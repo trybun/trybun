@@ -21,7 +21,7 @@
 | Web application | Next.js + React |
 | Styling | Tailwind CSS 4 with the theme defined as design tokens (CSS variables, `@theme`); class-variance-authority for component variants, tailwind-merge for combining classes |
 | UI components | Project component library (`packages/ui`, `@trybun/ui`) based on Radix UI and Tailwind CSS, using **shadcn/ui** (MIT) as the starting point: component source is copied into the library with the shadcn CLI and owned by the project; component catalog in Storybook (Rule 6) |
-| API and Worker | NestJS (the Worker is a separate process using the same domain code) |
+| API and Worker | NestJS – one backend application (`apps/server`) with two entry points: the API process and the Worker process ([§14.6](#146-monorepo-structure)) |
 | Database | PostgreSQL with the pgvector extension and a Polish full-text dictionary |
 | Database access | Prisma (ORM and migrations) |
 | Authentication | Keycloak |
@@ -29,7 +29,7 @@
 | Files | Any S3-compatible storage; SeaweedFS (Apache 2.0) included by default. Malware scanning with ClamAV |
 | Reverse proxy | Caddy (automatic Let's Encrypt certificates) |
 | Repository structure | Monorepo (pnpm workspaces + Turborepo) |
-| Validation and contracts | Shared schemas (Zod) and types for frontend and backend |
+| Validation and contracts | `@trybun/contracts`: Zod schemas and types shared by frontend and backend ([§14.6](#146-monorepo-structure)) |
 | Infrastructure | Docker and Docker Compose; CI/CD in GitHub Actions; images in GitHub Container Registry (`ghcr.io/trybun/<service>`, [§1.4](01-overview.md)) |
 | Tests | Vitest (unit and integration), Playwright (E2E), axe (accessibility) |
 
@@ -54,6 +54,7 @@
 - Incoming e-mail is handled by an e-mail provider that converts messages into webhooks, not by a self-hosted mail server.
 - Full-text search for Polish requires a Polish dictionary installed in PostgreSQL (e.g. hunspell). Without it, word inflections are not recognized.
 - All services run in containers. The local environment is reproducible with one command.
+- The repository structure and package boundaries follow [§14.6](#146-monorepo-structure).
 
 ## 14.5 Alternatives considered
 
@@ -70,3 +71,35 @@
 | Authentication library inside the application instead of Keycloak | Rejected – fewer infrastructure components, but more security code in the project |
 | CSS Modules or CSS-in-JS (e.g. styled-components) instead of Tailwind CSS | Rejected – CSS-in-JS adds runtime cost and fits React Server Components poorly; CSS Modules are viable but have a smaller ecosystem of ready patterns with Radix UI |
 | Services of a specific cloud provider | Rejected – the system must run on any Linux server ([15-deployment.md](15-deployment.md)) |
+
+## 14.6 Monorepo structure
+
+The repository follows the common pnpm + Turborepo convention: **`apps/`** contains what is run and deployed, **`packages/`** contains code shared by the applications.
+
+```
+apps/
+  web/              @trybun/web        Next.js web application
+  server/           @trybun/server     NestJS backend: API and Worker
+packages/
+  ui/               @trybun/ui         Component library (Rule 6)
+  contracts/        @trybun/contracts  Zod schemas, API types, status codes and mapping, labels
+  tsconfig/         @trybun/tsconfig   Shared TypeScript configuration (strict mode)
+  eslint-config/    @trybun/eslint-config  Shared lint rules, incl. Tailwind and boundary rules
+```
+
+### Backend: one application, two processes
+
+- `apps/server` contains all backend modules (domain, Prisma schema and migrations, integrations).
+- It has two entry points: `src/main.ts` starts the **API** (HTTP and WebSocket), `src/worker.ts` starts the **Worker** (queues, scheduled jobs, no HTTP server, NestJS application context).
+- Both processes are built into **one container image** (`ghcr.io/trybun/server`) and started as two Compose services with different commands. They remain separate processes as described in [§14.1](#141-system-components).
+- This keeps the domain code in one place without an extra package, following the NestJS convention.
+
+### Rules for packages
+
+- A package is created only for a concrete reason: the code is used by at least two applications, or a hard boundary is needed (e.g. `@trybun/ui` must not import application code). No packages "just in case".
+- Every package has one clear responsibility visible in its name. Catch-all packages such as `shared`, `common` or `utils` are not allowed.
+- `@trybun/contracts` contains only what frontend and backend must understand identically (schemas, types, codes, mappings, labels). It contains no permission or visibility logic, which stays in the API ([§14.4](#144-architectural-principles)).
+- Dependencies point in one direction only: applications → packages. Packages never import applications, and there are no cycles. `@trybun/contracts` depends on no other project package; `@trybun/ui` does not depend on `@trybun/server`. These boundaries are enforced by lint rules in CI.
+- Packages are **internal packages**: `"private": true`, referenced with the `workspace:*` protocol and consumed as TypeScript source, without a separate build or publishing step (Turborepo recommendation).
+- A package is published to npm only when there is an external consumer. The first expected candidate is a client SDK for the public API (`@trybun/sdk`, generated from the OpenAPI document, [§12.1](12-api-webhooks-import.md)), added when the public API exists.
+

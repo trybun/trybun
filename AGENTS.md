@@ -22,7 +22,7 @@ Instructions for AI coding agents working in the **Trybun** repository. This pro
 3. **User documentation from day one.** Docs-as-code, Diátaxis structure, EN + PL, contextual help. Update docs in the same PR.
 4. **Interactive tours.** Short (≤ ~5 steps), skippable, shown once, role-aware, accessible, translated; targets marked with `data-tour` attributes and checked by E2E tests.
 5. **README.md always current.** Update it in the same PR as the change it describes.
-6. **Reusable components.** Check `@trybun/ui` (`packages/ui`) and shared packages first; presentational UI components with Storybook entries, design tokens, no hard-coded text; no speculative options (YAGNI).
+6. **Reusable components.** Check `@trybun/ui` (`packages/ui`) and `@trybun/contracts` first; presentational UI components with Storybook entries, design tokens, no hard-coded text; no speculative options (YAGNI).
    shadcn/ui is the starting point: add components with the shadcn CLI into `packages/ui`, then adapt them (tokens, 44 px touch targets, translated texts, accessibility, Storybook entry) – they are project code from then on. Build from scratch only if shadcn/ui has nothing suitable.
    Styling: Tailwind CSS only, theme tokens only (no arbitrary values like `bg-[#…]`), variants via `cva`, merge via `tailwind-merge`, Prettier class sorting, dark mode through tokens.
 7. **Project memory in the repo.** Store knowledge gained during work (pitfalls, non-obvious behavior, proven solutions) only in `.ai/memory/` and keep the index `MEMORY.md` current. Tool-specific memory outside the repo (e.g. Claude Code auto memory) is disabled for this project (`.claude/settings.json`: `"autoMemoryEnabled": false`). Memory never overrides the spec; it does not duplicate the spec or ADRs. Write it in the same PR, in English, without secrets or personal data.
@@ -56,7 +56,8 @@ English for code, identifiers, comments, commits, PR descriptions, README and te
 
 ## Architecture essentials
 
-- TypeScript monorepo (pnpm + Turborepo): Next.js web app styled with Tailwind CSS, NestJS API and Worker, shared packages under the `@trybun/` npm scope (Zod schemas, types, `@trybun/ui`).
+- TypeScript monorepo (pnpm + Turborepo, [`docs/spec/14-architecture.md`](docs/spec/14-architecture.md) §14.6): `apps/web` (Next.js + Tailwind CSS), `apps/server` (NestJS – one app, two entry points: `main.ts` = API, `worker.ts` = Worker), `packages/ui`, `packages/contracts` (Zod schemas, types, status mapping – no permission logic), `packages/tsconfig`, `packages/eslint-config`. All internal (`private`, `workspace:*`).
+- New package only for code used by ≥ 2 apps or a hard boundary; never `shared`/`common`/`utils`. Dependencies only apps → packages, no cycles (lint-enforced).
 - PostgreSQL via Prisma; raw SQL only parameterized and only where Prisma is insufficient (full-text search, pgvector).
 - **Permissions and visibility are decided only by the API.** The frontend never contains this logic.
 - Authentication only via Keycloak. Never implement custom security mechanisms.

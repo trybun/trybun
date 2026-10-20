@@ -22,7 +22,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 ## 15.4 Releases
 
 - Versions follow **Semantic Versioning** and are produced by release-please from Conventional Commits; a human releases by merging the release pull request. Full rules: Rule 11 ([§2.11](02-agent-rules.md)).
-- Images are built **in CI** (GitHub Actions), tagged with the version and published to GitHub Container Registry as `ghcr.io/trybun/<service>` ([§1.4](01-overview.md)). The server only pulls ready images.
+- Images are built **in CI** (GitHub Actions), tagged with the version and published to GitHub Container Registry as `ghcr.io/trybun/<service>` ([§1.4](01-overview.md)): `web` and `server`; the API and the Worker run from the same `server` image with different commands ([§14.6](14-architecture.md)). The server only pulls ready images.
 - Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the install and update scripts and an installation guide (`INSTALL.md`). Source code is not needed for installation.
 - `CHANGELOG.md` follows the *Keep a Changelog* convention and is generated from commit messages in the Conventional Commits format. Release notes clearly mark breaking changes and any manual steps.
 

@@ -39,8 +39,8 @@ The product is called **Trybun**. Agents never invent other names, prefixes or s
 |---|---|---|
 | Running text: documentation, UI, e-mails, login screens, "About" page | **Trybun** | "Welcome to Trybun" |
 | GitHub organization and repository | `trybun` | `github.com/trybun/trybun` |
-| npm packages (monorepo) | `@trybun/<name>` | `@trybun/ui`, `@trybun/shared`, `@trybun/api` |
-| Container images | `ghcr.io/trybun/<service>` | `ghcr.io/trybun/web`, `ghcr.io/trybun/api`, `ghcr.io/trybun/worker` |
+| npm packages (monorepo) | `@trybun/<name>` | `@trybun/web`, `@trybun/server`, `@trybun/ui`, `@trybun/contracts` |
+| Container images | `ghcr.io/trybun/<service>` | `ghcr.io/trybun/web`, `ghcr.io/trybun/server` |
 | CLI commands and scripts | `trybun` | `trybun` |
 | Environment variables (own settings) | `TRYBUN_` prefix | `TRYBUN_DOMAIN`, `TRYBUN_DEFAULT_LANGUAGE` |
 | Keycloak realm | `trybun` | `trybun` |
