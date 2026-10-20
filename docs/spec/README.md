@@ -6,10 +6,10 @@ Specification of **Trybun**, a ticket / task management system for development t
 |---|---|
 | [00-glossary.md](00-glossary.md) | Every domain term with its code identifier and EN/PL UI labels |
 | [01-overview.md](01-overview.md) | Purpose of the system, AI Engineering approach, how to use this specification, naming conventions and brand assets |
-| [02-agent-rules.md](02-agent-rules.md) | Rules 1–11 for AI agents (incl. project memory, up-to-date specification, phone/tablet support, dependency security and versioning), Definition of Done, agent workflow (branching, ADRs, testing approach) and quality gates, Definition of Done, agent workflow and quality gates |
+| [02-agent-rules.md](02-agent-rules.md) | Rules 1–11 for AI agents (incl. project memory, up-to-date specification, phone/tablet support, dependency security and versioning), Definition of Done, agent workflow (branching, commit scopes, ADRs, testing approach), quality gates with coverage thresholds, tools and license policy |
 | [03-ticket-model.md](03-ticket-model.md) | Projects, ticket fields, forms, templates, sub-tickets, relations, labels |
 | [04-ticket-lifecycle.md](04-ticket-lifecycle.md) | Internal and public statuses, mapping, transition rules, activity timeline |
-| [05-visibility-and-search.md](05-visibility-and-search.md) | What end users see, shared tickets, portal search, similar ticket detection |
+| [05-visibility-and-search.md](05-visibility-and-search.md) | What end users see, shared tickets, portal search, similar ticket detection, end-user portal |
 | [06-comments-notifications.md](06-comments-notifications.md) | Public comments, internal notes, GFM editor, e-mail replies, watching, notifications |
 | [07-users-organizations-permissions.md](07-users-organizations-permissions.md) | Roles, organizations, accounts and authentication, permission matrix |
 | [08-team-views.md](08-team-views.md) | List and saved views, Kanban board, triage queue, command palette, global search |
@@ -19,7 +19,7 @@ Specification of **Trybun**, a ticket / task management system for development t
 | [12-api-webhooks-import.md](12-api-webhooks-import.md) | Public REST API, tokens, integration tickets and error grouping, outgoing webhooks, data import |
 | [13-non-functional.md](13-non-functional.md) | Internationalization, GDPR, attachments, accessibility, security, backups |
 | [14-architecture.md](14-architecture.md) | Components, technology stack, rationale, architectural principles, alternatives, monorepo structure |
-| [15-deployment.md](15-deployment.md) | Docker Compose deployment on any Linux VPS, releases, install, first run, updates, backups |
+| [15-deployment.md](15-deployment.md) | Docker Compose deployment on any Linux VPS, releases, install, first run, updates, backups, local development environment |
 | [16-open-source.md](16-open-source.md) | MIT license, community files, contribution rules (DCO, AI-assisted contributions), repository security, voluntary funding |
 | [17-conventions.md](17-conventions.md) | Code naming conventions; data and integration conventions: IDs, dates, deletion, concurrency, outbox, errors, logging, dependency failures, migrations |
 

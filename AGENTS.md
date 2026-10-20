@@ -23,7 +23,7 @@ Instructions for AI coding agents in the **Trybun** repository. The project is b
 
 ## Rules
 
-Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2–11 are subordinate to Rule 1; Rules 3–6 and 9 also to Rule 2.
+Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2–11 are subordinate to Rule 1; Rules 3, 4, 6 and 9 also to Rule 2.
 
 1. **Conventions first** – follow established standards; record deliberate deviations in an ADR.
 2. **Minimum user steps** – shortest path to the user's goal, never at the cost of predictability or accessibility.
@@ -45,7 +45,7 @@ Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2
 - Never disable, skip or weaken tests, thresholds or CI gates, and never add suppressions (`@ts-ignore`, lint-disable) to go green.
 - Never mock the database in integration tests – use Testcontainers.
 - Never add a second validation library (Zod only), a second DI container (NestJS only) or a second styling approach (Tailwind only).
-- Never use Redis, MinIO, WYSIWYG editors, external AI APIs for ticket content, or the SVAR Gantt PRO edition.
+- Never run a Redis server (use Valkey; Redis-protocol client libraries and adapters are allowed); never use MinIO, WYSIWYG editors, external AI APIs for ticket content, or the SVAR Gantt PRO edition.
 - Never put personal data, tokens or ticket content into logs.
 - Never decide a gap or contradiction in the specification yourself – propose a change for approval.
 - Never push to `main`; never access production secrets or data.
@@ -57,7 +57,7 @@ Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2
 - **Learn from corrections**: a specific pitfall → `.ai/memory/`; a general working rule → propose an `AGENTS.md` change.
 - **Repeated work** → propose a skill in `.ai/skills/`.
 - **Self-review before the PR**: knowing what you know now, is there a simpler, cleaner solution?
-- Trunk-based, squash merge; Conventional Commits with the closed scope list ([§2.13](docs/spec/02-agent-rules.md)); branch names `KEY-123-short-description`; DCO `Signed-off-by` on every commit.
+- Trunk-based, squash merge; Conventional Commits with the closed scope list ([§2.13](docs/spec/02-agent-rules.md)); branch names `KEY-123-short-description` (tickets) or `S0-01-short-description` (plan tasks); DCO `Signed-off-by` on every commit.
 - New dependency: exists, maintained, widely used, no known vulnerabilities, MIT-compatible licence – and only if really needed.
 
 ## Definition of Done
@@ -77,4 +77,15 @@ Checklist (full text: [§2.12](docs/spec/02-agent-rules.md)):
 
 ## Commands
 
-<!-- Fill in when the repository is scaffolded: install, dev, build, test, lint, typecheck, migrate, storybook. Keep in sync with README.md (Rule 5). -->
+Planned commands – **available after S0-01**; local environment: [§15.12](docs/spec/15-deployment.md). Keep in sync with README.md (Rule 5).
+
+| Command | Purpose |
+|---|---|
+| `pnpm install` | Install dependencies from the lockfile |
+| `pnpm dev` | Start the full local environment (infrastructure in Docker Compose, migrations and seed, apps with hot reload) |
+| `pnpm test` | Unit tests (Vitest) |
+| `pnpm test:integration` | Integration tests (Vitest + Testcontainers) |
+| `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop) |
+| `pnpm lint` | Lint and formatting check |
+| `pnpm typecheck` | TypeScript strict type check |
+| `pnpm build` | Build all applications |

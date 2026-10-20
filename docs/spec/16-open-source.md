@@ -24,6 +24,8 @@ Following GitHub community standards, the repository contains:
 | `.github/pull_request_template.md` | Checklist based on the Definition of Done, the linked specification sections and a "Specification changes" section listing changes marked for approval ([§2.8](02-agent-rules.md)) |
 | `.github/CODEOWNERS` | Who reviews which parts of the repository |
 
+Values that identify people – the copyright holder in `LICENSE`, the contact address in `CODE_OF_CONDUCT.md` and `SECURITY.md`, and the GitHub handles in `CODEOWNERS` – are supplied by the maintainer. Agents never invent them; until they are supplied, the files contain a clearly marked placeholder and the pull request lists them as open items.
+
 Additionally:
 
 - Labels `good first issue` and `help wanted` are used for tasks suitable for new contributors. Tasks from the implementation plan ([`docs/plan/`](../plan/implementation-plan.md)) can be published as GitHub issues.

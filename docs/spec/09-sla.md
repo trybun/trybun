@@ -6,8 +6,8 @@ An SLA defines the maximum handling times for tickets resulting from agreements 
 
 An SLA policy is a named set of time targets per priority. It has two metrics:
 
-- **First response time** – from ticket creation to the first public comment by a team member.
-- **Resolution time** – from ticket creation to a terminal status (`done`, `rejected`, `duplicate`).
+- **First response time** – from ticket creation to the first public comment by a team member. If the ticket reaches a terminal status without such a comment (e.g. `duplicate`), the metric is **not applicable** and is excluded from reports.
+- **Resolution time** – from ticket creation to a terminal status (`done`, `rejected`, `duplicate`). With resolution confirmation ([§4.3](04-ticket-lifecycle.md)), the metric is measured at the moment the confirmation was requested.
 
 Example policy (illustrative values):
 
@@ -18,30 +18,36 @@ Example policy (illustrative values):
 | `normal` | 1 business day | 5 business days |
 | `low` | 2 business days | 10 business days |
 
+**Units**: all targets are counted in **working time** of the referenced calendar. Hours are working hours; one business day equals the calendar's working hours per day (e.g. 8 hours for 8:00–16:00).
+
 Each policy references a **business calendar** ([§9.2](#92-business-calendar)) used to count time. Policies are managed by the Administrator.
+
+**Versions**: policies and calendars are versioned. Editing a policy or calendar creates a new version; existing versions are immutable. A ticket refers to the policy version selected at its creation ([§9.3](#93-policy-assignment)).
 
 ## 9.2 Business calendar
 
 - Working days and hours, e.g. Monday–Friday 8:00–16:00.
-- Time zone (default `Europe/Warsaw`).
-- Holidays, e.g. public holidays.
-- A 24/7 calendar is possible for round-the-clock support agreements.
+- Time zone (IANA name, default `Europe/Warsaw`). Working hours are local wall-clock times in this time zone, including across daylight saving time changes.
+- Holidays, e.g. public holidays. Adding or removing a holiday applies to running tickets from that moment on; time already counted is not recalculated.
+- A 24/7 calendar is possible for round-the-clock support agreements; it counts real elapsed time.
 
-SLA time runs only during the working hours of the referenced calendar.
+SLA time runs only during the working hours of the referenced calendar. A ticket created outside working hours starts counting at the beginning of the next working period.
 
 ## 9.3 Policy assignment
 
 - An SLA policy can be assigned to an **organization** ([§7.3](07-users-organizations-permissions.md)).
 - A project has a **default policy** for users without an organization and organizations without their own policy ([§3.1](03-ticket-model.md)).
-- Precedence: organization policy → project default policy → no SLA.
+- Precedence: organization policy → project default policy → no SLA. The policy (in its current version) is selected when the ticket is created.
 - SLA applies only to tickets with source `user`. Team tickets and integration tickets are not subject to SLA.
 
 ## 9.4 Time counting rules
 
-- The clock is **paused** while the ticket is in `waiting_for_requester` and resumes when the requester replies.
-- Changing the priority recalculates deadlines with the new priority's targets, counted from ticket creation.
+- For each metric the system stores the **working time elapsed**; deadlines are always derived from the elapsed time, the target and the calendar, never stored as fixed timestamps.
+- The clock is **paused** while the ticket is in `waiting_for_requester` and resumes when the ticket leaves that status.
+- Changing the priority recalculates deadlines with the new priority's targets of the same policy version, counted from ticket creation. A metric already recorded as `missed` stays `missed`, even if the new target would have been met.
 - Reopening a ticket ([§4.3](04-ticket-lifecycle.md)) resumes the resolution clock from the value at which it stopped.
-- Changing a policy or calendar affects new tickets only. Existing tickets keep the deadlines calculated at creation.
+- Changing a policy or calendar affects new tickets only; existing tickets keep their policy version.
+- SLA timers of tickets in an archived project are frozen ([§7.3](07-users-organizations-permissions.md)).
 
 ## 9.5 Presentation and warnings
 

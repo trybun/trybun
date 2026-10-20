@@ -33,6 +33,32 @@ The wordmark in `trybun-logo-*.svg` uses the **Manrope ExtraBold** font. Before 
 - Wordmark: **Manrope ExtraBold (800)**, always lowercase: `trybun`.
 - In running text the name is written **Trybun**.
 
+## UI design tokens
+
+**Status: proposed – requires human approval.** Until approved, the tokens below are the agreed starting point for `@trybun/ui` (Rule 6, [§2.6](../spec/02-agent-rules.md)); the final values are confirmed in the S0-07 pull request.
+
+The brand colours above are not a complete UI palette. The UI uses the token set of shadcn/ui, derived from the brand as follows:
+
+- **Ink** is the primary colour (`--primary`), and the base of the neutral scale (backgrounds, borders, muted text are tints and shades of Ink).
+- **Vermilion** is an **accent only** (highlights, the customer side of the mark, focus accents). It is not used for body text: white on `#E0482C` is about 4.1:1, below WCAG AA. For text and small UI elements a darker variant is used (proposed `#B8341C`; its contrast must be verified at ≥ 4.5:1 against its background).
+- **Semantic colours** (success, warning, danger, info) use the 700 shades of the Tailwind palette (green, amber, red, blue), each verified at ≥ 4.5:1 for text. They are always combined with an icon or text ([§13.4](../spec/13-non-functional.md)).
+
+| Token | Light | Dark |
+|---|---|---|
+| `--background` | White | Ink |
+| `--foreground` | Ink | White |
+| `--card`, `--popover` | White | Ink, lightened |
+| `--primary` / `--primary-foreground` | Ink / White | White / Ink |
+| `--secondary`, `--muted`, `--accent` | Ink tints | Ink shades |
+| `--muted-foreground` | Ink, ≥ 4.5:1 on `--background` | White, ≥ 4.5:1 on `--background` |
+| `--destructive` | red-700 | red-400 |
+| `--success` / `--warning` / `--info` | green-700 / amber-700 / blue-700 | green-400 / amber-400 / blue-400 |
+| `--border`, `--input` | Ink tint | Ink shade |
+| `--ring` | Vermilion (text variant) | Vermilion |
+| `--brand-accent` | Vermilion `#E0482C` | Vermilion `#E0482C` |
+
+**UI typeface:** Manrope (variable font, self-hosted with `next/font`), fallback `system-ui, sans-serif`. Code blocks use the system monospace stack.
+
 ## Rules
 
 - Keep clear space around the mark of at least the height of its crossbar.

@@ -21,13 +21,15 @@ State changes automatically: to `in_progress` when the first ticket reaches `in_
 
 A ticket is added to a milestone from the ticket, with a bulk action in the list ([§8.1](08-team-views.md)), or by dragging it on the roadmap view.
 
-Milestones map 1:1 to GitHub milestones in the linked repository ([§11.4](11-github-integration.md)).
+**Deleting a milestone**: the Project manager can delete a milestone. Its tickets lose the milestone (`milestone = none`) with an event in their activity timeline ([§4.5](04-ticket-lifecycle.md)); the GitHub milestone is not changed.
+
+**GitHub**: a milestone maps to a GitHub milestone of the same name in each linked repository ([§11.2](11-github-integration.md)). The GitHub milestone is created on demand, when the first issue of that milestone is created or synchronized in a repository, and is matched by name ([§11.4](11-github-integration.md)).
 
 ## 10.2 Internal roadmap
 
 - Timeline of the project's milestones, with a progress bar for each.
 - Expanding a milestone shows its tickets with their statuses.
-- Milestones at risk are highlighted (target date passed, or approaching with low progress).
+- Milestones at risk are highlighted: the milestone is not `completed` and either its target date has passed, or the target date is at most 14 days away and progress is below 50%.
 
 ## 10.3 Public roadmap
 
@@ -39,6 +41,8 @@ A simplified version for end users that reduces "when will it be ready?" questio
 - lists only tickets with source `user` that the viewer may see ([§5.1](05-visibility-and-search.md)).
 
 In a ticket view, the end user sees "Planned: Q2 2027" (PL: „Planowane: II kwartał 2027”) if the ticket belongs to a public milestone.
+
+Releases and deployments of the customer's software are **out of scope** of the system. End users learn about delivery through the public status `resolved` ([§4.2](04-ticket-lifecycle.md)) and the state of the public milestone.
 
 ## 10.4 Gantt chart
 

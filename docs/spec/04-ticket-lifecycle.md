@@ -49,7 +49,8 @@ Every internal status maps to exactly one public status. As a result:
 |---|---|---|---|
 | `new` | `received` | We have received your ticket | Otrzymaliśmy Twoje zgłoszenie |
 | `triage` | `received` | We are analyzing your ticket | Analizujemy zgłoszenie |
-| `waiting_for_requester` | `awaiting_reply` | We need more information from you | Potrzebujemy od Ciebie dodatkowych informacji |
+| `waiting_for_requester` (reason `information`) | `awaiting_reply` | We need more information from you | Potrzebujemy od Ciebie dodatkowych informacji |
+| `waiting_for_requester` (reason `confirmation`) | `awaiting_reply` | Please confirm whether your problem is solved | Potwierdź, czy Twój problem został rozwiązany |
 | `todo` | `in_progress` | Your ticket has been scheduled | Zgłoszenie zostało zaplanowane |
 | `in_progress` | `in_progress` | We are working on a solution | Pracujemy nad rozwiązaniem |
 | `in_verification` | `in_progress` | We are testing the solution | Testujemy rozwiązanie |
@@ -61,10 +62,24 @@ Every internal status maps to exactly one public status. As a result:
 
 - **Initial status:** tickets from end users and integrations start in `new` (they go through triage). Tickets created by the team start in `todo`. Tickets created from GitHub issues ([§11.5](11-github-integration.md)) start in `todo`.
 - The team may move a ticket between any statuses; the workflow is a convention, not a hard-enforced state machine. Permission rules from [§7.5](07-users-organizations-permissions.md) apply.
-- **Closing after verification**: a Developer or Project manager moves a ticket from `in_verification` to `done` after checking the result. Optionally, a project can enable **resolution confirmation**: instead of `done`, the ticket goes to `waiting_for_requester` with the question "Is your problem solved?" (PL: „Czy Twój problem został rozwiązany?”). A confirming reply moves it to `done`; a reply that the problem persists returns it to `in_progress`; with no reply within 7 days it moves to `done` automatically.
-- Moving a ticket to `rejected` requires a **reason**, published to the requester as a public comment. Moving to `duplicate` requires a **link** to the original ticket.
-- When the requester replies (public comment, including e-mail reply) to a ticket in `waiting_for_requester`, the ticket automatically returns to the **status it had before** – no manual team action.
+- **Waiting reason.** A ticket in `waiting_for_requester` always has a **waiting reason** (`ticket.waiting_reason`): `information` (the team asked for more information) or `confirmation` (resolution confirmation, below). The system also stores the status the ticket had before it started waiting. The reason is cleared when the ticket leaves `waiting_for_requester`.
+- **Closing after verification**: a Developer or Project manager moves a ticket from `in_verification` to `done` after checking the result.
+- **Resolution confirmation** (optional per project, [§3.1](03-ticket-model.md)): when the setting is on and a ticket with source `user` is moved to `done` from any non-terminal status, it goes to `waiting_for_requester` with reason `confirmation` instead. The requester is asked "Is your problem solved?" (PL: „Czy Twój problem został rozwiązany?”) and gets two explicit actions in the portal and in the e-mail:
+  - "Yes, solved" (PL: „Tak, rozwiązane”) → `done`,
+  - "No, still a problem" (PL: „Nie, problem nadal występuje”) → `in_progress`.
+  - In the e-mail both actions are signed one-click links that open a confirmation page in the portal; the change happens only after the button on that page is pressed (POST), so link scanners in mail systems cannot trigger it.
+  - Any other public comment by the requester counts as "No, still a problem" → `in_progress`.
+  - Only the requester's actions count; comments of other end users do not change the status.
+  - With no action within **7 calendar days** of the request, the ticket moves to `done` automatically (an automatic event, [§4.5](#45-activity-timeline)).
+  - These rules take precedence over the general return rule below.
+- **Requester reply while waiting for information**: when the requester replies (public comment, including e-mail reply) to a ticket in `waiting_for_requester` with reason `information`, the ticket automatically returns to the **status it had before** – no manual team action.
+- Moving a ticket to `rejected` requires a **reason**, published to the requester as a public comment.
+- Moving to `duplicate` requires a **link** to the original ticket in the same project, stored as the relation `duplicate_of` ([§3.5](03-ticket-model.md)):
+  - the requester and the watchers of the duplicate become watchers of the original, and the requester is counted as an affected user of the original ([§5.6](05-visibility-and-search.md)),
+  - if the original is itself a duplicate, the link points to its original (no chains),
+  - reopening the duplicate removes the `duplicate_of` relation and records an event.
 - Moving a ticket from a terminal status to any other status is a **reopen** (relevant for SLA, [§9.4](09-sla.md)).
+- **Comments on terminal tickets**: a public comment by the requester on a `done` ticket within **14 days** of reaching `done` reopens it to `triage` (a reopen for SLA) and notifies the assignee. After 14 days, and always for `rejected` and `duplicate`, end users cannot comment; instead of the comment field the portal shows "Create a new ticket" (PL: „Utwórz nowe zgłoszenie”). E-mail replies follow the same rules ([§6.3](06-comments-notifications.md)). The team can always comment.
 - Automatic transitions (GitHub, integrations) never move a ticket out of a terminal status, except the regression rule for integration tickets ([§12.3](12-api-webhooks-import.md)).
 
 ## 4.4 UX rules (Rule 2)
@@ -84,7 +99,9 @@ Every ticket has an activity timeline (pattern: GitHub) in which comments are in
 Rules:
 
 - Every change of a ticket field is recorded with the author, timestamp, previous and new value.
-- The history is **immutable**: nobody, including the Administrator, can edit or delete events. (GDPR anonymization replaces personal data of the author but keeps the event, [§13.2](13-non-functional.md).)
+  - Values that refer to other records (assignee, label, milestone, status) are stored as a snapshot – identifier plus display name – so the event stays readable after the record is renamed or deleted. Events have no foreign keys to labels or milestones.
+  - Changes of the description and of comments are recorded only as "edited" with author and time. The text itself is kept in **content revisions** ([§6.1](06-comments-notifications.md)), not in events, so it can be redacted.
+- The history is **immutable**: nobody, including the Administrator, can edit or delete events. (GDPR anonymization replaces personal data of the author but keeps the event, [§13.2](13-non-functional.md).) Redaction of content ([§5.2](05-visibility-and-search.md)) is itself recorded as an event "Content redacted" (PL: „Treść zredagowana”) with author and time, without the removed content.
 - Automatic events (GitHub, integrations, system rules) are marked as automatic, with their source.
 - End users see only **public events**: public status changes, public comments and assignment to a public milestone. Internal events are visible to the team only.
 - Team members can hide events and see comments only (toggle remembered per user).

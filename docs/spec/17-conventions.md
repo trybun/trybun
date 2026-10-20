@@ -6,6 +6,8 @@ Code naming and data/integration conventions that apply to every part of the sys
 
 Naming follows the conventions of each technology in the stack (Rule 1). Domain terms always use the code identifiers from the [glossary](00-glossary.md); product-related identifiers follow [§1.4](01-overview.md). All identifiers are in English (Rule 5).
 
+The glossary gives the **domain name** of every term and its **enum values**. The name is spelled according to the table below in each place: e.g. the glossary identifier `ticket.requester_count` is `requesterCount` in TypeScript and JSON and `requester_count` in the database; `activity_event` is the Prisma model `ActivityEvent` and the table `activity_events`. Enum values are used exactly as listed in the glossary.
+
 | Element | Convention | Example |
 |---|---|---|
 | Variables, functions, methods | camelCase; booleans start with `is`, `has`, `can` or `should` | `assignTicket()`, `isShared` |
@@ -21,9 +23,10 @@ Naming follows the conventions of each technology in the stack (Rule 1). Domain 
 | REST API paths | Plural nouns in kebab-case; no verbs, actions as sub-resources | `/api/v1/tickets/{id}/comments`, `/api/v1/saved-views` |
 | JSON fields and query parameters | camelCase | `{ "requesterCount": 3 }`, `?sortBy=createdAt` |
 | Webhook and internal events | `resource.event` in snake_case | `ticket.status_changed` |
+| Error codes | `resource.reason` in snake_case | `ticket.visibility_not_allowed` |
 | Queue names and job names | kebab-case | `github-webhooks`, `sla-timers` |
-| Translation keys | Dot-separated namespaces in camelCase, starting with the feature | `tickets.form.titleLabel` |
-| Environment variables | UPPER_SNAKE_CASE with the `TRYBUN_` prefix ([§1.4](01-overview.md)) | `TRYBUN_DOMAIN` |
+| Translation keys | Dot-separated namespaces in camelCase, starting with the feature; error messages use `errors.<error code>` with the code unchanged | `tickets.form.titleLabel`, `errors.ticket.visibility_not_allowed` |
+| Environment variables | UPPER_SNAKE_CASE with the `TRYBUN_` prefix ([§1.4](01-overview.md)); library-defined names stay unchanged ([§15.3](15-deployment.md)) | `TRYBUN_DOMAIN`, `DATABASE_URL` |
 | Design tokens / Tailwind theme | kebab-case | `--color-ink`, `bg-ink` |
 | Tests | `*.spec.ts` / `*.spec.tsx` next to the tested file; E2E tests in the application's `e2e/` folder | `visibility.spec.ts`, `apps/web/e2e/create-ticket.spec.ts` |
 | Product tour targets | `data-tour="<view>-<element>"` in kebab-case (Rule 4) | `data-tour="kanban-column-menu"` |
@@ -52,38 +55,62 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 - All timestamps are stored as `timestamptz` in UTC and exchanged in the API as ISO 8601 strings in UTC (e.g. `2026-11-03T09:15:00Z`).
 - Dates without time (e.g. a milestone's target date) are stored as `date` and exchanged as `YYYY-MM-DD`.
-- Conversion to the user's time zone and locale happens only in the presentation layer (web, e-mails) ([§13.1](13-non-functional.md)). SLA calculations use the time zone of the business calendar ([§9.2](09-sla.md)).
+- Conversion to the user's time zone and locale happens only in the presentation layer (web, e-mails) ([§13.1](13-non-functional.md)). SLA calculations use the time zone of the business calendar ([§9.2](09-sla.md)) and `date-fns` with `@date-fns/tz` ([§14.2](14-architecture.md)).
 
 ### Deleting data
 
 - Tickets are never deleted; they are closed as `rejected` or `duplicate` ([§4.3](04-ticket-lifecycle.md)). Personal data is removed only through anonymization ([§13.2](13-non-functional.md)).
+- **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)): the tickets of the batch that have no activity events other than "Imported" are deleted physically, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused. The undo is recorded in the administrative audit log.
 - Other records (e.g. labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log.
+- Activity events never reference deletable records by foreign key; they store the values they show (ID and display name, e.g. of a label or milestone) in their own data, so deleting a record never changes or breaks the history ([§4.5](04-ticket-lifecycle.md)).
 - There is no generic soft-delete (`deleted_at`) mechanism.
 
 ### Transactions and events
 
 - Changes that span several records are performed in one database transaction.
 - Side effects (notifications, webhooks, GitHub synchronization, search indexing) use the **transactional outbox** pattern: the event is written to an `outbox_events` table in the same transaction as the change, and the Worker publishes it to the queue. No event is lost when a process stops between the change and the publication, and no event is published for a change that was rolled back.
+- **Outbox publisher**: the Worker polls `outbox_events` about once per second with `SELECT … FOR UPDATE SKIP LOCKED` (safe with several Worker replicas), enqueues each event in BullMQ with `jobId` equal to the outbox event ID (so a repeated publication creates no second job), sets `published_at`, and deletes published events after 7 days.
 - Event handlers are idempotent, because events may be delivered more than once.
+
+### Background jobs and scheduling
+
+- All delayed and recurring work runs in the Worker on **BullMQ** ([§14.2](14-architecture.md)):
+  - recurring jobs (e.g. retention anonymization, GitHub delivery reconciliation, purging old records) use BullMQ job schedulers, so each run happens once regardless of the number of Worker replicas;
+  - timers (e.g. SLA deadlines, automatic closing after resolution confirmation, [§4.3](04-ticket-lifecycle.md)) and notification batching ([§6.7](06-comments-notifications.md)) use delayed jobs with a deterministic `jobId` derived from the subject (e.g. `notification-batch:<recipient>:<ticket>`), so rescheduling replaces the job instead of duplicating it.
+- Jobs that fail are retried with exponential backoff; after the last attempt they stay in the failed set and are visible to the Administrator.
 
 ### Concurrency
 
-- **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique, gapless and never reused even under concurrent creation.
-- **Optimistic locking**: tickets, comments, milestones and other editable records have a `version` field. The API returns it as an `ETag`; updates must send `If-Match`. A conflict returns `412 Precondition Failed` and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
+- **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique and never reused even under concurrent creation. Numbers are consecutive except for tickets removed by undoing an import (see "Deleting data").
+- **Optimistic locking** protects records edited by people:
+  - Versioned records: tickets, comments (including internal notes), milestones, labels, saved views, organizations, projects, SLA policies, business calendars, ticket templates and webhooks. Each has a `version` field.
+  - The API returns the version as a weak `ETag` (`W/"<version>"`). `PATCH`, `PUT` and `DELETE` of a versioned record must send `If-Match`; a missing header returns `428 Precondition Required` (code `request.precondition_required`), a stale one `412 Precondition Failed`, and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
+  - The ticket's `version` covers only the ticket's own fields (title, description, type, priority, status, assignee, milestone, dates, visibility, parent). Child records – comments, attachments, labels assigned, watchers, relations, "I have the same problem" – are separate resources and do not change the ticket's `version`.
+  - Automatic changes by the system (e.g. GitHub, the requester-reply status return, SLA, occurrence counts, automatic closing) do not send `If-Match` but do increase `version`, so a person editing at the same time gets a conflict instead of overwriting them.
+  - **Bulk actions** ([§8.1](08-team-views.md)) send `[{id, version}]` for at most 100 records. Each record is changed in its own transaction, and the response lists the result per record (`200`, `404`, `412`), so the UI can report the records that were not changed.
+  - Kanban columns have no manual card order ([§8.2](08-team-views.md)); moving a card changes only its status.
 
 ### Errors
 
 - A record the user is not allowed to see returns **`404 Not Found`, never `403`**, so the existence of tickets, projects or organizations is not disclosed (ticket identifiers are sequential). `403` is used only for actions on records the user can see.
-
-- The whole API (public and internal) returns errors in the *Problem Details* format (RFC 9457) with a stable, documented error `code` (e.g. `ticket.visibility_not_allowed`).
-- The web application translates error codes into messages in the user's language; raw server messages are never shown to users.
-- Validation errors list the invalid fields, so forms can show them next to the fields.
+- **Order of checks**: the visibility check (404) runs first, for the target record and for every record referenced in the request (e.g. the original ticket of a `duplicate`, a relation target, a milestone). Validation (`422`), preconditions (`412`, `428`), conflicts and `Idempotency-Key` replays are evaluated only afterwards, so their responses never reveal whether an invisible record exists.
+- The whole API (public and internal) returns errors in the *Problem Details* format (RFC 9457) with a stable, documented error `code` (e.g. `ticket.visibility_not_allowed`). The `type` member is `about:blank` until the project domain is confirmed ([§1.4](01-overview.md)), then `https://<domain>/problems/<code>`.
+- The web application translates error codes into messages in the user's language (translation key `errors.<code>`, [§17.1](#171-code-naming-conventions)); raw server messages are never shown to users.
+- Validation errors list the invalid fields in an `errors` member (`[{ "pointer": "/title", "code": "string.too_long" }]`, JSON Pointer to the field), so forms can show them next to the fields.
 
 ### Logging and monitoring
 
 - Logs are structured JSON (`nestjs-pino`) with level, time, request ID and, for jobs, job ID. The request ID is returned in the `X-Request-Id` header and passed to Worker jobs.
-- Logs never contain personal data, tokens, passwords or ticket content ([§13.2](13-non-functional.md)).
-- Health endpoints: `/health` (liveness) and `/health/ready` (readiness, checks database, Valkey and object storage).
+- **What logs may contain**:
+  - Allowed: pseudonymous IDs (UUIDs of users, tickets, projects, organizations, tokens), error codes, HTTP method, route template and status.
+  - IP addresses only in access and security logs (Caddy, Keycloak events, rate limiting), kept for at most **14 days**.
+  - Never: names, e-mail addresses, ticket or comment content, search text, tokens, passwords, secrets or cookies ([§13.2](13-non-functional.md)).
+- **No secrets or search text in URLs**, because URLs end up in access logs, browser history and `Referer` headers: setup and invitation tokens are submitted in the request body (or the URL fragment, which is never sent to the server), and the search query of the global search ([§8.5](08-team-views.md)) is kept in client state and sent in the request body. Caddy access logs record paths without query strings and never log the `Authorization` or `Cookie` headers ([§15.9](15-deployment.md)).
+- **Health endpoints** of the API (internal network only, [§14.4](14-architecture.md)):
+  - `/health` – liveness: returns `{ "status": "ok", "version": "X.Y.Z" }` without checking dependencies, so an outage of a dependency never makes Compose restart the API (Rule 11, [§2.11](02-agent-rules.md)).
+  - `/health/ready` – readiness: fails only when PostgreSQL is unavailable; the status of Valkey and the object storage is reported in the body as `ok` or `degraded` without failing the check (see "Dependency failures").
+  - The web application has its own liveness endpoint `/api/health`.
+  - The Worker has no HTTP server ([§14.6](14-architecture.md)); it writes a heartbeat file every 15 seconds, and its Compose health check fails when the file is older than 60 seconds.
 
 ### Dependency failures
 
@@ -92,9 +119,9 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 | Keycloak | No new sign-ins; existing sessions work until their access token cannot be refreshed; API tokens keep working |
 | SMTP / e-mail provider | Outgoing e-mails stay in the outbox and are retried with exponential backoff; the Administrator panel shows a warning |
 | ClamAV | Uploaded files stay in quarantine ("Checking…") until the scanner is back; nothing is released unscanned |
-| Object storage | Uploads and downloads fail with a clear message; the rest of the system works |
-| GitHub | Outgoing changes are retried with exponential backoff; incoming webhooks are re-delivered by GitHub |
-| Valkey | Background jobs and real-time updates pause; the web UI and API keep working with reduced functionality; jobs resume from the outbox |
+| Object storage | Uploads and downloads fail with a clear message; the rest of the system works; `/health/ready` reports `degraded` |
+| GitHub | Outgoing changes are retried with exponential backoff. GitHub does **not** redeliver failed webhook deliveries automatically, so a recurring Worker job lists the failed deliveries of the GitHub App through the GitHub API and requests their redelivery; duplicates are skipped by the delivery ID ([§11.1](11-github-integration.md)). The Administrator can also start a manual resynchronization of a repository |
+| Valkey | Background jobs and real-time updates pause; the web UI and API keep working with reduced functionality; jobs resume from the outbox; API rate limiting fails open; `/health/ready` reports `degraded` |
 | PostgreSQL | The system is unavailable; `/health/ready` reports the failure |
 
 
@@ -102,3 +129,4 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 - Database migrations are created with Prisma Migrate, named in snake_case describing the change (e.g. `add_ticket_visibility`), and are forward-only.
 - A migration that would lose data is split into compatible steps or marked as a breaking change (Rule 11).
+- Database objects that Prisma does not model (e.g. the `polish` text search configuration, pgvector indexes, partial unique indexes) are created in migrations with SQL.

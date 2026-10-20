@@ -9,6 +9,7 @@ Based on patterns used by Linear and Jira. Two pillars: **linking code to ticket
   - Verify the `X-Hub-Signature-256` signature of every request.
   - Respond immediately and process the event in a background queue ([§14.1](14-architecture.md)).
   - Idempotency: the delivery identifier (`X-GitHub-Delivery`) is stored and repeated deliveries are skipped.
+  - GitHub does not redeliver failed deliveries automatically. A Worker job periodically lists failed deliveries of the GitHub App through the GitHub API and requests their redelivery; the Administrator can also start a "Resync" of a linked repository.
 - **Outgoing changes:** GitHub API (REST/GraphQL), respecting rate limits, with retries and exponential backoff.
 - **Loop protection:** events caused by the system's own GitHub App are ignored.
 - The integration (installing the app, linking repositories) is configured by the Administrator.
@@ -24,6 +25,9 @@ Based on patterns used by Linear and Jira. Two pillars: **linking code to ticket
 
 Branches, commits and pull requests are linked to a ticket when their name, title or description contains the ticket key, e.g. `ERP-123-fix-login`.
 
+- The key is matched case-insensitively as a whole word: `KEY-number` delimited by non-alphanumeric characters (pattern `\b([A-Z][A-Z0-9]+)-(\d+)\b`, case-insensitive), so `ERP-12` never matches inside `ERP-123`.
+- Only keys of projects linked to the repository ([§11.2](#112-project-repositories)) are linked; other keys are ignored.
+
 - The ticket offers a **"Copy branch name"** action that generates a name following the convention (key + shortened title in kebab-case).
 - Linked branches and pull requests, with their state, are shown in the ticket (team only).
 - Automatic status changes:
@@ -31,10 +35,11 @@ Branches, commits and pull requests are linked to a ticket when their name, titl
 | GitHub event | Ticket status change |
 |---|---|
 | Branch created or PR opened with the ticket key | `todo` → `in_progress` |
-| PR merged | → `in_verification` |
+| PR merged | → `in_verification`, only when no other linked PR is still open (otherwise an event in the activity timeline) |
 | PR closed without merge | no change (event in the activity timeline, [§4.5](04-ticket-lifecycle.md)) |
 
-Automatic changes never move a ticket out of a terminal status.
+- Tickets in `new` or `triage` are not changed automatically; the GitHub event is only added to the activity timeline.
+- Automatic changes never move a ticket out of a terminal status.
 
 ## 11.4 Creating issues from tickets
 
@@ -65,8 +70,8 @@ Status mapping (issues have only open/closed states):
 | GitHub | System |
 |---|---|
 | Closed as "completed" | `in_verification` |
-| Closed as "not planned" | `rejected` |
-| Reopened | `todo` |
+| Closed as "not planned" | `rejected`, with the system reason "Closed in GitHub as not planned" (PL: „Zamknięte w GitHub jako nieplanowane”), recorded as an internal event and **not** published to the requester |
+| Reopened | `todo`; if the ticket is in a terminal status, no status change – only an event in the activity timeline ([§4.3](04-ticket-lifecycle.md)) |
 
 | System | GitHub (two-way sync only) |
 |---|---|

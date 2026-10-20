@@ -53,7 +53,7 @@ Per Rule 1 (practices of onboarding tools and tour libraries):
 
 - A tour is **short**: at most a few steps (about 5). Longer processes are split into separate tours.
 - A tour can be **skipped or closed** at any moment and **restarted** from the help menu.
-- A tour starts automatically **only once**: on a person's first visit to a given view. Completion or skipping is remembered.
+- A tour starts automatically **only once**: on a person's first visit to a given view. Completion or skipping is remembered **per user on the server** (product tour progress: user, tour, status `completed`/`skipped`, tour version), so it works the same on every device. Increasing a tour's version shows it again only when its steps change materially.
 - Tours are role-aware: end users never see steps about team-only features.
 - Elements targeted by tours are marked with stable attributes (e.g. `data-tour="…"`), never CSS classes, so visual changes do not break tours. E2E tests verify that all targets exist.
 - Tours are translated ([§13.1](13-non-functional.md)) and accessible ([§13.4](13-non-functional.md)): keyboard support, correct focus management, screen-reader labels, respect for reduced-motion settings.
@@ -94,7 +94,7 @@ Rule 6 is **subordinate to Rules 1 and 2**.
 Per Rule 1:
 
 - **Check what already exists first.** Before creating a component, the agent checks the project's component library. If a similar component exists, it extends it or composes from it instead of creating a copy.
-- UI components form the **project component library** (a separate monorepo package `packages/ui`, published as `@trybun/ui`), built on Radix UI primitives, not from scratch. **shadcn/ui** is the starting point ([§14.2](14-architecture.md)): if shadcn/ui offers a suitable component, it is added to `packages/ui` with the shadcn CLI and then adapted; a component is built from scratch only when shadcn/ui has nothing suitable.
+- UI components form the **project component library** (a separate internal monorepo package `packages/ui`, named `@trybun/ui`), built on Radix UI primitives, not from scratch. **shadcn/ui** is the starting point ([§14.2](14-architecture.md)): if shadcn/ui offers a suitable component, it is added to `packages/ui` with the shadcn CLI and then adapted; a component is built from scratch only when shadcn/ui has nothing suitable.
 - A component copied from shadcn/ui becomes **project code** and is adapted before first use:
   - styling uses only the project's design tokens,
   - touch targets meet Rule 9 (at least 44 × 44 px on touch devices),
@@ -243,11 +243,14 @@ Keyboard shortcuts remain a desktop accelerator; every action they trigger is al
 ### Performance
 
 - Pages are usable on mobile networks: code splitting and lazy loading of heavy views (Gantt, editor), optimized images.
-- Performance budget checked in CI with Lighthouse (mobile profile): Performance and Accessibility scores of at least 90 for key pages.
+- Performance budget checked in CI with Lighthouse (mobile profile): Performance and Accessibility scores of at least 90, LCP < 2.5 s, TBT < 200 ms and CLS < 0.1 for the **key pages**. Key pages are listed per stage and extended by the task that adds a page:
+  - Stage 0: sign-in redirect, empty application shell,
+  - Stage 1: portal project home, ticket creation form, ticket view (end user and team), team list view, Kanban board,
+  - later stages: triage queue, roadmap, Gantt chart, SLA report.
 
 ### Verification
 
-- E2E tests ([§2.13](#213-agent-workflow)) run key user paths on **phone, tablet and desktop** viewports (Playwright device profiles, e.g. a current iPhone, an Android phone and an iPad).
+- E2E tests ([§2.13](#213-agent-workflow)) run the key user paths (the user paths of the key pages above, plus the paths named in the "Done when" criteria of the implementation plan) on **phone, tablet and desktop** viewports (Playwright device profiles, e.g. a current iPhone, an Android phone and an iPad).
 - Every UI component in the component catalog (Rule 6) is shown in phone, tablet and desktop viewports.
 
 ## 2.10 Rule 10 – Dependencies are monitored and kept up to date
@@ -270,7 +273,7 @@ Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components
 
 | Stage | What happens | Blocking? |
 |---|---|---|
-| **Adding a dependency** (agent) | The agent checks that the package exists, is actively maintained and widely used, has no known vulnerabilities, has an MIT-compatible license ([§16.1](16-open-source.md)), and adds its latest stable version. It prefers fewer dependencies: no package for what a few lines of code or an existing dependency already do | Agent's responsibility; verified in review |
+| **Adding a dependency** (agent) | The agent checks that the package exists, is actively maintained and widely used, has no known vulnerabilities, has an MIT-compatible license ([§16.1](16-open-source.md)), and adds its latest stable version that is at least 7 days old (the cooldown applies to new dependencies too; security fixes excepted). It prefers fewer dependencies: no package for what a few lines of code or an existing dependency already do | Agent's responsibility; verified in review |
 | **Every pull request** (CI) | Dependency review of added/changed packages, vulnerability audit of the lockfile, license check. Install only from the committed lockfile (`--frozen-lockfile`) | **Yes**, for new vulnerabilities of severity high or critical |
 | **Continuously on the main branch** (scheduled, at least daily) | Vulnerability alerts for all dependencies (GitHub Dependabot alerts), scan of container images ([§15.4](15-deployment.md)) | Opens an alert and a fix pull request |
 | **Automated update pull requests** | Dependabot: security updates immediately; patch and minor updates weekly, grouped, with a 7-day cooldown; GitHub Actions and base images included | Normal review and CI apply |
@@ -322,7 +325,12 @@ For a self-hosted product, **MAJOR** is anything that requires the Administrator
 
 **MINOR** is new functionality that is backwards compatible. **PATCH** is a backwards-compatible fix.
 
-Before `1.0.0` (stages 0–7 of the implementation plan), a **MINOR** increase (e.g. `0.3` → `0.4`) may contain breaking changes and **PATCH** contains everything else, following the common convention for `0.x` versions.
+Before `1.0.0` (stages 0–7 of the implementation plan), following the common convention for `0.x` versions:
+
+- `feat:` commits and breaking changes increase **MINOR** (e.g. `0.3.0` → `0.4.0`); a MINOR release may contain breaking changes,
+- `fix:` and all other release-relevant commits increase **PATCH**.
+
+release-please is configured accordingly (`bump-minor-pre-major: true`). The stage versions in the implementation plan ([`docs/plan/`](../plan/implementation-plan.md)) result from this rule. The only allowed manual version is a **human-authored** `Release-As:` footer (used for `1.0.0` at the end of Stage 7); agents never write it.
 
 ### Commits are the source of versions
 
@@ -353,7 +361,7 @@ Releases are prepared by **release-please**:
 ### Where the version is visible
 
 - the "About" page of the Administrator panel ([§15.4](15-deployment.md)),
-- the health endpoint (`/health`) of the API, together with the status of its dependencies,
+- the health endpoint (`/health`) of the API; the status of its dependencies is reported by `/health/ready` ([§17.2](17-conventions.md)),
 - container image tags: `ghcr.io/trybun/<service>:X.Y.Z`, plus moving tags `:X.Y` and `:X`. The deployment package always pins the exact version `X.Y.Z` and never uses `latest`.
 
 ## 2.12 Definition of Done
@@ -408,8 +416,8 @@ These practices follow recommendations of the Claude Code team and apply to ever
 ### Branching and merging
 
 - **Trunk-based development**: short-lived branches from `main`, one per task, merged through pull requests with **squash merge**, so every merged PR is one Conventional Commit on `main`.
-- Branch names: `KEY-123-short-description` for tickets, `cez/<id>` for branches created by Cezar; maintenance branches `release/X.Y.x` only according to Rule 11.
-- Commit scopes form a closed list: `web`, `server`, `ui`, `contracts`, `i18n`, `spec`, `plan`, `agents`, `brand`, `ci`, `deps`, `release`. A new scope is added by changing this list.
+- Branch names: `KEY-123-short-description` for tickets, `S0-01-short-description` for tasks of the implementation plan, `cez/<id>` for branches created by Cezar; maintenance branches `release/X.Y.x` only according to Rule 11.
+- Commit scopes form a closed list: `web`, `server`, `ui`, `contracts`, `i18n`, `config` (shared tooling: `@trybun/tsconfig`, `@trybun/eslint-config`, root configuration), `deploy` (Docker Compose, Caddy, Keycloak configuration, install, update and backup scripts), `docs` (user documentation), `spec`, `plan`, `adr`, `agents` (`AGENTS.md`, `CLAUDE.md`, `.ai/skills/`), `memory` (`.ai/memory/`), `brand`, `repo` (community and GitHub files), `ci`, `deps`, `release`. A new scope is added by changing this list. The scope is optional for repository-wide changes (e.g. `chore: …`). The commit message check (commitlint) enforces this list.
 
 ### Architecture Decision Records
 
@@ -430,12 +438,40 @@ Every pull request passes at least the following in CI:
 
 - formatting and lint,
 - type checking in strict mode (TypeScript `strict`),
-- unit, integration and E2E tests with a minimum coverage threshold; E2E on phone, tablet and desktop viewports (Rule 9),
-- Lighthouse mobile performance and accessibility budget (Rule 9),
-- accessibility tests ([§13.4](13-non-functional.md)),
-- security analysis: dependency review and vulnerability audit (Rule 10), secret scanning, static application security testing (SAST),
+- unit, integration and E2E tests with the coverage thresholds below; E2E on phone, tablet and desktop viewports (Rule 9),
+- Lighthouse mobile performance and accessibility budget (Rule 9, [§2.9](#29-rule-9--designed-for-phones-and-tablets-from-the-start)),
+- accessibility tests with axe ([§13.4](13-non-functional.md)): rule tags `wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`; zero violations of impact `serious` or `critical`,
+- security analysis: dependency review and vulnerability audit (Rule 10), secret scanning, static application security testing (SAST), license check,
 - specification consistency check: links and `§N.M` references (Rule 8),
 - building all applications.
+
+**Coverage thresholds** (Vitest, V8 coverage; E2E tests are not counted):
+
+| Scope | Lines | Branches |
+|---|---|---|
+| Domain modules of `apps/server` and `@trybun/contracts` | ≥ 80 % | ≥ 75 % |
+| Every other package and application | ≥ 70 % | – |
+
+**Tools of the gates:**
+
+| Gate | Tool |
+|---|---|
+| SAST | GitHub CodeQL |
+| Secret scanning | GitHub secret scanning with push protection |
+| Dependency review and license check | `actions/dependency-review-action` with a license allowlist |
+| Vulnerability audit of the lockfile | `pnpm audit` (high and critical block) |
+| Container image scan (release, [§15.4](15-deployment.md)) | Trivy |
+| SBOM (release) | Syft, CycloneDX format |
+| Commit messages | commitlint (Conventional Commits, closed scope list) |
+| DCO ([§16.3](16-open-source.md)) | DCO check |
+| Specification consistency | link checker (lychee) and a project script for `§N.M` references |
+
+**License policy** ([§16.1](16-open-source.md)):
+
+- Allowed for npm dependencies: MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, MIT-0, BlueOak-1.0.0, CC0-1.0, Unlicense, Python-2.0, and CC-BY-4.0 for data packages (e.g. `caniuse-lite`).
+- Denied for npm dependencies: AGPL, GPL, SSPL and other strong copyleft or source-available licenses.
+- Documented exceptions (listed in the allowlist configuration with a reason): MPL-2.0 for development-only dependencies (e.g. `axe-core`); LGPL for dynamically loaded optional binaries (e.g. libvips of `sharp`).
+- Third-party services running in their own containers (e.g. ClamAV, GPL-2.0) are aggregated, not linked, and are allowed.
 
 ### Agent safety
 

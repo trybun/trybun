@@ -9,7 +9,7 @@ Every ticket belongs to exactly one **project**.
 | Field | Description |
 |---|---|
 | Name | Full project name |
-| Key | Short prefix used in ticket identifiers, e.g. `ERP` → `ERP-123` (convention from Jira/Linear). Unique, uppercase letters and digits |
+| Key | Short prefix used in ticket identifiers, e.g. `ERP` → `ERP-123` (convention from Jira/Linear). Pattern `^[A-Z][A-Z0-9]{1,9}$` (2–10 characters, starts with a letter). Unique across active and archived projects; the key of a deleted project (only possible without tickets, [§7.3](07-users-organizations-permissions.md)) may be reused. The key can be changed only while the project has no tickets; afterwards it is immutable, because it is part of identifiers, branch names ([§11.3](11-github-integration.md)) and e-mails |
 | GitHub repositories | One or more linked repositories; one marked as default for new issues ([§11.2](11-github-integration.md)) |
 | Default SLA policy | SLA policy for users without an organization and organizations without their own policy ([§9.3](09-sla.md)) |
 | Sync direction | GitHub issue synchronization direction ([§11.5](11-github-integration.md)) |
@@ -22,20 +22,21 @@ End users always create tickets **within a specific project**, so the `project` 
 
 | Field | Description | End user | Team |
 |---|---|---|---|
-| Identifier | Assigned automatically, format `KEY-number`; numbers are sequential per project and never reused | sees (read-only) | sees |
+| Identifier | Assigned automatically, format `KEY-number`; numbers are sequential per project and never reused. Stored as project + number; `KEY-number` is the display form ([§17.2](17-conventions.md)) | sees (read-only) | sees |
 | Title | Short description of the problem/task | fills in | fills in |
 | Description | GFM Markdown content ([§6.2](06-comments-notifications.md)) | fills in | fills in |
 | Attachments | Files, screenshots ([§13.3](13-non-functional.md)) | optional | optional |
-| Project | Project the ticket belongs to | set automatically, hidden | fills in (defaults to current project) |
+| Project | Project the ticket belongs to. Set at creation and **immutable** afterwards: tickets are not moved between projects (attempts are rejected with the error code `ticket.project_immutable`) | set automatically, hidden | fills in at creation (defaults to current project) |
 | Type | `bug` / `feature` / `task` / `question` | – | fills in (completed during triage) |
 | Source | `user` / `developer` / `integration` | set automatically | set automatically |
 | Occurrence count | For integration tickets: how many times the same error was reported ([§12.3](12-api-webhooks-import.md)) | – | set automatically |
-| Organization | Requester's organization, if any ([§7.3](07-users-organizations-permissions.md)) | set automatically, hidden | sees |
-| Visibility | `only_me` / `my_organization` / `all_customers` ([§5.1](05-visibility-and-search.md)) | chooses (default `only_me`) | sees; may mark as shared ([§5.2](05-visibility-and-search.md)) |
+| Organization | Requester's organization at the moment of creation, if any; a snapshot that never changes, also when the requester later changes organization ([§7.3](07-users-organizations-permissions.md)) | set automatically, hidden | sees |
+| Visibility | `only_me` / `my_organization` / `all_customers` ([§5.1](05-visibility-and-search.md)) | chooses (default `only_me`) | sees; may change it and approve sharing ([§5.2](05-visibility-and-search.md)) |
+| Sharing request | `none` / `pending` / `rejected` – state of the requester's request to share the ticket with all customers ([§5.2](05-visibility-and-search.md)) | set by choosing `all_customers` | approves or rejects |
 | Priority | `low` / `normal` / `high` / `critical` | – | fills in (default `normal`) |
 | Status | Internal status ([§4.1](04-ticket-lifecycle.md)) | sees the public status | changes |
 | Requester | Author of the ticket | set automatically | set automatically |
-| Assignee | Responsible person | – | Developer (self only) or Project manager |
+| Assignee | Responsible person; only an active team member of the project can be assigned ([§7.5](07-users-organizations-permissions.md)) | – | Developer (self only) or Project manager |
 | Created / updated | Timestamps | set automatically | set automatically |
 | Milestone | Milestone the ticket belongs to ([§10.1](10-roadmap-gantt.md)) | sees an approximate period if the milestone is public | set by Project manager |
 | Start / due date | Planned schedule ([§10.4](10-roadmap-gantt.md)) | – | set by Project manager |
@@ -43,7 +44,7 @@ End users always create tickets **within a specific project**, so the `project` 
 | Relations | Blocks / blocked by, relates to, duplicate of ([§3.5](#35-sub-tickets-relations-and-labels)) | – | Developer and above |
 | Labels | Project tags, e.g. `module:invoices` ([§3.5](#35-sub-tickets-relations-and-labels)) | – | Developer and above |
 | GitHub links | Linked issues, branches and pull requests ([§11.3](11-github-integration.md)) | – | set automatically |
-| Requester count | Number of users who clicked "I have the same problem" ([§5.6](05-visibility-and-search.md)) | – | set automatically |
+| Requester count | Number of distinct affected users: the requester plus users who clicked "I have the same problem" ([§5.6](05-visibility-and-search.md)) or whose duplicate tickets were closed in favour of this one ([§4.3](04-ticket-lifecycle.md)). Derived from one affected-user record per ticket and user, never stored as a free counter, so repeated clicks are counted once | – | set automatically |
 
 "Team" means the roles Developer, Project manager and Administrator ([§7.2](07-users-organizations-permissions.md)).
 
@@ -108,6 +109,8 @@ A large ticket (e.g. "Reporting module") can be split into smaller **sub-tickets
 - Relations are bidirectional: adding "A blocks B" automatically shows "blocked by A" in B.
 - A ticket with an open "blocked by" relation is marked in the list and on the Kanban board.
 - The system prevents cycles in "blocks" relations.
+- `relates_to` and `blocks` may link tickets of different projects the actor can see. A cross-project `blocks` relation is shown in both tickets and as a "blocked" marker, but is not used for automatic scheduling on the Gantt chart, which works per project ([§10.4](10-roadmap-gantt.md)).
+- `duplicate_of` links tickets of the **same project** only and always points to the original that is not itself a duplicate (chains are flattened). Its effects are defined in [§4.3](04-ticket-lifecycle.md).
 - Relations and sub-tickets are visible to the team only. Exception: an end user sees the link to the original ticket their ticket duplicates, if they may see it ([§5.1](05-visibility-and-search.md)).
 
 ### Labels
@@ -116,5 +119,8 @@ A large ticket (e.g. "Reporting module") can be split into smaller **sub-tickets
 - Recommended naming with group prefixes, e.g. `module:invoices`, `area:performance`.
 - Developers and above assign labels and may create new ones directly while assigning (type the name + Enter), without going to settings (Rule 2).
 - Editing, merging and deleting labels is done by the Project manager, to keep the label list tidy.
+  - **Merging** label A into label B assigns B to every ticket that has A (in one transaction), records a "Label merged" event in each affected ticket and then deletes A.
+  - **Deleting** a label removes it from all tickets and records the removal in their activity timelines. Saved views that filter by a deleted label ignore that filter value.
+  - Activity events keep the label name as it was, so the history stays readable after a label is renamed, merged or deleted ([§4.5](04-ticket-lifecycle.md)).
 - Labels are visible to the team only.
 - The prefixes `type:` and `priority:` are reserved for mapping type and priority to GitHub ([§11.4](11-github-integration.md)).
