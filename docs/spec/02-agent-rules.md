@@ -129,17 +129,18 @@ Rule 7 is **subordinate to Rule 1**.
 
 | Document | Purpose |
 |---|---|
-| Specification (`docs/spec/`) | **What** the system must do. The source of truth |
+| System specification (`docs/spec/`) | **What** the system must do. The source of truth |
+| Change specifications (`.ai/specs/`) | **What changes and why** in one unit of work ([§2.8](#28-rule-8--the-specification-is-kept-up-to-date)) |
 | ADRs | Significant technical **decisions** and their rationale ([§2.13](#213-agent-workflow)) |
-| Project memory (`docs/ai/memory/`) | Knowledge gained during work that is in neither of the above: pitfalls, non-obvious behavior of libraries and tools, proven ways of solving recurring problems, agreements from discussions |
+| Project memory (`.ai/memory/`) | Knowledge gained during work that is in neither of the above: pitfalls, non-obvious behavior of libraries and tools, proven ways of solving recurring problems, agreements from discussions |
 
 - Project memory **never overrides the specification**. If an agent finds a contradiction between memory and the specification, it handles it according to Rule 8 instead of "fixing" the specification through memory.
 - Memory does not duplicate the specification or ADRs; it links to them instead.
 
 ### Structure and loading
 
-- `docs/ai/memory/MEMORY.md` is the **index**: one line per topic file, saying what the file contains and when to read it.
-- Topic files (`docs/ai/memory/<topic>.md`) contain the knowledge itself.
+- `.ai/memory/MEMORY.md` is the **index**: one line per topic file, saying what the file contains and when to read it.
+- Topic files (`.ai/memory/<topic>.md`) contain the knowledge itself.
 - `AGENTS.md` links to the index, and the agent **reads the index at the start of every session**. Topic files are read **on demand**, only when relevant to the current task. Paths in the index are written in backticks, so tools do not import all files at start-up.
 
 ### Tool memory is disabled
@@ -162,7 +163,7 @@ Rule 7 is **subordinate to Rule 1**.
 
 ## 2.8 Rule 8 – The specification is kept up to date
 
-The specification (`docs/spec/`) always describes the system **as it actually is and is meant to be**. Like the README (Rule 5) and user documentation (Rule 3), it is updated **in the same pull request** as the change that affects it, never "later".
+The system specification (`docs/spec/`) always describes the system **as it actually is and is meant to be**. Like the README (Rule 5) and user documentation (Rule 3), it is updated **in the same pull request** as the change that affects it, never "later".
 
 Rule 8 is **subordinate to Rule 1** (specification-as-code, versioned and reviewed like code).
 
@@ -177,6 +178,16 @@ Rule 8 is **subordinate to Rule 1** (specification-as-code, versioned and review
 
 - Specification changes are clearly visible in review: a separate commit `docs(spec): …` and a filled-in "Specification changes" section in the PR description.
 - A change that alters behavior is never introduced silently through the code alone, and never through project memory (Rule 7).
+
+### Change specifications
+
+New functionality and changes of behavior or requirements start with a **change specification** in `.ai/specs/` (pattern used by Cezar and the Open Mercato skills). Details: [`.ai/specs/README.md`](../../.ai/specs/README.md).
+
+- Name: `YYYY-MM-DD-slug.md`, created from `.ai/specs/TEMPLATE.md`.
+- The change specification is proposed in its own pull request. Merging it is the human approval of the change; **implementation never starts while open questions remain unanswered**.
+- The implementation pull request updates the system specification (`docs/spec/`), marks the change specification as `implemented` and moves it to `.ai/specs/implemented/`. Abandoned or superseded specifications go to `.ai/specs/archive/` with the reason.
+- Required for tasks of the implementation plan that deliver functionality; optional for infrastructure tasks; not used for bug fixes, dependency updates and documentation-only changes.
+- The change specification never replaces the system specification: after implementation, `docs/spec/` alone must describe the system completely.
 
 ### Consistency
 

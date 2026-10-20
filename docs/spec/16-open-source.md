@@ -32,6 +32,7 @@ Additionally:
 ## 16.3 Contribution rules
 
 - Anyone can contribute through a fork and a pull request. Write access is granted only to trusted contributors after a history of good contributions (contributor → reviewer → maintainer).
+- Larger contributions (new functionality, changes of behavior) start with a change specification in `.ai/specs/` proposed as a pull request, so the idea can be discussed before any code is written ([§2.8](02-agent-rules.md)).
 - Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.13](02-agent-rules.md)).
 - **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line confirming that the author has the right to submit the code. CI checks it. No Contributor License Agreement (CLA) is required.
 - First responses to issues and pull requests should be fast and friendly; this is one of the strongest factors in whether contributors return.

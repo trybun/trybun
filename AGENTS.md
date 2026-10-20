@@ -4,8 +4,8 @@ Instructions for AI coding agents working in the **Trybun** repository. This pro
 
 ## Start of every session
 
-1. Read the project memory index: [`docs/ai/memory/MEMORY.md`](docs/ai/memory/MEMORY.md). Read topic files from it only when relevant to the task.
-2. Read the specification files your task refers to.
+1. Read the project memory index: [`.ai/memory/MEMORY.md`](.ai/memory/MEMORY.md). Read topic files from it only when relevant to the task.
+2. Read the specification files your task refers to, and the change specification in `.ai/specs/` if the task has one.
 
 ## Source of truth
 
@@ -25,8 +25,9 @@ Instructions for AI coding agents working in the **Trybun** repository. This pro
 6. **Reusable components.** Check `@trybun/ui` (`packages/ui`) and shared packages first; presentational UI components with Storybook entries, design tokens, no hard-coded text; no speculative options (YAGNI).
    shadcn/ui is the starting point: add components with the shadcn CLI into `packages/ui`, then adapt them (tokens, 44 px touch targets, translated texts, accessibility, Storybook entry) – they are project code from then on. Build from scratch only if shadcn/ui has nothing suitable.
    Styling: Tailwind CSS only, theme tokens only (no arbitrary values like `bg-[#…]`), variants via `cva`, merge via `tailwind-merge`, Prettier class sorting, dark mode through tokens.
-7. **Project memory in the repo.** Store knowledge gained during work (pitfalls, non-obvious behavior, proven solutions) only in `docs/ai/memory/` and keep the index `MEMORY.md` current. Tool-specific memory outside the repo (e.g. Claude Code auto memory) is disabled for this project (`.claude/settings.json`: `"autoMemoryEnabled": false`). Memory never overrides the spec; it does not duplicate the spec or ADRs. Write it in the same PR, in English, without secrets or personal data.
+7. **Project memory in the repo.** Store knowledge gained during work (pitfalls, non-obvious behavior, proven solutions) only in `.ai/memory/` and keep the index `MEMORY.md` current. Tool-specific memory outside the repo (e.g. Claude Code auto memory) is disabled for this project (`.claude/settings.json`: `"autoMemoryEnabled": false`). Memory never overrides the spec; it does not duplicate the spec or ADRs. Write it in the same PR, in English, without secrets or personal data.
 8. **Specification always current.** Update `docs/spec/` in the same PR as the change. Clarifications (exact error codes, paths, limits) – update directly. Changes of requirements or behaviour, gaps and contradictions – propose in the PR as a *specification change for approval*, in a separate `docs(spec): …` commit. Keep glossary, index, `§` references, permission matrix and plan consistent. The spec says *what*, not *how*.
+   Change specifications: new functionality and behaviour changes start with `.ai/specs/YYYY-MM-DD-slug.md` (from `TEMPLATE.md`) in its own PR; never implement while open questions are unanswered; the implementation PR updates `docs/spec/` and moves the change spec to `.ai/specs/implemented/`. Not used for bug fixes, dependency updates or docs-only changes.
 9. **Phones and tablets from the start.** Every page, dialog, form and tour is mobile-first and responsive from 360 px; touch targets ≥ 44 px; no hover-only actions; dialogs become full-screen/bottom sheets on phones; Kanban one column at a time on phones; Gantt read-only on phones. E2E on phone, tablet and desktop viewports; Lighthouse mobile ≥ 90.
 10. **Dependencies secure and current.** New dependency: exists, maintained, widely used, no known vulnerabilities, MIT-compatible licence, latest stable version – and only if really needed. Security fixes immediately; other updates after a 7-day cooldown; majors as planned tasks; stable releases and Node.js LTS only. CI blocks new high/critical vulnerabilities; lockfile committed; Actions pinned to SHA, images to digest.
 11. **Versioning.** One SemVer version for the whole product, produced by release-please from Conventional Commits; a human releases by merging the release PR. Never set version numbers or edit `CHANGELOG.md` by hand. Mark breaking changes with `!`/`BREAKING CHANGE:` and describe the Administrator's steps. MAJOR = anything requiring the Administrator's attention. Public API versioned in the path, webhook events with a `version` field.
@@ -36,6 +37,18 @@ Rules 2–11 are subordinate to Rule 1; Rules 3–6 and 9 are also subordinate t
 ## Naming and brand
 
 **Trybun** in text, `trybun` in every technical identifier: npm scope `@trybun/`, images `ghcr.io/trybun/<service>`, env prefix `TRYBUN_`, Keycloak realm `trybun`. Full table: [`docs/spec/01-overview.md`](docs/spec/01-overview.md) §1.4. Logo, colours and font only from [`docs/brand/`](docs/brand/README.md) – never draw your own.
+
+## Repository structure (agent-relevant)
+
+| Path | Purpose |
+|---|---|
+| `docs/spec/` | System specification – source of truth |
+| `docs/plan/` | Implementation plan and task status |
+| `docs/brand/` | Logo, colours, typeface |
+| `.ai/specs/` | Change specifications (`implemented/`, `archive/`) |
+| `.ai/memory/` | Project memory (`MEMORY.md` index + topic files) |
+| `.ai/skills/` | Project-specific skills for Cezar and agents (when created) |
+| `.ai/cezar/` | Managed by Cezar – do not edit its state files; workflows and skills are committed |
 
 ## Language
 

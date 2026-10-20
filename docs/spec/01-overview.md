@@ -28,6 +28,7 @@ Consequences for the whole project:
 - [00-glossary.md](00-glossary.md) defines every domain term with its **code identifier** and its **UI labels** (EN/PL). Always use the code identifiers from the glossary in code.
 - Cross-references use the form `§N.M`, where `N` is the file number.
 - The specification is written in English. **User-facing texts** (labels, messages) are given in both English and Polish, because the UI is bilingual ([§13.1](13-non-functional.md)).
+- New functionality and changes of requirements start with a **change specification** in `.ai/specs/` (Rule 8); this file set is the **system specification** describing the system as it is.
 - The specification is kept up to date in the same pull request as the code (Rule 8, [§2.8](02-agent-rules.md)). If the implementation reveals a gap or contradiction, do not resolve it yourself – propose a specification change marked for approval.
 
 ## 1.4 Naming

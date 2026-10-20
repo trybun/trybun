@@ -6,6 +6,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 
 - Every task below is meant to be **one pull request** ([§2.13](../spec/02-agent-rules.md)). If a task turns out larger, split it before starting and update this plan in the same PR.
 - Every task lists the specification sections it implements. Read them (and the glossary) before starting.
+- Tasks that deliver functionality (Stages 1–8) start with a **change specification** in `.ai/specs/` approved through its own pull request ([§2.8](../spec/02-agent-rules.md)); infrastructure tasks of Stage 0 may skip it.
 - Every task follows the **Definition of Done** ([§2.12](../spec/02-agent-rules.md)): conventions, minimum user steps, user docs, tours, README, reusable components, project memory, up-to-date specification, phone and tablet support, dependency security, versioning, tests, CI gates, human review.
 - Tasks within a stage are listed in a sensible order; tasks marked with the same group number can be done in parallel.
 - A stage is finished when all its tasks are merged and its **exit criteria** are met. Each finished stage is released ([§15.4](../spec/15-deployment.md)) and deployed to the test environment.
@@ -40,7 +41,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 
 | # | Group | Task | Spec |
 |---|---|---|---|
-| [ ] S0-01 | 1 | Monorepo scaffold: pnpm workspaces, Turborepo, apps `web` (Next.js), `api` and `worker` (NestJS), packages `shared` (Zod schemas, types), `ui`, all under the `@trybun/` npm scope; TypeScript `strict`; lint and formatting; `README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`, `docs/ai/memory/` | §1.4, §2.5, §2.7, §14.2 |
+| [ ] S0-01 | 1 | Monorepo scaffold: pnpm workspaces, Turborepo, apps `web` (Next.js), `api` and `worker` (NestJS), packages `shared` (Zod schemas, types), `ui`, all under the `@trybun/` npm scope; TypeScript `strict`; lint and formatting; `README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`, `.ai/memory/`, `.ai/specs/` (with `README.md`, `TEMPLATE.md`, `implemented/`, `archive/`), `.ai/skills/` | §1.4, §2.5, §2.7, §14.2 |
 | [ ] S0-02 | 2 | CI pipeline in GitHub Actions: format, lint, type check, unit tests with coverage threshold, build, dependency review and vulnerability audit blocking new high/critical issues, `--frozen-lockfile`, secret scanning, SAST, specification consistency check (links and `§` references); branch protection on `main`; Conventional Commits check | §2.8, §2.13 |
 | [ ] S0-03 | 2 | Docker Compose for development and production: PostgreSQL (pgvector, Polish dictionary), Valkey, SeaweedFS (profile), Keycloak, Caddy, ClamAV; named volumes, log rotation, memory limits, health checks, internal network | §14.1, §14.4, §15.3, §15.9 |
 | [ ] S0-04 | 2 | Prisma setup: base schema, migration workflow, migrations as a one-off Compose service; seed data for tests | §14.4, §15.7 |

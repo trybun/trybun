@@ -86,7 +86,8 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Integration token | `integration_token` | Integration token / Token integracji | Project-level API token |
 | Outgoing webhook | `webhook` | Webhook / Webhook | HTTP notification sent to external systems ([§12.4](12-api-webhooks-import.md)) |
 | Import batch | `import_batch` | Import / Import | One run of the import wizard; can be undone ([§12.5](12-api-webhooks-import.md)) |
-| Project memory | – | – | Knowledge gained during work, kept in `docs/ai/memory/` with the index `MEMORY.md` ([§2.7](02-agent-rules.md)) |
+| Change specification | – | – | Dated description of one change (`.ai/specs/YYYY-MM-DD-slug.md`) with status `draft` → `approved` → `implemented` / `archived` ([§2.8](02-agent-rules.md)) |
+| Project memory | – | – | Knowledge gained during work, kept in `.ai/memory/` with the index `MEMORY.md` ([§2.7](02-agent-rules.md)) |
 | Audit log | `audit_log_entry` | Audit log / Dziennik zdarzeń | Immutable log of administrative actions ([§13.5](13-non-functional.md)) |
 | Anonymization | – | Anonymization / Anonimizacja | GDPR erasure that keeps history ([§13.2](13-non-functional.md)) |
 | Deployment package | – | – | Release assets needed to install the system ([§15.4](15-deployment.md)) |

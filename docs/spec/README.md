@@ -22,9 +22,13 @@ Specification of **Trybun**, a ticket / task management system for development t
 | [15-deployment.md](15-deployment.md) | Docker Compose deployment on any Linux VPS, releases, install, first run, updates, backups |
 | [16-open-source.md](16-open-source.md) | MIT license, community files, contribution rules (DCO, AI-assisted contributions), repository security, voluntary funding |
 
+## Change specifications
+
+New functionality and changes of behavior start with a dated change specification in `.ai/specs/` (`YYYY-MM-DD-slug.md`), approved through its own pull request; implemented specifications move to `.ai/specs/implemented/` ([§2.8](02-agent-rules.md)). This folder (`docs/spec/`) remains the system specification and the source of truth.
+
 ## Project memory
 
-Knowledge gained during work (pitfalls, non-obvious behavior, proven solutions) is kept in `docs/ai/memory/` with the index `docs/ai/memory/MEMORY.md` ([§2.7](02-agent-rules.md)). It never overrides this specification.
+Knowledge gained during work (pitfalls, non-obvious behavior, proven solutions) is kept in `.ai/memory/` with the index `.ai/memory/MEMORY.md` ([§2.7](02-agent-rules.md)). It never overrides this specification.
 
 ## Implementation plan
 
