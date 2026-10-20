@@ -13,6 +13,8 @@ Every ticket belongs to exactly one **project**.
 | GitHub repositories | One or more linked repositories; one marked as default for new issues ([§11.2](11-github-integration.md)) |
 | Default SLA policy | SLA policy for users without an organization and organizations without their own policy ([§9.3](09-sla.md)) |
 | Sync direction | GitHub issue synchronization direction ([§11.5](11-github-integration.md)) |
+| Resolution confirmation | Whether resolved tickets from end users first ask the requester to confirm ([§4.3](04-ticket-lifecycle.md)); off by default |
+| State | `active` or `archived`; an archived project is read-only ([§7.3](07-users-organizations-permissions.md)) |
 
 End users always create tickets **within a specific project**, so the `project` field is set automatically and is not shown to them (Rule 2).
 

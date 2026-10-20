@@ -37,6 +37,8 @@ An organization represents a **customer company** (pattern: Zendesk, Jira Servic
 Rules:
 
 - An end user belongs to **at most one** organization. They may belong to none (e.g. an individual customer).
+- **Changing a user's organization**: tickets stay with the organization in which they were created, because they are the company's data. After the change the user keeps access only to their own tickets with visibility `only_me` or shared tickets; tickets visible only to the old organization are no longer visible to them.
+- **Archiving instead of deleting**: organizations and projects are not deleted but **archived** (read-only, hidden from navigation, members keep read access to their tickets). Only organizations and projects without tickets can be deleted.
 - Team members do not belong to customer organizations and see tickets of all organizations in their projects.
 - A project can serve **many organizations**, and an organization can access **many projects**.
 - Members of an organization automatically get access to all projects of the organization; no per-person access grants are needed.
@@ -55,14 +57,15 @@ If no organization exists in the system (e.g. an internal deployment in one comp
 ## 7.4 Accounts and authentication
 
 - Authentication is handled by the identity provider **Keycloak** ([§14.2](14-architecture.md)). The system implements no password handling, 2FA or external login of its own. Password hashing is configured in Keycloak according to OWASP recommendations.
-- **No open registration.** Accounts are created only by an e-mail invitation sent by a Project manager or the Administrator. The invited person sets a password on first login. The only exception is the first Administrator account, created in the first-run wizard ([§15.6](15-deployment.md)).
+- **No open registration.** Accounts are created only by an invitation from a Project manager or the Administrator. The invitation link is **single-use and valid for 7 days**; it is sent by e-mail and can always be **copied and passed on manually**, so inviting works even before e-mail is configured. The invited person sets a password on first login. The only exception is the first Administrator account, created in the first-run wizard ([§15.6](15-deployment.md)).
 - **Team members** log in with GitHub (OAuth via Keycloak). This links the account to the GitHub login needed for issue assignment ([§11.4](11-github-integration.md)). Two-factor authentication (2FA) is mandatory for team members.
   - An invitation for a team member contains a one-time link. On first sign-in through that link, the GitHub account is bound to the invited account in Keycloak. The GitHub e-mail address does not need to match the invitation address.
   - The **first Administrator** created by the first-run wizard ([§15.6](15-deployment.md)) has a password and 2FA as a **break-glass account**, so the system can be administered even if GitHub sign-in is unavailable. The Administrator can additionally link a GitHub account.
 - **End users** log in with e-mail and password, optionally with a Microsoft or Google account. 2FA is available but optional.
 - Password reset uses a one-time link with limited validity.
-- Deactivating an account (e.g. a customer's employee leaves) blocks login but keeps their tickets and comments in the history.
+- Deactivating an account (e.g. a customer's employee leaves) blocks login, **immediately ends all sessions** (in Keycloak and in the web application) and **revokes all API tokens** of the account; it keeps their tickets and comments in the history. Tickets assigned to a deactivated team member are marked as needing a new assignee.
 - Each user sets their language and time zone in account settings ([§13.1](13-non-functional.md)).
+- **Local environment**: in the local development environment only ([§15.1](15-deployment.md)), seeded team accounts can sign in with a password, so contributors do not need their own GitHub OAuth application. This is disabled in the test and production environments.
 
 ## 7.5 Permission matrix
 
@@ -103,7 +106,7 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Export own data, request account deletion ([§13.2](13-non-functional.md)) | ✅ | ✅ | ✅ | ✅ |
 | Execute anonymization, set retention period | – | – | – | ✅ |
 | Grant organizations access to projects | – | – | – | ✅ |
-| Create projects and organizations | – | – | – | ✅ |
+| Create, archive and delete (if empty) projects and organizations | – | – | – | ✅ |
 | SLA policies and business calendars | – | – | – | ✅ |
 | Ticket templates | – | – | – | ✅ |
 | GitHub integration configuration | – | – | – | ✅ |

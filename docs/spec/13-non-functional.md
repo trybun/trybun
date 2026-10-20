@@ -22,6 +22,7 @@
 
 - Maximum file size configurable by the Administrator (default 25 MB).
 - Allowed file types are defined by an allowlist, e.g. images, PDF, office documents, text and log files, ZIP archives. Other types are rejected.
+- Only raster images (PNG, JPEG, GIF, WebP) are displayed inline. SVG and HTML files may contain scripts, so they are always served as downloads (`Content-Disposition: attachment`) with `X-Content-Type-Options: nosniff`.
 - Files are uploaded through the API into a **quarantine** area and every file is **scanned for malware** by ClamAV in the Worker before it becomes available. Until the scan completes, the file is shown as "Checking…" (PL: „Sprawdzanie…”); infected files are deleted and the uploader is informed.
 - EXIF metadata (including GPS location) is stripped from images.
 - Files are stored in S3-compatible object storage ([§14.2](14-architecture.md)), never in a public directory. Access to every file is checked against the ticket's visibility ([§5.1](05-visibility-and-search.md)) and the comment kind ([§6.1](06-comments-notifications.md)); after the check the API issues a **short-lived signed URL** (e.g. 5 minutes) for the download.

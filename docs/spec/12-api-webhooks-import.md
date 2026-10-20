@@ -32,6 +32,7 @@
 ## 12.4 Outgoing webhooks
 
 - The Administrator defines a webhook: target URL, projects, subscribed events (e.g. `ticket.created`, `ticket.status_changed`, `comment.created`).
+- **SSRF protection**: target URLs must use HTTPS; addresses in private, loopback, link-local and cloud-metadata ranges are rejected, both when the webhook is saved and when each delivery is sent (including after redirects and DNS resolution).
 - Every event payload contains a `version` field of its format (Rule 11).
 - Every request carries an **HMAC signature** in a header (pattern: GitHub) and a unique event identifier that lets the receiver skip duplicates.
 - "At least once" delivery: failed deliveries are retried with exponential backoff.

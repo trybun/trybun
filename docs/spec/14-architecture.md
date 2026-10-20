@@ -19,8 +19,8 @@
 |---|---|
 | Language | TypeScript across the whole project |
 | Web application | Next.js (App Router) + React |
-| Web sign-in and session | Auth.js with the Keycloak provider; session in an `httpOnly`, `Secure`, `SameSite=Lax` cookie ([§14.4](#144-architectural-principles)) |
-| Data access from the web | Typed API client generated from the OpenAPI document (`openapi-typescript` + `openapi-fetch`); TanStack Query in client components |
+| Web sign-in and session | Auth.js with the Keycloak provider; session in an `httpOnly`, `Secure`, `SameSite=Lax` cookie; tokens never reach the browser (**Backend for Frontend**, [§14.4](#144-architectural-principles)) |
+| Data access from the web | Typed API client generated from the OpenAPI document (`openapi-typescript` + `openapi-fetch`) calling the BFF endpoint `/api/v1/*` of the web application; TanStack Query in client components |
 | Internationalization | `next-intl` in the web application; message catalogues in ICU MessageFormat in `@trybun/i18n`, shared by web and server ([§14.6](#146-monorepo-structure)) |
 | Markdown (GFM) | Own editor component in `@trybun/ui` (textarea, toolbar, Write/Preview, as on GitHub); rendering with `react-markdown` + `remark-gfm` + `rehype-sanitize`; the same unified pipeline renders Markdown on the server (e-mails) |
 | Drag and drop | `dnd-kit` (pointer, touch and keyboard sensors) |
@@ -41,7 +41,7 @@
 | Semantic search | Embeddings computed locally in the Worker with Transformers.js and the `multilingual-e5-small` model (MIT, 384 dimensions, supports Polish), stored in pgvector; no ticket content is sent to an external service ([§5.6](05-visibility-and-search.md)) |
 | Files | Any S3-compatible storage; SeaweedFS (Apache 2.0) included by default. Malware scanning with ClamAV |
 | Reverse proxy | Caddy (automatic Let's Encrypt certificates) |
-| Repository structure | Monorepo (pnpm workspaces + Turborepo) |
+| Repository structure | Monorepo (pnpm workspaces + Turborepo); Node.js LTS and pnpm versions pinned in the repository (`.node-version`, `packageManager` field) |
 | Validation and contracts | **Zod** – the only validation library. Schemas and types shared by frontend and backend live in `@trybun/contracts` ([§14.6](#146-monorepo-structure)). API: `nestjs-zod` (DTOs from Zod schemas, `ZodValidationPipe`, OpenAPI through `@nestjs/swagger`). Forms: React Hook Form with the Zod resolver (shadcn/ui `Form`) |
 | Infrastructure | Docker and Docker Compose; CI/CD in GitHub Actions; images in GitHub Container Registry (`ghcr.io/trybun/<service>`, [§1.4](01-overview.md)) |
 | Tests | Vitest (unit and integration), Testcontainers (real PostgreSQL and Valkey in integration tests), MSW (simulated external HTTP services), `@faker-js/faker` (test data factories), Playwright (E2E), axe (accessibility), Lighthouse (performance budget) |
@@ -65,8 +65,15 @@
 - Authentication, 2FA and OAuth are handled by Keycloak. Custom implementations of security mechanisms are forbidden (Rule 1, [§13.5](13-non-functional.md)). API tokens ([§12.2](12-api-webhooks-import.md)) are handled by the system.
 - Database access goes through Prisma. Where the ORM is not sufficient (full-text search, pgvector), only parameterized SQL queries are allowed.
 - Incoming e-mail is handled by an e-mail provider that converts messages into webhooks, not by a self-hosted mail server. Outgoing e-mail uses SMTP, so any provider can be configured.
-- **Web ↔ API communication.** The browser and Next.js server components call the API at `/api/v1` on the same domain (Caddy routes `/api` to the API). There is one channel to the API: the generated typed client. Next.js Server Actions and Route Handlers are not used as a second backend; Next.js Route Handlers exist only where Auth.js requires them.
-- **Sign-in.** Auth.js performs the OpenID Connect flow with Keycloak and keeps the session in a secure cookie. The API accepts only Keycloak access tokens (JWT verified against the Keycloak JWKS) and API tokens ([§12.2](12-api-webhooks-import.md)).
+- **Web ↔ API communication: Backend for Frontend (BFF).** Following the IETF guidance for browser-based applications, access tokens never reach the browser.
+  - The web application exposes one proxy endpoint `/api/v1/*`. It attaches the user's Keycloak access token from the Auth.js session on the server side, refreshes it when it expires and forwards the request to the API over the internal network.
+  - Requests that already carry an `Authorization` header (API tokens of integrations, [§12.2](12-api-webhooks-import.md)) are forwarded unchanged, so integrations use the same public URL.
+  - The API itself is **not exposed publicly**; Caddy routes all traffic to the web application, except WebSocket traffic.
+  - Next.js server components call the API directly over the internal network with the session's token.
+  - Next.js Server Actions are not used as a second backend; Route Handlers exist only for the BFF proxy and Auth.js.
+  - CSRF protection: session cookie with `SameSite=Lax` and a check of the `Origin` header for every state-changing request.
+- **Real-time connections.** The browser connects to the Socket.IO gateway of the API (`/socket.io`, routed by Caddy) with a one-time ticket valid for 30 seconds, issued by the BFF. Every subscription (e.g. to a ticket or a board) is authorized with CASL, and permissions are checked again before each event is delivered, so a user never receives events about tickets they can no longer see.
+- **Sign-in.** Auth.js performs the OpenID Connect flow with Keycloak. The API accepts only Keycloak access tokens (JWT verified against the Keycloak JWKS) and API tokens ([§12.2](12-api-webhooks-import.md)).
 - **Authorization in one place.** All permissions ([§7.5](07-users-organizations-permissions.md)) and visibility rules ([§5.1](05-visibility-and-search.md)) are defined once as CASL abilities in the server. The same definition checks actions and builds Prisma filters (`accessibleBy`), so a list can never return a ticket that its detail view would refuse. The permission matrix is covered by automated tests.
 - **Uploads.** Files are uploaded through the API into a quarantine area of the object storage, scanned by ClamAV in the Worker and only then made available. Downloads use short-lived signed URLs issued after the access check ([§13.3](13-non-functional.md)).
 - Full-text search for Polish requires a Polish dictionary installed in PostgreSQL (e.g. hunspell). Without it, word inflections are not recognized.
@@ -194,7 +201,14 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](#146-mon
 - Side effects (notifications, webhooks, GitHub synchronization, search indexing) use the **transactional outbox** pattern: the event is written to an `outbox_events` table in the same transaction as the change, and the Worker publishes it to the queue. No event is lost when a process stops between the change and the publication, and no event is published for a change that was rolled back.
 - Event handlers are idempotent, because events may be delivered more than once.
 
+### Concurrency
+
+- **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique, gapless and never reused even under concurrent creation.
+- **Optimistic locking**: tickets, comments, milestones and other editable records have a `version` field. The API returns it as an `ETag`; updates must send `If-Match`. A conflict returns `412 Precondition Failed` and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
+
 ### Errors
+
+- A record the user is not allowed to see returns **`404 Not Found`, never `403`**, so the existence of tickets, projects or organizations is not disclosed (ticket identifiers are sequential). `403` is used only for actions on records the user can see.
 
 - The whole API (public and internal) returns errors in the *Problem Details* format (RFC 9457) with a stable, documented error `code` (e.g. `ticket.visibility_not_allowed`).
 - The web application translates error codes into messages in the user's language; raw server messages are never shown to users.
@@ -205,6 +219,19 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](#146-mon
 - Logs are structured JSON (`nestjs-pino`) with level, time, request ID and, for jobs, job ID. The request ID is returned in the `X-Request-Id` header and passed to Worker jobs.
 - Logs never contain personal data, tokens, passwords or ticket content ([§13.2](13-non-functional.md)).
 - Health endpoints: `/health` (liveness) and `/health/ready` (readiness, checks database, Valkey and object storage).
+
+### Dependency failures
+
+| Unavailable | Behaviour |
+|---|---|
+| Keycloak | No new sign-ins; existing sessions work until their access token cannot be refreshed; API tokens keep working |
+| SMTP / e-mail provider | Outgoing e-mails stay in the outbox and are retried with exponential backoff; the Administrator panel shows a warning |
+| ClamAV | Uploaded files stay in quarantine ("Checking…") until the scanner is back; nothing is released unscanned |
+| Object storage | Uploads and downloads fail with a clear message; the rest of the system works |
+| GitHub | Outgoing changes are retried with exponential backoff; incoming webhooks are re-delivered by GitHub |
+| Valkey | Background jobs and real-time updates pause; the web UI and API keep working with reduced functionality; jobs resume from the outbox |
+| PostgreSQL | The system is unavailable; `/health/ready` reports the failure |
+
 
 ### Migrations
 

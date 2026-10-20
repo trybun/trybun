@@ -61,6 +61,7 @@ Every internal status maps to exactly one public status. As a result:
 
 - **Initial status:** tickets from end users and integrations start in `new` (they go through triage). Tickets created by the team start in `todo`. Tickets created from GitHub issues ([§11.5](11-github-integration.md)) start in `todo`.
 - The team may move a ticket between any statuses; the workflow is a convention, not a hard-enforced state machine. Permission rules from [§7.5](07-users-organizations-permissions.md) apply.
+- **Closing after verification**: a Developer or Project manager moves a ticket from `in_verification` to `done` after checking the result. Optionally, a project can enable **resolution confirmation**: instead of `done`, the ticket goes to `waiting_for_requester` with the question "Is your problem solved?" (PL: „Czy Twój problem został rozwiązany?”). A confirming reply moves it to `done`; a reply that the problem persists returns it to `in_progress`; with no reply within 7 days it moves to `done` automatically.
 - Moving a ticket to `rejected` requires a **reason**, published to the requester as a public comment. Moving to `duplicate` requires a **link** to the original ticket.
 - When the requester replies (public comment, including e-mail reply) to a ticket in `waiting_for_requester`, the ticket automatically returns to the **status it had before** – no manual team action.
 - Moving a ticket from a terminal status to any other status is a **reopen** (relevant for SLA, [§9.4](09-sla.md)).

@@ -18,6 +18,7 @@ Based on patterns used by Linear and Jira. Two pillars: **linking code to ticket
 - A project can have **multiple repositories** (e.g. separate frontend and backend).
 - Code linking works in all linked repositories.
 - One repository is the **default** for new issues. Another can be chosen when creating an issue.
+- **Unlinking a repository**: existing links to issues, branches and pull requests stay in the tickets as plain links, synchronization stops, and an event is added to the activity timeline of the affected tickets.
 
 ## 11.3 Linking code to tickets
 
@@ -57,7 +58,7 @@ Automatic changes never move a ticket out of a terminal status.
 The sync direction is set **per project** (pattern: Linear):
 
 - **One-way (default):** changes from GitHub flow into the system. An issue created directly in a linked repository creates a ticket with source `developer` and status `todo`.
-- **Two-way:** additionally, changes in the ticket (title, description, labels, assignee, status) update the issue.
+- **Two-way:** additionally, changes in the ticket (title, description, labels, assignee, status) update the issue. Comments on the issue written by GitHub users who are not team members are imported as **internal notes** marked with the GitHub author, never as public comments.
 
 Status mapping (issues have only open/closed states):
 

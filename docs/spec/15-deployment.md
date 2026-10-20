@@ -8,7 +8,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 
 | Environment | Purpose | Data |
 |---|---|---|
-| **Local** | Development on the developer's machine or dev VPS; includes Mailpit to capture all outgoing e-mail | Seed and demo data |
+| **Local** | Development on the developer's machine or dev VPS; includes Mailpit to capture all outgoing e-mail; seeded team accounts may sign in with a password ([§7.4](07-users-organizations-permissions.md)) | Seed and demo data |
 | **Test** | Every release candidate (`-rc`, Rule 11) is deployed here before release | Demo data, never production data |
 | **Production** | Customer installations | Real data |
 
@@ -28,6 +28,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 ## 15.4 Releases
 
 - Versions follow **Semantic Versioning** and are produced by release-please from Conventional Commits; a human releases by merging the release pull request. Full rules: Rule 11 ([§2.11](02-agent-rules.md)).
+- The web application is built in Next.js `standalone` mode for its container image; the internal API address is configured with an environment variable.
 - Images are built **in CI** (GitHub Actions), tagged with the version and published to GitHub Container Registry as `ghcr.io/trybun/<service>` ([§1.4](01-overview.md)): `web` and `server`; the API and the Worker run from the same `server` image with different commands ([§14.6](14-architecture.md)). The server only pulls ready images.
 - Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the install and update scripts and an installation guide (`INSTALL.md`). Source code is not needed for installation.
 - `CHANGELOG.md` follows the *Keep a Changelog* convention and is generated from commit messages in the Conventional Commits format. Release notes clearly mark breaking changes and any manual steps.
@@ -64,7 +65,7 @@ Installing on a new server:
 - Never overwrites an existing `.env`, so re-running it is safe.
 - Finally starts the system and prints the first-run wizard URL with a **one-time setup token**.
 
-Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3 storage for backups, GitHub App) can be filled in `.env` now or later. Until SMTP is configured, the system works but sends no e-mails, and the Administrator panel shows a warning.
+Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3 storage for backups, GitHub App) can be filled in `.env` now or later. The same SMTP settings are used by the server and by Keycloak (password reset, e-mail verification). Until SMTP is configured, the system works but sends no e-mails, invitation links are copied manually ([§7.4](07-users-organizations-permissions.md)), and the Administrator panel shows a warning.
 
 **Automatic Keycloak configuration:**
 
@@ -73,9 +74,10 @@ Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3
 
 ## 15.6 First-run wizard
 
-- Available only while no Administrator account exists, and protected by the one-time setup token, so nobody else can take over a fresh installation.
+- Available only while no Administrator account exists, and protected by the one-time setup token, so nobody else can take over a fresh installation. The token expires after **24 hours** or after first use; a new one can be generated with the install script.
 - Guides through: creating the first Administrator account (with 2FA setup), confirming the default language and time zone, sending a test e-mail (if an e-mail provider is configured).
 - Disabled permanently after completion.
+- Afterwards the Administrator panel shows a **getting-started checklist**: create a project, create an organization (optional), invite the team, configure e-mail, connect GitHub (optional). Completed items are ticked automatically.
 
 ## 15.7 Updates
 
@@ -101,7 +103,7 @@ Containerization on Linux adds no significant performance overhead (containers a
 - Container logs use **rotation with a size limit**, so they do not fill the disk.
 - Every service has a **memory limit**, so one service (e.g. ClamAV updating signatures) cannot starve the others.
 - Every service has a **health check** and an automatic restart policy.
-- Only the reverse proxy is exposed publicly. The database, Valkey, SeaweedFS and Keycloak's internals are reachable only on the internal Compose network.
+- Only the reverse proxy is exposed publicly. It routes traffic to the web application (including the BFF endpoint `/api/v1/*`), WebSocket traffic to the API, and only the sign-in endpoints of Keycloak. The Keycloak administration console, the API, the database, Valkey and SeaweedFS are reachable only on the internal Compose network (administration through an SSH tunnel).
 
 ## 15.10 Backups
 

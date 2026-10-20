@@ -26,13 +26,14 @@ The editor works like GitHub's (issues and pull requests) and is based on **GitH
 
 Using GFM also simplifies the GitHub integration: ticket content goes into issues without format conversion ([§11.4](11-github-integration.md)).
 
-Security (Rule 1): rendered HTML is sanitized according to OWASP recommendations to prevent XSS.
+Security (Rule 1): rendered HTML is sanitized according to OWASP recommendations to prevent XSS. Images are displayed only from the ticket's own attachments; images referenced by external URLs are not loaded (they could track readers and bypass the Content Security Policy) and are shown as links instead.
 
 ## 6.3 E-mail replies
 
 - Requesters and watchers receive new public comments and public status changes by e-mail ([§6.6](#66-events-and-settings)).
 - A reply to such an e-mail is added to the ticket as a public comment, so the user does not need to log in. Incoming e-mail is received by an e-mail provider that forwards messages as webhooks; the server handles them through an **adapter interface**, so providers can be added without changing the domain logic. Outgoing e-mail is sent via SMTP and works with any provider ([§14.2](14-architecture.md)).
-- The reply is matched to the ticket and the sender's account; e-mails from unknown senders are rejected.
+- Every notification e-mail uses a **personal reply address** with a signed token identifying the ticket and the recipient (e.g. `reply+<token>@<domain>`). A reply is accepted only if the token is valid and the e-mail provider reports a successful SPF and DKIM check; the sender address alone is never trusted, because it can be forged.
+- Replies that fail these checks, come from users who no longer have access, or refer to closed or archived projects are rejected, and the sender receives a short explanation.
 
 ## 6.4 Watching tickets
 
@@ -71,6 +72,7 @@ End users do not configure channels. They receive an e-mail and an in-app notifi
 ## 6.7 Rules
 
 - Nobody is notified about their own actions.
+- Permissions are checked again **at the moment of sending**. A watcher who has lost access to the ticket (e.g. after narrowing its visibility, a change of organization or deactivation) receives nothing and is removed from the watchers.
 - Several changes to the same ticket within a short time window (e.g. 2 minutes) are combined into one notification to avoid notification floods.
 - Notifications about internal events are never sent to end users.
 - Notifications and e-mails are sent in the recipient's language ([§13.1](13-non-functional.md)).
