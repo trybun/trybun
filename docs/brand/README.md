@@ -39,3 +39,22 @@ The wordmark in `trybun-logo-*.svg` uses the **Manrope ExtraBold** font. Before 
 - Minimum size: 16 px for the icon, 80 px width for the logo with wordmark.
 - Do not recolour the branches, rotate, stretch, outline or add effects to the mark.
 - On photos or busy backgrounds, use the one-colour version.
+
+## Project README header
+
+Use the icon (pure shapes, no font dependency) with a regular Markdown heading. The `<picture>` element switches to the dark-background icon in GitHub's dark theme:
+
+```html
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/trybun-icon-on-dark.svg">
+    <img src="docs/brand/trybun-icon.svg" alt="" width="96">
+  </picture>
+</p>
+<h1 align="center">Trybun</h1>
+<p align="center">Customer requests and developer work on one path</p>
+```
+
+## GitHub social preview
+
+`trybun-social-preview.png` (1280 × 640) is uploaded in the repository settings: **Settings → General → Social preview**.
