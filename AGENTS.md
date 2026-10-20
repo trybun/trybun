@@ -57,6 +57,7 @@ English for code, identifiers, comments, commits, PR descriptions, README and te
 ## Architecture essentials
 
 - TypeScript monorepo (pnpm + Turborepo, [`docs/spec/14-architecture.md`](docs/spec/14-architecture.md) §14.6): `apps/web` (Next.js + Tailwind CSS), `apps/server` (NestJS – one app, two entry points: `main.ts` = API, `worker.ts` = Worker), `packages/ui`, `packages/contracts` (Zod schemas, types, status mapping – no permission logic), `packages/tsconfig`, `packages/eslint-config`. All internal (`private`, `workspace:*`).
+- **Validation: Zod only** (no `class-validator`, Yup, Joi). Cross-boundary schemas (API, webhooks, imports, WebSocket) live in `@trybun/contracts`. API: `nestjs-zod` + global `ZodValidationPipe`, OpenAPI generated from the same schemas. Forms: React Hook Form + Zod resolver (shadcn/ui `Form`). Env vars validated with Zod at start-up.
 - New package only for code used by ≥ 2 apps or a hard boundary; never `shared`/`common`/`utils`. Dependencies only apps → packages, no cycles (lint-enforced).
 - PostgreSQL via Prisma; raw SQL only parameterized and only where Prisma is insufficient (full-text search, pgvector).
 - **Permissions and visibility are decided only by the API.** The frontend never contains this logic.

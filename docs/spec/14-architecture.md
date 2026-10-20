@@ -29,7 +29,7 @@
 | Files | Any S3-compatible storage; SeaweedFS (Apache 2.0) included by default. Malware scanning with ClamAV |
 | Reverse proxy | Caddy (automatic Let's Encrypt certificates) |
 | Repository structure | Monorepo (pnpm workspaces + Turborepo) |
-| Validation and contracts | `@trybun/contracts`: Zod schemas and types shared by frontend and backend ([§14.6](#146-monorepo-structure)) |
+| Validation and contracts | **Zod** – the only validation library. Schemas and types shared by frontend and backend live in `@trybun/contracts` ([§14.6](#146-monorepo-structure)). API: `nestjs-zod` (DTOs from Zod schemas, `ZodValidationPipe`, OpenAPI through `@nestjs/swagger`). Forms: React Hook Form with the Zod resolver (shadcn/ui `Form`) |
 | Infrastructure | Docker and Docker Compose; CI/CD in GitHub Actions; images in GitHub Container Registry (`ghcr.io/trybun/<service>`, [§1.4](01-overview.md)) |
 | Tests | Vitest (unit and integration), Playwright (E2E), axe (accessibility) |
 
@@ -55,6 +55,12 @@
 - Full-text search for Polish requires a Polish dictionary installed in PostgreSQL (e.g. hunspell). Without it, word inflections are not recognized.
 - All services run in containers. The local environment is reproducible with one command.
 - The repository structure and package boundaries follow [§14.6](#146-monorepo-structure).
+- **Zod is the only validation library** in the project. `class-validator`/`class-transformer`, Yup, Joi and similar libraries are not used.
+  - Every schema crossing a boundary (API requests and responses, webhook events, import formats, WebSocket messages) lives in `@trybun/contracts` and is used by both sides.
+  - Schemas used only inside one application (e.g. its configuration) stay in that application.
+  - The API validates every request with the shared schema (`nestjs-zod`, global `ZodValidationPipe`); the OpenAPI document ([§12.1](12-api-webhooks-import.md)) is generated from the same schemas, so documentation and validation cannot drift apart.
+  - Web forms validate with the same schemas (React Hook Form + Zod resolver) for immediate feedback; the API validation remains authoritative.
+  - Environment variables are validated with a Zod schema at start-up of `server` and `web`; an invalid or missing variable stops the start with a clear message ([§15.3](15-deployment.md)).
 
 ## 14.5 Alternatives considered
 

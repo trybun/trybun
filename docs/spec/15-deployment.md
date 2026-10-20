@@ -15,7 +15,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 
 ## 15.3 Configuration (Twelve-Factor App)
 
-- All configuration is passed via **environment variables**; the system's own variables use the `TRYBUN_` prefix ([§1.4](01-overview.md)). `.env.example` contains the full list of variables with descriptions (Rule 5).
+- All configuration is passed via **environment variables**; the system's own variables use the `TRYBUN_` prefix ([§1.4](01-overview.md)). They are validated at start-up; invalid or missing values stop the service with a clear message ([§14.4](14-architecture.md)). `.env.example` contains the full list of variables with descriptions (Rule 5).
 - Object storage: SeaweedFS runs in Compose by default. Setting variables switches to any external S3-compatible storage (SeaweedFS is then not started – Compose profiles).
 - Secrets are never stored in the repository or in images ([§13.5](13-non-functional.md)).
 
