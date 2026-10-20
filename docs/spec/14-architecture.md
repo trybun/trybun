@@ -25,8 +25,8 @@
 | Database | PostgreSQL with the pgvector extension and a Polish full-text dictionary |
 | Database access | Prisma (ORM and migrations) |
 | Authentication | Keycloak |
-| Queue | BullMQ + Redis |
-| Files | Any S3-compatible storage; MinIO included by default. Malware scanning with ClamAV |
+| Queue | BullMQ + Valkey (Redis-compatible, BSD-3-Clause) |
+| Files | Any S3-compatible storage; SeaweedFS (Apache 2.0) included by default. Malware scanning with ClamAV |
 | Reverse proxy | Caddy (automatic Let's Encrypt certificates) |
 | Repository structure | Monorepo (pnpm workspaces + Turborepo) |
 | Validation and contracts | Shared schemas (Zod) and types for frontend and backend |
@@ -38,6 +38,7 @@
 - **One language and shared contracts.** Rules for visibility, permissions, statuses and validation are defined once and used by both the UI and the API, eliminating discrepancies between layers.
 - **Next.js + React** offers the most mature component ecosystem for a highly interactive UI (Kanban, Gantt, GFM editor, keyboard shortcuts) and good internationalization support. It is the framework recommended by the React documentation for new applications.
 - **A separate NestJS backend**, because much of the logic runs outside user requests (SLA, queues, e-mail, scanning). A strongly structured framework with built-in conventions supports Rule 1.
+- **Valkey** and **SeaweedFS** have permissive licenses (BSD-3-Clause, Apache 2.0) and active, vendor-neutral or community development, so the default stack contains no component with a restrictive or abandoned license (Rule 10, [§16.1](16-open-source.md)).
 - **PostgreSQL** provides full-text search (first version of [§5.6](05-visibility-and-search.md)) and semantic search via pgvector (target version) without extra infrastructure.
 - **Tailwind CSS** is the most common styling approach with Next.js, and Radix UI + Tailwind is the basis of the widely used shadcn/ui pattern. Its theme is defined as design tokens (Rule 6) and its utilities are mobile-first by default (Rule 9).
 - **Prisma** is the most popular ORM in the TypeScript ecosystem, with a mature migration system, type generation and documented NestJS integration.
@@ -60,7 +61,10 @@
 | ASP.NET Core (API, background services, SignalR) + React frontend | Technically equivalent. Rejected only because of the lack of a shared language and contracts between layers |
 | Next.js only (no separate backend) | Rejected – not designed for extensive background processing |
 | Blazor | Rejected – weaker ecosystem of components for Kanban, Gantt and a GFM editor |
-| PostgreSQL-based queue (e.g. pg-boss) instead of Redis | Acceptable if minimizing infrastructure components becomes a priority |
+| PostgreSQL-based queue (e.g. pg-boss) instead of Valkey | Acceptable if minimizing infrastructure components becomes a priority |
+| Redis instead of Valkey | Rejected – since 7.4 licensed RSALv2/SSPLv1, since 8.0 also AGPLv3; Valkey (Linux Foundation fork of Redis 7.2) keeps the permissive BSD license, vendor-neutral governance and protocol compatibility used by BullMQ |
+| MinIO instead of SeaweedFS | Rejected – the community edition stopped publishing images and binaries (October 2025), entered maintenance mode and its repository was archived (2026); no security updates, which conflicts with Rule 10 |
+| Garage or RustFS instead of SeaweedFS | Garage (AGPLv3) needs more configuration for a single node; RustFS (Apache 2.0) is promising but still young. Both can be used as external S3 storage ([§15.3](15-deployment.md)) |
 | Drizzle instead of Prisma | Rejected – lighter and closer to SQL, but less established. Raw SQL for search is needed in both cases |
 | Authentication library inside the application instead of Keycloak | Rejected – fewer infrastructure components, but more security code in the project |
 | CSS Modules or CSS-in-JS (e.g. styled-components) instead of Tailwind CSS | Rejected – CSS-in-JS adds runtime cost and fits React Server Components poorly; CSS Modules are viable but have a smaller ecosystem of ready patterns with Radix UI |

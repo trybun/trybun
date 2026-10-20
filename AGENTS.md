@@ -46,7 +46,7 @@ English for code, identifiers, comments, commits, PR descriptions, README and te
 - PostgreSQL via Prisma; raw SQL only parameterized and only where Prisma is insufficient (full-text search, pgvector).
 - **Permissions and visibility are decided only by the API.** The frontend never contains this logic.
 - Authentication only via Keycloak. Never implement custom security mechanisms.
-- Background work (webhooks, SLA, scanning, e-mail, imports) runs in the Worker via BullMQ.
+- Background work (webhooks, SLA, scanning, e-mail, imports) runs in the Worker via BullMQ on Valkey. Object storage: SeaweedFS by default (any S3-compatible storage via config). Do not use Redis or MinIO.
 - Everything runs in Docker Compose; the system must run on any Linux VPS.
 
 ## Definition of Done

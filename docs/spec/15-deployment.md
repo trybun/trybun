@@ -9,14 +9,14 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 ## 15.2 Server requirements
 
 - Linux with Docker Engine and the Docker Compose plugin.
-- At least 8 GB RAM, 16 GB recommended (one server runs, among others, PostgreSQL, Redis, Keycloak and ClamAV).
+- At least 8 GB RAM, 16 GB recommended (one server runs, among others, PostgreSQL, Valkey, SeaweedFS, Keycloak and ClamAV).
 - Access to external S3-compatible storage in a different location than the server – for backups ([§15.10](#1510-backups)).
 - Recommended server location in the European Economic Area (GDPR, [§13.2](13-non-functional.md)).
 
 ## 15.3 Configuration (Twelve-Factor App)
 
 - All configuration is passed via **environment variables**; the system's own variables use the `TRYBUN_` prefix ([§1.4](01-overview.md)). `.env.example` contains the full list of variables with descriptions (Rule 5).
-- Object storage: MinIO runs in Compose by default. Setting variables switches to any external S3-compatible storage (MinIO is then not started – Compose profiles).
+- Object storage: SeaweedFS runs in Compose by default. Setting variables switches to any external S3-compatible storage (SeaweedFS is then not started – Compose profiles).
 - Secrets are never stored in the repository or in images ([§13.5](13-non-functional.md)).
 
 ## 15.4 Releases
@@ -53,7 +53,7 @@ Installing on a new server:
 
 - Checks prerequisites: Docker and Compose versions, available RAM, free ports 80 and 443, the domain pointing to the server.
 - Asks a few questions: domain, Administrator e-mail, default system language, time zone.
-- **Generates all secrets** (database, Redis, MinIO and Keycloak passwords, application keys) as cryptographically random values. The Administrator does not have to invent them.
+- **Generates all secrets** (database, Valkey, SeaweedFS and Keycloak passwords, application keys) as cryptographically random values. The Administrator does not have to invent them.
 - Writes `.env` with permissions restricted to the owner.
 - Never overwrites an existing `.env`, so re-running it is safe.
 - Finally starts the system and prints the first-run wizard URL with a **one-time setup token**.
@@ -91,11 +91,11 @@ The reverse proxy (Caddy) obtains and renews HTTPS certificates automatically. O
 
 Containerization on Linux adds no significant performance overhead (containers are processes running on the host kernel, not virtual machines). To keep it that way:
 
-- PostgreSQL, Redis and MinIO data is stored in **named volumes**, not in the container filesystem.
+- PostgreSQL, Valkey and SeaweedFS data is stored in **named volumes**, not in the container filesystem.
 - Container logs use **rotation with a size limit**, so they do not fill the disk.
 - Every service has a **memory limit**, so one service (e.g. ClamAV updating signatures) cannot starve the others.
 - Every service has a **health check** and an automatic restart policy.
-- Only the reverse proxy is exposed publicly. The database, Redis, MinIO and Keycloak's internals are reachable only on the internal Compose network.
+- Only the reverse proxy is exposed publicly. The database, Valkey, SeaweedFS and Keycloak's internals are reachable only on the internal Compose network.
 
 ## 15.10 Backups
 

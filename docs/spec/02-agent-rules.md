@@ -235,7 +235,7 @@ Keyboard shortcuts remain a desktop accelerator; every action they trigger is al
 
 ## 2.10 Rule 10 – Dependencies are monitored and kept up to date
 
-All dependencies – npm packages, frameworks, the Node.js runtime, container base images, GitHub Actions and third-party services in Docker Compose (PostgreSQL, Redis, Keycloak, MinIO, Caddy, ClamAV) – are **continuously monitored for vulnerabilities** and **kept up to date**.
+All dependencies – npm packages, frameworks, the Node.js runtime, container base images, GitHub Actions and third-party services in Docker Compose (PostgreSQL, Valkey, Keycloak, SeaweedFS, Caddy, ClamAV) – are **continuously monitored for vulnerabilities** and **kept up to date**.
 
 Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components*; supply-chain security practices).
 
