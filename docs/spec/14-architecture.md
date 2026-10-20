@@ -109,3 +109,41 @@ packages/
 - Packages are **internal packages**: `"private": true`, referenced with the `workspace:*` protocol and consumed as TypeScript source, without a separate build or publishing step (Turborepo recommendation).
 - A package is published to npm only when there is an external consumer. The first expected candidate is a client SDK for the public API (`@trybun/sdk`, generated from the OpenAPI document, [§12.1](12-api-webhooks-import.md)), added when the public API exists.
 
+## 14.7 Code naming conventions
+
+Naming follows the conventions of each technology in the stack (Rule 1). Domain terms always use the code identifiers from the [glossary](00-glossary.md); product-related identifiers follow [§1.4](01-overview.md). All identifiers are in English (Rule 5).
+
+| Element | Convention | Example |
+|---|---|---|
+| Variables, functions, methods | camelCase; booleans start with `is`, `has`, `can` or `should` | `assignTicket()`, `isShared` |
+| Classes, types, interfaces, React components | PascalCase; interfaces without an `I` prefix | `TicketVisibility`, `StatusBadge` |
+| Module-level constants | UPPER_SNAKE_CASE | `MAX_ATTACHMENT_SIZE` |
+| Files and folders | kebab-case; NestJS files with their role suffix (NestJS convention); Next.js route segments in kebab-case | `ticket-list.tsx`, `tickets.service.ts`, `app/saved-views/` |
+| NestJS classes | Plural resource + role | `TicketsModule`, `TicketsService`, `TicketsController` |
+| DTOs | Action + resource + `Dto`, created from Zod schemas ([§14.4](#144-architectural-principles)) | `CreateTicketDto` |
+| Zod schemas and inferred types | Schema in camelCase with the `Schema` suffix; type in PascalCase via `z.infer` | `ticketSchema` → `type Ticket` |
+| Prisma models | PascalCase, singular; fields in camelCase | `model Ticket { createdAt DateTime }` |
+| PostgreSQL tables and columns | snake_case; tables in plural; mapped from Prisma with `@@map` and `@map` | `tickets`, `created_at` |
+| Enum values (code, database, API) | The glossary codes in snake_case | `in_progress`, `only_me` |
+| REST API paths | Plural nouns in kebab-case; no verbs, actions as sub-resources | `/api/v1/tickets/{id}/comments`, `/api/v1/saved-views` |
+| JSON fields and query parameters | camelCase | `{ "requesterCount": 3 }`, `?sortBy=createdAt` |
+| Webhook and internal events | `resource.event` in snake_case | `ticket.status_changed` |
+| Queue names and job names | kebab-case | `github-webhooks`, `sla-timers` |
+| Translation keys | Dot-separated namespaces in camelCase, starting with the feature | `tickets.form.titleLabel` |
+| Environment variables | UPPER_SNAKE_CASE with the `TRYBUN_` prefix ([§1.4](01-overview.md)) | `TRYBUN_DOMAIN` |
+| Design tokens / Tailwind theme | kebab-case | `--color-ink`, `bg-ink` |
+| Tests | `*.spec.ts` / `*.spec.tsx` next to the tested file; E2E tests in the application's `e2e/` folder | `visibility.spec.ts`, `apps/web/e2e/create-ticket.spec.ts` |
+| Product tour targets | `data-tour="<view>-<element>"` in kebab-case (Rule 4) | `data-tour="kanban-column-menu"` |
+
+### Database naming
+
+The code follows TypeScript conventions (camelCase) and the database follows PostgreSQL conventions (snake_case). Prisma maps between them, so:
+
+- every Prisma model has `@@map("<plural_snake_case>")` and every multi-word field has `@map("<snake_case>")`,
+- raw SQL queries ([§14.4](#144-architectural-principles)) use the snake_case names and never need quoted identifiers,
+- primary keys are named `id`, foreign keys `<entity>_id` (`requester_id`), timestamps `created_at`, `updated_at`.
+
+### Enforcement
+
+The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](#146-monorepo-structure)): `@typescript-eslint/naming-convention` for identifiers and a file-name rule for files and folders. A check of the Prisma schema verifies that every model and multi-word field has its database mapping.
+

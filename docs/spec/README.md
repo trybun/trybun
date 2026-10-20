@@ -18,7 +18,7 @@ Specification of **Trybun**, a ticket / task management system for development t
 | [11-github-integration.md](11-github-integration.md) | GitHub App, linking code to tickets, creating issues, issue sync, privacy |
 | [12-api-webhooks-import.md](12-api-webhooks-import.md) | Public REST API, tokens, integration tickets and error grouping, outgoing webhooks, data import |
 | [13-non-functional.md](13-non-functional.md) | Internationalization, GDPR, attachments, accessibility, security, backups |
-| [14-architecture.md](14-architecture.md) | Components, technology stack, rationale, architectural principles, alternatives |
+| [14-architecture.md](14-architecture.md) | Components, technology stack, rationale, architectural principles, alternatives, monorepo structure, code naming conventions |
 | [15-deployment.md](15-deployment.md) | Docker Compose deployment on any Linux VPS, releases, install, first run, updates, backups |
 | [16-open-source.md](16-open-source.md) | MIT license, community files, contribution rules (DCO, AI-assisted contributions), repository security, voluntary funding |
 
