@@ -22,9 +22,9 @@
 
 - Maximum file size configurable by the Administrator (default 25 MB).
 - Allowed file types are defined by an allowlist, e.g. images, PDF, office documents, text and log files, ZIP archives. Other types are rejected.
-- Every file is **scanned for malware** before it becomes available. Until the scan completes, the file is shown as "Checking…" (PL: „Sprawdzanie…”).
+- Files are uploaded through the API into a **quarantine** area and every file is **scanned for malware** by ClamAV in the Worker before it becomes available. Until the scan completes, the file is shown as "Checking…" (PL: „Sprawdzanie…”); infected files are deleted and the uploader is informed.
 - EXIF metadata (including GPS location) is stripped from images.
-- Files are stored in S3-compatible object storage ([§14.2](14-architecture.md)), never in a public directory. Access to every file is checked against the ticket's visibility ([§5.1](05-visibility-and-search.md)) and the comment kind ([§6.1](06-comments-notifications.md)).
+- Files are stored in S3-compatible object storage ([§14.2](14-architecture.md)), never in a public directory. Access to every file is checked against the ticket's visibility ([§5.1](05-visibility-and-search.md)) and the comment kind ([§6.1](06-comments-notifications.md)); after the check the API issues a **short-lived signed URL** (e.g. 5 minutes) for the download.
 - Files other than images are served as downloads, not opened directly in the browser.
 
 ## 13.4 Accessibility
@@ -39,7 +39,8 @@
 
 - Reference for security requirements: **OWASP ASVS** (Rule 1).
 - Dependencies are monitored for vulnerabilities and kept up to date according to Rule 10 ([§2.10](02-agent-rules.md)).
-- HTTPS only.
+- HTTPS only, with HSTS.
+- Security headers set in one place: a strict Content Security Policy with nonces (Next.js), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` with only the features used, and framing denied (`frame-ancestors 'none'`).
 - Protection against brute-force login attempts (rate limiting), expiry of inactive sessions, CSRF protection.
 - Secrets (e.g. the GitHub App private key) are kept out of code and the repository, in a secure secret store / environment configuration ([§15.3](15-deployment.md)).
 - API tokens ([§12.2](12-api-webhooks-import.md)) are stored only as hashes, like passwords.

@@ -88,6 +88,13 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Import batch | `import_batch` | Import / Import | One run of the import wizard; can be undone ([§12.5](12-api-webhooks-import.md)) |
 | Change specification | – | – | Dated description of one change (`.ai/specs/YYYY-MM-DD-slug.md`) with status `draft` → `approved` → `implemented` / `archived` ([§2.8](02-agent-rules.md)) |
 | Project memory | – | – | Knowledge gained during work, kept in `.ai/memory/` with the index `MEMORY.md` ([§2.7](02-agent-rules.md)) |
+| Release candidate | – | – | Pre-release `X.Y.Z-rc.N` deployed to the test environment before a release (Rule 11) |
+| Maintenance branch | – | – | `release/X.Y.x` branch for PATCH releases without new features (Rule 11) |
+| SBOM | – | – | Software bill of materials attached to every release (Rule 10) |
+| Cooldown | – | – | Minimum age (7 days) of a dependency version before a regular update (Rule 10) |
+| Transactional outbox | `outbox_event` | – | Event stored in the same transaction as the change and published by the Worker ([§14.8](14-architecture.md)) |
+| ADR | – | – | Architecture Decision Record in `docs/adr/` ([§2.13](02-agent-rules.md)) |
+| Break-glass account | – | – | The first Administrator account with password and 2FA, usable without GitHub sign-in ([§7.4](07-users-organizations-permissions.md)) |
 | Audit log | `audit_log_entry` | Audit log / Dziennik zdarzeń | Immutable log of administrative actions ([§13.5](13-non-functional.md)) |
 | Anonymization | – | Anonymization / Anonimizacja | GDPR erasure that keeps history ([§13.2](13-non-functional.md)) |
 | Deployment package | – | – | Release assets needed to install the system ([§15.4](15-deployment.md)) |

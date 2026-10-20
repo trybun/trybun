@@ -73,5 +73,5 @@ UX rules (Rule 2):
 ### Search mechanism
 
 - First version: PostgreSQL full-text search on title and description, with a Polish dictionary installed ([§14.4](14-architecture.md)).
-- Target version: semantic search (pgvector) that recognizes the same problem described in different words.
+- Target version: semantic search (pgvector) that recognizes the same problem described in different words. Embeddings are computed **locally** in the Worker (Transformers.js, `multilingual-e5-small`, [§14.2](14-architecture.md)); ticket content is never sent to an external service. Results combine full-text and semantic similarity (hybrid ranking).
 - The same mechanism is used by the portal search ([§5.5](#55-search-in-the-end-user-portal)) and the team's global search ([§8.5](08-team-views.md)).

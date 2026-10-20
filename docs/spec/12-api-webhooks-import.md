@@ -6,7 +6,7 @@
 - **OpenAPI documentation** generated automatically from the code and published with the API.
 - Conventions (Rule 1):
   - cursor-based pagination,
-  - errors in the *Problem Details* format (RFC 9457),
+  - errors in the *Problem Details* format (RFC 9457) with stable error codes, the same as in the internal API ([§14.8](14-architecture.md)),
   - rate limits with information in response headers,
   - support for the `Idempotency-Key` header when creating resources, so a retried request does not create a duplicate.
 - The public API is **the same API** the web application uses. Permissions and visibility work identically ([§14.4](14-architecture.md)).

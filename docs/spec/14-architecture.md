@@ -18,20 +18,33 @@
 | Layer | Technology |
 |---|---|
 | Language | TypeScript across the whole project |
-| Web application | Next.js + React |
+| Web application | Next.js (App Router) + React |
+| Web sign-in and session | Auth.js with the Keycloak provider; session in an `httpOnly`, `Secure`, `SameSite=Lax` cookie ([§14.4](#144-architectural-principles)) |
+| Data access from the web | Typed API client generated from the OpenAPI document (`openapi-typescript` + `openapi-fetch`); TanStack Query in client components |
+| Internationalization | `next-intl` in the web application; message catalogues in ICU MessageFormat in `@trybun/i18n`, shared by web and server ([§14.6](#146-monorepo-structure)) |
+| Markdown (GFM) | Own editor component in `@trybun/ui` (textarea, toolbar, Write/Preview, as on GitHub); rendering with `react-markdown` + `remark-gfm` + `rehype-sanitize`; the same unified pipeline renders Markdown on the server (e-mails) |
+| Drag and drop | `dnd-kit` (pointer, touch and keyboard sensors) |
+| Gantt chart | SVAR React Gantt, open-source MIT edition only (never the commercial PRO edition); scheduling logic lives in the API ([§10.4](10-roadmap-gantt.md)) |
+| Charts | Recharts (basis of the shadcn/ui `Chart` component) |
 | Styling | Tailwind CSS 4 with the theme defined as design tokens (CSS variables, `@theme`); class-variance-authority for component variants, tailwind-merge for combining classes |
 | UI components | Project component library (`packages/ui`, `@trybun/ui`) based on Radix UI and Tailwind CSS, using **shadcn/ui** (MIT) as the starting point: component source is copied into the library with the shadcn CLI and owned by the project; component catalog in Storybook (Rule 6) |
 | API and Worker | NestJS – one backend application (`apps/server`) with two entry points: the API process and the Worker process ([§14.6](#146-monorepo-structure)) |
 | Database | PostgreSQL with the pgvector extension and a Polish full-text dictionary |
 | Database access | Prisma (ORM and migrations) |
+| Authorization | CASL with `@casl/prisma`: one definition of abilities used both for action checks and for filtering database queries ([§14.4](#144-architectural-principles)) |
 | Authentication | Keycloak |
 | Queue | BullMQ + Valkey (Redis-compatible, BSD-3-Clause) |
+| Real-time | NestJS WebSocket gateway with Socket.IO and its Redis adapter on Valkey |
+| E-mail | Outgoing: SMTP via Nodemailer (works with any provider), templates in React Email. Incoming: provider webhook through an adapter interface ([§6.3](06-comments-notifications.md)). Development: Mailpit |
+| Logging | `nestjs-pino`: JSON logs with a request ID propagated from the API to the Worker; no personal data ([§13.2](13-non-functional.md)) |
+| Rate limiting | `@nestjs/throttler` with storage in Valkey |
+| Semantic search | Embeddings computed locally in the Worker with Transformers.js and the `multilingual-e5-small` model (MIT, 384 dimensions, supports Polish), stored in pgvector; no ticket content is sent to an external service ([§5.6](05-visibility-and-search.md)) |
 | Files | Any S3-compatible storage; SeaweedFS (Apache 2.0) included by default. Malware scanning with ClamAV |
 | Reverse proxy | Caddy (automatic Let's Encrypt certificates) |
 | Repository structure | Monorepo (pnpm workspaces + Turborepo) |
 | Validation and contracts | **Zod** – the only validation library. Schemas and types shared by frontend and backend live in `@trybun/contracts` ([§14.6](#146-monorepo-structure)). API: `nestjs-zod` (DTOs from Zod schemas, `ZodValidationPipe`, OpenAPI through `@nestjs/swagger`). Forms: React Hook Form with the Zod resolver (shadcn/ui `Form`) |
 | Infrastructure | Docker and Docker Compose; CI/CD in GitHub Actions; images in GitHub Container Registry (`ghcr.io/trybun/<service>`, [§1.4](01-overview.md)) |
-| Tests | Vitest (unit and integration), Playwright (E2E), axe (accessibility) |
+| Tests | Vitest (unit and integration), Testcontainers (real PostgreSQL and Valkey in integration tests), MSW (simulated external HTTP services), `@faker-js/faker` (test data factories), Playwright (E2E), axe (accessibility), Lighthouse (performance budget) |
 
 ## 14.3 Rationale
 
@@ -51,10 +64,14 @@
 - The frontend contains no permission or visibility logic. Decisions are made only by the API; the frontend only adapts the UI.
 - Authentication, 2FA and OAuth are handled by Keycloak. Custom implementations of security mechanisms are forbidden (Rule 1, [§13.5](13-non-functional.md)). API tokens ([§12.2](12-api-webhooks-import.md)) are handled by the system.
 - Database access goes through Prisma. Where the ORM is not sufficient (full-text search, pgvector), only parameterized SQL queries are allowed.
-- Incoming e-mail is handled by an e-mail provider that converts messages into webhooks, not by a self-hosted mail server.
+- Incoming e-mail is handled by an e-mail provider that converts messages into webhooks, not by a self-hosted mail server. Outgoing e-mail uses SMTP, so any provider can be configured.
+- **Web ↔ API communication.** The browser and Next.js server components call the API at `/api/v1` on the same domain (Caddy routes `/api` to the API). There is one channel to the API: the generated typed client. Next.js Server Actions and Route Handlers are not used as a second backend; Next.js Route Handlers exist only where Auth.js requires them.
+- **Sign-in.** Auth.js performs the OpenID Connect flow with Keycloak and keeps the session in a secure cookie. The API accepts only Keycloak access tokens (JWT verified against the Keycloak JWKS) and API tokens ([§12.2](12-api-webhooks-import.md)).
+- **Authorization in one place.** All permissions ([§7.5](07-users-organizations-permissions.md)) and visibility rules ([§5.1](05-visibility-and-search.md)) are defined once as CASL abilities in the server. The same definition checks actions and builds Prisma filters (`accessibleBy`), so a list can never return a ticket that its detail view would refuse. The permission matrix is covered by automated tests.
+- **Uploads.** Files are uploaded through the API into a quarantine area of the object storage, scanned by ClamAV in the Worker and only then made available. Downloads use short-lived signed URLs issued after the access check ([§13.3](13-non-functional.md)).
 - Full-text search for Polish requires a Polish dictionary installed in PostgreSQL (e.g. hunspell). Without it, word inflections are not recognized.
 - All services run in containers. The local environment is reproducible with one command.
-- The repository structure and package boundaries follow [§14.6](#146-monorepo-structure).
+- The repository structure and package boundaries follow [§14.6](#146-monorepo-structure); data and integration conventions follow [§14.8](#148-data-and-integration-conventions).
 - **Zod is the only validation library** in the project. `class-validator`/`class-transformer`, Yup, Joi and similar libraries are not used.
   - Every schema crossing a boundary (API requests and responses, webhook events, import formats, WebSocket messages) lives in `@trybun/contracts` and is used by both sides.
   - Schemas used only inside one application (e.g. its configuration) stay in that application.
@@ -76,6 +93,10 @@
 | Drizzle instead of Prisma | Rejected – lighter and closer to SQL, but less established. Raw SQL for search is needed in both cases |
 | Authentication library inside the application instead of Keycloak | Rejected – fewer infrastructure components, but more security code in the project |
 | CSS Modules or CSS-in-JS (e.g. styled-components) instead of Tailwind CSS | Rejected – CSS-in-JS adds runtime cost and fits React Server Components poorly; CSS Modules are viable but have a smaller ecosystem of ready patterns with Radix UI |
+| A WYSIWYG editor (e.g. Tiptap) instead of a Markdown textarea | Rejected – converting between rich text and GFM is lossy; a textarea with toolbar and preview matches GitHub exactly ([§6.2](06-comments-notifications.md)) |
+| Next.js Server Actions as the main way to change data | Rejected – it would create a second backend next to the API and duplicate validation and permissions |
+| An external embedding API (e.g. a cloud AI provider) for semantic search | Rejected – ticket content would leave the installation (GDPR); a local model is sufficient for similarity search |
+| Commercial Gantt libraries or the SVAR PRO edition | Rejected – not compatible with an MIT project without paid licences; the scheduling logic required by [§10.4](10-roadmap-gantt.md) is implemented in the API |
 | Services of a specific cloud provider | Rejected – the system must run on any Linux server ([15-deployment.md](15-deployment.md)) |
 
 ## 14.6 Monorepo structure
@@ -88,7 +109,8 @@ apps/
   server/           @trybun/server     NestJS backend: API and Worker
 packages/
   ui/               @trybun/ui         Component library (Rule 6)
-  contracts/        @trybun/contracts  Zod schemas, API types, status codes and mapping, labels
+  contracts/        @trybun/contracts  Zod schemas, API types, status codes and mapping
+  i18n/             @trybun/i18n       Message catalogues (EN, PL) in ICU MessageFormat for web and server
   tsconfig/         @trybun/tsconfig   Shared TypeScript configuration (strict mode)
   eslint-config/    @trybun/eslint-config  Shared lint rules, incl. Tailwind and boundary rules
 ```
@@ -105,7 +127,7 @@ packages/
 - A package is created only for a concrete reason: the code is used by at least two applications, or a hard boundary is needed (e.g. `@trybun/ui` must not import application code). No packages "just in case".
 - Every package has one clear responsibility visible in its name. Catch-all packages such as `shared`, `common` or `utils` are not allowed.
 - `@trybun/contracts` contains only what frontend and backend must understand identically (schemas, types, codes, mappings, labels). It contains no permission or visibility logic, which stays in the API ([§14.4](#144-architectural-principles)).
-- Dependencies point in one direction only: applications → packages. Packages never import applications, and there are no cycles. `@trybun/contracts` depends on no other project package; `@trybun/ui` does not depend on `@trybun/server`. These boundaries are enforced by lint rules in CI.
+- Dependencies point in one direction only: applications → packages. Packages never import applications, and there are no cycles. `@trybun/contracts` and `@trybun/i18n` depend on no other project package; `@trybun/ui` does not depend on `@trybun/server`. These boundaries are enforced by lint rules in CI.
 - Packages are **internal packages**: `"private": true`, referenced with the `workspace:*` protocol and consumed as TypeScript source, without a separate build or publishing step (Turborepo recommendation).
 - A package is published to npm only when there is an external consumer. The first expected candidate is a client SDK for the public API (`@trybun/sdk`, generated from the OpenAPI document, [§12.1](12-api-webhooks-import.md)), added when the public API exists.
 
@@ -146,4 +168,46 @@ The code follows TypeScript conventions (camelCase) and the database follows Pos
 ### Enforcement
 
 The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](#146-monorepo-structure)): `@typescript-eslint/naming-convention` for identifiers and a file-name rule for files and folders. A check of the Prisma schema verifies that every model and multi-word field has its database mapping.
+
+## 14.8 Data and integration conventions
+
+### Identifiers
+
+- Primary keys are **UUIDv7**, generated by the application: unique without coordination and time-ordered, which keeps indexes efficient.
+- The human-readable ticket identifier `KEY-number` ([§3.2](03-ticket-model.md)) is a separate field and is never used as a primary or foreign key.
+
+### Dates and times
+
+- All timestamps are stored as `timestamptz` in UTC and exchanged in the API as ISO 8601 strings in UTC (e.g. `2026-11-03T09:15:00Z`).
+- Dates without time (e.g. a milestone's target date) are stored as `date` and exchanged as `YYYY-MM-DD`.
+- Conversion to the user's time zone and locale happens only in the presentation layer (web, e-mails) ([§13.1](13-non-functional.md)). SLA calculations use the time zone of the business calendar ([§9.2](09-sla.md)).
+
+### Deleting data
+
+- Tickets are never deleted; they are closed as `rejected` or `duplicate` ([§4.3](04-ticket-lifecycle.md)). Personal data is removed only through anonymization ([§13.2](13-non-functional.md)).
+- Other records (e.g. labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log.
+- There is no generic soft-delete (`deleted_at`) mechanism.
+
+### Transactions and events
+
+- Changes that span several records are performed in one database transaction.
+- Side effects (notifications, webhooks, GitHub synchronization, search indexing) use the **transactional outbox** pattern: the event is written to an `outbox_events` table in the same transaction as the change, and the Worker publishes it to the queue. No event is lost when a process stops between the change and the publication, and no event is published for a change that was rolled back.
+- Event handlers are idempotent, because events may be delivered more than once.
+
+### Errors
+
+- The whole API (public and internal) returns errors in the *Problem Details* format (RFC 9457) with a stable, documented error `code` (e.g. `ticket.visibility_not_allowed`).
+- The web application translates error codes into messages in the user's language; raw server messages are never shown to users.
+- Validation errors list the invalid fields, so forms can show them next to the fields.
+
+### Logging and monitoring
+
+- Logs are structured JSON (`nestjs-pino`) with level, time, request ID and, for jobs, job ID. The request ID is returned in the `X-Request-Id` header and passed to Worker jobs.
+- Logs never contain personal data, tokens, passwords or ticket content ([§13.2](13-non-functional.md)).
+- Health endpoints: `/health` (liveness) and `/health/ready` (readiness, checks database, Valkey and object storage).
+
+### Migrations
+
+- Database migrations are created with Prisma Migrate, named in snake_case describing the change (e.g. `add_ticket_visibility`), and are forward-only.
+- A migration that would lose data is split into compatible steps or marked as a breaking change (Rule 11).
 

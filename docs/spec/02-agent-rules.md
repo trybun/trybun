@@ -405,6 +405,25 @@ These practices follow recommendations of the Claude Code team and apply to ever
 - **Fix the cause, never the gate.** When CI fails, the agent reads the logs and fixes the cause. It **never** disables, skips or weakens tests, lowers coverage or performance thresholds, removes quality gates or adds suppressions (e.g. lint-disable comments, `@ts-ignore`) to make CI pass. If a gate itself is wrong, the agent proposes changing it as a separate, explained change for human approval.
 - **Self-review before the pull request.** Before opening a pull request the agent reviews its own diff against the specification and the Definition of Done and asks: *knowing everything I know now, is there a simpler, cleaner solution?* If so, it reworks the change before handing it over for review.
 
+### Branching and merging
+
+- **Trunk-based development**: short-lived branches from `main`, one per task, merged through pull requests with **squash merge**, so every merged PR is one Conventional Commit on `main`.
+- Branch names: `KEY-123-short-description` for tickets, `cez/<id>` for branches created by Cezar; maintenance branches `release/X.Y.x` only according to Rule 11.
+- Commit scopes form a closed list: `web`, `server`, `ui`, `contracts`, `i18n`, `spec`, `plan`, `agents`, `brand`, `ci`, `deps`, `release`. A new scope is added by changing this list.
+
+### Architecture Decision Records
+
+- ADRs are stored in `docs/adr/` as `NNNN-short-title.md` (sequential number, kebab-case) in the **MADR** format: context, decision, considered options, consequences, status (`proposed`, `accepted`, `superseded by NNNN`).
+- `docs/adr/README.md` is the index. ADRs are never deleted; a changed decision gets a new ADR that supersedes the old one.
+
+### Testing approach
+
+- **Unit tests** (Vitest) for domain logic: visibility, permissions, status transitions, SLA calculation, scheduling.
+- **Integration tests** (Vitest + Testcontainers) run against real PostgreSQL and Valkey; the database is never mocked. External HTTP services (GitHub, e-mail provider) are simulated with MSW.
+- **Permission tests**: every row of the permission matrix ([§7.5](07-users-organizations-permissions.md)) is an automated test, for both allowed and denied cases.
+- **E2E tests** (Playwright) cover the key user paths on phone, tablet and desktop viewports (Rule 9) and include accessibility checks (axe).
+- Test data is created with **factories** (`@faker-js/faker`); tests never depend on each other's data. A separate, deterministic **demo dataset** is used for the local and test environments, documentation screenshots and product tours.
+
 ### Automated quality gates
 
 Every pull request passes at least the following in CI:

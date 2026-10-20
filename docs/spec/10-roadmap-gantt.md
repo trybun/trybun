@@ -44,6 +44,12 @@ In a ticket view, the end user sees "Planned: Q2 2027" (PL: „Planowane: II kwa
 
 Visualizes how work is distributed over time. On phones the chart is read-only and scheduling is done through ticket fields; tablets support full touch editing (Rule 9, [§2.9](02-agent-rules.md)). The chart shows the project's tickets grouped by milestone.
 
+### Implementation
+
+- The chart uses **SVAR React Gantt**, open-source MIT edition only ([§14.2](14-architecture.md)).
+- Scheduling logic is part of the domain and lives in the API: shifting dependent tickets, computing parent summary bars, cycle prevention and warnings. The chart only displays the result and sends the user's changes to the API.
+- The "Unscheduled" panel is a project component in `@trybun/ui` (a list with drag sources), not a feature of the chart library.
+
 ### Chart elements
 
 - A bar per ticket from start date to due date, with the assignee and a color based on status (plus a text/icon indicator, [§13.4](13-non-functional.md)).

@@ -10,6 +10,9 @@
 - For team members the default kind is **internal note**. A public comment requires a deliberate switch, which prevents accidentally sending a technical discussion to the customer.
 - Internal notes are clearly distinguished visually (e.g. a different background color, plus an icon/label – never color alone, [§13.4](13-non-functional.md)).
 - `@mentions` notify the mentioned person. End users can mention members of their organization and team members ([§7.3](07-users-organizations-permissions.md)).
+- **Editing**: the author can edit their own comment or note. Edited comments show "edited" (PL: „edytowano”) and the previous versions are available in the edit history to everyone who can see the comment (pattern: GitHub). The ticket description can be edited by its author and by the team, also with history.
+- **Deleting**: the author can delete their own comment or note; the team (Developer and above) can delete any comment, e.g. to remove personal data. A deleted comment leaves the entry "Comment deleted" (PL: „Komentarz usunięty”) with author and time in the activity timeline ([§4.5](04-ticket-lifecycle.md)); its content and attachments are removed.
+- Editing or deleting a comment never sends notifications.
 
 ## 6.2 Editor
 
@@ -28,7 +31,7 @@ Security (Rule 1): rendered HTML is sanitized according to OWASP recommendations
 ## 6.3 E-mail replies
 
 - Requesters and watchers receive new public comments and public status changes by e-mail ([§6.6](#66-events-and-settings)).
-- A reply to such an e-mail is added to the ticket as a public comment, so the user does not need to log in. Incoming e-mail is handled by an e-mail provider that converts messages into webhooks ([§14.4](14-architecture.md)).
+- A reply to such an e-mail is added to the ticket as a public comment, so the user does not need to log in. Incoming e-mail is received by an e-mail provider that forwards messages as webhooks; the server handles them through an **adapter interface**, so providers can be added without changing the domain logic. Outgoing e-mail is sent via SMTP and works with any provider ([§14.2](14-architecture.md)).
 - The reply is matched to the ticket and the sender's account; e-mails from unknown senders are rejected.
 
 ## 6.4 Watching tickets

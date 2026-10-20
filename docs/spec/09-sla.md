@@ -70,4 +70,6 @@ SLA deadlines are **visible to the team only**. End users do not see them, so a 
 - Average first response and resolution times.
 - List of tickets with breached SLA.
 
+Charts in reports use Recharts ([§14.2](14-architecture.md)).
+
 Reports are available to the Project manager and the Administrator and can serve as a basis for settlements with customers.

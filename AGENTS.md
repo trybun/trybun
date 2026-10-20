@@ -62,7 +62,11 @@ English for code, identifiers, comments, commits, PR descriptions, README and te
 - New package only for code used by ≥ 2 apps or a hard boundary; never `shared`/`common`/`utils`. Dependencies only apps → packages, no cycles (lint-enforced).
 - PostgreSQL via Prisma; raw SQL only parameterized and only where Prisma is insufficient (full-text search, pgvector).
 - **Permissions and visibility are decided only by the API.** The frontend never contains this logic.
-- Authentication only via Keycloak. Never implement custom security mechanisms.
+- Authentication only via Keycloak (web: Auth.js with Keycloak provider; API: JWT via JWKS). Never implement custom security mechanisms.
+- **Permissions and visibility only as CASL abilities in `server`** (`@casl/prisma` `accessibleBy` for queries). The permission matrix is tested row by row.
+- Web → API only through the generated OpenAPI client at `/api/v1` (TanStack Query in client components). No Server Actions as a second backend.
+- i18n: `next-intl`, catalogues in `@trybun/i18n` (ICU). Markdown: own textarea editor + `react-markdown`/`remark-gfm`/`rehype-sanitize` (no WYSIWYG). DnD: `dnd-kit`. Gantt: SVAR React Gantt MIT only, scheduling in API. Charts: Recharts. Real-time: Socket.IO + Valkey adapter. E-mail: SMTP (Nodemailer) + React Email; Mailpit locally. Logs: `nestjs-pino`, request ID, no personal data. Semantic search: local `multilingual-e5-small` via Transformers.js – never an external AI API.
+- Data ([§14.8](docs/spec/14-architecture.md)): UUIDv7 keys; `timestamptz` UTC, ISO 8601 in API; tickets never deleted, no generic soft delete; side effects via transactional outbox, idempotent handlers; errors as Problem Details with stable codes; uploads via quarantine + scan + signed URLs.
 - Background work (webhooks, SLA, scanning, e-mail, imports) runs in the Worker via BullMQ on Valkey. Object storage: SeaweedFS by default (any S3-compatible storage via config). Do not use Redis or MinIO.
 - Everything runs in Docker Compose; the system must run on any Linux VPS.
 
@@ -74,7 +78,8 @@ English for code, identifiers, comments, commits, PR descriptions, README and te
 
 - Small tasks; one task = one focused PR referencing spec sections (e.g. `§5.2`).
 - Never push to `main`; PRs only.
-- Conventional Commits; branch names `KEY-123-short-description`.
+- Trunk-based, squash merge. Conventional Commits with scopes from the closed list (`web`, `server`, `ui`, `contracts`, `i18n`, `spec`, `plan`, `agents`, `brand`, `ci`, `deps`, `release`); branch names `KEY-123-short-description`.
+- ADRs in `docs/adr/NNNN-title.md` (MADR). Tests: integration against real PostgreSQL/Valkey (Testcontainers), external HTTP via MSW, data via factories; never mock the database.
 - CI gates: format, lint, strict type check, spec consistency check, Lighthouse mobile budget, unit/integration/E2E tests with coverage threshold, accessibility tests, dependency review and vulnerability audit, secret scanning, SAST, build.
 - No access to production secrets or data; use test data.
 - Other agents may work in parallel: stay within the task scope and rebase on `main` before opening a PR.

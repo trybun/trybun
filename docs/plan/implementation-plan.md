@@ -41,22 +41,23 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 
 | # | Group | Task | Spec |
 |---|---|---|---|
-| [ ] S0-01 | 1 | Monorepo scaffold: pnpm workspaces, Turborepo, apps `web` (Next.js) and `server` (NestJS with two entry points: API `main.ts` and Worker `worker.ts`), packages `ui`, `contracts`, `tsconfig`, `eslint-config` as internal packages under the `@trybun/` npm scope, lint rules for package boundaries and naming conventions (identifiers, file names); Zod in `@trybun/contracts`, `nestjs-zod` with global `ZodValidationPipe` in `server`, Zod validation of environment variables at start-up of `server` and `web`; TypeScript `strict`; lint and formatting; `README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`, `.ai/memory/`, `.ai/specs/` (with `README.md`, `TEMPLATE.md`, `implemented/`, `archive/`), `.ai/skills/` | §1.4, §2.5, §2.7, §14.2, §14.4, §14.6, §14.7 |
-| [ ] S0-02 | 2 | CI pipeline in GitHub Actions: format, lint, type check, unit tests with coverage threshold, build, dependency review and vulnerability audit blocking new high/critical issues, `--frozen-lockfile`, secret scanning, SAST, specification consistency check (links and `§` references); branch protection on `main`; Conventional Commits check | §2.8, §2.13 |
+| [ ] S0-01 | 1 | Monorepo scaffold: pnpm workspaces, Turborepo, apps `web` (Next.js) and `server` (NestJS with two entry points: API `main.ts` and Worker `worker.ts`), packages `ui`, `contracts`, `tsconfig`, `eslint-config` as internal packages under the `@trybun/` npm scope, lint rules for package boundaries and naming conventions (identifiers, file names); Zod in `@trybun/contracts`, `nestjs-zod` with global `ZodValidationPipe` in `server`, Zod validation of environment variables at start-up of `server` and `web`; TypeScript `strict`; lint and formatting; `README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`, `.ai/memory/`, `.ai/specs/` (with `README.md`, `TEMPLATE.md`, `implemented/`, `archive/`), `.ai/skills/`; `packages/i18n`; `docs/adr/` with index and first ADRs for the stack decisions; closed list of commit scopes; squash-merge-only setting | §1.4, §2.5, §2.7, §14.2, §14.4, §14.6, §14.7, §2.13 |
+| [ ] S0-02 | 2 | CI pipeline in GitHub Actions: format, lint, type check, unit tests with coverage threshold, build, dependency review and vulnerability audit blocking new high/critical issues, `--frozen-lockfile`, secret scanning, SAST, specification consistency check (links and `§` references); branch protection on `main`; Conventional Commits check; integration test setup with Testcontainers (PostgreSQL, Valkey) and MSW | §2.8, §2.13, §2.13 |
 | [ ] S0-03 | 2 | Docker Compose for development and production: services `web`, `api` and `worker` (the last two from the same `server` image with different commands), PostgreSQL (pgvector, Polish dictionary), Valkey, SeaweedFS (profile), Keycloak, Caddy, ClamAV; named volumes, log rotation, memory limits, health checks, internal network | §14.6, §14.1, §14.4, §15.3, §15.9 |
-| [ ] S0-04 | 2 | Prisma setup with snake_case database mapping (`@@map`/`@map`) and a schema check in CI (database types mapped to Zod schemas in `@trybun/contracts` only where they cross a boundary): base schema, migration workflow, migrations as a one-off Compose service; seed data for tests | §14.4, §15.7 |
-| [ ] S0-05 | 3 | Keycloak configuration as code: realm, clients, login with GitHub (team) and e-mail/password + Microsoft/Google (end users), mandatory 2FA for team, translated login screens; API token validation in NestJS | §7.4, §15.5 |
-| [ ] S0-06 | 3 | Internationalization infrastructure: EN/PL resources in web, API messages and e-mail templates; language detection and user setting; locale-aware dates/numbers and time zones | §13.1 |
+| [ ] S0-04 | 2 | Prisma setup with snake_case database mapping (`@@map`/`@map`) and a schema check in CI (database types mapped to Zod schemas in `@trybun/contracts` only where they cross a boundary): base schema, migration workflow, migrations as a one-off Compose service; seed data for tests; UUIDv7 primary keys, `timestamptz` in UTC, `outbox_events` table and outbox publisher in the Worker, test data factories and deterministic demo dataset | §14.4, §15.7, §14.8 |
+| [ ] S0-05 | 3 | Keycloak configuration as code: realm, clients, login with GitHub (team) and e-mail/password + Microsoft/Google (end users), mandatory 2FA for team, translated login screens; API token validation in NestJS; Auth.js with the Keycloak provider in `web` (secure session cookie), JWT verification against the Keycloak JWKS in `server`, invitation link binding the GitHub account for team members, break-glass first Administrator | §7.4, §15.5, §7.4, §14.4 |
+| [ ] S0-06 | 3 | Internationalization infrastructure: EN/PL resources in web, API messages and e-mail templates; language detection and user setting; locale-aware dates/numbers and time zones; `next-intl` in `web`, ICU message catalogues in `@trybun/i18n` used by `web` and `server` | §13.1, §14.2 |
 | [ ] S0-07 | 3 | Component library `packages/ui` (`@trybun/ui`): shadcn/ui initialized in the monorepo package (CLI configuration, aliases); Tailwind CSS 4 theme with design tokens based on the brand colours and typeface from `docs/brand/` (light and dark), class-variance-authority and tailwind-merge, lint rule against arbitrary values, Prettier class sorting; Radix UI primitives, Storybook with accessibility addon, light/dark themes; first components added from shadcn/ui and adapted to the tokens, Rule 9 and translations (button, input, select, dialog, drawer/bottom sheet, dropdown menu, badge, toast via Sonner), each shown in phone, tablet and desktop viewports in Storybook | §1.4, §2.6, §14.2, §13.4 |
-| [ ] S0-08 | 4 | Application shell, mobile-first: responsive layout (phone, tablet, desktop), navigation, header with search button, user menu, language switch, help icon slot, notification bell slot; web app manifest with brand icons; E2E test setup (Playwright + axe) with phone, tablet and desktop device profiles; Lighthouse mobile budget in CI | §2.2, §2.9, §13.4 |
+| [ ] S0-08 | 4 | Application shell, mobile-first: responsive layout (phone, tablet, desktop), navigation, header with search button, user menu, language switch, help icon slot, notification bell slot; web app manifest with brand icons; E2E test setup (Playwright + axe) with phone, tablet and desktop device profiles; Lighthouse mobile budget in CI; typed API client generated from OpenAPI (`openapi-typescript` + `openapi-fetch`) with TanStack Query; Caddy routing `/api` to the API on the same domain | §2.2, §2.9, §13.4, §14.4 |
 | [ ] S0-09 | 4 | Documentation infrastructure: docs-as-code structure (Diátaxis, EN/PL, per audience), in-app help viewer with contextual links and search | §2.3 |
 | [ ] S0-10 | 4 | Product tour infrastructure: tour definitions, `data-tour` targets, show-once tracking per user, restart from help menu, E2E check that targets exist; tour "First login" | §2.4 |
 | [ ] S0-11 | 5 | Release pipeline: release-please (release PR, SemVer from Conventional Commits, `CHANGELOG.md`, support for `release/X.Y.x` maintenance branches and `-rc` pre-releases), SemVer tags, image vulnerability scan blocking critical issues, SBOM (CycloneDX or SPDX) attached to releases, images to `ghcr.io/trybun/<service>`, `CHANGELOG.md` from Conventional Commits, GitHub Release with deployment package; image tags `X.Y.Z`, `X.Y`, `X`; version in `/health` and on the "About" page | §2.11, §15.4 |
 | [ ] S0-12 | 5 | Install script and first-run wizard: prerequisite checks, generated secrets, `.env`, one-time setup token, first Administrator with 2FA | §15.5, §15.6 |
 | [ ] S0-13 | 5 | Update and restore scripts with automatic pre-update backup; backup service to external S3 (encrypted, retention); restore test procedure | §13.6, §15.7, §15.10 |
-| [ ] S0-14 | 6 | Security baseline: HTTPS only, CSRF protection, session expiry, rate limiting, security headers; administrative audit log (infrastructure and first entries) | §13.5 |
+| [ ] S0-14 | 6 | Security baseline: HTTPS only, CSRF protection, session expiry, rate limiting, security headers; administrative audit log (infrastructure and first entries); strict CSP with nonces, HSTS and other security headers; `@nestjs/throttler` with Valkey storage | §13.5, §13.5 |
 | [ ] S0-15 | 1 | Open source setup: `LICENSE` (MIT), SPDX identifiers, `CONTRIBUTING.md` (incl. DCO and AI contribution policy), `CODE_OF_CONDUCT.md` (Contributor Covenant), `SECURITY.md`, issue forms, PR template, `CODEOWNERS`, labels, GitHub Discussions | §16.1–§16.4 |
 | [ ] S0-16 | 2 | Repository security and contribution checks: DCO check and dependency license check in CI, no secrets for fork PR workflows, Dependabot (alerts, security updates, grouped weekly version updates with 7-day cooldown, GitHub Actions pinned to SHA and base images pinned to digest), pnpm `onlyBuiltDependencies`, private vulnerability reporting, mandatory 2FA in the GitHub organization | §2.10, §16.1, §16.3, §16.5 |
+| [ ] S0-17 | 3 | Error handling and observability baseline: Problem Details with stable error codes for the whole API, error-code translation in `web`, `nestjs-pino` JSON logs with request ID propagated to Worker jobs, `/health` and `/health/ready` | §14.8 |
 
 ---
 
@@ -78,18 +79,18 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 | [ ] S1-01 | 1 | Projects: model, key, CRUD for Administrator, project membership with per-project team roles | §3.1, §7.1, §7.2 |
 | [ ] S1-02 | 1 | Organizations: model, e-mail domains, project access, membership; hiding organization UI when none exist | §7.3 |
 | [ ] S1-03 | 2 | Invitations and accounts: invite by e-mail (Keycloak), domain-based organization assignment, deactivation, user settings (language, time zone) | §7.4 |
-| [ ] S1-04 | 2 | Permission layer in the API: roles, hierarchy, policy checks for every endpoint, visibility filtering in queries; permission matrix as executable tests | §7.5, §14.4 |
+| [ ] S1-04 | 2 | Permission layer in the API: roles, hierarchy, policy checks for every endpoint, visibility filtering in queries; permission matrix as executable tests; implemented with CASL and `@casl/prisma` (one definition for action checks and query filters) | §7.5, §14.4, §14.4 |
 | [ ] S1-05 | 3 | Ticket model: fields, per-project sequential identifiers, source, type, priority, requester, assignee; activity events for every field change | §3.2, §4.5 |
 | [ ] S1-06 | 3 | Statuses: internal and public statuses, mapping, transition rules (initial statuses, reason for `rejected`, link for `duplicate`, return from `waiting_for_requester`, reopen) | §4.1–§4.4 |
-| [ ] S1-07 | 4 | GFM editor component: toolbar, write/preview, task lists, code highlighting, tables, shortcuts; OWASP-compliant HTML sanitization | §6.2 |
-| [ ] S1-08 | 4 | Attachments: upload to S3 storage, allowlist, size limit, ClamAV scanning in the Worker with "Checking…" state, EXIF stripping, access checks, download disposition | §13.3 |
+| [ ] S1-07 | 4 | GFM editor component: toolbar, write/preview, task lists, code highlighting, tables, shortcuts; OWASP-compliant HTML sanitization; implemented as textarea + toolbar + preview (no WYSIWYG); rendering with `react-markdown`, `remark-gfm`, `rehype-sanitize`; same unified pipeline on the server for e-mails | §6.2, §14.2 |
+| [ ] S1-08 | 4 | Attachments: upload to S3 storage, allowlist, size limit, ClamAV scanning in the Worker with "Checking…" state, EXIF stripping, access checks, download disposition; upload through the API into quarantine, release after scan, downloads via short-lived signed URLs | §13.3, §14.4 |
 | [ ] S1-09 | 5 | End-user portal: project home, simplified ticket form with visibility switch and template placeholder, "my tickets", ticket view with public status and public timeline | §3.3, §3.4, §5.1, §5.4 |
 | [ ] S1-10 | 5 | Team ticket view and full form: all fields, type-dependent templates, assignment rules, internal statuses, full activity timeline with "hide events" toggle | §3.3, §3.4, §4.5 |
 | [ ] S1-11 | 5 | Visibility: `only_me`, `my_organization`, `all_customers` with team approval, shared tickets, widening/narrowing rules, warning text | §5.1–§5.4 |
-| [ ] S1-12 | 6 | Comments and internal notes: kinds, default internal for team, visual distinction, `@mentions` with scope rules | §6.1 |
+| [ ] S1-12 | 6 | Comments and internal notes: kinds, default internal for team, visual distinction, `@mentions` with scope rules; editing with edit history and deleting of comments and descriptions, permission rules | §6.1, §6.1, §7.5 |
 | [ ] S1-13 | 6 | Team list view: filters, sorting, predefined saved views, bulk actions | §8.1 |
-| [ ] S1-14 | 6 | Kanban board: status columns, `waiting_for_requester` column, recent `done` only, card menu for `rejected`/`duplicate`, drag with keyboard alternative, optional WIP limits | §8.2, §13.4 |
-| [ ] S1-15 | 7 | Watching and notifications: automatic/manual watchers, in-app notification center, outgoing e-mails in recipient's language, batching window, no self-notifications, never internal events to end users | §6.4, §6.5, §6.7 |
+| [ ] S1-14 | 6 | Kanban board: status columns, `waiting_for_requester` column, recent `done` only, card menu for `rejected`/`duplicate`, drag with keyboard alternative, optional WIP limits; drag and drop with `dnd-kit` (pointer, touch, keyboard) | §8.2, §13.4, §14.2 |
+| [ ] S1-15 | 7 | Watching and notifications: automatic/manual watchers, in-app notification center, outgoing e-mails in recipient's language, batching window, no self-notifications, never internal events to end users; outgoing e-mail via SMTP (Nodemailer) with React Email templates, Mailpit in local environment; notifications published through the transactional outbox; live updates via Socket.IO gateway with Valkey adapter | §6.4, §6.5, §6.7, §14.2, §14.8 |
 | [ ] S1-16 | 7 | GDPR baseline: self-service data export (JSON), deletion request, anonymization by Administrator, retention setting with automatic anonymization job, audit log entries | §13.2, §13.5 |
 | [ ] S1-17 | 8 | Ticket templates management for the Administrator (EN/PL versions) | §3.4 |
 | [ ] S1-18 | 8 | Tours and user documentation for MVP views: creating a ticket, Kanban board; reference pages for statuses, visibility and permissions | §2.3, §2.4 |
@@ -115,7 +116,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 | [ ] S2-09 | 4 | Labels: per-project labels, inline creation, management by Project manager, reserved prefixes, filters | §3.5, §8.1 |
 | [ ] S2-10 | 5 | User-defined saved views | §8.1 |
 | [ ] S2-11 | 5 | Notification settings per event and channel for team members, with defaults | §6.6 |
-| [ ] S2-12 | 5 | Incoming e-mail replies through the e-mail provider webhook, matching ticket and sender, rejection of unknown senders | §6.3 |
+| [ ] S2-12 | 5 | Incoming e-mail replies through the e-mail provider webhook, matching ticket and sender, rejection of unknown senders; incoming e-mail through an adapter interface with a first provider adapter | §6.3, §6.3 |
 
 ---
 
@@ -149,7 +150,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 | [ ] S4-04 | 3 | Business calendars and SLA policies (Administrator), assignment to organizations and project default | §9.1–§9.3 |
 | [ ] S4-05 | 4 | SLA engine in the Worker: time counting in working hours, pause, priority change, reopen; at-risk and breached events | §9.4, §9.5 |
 | [ ] S4-06 | 5 | SLA presentation: ticket countdown, list column and "SLA at risk" view, Kanban badge, triage ordering; notifications | §9.5, §6.6 |
-| [ ] S4-07 | 5 | SLA reports for Project manager and Administrator | §9.6 |
+| [ ] S4-07 | 5 | SLA reports for Project manager and Administrator; charts with Recharts | §9.6, §14.2 |
 
 ---
 
@@ -162,7 +163,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 | # | Group | Task | Spec |
 |---|---|---|---|
 | [ ] S5-01 | 1 | Ticket start/due dates and dependency scheduling logic (finish-to-start, automatic shifting, cycle prevention) | §3.2, §10.4 |
-| [ ] S5-02 | 2 | Gantt chart view: bars, milestones, today line, zoom levels, parent summary bars, collapse/expand | §10.4 |
+| [ ] S5-02 | 2 | Gantt chart view: bars, milestones, today line, zoom levels, parent summary bars, collapse/expand; SVAR React Gantt (MIT edition); scheduling logic in the API | §10.4, §14.2 |
 | [ ] S5-03 | 3 | Editing on the chart: drag to move/resize, drag connectors for dependencies, keyboard/menu alternatives | §10.4, §13.4 |
 | [ ] S5-04 | 3 | "Show unscheduled" panel with drag-to-schedule, remembered per user; warnings; tour | §10.4, §2.4 |
 
@@ -193,7 +194,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 
 | # | Group | Task | Spec |
 |---|---|---|---|
-| [ ] S7-01 | 1 | Semantic search with pgvector: embeddings, indexing job in the Worker, hybrid ranking with full-text; used by similar detection, portal and global search | §5.6 |
+| [ ] S7-01 | 1 | Semantic search with pgvector: embeddings, indexing job in the Worker, hybrid ranking with full-text; used by similar detection, portal and global search; embeddings computed locally in the Worker with Transformers.js and `multilingual-e5-small` (384 dimensions) | §5.6, §14.2 |
 | [ ] S7-02 | 2 | Accessibility audit against WCAG 2.1 AA (and 2.5.7) of all views; fixes | §13.4 |
 | [ ] S7-03 | 2 | Security review against OWASP ASVS; fixes; audit log completeness check | §13.5 |
 | [ ] S7-04 | 3 | Documentation completeness review (Diátaxis, EN/PL, all audiences) and tour review | §2.3, §2.4 |

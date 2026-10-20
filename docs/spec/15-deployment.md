@@ -6,6 +6,12 @@ The system must run on **any Linux VPS**, without depending on services of a spe
 
 Development and test environments (e.g. a VPS at OVH) use the same Compose file as production, with an additional override file for development settings. What is tested is exactly what goes to production.
 
+| Environment | Purpose | Data |
+|---|---|---|
+| **Local** | Development on the developer's machine or dev VPS; includes Mailpit to capture all outgoing e-mail | Seed and demo data |
+| **Test** | Every release candidate (`-rc`, Rule 11) is deployed here before release | Demo data, never production data |
+| **Production** | Customer installations | Real data |
+
 ## 15.2 Server requirements
 
 - Linux with Docker Engine and the Docker Compose plugin.
@@ -58,7 +64,7 @@ Installing on a new server:
 - Never overwrites an existing `.env`, so re-running it is safe.
 - Finally starts the system and prints the first-run wizard URL with a **one-time setup token**.
 
-Optional settings (e-mail provider, S3 storage for backups, GitHub App) can be filled in `.env` now or later.
+Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3 storage for backups, GitHub App) can be filled in `.env` now or later. Until SMTP is configured, the system works but sends no e-mails, and the Administrator panel shows a warning.
 
 **Automatic Keycloak configuration:**
 
