@@ -52,4 +52,4 @@
 - Automatic backups of the database and the object storage at least once a day, encrypted and stored in a different location than the system ([§15.10](15-deployment.md)).
 - Backup retention configurable (default 30 days).
 - Regular restore tests from backups.
-- Availability monitoring (health checks) and structured technical logs. The API health endpoint (`/health`) also reports the system version (Rule 11).
+- Availability monitoring (health checks) and structured technical logs. Health endpoints (`/health`, `/health/ready`) are defined in [§17.2](17-conventions.md); `/health` also reports the system version (Rule 11).

@@ -92,11 +92,11 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Maintenance branch | – | – | `release/X.Y.x` branch for PATCH releases without new features (Rule 11) |
 | SBOM | – | – | Software bill of materials attached to every release (Rule 10) |
 | Cooldown | – | – | Minimum age (7 days) of a dependency version before a regular update (Rule 10) |
-| Transactional outbox | `outbox_event` | – | Event stored in the same transaction as the change and published by the Worker ([§14.8](14-architecture.md)) |
+| Transactional outbox | `outbox_event` | – | Event stored in the same transaction as the change and published by the Worker ([§17.2](17-conventions.md)) |
 | ADR | – | – | Architecture Decision Record in `docs/adr/` ([§2.13](02-agent-rules.md)) |
 | Break-glass account | – | – | The first Administrator account with password and 2FA, usable without GitHub sign-in ([§7.4](07-users-organizations-permissions.md)) |
 | BFF (Backend for Frontend) | – | – | The web application's proxy endpoint `/api/v1/*` that attaches the user's token on the server side ([§14.4](14-architecture.md)) |
-| Optimistic locking | `version` | – | Conflict detection with `ETag`/`If-Match` when two people edit the same record ([§14.8](14-architecture.md)) |
+| Optimistic locking | `version` | – | Conflict detection with `ETag`/`If-Match` when two people edit the same record ([§17.2](17-conventions.md)) |
 | Archived | `state = archived` | Archived / Zarchiwizowane | Read-only project or organization that can no longer be changed ([§7.3](07-users-organizations-permissions.md)) |
 | Resolution confirmation | `project.confirm_resolution` | – | Optional request to the requester to confirm that the problem is solved ([§4.3](04-ticket-lifecycle.md)) |
 | Audit log | `audit_log_entry` | Audit log / Dziennik zdarzeń | Immutable log of administrative actions ([§13.5](13-non-functional.md)) |
