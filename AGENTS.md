@@ -74,6 +74,15 @@ English for code, identifiers, comments, commits, PR descriptions, README and te
 - Conventional Commits; branch names `KEY-123-short-description`.
 - CI gates: format, lint, strict type check, spec consistency check, Lighthouse mobile budget, unit/integration/E2E tests with coverage threshold, accessibility tests, dependency review and vulnerability audit, secret scanning, SAST, build.
 - No access to production secrets or data; use test data.
+- Other agents may work in parallel: stay within the task scope and rebase on `main` before opening a PR.
+
+## Working practices
+
+- **Plan first, re-plan when it goes wrong.** Plan non-trivial tasks before coding (change spec or PR description). If implementation goes sideways, stop and re-plan – don't pile up patches.
+- **Learn from every correction.** Specific pitfall → `.ai/memory/`. General working rule → propose an `AGENTS.md` change in the PR.
+- **Repeated work → skill.** Doing the same steps again? Propose a skill in `.ai/skills/`.
+- **Fix the cause, never the gate.** Never disable/skip/weaken tests, lower thresholds, remove CI gates or add suppressions (`@ts-ignore`, lint-disable) to go green. A wrong gate is changed only as a separate, explained change for approval.
+- **Self-review before the PR.** Review your own diff against the spec and the Definition of Done: *knowing what you know now, is there a simpler, cleaner solution?* If yes, rework it first.
 - The project is open source under MIT ([`docs/spec/16-open-source.md`](docs/spec/16-open-source.md)). Every commit needs a DCO `Signed-off-by` line. Never add conditions to the license text and never add prompts asking for donations in the application, installer or scripts.
 
 ## Commands

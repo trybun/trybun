@@ -391,6 +391,19 @@ An implementation task is done only when:
 - Agents never push directly to the main branch. The main branch is protected and accepts changes only through approved pull requests.
 - If the implementation reveals a gap or contradiction in the specification, the agent **does not resolve it on its own**: it proposes a specification change marked for human approval (Rule 8).
 - Significant technical decisions, including deliberate departures from conventions (Rule 1), are recorded as **ADRs** (Architecture Decision Records) in the repository.
+- Other agents may be working on other tasks in parallel (separate worktrees, e.g. through Cezar). Keep changes within the scope of the task and keep the branch up to date with `main` before opening a pull request.
+
+### Working practices
+
+These practices follow recommendations of the Claude Code team and apply to every agent.
+
+- **Plan first, re-plan when it goes wrong.** For a non-trivial task the agent first writes a plan (in the change specification or the pull request description) and only then implements it. If the implementation goes sideways – repeated failures, growing workarounds, a design that no longer fits – the agent **stops, re-plans** and updates the plan or the change specification instead of pushing through with patches.
+- **Learn from every correction.** When a human corrects the agent, the agent makes sure the mistake does not repeat:
+  - a specific pitfall or technique → project memory (`.ai/memory/`, Rule 7),
+  - a general working rule → a proposed change to `AGENTS.md` in the pull request, for human approval.
+- **Turn repeated work into skills.** When the agent performs the same sequence of steps repeatedly, it proposes a project skill in `.ai/skills/` instead of repeating the steps by hand.
+- **Fix the cause, never the gate.** When CI fails, the agent reads the logs and fixes the cause. It **never** disables, skips or weakens tests, lowers coverage or performance thresholds, removes quality gates or adds suppressions (e.g. lint-disable comments, `@ts-ignore`) to make CI pass. If a gate itself is wrong, the agent proposes changing it as a separate, explained change for human approval.
+- **Self-review before the pull request.** Before opening a pull request the agent reviews its own diff against the specification and the Definition of Done and asks: *knowing everything I know now, is there a simpler, cleaner solution?* If so, it reworks the change before handing it over for review.
 
 ### Automated quality gates
 
