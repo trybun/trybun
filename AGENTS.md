@@ -13,7 +13,7 @@ Instructions for AI coding agents working in the **Trybun** repository. This pro
 - Terms and code identifiers: [`docs/spec/00-glossary.md`](docs/spec/00-glossary.md). Always use these identifiers in code.
 - Full rules: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). This file is a summary.
 - Implementation plan and task status: [`docs/plan/implementation-plan.md`](docs/plan/implementation-plan.md). Mark a task `[x]` in the same PR that completes it.
-- If the spec has a gap or contradiction, **do not decide yourself** – report it and propose a spec change.
+- Keep the spec up to date in the same PR (Rule 8). If it has a gap or contradiction, **do not decide yourself** – propose a spec change marked for approval.
 
 ## Rules (in order of precedence)
 
@@ -24,8 +24,12 @@ Instructions for AI coding agents working in the **Trybun** repository. This pro
 5. **README.md always current.** Update it in the same PR as the change it describes.
 6. **Reusable components.** Check `@trybun/ui` (`packages/ui`) and shared packages first; presentational UI components with Storybook entries, design tokens, no hard-coded text; no speculative options (YAGNI).
 7. **Project memory in the repo.** Store knowledge gained during work (pitfalls, non-obvious behavior, proven solutions) only in `docs/ai/memory/` and keep the index `MEMORY.md` current. Tool-specific memory outside the repo (e.g. Claude Code auto memory) is disabled for this project (`.claude/settings.json`: `"autoMemoryEnabled": false`). Memory never overrides the spec; it does not duplicate the spec or ADRs. Write it in the same PR, in English, without secrets or personal data.
+8. **Specification always current.** Update `docs/spec/` in the same PR as the change. Clarifications (exact error codes, paths, limits) – update directly. Changes of requirements or behaviour, gaps and contradictions – propose in the PR as a *specification change for approval*, in a separate `docs(spec): …` commit. Keep glossary, index, `§` references, permission matrix and plan consistent. The spec says *what*, not *how*.
+9. **Phones and tablets from the start.** Every page, dialog, form and tour is mobile-first and responsive from 360 px; touch targets ≥ 44 px; no hover-only actions; dialogs become full-screen/bottom sheets on phones; Kanban one column at a time on phones; Gantt read-only on phones. E2E on phone, tablet and desktop viewports; Lighthouse mobile ≥ 90.
+10. **Dependencies secure and current.** New dependency: exists, maintained, widely used, no known vulnerabilities, MIT-compatible licence, latest stable version – and only if really needed. Security fixes immediately; other updates after a 7-day cooldown; majors as planned tasks; stable releases and Node.js LTS only. CI blocks new high/critical vulnerabilities; lockfile committed; Actions pinned to SHA, images to digest.
+11. **Versioning.** One SemVer version for the whole product, produced by release-please from Conventional Commits; a human releases by merging the release PR. Never set version numbers or edit `CHANGELOG.md` by hand. Mark breaking changes with `!`/`BREAKING CHANGE:` and describe the Administrator's steps. MAJOR = anything requiring the Administrator's attention. Public API versioned in the path, webhook events with a `version` field.
 
-Rules 2–7 are subordinate to Rule 1; Rules 3–6 are also subordinate to Rule 2.
+Rules 2–11 are subordinate to Rule 1; Rules 3–6 and 9 are also subordinate to Rule 2.
 
 ## Naming and brand
 
@@ -46,15 +50,14 @@ English for code, identifiers, comments, commits, PR descriptions, README and te
 
 ## Definition of Done
 
-1. Conventions checked (Rule 1) · 2. Shortest user path verified (Rule 2) · 3. User docs updated (Rule 3) · 4. Tour updated if affected (Rule 4) · 5. README current (Rule 5) · 6. Components reusable, Storybook entry (Rule 6) · 7. Project memory and its index updated (Rule 7) · 8. Tests added and passing · 9. All CI quality gates pass · 10. Human review approved.
+1. Conventions checked (Rule 1) · 2. Shortest user path verified (Rule 2) · 3. User docs updated (Rule 3) · 4. Tour updated if affected (Rule 4) · 5. README current (Rule 5) · 6. Components reusable, Storybook entry (Rule 6) · 7. Project memory and its index updated (Rule 7) · 8. Spec updated, requirement changes marked for approval (Rule 8) · 9. Works on phone, tablet and desktop (Rule 9) · 10. No new vulnerabilities, deps current (Rule 10) · 11. Conventional Commits, breaking changes marked (Rule 11) · 12. Tests added and passing · 13. All CI quality gates pass · 14. Human review approved.
 
 ## Workflow
 
 - Small tasks; one task = one focused PR referencing spec sections (e.g. `§5.2`).
 - Never push to `main`; PRs only.
 - Conventional Commits; branch names `KEY-123-short-description`.
-- CI gates: format, lint, strict type check, unit/integration/E2E tests with coverage threshold, accessibility tests, dependency audit, secret scanning, SAST, build.
-- Before adding a dependency, verify it exists, is maintained and widely used.
+- CI gates: format, lint, strict type check, spec consistency check, Lighthouse mobile budget, unit/integration/E2E tests with coverage threshold, accessibility tests, dependency review and vulnerability audit, secret scanning, SAST, build.
 - No access to production secrets or data; use test data.
 - The project is open source under MIT ([`docs/spec/16-open-source.md`](docs/spec/16-open-source.md)). Every commit needs a DCO `Signed-off-by` line. Never add conditions to the license text and never add prompts asking for donations in the application, installer or scripts.
 

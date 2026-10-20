@@ -42,7 +42,7 @@ In a ticket view, the end user sees "Planned: Q2 2027" (PL: „Planowane: II kwa
 
 ## 10.4 Gantt chart
 
-Visualizes how work is distributed over time. The chart shows the project's tickets grouped by milestone.
+Visualizes how work is distributed over time. On phones the chart is read-only and scheduling is done through ticket fields; tablets support full touch editing (Rule 9, [§2.9](02-agent-rules.md)). The chart shows the project's tickets grouped by milestone.
 
 ### Chart elements
 

@@ -30,6 +30,7 @@
 ## 13.4 Accessibility
 
 - Compliance with **WCAG 2.1 level AA**.
+- Touch targets of at least 44 × 44 px on phones and tablets (Rule 9, [§2.9](02-agent-rules.md)).
 - Full keyboard operation, visible focus, sufficient contrast, labels for screen readers.
 - Every drag-and-drop operation (Kanban, roadmap, Gantt chart) has an alternative without dragging, e.g. a context menu or keyboard shortcut (WCAG 2.2 criterion 2.5.7).
 - Information is never conveyed by color alone (e.g. SLA states and internal notes also have an icon or text).
@@ -37,6 +38,7 @@
 ## 13.5 Security
 
 - Reference for security requirements: **OWASP ASVS** (Rule 1).
+- Dependencies are monitored for vulnerabilities and kept up to date according to Rule 10 ([§2.10](02-agent-rules.md)).
 - HTTPS only.
 - Protection against brute-force login attempts (rate limiting), expiry of inactive sessions, CSRF protection.
 - Secrets (e.g. the GitHub App private key) are kept out of code and the repository, in a secure secret store / environment configuration ([§15.3](15-deployment.md)).
@@ -48,4 +50,4 @@
 - Automatic backups of the database and the object storage at least once a day, encrypted and stored in a different location than the system ([§15.10](15-deployment.md)).
 - Backup retention configurable (default 30 days).
 - Regular restore tests from backups.
-- Availability monitoring (health checks) and structured technical logs.
+- Availability monitoring (health checks) and structured technical logs. The API health endpoint (`/health`) also reports the system version (Rule 11).

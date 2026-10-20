@@ -2,7 +2,7 @@
 
 ## 12.1 API
 
-- **Versioned REST API** with the version in the path (`/api/v1/...`). Breaking changes are introduced only in a new version.
+- **Versioned REST API** with the version in the path (`/api/v1/...`). Breaking changes are introduced only in a new version; the previous version is deprecated with `Deprecation` and `Sunset` headers and kept for at least one more MAJOR product version (Rule 11, [§2.11](02-agent-rules.md)).
 - **OpenAPI documentation** generated automatically from the code and published with the API.
 - Conventions (Rule 1):
   - cursor-based pagination,
@@ -32,6 +32,7 @@
 ## 12.4 Outgoing webhooks
 
 - The Administrator defines a webhook: target URL, projects, subscribed events (e.g. `ticket.created`, `ticket.status_changed`, `comment.created`).
+- Every event payload contains a `version` field of its format (Rule 11).
 - Every request carries an **HMAC signature** in a header (pattern: GitHub) and a unique event identifier that lets the receiver skip duplicates.
 - "At least once" delivery: failed deliveries are retried with exponential backoff.
 - **Delivery log** with request payload, response and a "Redeliver" button.

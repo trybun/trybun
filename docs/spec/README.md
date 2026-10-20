@@ -6,7 +6,7 @@ Specification of **Trybun**, a ticket / task management system for development t
 |---|---|
 | [00-glossary.md](00-glossary.md) | Every domain term with its code identifier and EN/PL UI labels |
 | [01-overview.md](01-overview.md) | Purpose of the system, AI Engineering approach, how to use this specification, naming conventions and brand assets |
-| [02-agent-rules.md](02-agent-rules.md) | Rules 1–7 for AI agents (incl. project memory), Definition of Done, agent workflow and quality gates |
+| [02-agent-rules.md](02-agent-rules.md) | Rules 1–11 for AI agents (incl. project memory, up-to-date specification, phone/tablet support, dependency security and versioning), Definition of Done, agent workflow and quality gates |
 | [03-ticket-model.md](03-ticket-model.md) | Projects, ticket fields, forms, templates, sub-tickets, relations, labels |
 | [04-ticket-lifecycle.md](04-ticket-lifecycle.md) | Internal and public statuses, mapping, transition rules, activity timeline |
 | [05-visibility-and-search.md](05-visibility-and-search.md) | What end users see, shared tickets, portal search, similar ticket detection |

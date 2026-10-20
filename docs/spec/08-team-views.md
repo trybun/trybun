@@ -1,6 +1,6 @@
 # 08 – Team views
 
-Ways of working with tickets, modelled on GitHub Projects and Jira. Available to Developer and above. Switching between the list and the Kanban board keeps the active filters.
+Ways of working with tickets, modelled on GitHub Projects and Jira. All views work on phones and tablets according to Rule 9 ([§2.9](02-agent-rules.md)). Available to Developer and above. Switching between the list and the Kanban board keeps the active filters.
 
 ## 8.1 List
 

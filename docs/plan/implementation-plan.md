@@ -4,9 +4,9 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 
 ## How to use this plan
 
-- Every task below is meant to be **one pull request** ([§2.9](../spec/02-agent-rules.md)). If a task turns out larger, split it before starting and update this plan in the same PR.
+- Every task below is meant to be **one pull request** ([§2.13](../spec/02-agent-rules.md)). If a task turns out larger, split it before starting and update this plan in the same PR.
 - Every task lists the specification sections it implements. Read them (and the glossary) before starting.
-- Every task follows the **Definition of Done** ([§2.8](../spec/02-agent-rules.md)): conventions, minimum user steps, user docs, tours, README, reusable components, project memory, tests, CI gates, human review.
+- Every task follows the **Definition of Done** ([§2.12](../spec/02-agent-rules.md)): conventions, minimum user steps, user docs, tours, README, reusable components, project memory, up-to-date specification, phone and tablet support, dependency security, versioning, tests, CI gates, human review.
 - Tasks within a stage are listed in a sensible order; tasks marked with the same group number can be done in parallel.
 - A stage is finished when all its tasks are merged and its **exit criteria** are met. Each finished stage is released ([§15.4](../spec/15-deployment.md)) and deployed to the test environment.
 - Task status is tracked in this file: `[ ]` open, `[x]` done.
@@ -41,21 +41,21 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 | # | Group | Task | Spec |
 |---|---|---|---|
 | [ ] S0-01 | 1 | Monorepo scaffold: pnpm workspaces, Turborepo, apps `web` (Next.js), `api` and `worker` (NestJS), packages `shared` (Zod schemas, types), `ui`, all under the `@trybun/` npm scope; TypeScript `strict`; lint and formatting; `README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`, `docs/ai/memory/` | §1.4, §2.5, §2.7, §14.2 |
-| [ ] S0-02 | 2 | CI pipeline in GitHub Actions: format, lint, type check, unit tests with coverage threshold, build, dependency audit, secret scanning, SAST; branch protection on `main`; Conventional Commits check | §2.9 |
+| [ ] S0-02 | 2 | CI pipeline in GitHub Actions: format, lint, type check, unit tests with coverage threshold, build, dependency review and vulnerability audit blocking new high/critical issues, `--frozen-lockfile`, secret scanning, SAST, specification consistency check (links and `§` references); branch protection on `main`; Conventional Commits check | §2.8, §2.13 |
 | [ ] S0-03 | 2 | Docker Compose for development and production: PostgreSQL (pgvector, Polish dictionary), Redis, MinIO (profile), Keycloak, Caddy, ClamAV; named volumes, log rotation, memory limits, health checks, internal network | §14.1, §14.4, §15.3, §15.9 |
 | [ ] S0-04 | 2 | Prisma setup: base schema, migration workflow, migrations as a one-off Compose service; seed data for tests | §14.4, §15.7 |
 | [ ] S0-05 | 3 | Keycloak configuration as code: realm, clients, login with GitHub (team) and e-mail/password + Microsoft/Google (end users), mandatory 2FA for team, translated login screens; API token validation in NestJS | §7.4, §15.5 |
 | [ ] S0-06 | 3 | Internationalization infrastructure: EN/PL resources in web, API messages and e-mail templates; language detection and user setting; locale-aware dates/numbers and time zones | §13.1 |
-| [ ] S0-07 | 3 | Component library `packages/ui` (`@trybun/ui`): design tokens based on the brand colours and typeface from `docs/brand/`, Radix UI primitives, Storybook with accessibility addon, light/dark themes; first components (button, input, select, dialog, menu, badge, toast) | §1.4, §2.6, §13.4 |
-| [ ] S0-08 | 4 | Application shell: layout, navigation, header, user menu, language switch, help icon slot, notification bell slot; E2E test setup (Playwright + axe) | §2.2, §13.4 |
+| [ ] S0-07 | 3 | Component library `packages/ui` (`@trybun/ui`): design tokens based on the brand colours and typeface from `docs/brand/`, Radix UI primitives, Storybook with accessibility addon, light/dark themes; first components (button, input, select, dialog/bottom sheet, menu, badge, toast), each shown in phone, tablet and desktop viewports in Storybook | §1.4, §2.6, §13.4 |
+| [ ] S0-08 | 4 | Application shell, mobile-first: responsive layout (phone, tablet, desktop), navigation, header with search button, user menu, language switch, help icon slot, notification bell slot; web app manifest with brand icons; E2E test setup (Playwright + axe) with phone, tablet and desktop device profiles; Lighthouse mobile budget in CI | §2.2, §2.9, §13.4 |
 | [ ] S0-09 | 4 | Documentation infrastructure: docs-as-code structure (Diátaxis, EN/PL, per audience), in-app help viewer with contextual links and search | §2.3 |
 | [ ] S0-10 | 4 | Product tour infrastructure: tour definitions, `data-tour` targets, show-once tracking per user, restart from help menu, E2E check that targets exist; tour "First login" | §2.4 |
-| [ ] S0-11 | 5 | Release pipeline: SemVer tags, images to `ghcr.io/trybun/<service>`, `CHANGELOG.md` from Conventional Commits, GitHub Release with deployment package | §15.4 |
+| [ ] S0-11 | 5 | Release pipeline: release-please (release PR, SemVer from Conventional Commits, `CHANGELOG.md`, support for `release/X.Y.x` maintenance branches and `-rc` pre-releases), SemVer tags, image vulnerability scan blocking critical issues, SBOM (CycloneDX or SPDX) attached to releases, images to `ghcr.io/trybun/<service>`, `CHANGELOG.md` from Conventional Commits, GitHub Release with deployment package; image tags `X.Y.Z`, `X.Y`, `X`; version in `/health` and on the "About" page | §2.11, §15.4 |
 | [ ] S0-12 | 5 | Install script and first-run wizard: prerequisite checks, generated secrets, `.env`, one-time setup token, first Administrator with 2FA | §15.5, §15.6 |
 | [ ] S0-13 | 5 | Update and restore scripts with automatic pre-update backup; backup service to external S3 (encrypted, retention); restore test procedure | §13.6, §15.7, §15.10 |
 | [ ] S0-14 | 6 | Security baseline: HTTPS only, CSRF protection, session expiry, rate limiting, security headers; administrative audit log (infrastructure and first entries) | §13.5 |
 | [ ] S0-15 | 1 | Open source setup: `LICENSE` (MIT), SPDX identifiers, `CONTRIBUTING.md` (incl. DCO and AI contribution policy), `CODE_OF_CONDUCT.md` (Contributor Covenant), `SECURITY.md`, issue forms, PR template, `CODEOWNERS`, labels, GitHub Discussions | §16.1–§16.4 |
-| [ ] S0-16 | 2 | Repository security and contribution checks: DCO check and dependency license check in CI, no secrets for fork PR workflows, Dependabot, private vulnerability reporting, mandatory 2FA in the GitHub organization | §16.1, §16.3, §16.5 |
+| [ ] S0-16 | 2 | Repository security and contribution checks: DCO check and dependency license check in CI, no secrets for fork PR workflows, Dependabot (alerts, security updates, grouped weekly version updates with 7-day cooldown, GitHub Actions pinned to SHA and base images pinned to digest), pnpm `onlyBuiltDependencies`, private vulnerability reporting, mandatory 2FA in the GitHub organization | §2.10, §16.1, §16.3, §16.5 |
 
 ---
 

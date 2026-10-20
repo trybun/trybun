@@ -21,10 +21,23 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 
 ## 15.4 Releases
 
-- Versions follow **Semantic Versioning**: `MAJOR.MINOR.PATCH`. A MAJOR change means changes that require the Administrator's attention.
+- Versions follow **Semantic Versioning** and are produced by release-please from Conventional Commits; a human releases by merging the release pull request. Full rules: Rule 11 ([§2.11](02-agent-rules.md)).
 - Images are built **in CI** (GitHub Actions), tagged with the version and published to GitHub Container Registry as `ghcr.io/trybun/<service>` ([§1.4](01-overview.md)). The server only pulls ready images.
 - Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the install and update scripts and an installation guide (`INSTALL.md`). Source code is not needed for installation.
 - `CHANGELOG.md` follows the *Keep a Changelog* convention and is generated from commit messages in the Conventional Commits format. Release notes clearly mark breaking changes and any manual steps.
+
+### Releasing a PATCH version (example)
+
+1. Fixes are merged into `main` as `fix:` commits through reviewed pull requests.
+2. release-please updates its release pull request (e.g. "release 1.4.1") with the version and changelog entry.
+3. Optionally, the build from `main` is deployed to the test environment and verified.
+4. The maintainer merges the release pull request – the only manual decision.
+5. Automation creates the tag `v1.4.1` and the GitHub Release, builds and scans the images `ghcr.io/trybun/<service>:1.4.1` (and moves `:1.4`, `:1`), attaches the SBOM and the deployment package.
+6. Administrators run the update script ([§15.7](#157-updates)).
+
+If `main` already contains `feat:` commits, the release becomes a MINOR version. To release only a fix, use a maintenance branch `release/1.4.x` as described in Rule 11.
+
+- Built images are scanned for vulnerabilities and every release includes an SBOM; no release ships with known critical vulnerabilities ([§2.10](02-agent-rules.md)).
 - The "About" page of the Administrator panel shows the installed system version, the license and the "Support the project" link ([§16.6](16-open-source.md)).
 
 ## 15.5 Installation
