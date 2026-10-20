@@ -97,7 +97,12 @@ Per Rule 1:
 - UI components form the **project component library** (a separate monorepo package `packages/ui`, published as `@trybun/ui`), built on Radix UI primitives, not from scratch.
 - Every UI component has a **component catalog entry** (Storybook) with usage examples and all states (e.g. empty, loading, error, disabled).
 - UI components are **presentational**: no domain logic and no API calls. They receive data and actions through props. Domain logic lives in the application layer and the API ([§14.4](14-architecture.md)).
-- Styling is based on **design tokens** (colors, spacing, typography), never hard-coded values.
+- Styling uses **Tailwind CSS** ([§14.2](14-architecture.md)) and is based on **design tokens** (colors, spacing, typography, radii, shadows) defined once in the Tailwind theme (`@theme`, CSS variables). Brand colours and the typeface come from [`docs/brand/`](../brand/README.md). Rules:
+  - only theme tokens are used – no arbitrary values such as `bg-[#E0482C]` or `p-[13px]` (enforced by lint),
+  - long class lists live inside `@trybun/ui` components, never copied across views; component variants use class-variance-authority, classes are combined with tailwind-merge,
+  - class order is sorted automatically (official Prettier plugin for Tailwind CSS),
+  - dark mode is implemented through the tokens, not with separate classes in every component,
+  - no inline `style` attributes and no other styling approach (CSS-in-JS, separate CSS files per component) is mixed in.
 - Components contain no hard-coded texts. All texts come from translation resources ([§13.1](13-non-functional.md)).
 - Accessibility ([§13.4](13-non-functional.md)) is built into the component, not added at the call site.
 - On the backend, reusability means shared monorepo packages (e.g. validation schemas, types, status mapping) and NestJS modules with clearly defined interfaces.

@@ -19,7 +19,8 @@
 |---|---|
 | Language | TypeScript across the whole project |
 | Web application | Next.js + React |
-| UI components | Project component library (`packages/ui`, `@trybun/ui`) based on Radix UI; component catalog in Storybook (Rule 6) |
+| Styling | Tailwind CSS 4 with the theme defined as design tokens (CSS variables, `@theme`); class-variance-authority for component variants, tailwind-merge for combining classes |
+| UI components | Project component library (`packages/ui`, `@trybun/ui`) based on Radix UI and Tailwind CSS; component catalog in Storybook (Rule 6) |
 | API and Worker | NestJS (the Worker is a separate process using the same domain code) |
 | Database | PostgreSQL with the pgvector extension and a Polish full-text dictionary |
 | Database access | Prisma (ORM and migrations) |
@@ -38,6 +39,7 @@
 - **Next.js + React** offers the most mature component ecosystem for a highly interactive UI (Kanban, Gantt, GFM editor, keyboard shortcuts) and good internationalization support. It is the framework recommended by the React documentation for new applications.
 - **A separate NestJS backend**, because much of the logic runs outside user requests (SLA, queues, e-mail, scanning). A strongly structured framework with built-in conventions supports Rule 1.
 - **PostgreSQL** provides full-text search (first version of [§5.6](05-visibility-and-search.md)) and semantic search via pgvector (target version) without extra infrastructure.
+- **Tailwind CSS** is the most common styling approach with Next.js, and Radix UI + Tailwind is the basis of the widely used shadcn/ui pattern. Its theme is defined as design tokens (Rule 6) and its utilities are mobile-first by default (Rule 9).
 - **Prisma** is the most popular ORM in the TypeScript ecosystem, with a mature migration system, type generation and documented NestJS integration.
 - **Keycloak** provides proven login, 2FA and external login, including translated login screens. In a project delivered by AI agents it minimizes the amount of security code written in the project.
 - **A popular stack** makes it easier to find specialists and helps AI agents work effectively.
@@ -61,4 +63,5 @@
 | PostgreSQL-based queue (e.g. pg-boss) instead of Redis | Acceptable if minimizing infrastructure components becomes a priority |
 | Drizzle instead of Prisma | Rejected – lighter and closer to SQL, but less established. Raw SQL for search is needed in both cases |
 | Authentication library inside the application instead of Keycloak | Rejected – fewer infrastructure components, but more security code in the project |
+| CSS Modules or CSS-in-JS (e.g. styled-components) instead of Tailwind CSS | Rejected – CSS-in-JS adds runtime cost and fits React Server Components poorly; CSS Modules are viable but have a smaller ecosystem of ready patterns with Radix UI |
 | Services of a specific cloud provider | Rejected – the system must run on any Linux server ([15-deployment.md](15-deployment.md)) |
