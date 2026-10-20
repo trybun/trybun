@@ -20,7 +20,7 @@
 | Language | TypeScript across the whole project |
 | Web application | Next.js + React |
 | Styling | Tailwind CSS 4 with the theme defined as design tokens (CSS variables, `@theme`); class-variance-authority for component variants, tailwind-merge for combining classes |
-| UI components | Project component library (`packages/ui`, `@trybun/ui`) based on Radix UI and Tailwind CSS; component catalog in Storybook (Rule 6) |
+| UI components | Project component library (`packages/ui`, `@trybun/ui`) based on Radix UI and Tailwind CSS, using **shadcn/ui** (MIT) as the starting point: component source is copied into the library with the shadcn CLI and owned by the project; component catalog in Storybook (Rule 6) |
 | API and Worker | NestJS (the Worker is a separate process using the same domain code) |
 | Database | PostgreSQL with the pgvector extension and a Polish full-text dictionary |
 | Database access | Prisma (ORM and migrations) |
@@ -41,6 +41,7 @@
 - **Valkey** and **SeaweedFS** have permissive licenses (BSD-3-Clause, Apache 2.0) and active, vendor-neutral or community development, so the default stack contains no component with a restrictive or abandoned license (Rule 10, [§16.1](16-open-source.md)).
 - **PostgreSQL** provides full-text search (first version of [§5.6](05-visibility-and-search.md)) and semantic search via pgvector (target version) without extra infrastructure.
 - **Tailwind CSS** is the most common styling approach with Next.js, and Radix UI + Tailwind is the basis of the widely used shadcn/ui pattern. Its theme is defined as design tokens (Rule 6) and its utilities are mobile-first by default (Rule 9).
+- **shadcn/ui** is the most widely used way to build component libraries on Radix UI and Tailwind CSS. Its components are copied into the project, not installed as a dependency, so `@trybun/ui` stays fully under the project's control. It provides ready building blocks for the specification: `Command` (command palette, [§8.4](08-team-views.md)), `Drawer` (bottom sheets on phones, Rule 9), `Data Table` (list view, [§8.1](08-team-views.md)), `Sonner` (toasts), `Calendar` and date pickers.
 - **Prisma** is the most popular ORM in the TypeScript ecosystem, with a mature migration system, type generation and documented NestJS integration.
 - **Keycloak** provides proven login, 2FA and external login, including translated login screens. In a project delivered by AI agents it minimizes the amount of security code written in the project.
 - **A popular stack** makes it easier to find specialists and helps AI agents work effectively.

@@ -94,7 +94,13 @@ Rule 6 is **subordinate to Rules 1 and 2**.
 Per Rule 1:
 
 - **Check what already exists first.** Before creating a component, the agent checks the project's component library. If a similar component exists, it extends it or composes from it instead of creating a copy.
-- UI components form the **project component library** (a separate monorepo package `packages/ui`, published as `@trybun/ui`), built on Radix UI primitives, not from scratch.
+- UI components form the **project component library** (a separate monorepo package `packages/ui`, published as `@trybun/ui`), built on Radix UI primitives, not from scratch. **shadcn/ui** is the starting point ([§14.2](14-architecture.md)): if shadcn/ui offers a suitable component, it is added to `packages/ui` with the shadcn CLI and then adapted; a component is built from scratch only when shadcn/ui has nothing suitable.
+- A component copied from shadcn/ui becomes **project code** and is adapted before first use:
+  - styling uses only the project's design tokens,
+  - touch targets meet Rule 9 (at least 44 × 44 px on touch devices),
+  - all texts come from translation resources ([§13.1](13-non-functional.md)),
+  - accessibility is verified (keyboard, focus, labels, [§13.4](13-non-functional.md)),
+  - it gets a component catalog entry with all states.
 - Every UI component has a **component catalog entry** (Storybook) with usage examples and all states (e.g. empty, loading, error, disabled).
 - UI components are **presentational**: no domain logic and no API calls. They receive data and actions through props. Domain logic lives in the application layer and the API ([§14.4](14-architecture.md)).
 - Styling uses **Tailwind CSS** ([§14.2](14-architecture.md)) and is based on **design tokens** (colors, spacing, typography, radii, shadows) defined once in the Tailwind theme (`@theme`, CSS variables). Brand colours and the typeface come from [`docs/brand/`](../brand/README.md). Rules:
@@ -258,7 +264,7 @@ Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components
 | **Continuously on the main branch** (scheduled, at least daily) | Vulnerability alerts for all dependencies (GitHub Dependabot alerts), scan of container images ([§15.4](15-deployment.md)) | Opens an alert and a fix pull request |
 | **Automated update pull requests** | Dependabot: security updates immediately; patch and minor updates weekly, grouped, with a 7-day cooldown; GitHub Actions and base images included | Normal review and CI apply |
 | **Release** ([§15.4](15-deployment.md)) | Scan of the built images; a **software bill of materials (SBOM)** in CycloneDX or SPDX format is attached to the GitHub Release | **Yes**: no release with known critical vulnerabilities |
-| **Monthly** (planned task) | Review of outdated dependencies and pending major updates; planning of major upgrades | – |
+| **Monthly** (planned task) | Review of outdated dependencies and pending major updates; planning of major upgrades; review of upstream changes to components copied from shadcn/ui (`shadcn diff`) and deliberate porting of relevant fixes | – |
 
 ### Response times
 
