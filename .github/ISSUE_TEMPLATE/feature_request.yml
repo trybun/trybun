@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an idea or a change of behaviour
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Larger changes start with a change specification proposed as a pull request (see [CONTRIBUTING.md](https://github.com/trybun/trybun/blob/main/CONTRIBUTING.md)). For open questions, use [Discussions](https://github.com/trybun/trybun/discussions).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem do you want to solve?
+      description: Describe the goal of the user, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: The shortest path for the user to reach the goal, if you have one in mind.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: input
+    id: spec
+    attributes:
+      label: Related specification sections
+      placeholder: "§5.2"

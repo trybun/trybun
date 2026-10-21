@@ -1,0 +1,9 @@
+# Labels required by docs/spec/16-open-source.md §16.2. This file is a definition only:
+# GitHub does not read it. The maintainer creates the labels on the repository
+# (see CONTRIBUTING.md and the task report of S0-15).
+- name: good first issue
+  color: 7057ff
+  description: Suitable for new contributors
+- name: help wanted
+  color: 008672
+  description: Extra attention is needed from the community
