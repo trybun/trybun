@@ -7,12 +7,13 @@ Instructions for AI coding agents in the **Trybun** repository. The project is b
 1. Read the project memory index [`.ai/memory/MEMORY.md`](.ai/memory/MEMORY.md); open topic files only when relevant.
 2. Read the specification sections your task refers to (index: [`docs/spec/README.md`](docs/spec/README.md)) and the change specification in `.ai/specs/`, if the task has one.
 3. Use the code identifiers from the [glossary](docs/spec/00-glossary.md).
+4. Before writing code, look up its pattern in the [pattern catalogue](docs/spec/18-code-patterns.md) and follow the listed reference implementation.
 
 ## Where things are
 
 | Path | Content |
 |---|---|
-| `docs/spec/` | System specification – the source of truth ([rules](docs/spec/02-agent-rules.md), [architecture](docs/spec/14-architecture.md), [conventions](docs/spec/17-conventions.md)) |
+| `docs/spec/` | System specification – the source of truth ([rules](docs/spec/02-agent-rules.md), [architecture](docs/spec/14-architecture.md), [conventions](docs/spec/17-conventions.md), [code patterns](docs/spec/18-code-patterns.md)) |
 | `docs/plan/` | Implementation plan and task status – mark a task `[x]` in the PR that completes it |
 | `docs/adr/` | Architecture Decision Records (MADR) |
 | `docs/brand/` | Logo, colours, typeface – never draw your own |
@@ -23,7 +24,7 @@ Instructions for AI coding agents in the **Trybun** repository. The project is b
 
 ## Rules
 
-Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2–11 are subordinate to Rule 1; Rules 3, 4, 6 and 9 also to Rule 2.
+Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2–12 are subordinate to Rule 1; Rules 3, 4, 6 and 9 also to Rule 2.
 
 1. **Conventions first** – follow established standards; record deliberate deviations in an ADR.
 2. **Minimum user steps** – shortest path to the user's goal, never at the cost of predictability or accessibility.
@@ -36,15 +37,17 @@ Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2
 9. **Phones and tablets first** – every view from 360 px, touch targets ≥ 44 px, no hover-only actions.
 10. **Dependencies secure and current** – latest stable after a 7-day cooldown (security fixes immediately); no new high/critical vulnerabilities.
 11. **Versioning** – SemVer from Conventional Commits via release-please; never set versions or edit `CHANGELOG.md` by hand; mark breaking changes.
+12. **One pattern per problem** – write code with the patterns of [§18](docs/spec/18-code-patterns.md) and its reference implementations; a missing pattern is proposed for approval, a changed one needs an ADR and migrates the existing code.
 
 ## Never
 
-- Never expose tokens to the browser – the web app is a BFF ([§14.4](docs/spec/14-architecture.md)).
-- Never put permission or visibility logic outside the server's CASL abilities; invisible records return **404, never 403**.
+- Never expose tokens to the browser – the web app is a BFF ([§14.4](docs/spec/14-architecture.md)); never cache per-user API data across requests on the web server.
+- Never put permission or visibility logic outside the server's CASL abilities – the web app only follows the API's `allowedActions`; invisible records return **404, never 403**.
+- Never introduce a second way of solving a problem the [pattern catalogue](docs/spec/18-code-patterns.md) covers – e.g. no repository layer or generic base classes, no in-process event bus instead of the outbox, no global client state store.
 - Never implement your own authentication, password, 2FA or crypto mechanisms – use Keycloak and proven libraries.
 - Never disable, skip or weaken tests, thresholds or CI gates, and never add suppressions (`@ts-ignore`, lint-disable) to go green.
 - Never mock the database in integration tests – use Testcontainers.
-- Never add a second validation library (Zod only), a second DI container (NestJS only) or a second styling approach (Tailwind only).
+- Never add a second validation library (Zod only), a second DI container (NestJS only), a second styling approach (Tailwind only) or a second UI primitive library (Base UI only).
 - Never run a Redis server (use Valkey; Redis-protocol client libraries and adapters are allowed); never use MinIO, WYSIWYG editors, external AI APIs for ticket content, or the SVAR Gantt PRO edition.
 - Never put personal data, tokens or ticket content into logs.
 - Never decide a gap or contradiction in the specification yourself – propose a change for approval.
@@ -57,12 +60,12 @@ Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2
 - **Learn from corrections**: a specific pitfall → `.ai/memory/`; a general working rule → propose an `AGENTS.md` change.
 - **Repeated work** → propose a skill in `.ai/skills/`.
 - **Self-review before the PR**: knowing what you know now, is there a simpler, cleaner solution?
-- Trunk-based, squash merge; Conventional Commits with the closed scope list ([§2.13](docs/spec/02-agent-rules.md)); branch names `KEY-123-short-description` (tickets) or `S0-01-short-description` (plan tasks); DCO `Signed-off-by` on every commit.
-- New dependency: exists, maintained, widely used, no known vulnerabilities, MIT-compatible licence – and only if really needed.
+- Trunk-based, squash merge; Conventional Commits with the closed scope list ([§2.14](docs/spec/02-agent-rules.md)); branch names `KEY-123-short-description` (tickets) or `S0-01-short-description` (plan tasks); DCO `Signed-off-by` on every commit.
+- New dependency: exists, maintained, widely used, no known vulnerabilities, MIT-compatible licence – and only if really needed; add a stable version with an explicit range, never by dist-tag (`latest` may be a release candidate).
 
 ## Definition of Done
 
-Checklist (full text: [§2.12](docs/spec/02-agent-rules.md)):
+Checklist (full text: [§2.13](docs/spec/02-agent-rules.md)):
 
 - [ ] Conventions checked (Rule 1) and shortest user path verified (Rule 2)
 - [ ] User docs, tours and README updated where affected (Rules 3–5)
@@ -72,6 +75,7 @@ Checklist (full text: [§2.12](docs/spec/02-agent-rules.md)):
 - [ ] Works on phone, tablet and desktop (Rule 9)
 - [ ] No new vulnerabilities; dependencies current (Rule 10)
 - [ ] Conventional Commits; breaking changes marked (Rule 11)
+- [ ] Code follows the pattern catalogue; new or changed patterns proposed for approval (Rule 12)
 - [ ] Tests added and passing; all CI gates green
 - [ ] Human review approved
 

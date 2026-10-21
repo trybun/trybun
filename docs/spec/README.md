@@ -6,7 +6,7 @@ Specification of **Trybun**, a ticket / task management system for development t
 |---|---|
 | [00-glossary.md](00-glossary.md) | Every domain term with its code identifier and EN/PL UI labels |
 | [01-overview.md](01-overview.md) | Purpose of the system, AI Engineering approach, how to use this specification, naming conventions and brand assets |
-| [02-agent-rules.md](02-agent-rules.md) | Rules 1–11 for AI agents (incl. project memory, up-to-date specification, phone/tablet support, dependency security and versioning), Definition of Done, agent workflow (branching, commit scopes, ADRs, testing approach), quality gates with coverage thresholds, tools and license policy |
+| [02-agent-rules.md](02-agent-rules.md) | Rules 1–12 for AI agents (incl. project memory, up-to-date specification, phone/tablet support, dependency security, versioning and one pattern per problem), Definition of Done, agent workflow (branching, commit scopes, ADRs, testing approach), quality gates with coverage thresholds, tools and license policy |
 | [03-ticket-model.md](03-ticket-model.md) | Projects, ticket fields, forms, templates, sub-tickets, relations, labels |
 | [04-ticket-lifecycle.md](04-ticket-lifecycle.md) | Internal and public statuses, mapping, transition rules, activity timeline |
 | [05-visibility-and-search.md](05-visibility-and-search.md) | What end users see, shared tickets, portal search, similar ticket detection, end-user portal |
@@ -22,6 +22,7 @@ Specification of **Trybun**, a ticket / task management system for development t
 | [15-deployment.md](15-deployment.md) | Docker Compose deployment on any Linux VPS, releases, install, first run, updates, backups, local development environment |
 | [16-open-source.md](16-open-source.md) | MIT license, community files, contribution rules (DCO, AI-assisted contributions), repository security, voluntary funding |
 | [17-conventions.md](17-conventions.md) | Code naming conventions; data and integration conventions: IDs, dates, deletion, concurrency, outbox, errors, logging, dependency failures, migrations |
+| [18-code-patterns.md](18-code-patterns.md) | Code design patterns – one pattern per recurring problem: server layers and request pipeline, authorization, transactions and outbox, web data fetching and state, UI components, tests, rejected alternatives, enforcement and reference implementations |
 
 ## Change specifications
 

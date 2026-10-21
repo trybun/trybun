@@ -10,7 +10,7 @@ Before implementing, the agent:
 
 1. Checks whether a recognized standard or pattern exists for the problem (e.g. language/framework naming conventions, REST/HTTP, SOLID, OWASP, Semantic Versioning, Conventional Commits).
 2. Chooses the solution that follows the standard instead of inventing its own.
-3. If it deliberately departs from a convention, documents the reason in an ADR ([§2.13](#213-agent-workflow)).
+3. If it deliberately departs from a convention, documents the reason in an ADR ([§2.14](#214-agent-workflow)).
 
 ## 2.2 Rule 2 – Minimum number of user steps (UX/UI)
 
@@ -94,7 +94,7 @@ Rule 6 is **subordinate to Rules 1 and 2**.
 Per Rule 1:
 
 - **Check what already exists first.** Before creating a component, the agent checks the project's component library. If a similar component exists, it extends it or composes from it instead of creating a copy.
-- UI components form the **project component library** (a separate internal monorepo package `packages/ui`, named `@trybun/ui`), built on Radix UI primitives, not from scratch. **shadcn/ui** is the starting point ([§14.2](14-architecture.md)): if shadcn/ui offers a suitable component, it is added to `packages/ui` with the shadcn CLI and then adapted; a component is built from scratch only when shadcn/ui has nothing suitable.
+- UI components form the **project component library** (a separate internal monorepo package `packages/ui`, named `@trybun/ui`), built on Base UI primitives (the default of shadcn/ui), not from scratch. **shadcn/ui** is the starting point ([§14.2](14-architecture.md)): if shadcn/ui offers a suitable component, it is added to `packages/ui` with the shadcn CLI and then adapted; a component is built from scratch only when shadcn/ui has nothing suitable.
 - A component copied from shadcn/ui becomes **project code** and is adapted before first use:
   - styling uses only the project's design tokens,
   - touch targets meet Rule 9 (at least 44 × 44 px on touch devices),
@@ -105,7 +105,7 @@ Per Rule 1:
 - UI components are **presentational**: no domain logic and no API calls. They receive data and actions through props. Domain logic lives in the application layer and the API ([§14.4](14-architecture.md)).
 - Styling uses **Tailwind CSS** ([§14.2](14-architecture.md)) and is based on **design tokens** (colors, spacing, typography, radii, shadows) defined once in the Tailwind theme (`@theme`, CSS variables). Brand colours and the typeface come from [`docs/brand/`](../brand/README.md). Rules:
   - only theme tokens are used – no arbitrary values such as `bg-[#E0482C]` or `p-[13px]` (enforced by lint),
-  - long class lists live inside `@trybun/ui` components, never copied across views; component variants use class-variance-authority, classes are combined with tailwind-merge,
+  - long class lists live inside `@trybun/ui` components, never copied across views; component variants use class-variance-authority, classes are combined with `cn` (the shadcn/ui package),
   - class order is sorted automatically (official Prettier plugin for Tailwind CSS),
   - dark mode is implemented through the tokens, not with separate classes in every component,
   - no inline `style` attributes and no other styling approach (CSS-in-JS, separate CSS files per component) is mixed in.
@@ -131,7 +131,7 @@ Rule 7 is **subordinate to Rule 1**.
 |---|---|
 | System specification (`docs/spec/`) | **What** the system must do. The source of truth |
 | Change specifications (`.ai/specs/`) | **What changes and why** in one unit of work ([§2.8](#28-rule-8--the-specification-is-kept-up-to-date)) |
-| ADRs | Significant technical **decisions** and their rationale ([§2.13](#213-agent-workflow)) |
+| ADRs | Significant technical **decisions** and their rationale ([§2.14](#214-agent-workflow)) |
 | Project memory (`.ai/memory/`) | Knowledge gained during work that is in neither of the above: pitfalls, non-obvious behavior of libraries and tools, proven ways of solving recurring problems, agreements from discussions |
 
 - Project memory **never overrides the specification**. If an agent finds a contradiction between memory and the specification, it handles it according to Rule 8 instead of "fixing" the specification through memory.
@@ -200,11 +200,11 @@ With every specification change the agent keeps the specification consistent:
 - the implementation plan ([`docs/plan/`](../plan/implementation-plan.md)) – if tasks, scope or task status change,
 - user-facing texts in both languages (EN and PL).
 
-CI includes an automated **specification consistency check**: every link and `§N.M` reference must point to an existing file and section ([§2.13](#213-agent-workflow)).
+CI includes an automated **specification consistency check**: every link and `§N.M` reference must point to an existing file and section ([§2.14](#214-agent-workflow)).
 
 ### Scope of the specification
 
-The specification describes **what** the system does and the rules it follows. It does not describe **how** the code implements it: implementation details belong in the code and its comments, decisions in ADRs, and knowledge gained during work in project memory (Rule 7).
+The specification describes **what** the system does and the rules it follows. It does not describe **how** the code implements it: implementation details belong in the code and its comments, decisions in ADRs, and knowledge gained during work in project memory (Rule 7). The code patterns ([18-code-patterns.md](18-code-patterns.md)) are rules the code follows: they name the pattern used for each recurring problem, while code examples live in the reference implementations and project skills (Rule 12).
 
 ## 2.9 Rule 9 – Designed for phones and tablets from the start
 
@@ -250,7 +250,7 @@ Keyboard shortcuts remain a desktop accelerator; every action they trigger is al
 
 ### Verification
 
-- E2E tests ([§2.13](#213-agent-workflow)) run the key user paths (the user paths of the key pages above, plus the paths named in the "Done when" criteria of the implementation plan) on **phone, tablet and desktop** viewports (Playwright device profiles, e.g. a current iPhone, an Android phone and an iPad).
+- E2E tests ([§2.14](#214-agent-workflow)) run the key user paths (the user paths of the key pages above, plus the paths named in the "Done when" criteria of the implementation plan) on **phone, tablet and desktop** viewports (Playwright device profiles, e.g. a current iPhone, an Android phone and an iPad).
 - Every UI component in the component catalog (Rule 6) is shown in phone, tablet and desktop viewports.
 
 ## 2.10 Rule 10 – Dependencies are monitored and kept up to date
@@ -273,7 +273,7 @@ Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components
 
 | Stage | What happens | Blocking? |
 |---|---|---|
-| **Adding a dependency** (agent) | The agent checks that the package exists, is actively maintained and widely used, has no known vulnerabilities, has an MIT-compatible license ([§16.1](16-open-source.md)), and adds its latest stable version that is at least 7 days old (the cooldown applies to new dependencies too; security fixes excepted). It prefers fewer dependencies: no package for what a few lines of code or an existing dependency already do | Agent's responsibility; verified in review |
+| **Adding a dependency** (agent) | The agent checks that the package exists, is actively maintained and widely used, has no known vulnerabilities, has an MIT-compatible license ([§16.1](16-open-source.md)), and adds its latest stable version that is at least 7 days old (the cooldown applies to new dependencies too; security fixes excepted) with an explicit version range – never through a dist-tag, because `latest` may point to a release candidate (in October 2026 `prisma@latest` was a Prisma ORM 8 release candidate). It prefers fewer dependencies: no package for what a few lines of code or an existing dependency already do | Agent's responsibility; verified in review |
 | **Every pull request** (CI) | Dependency review of added/changed packages, vulnerability audit of the lockfile, license check. Install only from the committed lockfile (`--frozen-lockfile`) | **Yes**, for new vulnerabilities of severity high or critical |
 | **Continuously on the main branch** (scheduled, at least daily) | Vulnerability alerts for all dependencies (GitHub Dependabot alerts), scan of container images ([§15.4](15-deployment.md)) | Opens an alert and a fix pull request |
 | **Automated update pull requests** | Dependabot: security updates immediately; patch and minor updates weekly, grouped, with a 7-day cooldown; GitHub Actions and base images included | Normal review and CI apply |
@@ -342,7 +342,7 @@ release-please is configured accordingly (`bump-minor-pre-major: true`). The sta
 
 Releases are prepared by **release-please**:
 
-1. Changes are merged into `main` through reviewed pull requests ([§2.13](#213-agent-workflow)).
+1. Changes are merged into `main` through reviewed pull requests ([§2.14](#214-agent-workflow)).
 2. release-please keeps an open **release pull request** with the next version number calculated from the commits and the generated `CHANGELOG.md` entry (Keep a Changelog format).
 3. A **human decides** when to release by merging the release pull request (optionally after testing a release candidate, see below).
 4. Merging creates the tag `vX.Y.Z` and the GitHub Release; CI then builds, scans and publishes the images and the deployment package ([§15.4](15-deployment.md)).
@@ -364,7 +364,19 @@ Releases are prepared by **release-please**:
 - the health endpoint (`/health`) of the API; the status of its dependencies is reported by `/health/ready` ([§17.2](17-conventions.md)),
 - container image tags: `ghcr.io/trybun/<service>:X.Y.Z`, plus moving tags `:X.Y` and `:X`. The deployment package always pins the exact version `X.Y.Z` and never uses `latest`.
 
-## 2.12 Definition of Done
+## 2.12 Rule 12 – One pattern per problem
+
+For every recurring problem in the code – where a file belongs, how an endpoint checks permissions, how a change triggers side effects, how the web application reads and changes data – the project uses **exactly one pattern**. Code written by different agents at different times must read as if one team wrote it.
+
+Rule 12 is **subordinate to Rule 1**: the patterns are chosen from the conventions and best practices of each technology and recorded in the pattern catalogue ([18-code-patterns.md](18-code-patterns.md)).
+
+- Before writing code, the agent looks up the pattern for each problem in the catalogue and follows its **reference implementation** ([§18.9](18-code-patterns.md#189-enforcement-and-changes)) in structure, naming, error handling and tests.
+- The agent never introduces a second way of solving a problem the catalogue covers, even where it considers another approach better. A better approach is proposed as a change of the pattern.
+- A recurring problem the catalogue does not cover: its first implementation proposes the pattern in the catalogue in the same pull request, marked as a specification change for approval (Rule 8).
+- Changing a pattern requires an ADR approved by a human ([§2.14](#214-agent-workflow)). The same pull request updates the catalogue, the reference implementation and the affected skills; existing code is migrated in it or in a task added to the implementation plan. Two patterns for the same problem never coexist without such a task.
+- Patterns that can be checked automatically are enforced by lint rules in CI.
+
+## 2.13 Definition of Done
 
 An implementation task is done only when:
 
@@ -379,11 +391,12 @@ An implementation task is done only when:
 9. the UI works on phones, tablets and desktop and is verified on these viewports (Rule 9),
 10. no new known vulnerabilities are introduced and new dependencies are at their latest stable version (Rule 10),
 11. commits follow Conventional Commits and breaking changes are marked with the steps required from the Administrator (Rule 11),
-12. tests pass and the new functionality is covered by tests,
-13. all automated quality gates in CI pass,
-14. the change has been reviewed and approved by a human.
+12. the code follows the patterns of the catalogue, and a new or changed pattern is proposed for approval (Rule 12),
+13. tests pass and the new functionality is covered by tests,
+14. all automated quality gates in CI pass,
+15. the change has been reviewed and approved by a human.
 
-## 2.13 Agent workflow
+## 2.14 Agent workflow
 
 ### Agent instructions in the repository
 
@@ -411,7 +424,7 @@ These practices follow recommendations of the Claude Code team and apply to ever
   - a general working rule → a proposed change to `AGENTS.md` in the pull request, for human approval.
 - **Turn repeated work into skills.** When the agent performs the same sequence of steps repeatedly, it proposes a project skill in `.ai/skills/` instead of repeating the steps by hand.
 - **Fix the cause, never the gate.** When CI fails, the agent reads the logs and fixes the cause. It **never** disables, skips or weakens tests, lowers coverage or performance thresholds, removes quality gates or adds suppressions (e.g. lint-disable comments, `@ts-ignore`) to make CI pass. If a gate itself is wrong, the agent proposes changing it as a separate, explained change for human approval.
-- **Self-review before the pull request.** Before opening a pull request the agent reviews its own diff against the specification and the Definition of Done and asks: *knowing everything I know now, is there a simpler, cleaner solution?* If so, it reworks the change before handing it over for review.
+- **Self-review before the pull request.** Before opening a pull request the agent reviews its own diff against the specification, the code patterns (Rule 12) and the Definition of Done and asks: *knowing everything I know now, is there a simpler, cleaner solution?* If so, it reworks the change before handing it over for review.
 
 ### Branching and merging
 

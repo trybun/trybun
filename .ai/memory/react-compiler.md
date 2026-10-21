@@ -1,0 +1,12 @@
+# React Compiler – set-up, library compatibility and diagnosis
+
+Non-obvious behaviour found when the React Compiler was adopted (October 2026). Decision: [§14.2](../../docs/spec/14-architecture.md); patterns: [§18.5](../../docs/spec/18-code-patterns.md).
+
+- Next.js: `reactCompiler: true` (stable since 16.0, off by default) needs `babel-plugin-react-compiler`; Next applies it only to files with JSX or hooks. The Rust implementation in Next.js 16.3/16.4 is experimental and not used. The default of `environment.enablePreserveExistingMemoizationGuarantees` differs between compiler versions – set it explicitly if it matters.
+- Storybook (Vite): the `compiler` option of `@vitejs/plugin-react` 6 enables the compiler; Storybook's Vite builder is expected to read the project's Vite configuration – confirm in S0-07.
+- `@trybun/ui` is consumed as source, so the consuming build (Next.js through `transpilePackages`) has to compile it – confirm with the ✨ badge in React DevTools (S0-08).
+- The compiler silently skips components that break the Rules of React. The `recommended` preset of `eslint-plugin-react-hooks` 7 reports them (`purity`, `refs`, `immutability`, `set-state-in-render`, `incompatible-library`, `preserve-manual-memoization`).
+- Incompatible APIs (interior mutability, stale UI when memoized):
+  - React Hook Form: `watch()` of `useForm()` → use `useWatch({ control, name })`.
+  - TanStack Table 8: `useReactTable` → use TanStack Table 9 (`useTable`); nested row or cell components that receive only table objects need `Subscribe`.
+- Diagnosis: `'use no memo'` in a misbehaving component is a temporary test. If the problem disappears, the code breaks the Rules of React (often it relies on memoization for correctness, e.g. an effect depending on object identity) – fix it and remove the directive. A permanent `'use no memo'` is allowed only for a library incompatibility listed in this file.

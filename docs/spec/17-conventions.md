@@ -1,6 +1,6 @@
 # 17 – Conventions
 
-Code naming and data/integration conventions that apply to every part of the system. Architecture and technology choices are in [14-architecture.md](14-architecture.md).
+Code naming and data/integration conventions that apply to every part of the system. Architecture and technology choices are in [14-architecture.md](14-architecture.md), code design patterns in [18-code-patterns.md](18-code-patterns.md).
 
 ## 17.1 Code naming conventions
 
@@ -15,7 +15,7 @@ The glossary gives the **domain name** of every term and its **enum values**. Th
 | Module-level constants | UPPER_SNAKE_CASE | `MAX_ATTACHMENT_SIZE` |
 | Files and folders | kebab-case; NestJS files with their role suffix (NestJS convention); Next.js route segments in kebab-case | `ticket-list.tsx`, `tickets.service.ts`, `app/saved-views/` |
 | NestJS classes | Plural resource + role | `TicketsModule`, `TicketsService`, `TicketsController` |
-| DTOs | Action + resource + `Dto`, created from Zod schemas ([§14.4](14-architecture.md#144-architectural-principles)) | `CreateTicketDto` |
+| DTOs | Action + resource + `Dto`: the type inferred from the request schema in `@trybun/contracts`; no DTO classes ([§14.4](14-architecture.md#144-architectural-principles)) | `type CreateTicketDto = z.infer<typeof createTicketSchema>` |
 | Zod schemas and inferred types | Schema in camelCase with the `Schema` suffix; type in PascalCase via `z.infer` | `ticketSchema` → `type Ticket` |
 | Prisma models | PascalCase, singular; fields in camelCase | `model Ticket { createdAt DateTime }` |
 | PostgreSQL tables and columns | snake_case; tables in plural; mapped from Prisma with `@@map` and `@map` | `tickets`, `created_at` |
@@ -25,10 +25,11 @@ The glossary gives the **domain name** of every term and its **enum values**. Th
 | Webhook and internal events | `resource.event` in snake_case | `ticket.status_changed` |
 | Error codes | `resource.reason` in snake_case | `ticket.visibility_not_allowed` |
 | Queue names and job names | kebab-case | `github-webhooks`, `sla-timers` |
+| Job IDs and deduplication keys | Custom job ID: the unique ID of the source (e.g. the outbox event ID); deduplication key: `<job-name>-<id>[-<id>]`; never `:` and never digits only ([§17.2](#172-data-and-integration-conventions)) | `notification-batch-<recipientId>-<ticketId>` |
 | Translation keys | Dot-separated namespaces in camelCase, starting with the feature; error messages use `errors.<error code>` with the code unchanged | `tickets.form.titleLabel`, `errors.ticket.visibility_not_allowed` |
 | Environment variables | UPPER_SNAKE_CASE with the `TRYBUN_` prefix ([§1.4](01-overview.md)); library-defined names stay unchanged ([§15.3](15-deployment.md)) | `TRYBUN_DOMAIN`, `DATABASE_URL` |
 | Design tokens / Tailwind theme | kebab-case | `--color-ink`, `bg-ink` |
-| Tests | `*.spec.ts` / `*.spec.tsx` next to the tested file; E2E tests in the application's `e2e/` folder | `visibility.spec.ts`, `apps/web/e2e/create-ticket.spec.ts` |
+| Tests | `*.spec.ts` / `*.spec.tsx` next to the tested file; integration tests `*.integration.spec.ts` ([§18.7](18-code-patterns.md)); E2E tests in the application's `e2e/` folder | `visibility.spec.ts`, `tickets.service.integration.spec.ts`, `apps/web/e2e/create-ticket.spec.ts` |
 | Product tour targets | `data-tour="<view>-<element>"` in kebab-case (Rule 4) | `data-tour="kanban-column-menu"` |
 
 ### Database naming
@@ -69,15 +70,18 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 - Changes that span several records are performed in one database transaction.
 - Side effects (notifications, webhooks, GitHub synchronization, search indexing) use the **transactional outbox** pattern: the event is written to an `outbox_events` table in the same transaction as the change, and the Worker publishes it to the queue. No event is lost when a process stops between the change and the publication, and no event is published for a change that was rolled back.
-- **Outbox publisher**: the Worker polls `outbox_events` about once per second with `SELECT … FOR UPDATE SKIP LOCKED` (safe with several Worker replicas), enqueues each event in BullMQ with `jobId` equal to the outbox event ID (so a repeated publication creates no second job), sets `published_at`, and deletes published events after 7 days.
+- **Outbox publisher**: the Worker polls `outbox_events` about once per second with `SELECT … FOR UPDATE SKIP LOCKED` (safe with several Worker replicas), enqueues each event in BullMQ with `jobId` equal to the outbox event ID (so a repeated publication creates no second job while the first one is kept, see "Background jobs and scheduling"), sets `published_at`, and deletes published events after 7 days.
 - Event handlers are idempotent, because events may be delivered more than once.
 
 ### Background jobs and scheduling
 
 - All delayed and recurring work runs in the Worker on **BullMQ** ([§14.2](14-architecture.md)):
-  - recurring jobs (e.g. retention anonymization, GitHub delivery reconciliation, purging old records) use BullMQ job schedulers, so each run happens once regardless of the number of Worker replicas;
-  - timers (e.g. SLA deadlines, automatic closing after resolution confirmation, [§4.3](04-ticket-lifecycle.md)) and notification batching ([§6.7](06-comments-notifications.md)) use delayed jobs with a deterministic `jobId` derived from the subject (e.g. `notification-batch:<recipient>:<ticket>`), so rescheduling replaces the job instead of duplicating it.
-- Jobs that fail are retried with exponential backoff; after the last attempt they stay in the failed set and are visible to the Administrator.
+  - recurring jobs (e.g. retention anonymization, GitHub delivery reconciliation, purging old records) use BullMQ job schedulers (`upsertJobScheduler` with a stable scheduler ID), so each run happens once regardless of the number of Worker replicas;
+  - timers (e.g. SLA deadlines, automatic closing after resolution confirmation, [§4.3](04-ticket-lifecycle.md)) and notification batching ([§6.7](06-comments-notifications.md)) are delayed jobs deduplicated by a key derived from the subject (e.g. `notification-batch-<recipientId>-<ticketId>`) in BullMQ's debounce mode (`replace`, `extend`), so rescheduling replaces the pending job instead of adding a second one. A timer job carries only identifiers; its handler reads the current state and does nothing when the timer no longer applies (e.g. the ticket has left `waiting_for_requester`), so timers are never cancelled. The delay of a notification batch is computed from the first pending change, which keeps the 10-minute limit of [§6.7](06-comments-notifications.md);
+  - work that must be enqueued only once (outbox events, outgoing webhook deliveries) uses a custom `jobId` equal to the unique ID of its source; BullMQ ignores a second job with the same ID while the first one is kept.
+- Job IDs and deduplication keys never contain `:` (reserved by BullMQ) and never consist of digits only ([§17.1](#171-code-naming-conventions)).
+- **Retention**: completed jobs are removed after 24 hours; failed jobs are kept for 30 days and are visible to the Administrator ([§13.2](13-non-functional.md)).
+- Jobs that fail are retried with exponential backoff; after the last attempt they stay in the failed set. A failed job is retried manually with `job.retry()` – a new job with the same ID would be ignored. A manual redelivery of an outgoing webhook ([§12.4](12-api-webhooks-import.md)) creates a new delivery with its own ID.
 
 ### Concurrency
 

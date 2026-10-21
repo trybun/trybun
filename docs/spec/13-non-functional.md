@@ -56,6 +56,8 @@ Anonymization of an account affects every store of personal data:
 |---|---|
 | Notifications | 90 days |
 | Published outbox events ([§17.2](17-conventions.md)) | 7 days after publication |
+| Completed background jobs ([§17.2](17-conventions.md)) | 24 hours |
+| Failed background jobs ([§17.2](17-conventions.md)) | 30 days |
 | Outgoing webhook delivery logs ([§12.4](12-api-webhooks-import.md)) | 30 days |
 | Security and access logs with IP addresses | 14 days |
 | Keycloak login and admin events | 90 days |

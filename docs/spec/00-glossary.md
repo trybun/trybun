@@ -24,6 +24,8 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Invitation | `invitation` | Invitation / Zaproszenie | Single-use link valid 7 days that creates or extends access; targets a project role, an organization or the Administrator role ([§7.4](07-users-organizations-permissions.md)) |
 | Team group | – | – | Keycloak group `team`, kept in sync by the API; members must use 2FA ([§7.4](07-users-organizations-permissions.md)) |
 | Deleted user | – | Deleted user / Użytkownik usunięty | Tombstone that replaces an anonymized account in history ([§13.2](13-non-functional.md)) |
+| Principal | `principal` | – | The identity a request or job acts as: a user (session or personal access token), an integration token or the system ([§18.3](18-code-patterns.md)) |
+| Allowed actions | `allowed_actions` | – | Codes of the actions the principal may perform on a record, sent by the API so that the UI adapts to them ([§18.3](18-code-patterns.md)) |
 
 ## Tickets
 
@@ -113,12 +115,13 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Import batch | `import_batch` | Import / Import | One run of the import wizard; can be undone ([§12.5](12-api-webhooks-import.md)) |
 | Change specification | – | – | Dated description of one change (`.ai/specs/YYYY-MM-DD-slug.md`) with status `draft` → `approved` → `implemented` / `archived` ([§2.8](02-agent-rules.md)) |
 | Project memory | – | – | Knowledge gained during work, kept in `.ai/memory/` with the index `MEMORY.md` ([§2.7](02-agent-rules.md)) |
+| Reference implementation | – | – | The first implementation of a code pattern, listed in [§18.9](18-code-patterns.md); later code follows it (Rule 12) |
 | Release candidate | – | – | Pre-release `X.Y.Z-rc.N` deployed to the test environment before a release (Rule 11) |
 | Maintenance branch | – | – | `release/X.Y.x` branch for PATCH releases without new features (Rule 11) |
 | SBOM | – | – | Software bill of materials attached to every release (Rule 10) |
 | Cooldown | – | – | Minimum age (7 days) of a dependency version before a regular update (Rule 10) |
 | Transactional outbox | `outbox_event` | – | Event stored in the same transaction as the change and published by the Worker ([§17.2](17-conventions.md)) |
-| ADR | – | – | Architecture Decision Record in `docs/adr/` ([§2.13](02-agent-rules.md)) |
+| ADR | – | – | Architecture Decision Record in `docs/adr/` ([§2.14](02-agent-rules.md)) |
 | Break-glass account | – | – | The first Administrator account with password and 2FA, usable without GitHub sign-in ([§7.4](07-users-organizations-permissions.md)) |
 | BFF (Backend for Frontend) | – | – | The web application's proxy endpoint `/api/v1/*` that attaches the user's token on the server side ([§14.4](14-architecture.md)) |
 | Optimistic locking | `version` | – | Conflict detection with `ETag`/`If-Match` when two people edit the same record ([§17.2](17-conventions.md)) |

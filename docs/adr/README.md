@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/madr/) format. Rules: [`docs/spec/02-agent-rules.md`](../spec/02-agent-rules.md) §2.13.
+Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/madr/) format. Rules: [`docs/spec/02-agent-rules.md`](../spec/02-agent-rules.md) §2.14.
 
 - File name: `NNNN-short-title.md` (sequential number, kebab-case).
 - Status: `proposed`, `accepted` or `superseded by NNNN`.

@@ -8,7 +8,7 @@ The project is published as open source. This file defines the license, the rule
 - The repository root contains a `LICENSE` file with the **unmodified standard MIT text** and the line `Copyright (c) <year> <author>`. No additional conditions are ever added to the license text (it would no longer be MIT).
 - Every package declares the license with its SPDX identifier (e.g. `"license": "MIT"` in `package.json`).
 - The README ends with a short "License" section linking to `LICENSE`.
-- Third-party dependencies must have licenses compatible with MIT distribution. The CI dependency audit ([§2.13](02-agent-rules.md)) includes a license check.
+- Third-party dependencies must have licenses compatible with MIT distribution. The CI dependency audit ([§2.14](02-agent-rules.md)) includes a license check.
 
 ## 16.2 Community files
 
@@ -17,7 +17,7 @@ Following GitHub community standards, the repository contains:
 | File | Content |
 |---|---|
 | `README.md` | Rule 5 ([§2.5](02-agent-rules.md)); links to the files below |
-| `CONTRIBUTING.md` | How to set up the project, how to propose changes, commit and branch conventions, Definition of Done ([§2.12](02-agent-rules.md)), DCO sign-off, AI contribution policy ([§16.4](#164-ai-assisted-contributions)). Refers to `AGENTS.md` and `docs/spec/` instead of duplicating them |
+| `CONTRIBUTING.md` | How to set up the project, how to propose changes, commit and branch conventions, Definition of Done ([§2.13](02-agent-rules.md)), DCO sign-off, AI contribution policy ([§16.4](#164-ai-assisted-contributions)). Refers to `AGENTS.md` and `docs/spec/` instead of duplicating them |
 | `CODE_OF_CONDUCT.md` | Contributor Covenant (current version, unmodified) with a contact address |
 | `SECURITY.md` | How to report vulnerabilities **privately** (GitHub private vulnerability reporting), supported versions, expected response time. Vulnerabilities are never reported in public issues |
 | `.github/ISSUE_TEMPLATE/` | Issue forms: bug report, feature request; a config pointing questions to GitHub Discussions and vulnerabilities to `SECURITY.md` |
@@ -35,7 +35,7 @@ Additionally:
 
 - Anyone can contribute through a fork and a pull request. Write access is granted only to trusted contributors after a history of good contributions (contributor → reviewer → maintainer).
 - Larger contributions (new functionality, changes of behavior) start with a change specification in `.ai/specs/` proposed as a pull request, so the idea can be discussed before any code is written ([§2.8](02-agent-rules.md)).
-- Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.13](02-agent-rules.md)).
+- Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.14](02-agent-rules.md)).
 - **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line confirming that the author has the right to submit the code. CI checks it. No Contributor License Agreement (CLA) is required.
 - First responses to issues and pull requests should be fast and friendly; this is one of the strongest factors in whether contributors return.
 
@@ -52,7 +52,7 @@ The project itself is built with AI agents ([§1.2](01-overview.md)), and contri
 - Two-factor authentication is mandatory for all members of the GitHub organization.
 - CI workflows triggered by pull requests from forks never have access to secrets.
 - Dependabot alerts, security updates and version updates ([§2.10](02-agent-rules.md)) and GitHub private vulnerability reporting are enabled.
-- The main branch is protected ([§2.13](02-agent-rules.md)).
+- The main branch is protected ([§2.14](02-agent-rules.md)).
 
 ## 16.6 Voluntary financial support
 
