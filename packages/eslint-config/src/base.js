@@ -77,6 +77,11 @@ export const base = defineConfig(
     },
     rules: {
       'no-console': 'error',
+      // Coverage-ignore comments are suppressions (§2.14).
+      'no-warning-comments': [
+        'error',
+        { terms: ['v8 ignore', 'c8 ignore', 'istanbul ignore'], location: 'start' },
+      ],
       'no-restricted-imports': restrictedImports(),
       'no-restricted-properties': [
         'error',

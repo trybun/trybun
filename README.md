@@ -10,7 +10,7 @@ The project is delivered with an **AI Engineering** approach: AI agents write th
 
 - **Node.js** in the version from [`.node-version`](.node-version) (24 LTS)
 - **pnpm** enabled through Corepack: `corepack enable` (the version comes from the `packageManager` field of [`package.json`](package.json))
-- **Docker** with the Compose plugin – needed once the infrastructure services arrive (task S0-03)
+- **Docker** with the Compose plugin – needed for the integration tests (Testcontainers) and, from task S0-03, for the infrastructure services
 
 ## Getting started
 
@@ -32,11 +32,18 @@ Run from the repository root:
 | `pnpm dev` | Start the web application and the API with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications |
 | `pnpm lint` | Lint all packages and check the formatting |
+| `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
 | `pnpm test` | Unit tests (Vitest) |
+| `pnpm test:integration` | Integration tests against PostgreSQL and Valkey in Testcontainers (needs Docker) |
+| `pnpm test:coverage` | Unit and integration tests with the coverage thresholds of CI (needs Docker) |
 
-Integration tests, E2E tests and database migrations arrive with tasks S0-02, S0-08 and S0-04.
+E2E tests and database migrations arrive with tasks S0-08 and S0-04.
+
+## Continuous integration
+
+Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit and integration tests with coverage thresholds, build, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Run the same checks locally with the commands above before opening a pull request.
 
 ## Monorepo structure
 

@@ -12,6 +12,10 @@
     },
     "lint": {},
     "typecheck": {},
-    "test": {}
+    "test": {},
+    "test:integration": {
+      "cache": false,
+      "passThroughEnv": ["DOCKER_*", "TESTCONTAINERS_*"]
+    }
   }
 }

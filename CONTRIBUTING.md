@@ -8,7 +8,7 @@ Ask questions and share ideas in [GitHub Discussions](https://github.com/trybun/
 
 ## Setting up
 
-Prerequisites, the one-command start (`pnpm install`, `pnpm dev`) and the other commands (`pnpm test`, `pnpm lint`, `pnpm typecheck` …) are described in [§15.12](docs/spec/15-deployment.md) and in the commands table of [`AGENTS.md`](AGENTS.md). They become available with task S0-01 of the plan.
+Prerequisites, the one-command start (`pnpm install`, `pnpm dev`) and the other commands (`pnpm test`, `pnpm lint`, `pnpm typecheck` …) are described in [§15.12](docs/spec/15-deployment.md) and in the commands table of [`AGENTS.md`](AGENTS.md). Every pull request runs the CI quality gates listed in the [README](README.md#continuous-integration).
 
 ## Proposing changes
 
