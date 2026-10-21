@@ -81,17 +81,18 @@ Checklist (full text: [§2.13](docs/spec/02-agent-rules.md)):
 
 ## Commands
 
-Planned commands – **available after S0-01**; local environment: [§15.12](docs/spec/15-deployment.md). Keep in sync with README.md (Rule 5).
+Run from the repository root; local environment: [§15.12](docs/spec/15-deployment.md). Keep in sync with README.md (Rule 5). Commands marked with a task arrive with it.
 
 | Command | Purpose |
 |---|---|
 | `pnpm install` | Install dependencies from the lockfile |
-| `pnpm dev` | Start the full local environment (infrastructure in Docker Compose, migrations and seed, apps with hot reload) |
+| `pnpm dev` | Start the web application and the API with hot reload (infrastructure in Docker Compose, migrations and seed: S0-03, S0-04) |
 | `pnpm test` | Unit tests (Vitest) |
-| `pnpm test:integration` | Integration tests (Vitest + Testcontainers) |
-| `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop) |
+| `pnpm test:integration` | Integration tests (Vitest + Testcontainers) – S0-02 |
+| `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop) – S0-08 |
 | `pnpm lint` | Lint and formatting check |
+| `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
 | `pnpm build` | Build all applications |
-| `pnpm db:migrate` | Apply database migrations |
-| `pnpm db:seed` | Load seed and demo data |
+| `pnpm db:migrate` | Apply database migrations – S0-04 |
+| `pnpm db:seed` | Load seed and demo data – S0-04 |

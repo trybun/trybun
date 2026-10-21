@@ -1,0 +1,4 @@
+{
+  "extends": "@trybun/tsconfig/library.json",
+  "include": ["src", "*.config.ts"]
+}

@@ -14,6 +14,7 @@ Knowledge gained while working on this project that is not in the specification 
 - `.ai/memory/nestjs.md` – NestJS 12 validation, serialization and OpenAPI pitfalls; ecosystem support of NestJS 12 – read when writing endpoints, gateways, request or response schemas, or when adding a NestJS library.
 - `.ai/memory/prisma.md` – Prisma ORM 7 pitfalls: `latest` is the Prisma 8 release candidate, driver adapters, `prisma.config.ts`, client extensions and `@casl/prisma`, TypedSQL status, transactions – read when installing or updating Prisma, or changing the schema, queries or transactions.
 - `.ai/memory/react-compiler.md` – React Compiler: set-up in Next.js and Storybook, incompatible library APIs (React Hook Form `watch()`, TanStack Table 8), diagnosing with `'use no memo'` – read when a client component shows stale data or when adding a React library.
+- `.ai/memory/toolchain.md` – pnpm 12 (`allowBuilds`, release-age cooldown), TypeScript 7 not yet usable, Next.js env loading and instrumentation, NestJS rspack bundling of workspace packages, Vitest with SWC, ESLint flat-config overrides – read when adding dependencies, scripts, build or lint configuration.
 - `.ai/memory/shadcn.md` – shadcn/ui on Base UI: CLI flags, flavours of Drawer, Command and Toast, `asChild` → `render`, the `cn` package, monorepo set-up – read when adding or adapting components in `@trybun/ui`.
 
 <!-- Example:
