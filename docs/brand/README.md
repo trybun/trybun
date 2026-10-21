@@ -35,7 +35,7 @@ The wordmark in `trybun-logo-*.svg` uses the **Manrope ExtraBold** font. Before 
 
 ## UI design tokens
 
-**Status: proposed – requires human approval.** Until approved, the tokens below are the agreed starting point for `@trybun/ui` (Rule 6, [§2.6](../spec/02-agent-rules.md)); the final values are confirmed in the S0-07 pull request.
+**Status: proposed – requires human approval.** The tokens below are the starting point for `@trybun/ui` (Rule 6, [§2.6](../spec/02-agent-rules.md)); a human approves the final values in the S0-07 pull request.
 
 The brand colours above are not a complete UI palette. The UI uses the token set of shadcn/ui, derived from the brand as follows:
 

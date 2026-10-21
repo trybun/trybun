@@ -60,7 +60,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 ### Deleting data
 
 - Tickets are never deleted; they are closed as `rejected` or `duplicate` ([§4.3](04-ticket-lifecycle.md)). Personal data is removed only through anonymization ([§13.2](13-non-functional.md)).
-- **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)): the tickets of the batch that have no activity events other than "Imported" are deleted physically, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused. The undo is recorded in the administrative audit log.
+- **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)), possible only while no ticket of the batch has activity events other than "Imported": the tickets of the batch are deleted physically, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused. The undo is recorded in the administrative audit log.
 - Other records (e.g. labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log.
 - Activity events never reference deletable records by foreign key; they store the values they show (ID and display name, e.g. of a label or milestone) in their own data, so deleting a record never changes or breaks the history ([§4.5](04-ticket-lifecycle.md)).
 - There is no generic soft-delete (`deleted_at`) mechanism.

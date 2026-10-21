@@ -89,3 +89,5 @@ Planned commands – **available after S0-01**; local environment: [§15.12](doc
 | `pnpm lint` | Lint and formatting check |
 | `pnpm typecheck` | TypeScript strict type check |
 | `pnpm build` | Build all applications |
+| `pnpm db:migrate` | Apply database migrations |
+| `pnpm db:seed` | Load seed and demo data |

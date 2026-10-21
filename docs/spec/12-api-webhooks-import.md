@@ -68,12 +68,12 @@
 
 - Original creation dates and authors are preserved. Every imported ticket has a link to its source and an "Imported" event in the activity timeline; content attributed to existing users by e-mail matching is marked "Imported – originally by <name>" and the import is recorded in the audit log ([§13.5](13-non-functional.md)).
 - **Source and visibility** of imported tickets: tickets imported from GitHub issues get source `developer`; for CSV the source is mapped explicitly in the wizard (default `developer`). Imported tickets always get visibility `only_me` and are never shared; the visibility column cannot be mapped. The organization is taken from the matched requester's membership.
-- People who do not exist in the system get **inactive accounts**. Invitations are not sent automatically (GDPR, [§13.2](13-non-functional.md)); the Administrator can send them manually.
+- People who do not exist in the system get accounts in state `invited` without a Keycloak user ([§7.4](07-users-organizations-permissions.md)). Invitations are not sent automatically (GDPR, [§13.2](13-non-functional.md)); the Administrator can send them manually.
 - **Safe re-runs**: records are identified by their external ID, so re-running an import skips already imported records.
 - **Undo import**: a whole import batch can be rolled back in one action within 7 days (in case of a wrong mapping). This is the only exception to the rule that tickets are never deleted ([§17.2](17-conventions.md)):
   - undo is possible only if no ticket of the batch has any activity event other than "Imported";
   - the tickets of the batch are deleted physically; their numbers are retired and never reused, so a gap in numbering is accepted;
-  - inactive accounts created by the batch that have no other activity are deleted;
+  - accounts created by the batch that have no other activity are deleted;
   - the external IDs of the batch are removed, so a later re-run imports the records again;
   - the undo is recorded in the audit log.
 - Imports are performed by the Administrator.

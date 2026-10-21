@@ -46,7 +46,7 @@ Security (Rule 1): rendered HTML is sanitized according to OWASP recommendations
 - Each incoming message is processed **once**: duplicates (the same `Message-ID` and token, e.g. provider retries) are skipped.
 - **Automatic replies** (out-of-office, mailing lists, bounces: `Auto-Submitted` other than `no`, `Precedence: bulk`, `list` or `auto_reply`, `X-Autoreply`) are dropped silently, without a comment or a notification (RFC 3834). All e-mails sent by the system carry `Auto-Submitted: auto-generated`.
 - Quoted earlier messages and signatures below the reply marker are removed; only the new text becomes the comment. Attachments of a reply go through the attachment rules and malware scanning ([§13.3](13-non-functional.md)).
-- Replies from users who no longer have access, or that refer to tickets in a terminal status ([§6.1](#61-comments-and-internal-notes)) or to archived projects, are rejected, and the sender receives a short explanation with a link to create a new ticket. A sender receives an explanation only if the authentication checks above passed; otherwise the message is dropped silently (no backscatter).
+- Replies from users who no longer have access, replies to tickets on which the sender may not comment ([§6.1](#61-comments-and-internal-notes): `rejected`, `duplicate`, or `done` for more than 14 days) and replies to archived projects are rejected, and the sender receives a short explanation with a link to create a new ticket. A sender receives an explanation only if the authentication checks above passed; otherwise the message is dropped silently (no backscatter).
 
 ## 6.4 Watching tickets
 
