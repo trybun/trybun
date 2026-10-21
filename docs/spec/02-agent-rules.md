@@ -410,7 +410,7 @@ An implementation task is done only when:
 - Work is split into **small, well-defined tasks**. Every task names the specification sections it implements.
 - One task = one pull request of limited scope, easy for a human to review.
 - Agents never push directly to the main branch. The main branch is protected and accepts changes only through approved pull requests.
-- Agents push branches and open pull requests **only as the machine account** ([§16.5](16-open-source.md), [ADR 0001](../adr/0001-github-identity-of-ai-agents.md)), never as the maintainer. The maintainer approves the pull request as **code owner**; agents never approve pull requests.
+- The project's own agents (run by the maintainer, e.g. through Cezar) push branches and open pull requests **only as the machine account** ([§16.5](16-open-source.md), [ADR 0001](../adr/0001-github-identity-of-ai-agents.md)), never as the maintainer. The maintainer approves the pull request as **code owner**; agents never approve pull requests. External contributors and their agents use their own GitHub accounts ([§16.4](16-open-source.md)).
 - If the implementation reveals a gap or contradiction in the specification, the agent **does not resolve it on its own**: it proposes a specification change marked for human approval (Rule 8).
 - Significant technical decisions, including deliberate departures from conventions (Rule 1), are recorded as **ADRs** (Architecture Decision Records) in the repository.
 - Other agents may be working on other tasks in parallel (separate worktrees, e.g. through Cezar). Keep changes within the scope of the task and keep the branch up to date with `main` before opening a pull request.
