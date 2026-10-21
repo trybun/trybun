@@ -22,7 +22,7 @@ Following GitHub community standards, the repository contains:
 | `SECURITY.md` | How to report vulnerabilities **privately** (GitHub private vulnerability reporting), supported versions, expected response time. Vulnerabilities are never reported in public issues |
 | `.github/ISSUE_TEMPLATE/` | Issue forms: bug report, feature request; a config pointing questions to GitHub Discussions and vulnerabilities to `SECURITY.md` |
 | `.github/pull_request_template.md` | Checklist based on the Definition of Done, the linked specification sections and a "Specification changes" section listing changes marked for approval ([§2.8](02-agent-rules.md)) |
-| `.github/CODEOWNERS` | Who reviews which parts of the repository |
+| `.github/CODEOWNERS` | Who reviews which parts of the repository; code owners are the humans whose approval is required ([§16.3](#163-contribution-rules)) |
 
 Values that identify people – the copyright holder in `LICENSE`, the contact address in `CODE_OF_CONDUCT.md` and `SECURITY.md`, and the GitHub handles in `CODEOWNERS` – are supplied by the maintainer. Agents never invent them; until they are supplied, the files contain a clearly marked placeholder and the pull request lists them as open items.
 
@@ -35,7 +35,7 @@ Additionally:
 
 - Anyone can contribute through a fork and a pull request. Write access is granted only to trusted contributors after a history of good contributions (contributor → reviewer → maintainer).
 - Larger contributions (new functionality, changes of behavior) start with a change specification in `.ai/specs/` proposed as a pull request, so the idea can be discussed before any code is written ([§2.8](02-agent-rules.md)).
-- Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.14](02-agent-rules.md)).
+- Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.14](02-agent-rules.md)). An approval means an approval by a **code owner** (`.github/CODEOWNERS`, a human maintainer); approvals by the machine account ([§16.5](#165-repository-security)) never count.
 - **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line confirming that the author has the right to submit the code. CI checks it. No Contributor License Agreement (CLA) is required.
 - First responses to issues and pull requests should be fast and friendly; this is one of the strongest factors in whether contributors return.
 
@@ -43,7 +43,7 @@ Additionally:
 
 The project itself is built with AI agents ([§1.2](01-overview.md)), and contributors may use them too. `CONTRIBUTING.md` states:
 
-- The author of a pull request is responsible for every line of it and must understand it.
+- The author of a pull request is responsible for every line of it and must understand it. The author may be the project's machine account ([§16.5](#165-repository-security)); then its human operator is responsible for the pull request.
 - AI agents must follow `AGENTS.md`, the rules ([02-agent-rules.md](02-agent-rules.md)) and the Definition of Done, like any other contributor.
 - Pull requests that ignore the specification or the Definition of Done are closed without detailed review.
 
@@ -53,6 +53,8 @@ The project itself is built with AI agents ([§1.2](01-overview.md)), and contri
 - CI workflows triggered by pull requests from forks never have access to secrets.
 - Dependabot alerts, security updates and version updates ([§2.10](02-agent-rules.md)) and GitHub private vulnerability reporting are enabled.
 - The main branch is protected ([§2.14](02-agent-rules.md)).
+- The project's AI agents act on GitHub as a **machine account** ([ADR 0001](../adr/0001-github-identity-of-ai-agents.md)): a member of the organization with 2FA and only the **Write** role on the repository. It uses **one fine-grained personal access token per machine**, limited to the repository.
+- Maintainer credentials are never stored on machines or OS users where agents run.
 
 ## 16.6 Voluntary financial support
 
