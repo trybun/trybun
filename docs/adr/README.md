@@ -10,4 +10,4 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 
 | No. | Title | Status |
 |---|---|---|
-| [0001](0001-github-identity-of-ai-agents.md) | GitHub identity of AI agents | proposed |
+| [0001](0001-github-identity-of-ai-agents.md) | GitHub identity of AI agents | accepted |
