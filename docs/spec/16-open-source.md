@@ -53,7 +53,7 @@ The project itself is built with AI agents ([§1.2](01-overview.md)), and contri
 - CI workflows triggered by pull requests from forks never have access to secrets.
 - Dependabot alerts, security updates and version updates ([§2.10](02-agent-rules.md)) and GitHub private vulnerability reporting are enabled.
 - The main branch is protected ([§2.14](02-agent-rules.md)).
-- The project's AI agents act on GitHub as a **machine account** ([ADR 0001](../adr/0001-github-identity-of-ai-agents.md)): a member of the organization with 2FA and only the **Write** role on the repository. It uses **one fine-grained personal access token per machine**, limited to the repository.
+- The project's AI agents act on GitHub as a **machine account** ([ADR 0001](../adr/0001-github-identity-of-ai-agents.md)): a member of the organization with 2FA and only the **Write** role on the repository. Its role is the limit of what agents can do: it never gets the Maintain or Admin role on any repository, so its token (the `gh` login of the machine) cannot change the protection of the main branch.
 - Maintainer credentials are never stored on machines or OS users where agents run.
 
 ## 16.6 Voluntary financial support
