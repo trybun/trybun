@@ -1,6 +1,6 @@
 # 0001 – GitHub identity of AI agents
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-21
 - Deciders: the maintainer (`@dtk7c2`)
 - Specification: [§2.14](../spec/02-agent-rules.md), [§16.3](../spec/16-open-source.md), [§16.4](../spec/16-open-source.md), [§16.5](../spec/16-open-source.md)
@@ -46,7 +46,7 @@ The maintainer (`@dtk7c2`) is the only code owner (`.github/CODEOWNERS`: `* @dtk
 
 Maintainer credentials are never stored on machines or OS users where agents run.
 
-**DCO sign-off (proposed, open for the maintainer's decision):** the project's agents commit with the maintainer's identity and add the maintainer's `Signed-off-by` line ([§16.3](../spec/16-open-source.md)), as in the history so far; the maintainer's approval of the pull request confirms the sign-off. The alternative is that agents never add `Signed-off-by` and the maintainer signs off the commits.
+**DCO sign-off (decided 2026-10-21):** the project's agents commit with the maintainer's identity and add the maintainer's `Signed-off-by` line ([§16.3](../spec/16-open-source.md)), as in the history so far; the maintainer's approval of the pull request confirms the sign-off. The rejected alternative – agents never sign off and the maintainer adds `Signed-off-by` to their commits – does not work with the ruleset: the maintainer would have to rewrite and push the commits of the pull request, become the pusher of its most recent push and could then no longer approve it, while no other code owner exists. The sign-off is the certificate of a person, not of a tool: the agents work on the maintainer's behalf, and the review before the approval is where the maintainer certifies the change ([§16.4](../spec/16-open-source.md)). External contributors sign off with their own identity.
 
 The squash commit of a pull request opened by the machine account is authored by the machine account (`dtk7c2-2 <dtk7c2.2@gmail.com>`): GitHub makes the PR author the author of the squash commit, and the merge cannot choose another author. This is the intended attribution – the machine account prepared the change, and the `Signed-off-by: Dawid Fac <dtk7c2@gmail.com>` lines carried into the squash commit body show who is responsible for it ([§16.4](../spec/16-open-source.md)). The DCO check runs on the commits of the pull request, which are authored and signed off by the maintainer.
 
