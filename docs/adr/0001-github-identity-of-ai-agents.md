@@ -32,7 +32,7 @@ Chosen option: **1, a machine account** (`dtk7c2-2`), because it is the only opt
 GitHub's terms allow one free machine account per person. The account:
 
 - is a member of the `trybun` organization with 2FA and has the **Write** role on `trybun/trybun` – never Maintain or Admin, here or in any other repository it reaches;
-- authenticates with the **OAuth token of `gh`** (`gh auth login`, scopes `repo`, `workflow`, `read:org`), stored in `gh` of the OS user that runs the agents. The token can do whatever the account can do, so the **Write role is the security boundary**, not the token. The maintainer removes the `gist` scope that `gh` adds by default (`gh auth refresh -r gist`), so the token cannot publish content as gists;
+- authenticates with the **OAuth token of `gh`** (`gh auth login`, scopes `repo`, `workflow`, `read:org`, `gist`), stored in `gh` of the OS user that runs the agents. The token can do whatever the account can do, so the **Write role is the security boundary**, not the token. The `gist` scope belongs to the minimum scopes of `gh` and cannot be removed from its OAuth token; the risk that the token publishes content as gists is accepted;
 - pushes branches and opens pull requests; it never approves them.
 
 This decision covers only the project's own agents, run by the maintainer through Cezar. External contributors and their AI agents work from their own GitHub accounts and forks and sign off with their own identity ([§16.3](../spec/16-open-source.md), [§16.4](../spec/16-open-source.md)); for them nothing changes except that a code owner approves their pull requests.
@@ -66,7 +66,7 @@ Bad, and the rules that follow from it:
 - **Undocumented ruleset option.** GitHub added `require_extra_approval_for_unattributed_changes: true` to the ruleset by default. It is undocumented; its effect on the first pull requests is watched and recorded in project memory.
 - **Shared `gh` login.** `gh auth login` on a shared OS user switches `gh` for every project of that user. An SSH remote pushes as the key's owner, so the remote is https and git uses `gh auth setup-git`.
 - **Long-lived token.** The OAuth token of `gh` does not expire; it is revoked under *Settings → Applications → Authorized OAuth Apps → GitHub CLI* of the machine account when a machine is retired or the token may have leaked. Giving the machine account an Admin role anywhere would turn this token into an administrative credential.
-- **Fine-grained token as an option.** A fine-grained personal access token (one per resource owner, with selected repositories, editable later) would limit the token itself, but needs a token per organization and regular renewal. It works only for organization members, not for outside collaborators.
+- **Fine-grained token as an option.** A fine-grained personal access token (one per resource owner, with selected repositories, editable later, used with `gh auth login --with-token`) would limit the token itself and drop the `gist` scope, but needs a token per organization and regular renewal. It works only for organization members, not for outside collaborators.
 - **One maintainer.** While the maintainer is the only code owner, nothing can be merged when they are unavailable; more code owners are added as the project grows ([§16.3](../spec/16-open-source.md)).
 
 ## Pros and cons of the options
