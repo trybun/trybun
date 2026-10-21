@@ -1,0 +1,4 @@
+{
+  "extends": "@trybun/tsconfig/nestjs.json",
+  "include": ["src", "test", "*.config.ts"]
+}

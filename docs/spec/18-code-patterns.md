@@ -94,7 +94,7 @@ Every endpoint follows the order of checks of [§17.2](17-conventions.md) throug
 4. **Validation** (global `StandardSchemaValidationPipe` with `errorHttpStatusCode: 422`): every `@Body`, `@Query`, `@Param` and `@MessageBody` declares its contract schema with the `schema` option, because a parameter without it is not validated; one `exceptionFactory` turns the issues into `422` with `errors[]`. A missing `If-Match` on a versioned record returns `428`.
 5. **Controller**: calls one service method with the principal, the identifiers, the input and the expected version.
 6. **Service**: loads the records it changes inside its transaction through the ability; referenced records (e.g. a milestone, the original of a duplicate) not visible, `404`; field-level permission rules (e.g. a Developer assigns only themselves), `403`; business rules, `422` or `409`; stale version, `412`.
-7. **Serialization** (global `StandardSchemaSerializerInterceptor`): the response schema is declared once per handler with the project's response decorator, which combines `@SerializeOptions({ schema })` with `@ApiResponse({ standardSchema })`. The schema's output is sent, so fields outside the schema are stripped and a record never carries fields its audience must not see; a response that does not match its schema is a server error (`500`).
+7. **Serialization** (global `StandardSchemaSerializerInterceptor`): the response schema is declared once per handler with the project's response decorator `@ResponseSchema()`, which combines `@SerializeOptions({ schema })` with `@ApiResponse({ standardSchema })`. The schema's output is sent, so fields outside the schema are stripped and a record never carries fields its audience must not see; a response that does not match its schema is a server error (`500`).
 8. **Exception filter** (global): every error becomes Problem Details ([§17.2](17-conventions.md)); unexpected errors are logged once with the request ID and returned as `500` without details.
 
 ### Authorization
@@ -267,7 +267,7 @@ No global client state library is used.
 
 | Pattern | Reference implementation (planned) | Task |
 |---|---|---|
-| Server and web layout, lint boundaries | `apps/server/src/`, `apps/web/src/` | S0-01 |
+| Server and web layout, lint boundaries | `apps/server/src/`, `apps/web/src/`, `packages/eslint-config/src/` | S0-01 |
 | Transaction with an outbox event and a Worker handler | `apps/server/src/platform/outbox/` | S0-04 |
 | UI component with variants and stories | `packages/ui/src/components/button.tsx` | S0-07 |
 | Server query, prefetch and hydration in the web | `apps/web/src/features/` (application shell) | S0-08 |

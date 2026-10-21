@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Rule 10: a new version is installed only after a 7-day cooldown (in minutes).
+minimumReleaseAge: 10080
+
+# Dependencies allowed to run install scripts; every other one is refused.
+allowBuilds:
+  '@scarf/scarf': false
+  '@swc/core': true
+  unrs-resolver: true
+
+peerDependencyRules:
+  allowedVersions:
+    # openapi-typescript 7 declares TypeScript 5 only; verified with TypeScript 6 in S0-01.
+    openapi-typescript>typescript: '6'
