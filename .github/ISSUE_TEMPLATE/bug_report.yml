@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not work as the documentation or specification says
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Do not report security vulnerabilities here** – see [SECURITY.md](https://github.com/trybun/trybun/security/policy). Do not paste tokens, personal data or ticket content.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Trybun version or commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser, device and screen width
+      description: For example "Safari on iPhone, 390 px".
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Remove tokens and personal data first.
