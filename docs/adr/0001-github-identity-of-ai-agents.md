@@ -34,6 +34,8 @@ GitHub's terms allow one free machine account per person. The account:
 - uses **one fine-grained personal access token per machine**: resource owner `trybun`, only `trybun/trybun`, Contents read and write, Pull requests read and write, Workflows read and write, Actions read, Commit statuses read, 90-day expiry, stored in `gh` of the OS user that runs the agents;
 - pushes branches and opens pull requests; it never approves them.
 
+This decision covers only the project's own agents, run by the maintainer through Cezar. External contributors and their AI agents work from their own GitHub accounts and forks and sign off with their own identity ([§16.3](../spec/16-open-source.md), [§16.4](../spec/16-open-source.md)); for them nothing changes except that a code owner approves their pull requests.
+
 The maintainer (`@dtk7c2`) is the only code owner (`.github/CODEOWNERS`: `* @dtk7c2`) and approves on GitHub (web or mobile app). The ruleset "Protect main" (default branch, active, no bypass actors) enforces this:
 
 - a pull request is required, with 1 approval and Code Owners review;
@@ -43,9 +45,9 @@ The maintainer (`@dtk7c2`) is the only code owner (`.github/CODEOWNERS`: `* @dtk
 
 Maintainer credentials are never stored on machines or OS users where agents run.
 
-**DCO sign-off (proposed, open for the maintainer's decision):** agents commit with the maintainer's identity and add the maintainer's `Signed-off-by` line ([§16.3](../spec/16-open-source.md)), as in the history so far; the maintainer's approval of the pull request confirms the sign-off. The alternative is that agents never add `Signed-off-by` and the maintainer signs off the commits.
+**DCO sign-off (proposed, open for the maintainer's decision):** the project's agents commit with the maintainer's identity and add the maintainer's `Signed-off-by` line ([§16.3](../spec/16-open-source.md)), as in the history so far; the maintainer's approval of the pull request confirms the sign-off. The alternative is that agents never add `Signed-off-by` and the maintainer signs off the commits.
 
-The squash commit on `main` is authored by the machine account (`dtk7c2-2 <dtk7c2.2@gmail.com>`): GitHub makes the PR author the author of the squash commit, and the merge cannot choose another author. This is the intended attribution – the machine account prepared the change, and the `Signed-off-by: Dawid Fac <dtk7c2@gmail.com>` lines carried into the squash commit body show who is responsible for it ([§16.4](../spec/16-open-source.md)). The DCO check runs on the commits of the pull request, which are authored and signed off by the maintainer.
+The squash commit of a pull request opened by the machine account is authored by the machine account (`dtk7c2-2 <dtk7c2.2@gmail.com>`): GitHub makes the PR author the author of the squash commit, and the merge cannot choose another author. This is the intended attribution – the machine account prepared the change, and the `Signed-off-by: Dawid Fac <dtk7c2@gmail.com>` lines carried into the squash commit body show who is responsible for it ([§16.4](../spec/16-open-source.md)). The DCO check runs on the commits of the pull request, which are authored and signed off by the maintainer.
 
 ### Consequences
 
