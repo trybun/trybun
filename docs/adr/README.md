@@ -10,4 +10,4 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 
 | No. | Title | Status |
 |---|---|---|
-| – | _No ADRs yet. The stack decisions of [§14](../spec/14-architecture.md) are recorded as the first ADRs in task S0-01._ | – |
+| [0001](0001-github-identity-of-ai-agents.md) | GitHub identity of AI agents | proposed |
