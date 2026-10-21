@@ -36,7 +36,7 @@ Additionally:
 - Anyone can contribute through a fork and a pull request. Write access is granted only to trusted contributors after a history of good contributions (contributor → reviewer → maintainer).
 - Larger contributions (new functionality, changes of behavior) start with a change specification in `.ai/specs/` proposed as a pull request, so the idea can be discussed before any code is written ([§2.8](02-agent-rules.md)).
 - Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.14](02-agent-rules.md)). An approval means an approval by a **code owner** (`.github/CODEOWNERS`, a human maintainer); approvals by the machine account ([§16.5](#165-repository-security)) never count.
-- **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line confirming that the author has the right to submit the code. CI checks it. No Contributor License Agreement (CLA) is required.
+- **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line confirming that the author has the right to submit the code. CI checks it. No Contributor License Agreement (CLA) is required. The project's own agents ([§16.5](#165-repository-security)) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0001](../adr/0001-github-identity-of-ai-agents.md)).
 - First responses to issues and pull requests should be fast and friendly; this is one of the strongest factors in whether contributors return.
 
 ## 16.4 AI-assisted contributions
