@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/platform/config/load-config.js';
 import { KeycloakAccessTokenVerifier } from '../../src/platform/authentication/keycloak-access-token-verifier.js';
 import { TEST_ENV } from '../env.js';
-import { signIn } from './browser-sign-in.js';
+import { refreshAccessToken, signIn } from './browser-sign-in.js';
 import { adminApi, applyRealmConfig, startKeycloak, type TestKeycloak } from './keycloak.js';
 
 interface Realm {
@@ -138,6 +138,21 @@ describe('Keycloak realm configuration', () => {
       });
 
       const claims = await verifier().verify(accessToken ?? '');
+      expect(claims?.amr).toEqual(['pwd', 'otp']);
+    });
+
+    it('keeps the second factor in the tokens of a later refresh', async () => {
+      const username = await createUser({ team: true, otp: true });
+      const { refreshToken } = await signIn(keycloak, {
+        username,
+        password: 'password',
+        otpSecret: OTP_SECRET,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+
+      const accessToken = await refreshAccessToken(keycloak, refreshToken ?? '');
+
+      const claims = await verifier().verify(accessToken);
       expect(claims?.amr).toEqual(['pwd', 'otp']);
     });
 

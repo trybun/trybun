@@ -15,7 +15,7 @@ Non-obvious behaviour found when the sign-in was built (S0-05, October 2026, Key
 
 ## Keycloak
 
-- **`amr` claim**: the `oidc-amr-mapper` stays empty until each execution has an authenticator config with `default.reference.value` (`pwd` for the password form, `otp` for the OTP form).
+- **`amr` claim**: the `oidc-amr-mapper` stays empty until each execution has an authenticator config with `default.reference.value` (`pwd` for the password form, `otp` for the OTP form). A method stays in the claim only for `default.reference.maxAge` seconds after the sign-in – unset means 0, so a token issued a second later (a slow CI runner, every refresh) has `amr: []`; the realm sets the maximum session lifetime. `realm.integration.spec.ts` checks a refresh after 2 seconds.
 - **2FA for a group**: `conditional-user-role` with the realm role `team` granted by the group `team`. A REQUIRED OTP form for a user without OTP adds the required action `CONFIGURE_TOTP`, so the sign-in stops at `/login-actions/required-action`. Sign-ins through an identity provider skip the browser flow's forms – the `postBrokerLoginFlowAlias` flow repeats the condition.
 - **Admin REST user creation** accepts OTP credentials (`type: otp`, `secretData: {"value": …}`, `credentialData` with `subType: totp`); the secret is the raw string, an authenticator app needs its base32 form (pick a length that is a multiple of 5 bytes to avoid `=` padding).
 - **TOTP replay protection**: the same code is refused twice in one 30-second window; scripted sign-ins wait for the next window.

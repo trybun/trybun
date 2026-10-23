@@ -9,6 +9,7 @@ export interface SignInResult {
   /** The page Keycloak shows instead of completing the sign-in, e.g. a required action. */
   stoppedAt?: string;
   accessToken?: string;
+  refreshToken?: string;
 }
 
 /** The current TOTP (RFC 6238, SHA-1, 6 digits, 30 seconds) of a Keycloak OTP secret. */
@@ -81,6 +82,27 @@ export async function signIn(
       code_verifier: verifier,
     }),
   });
-  const { access_token: accessToken } = (await tokens.json()) as { access_token: string };
-  return { accessToken };
+  const { access_token: accessToken, refresh_token: refreshToken } = (await tokens.json()) as {
+    access_token: string;
+    refresh_token: string;
+  };
+  return { accessToken, refreshToken };
+}
+
+/** A new access token for a refresh token, as the BFF obtains it (§14.4). */
+export async function refreshAccessToken(
+  keycloak: TestKeycloak,
+  refreshToken: string,
+): Promise<string> {
+  const response = await fetch(`${keycloak.url}/realms/trybun/protocol/openid-connect/token`, {
+    method: 'POST',
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: 'trybun-web',
+      client_secret: WEB_CLIENT_SECRET,
+    }),
+  });
+  const { access_token: accessToken } = (await response.json()) as { access_token: string };
+  return accessToken;
 }

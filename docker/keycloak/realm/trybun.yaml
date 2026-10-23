@@ -139,16 +139,21 @@ authenticationFlows:
         priority: 20
         authenticatorFlow: false
 authenticatorConfig:
-  # References of the authentication methods in the `amr` claim (RFC 8176).
+  # References of the authentication methods in the `amr` claim (RFC 8176). A method stays in the
+  # claim only for `maxAge` seconds after the sign-in – the maximum session lifetime, so refreshed
+  # tokens keep it.
   - alias: trybun password reference
     config:
       default.reference.value: pwd
+      default.reference.maxAge: '2592000'
   - alias: trybun otp reference
     config:
       default.reference.value: otp
+      default.reference.maxAge: '2592000'
   - alias: trybun otp reference after broker login
     config:
       default.reference.value: otp
+      default.reference.maxAge: '2592000'
   - alias: trybun team member
     config:
       condUserRole: team
