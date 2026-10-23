@@ -1,0 +1,73 @@
+# Automated update pull requests (§2.10): security updates immediately (enabled in the repository
+# settings, no cooldown); version updates weekly, grouped, after a 7-day cooldown. Major updates
+# arrive as separate pull requests and are planned tasks (§2.10). The commit messages are
+# Conventional Commits with the scope `deps` (§2.14).
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      npm:
+        applies-to: version-updates
+        update-types: [minor, patch]
+    ignore:
+      # Prisma ORM 8 waits for its planned upgrade task (§14.2).
+      - dependency-name: prisma
+        update-types: [version-update:semver-major]
+      - dependency-name: '@prisma/*'
+        update-types: [version-update:semver-major]
+    commit-message:
+      prefix: fix(deps)
+      prefix-development: chore(deps)
+
+  - package-ecosystem: github-actions
+    directories: [/, /.github/actions/*]
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        applies-to: version-updates
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: docker
+    directories: [/docker/*]
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      docker:
+        applies-to: version-updates
+        update-types: [minor, patch]
+    ignore:
+      # Only Node.js LTS lines; a move to the next LTS is a planned task (§2.10).
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+    commit-message:
+      prefix: fix(deps)
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      docker-compose:
+        applies-to: version-updates
+        update-types: [minor, patch]
+    commit-message:
+      prefix: fix(deps)

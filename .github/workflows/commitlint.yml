@@ -1,5 +1,6 @@
 # Commit messages and the pull request title (it becomes the squash commit on main) are
-# Conventional Commits with the closed scope list of §2.14. Runs again when the title is edited.
+# Conventional Commits with the closed scope list of §2.14, and every commit is signed off (DCO,
+# §16.3). Runs again when the title is edited.
 name: Commit messages
 
 on:
@@ -33,3 +34,22 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: printf '%s\n' "$PR_TITLE" | pnpm exec commitlint --verbose
+
+  dco:
+    name: DCO sign-off
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Check the sign-off of every commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-dco.js "$BASE_SHA" "$HEAD_SHA"

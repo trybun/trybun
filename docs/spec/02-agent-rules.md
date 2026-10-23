@@ -276,7 +276,7 @@ Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components
 | **Adding a dependency** (agent) | The agent checks that the package exists, is actively maintained and widely used, has no known vulnerabilities, has an MIT-compatible license ([§16.1](16-open-source.md)), and adds its latest stable version that is at least 7 days old (the cooldown applies to new dependencies too; security fixes excepted) with an explicit version range – never through a dist-tag, because `latest` may point to a release candidate (in October 2026 `prisma@latest` was a Prisma ORM 8 release candidate). It prefers fewer dependencies: no package for what a few lines of code or an existing dependency already do | Agent's responsibility; verified in review |
 | **Every pull request** (CI) | Dependency review of added/changed packages, vulnerability audit of the lockfile, license check. Install only from the committed lockfile (`--frozen-lockfile`) | **Yes**, for new vulnerabilities of severity high or critical |
 | **Continuously on the main branch** (scheduled, at least daily) | Vulnerability alerts for all dependencies (GitHub Dependabot alerts), scan of container images ([§15.4](15-deployment.md)) | Opens an alert and a fix pull request |
-| **Automated update pull requests** | Dependabot: security updates immediately; patch and minor updates weekly, grouped, with a 7-day cooldown; GitHub Actions and base images included | Normal review and CI apply |
+| **Automated update pull requests** | Dependabot: security updates immediately; patch and minor updates weekly, grouped, with a 7-day cooldown; GitHub Actions and base images included. Major updates arrive as separate pull requests; none for `prisma` and `@prisma/*` ([§14.2](14-architecture.md)) and for the Node.js base image (LTS line) | Normal review and CI apply |
 | **Release** ([§15.4](15-deployment.md)) | Scan of the built images; a **software bill of materials (SBOM)** in CycloneDX or SPDX format is attached to the GitHub Release | **Yes**: no release with known critical vulnerabilities |
 | **Monthly** (planned task) | Review of outdated dependencies and pending major updates; planning of major upgrades; review of upstream changes to components copied from shadcn/ui (`shadcn diff`) and deliberate porting of relevant fixes | – |
 
@@ -294,8 +294,8 @@ If no fixed version exists, the agent documents the risk and the mitigation in t
 ### Supply-chain hardening
 
 - The lockfile (`pnpm-lock.yaml`) is always committed and reviewed.
-- GitHub Actions are pinned to a full commit SHA; container base images are pinned to a digest. Dependabot keeps both up to date.
-- Package install scripts are allowed only for explicitly approved packages (pnpm `onlyBuiltDependencies`).
+- GitHub Actions are pinned to a full commit SHA; container base images are pinned to a digest, written in the `FROM` line of the Dockerfile (Dependabot does not read images from `ARG` values) and in `image:` of the Compose files; the images of the integration tests use the references of the Compose files. Dependabot keeps them up to date (`.github/dependabot.yml`); `pnpm lint` checks the pinning (`scripts/check-supply-chain.js`).
+- Package install scripts are allowed only for explicitly approved packages (pnpm `allowBuilds` in `pnpm-workspace.yaml`, the pnpm 12 successor of `onlyBuiltDependencies`); the install of a package with an install script that is not listed fails.
 
 ## 2.11 Rule 11 – Versioning
 
@@ -495,7 +495,7 @@ Every pull request passes at least the following in CI:
 | Container image scan (release, [§15.4](15-deployment.md)) | Trivy |
 | SBOM (release) | Syft, CycloneDX format |
 | Commit messages | commitlint (Conventional Commits, closed scope list) for the commits and the title of the pull request |
-| DCO ([§16.3](16-open-source.md)) | DCO check |
+| DCO ([§16.3](16-open-source.md)) | Project script `scripts/check-dco.js` (job `DCO sign-off`) |
 | Specification consistency | link checker (lychee) and a project script for `§N.M` references |
 
 **License policy** ([§16.1](16-open-source.md)):
