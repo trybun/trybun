@@ -47,7 +47,8 @@ export class AuthenticationGuard implements CanActivate {
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();
     const token = BEARER_JWT.exec(request.headers.authorization ?? '')?.[1];
-    const claims = token === undefined ? undefined : await this.verifier.verify(token);
+    // Every request goes through the verification; without a JWT it fails as an invalid token.
+    const claims = await this.verifier.verify(token ?? '');
     const principal =
       claims === undefined ? undefined : await this.authentication.findPrincipal(claims.sub);
     if (claims === undefined || principal === undefined) {
