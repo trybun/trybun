@@ -1,6 +1,6 @@
 # 0001 – GitHub identity of AI agents
 
-- Status: accepted
+- Status: superseded by [0005](0005-github-app-as-agent-identity.md)
 - Date: 2026-10-21
 - Deciders: the maintainer (`@dtk7c2`)
 - Specification: [§2.14](../spec/02-agent-rules.md), [§16.3](../spec/16-open-source.md), [§16.4](../spec/16-open-source.md), [§16.5](../spec/16-open-source.md)

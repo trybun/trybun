@@ -35,15 +35,15 @@ Additionally:
 
 - Anyone can contribute through a fork and a pull request. Write access is granted only to trusted contributors after a history of good contributions (contributor → reviewer → maintainer).
 - Larger contributions (new functionality, changes of behavior) start with a change specification in `.ai/specs/` proposed as a pull request, so the idea can be discussed before any code is written ([§2.8](02-agent-rules.md)).
-- Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.14](02-agent-rules.md)). An approval means an approval by a **code owner** (`.github/CODEOWNERS`, a human maintainer); approvals by the machine account ([§16.5](#165-repository-security)) never count.
-- **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line confirming that the author has the right to submit the code. CI checks it. No Contributor License Agreement (CLA) is required. The project's own agents ([§16.5](#165-repository-security)) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0001](../adr/0001-github-identity-of-ai-agents.md)).
+- Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.14](02-agent-rules.md)). An approval means an approval by a **code owner** (`.github/CODEOWNERS`, a human maintainer); approvals by the project's GitHub App ([§16.5](#165-repository-security)) never count.
+- **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line confirming that the author has the right to submit the code. CI checks it. No Contributor License Agreement (CLA) is required. The project's own agents ([§16.5](#165-repository-security)) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0005](../adr/0005-github-app-as-agent-identity.md)).
 - First responses to issues and pull requests should be fast and friendly; this is one of the strongest factors in whether contributors return.
 
 ## 16.4 AI-assisted contributions
 
 The project itself is built with AI agents ([§1.2](01-overview.md)), and contributors may use them too. `CONTRIBUTING.md` states:
 
-- The author of a pull request is responsible for every line of it and must understand it. The author may be the project's machine account ([§16.5](#165-repository-security)); then its human operator is responsible for the pull request.
+- The author of a pull request is responsible for every line of it and must understand it. The author may be the project's GitHub App ([§16.5](#165-repository-security)); then its human operator is responsible for the pull request.
 - AI agents must follow `AGENTS.md`, the rules ([02-agent-rules.md](02-agent-rules.md)) and the Definition of Done, like any other contributor.
 - Pull requests that ignore the specification or the Definition of Done are closed without detailed review.
 
@@ -53,7 +53,7 @@ The project itself is built with AI agents ([§1.2](01-overview.md)), and contri
 - CI workflows triggered by pull requests from forks never have access to secrets.
 - Dependabot alerts, security updates and version updates ([§2.10](02-agent-rules.md)) and GitHub private vulnerability reporting are enabled.
 - The main branch is protected ([§2.14](02-agent-rules.md)).
-- The project's AI agents act on GitHub as a **machine account** ([ADR 0001](../adr/0001-github-identity-of-ai-agents.md)): a member of the organization with 2FA and only the **Write** role on the repository. Its role is the limit of what agents can do: it never gets the Maintain or Admin role on any repository, so its token (the `gh` login of the machine) cannot change the protection of the main branch.
+- The project's AI agents act on GitHub as a **GitHub App** owned by the maintainer ([ADR 0005](../adr/0005-github-app-as-agent-identity.md)), installed only on this repository. Its permissions are the limit of what agents can do: it never gets the Administration permission, so its tokens cannot change the protection of the main branch. Its installation tokens expire after an hour; its private key stays on the machine where the agents run.
 - Maintainer credentials are never stored on machines or OS users where agents run.
 
 ## 16.6 Voluntary financial support

@@ -37,13 +37,13 @@ Signed-off-by: Your Name <your.email@example.com>
 ```
 
 - **Contributors** sign off with their own identity. CI checks it. No Contributor License Agreement is required.
-- **The project's own agents** (run by the maintainer through Cezar) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0001](docs/adr/0001-github-identity-of-ai-agents.md), [§16.3](docs/spec/16-open-source.md)). Agents of external contributors act from the contributor's own account and fork and sign off with the contributor's identity.
+- **The project's own agents** (run by the maintainer through Cezar) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0005](docs/adr/0005-github-app-as-agent-identity.md), [§16.3](docs/spec/16-open-source.md)). Agents of external contributors act from the contributor's own account and fork and sign off with the contributor's identity.
 
 ## AI-assisted contributions
 
 You may use AI agents ([§16.4](docs/spec/16-open-source.md)). The project is built that way itself.
 
-- The author of a pull request is responsible for every line of it and must understand it. If the author is the project's machine account, its human operator is responsible.
+- The author of a pull request is responsible for every line of it and must understand it. If the author is the project's GitHub App, its human operator is responsible.
 - AI agents must follow [`AGENTS.md`](AGENTS.md), the [rules](docs/spec/02-agent-rules.md) and the Definition of Done, like any other contributor.
 - Pull requests that ignore the specification or the Definition of Done are closed without detailed review.
 
