@@ -20,7 +20,10 @@ WORKDIR /app
 COPY --from=build /out/package.json ./
 COPY --from=build /out/node_modules ./node_modules
 COPY --from=build /repo/apps/server/dist ./dist
+# Migrations of the one-off `migrate` service (§15.7).
+COPY --from=build /repo/apps/server/prisma.config.ts ./
+COPY --from=build /repo/apps/server/prisma ./prisma
 USER node
 EXPOSE 3001
-# The API; the Worker runs `node dist/worker.js`.
+# The API; the Worker runs `node dist/worker.js`, the migrations `prisma migrate deploy`.
 CMD ["node", "dist/main.js"]

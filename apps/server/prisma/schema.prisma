@@ -1,0 +1,69 @@
+// Database schema of Trybun (§17.1, §17.2). Models and fields follow the TypeScript conventions;
+// every model maps to a plural snake_case table and every multi-word field to a snake_case
+// column (`pnpm lint` checks it). Objects Prisma does not model are created with SQL in the
+// migrations (§17.2).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// `user.kind` (§7.1)
+enum UserKind {
+  team
+  end_user
+
+  @@map("user_kind")
+}
+
+/// `user.state` (§7.4)
+enum UserState {
+  invited
+  active
+  deactivated
+  anonymized
+
+  @@map("user_state")
+}
+
+/// An account (§7.4). Keycloak stores only credentials and sign-in factors; roles live here.
+/// Anonymization (§13.2) removes the personal fields, so they are optional.
+model User {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  /// The `sub` of the Keycloak user; missing until an invited person signs in for the first time.
+  keycloakUserId String?   @unique @map("keycloak_user_id")
+  email          String?   @unique
+  displayName    String?   @map("display_name")
+  /// Set on the first sign-in (§13.1).
+  language       String?
+  /// IANA time-zone name (§13.1).
+  timeZone       String?   @map("time_zone")
+  kind           UserKind
+  isAdmin        Boolean   @default(false) @map("is_admin")
+  state          UserState @default(invited)
+  githubLogin    String?   @unique @map("github_login")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("users")
+}
+
+/// Transactional outbox (§17.2): written in the transaction of a change, published by the Worker.
+model OutboxEvent {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  /// Internal event name `resource.event` (§17.1).
+  type        String
+  /// Identifiers and changed values only, never content or personal data (§18.3).
+  payload     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(3)
+
+  @@index([publishedAt])
+  @@map("outbox_events")
+}

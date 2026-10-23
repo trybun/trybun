@@ -269,7 +269,7 @@ No global client state library is used.
 |---|---|---|
 | Server and web layout, lint boundaries | `apps/server/src/`, `apps/web/src/`, `packages/eslint-config/src/` | S0-01 |
 | Integration test set-up: containers, MSW | `apps/server/test/setup/`, `apps/server/test/msw/` | S0-02 |
-| Transaction with an outbox event and a Worker handler | `apps/server/src/platform/outbox/` | S0-04 |
+| Transaction with an outbox event and a Worker handler | `apps/server/src/platform/outbox/` (job options, keys and timers: `apps/server/src/platform/queues/job-options.ts`) | S0-04 |
 | UI component with variants and stories | `packages/ui/src/components/button.tsx` | S0-07 |
 | Server query, prefetch and hydration in the web | `apps/web/src/features/` (application shell) | S0-08 |
 | Request pipeline, Problem Details, optimistic locking | `apps/server/src/platform/` | S0-17 |

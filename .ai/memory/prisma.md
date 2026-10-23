@@ -9,3 +9,11 @@ Non-obvious behaviour of Prisma found when the version was chosen (October 2026)
 - TypedSQL (`$queryRawTyped`) is still a preview feature – the project uses `$queryRaw` tagged templates ([§18.3](../../docs/spec/18-code-patterns.md)).
 - Interactive transactions: `$transaction(async (tx) => …, { maxWait, timeout, isolationLevel })`; since 7.5 a nested `$transaction` uses a savepoint.
 - `@default(uuid(7))` generates UUIDv7 in Prisma Client (application side), as [§17.2](../../docs/spec/17-conventions.md) requires.
+
+Found when Prisma was set up (S0-04, October 2026):
+
+- The lockfile of Prisma 7.10 contains `@prisma/engines-version@8.1.0-…` – an engine build identifier, not a Prisma ORM 8 package; `scripts/check-prisma.js` exempts it.
+- `@prisma/engines` and `prisma` need their install scripts (`allowBuilds`): the schema engine of the migrations is a downloaded binary. `prisma` is a production dependency of `apps/server`, because the image runs `prisma migrate deploy` (one-off `migrate` service).
+- `prisma generate` runs without `DATABASE_URL` (postinstall, CI, image build) as long as `prisma.config.ts` does not call `env()`, which throws for a missing variable. `prisma migrate diff --from-empty --to-schema …` still needs a datasource URL (any URL; nothing connects) – without one it fails with an empty "Error in Schema engine".
+- The seed (`migrations.seed`) runs with `tsx`: Node's type stripping cannot run the generated client imported with `.js` extensions. `tsx` works without the install script of `esbuild` (denied).
+- The generated `prisma-client` output (`src/generated/prisma`) is TypeScript; the server bundle inlines it, its runtime `@prisma/client/runtime/*` stays external.
