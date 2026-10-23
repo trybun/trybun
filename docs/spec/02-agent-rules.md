@@ -494,7 +494,7 @@ Every pull request passes at least the following in CI:
 | Vulnerability audit of the lockfile | `pnpm audit` (high and critical block) |
 | Container image scan (release, [§15.4](15-deployment.md)) | Trivy |
 | SBOM (release) | Syft, CycloneDX format |
-| Commit messages | commitlint (Conventional Commits, closed scope list) for the commits and the title of the pull request |
+| Commit messages | commitlint (Conventional Commits, closed scope list) for the title of the pull request and its commits (project script `scripts/check-commit-messages.js`); Dependabot's commits are exempt – it chooses the case of their subject – and the title of its pull requests is corrected before merge |
 | DCO ([§16.3](16-open-source.md)) | Project script `scripts/check-dco.js` (job `DCO sign-off`) |
 | Specification consistency | link checker (lychee) and a project script for `§N.M` references |
 
