@@ -195,6 +195,10 @@ packages/
   eslint-config/    @trybun/eslint-config  Shared lint rules, incl. Tailwind and boundary rules
 docker/
   postgres/         Dockerfile of ghcr.io/trybun/postgres (pgvector + Polish dictionary)
+  server/, web/     Dockerfiles of ghcr.io/trybun/server and ghcr.io/trybun/web
+  caddy/, keycloak/ Caddy and Keycloak configuration of the deployment package (§15.4)
+compose.yaml        Docker Compose file of every environment (§15.1)
+compose.dev.yaml    Override of the local environment (§15.12)
 scripts/            Repository tooling run by CI, e.g. the specification consistency check
 docs/
   user/             User documentation (Rule 3)

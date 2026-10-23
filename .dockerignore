@@ -1,0 +1,16 @@
+# Build context of the images in docker/ (§15.4): source and lockfile only, never secrets.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+.git
+.ai
+.claude
+.github
+.env
+.env.*
+docs
+docker
+compose*.yaml

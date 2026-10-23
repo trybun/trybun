@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { InvalidConfigError, loadConfig } from './load-config.js';
 
@@ -6,6 +8,7 @@ describe('loadConfig', () => {
     expect(loadConfig({ TRYBUN_DOMAIN: 'trybun.example.com' })).toEqual({
       domain: 'trybun.example.com',
       apiPort: 3001,
+      workerHeartbeatFile: join(tmpdir(), 'trybun-worker.heartbeat'),
     });
   });
 
