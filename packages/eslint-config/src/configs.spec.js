@@ -76,9 +76,10 @@ const ui = [...library({ allowedPackages: ['@trybun/i18n'] }), ...react];
 
 describe('lint rules', () => {
   // The first type-aware lint builds the TypeScript program of the fixture, which typescript-eslint
-  // then reuses; on a busy CI runner that alone can take longer than the timeout of a test.
+  // then reuses; on a busy CI runner that alone can take longer than the timeout of a test. The
+  // warm-up lints the file the tests use, so the program already contains it.
   beforeAll(async () => {
-    await typedRuleIds(server, 'server', 'src/modules/tickets/warm-up.ts', 'export {};\n');
+    await typedRuleIds(server, 'server', 'src/modules/tickets/naming-case.ts', 'export {};\n');
   }, 60_000);
 
   it.each([
