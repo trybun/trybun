@@ -14,7 +14,7 @@ const KEYCLOAK_CONFIG_DIR = join(import.meta.dirname, '../../../../docker/keyclo
 const KEYCLOAK_IMAGE =
   'quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b';
 const KEYCLOAK_CONFIG_CLI_IMAGE =
-  'adorsys/keycloak-config-cli:6.5.1-26.1.0@sha256:1b22dfaa9ae0c71f74b0342f9221a6510f272da5def683dbba26a98e6b1b1411';
+  'adorsys/keycloak-config-cli:6.5.1-26.5.5@sha256:0955d98c8a341898b7aa177477edf8a1e90569ae50bbe7598141c1270b773274';
 
 const ADMIN_PASSWORD = 'admin';
 export const WEB_CLIENT_SECRET = 'web-client-secret';
