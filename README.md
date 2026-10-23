@@ -22,6 +22,18 @@ pnpm dev
 
 `pnpm dev` starts the infrastructure in Docker Compose (`compose.yaml` with `compose.dev.yaml`: PostgreSQL, Valkey, SeaweedFS, Keycloak, ClamAV and Mailpit, ports bound to `127.0.0.1`), applies the Keycloak configuration, runs the database migrations, loads the demo dataset, and then starts the web application on <http://localhost:3000>, the API on <http://localhost:3001/api/v1> and the Worker. Keycloak answers on <http://localhost:8080/auth>, Mailpit shows all outgoing e-mail on <http://localhost:8025>. When memory is short, remove `clamav` from `COMPOSE_PROFILES` in `.env`. A change of the API or the Worker rebuilds and restarts both ([§15.12](docs/spec/15-deployment.md)); `docker compose -f compose.yaml -f compose.dev.yaml down` stops the infrastructure.
 
+### Signing in locally
+
+Opening <http://localhost:3000> leads to the Keycloak login screen. In the local environment only, the seeded team accounts of the demo dataset sign in with a password ([§7.4](docs/spec/07-users-organizations-permissions.md)), so no GitHub OAuth application is needed:
+
+| Account | E-mail | Password |
+|---|---|---|
+| Administrator | `admin@example.com` | `trybun` |
+| Project manager | `manager@example.com` | `trybun` |
+| Developer | `developer@example.com` | `trybun` |
+
+Team members always sign in with 2FA. The seeded accounts share one TOTP secret: add `ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ` to an authenticator app, or print the current code with `oathtool --totp -b ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ`. Keycloak imports these accounts only on the first start of an empty Keycloak database ([`docker/keycloak/dev/`](docker/keycloak/dev)); after `docker compose -f compose.yaml -f compose.dev.yaml down -v` they are imported again. Sign-in with GitHub, Microsoft or Google appears on the login screen once its variables are set in `.env`.
+
 ## Scripts
 
 Run from the repository root:
@@ -79,7 +91,7 @@ The code inside the applications follows the patterns of [§18](docs/spec/18-cod
 
 ## Configuration
 
-All configuration comes from environment variables ([§15.3](docs/spec/15-deployment.md)); the system's own variables start with `TRYBUN_`. [`.env.example`](.env.example) lists every variable with its description. The API and the web application validate their variables at start-up and stop with a clear message when one is missing or invalid.
+All configuration comes from environment variables ([§15.3](docs/spec/15-deployment.md)); the system's own variables start with `TRYBUN_`. [`.env.example`](.env.example) lists every variable with its description. The API and the web application validate their variables at start-up and stop with a clear message when one is missing or invalid. The Keycloak realm is configuration as code in [`docker/keycloak/`](docker/keycloak), applied by the one-off `keycloak-config` service on every start ([§15.5](docs/spec/15-deployment.md)); optional parts – SMTP and each sign-in provider – are applied only when their variables are set.
 
 ## Deployment
 

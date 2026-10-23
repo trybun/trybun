@@ -24,6 +24,7 @@ x-server: &server
     TRYBUN_DOMAIN: ${TRYBUN_DOMAIN:?TRYBUN_DOMAIN must be set}
     DATABASE_URL: postgresql://trybun:${TRYBUN_POSTGRES_PASSWORD}@postgres:5432/trybun
     TRYBUN_VALKEY_URL: redis://:${TRYBUN_VALKEY_PASSWORD}@valkey:6379
+    TRYBUN_KEYCLOAK_URL: http://keycloak:8080/auth
   mem_limit: 512m
 
 services:
@@ -36,8 +37,13 @@ services:
     environment:
       TRYBUN_DOMAIN: ${TRYBUN_DOMAIN:?TRYBUN_DOMAIN must be set}
       TRYBUN_API_URL: http://api:3001
-    # Auth.js reaches Keycloak through its public issuer URL (§14.4).
-    networks: [internal, outbound]
+      # The sessions (§14.4).
+      DATABASE_URL: postgresql://trybun:${TRYBUN_POSTGRES_PASSWORD}@postgres:5432/trybun
+      NEXTAUTH_URL: https://${TRYBUN_DOMAIN}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set}
+      # Auth.js calls Keycloak over the internal network; the issuer stays public (§15.5).
+      TRYBUN_KEYCLOAK_URL: http://keycloak:8080/auth
+      TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: ${TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET:?TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET must be set}
     mem_limit: 512m
     healthcheck:
       test:
@@ -48,6 +54,11 @@ services:
       interval: 10s
       timeout: 5s
       start_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      keycloak-config:
+        condition: service_completed_successfully
 
   api:
     <<: *server
@@ -175,6 +186,8 @@ services:
       KC_HTTP_RELATIVE_PATH: /auth
       KC_PROXY_HEADERS: xforwarded
       KC_HEALTH_ENABLED: 'true'
+      # Administrators cannot impersonate users (§13.5).
+      KC_FEATURES_DISABLED: impersonation
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${TRYBUN_KEYCLOAK_ADMIN_PASSWORD:?TRYBUN_KEYCLOAK_ADMIN_PASSWORD must be set}
     networks: [internal, outbound]
@@ -200,17 +213,33 @@ services:
     restart: 'no'
     logging: *logging
     networks: [internal]
+    # Chooses the files to import from the variables below (docker/keycloak/apply-config.sh).
+    entrypoint: [sh, /config/apply-config.sh]
     environment:
       KEYCLOAK_URL: http://keycloak:8080/auth
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: ${TRYBUN_KEYCLOAK_ADMIN_PASSWORD}
-      # Keycloak reports ready before its first start has created the master realm.
-      KEYCLOAK_AVAILABILITYCHECK_ENABLED: 'true'
-      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 120s
-      IMPORT_FILES_LOCATIONS: /config/*
-      IMPORT_VARSUBSTITUTION_ENABLED: 'true'
+      TRYBUN_DOMAIN: ${TRYBUN_DOMAIN}
+      TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
+      TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: ${TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET:?TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET must be set}
+      TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET: ${TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET:?TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET must be set}
+      # Outgoing e-mail, shared with the server (§15.5); optional.
+      TRYBUN_SMTP_HOST: ${TRYBUN_SMTP_HOST:-}
+      TRYBUN_SMTP_PORT: ${TRYBUN_SMTP_PORT:-587}
+      TRYBUN_SMTP_SECURITY: ${TRYBUN_SMTP_SECURITY:-starttls}
+      TRYBUN_SMTP_USER: ${TRYBUN_SMTP_USER:-}
+      TRYBUN_SMTP_PASSWORD: ${TRYBUN_SMTP_PASSWORD:-}
+      TRYBUN_MAIL_FROM: ${TRYBUN_MAIL_FROM:-}
+      # Sign-in providers (§15.3); each one is created only when its variables are set.
+      TRYBUN_GITHUB_CLIENT_ID: ${TRYBUN_GITHUB_CLIENT_ID:-}
+      TRYBUN_GITHUB_CLIENT_SECRET: ${TRYBUN_GITHUB_CLIENT_SECRET:-}
+      TRYBUN_MICROSOFT_CLIENT_ID: ${TRYBUN_MICROSOFT_CLIENT_ID:-}
+      TRYBUN_MICROSOFT_CLIENT_SECRET: ${TRYBUN_MICROSOFT_CLIENT_SECRET:-}
+      TRYBUN_GOOGLE_CLIENT_ID: ${TRYBUN_GOOGLE_CLIENT_ID:-}
+      TRYBUN_GOOGLE_CLIENT_SECRET: ${TRYBUN_GOOGLE_CLIENT_SECRET:-}
     volumes:
-      - ./docker/keycloak/realms:/config:ro
+      - ./docker/keycloak/apply-config.sh:/config/apply-config.sh:ro
+      - ./docker/keycloak/realm:/config/realm:ro
     mem_limit: 512m
     depends_on:
       keycloak:

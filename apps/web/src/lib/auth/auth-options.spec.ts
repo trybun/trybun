@@ -1,0 +1,91 @@
+import type { Account } from 'next-auth';
+import { SignJWT } from 'jose';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { TEST_ENV } from '../../../test/env.js';
+import type { SignInTokens } from './session-adapter.js';
+
+vi.mock('server-only', () => ({}));
+
+const { createAuthOptions, toKeycloakTokens } = await import('./auth-options.js');
+
+const ID_TOKEN = await new SignJWT({ sub: 'user-1', sid: 'keycloak-session-1' })
+  .setProtectedHeader({ alg: 'HS256' })
+  .sign(new TextEncoder().encode('a test key of at least 32 characters'));
+
+const ACCOUNT: Account = {
+  provider: 'keycloak',
+  type: 'oauth',
+  providerAccountId: 'user-1',
+  access_token: 'access-token',
+  refresh_token: 'refresh-token',
+  id_token: ID_TOKEN,
+  expires_at: 1_793_000_000,
+};
+
+describe('toKeycloakTokens', () => {
+  it('takes the tokens, their expiry and the Keycloak session of a sign-in', () => {
+    expect(toKeycloakTokens(ACCOUNT)).toEqual({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      accessTokenExpiresAt: new Date(1_793_000_000_000),
+      keycloakSessionId: 'keycloak-session-1',
+    });
+  });
+
+  it.each(['access_token', 'refresh_token', 'expires_at', 'id_token'] as const)(
+    'refuses a token response without %s',
+    (field) => {
+      expect(toKeycloakTokens({ ...ACCOUNT, [field]: undefined })).toBeUndefined();
+    },
+  );
+});
+
+describe('createAuthOptions', () => {
+  beforeAll(() => {
+    for (const [name, value] of Object.entries(TEST_ENV)) {
+      vi.stubEnv(name, value);
+    }
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function signInCallback(signIn: SignInTokens | undefined, account: Account | null) {
+    const callback = createAuthOptions(signIn).callbacks?.signIn;
+    return callback?.({ user: { id: 'user-1' }, account });
+  }
+
+  it('keeps the tokens of a sign-in for the session it creates', async () => {
+    const signIn: SignInTokens = {};
+
+    expect(await signInCallback(signIn, ACCOUNT)).toBe(true);
+    expect(signIn.current?.refreshToken).toBe('refresh-token');
+  });
+
+  it.each([
+    ['without a sign-in slot (reading a session)', undefined, ACCOUNT],
+    ['without an account', {}, null],
+    ['with an incomplete token response', {}, { ...ACCOUNT, refresh_token: undefined }],
+  ])('refuses a sign-in %s', async (_case, signIn, account) => {
+    expect(await signInCallback(signIn, account)).toBe(false);
+  });
+
+  it('sends the browser a session without tokens or user data', async () => {
+    const callback = createAuthOptions().callbacks?.session;
+
+    const session = await callback?.({
+      session: { expires: '2026-11-03T09:15:00.000Z', user: { email: 'ada@example.com' } },
+      user: { id: 'user-1', email: '', emailVerified: null },
+      token: {},
+      newSession: undefined,
+      trigger: 'update',
+    });
+
+    expect(session).toEqual({ expires: '2026-11-03T09:15:00.000Z' });
+  });
+
+  it('keeps the sessions on the server', () => {
+    expect(createAuthOptions().session).toMatchObject({ strategy: 'database' });
+  });
+});

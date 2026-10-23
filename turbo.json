@@ -8,7 +8,7 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "passThroughEnv": ["TRYBUN_*", "DATABASE_URL"]
+      "passThroughEnv": ["TRYBUN_*", "DATABASE_URL", "NEXTAUTH_URL", "AUTH_SECRET"]
     },
     "lint": {},
     "typecheck": {},

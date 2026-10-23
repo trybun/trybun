@@ -1,0 +1,13 @@
+# Outgoing e-mail of Keycloak (password reset, e-mail verification) with the SMTP settings shared
+# with the server (§15.5), imported only when TRYBUN_SMTP_HOST is set.
+realm: trybun
+smtpServer:
+  host: $(env:TRYBUN_SMTP_HOST)
+  port: $(env:TRYBUN_SMTP_PORT:-587)
+  from: $(env:TRYBUN_MAIL_FROM)
+  fromDisplayName: Trybun
+  auth: $(env:KEYCLOAK_SMTP_AUTH)
+  user: $(env:TRYBUN_SMTP_USER:-)
+  password: $(env:TRYBUN_SMTP_PASSWORD:-)
+  starttls: $(env:KEYCLOAK_SMTP_STARTTLS)
+  ssl: $(env:KEYCLOAK_SMTP_SSL)

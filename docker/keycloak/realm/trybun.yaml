@@ -1,0 +1,246 @@
+# Realm of Trybun, applied by keycloak-config-cli on installation and on every update (§15.5).
+# Every setting in this file is managed by Trybun and overwritten on every run; settings an
+# Administrator changes in Keycloak that are not listed here are left untouched. The `env:` values
+# come from `.env` through the `keycloak-config` service (docker/keycloak/apply-config.sh).
+realm: trybun
+enabled: true
+displayName: Trybun
+sslRequired: external
+
+# No open registration (§7.4): accounts are created by invitations and the first-run wizard.
+registrationAllowed: false
+loginWithEmailAllowed: true
+duplicateEmailsAllowed: false
+editUsernameAllowed: false
+resetPasswordAllowed: true
+rememberMe: false
+
+# Translated login screens (§13.1, §15.5).
+internationalizationEnabled: true
+supportedLocales: [en, pl]
+defaultLocale: $(env:TRYBUN_DEFAULT_LANGUAGE:-en)
+
+# Brute-force detection (§14.4): 5 failures lock the account for 1 minute, the wait doubles up to
+# 15 minutes; never a permanent lockout.
+bruteForceProtected: true
+permanentLockout: false
+failureFactor: 5
+waitIncrementSeconds: 60
+maxFailureWaitSeconds: 900
+bruteForceStrategy: MULTIPLE
+maxDeltaTimeSeconds: 43200
+quickLoginCheckMilliSeconds: 1000
+minimumQuickLoginWaitSeconds: 60
+
+# Lifetimes (§14.4): 5-minute access tokens, refresh tokens rotated on every use. The session
+# lifetimes are those of end users; the web session ends idle team sessions earlier (S0-14).
+accessTokenLifespan: 300
+ssoSessionIdleTimeout: 28800
+ssoSessionMaxLifespan: 2592000
+revokeRefreshToken: true
+refreshTokenMaxReuse: 0
+
+# Login and admin events (§13.5), kept for 14 days (§13.2); admin events without representations,
+# which would contain personal data.
+eventsEnabled: true
+eventsExpiration: 1209600
+adminEventsEnabled: true
+adminEventsDetailsEnabled: false
+
+# Team accounts are members of the group `team` (§7.4), kept in sync by the server. The group
+# grants the realm role `team`, which the sign-in flows use to require 2FA; the application never
+# reads roles from tokens (§14.4).
+roles:
+  realm:
+    - name: team
+      description: Team member; sign-in requires 2FA.
+groups:
+  - name: team
+    realmRoles: [team]
+
+# 2FA for the team (§7.4): after the password form and after every sign-in through an identity
+# provider, members of the role `team` must enter a one-time password; without one, Keycloak
+# requires its set-up before the sign-in completes.
+browserFlow: trybun browser
+authenticationFlows:
+  - alias: trybun browser
+    description: Browser sign-in with mandatory 2FA for the team.
+    providerId: basic-flow
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: auth-cookie
+        requirement: ALTERNATIVE
+        priority: 10
+        authenticatorFlow: false
+      - authenticator: identity-provider-redirector
+        requirement: ALTERNATIVE
+        priority: 20
+        authenticatorFlow: false
+      - flowAlias: trybun browser forms
+        requirement: ALTERNATIVE
+        priority: 30
+        authenticatorFlow: true
+  - alias: trybun browser forms
+    description: Password form, then 2FA for the team.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: auth-username-password-form
+        authenticatorConfig: trybun password reference
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - flowAlias: trybun team 2fa
+        requirement: CONDITIONAL
+        priority: 20
+        authenticatorFlow: true
+  - alias: trybun post broker login
+    description: 2FA for the team after a sign-in through an identity provider.
+    providerId: basic-flow
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - flowAlias: trybun team 2fa after broker login
+        requirement: CONDITIONAL
+        priority: 10
+        authenticatorFlow: true
+  - alias: trybun team 2fa
+    description: One-time password for members of the role `team`.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: conditional-user-role
+        authenticatorConfig: trybun team member
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - authenticator: auth-otp-form
+        authenticatorConfig: trybun otp reference
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: false
+  - alias: trybun team 2fa after broker login
+    description: One-time password for members of the role `team`.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: conditional-user-role
+        authenticatorConfig: trybun team member after broker login
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - authenticator: auth-otp-form
+        authenticatorConfig: trybun otp reference after broker login
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: false
+authenticatorConfig:
+  # References of the authentication methods in the `amr` claim (RFC 8176). A method stays in the
+  # claim only for `maxAge` seconds after the sign-in – the maximum session lifetime, so refreshed
+  # tokens keep it.
+  - alias: trybun password reference
+    config:
+      default.reference.value: pwd
+      default.reference.maxAge: '2592000'
+  - alias: trybun otp reference
+    config:
+      default.reference.value: otp
+      default.reference.maxAge: '2592000'
+  - alias: trybun otp reference after broker login
+    config:
+      default.reference.value: otp
+      default.reference.maxAge: '2592000'
+  - alias: trybun team member
+    config:
+      condUserRole: team
+      negate: 'false'
+  - alias: trybun team member after broker login
+    config:
+      condUserRole: team
+      negate: 'false'
+
+clients:
+  # Sign-in of the web application (Auth.js, §14.4): confidential, authorization code with PKCE.
+  - clientId: trybun-web
+    name: Trybun
+    enabled: true
+    protocol: openid-connect
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: $(env:TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET)
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+    frontchannelLogout: false
+    # Roles are never read from tokens (§14.4), so tokens carry none.
+    fullScopeAllowed: false
+    rootUrl: $(env:TRYBUN_WEB_URL)
+    baseUrl: /
+    redirectUris: [$(env:TRYBUN_WEB_URL)/api/auth/callback/keycloak]
+    webOrigins: []
+    attributes:
+      pkce.code.challenge.method: S256
+      post.logout.redirect.uris: $(env:TRYBUN_WEB_URL)/*
+      # Back-channel logout deletes the web session (§14.4); called over the internal network.
+      backchannel.logout.url: $(env:TRYBUN_WEB_INTERNAL_URL)/api/auth/backchannel-logout
+      backchannel.logout.session.required: 'true'
+      backchannel.logout.revoke.offline.tokens: 'true'
+    defaultClientScopes: [basic, acr, profile, email]
+    optionalClientScopes: []
+    protocolMappers:
+      # Access tokens are issued for the API (`aud` contains `trybun-api`, §14.4).
+      - name: audience trybun-api
+        protocol: openid-connect
+        protocolMapper: oidc-audience-mapper
+        config:
+          included.client.audience: trybun-api
+          access.token.claim: 'true'
+          id.token.claim: 'false'
+          introspection.token.claim: 'true'
+      # Authentication methods of the sign-in (`amr`), so the API can require completed 2FA for
+      # team actions (§7.4).
+      - name: authentication methods
+        protocol: openid-connect
+        protocolMapper: oidc-amr-mapper
+        config:
+          access.token.claim: 'true'
+          id.token.claim: 'true'
+          introspection.token.claim: 'true'
+  # Audience of the access tokens; the API validates tokens and has no sign-in of its own.
+  - clientId: trybun-api
+    name: Trybun API
+    enabled: true
+    protocol: openid-connect
+    bearerOnly: true
+    publicClient: false
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+  # The server manages users, required actions and the group `team` through the Admin API (§14.4).
+  - clientId: trybun-server
+    name: Trybun server
+    enabled: true
+    protocol: openid-connect
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: $(env:TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET)
+    standardFlowEnabled: false
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: true
+    defaultClientScopes: [basic]
+    optionalClientScopes: []
+
+# Permissions of the service account of `trybun-server`: managing the users of this realm only.
+users:
+  - username: service-account-trybun-server
+    enabled: true
+    serviceAccountClientId: trybun-server
+    clientRoles:
+      realm-management: [manage-users, view-users, query-users, query-groups]

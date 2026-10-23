@@ -1,4 +1,0 @@
-# Realm of Trybun, applied by keycloak-config-cli on installation and on every update (§15.5).
-# Clients, sign-in providers, 2FA, brute-force detection, lifetimes and themes follow in S0-05.
-realm: trybun
-enabled: true

@@ -1,0 +1,89 @@
+{
+  "realm": "trybun",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "team"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "team",
+      "path": "/team",
+      "realmRoles": ["team"]
+    }
+  ],
+  "users": [
+    {
+      "id": "019b8d00-0000-7000-8000-000000000001",
+      "username": "admin@example.com",
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "firstName": "Ada",
+      "lastName": "Admin",
+      "enabled": true,
+      "groups": ["/team"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "trybun",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Development",
+          "secretData": "{\"value\": \"trybun-local-2fa-key\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "id": "019b8d00-0000-7000-8000-000000000002",
+      "username": "manager@example.com",
+      "email": "manager@example.com",
+      "emailVerified": true,
+      "firstName": "Marek",
+      "lastName": "Manager",
+      "enabled": true,
+      "groups": ["/team"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "trybun",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Development",
+          "secretData": "{\"value\": \"trybun-local-2fa-key\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    },
+    {
+      "id": "019b8d00-0000-7000-8000-000000000003",
+      "username": "developer@example.com",
+      "email": "developer@example.com",
+      "emailVerified": true,
+      "firstName": "Dorota",
+      "lastName": "Developer",
+      "enabled": true,
+      "groups": ["/team"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "trybun",
+          "temporary": false
+        },
+        {
+          "type": "otp",
+          "userLabel": "Development",
+          "secretData": "{\"value\": \"trybun-local-2fa-key\"}",
+          "credentialData": "{\"subType\": \"totp\", \"digits\": 6, \"counter\": 0, \"period\": 30, \"algorithm\": \"HmacSHA1\"}"
+        }
+      ]
+    }
+  ]
+}

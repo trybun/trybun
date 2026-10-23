@@ -272,6 +272,8 @@ No global client state library is used.
 | Transaction with an outbox event and a Worker handler | `apps/server/src/platform/outbox/` (job options, keys and timers: `apps/server/src/platform/queues/job-options.ts`) | S0-04 |
 | UI component with variants and stories | `packages/ui/src/components/button.tsx` | S0-07 |
 | Server query, prefetch and hydration in the web | `apps/web/src/features/` (application shell) | S0-08 |
+| Authentication guard, principal, `@Public()` | `apps/server/src/platform/authentication/` | S0-05 |
+| Session read in the web (`getSession`, `requireSession`) | `apps/web/src/lib/auth/session.ts` | S0-05 |
 | Request pipeline, Problem Details, optimistic locking | `apps/server/src/platform/` | S0-17 |
 | Feature module with endpoints, list, form and mutations | `modules/projects/`, `features/projects/` | S1-01 |
 | Abilities, `accessibleBy` queries, `allowedActions`, permission tests | `modules/projects/projects.abilities.ts` | S1-04 |

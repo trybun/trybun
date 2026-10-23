@@ -1,0 +1,20 @@
+# Optional sign-in of end users (§7.4), imported only when TRYBUN_MICROSOFT_CLIENT_ID and
+# TRYBUN_MICROSOFT_CLIENT_SECRET are set (§15.3). Accounts are never linked automatically by a
+# matching e-mail address: the default first broker login flow asks the user to sign in to the
+# existing account (§7.4).
+realm: trybun
+identityProviders:
+  - alias: microsoft
+    displayName: Microsoft
+    providerId: microsoft
+    enabled: true
+    trustEmail: false
+    storeToken: false
+    linkOnly: false
+    firstBrokerLoginFlowAlias: first broker login
+    postBrokerLoginFlowAlias: trybun post broker login
+    config:
+      clientId: $(env:TRYBUN_MICROSOFT_CLIENT_ID)
+      clientSecret: $(env:TRYBUN_MICROSOFT_CLIENT_SECRET)
+      defaultScope: openid profile email
+      syncMode: IMPORT

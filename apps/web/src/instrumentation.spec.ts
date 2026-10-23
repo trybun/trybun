@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { TEST_ENV } from '../test/env.js';
 
 vi.mock('server-only', () => ({}));
 
@@ -25,8 +26,9 @@ describe('register', () => {
 
   it('starts the Node.js server process with a valid environment', async () => {
     vi.stubEnv('NEXT_RUNTIME', 'nodejs');
-    vi.stubEnv('TRYBUN_DOMAIN', 'trybun.example.com');
-    vi.stubEnv('TRYBUN_API_URL', 'http://api:3001');
+    for (const [name, value] of Object.entries(TEST_ENV)) {
+      vi.stubEnv(name, value);
+    }
     const exit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
     await register();

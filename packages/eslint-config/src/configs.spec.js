@@ -2,7 +2,7 @@ import { rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ESLint } from 'eslint';
 import tseslint from 'typescript-eslint';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { library } from './library.js';
 import { nestjs } from './nestjs.js';
 import { nextjs } from './nextjs.js';
@@ -75,6 +75,13 @@ const web = nextjs({
 const ui = [...library({ allowedPackages: ['@trybun/i18n'] }), ...react];
 
 describe('lint rules', () => {
+  // The first type-aware lint builds the TypeScript program of the fixture, which typescript-eslint
+  // then reuses; on a busy CI runner that alone can take longer than the timeout of a test. The
+  // warm-up lints the file the tests use, so the program already contains it.
+  beforeAll(async () => {
+    await typedRuleIds(server, 'server', 'src/modules/tickets/naming-case.ts', 'export {};\n');
+  }, 60_000);
+
   it.each([
     [
       'a cross-boundary import (ui → server)',
