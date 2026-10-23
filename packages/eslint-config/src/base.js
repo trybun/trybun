@@ -59,7 +59,13 @@ export function packageBoundaries(allowedPackages) {
 export const base = defineConfig(
   {
     name: 'trybun/ignores',
-    ignores: ['**/dist/**', '**/.next/**', '**/coverage/**', '**/next-env.d.ts'],
+    ignores: [
+      '**/dist/**',
+      '**/.next/**',
+      '**/coverage/**',
+      '**/next-env.d.ts',
+      '**/src/generated/**',
+    ],
   },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,

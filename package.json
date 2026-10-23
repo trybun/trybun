@@ -9,14 +9,16 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "docker compose -f compose.yaml -f compose.dev.yaml up -d --wait && docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config && turbo run dev",
-    "lint": "turbo run lint && prettier --check .",
+    "dev": "docker compose -f compose.yaml -f compose.dev.yaml up -d --wait && docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config && pnpm db:migrate && pnpm db:seed && turbo run dev",
+    "lint": "turbo run lint && prettier --check . && node scripts/check-prisma.js",
     "format": "prettier --write .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && vitest run --project scripts",
     "test:integration": "turbo run test:integration",
     "test:coverage": "vitest run --coverage",
-    "lint:spec": "node scripts/check-spec-references.js"
+    "lint:spec": "node scripts/check-spec-references.js",
+    "db:migrate": "pnpm --filter @trybun/server db:migrate",
+    "db:seed": "pnpm --filter @trybun/server db:seed"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

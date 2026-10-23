@@ -96,8 +96,7 @@ services:
   migrate:
     <<: *server
     restart: 'no'
-    # Placeholder until the migrations exist (S0-04, `prisma migrate deploy`).
-    command: [node, -e, "console.log('No database migrations yet.')"]
+    command: [node, node_modules/prisma/build/index.js, migrate, deploy]
     depends_on:
       postgres:
         condition: service_healthy

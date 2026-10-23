@@ -86,15 +86,15 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 | Command | Purpose |
 |---|---|
 | `pnpm install` | Install dependencies from the lockfile |
-| `pnpm dev` | Start the infrastructure in Docker Compose, then the web application and the API with hot reload (migrations and seed: S0-04) |
+| `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload |
 | `pnpm test` | Unit tests (Vitest) |
 | `pnpm test:integration` | Integration tests (Vitest + Testcontainers; needs Docker) |
 | `pnpm test:coverage` | Unit and integration tests with the coverage thresholds of CI (needs Docker) |
 | `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop) – S0-08 |
-| `pnpm lint` | Lint and formatting check |
+| `pnpm lint` | Lint, formatting and Prisma checks (schema mappings, no Prisma ORM 8) |
 | `pnpm lint:spec` | Specification consistency: `§N.M` references (links: lychee in CI) |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
 | `pnpm build` | Build all applications |
-| `pnpm db:migrate` | Apply database migrations – S0-04 |
-| `pnpm db:seed` | Load seed and demo data – S0-04 |
+| `pnpm db:migrate` | Apply database migrations |
+| `pnpm db:seed` | Load the deterministic demo dataset |

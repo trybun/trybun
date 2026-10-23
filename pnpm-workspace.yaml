@@ -7,9 +7,13 @@ minimumReleaseAge: 10080
 
 # Dependencies allowed to run install scripts; every other one is refused.
 allowBuilds:
+  '@prisma/engines': true
   '@scarf/scarf': false
   '@swc/core': true
   cpu-features: false
+  esbuild: false
+  msgpackr-extract: false
+  prisma: true
   protobufjs: false
   ssh2: false
   unrs-resolver: true

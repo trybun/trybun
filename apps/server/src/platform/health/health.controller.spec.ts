@@ -3,6 +3,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { TEST_ENV } from '../../../test/env.js';
 import { ApiModule } from '../../api.module.js';
 import { loadConfig } from '../config/load-config.js';
 import { API_PREFIX, UNPREFIXED_ROUTES } from '../http/api-prefix.js';
@@ -12,7 +13,7 @@ describe('HealthController', () => {
   let app: INestApplication<Server>;
 
   beforeAll(async () => {
-    const config = loadConfig({ TRYBUN_DOMAIN: 'trybun.example.com' });
+    const config = loadConfig(TEST_ENV);
     const moduleRef = await Test.createTestingModule({
       imports: [ApiModule.forRoot(config)],
     }).compile();

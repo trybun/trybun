@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { Logger, type INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { TEST_ENV } from '../../../test/env.js';
 import { ConfigModule } from '../config/config.module.js';
 import { loadConfig } from '../config/load-config.js';
 import { HEARTBEAT_INTERVAL_MS } from './heartbeat.service.js';
@@ -11,7 +12,7 @@ import { HeartbeatModule } from './heartbeat.module.js';
 
 async function startWorker(heartbeatFile: string): Promise<INestApplicationContext> {
   const config = loadConfig({
-    TRYBUN_DOMAIN: 'trybun.example.com',
+    ...TEST_ENV,
     TRYBUN_WORKER_HEARTBEAT_FILE: heartbeatFile,
   });
   const app = await NestFactory.createApplicationContext(

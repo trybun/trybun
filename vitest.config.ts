@@ -38,10 +38,13 @@ export default defineConfig({
         // Process entry points that only bootstrap
         'apps/server/src/main.ts',
         'apps/server/src/worker.ts',
+        // Generated code: the Prisma Client (`prisma generate`)
+        'apps/server/src/generated/**',
         // Configuration files and type declarations
         '**/*.config.{ts,js,mjs}',
         '**/*.d.ts',
-        // Generated code joins with the tasks that generate it; seed scripts are outside `src/`.
+        // Further generated code joins with the tasks that generate it; the seed script and the
+        // demo dataset are outside `src/` (`apps/server/prisma/`).
       ],
       reporter: ['text-summary', 'json-summary', 'html'],
       thresholds: {

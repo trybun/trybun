@@ -1,4 +1,5 @@
 pnpm-lock.yaml
+apps/server/src/generated/
 docs/
 .ai/
 *.md

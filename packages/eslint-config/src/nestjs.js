@@ -71,7 +71,9 @@ export function nestjs({ allowedPackages, root }) {
     },
     {
       name: 'trybun/nestjs-config',
-      files: ['src/platform/config/**/*.ts'],
+      // The configuration module, the Prisma configuration and the integration test set-up,
+      // which passes the database of its container to the migrations.
+      files: ['src/platform/config/**/*.ts', 'prisma.config.ts', 'test/setup/containers.ts'],
       rules: { 'no-restricted-properties': 'off' },
     },
     {

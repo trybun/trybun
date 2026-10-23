@@ -28,7 +28,7 @@ How are `apps/server` and the packages compiled, built and run, in production, i
 - npm dependencies stay **external** (`webpack-node-externals` with ES module imports), so the image needs the production `node_modules` of `apps/server`;
 - the `@trybun/*` workspace packages are on the allowlist of the externals and **inlined from their TypeScript source**; the SWC loader of rspack compiles them with decorator metadata.
 
-**Development.** `nest start --watch` rebuilds with the same configuration and restarts the API; the environment comes from the root `.env` (`node --env-file-if-exists`). The Worker gets its development command when it has work to do (task S0-04). The web application loads the root `.env` with `@next/env` in `next.config.ts`.
+**Development.** `nest start --watch` rebuilds with the same configuration and restarts the API; the environment comes from the root `.env` (`node --env-file-if-exists`). Since S0-04, the same `nest start --watch` starts the Worker next to the API (`--exec` runs both from one shell; the CLI stops the whole process tree before each restart), so one build serves both processes. The web application loads the root `.env` with `@next/env` in `next.config.ts`.
 
 **Tests.** Vitest compiles with SWC (`unplugin-swc`), which emits the decorator metadata NestJS needs; esbuild, the default transformer of Vitest, does not.
 
@@ -37,7 +37,7 @@ How are `apps/server` and the packages compiled, built and run, in production, i
 - Good: no build step and no `dist` folders for the packages; a change in `@trybun/contracts` is picked up by the web application, the server bundle and the tests directly.
 - Good: the API and the Worker share one build; `node dist/main.js` and `node dist/worker.js` run without a TypeScript loader.
 - Bad: the server bundle depends on the CLI defaults of `@nestjs/cli`; `rspack.config.js` replaces only the entries, the output name and the externals, so an update of the CLI is checked by building and starting both processes.
-- Bad: two watchers of the same build would race on `dist/`, so the Worker cannot simply get a second `nest start --watch`; S0-04 decides its development command.
+- Bad: two watchers of the same build would race on `dist/`, so the Worker cannot simply get a second `nest start --watch`; it is started by the same watcher (S0-04).
 
 ## Considered options
 
