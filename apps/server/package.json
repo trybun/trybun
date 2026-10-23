@@ -50,7 +50,7 @@
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "@types/webpack-node-externals": "^3.0.4",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "msw": "^3.0.3",
     "openapi-fetch": "^0.17.0",
     "openapi-typescript": "^7.13.0",
@@ -61,7 +61,7 @@
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "unplugin-swc": "^2.0.0",
-    "vitest": "^5.0.4",
+    "vitest": "^5.0.5",
     "webpack-node-externals": "^3.0.0"
   }
 }
