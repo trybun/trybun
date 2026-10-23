@@ -17,14 +17,16 @@ import { isSecondFactorSatisfied } from './second-factor.js';
 
 export type AuthenticatedRequest = Request & { principal: Principal };
 
-/** Prefixes of the API tokens (§12.2); such a token is never parsed as a JWT (§14.4). */
-const API_TOKEN_PREFIXES = ['trybun_pat_', 'trybun_int_'];
-
-const BEARER = /^Bearer ([^\s]+)$/i;
+/**
+ * A bearer JWT: three base64url segments. API tokens (`trybun_pat_…`, `trybun_int_…`, §12.2)
+ * contain no dots, so they never reach the JWT verification (§14.4).
+ */
+const BEARER_JWT = /^Bearer ([\w-]+\.[\w-]+\.[\w-]+)$/i;
 
 /**
  * Step 1 of the request pipeline (§18.3): resolves the principal from the access token in the
- * `Authorization` header, otherwise `401`. API tokens join with their task (§12.2).
+ * `Authorization` header, otherwise `401`. API tokens join with their task (§12.2) and are
+ * refused until then.
  */
 @Injectable()
 export class AuthenticationGuard implements CanActivate {
@@ -44,11 +46,8 @@ export class AuthenticationGuard implements CanActivate {
     }
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();
-    const token = BEARER.exec(request.headers.authorization ?? '')?.[1];
-    const claims =
-      token === undefined || API_TOKEN_PREFIXES.some((prefix) => token.startsWith(prefix))
-        ? undefined
-        : await this.verifier.verify(token);
+    const token = BEARER_JWT.exec(request.headers.authorization ?? '')?.[1];
+    const claims = token === undefined ? undefined : await this.verifier.verify(token);
     const principal =
       claims === undefined ? undefined : await this.authentication.findPrincipal(claims.sub);
     if (claims === undefined || principal === undefined) {
