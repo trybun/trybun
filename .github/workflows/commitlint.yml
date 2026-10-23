@@ -1,6 +1,8 @@
 # Commit messages and the pull request title (it becomes the squash commit on main) are
 # Conventional Commits with the closed scope list of §2.14, and every commit is signed off (DCO,
-# §16.3). Runs again when the title is edited.
+# §16.3). Dependabot's commits are exempt from both per-commit checks (it chooses the case of its
+# subject and cannot sign off); the title of its pull requests is still checked. Runs again when the
+# title is edited.
 name: Commit messages
 
 on:
@@ -29,7 +31,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+        run: node scripts/check-commit-messages.js "$BASE_SHA" "$HEAD_SHA"
       - name: Check the pull request title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
