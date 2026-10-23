@@ -1,0 +1,47 @@
+# Local infrastructure for `pnpm dev` (§15.12), on top of compose.yaml. The applications run on
+# the host with hot reload; the infrastructure publishes its ports on 127.0.0.1 only.
+
+services:
+  web: { profiles: [apps] }
+  api: { profiles: [apps] }
+  worker: { profiles: [apps] }
+  migrate: { profiles: [apps] }
+  caddy: { profiles: [apps] }
+
+  postgres:
+    ports: ['127.0.0.1:5432:5432']
+    networks: [outbound]
+
+  valkey:
+    ports: ['127.0.0.1:6379:6379']
+    networks: [outbound]
+
+  seaweedfs:
+    ports: ['127.0.0.1:8333:8333']
+    networks: [outbound]
+
+  keycloak:
+    environment:
+      KC_HOSTNAME: http://localhost:8080/auth
+    ports: ['127.0.0.1:8080:8080']
+
+  clamav:
+    ports: ['127.0.0.1:3310:3310']
+
+  # Captures all outgoing e-mail: SMTP on port 1025, web UI on http://localhost:8025 (§15.1).
+  mailpit:
+    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    ports: ['127.0.0.1:8025:8025', '127.0.0.1:1025:1025']
+    networks: [internal, outbound]
+    mem_limit: 128m
+    healthcheck:
+      test: [CMD, /mailpit, readyz]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s

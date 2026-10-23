@@ -1,0 +1,26 @@
+# ghcr.io/trybun/server: the API and the Worker, started with different commands (§14.6, §15.4).
+# Build context: the repository root. Base image pinned to a digest (§2.10).
+ARG NODE_IMAGE=node:24.22.0-trixie-slim@sha256:a6155384446670e9719bdc4fd0ebe4d4b29fb32a8d6aa523da3547a6cfbcf22c
+
+FROM ${NODE_IMAGE} AS build
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+WORKDIR /repo
+COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch
+COPY . .
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+  pnpm install --offline --frozen-lockfile --filter @trybun/server...
+RUN pnpm --filter @trybun/server build \
+  && pnpm --filter @trybun/server deploy --prod --legacy /out
+
+FROM ${NODE_IMAGE}
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build /out/package.json ./
+COPY --from=build /out/node_modules ./node_modules
+COPY --from=build /repo/apps/server/dist ./dist
+USER node
+EXPOSE 3001
+# The API; the Worker runs `node dist/worker.js`.
+CMD ["node", "dist/main.js"]

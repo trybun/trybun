@@ -1,0 +1,275 @@
+# Trybun on one server (§15.1, §15.9). Production, test and – with compose.dev.yaml – the local
+# infrastructure use this file. Variables come from `.env` (`.env.example` lists them all, §15.3).
+# Optional services are enabled by profiles in COMPOSE_PROFILES: `seaweedfs` (off with an external
+# S3 storage), `clamav` (off locally when memory is short).
+
+name: trybun
+
+# Rotated container logs (§15.9).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+x-service: &service
+  restart: unless-stopped
+  logging: *logging
+  networks: [internal]
+
+x-server: &server
+  <<: *service
+  image: ghcr.io/trybun/server:${TRYBUN_VERSION:-latest}
+  environment:
+    TRYBUN_DOMAIN: ${TRYBUN_DOMAIN:?TRYBUN_DOMAIN must be set}
+    DATABASE_URL: postgresql://trybun:${TRYBUN_POSTGRES_PASSWORD}@postgres:5432/trybun
+    TRYBUN_VALKEY_URL: redis://:${TRYBUN_VALKEY_PASSWORD}@valkey:6379
+  mem_limit: 512m
+
+services:
+  web:
+    <<: *service
+    image: ghcr.io/trybun/web:${TRYBUN_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    environment:
+      TRYBUN_DOMAIN: ${TRYBUN_DOMAIN:?TRYBUN_DOMAIN must be set}
+      TRYBUN_API_URL: http://api:3001
+    # Auth.js reaches Keycloak through its public issuer URL (§14.4).
+    networks: [internal, outbound]
+    mem_limit: 512m
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+
+  api:
+    <<: *server
+    # Builds the image of the API, the Worker and the migrations.
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3001/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      keycloak-config:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+
+  worker:
+    <<: *server
+    command: [node, dist/worker.js]
+    networks: [internal, outbound]
+    healthcheck:
+      # The heartbeat file is written every 15 seconds (§17.2).
+      test:
+        - CMD
+        - node
+        - -e
+        - "process.exit(Date.now() - require('node:fs').statSync('/tmp/trybun-worker.heartbeat').mtimeMs < 60000 ? 0 : 1)"
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+
+  # One-off: database migrations before the API and the Worker start (§15.7).
+  migrate:
+    <<: *server
+    restart: 'no'
+    # Placeholder until the migrations exist (S0-04, `prisma migrate deploy`).
+    command: [node, -e, "console.log('No database migrations yet.')"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    <<: *service
+    image: ghcr.io/trybun/postgres:${TRYBUN_VERSION:-latest}
+    build: docker/postgres
+    environment:
+      POSTGRES_USER: trybun
+      POSTGRES_DB: trybun
+      POSTGRES_PASSWORD: ${TRYBUN_POSTGRES_PASSWORD:?TRYBUN_POSTGRES_PASSWORD must be set}
+      KEYCLOAK_DB_PASSWORD: ${TRYBUN_KEYCLOAK_DB_PASSWORD:?TRYBUN_KEYCLOAK_DB_PASSWORD must be set}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    mem_limit: 1g
+    shm_size: 256m
+    healthcheck:
+      test: [CMD, pg_isready, --username=trybun, --dbname=trybun]
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+
+  valkey:
+    <<: *service
+    image: valkey/valkey:9.1.2-alpine3.24@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
+    environment:
+      VALKEY_PASSWORD: ${TRYBUN_VALKEY_PASSWORD:?TRYBUN_VALKEY_PASSWORD must be set}
+      REDISCLI_AUTH: ${TRYBUN_VALKEY_PASSWORD}
+    # Jobs survive a restart (AOF); BullMQ requires keys never to be evicted.
+    command:
+      - sh
+      - -c
+      - exec valkey-server --requirepass "$$VALKEY_PASSWORD" --appendonly yes --maxmemory 384mb --maxmemory-policy noeviction
+    volumes:
+      - valkey-data:/data
+    mem_limit: 512m
+    healthcheck:
+      test: [CMD, valkey-cli, ping]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+
+  # Object storage (S3 API); not started when an external S3 storage is configured (§15.3).
+  seaweedfs:
+    <<: *service
+    profiles: [seaweedfs]
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    command: [server, -dir=/data, -s3, -master.telemetry=false]
+    environment:
+      AWS_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:?TRYBUN_S3_ACCESS_KEY_ID must be set}
+      AWS_SECRET_ACCESS_KEY: ${TRYBUN_S3_SECRET_ACCESS_KEY:?TRYBUN_S3_SECRET_ACCESS_KEY must be set}
+    volumes:
+      - seaweedfs-data:/data
+    mem_limit: 1g
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8333/healthz]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+
+  # Identity provider under /auth on the system domain (§15.5).
+  keycloak:
+    <<: *service
+    image: quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b
+    command: [start]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${TRYBUN_KEYCLOAK_DB_PASSWORD}
+      KC_HOSTNAME: https://${TRYBUN_DOMAIN}/auth
+      # The API and keycloak-config-cli call Keycloak over the internal network (§14.4).
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: 'true'
+      KC_HTTP_ENABLED: 'true'
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: 'true'
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${TRYBUN_KEYCLOAK_ADMIN_PASSWORD:?TRYBUN_KEYCLOAK_ADMIN_PASSWORD must be set}
+    networks: [internal, outbound]
+    mem_limit: 1g
+    healthcheck:
+      # The image has no HTTP client; the management interface listens on port 9000.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"status": "UP"' <&3
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # One-off: Keycloak configuration as code, on installation and on every update (§15.5).
+  keycloak-config:
+    image: adorsys/keycloak-config-cli:6.5.1-26.1.0@sha256:1b22dfaa9ae0c71f74b0342f9221a6510f272da5def683dbba26a98e6b1b1411
+    restart: 'no'
+    logging: *logging
+    networks: [internal]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: ${TRYBUN_KEYCLOAK_ADMIN_PASSWORD}
+      # Keycloak reports ready before its first start has created the master realm.
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: 'true'
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 120s
+      IMPORT_FILES_LOCATIONS: /config/*
+      IMPORT_VARSUBSTITUTION_ENABLED: 'true'
+    volumes:
+      - ./docker/keycloak/realms:/config:ro
+    mem_limit: 512m
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  # Malware scanner of uploads, used by the Worker (§13.3).
+  clamav:
+    <<: *service
+    profiles: [clamav]
+    image: clamav/clamav:1.5.4@sha256:e19130cdebaeacc71fa46eab3ed6f69941f2f22aa5e08d55e9197f8edf43ce5e
+    volumes:
+      - clamav-data:/var/lib/clamav
+    # Signature reloads briefly hold two copies of the database in memory.
+    mem_limit: 3g
+    networks: [internal, outbound]
+    healthcheck:
+      test: [CMD, clamdcheck.sh]
+      interval: 30s
+      timeout: 10s
+      start_period: 150s
+      start_interval: 5s
+
+  # The only service with published ports (§15.9).
+  caddy:
+    <<: *service
+    image: caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f
+    environment:
+      TRYBUN_DOMAIN: ${TRYBUN_DOMAIN}
+    ports:
+      - 80:80
+      - 443:443
+      - 443:443/udp
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [internal, outbound]
+    mem_limit: 256m
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:2019/config/]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+    depends_on:
+      web:
+        condition: service_healthy
+
+networks:
+  # Service-to-service traffic; no access to or from outside the server.
+  internal:
+    internal: true
+  # Outgoing connections (GitHub, SMTP, sign-in providers, signature updates) and the public ports.
+  outbound: {}
+
+volumes:
+  postgres-data:
+  valkey-data:
+  seaweedfs-data:
+  clamav-data:
+  caddy-data:
+  caddy-config:

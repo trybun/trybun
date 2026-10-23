@@ -10,7 +10,7 @@ The project is delivered with an **AI Engineering** approach: AI agents write th
 
 - **Node.js** in the version from [`.node-version`](.node-version) (24 LTS)
 - **pnpm** enabled through Corepack: `corepack enable` (the version comes from the `packageManager` field of [`package.json`](package.json))
-- **Docker** with the Compose plugin – needed for the integration tests (Testcontainers) and, from task S0-03, for the infrastructure services
+- **Docker** with the Compose plugin – runs the infrastructure services and the integration tests (Testcontainers)
 
 ## Getting started
 
@@ -20,7 +20,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-`pnpm dev` starts the web application on <http://localhost:3000> and the API on <http://localhost:3001/api/v1>. The infrastructure (PostgreSQL, Valkey, Keycloak and others), the migrations and the seed data join the same command in Stage 0 ([§15.12](docs/spec/15-deployment.md)).
+`pnpm dev` starts the infrastructure in Docker Compose (`compose.yaml` with `compose.dev.yaml`: PostgreSQL, Valkey, SeaweedFS, Keycloak, ClamAV and Mailpit, ports bound to `127.0.0.1`), applies the Keycloak configuration, and then starts the web application on <http://localhost:3000> and the API on <http://localhost:3001/api/v1>. Keycloak answers on <http://localhost:8080/auth>, Mailpit shows all outgoing e-mail on <http://localhost:8025>. When memory is short, remove `clamav` from `COMPOSE_PROFILES` in `.env`. The migrations and the seed data join the same command in Stage 0 ([§15.12](docs/spec/15-deployment.md)); `docker compose -f compose.yaml -f compose.dev.yaml down` stops the infrastructure.
 
 ## Scripts
 
@@ -29,7 +29,7 @@ Run from the repository root:
 | Command | Purpose |
 |---|---|
 | `pnpm install` | Install dependencies from the lockfile |
-| `pnpm dev` | Start the web application and the API with hot reload (variables from `.env` or the environment) |
+| `pnpm dev` | Start the infrastructure in Docker Compose, then the web application and the API with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications |
 | `pnpm lint` | Lint all packages and check the formatting |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
@@ -68,7 +68,13 @@ All configuration comes from environment variables ([§15.3](docs/spec/15-deploy
 
 ## Deployment
 
-Trybun runs on a single Linux server with Docker Compose ([15-deployment.md](docs/spec/15-deployment.md)). The release package with the install script arrives in Stage 0 (tasks S0-11, S0-12).
+Trybun runs on a single Linux server with Docker Compose ([15-deployment.md](docs/spec/15-deployment.md)). [`compose.yaml`](compose.yaml) defines every service: `web`, `api` and `worker` (one `server` image, two commands), PostgreSQL with pgvector and the Polish dictionary, Valkey, SeaweedFS, Keycloak, ClamAV, the one-off services `migrate` and `keycloak-config`, and Caddy as the only public entry point with automatic HTTPS. The images are built from [`docker/`](docker). To try the production set-up locally, set the variables of `.env` and run:
+
+```sh
+docker compose up --build --wait
+```
+
+The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a certificate of Caddy's local authority). The release package with the install script arrives in Stage 0 (tasks S0-11, S0-12).
 
 ## Documentation
 
