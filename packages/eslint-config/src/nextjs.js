@@ -51,7 +51,9 @@ export function nextjs({ allowedPackages, root }) {
     },
     {
       name: 'trybun/next-environment',
-      files: ['src/lib/env/**', 'src/instrumentation.ts'],
+      // The environment module, the instrumentation hook and the integration test set-up, which
+      // passes the database of its container to the migrations.
+      files: ['src/lib/env/**', 'src/instrumentation.ts', 'test/setup/containers.ts'],
       rules: { 'no-restricted-properties': 'off' },
     },
   );

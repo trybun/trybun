@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildDemoDataset, seedDemoData } from '../prisma/demo-dataset.js';
 import { PrismaService } from '../src/platform/database/prisma.service.js';
@@ -6,6 +8,20 @@ import { integrationConfig } from './setup/config.js';
 describe('demo dataset', () => {
   it('is the same on every build', () => {
     expect(buildDemoDataset()).toEqual(buildDemoDataset());
+  });
+
+  it('links every team account to the seeded Keycloak user with the same ID and e-mail', async () => {
+    const realm = JSON.parse(
+      await readFile(
+        join(import.meta.dirname, '../../../docker/keycloak/dev/trybun-realm.json'),
+        'utf8',
+      ),
+    ) as { users: { id: string; email: string }[] };
+    const team = buildDemoDataset().users.filter((user) => user.kind === 'team');
+
+    expect(team.map(({ keycloakUserId, email }) => ({ id: keycloakUserId, email }))).toEqual(
+      realm.users.map(({ id, email }) => ({ id, email })),
+    );
   });
 
   it('loads identical records on two runs', async () => {

@@ -20,10 +20,31 @@ services:
     ports: ['127.0.0.1:8333:8333']
     networks: [outbound]
 
+  # The development realm overlay (§15.12): on its first start, Keycloak imports the seeded team
+  # accounts of the demo dataset with their fixed IDs; keycloak-config then applies the realm.
   keycloak:
+    command: [start, --import-realm]
     environment:
       KC_HOSTNAME: http://localhost:8080/auth
+      # A host firewall may drop the back-channel logout to the host; Keycloak then waits for the
+      # connection only briefly instead of blocking the logout for minutes.
+      KC_SPI_CONNECTIONS_HTTP_CLIENT__DEFAULT__ESTABLISH_CONNECTION_TIMEOUT_MILLIS: '2000'
+    volumes:
+      - ./docker/keycloak/dev:/opt/keycloak/data/import:ro
     ports: ['127.0.0.1:8080:8080']
+    # Back-channel logout reaches the web application on the host.
+    extra_hosts: ['host.docker.internal:host-gateway']
+
+  # `trybun-web` for the web application on http://localhost:3000; e-mail goes to Mailpit.
+  keycloak-config:
+    environment:
+      TRYBUN_WEB_URL: http://localhost:3000
+      TRYBUN_WEB_INTERNAL_URL: http://host.docker.internal:3000
+      TRYBUN_SMTP_HOST: mailpit
+      TRYBUN_SMTP_PORT: 1025
+      TRYBUN_SMTP_SECURITY: none
+      TRYBUN_SMTP_USER: ''
+      TRYBUN_MAIL_FROM: trybun@localhost
 
   clamav:
     ports: ['127.0.0.1:3310:3310']

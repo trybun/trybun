@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { TEST_ENV } from '../../../test/env.js';
 
 vi.mock('server-only', () => ({}));
 
@@ -6,15 +7,35 @@ const { InvalidEnvError, parseEnv } = await import('./env.js');
 
 describe('parseEnv', () => {
   it('returns the typed environment', () => {
-    expect(
-      parseEnv({ TRYBUN_DOMAIN: 'trybun.example.com', TRYBUN_API_URL: 'http://api:3001' }),
-    ).toEqual({ domain: 'trybun.example.com', apiUrl: 'http://api:3001' });
+    expect(parseEnv(TEST_ENV)).toEqual({
+      domain: 'trybun.example.com',
+      apiUrl: 'http://api:3001',
+      databaseUrl: 'postgresql://trybun@localhost:5432/trybun',
+      authSecret: 'a-test-secret-of-at-least-32-characters',
+      keycloak: {
+        issuer: 'https://trybun.example.com/auth/realms/trybun',
+        internalRealmUrl: 'http://keycloak:8080/auth/realms/trybun',
+        clientId: 'trybun-web',
+        clientSecret: 'web-client-secret',
+      },
+    });
+  });
+
+  it('takes the issuer from the public URL of Keycloak when it is set', () => {
+    const env = parseEnv({ ...TEST_ENV, TRYBUN_KEYCLOAK_PUBLIC_URL: 'http://localhost:8080/auth' });
+
+    expect(env.keycloak.issuer).toBe('http://localhost:8080/auth/realms/trybun');
   });
 
   it.each([
-    [{ TRYBUN_API_URL: 'http://api:3001' }, 'TRYBUN_DOMAIN'],
-    [{ TRYBUN_DOMAIN: 'trybun.example.com' }, 'TRYBUN_API_URL'],
-    [{ TRYBUN_DOMAIN: 'trybun.example.com', TRYBUN_API_URL: 'ftp://api' }, 'TRYBUN_API_URL'],
+    [{ ...TEST_ENV, TRYBUN_DOMAIN: undefined }, 'TRYBUN_DOMAIN'],
+    [{ ...TEST_ENV, TRYBUN_API_URL: undefined }, 'TRYBUN_API_URL'],
+    [{ ...TEST_ENV, TRYBUN_API_URL: 'ftp://api' }, 'TRYBUN_API_URL'],
+    [{ ...TEST_ENV, DATABASE_URL: 'mysql://localhost/trybun' }, 'DATABASE_URL'],
+    [{ ...TEST_ENV, NEXTAUTH_URL: undefined }, 'NEXTAUTH_URL'],
+    [{ ...TEST_ENV, AUTH_SECRET: 'too short' }, 'AUTH_SECRET'],
+    [{ ...TEST_ENV, TRYBUN_KEYCLOAK_URL: undefined }, 'TRYBUN_KEYCLOAK_URL'],
+    [{ ...TEST_ENV, TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: '' }, 'TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => parseEnv(env)).toThrow(InvalidEnvError);
     expect(() => parseEnv(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));

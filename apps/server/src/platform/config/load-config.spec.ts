@@ -11,8 +11,21 @@ describe('loadConfig', () => {
       apiPort: 3001,
       databaseUrl: 'postgresql://trybun@localhost:5432/trybun',
       valkeyUrl: 'redis://localhost:6379',
+      keycloak: {
+        issuer: 'https://trybun.example.com/auth/realms/trybun',
+        jwksUrl: 'http://keycloak:8080/auth/realms/trybun/protocol/openid-connect/certs',
+      },
       workerHeartbeatFile: join(tmpdir(), 'trybun-worker.heartbeat'),
     });
+  });
+
+  it('takes the issuer from the public URL of Keycloak when it is set', () => {
+    const config = loadConfig({
+      ...TEST_ENV,
+      TRYBUN_KEYCLOAK_PUBLIC_URL: 'http://localhost:8080/auth',
+    });
+
+    expect(config.keycloak.issuer).toBe('http://localhost:8080/auth/realms/trybun');
   });
 
   it.each([
@@ -22,6 +35,8 @@ describe('loadConfig', () => {
     [{ ...TEST_ENV, DATABASE_URL: undefined }, 'DATABASE_URL'],
     [{ ...TEST_ENV, DATABASE_URL: 'mysql://localhost/trybun' }, 'DATABASE_URL'],
     [{ ...TEST_ENV, TRYBUN_VALKEY_URL: 'http://localhost:6379' }, 'TRYBUN_VALKEY_URL'],
+    [{ ...TEST_ENV, TRYBUN_KEYCLOAK_URL: undefined }, 'TRYBUN_KEYCLOAK_URL'],
+    [{ ...TEST_ENV, TRYBUN_KEYCLOAK_PUBLIC_URL: 'keycloak' }, 'TRYBUN_KEYCLOAK_PUBLIC_URL'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => loadConfig(env)).toThrow(InvalidConfigError);
     expect(() => loadConfig(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));

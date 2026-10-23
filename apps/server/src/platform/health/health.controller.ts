@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { z } from 'zod';
+import { Public } from '../authentication/public.decorator.js';
 import { ResponseSchema } from '../http/response-schema.decorator.js';
 
 const healthSchema = z.object({ status: z.literal('ok') });
@@ -10,6 +11,7 @@ const healthSchema = z.object({ status: z.literal('ok') });
  * an outage of one never restarts the API. Reachable only on the internal network (§14.4).
  */
 @ApiExcludeController()
+@Public()
 @Controller('health')
 export class HealthController {
   @Get()

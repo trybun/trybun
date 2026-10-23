@@ -10,6 +10,15 @@ generator client {
   importFileExtension = "js"
 }
 
+// The client of the web application (apps/web), which reads and writes only its sessions (§14.4).
+// One schema keeps one migration history; each application generates its own client.
+generator web {
+  provider            = "prisma-client"
+  output              = "../../web/src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -66,4 +75,29 @@ model OutboxEvent {
 
   @@index([publishedAt])
   @@map("outbox_events")
+}
+
+/// A web session (§14.4) of Auth.js, written only by the web application. The cookie holds the
+/// opaque session token, of which only a hash is stored; the Keycloak tokens are encrypted and
+/// never reach the browser. Deleting the row signs the user out on their next request.
+model Session {
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  /// SHA-256 of the session token in the cookie, base64url.
+  tokenHash            String   @unique @map("token_hash")
+  /// The `sub` of the Keycloak user; the API resolves the account from the access token.
+  keycloakUserId       String   @map("keycloak_user_id")
+  /// The Keycloak session (`sid`), ended by back-channel logout.
+  keycloakSessionId    String   @map("keycloak_session_id")
+  /// Encrypted (JWE).
+  accessToken          String   @map("access_token")
+  accessTokenExpiresAt DateTime @map("access_token_expires_at") @db.Timestamptz(3)
+  /// Encrypted (JWE); rotated on every refresh.
+  refreshToken         String   @map("refresh_token")
+  expiresAt            DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([keycloakUserId])
+  @@index([keycloakSessionId])
+  @@map("sessions")
 }

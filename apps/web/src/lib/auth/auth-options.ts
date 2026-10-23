@@ -1,0 +1,97 @@
+import 'server-only';
+import { decodeJwt } from 'jose';
+import type { Account, NextAuthOptions } from 'next-auth';
+import { getPrisma } from '../database/prisma.js';
+import { getEnv, type WebEnv } from '../env/env.js';
+import { KeycloakProvider } from './next-auth.js';
+import { createKeycloakClient, type KeycloakClient } from './keycloak-client.js';
+import { createSessionAdapter, type KeycloakTokens, type SignInTokens } from './session-adapter.js';
+import { createTokenCipher, type TokenCipher } from './token-cipher.js';
+
+/**
+ * Maximum lifetime of a web session: the longest Keycloak session (end users, §14.4). Keycloak
+ * ends sessions earlier through back-channel logout and when a refresh fails.
+ */
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+
+/** The page that starts the sign-in with Keycloak. */
+export const SIGN_IN_PATH = '/sign-in';
+
+/** The Keycloak tokens of a sign-in; `undefined` for an incomplete token response. */
+export function toKeycloakTokens(account: Account): KeycloakTokens | undefined {
+  const { access_token: accessToken, refresh_token: refreshToken, expires_at: expiresAt } = account;
+  const sid = account.id_token === undefined ? undefined : decodeJwt(account.id_token).sid;
+  if (
+    accessToken === undefined ||
+    refreshToken === undefined ||
+    expiresAt === undefined ||
+    typeof sid !== 'string'
+  ) {
+    return undefined;
+  }
+  return {
+    accessToken,
+    refreshToken,
+    accessTokenExpiresAt: new Date(expiresAt * 1_000),
+    keycloakSessionId: sid,
+  };
+}
+
+let dependencies: { env: WebEnv; cipher: TokenCipher; keycloak: KeycloakClient } | undefined;
+
+function getDependencies() {
+  if (dependencies === undefined) {
+    const env = getEnv();
+    dependencies = {
+      env,
+      cipher: createTokenCipher(env.authSecret),
+      keycloak: createKeycloakClient(env.keycloak),
+    };
+  }
+  return dependencies;
+}
+
+/** The Keycloak client of the web application (back-channel logout, sign-out). */
+export function getKeycloakClient(): KeycloakClient {
+  return getDependencies().keycloak;
+}
+
+/**
+ * Auth.js with Keycloak and server-side sessions (§14.4, ADR 0004). The Route Handler creates the
+ * options per request with its own `signIn` slot, so the tokens of one sign-in reach only the
+ * session that this sign-in creates.
+ */
+export function createAuthOptions(signIn?: SignInTokens): NextAuthOptions {
+  const { env, cipher, keycloak } = getDependencies();
+  return {
+    secret: env.authSecret,
+    providers: [
+      KeycloakProvider({
+        clientId: env.keycloak.clientId,
+        clientSecret: env.keycloak.clientSecret,
+        issuer: env.keycloak.issuer,
+        // Discovery over the internal network; Keycloak returns the public issuer and the
+        // public authorization endpoint (§15.5).
+        wellKnown: `${env.keycloak.internalRealmUrl}/.well-known/openid-configuration`,
+        // The account data comes from the API, so only the identity is requested.
+        authorization: { params: { scope: 'openid' } },
+        profile: (profile: { sub: string }) => ({ id: profile.sub }),
+      }),
+    ],
+    adapter: createSessionAdapter({ prisma: getPrisma(), cipher, keycloak, signIn }),
+    session: { strategy: 'database', maxAge: SESSION_MAX_AGE_SECONDS },
+    pages: { signIn: SIGN_IN_PATH },
+    callbacks: {
+      signIn({ account }) {
+        const tokens = account === null ? undefined : toKeycloakTokens(account);
+        if (signIn === undefined || tokens === undefined) {
+          return false;
+        }
+        signIn.current = tokens;
+        return true;
+      },
+      // The browser-visible session (`/api/auth/session`) carries neither tokens nor user data.
+      session: ({ session }) => ({ expires: session.expires }),
+    },
+  };
+}

@@ -26,6 +26,11 @@
 		error 404
 	}
 
+	# Back-channel logout is called by Keycloak over the internal network only (§14.4).
+	handle /api/auth/backchannel-logout {
+		error 404
+	}
+
 	# Everything else, including the BFF endpoint /api/v1/* and the incoming webhooks.
 	handle {
 		reverse_proxy web:3000

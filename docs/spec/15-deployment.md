@@ -22,7 +22,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 ## 15.3 Configuration (Twelve-Factor App)
 
 - All configuration is passed via **environment variables**; the system's own variables use the `TRYBUN_` prefix ([§1.4](01-overview.md)). They are validated at start-up; invalid or missing values stop the service with a clear message ([§14.4](14-architecture.md)). `.env.example` contains the full list of variables with descriptions (Rule 5).
-- Variables read implicitly by a library keep the library's name (e.g. `DATABASE_URL` for Prisma, `AUTH_SECRET` and `AUTH_URL` for Auth.js), like the variables of third-party components ([§1.4](01-overview.md)); every other own setting uses the `TRYBUN_` prefix.
+- Variables read implicitly by a library keep the library's name (e.g. `DATABASE_URL` for Prisma, `AUTH_SECRET` and `NEXTAUTH_URL` for Auth.js 4), like the variables of third-party components ([§1.4](01-overview.md)); every other own setting uses the `TRYBUN_` prefix.
 - The web application reads its configuration only on the server at runtime; `NEXT_PUBLIC_*` variables are not used, because the same image is used by every installation ([§14.2](14-architecture.md)).
 - Object storage: SeaweedFS runs in Compose by default. Setting variables switches to any external S3-compatible storage (SeaweedFS is then not started – Compose profiles).
 - Sign-in providers are enabled only when their variables are set: `TRYBUN_GITHUB_CLIENT_ID` and `TRYBUN_GITHUB_CLIENT_SECRET` (team sign-in, [§7.4](07-users-organizations-permissions.md)), `TRYBUN_MICROSOFT_*` and `TRYBUN_GOOGLE_*` (optional end-user sign-in). A provider without configuration is not shown on the login screen.
@@ -86,8 +86,9 @@ Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3
 **Automatic Keycloak configuration:**
 
 - Keycloak configuration (realm, clients, login flows, mandatory 2FA for the team, brute-force detection, session lifetimes, translated login screens, theme) is part of the repository and the deployment package (configuration as code).
-- It is applied by **`keycloak-config-cli`** running as a one-off Compose service on installation and on every update ([§15.7](#157-updates)). Settings managed by Trybun are overwritten on every run, so new versions can change them; other settings an Administrator changes in Keycloak are left untouched.
-- Sign-in providers (GitHub, Microsoft, Google) are created only when their variables are set ([§15.3](#153-configuration-twelve-factor-app)).
+- It is applied by **`keycloak-config-cli`** running as a one-off Compose service on installation and on every update ([§15.7](#157-updates)). Settings managed by Trybun are overwritten on every run, so new versions can change them; other settings an Administrator changes in Keycloak are left untouched. Every run applies the files, also when they are unchanged (the checksum cache of keycloak-config-cli is off), so a managed setting changed in the console is restored.
+- Sign-in providers (GitHub, Microsoft, Google) are created only when their variables are set ([§15.3](#153-configuration-twelve-factor-app)); a provider whose variables are removed later stays in Keycloak until an Administrator deletes it. The SMTP settings are applied only when `TRYBUN_SMTP_HOST` is set.
+- Team 2FA: the browser flow and the flow after every sign-in through a sign-in provider require a one-time password for members of the group `team` (through its realm role `team`); a member without one must set it up before the sign-in completes. The access tokens carry the authentication methods (`amr`) for the check of the API ([§14.4](14-architecture.md)).
 - No manual configuration in the Keycloak admin console is required.
 
 ## 15.6 First-run wizard
@@ -154,7 +155,7 @@ pnpm dev
 `pnpm dev`:
 
 1. starts the infrastructure with `docker compose -f compose.yaml -f compose.dev.yaml up -d --wait`: PostgreSQL, Valkey, SeaweedFS, Keycloak, ClamAV and Mailpit;
-2. applies the Keycloak configuration with the **development realm overlay**: seeded team accounts that sign in with a password ([§7.4](07-users-organizations-permissions.md)) and a `trybun-web` client for `http://localhost:3000`;
+2. applies the Keycloak configuration with the **development realm overlay**: seeded team accounts that sign in with a password and a TOTP secret listed in `README.md` ([§7.4](07-users-organizations-permissions.md)), imported by Keycloak on the first start of its database so they keep their fixed IDs, and a `trybun-web` client for `http://localhost:3000`;
 3. runs the database migrations and loads the seed and demo data (seeded Keycloak users and database users share fixed IDs);
 4. starts the applications on the host with hot reload (`turbo dev`): the web application on `http://localhost:3000`, the API and the Worker.
 

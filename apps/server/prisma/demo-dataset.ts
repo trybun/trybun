@@ -18,7 +18,8 @@ export function demoId(n: number): string {
 
 export function buildDemoDataset(): DemoDataset {
   const faker = new Faker({ locale: [pl, en, base], seed: FAKER_SEED });
-  // Team accounts sign in with a password in the local environment only (§7.4).
+  // Team accounts sign in with a password in the local environment only (§7.4); their Keycloak
+  // users have the same IDs (docker/keycloak/dev/trybun-realm.json).
   const team: Prisma.UserCreateManyInput[] = [
     { email: 'admin@example.com', displayName: 'Ada Admin', isAdmin: true },
     { email: 'manager@example.com', displayName: 'Marek Manager' },
@@ -26,6 +27,7 @@ export function buildDemoDataset(): DemoDataset {
   ].map((account, index) => ({
     ...account,
     id: demoId(index + 1),
+    keycloakUserId: demoId(index + 1),
     kind: 'team',
     state: 'active',
     language: 'pl',
