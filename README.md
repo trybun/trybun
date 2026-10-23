@@ -43,7 +43,7 @@ Run from the repository root:
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications |
-| `pnpm lint` | Lint all packages, check the formatting and the Prisma schema mappings, and reject Prisma ORM 8 packages in the lockfile |
+| `pnpm lint` | Lint all packages, check the formatting and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |

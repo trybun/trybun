@@ -36,7 +36,7 @@ Every commit needs a `Signed-off-by` line confirming that you have the right to 
 Signed-off-by: Your Name <your.email@example.com>
 ```
 
-- **Contributors** sign off with their own identity. CI checks it. No Contributor License Agreement is required.
+- **Contributors** sign off with their own identity. CI checks every commit of the pull request (job `DCO sign-off`); the sign-off must match the commit's author name and e-mail address. To add a missing sign-off, run `git rebase --signoff origin/main` and push with `--force-with-lease`. No Contributor License Agreement is required.
 - **The project's own agents** (run by the maintainer through Cezar) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0005](docs/adr/0005-github-app-as-agent-identity.md), [§16.3](docs/spec/16-open-source.md)). Agents of external contributors act from the contributor's own account and fork and sign off with the contributor's identity.
 
 ## AI-assisted contributions
