@@ -46,7 +46,7 @@
     "@trybun/eslint-config": "workspace:*",
     "@trybun/tsconfig": "workspace:*",
     "@types/express": "^5.0.6",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "@types/webpack-node-externals": "^3.0.4",
