@@ -9,6 +9,14 @@ minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   # GHSA-27r3-jxmh-p828, body-parser >=2.0.0 <2.4.0: DoS through trailing bytes after a compressed body (high).
   - body-parser@2.4.0
+  # GHSA-q7qp-rjg7-q26m, multer >=2.0.0 <2.5.0: DoS through a pending asynchronous fileFilter (high).
+  - multer@2.5.0
+
+# Security fixes for transitive dependencies pinned to an exact vulnerable version by their parent.
+# Remove an entry once the parent depends on the fixed version.
+overrides:
+  # @nestjs/platform-express 12.2.0 still pins multer 2.4.0 (GHSA-q7qp-rjg7-q26m).
+  multer@2.4.0: 2.5.0
 
 # Dependencies allowed to run install scripts; every other one is refused.
 allowBuilds:
