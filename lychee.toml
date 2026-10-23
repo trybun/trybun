@@ -1,0 +1,7 @@
+# Link check of the specification consistency gate (§2.8, §2.14): every relative link of the
+# Markdown files must point to an existing file and heading. External links are not checked in
+# pull requests, so the gate does not depend on other sites being up.
+offline = true
+include_fragments = "full"
+hidden = true
+exclude_path = ['node_modules', '^\./\.git/', '\.ai/cezar/', '\.claude/skills/', 'CHANGELOG\.md']

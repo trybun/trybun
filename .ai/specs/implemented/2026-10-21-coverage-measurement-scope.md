@@ -2,20 +2,20 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-10-21 |
 | Plan task | `S0-02` |
 | System specification sections | §2.14, §18.7 |
-| Related issues / PRs | – |
+| Related issues / PRs | #5 (approval), #8 (S0-02) |
 
 ## Context
 
-[§2.14](../../docs/spec/02-agent-rules.md) ("Automated quality gates") sets coverage thresholds for every pull request: lines ≥ 80 % and branches ≥ 75 % for the domain modules of `apps/server` and `@trybun/contracts`, lines ≥ 70 % for every other package and application, measured with Vitest and V8 coverage, with E2E tests not counted.
+[§2.14](../../../docs/spec/02-agent-rules.md) ("Automated quality gates") sets coverage thresholds for every pull request: lines ≥ 80 % and branches ≥ 75 % for the domain modules of `apps/server` and `@trybun/contracts`, lines ≥ 70 % for every other package and application, measured with Vitest and V8 coverage, with E2E tests not counted.
 
 Two things the CI pipeline of task S0-02 needs are not specified:
 
-1. **Which tests count.** Only E2E tests are excluded. Unit tests (`*.spec.ts`, `pnpm test`) and integration tests (`*.integration.spec.ts`, `pnpm test:integration`) run as separate commands ([§18.7](../../docs/spec/18-code-patterns.md), [§15.12](../../docs/spec/15-deployment.md)), so it is open whether the thresholds apply to the unit run alone or to both runs together. Following "functional core, imperative shell" ([§18.1](../../docs/spec/18-code-patterns.md)), services are integration-tested only; measuring unit tests alone would count every service of `apps/server` as uncovered.
-2. **Which files are measured.** Nothing says which files may be excluded from the measurement. Without a rule, each task decides on its own, the thresholds can be met by excluding code, and entry points, generated code and configuration lower the result although testing them adds nothing. The rule against suppressions ([§2.14](../../docs/spec/02-agent-rules.md), "Fix the cause, never the gate") forbids comments in the code but does not say whether exclusions in the Vitest configuration are allowed.
+1. **Which tests count.** Only E2E tests are excluded. Unit tests (`*.spec.ts`, `pnpm test`) and integration tests (`*.integration.spec.ts`, `pnpm test:integration`) run as separate commands ([§18.7](../../../docs/spec/18-code-patterns.md), [§15.12](../../../docs/spec/15-deployment.md)), so it is open whether the thresholds apply to the unit run alone or to both runs together. Following "functional core, imperative shell" ([§18.1](../../../docs/spec/18-code-patterns.md)), services are integration-tested only; measuring unit tests alone would count every service of `apps/server` as uncovered.
+2. **Which files are measured.** Nothing says which files may be excluded from the measurement. Without a rule, each task decides on its own, the thresholds can be met by excluding code, and entry points, generated code and configuration lower the result although testing them adds nothing. The rule against suppressions ([§2.14](../../../docs/spec/02-agent-rules.md), "Fix the cause, never the gate") forbids comments in the code but does not say whether exclusions in the Vitest configuration are allowed.
 
 ## Goals
 
@@ -51,7 +51,7 @@ Coverage is measured for the source files of every application and package, exce
 | Type declarations | `*.d.ts` | No runtime code |
 | Database seed scripts | `apps/server/prisma/seed.ts` and the demo dataset | Tooling; the demo data is exercised by E2E tests |
 
-- The list lives in [§2.14](../../docs/spec/02-agent-rules.md) and in one shared Vitest coverage configuration. Adding a pattern to it is a specification change for approval.
+- The list lives in [§2.14](../../../docs/spec/02-agent-rules.md) and in one shared Vitest coverage configuration. Adding a pattern to it is a specification change for approval.
 - Coverage-ignore comments in the code (`/* v8 ignore … */`, `/* istanbul ignore … */`, `/* c8 ignore … */`) are suppressions and are not allowed, like `@ts-ignore` and lint-disable comments.
 
 ## Changes to the system specification
@@ -60,7 +60,7 @@ Coverage is measured for the source files of every application and package, exce
 |---|---|
 | §2.14 "Automated quality gates" | After the coverage thresholds table: unit and integration tests count, checked on the combined result in CI; the closed list of excluded files; coverage-ignore comments are suppressions and not allowed |
 | §2.14 "Working practices" ("Fix the cause, never the gate") | Name coverage-ignore comments among the forbidden suppressions and adding exclusions to the coverage configuration among the forbidden ways of weakening a gate |
-| §18.7 | One sentence: integration tests count toward coverage ([§2.14](../../docs/spec/02-agent-rules.md)) |
+| §18.7 | One sentence: integration tests count toward coverage ([§2.14](../../../docs/spec/02-agent-rules.md)) |
 | Implementation plan, S0-02 | "unit tests with coverage thresholds" → "unit and integration tests with coverage thresholds on the combined result ([change specification](2026-10-21-coverage-measurement-scope.md))" |
 
 New or changed glossary terms: none.
@@ -74,14 +74,16 @@ Implementation must not start until every question has an answer.
 
 ## Acceptance criteria
 
-- [ ] A pull request whose combined unit and integration coverage meets the thresholds passes, although its unit coverage alone is below them.
-- [ ] A pull request whose combined coverage is below a threshold is blocked.
-- [ ] `main.ts`, `worker.ts`, generated code, configuration files, stories and test code do not appear in the coverage report.
-- [ ] A `/* v8 ignore */` (or `istanbul` / `c8`) comment in the source fails CI.
-- [ ] §2.14, §18.7 and the S0-02 task describe the measurement as above.
+- [x] A pull request whose combined unit and integration coverage meets the thresholds passes, although its unit coverage alone is below them.
+- [x] A pull request whose combined coverage is below a threshold is blocked.
+- [x] `main.ts`, `worker.ts`, generated code, configuration files, stories and test code do not appear in the coverage report.
+- [x] A `/* v8 ignore */` (or `istanbul` / `c8`) comment in the source fails CI.
+- [x] §2.14, §18.7 and the S0-02 task describe the measurement as above.
 - Works on phone, tablet and desktop (Rule 9): not applicable – no user interface.
 - User documentation and product tour: not applicable – no user-facing change.
 
 ## Changelog
 
 - 2026-10-21 – Created.
+- 2026-10-21 – Approved by merging #5.
+- 2026-10-21 – Implemented in S0-02: root `vitest.config.ts` (`pnpm test:coverage`), lint rule `no-warning-comments` against coverage-ignore comments, §2.14, §18.7 and the plan updated.

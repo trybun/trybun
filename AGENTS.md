@@ -88,9 +88,11 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the web application and the API with hot reload (infrastructure in Docker Compose, migrations and seed: S0-03, S0-04) |
 | `pnpm test` | Unit tests (Vitest) |
-| `pnpm test:integration` | Integration tests (Vitest + Testcontainers) – S0-02 |
+| `pnpm test:integration` | Integration tests (Vitest + Testcontainers; needs Docker) |
+| `pnpm test:coverage` | Unit and integration tests with the coverage thresholds of CI (needs Docker) |
 | `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop) – S0-08 |
 | `pnpm lint` | Lint and formatting check |
+| `pnpm lint:spec` | Specification consistency: `§N.M` references (links: lychee in CI) |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
 | `pnpm build` | Build all applications |

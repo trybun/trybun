@@ -96,6 +96,7 @@ describe('HttpModule', () => {
     });
   });
 
+  // Compiling with TypeScript takes seconds, more on a loaded CI runner with coverage.
   it('generates openapi-typescript types that compile with openapi-fetch', async () => {
     const document = createOpenApiDocument(app);
     const types = astToString(await openapiTS(document as Parameters<typeof openapiTS>[0]));
@@ -133,5 +134,5 @@ describe('HttpModule', () => {
       .map((d) => ts.flattenDiagnosticMessageText(d.messageText, '\n'));
 
     expect(diagnostics).toEqual([]);
-  });
+  }, 30_000);
 });

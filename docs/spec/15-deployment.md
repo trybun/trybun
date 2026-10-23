@@ -160,4 +160,4 @@ pnpm dev
 
 Mailpit shows all outgoing e-mail on `http://localhost:8025`. Session cookies are not marked `Secure` only on `localhost`.
 
-**Other commands** (listed in `README.md` and `AGENTS.md`): `pnpm test` (unit tests), `pnpm test:integration` (integration tests with Testcontainers), `pnpm e2e` (Playwright), `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm db:migrate`, `pnpm db:seed`.
+**Other commands** (listed in `README.md` and `AGENTS.md`): `pnpm test` (unit tests), `pnpm test:integration` (integration tests with Testcontainers), `pnpm test:coverage` (unit and integration tests with the coverage thresholds of CI), `pnpm e2e` (Playwright), `pnpm lint`, `pnpm lint:spec` (specification references), `pnpm typecheck`, `pnpm build`, `pnpm db:migrate`, `pnpm db:seed`.

@@ -231,7 +231,7 @@ No global client state library is used.
 ## 18.7 Tests
 
 - **Unit tests** (`*.spec.ts`) cover business rules and other pure functions, written as tables (`it.each`) with the cases of the specification.
-- **Integration tests** (`*.integration.spec.ts`, run by `pnpm test:integration`) cover services and endpoints through the Nest application against PostgreSQL and Valkey in Testcontainers ([§2.14](02-agent-rules.md)). Each test creates its own data with factories.
+- **Integration tests** (`*.integration.spec.ts`, run by `pnpm test:integration`) cover services and endpoints through the Nest application against PostgreSQL and Valkey in Testcontainers ([§2.14](02-agent-rules.md)). Each test creates its own data with factories. Integration tests count toward the coverage thresholds ([§2.14](02-agent-rules.md)).
 - **Test doubles only at external boundaries**: MSW for external HTTP services, the fixed clock, adapters of services without a container. The project's own services, Prisma and the database are never mocked.
 - **Factories**: one per model (`test/factories/<model>.factory.ts`) with `@faker-js/faker` defaults and overrides.
 - **E2E tests** (Playwright) use one page object per view and locate elements by role, label or text (`getByRole`); `data-tour` attributes only for tours; never CSS classes.
@@ -268,6 +268,7 @@ No global client state library is used.
 | Pattern | Reference implementation (planned) | Task |
 |---|---|---|
 | Server and web layout, lint boundaries | `apps/server/src/`, `apps/web/src/`, `packages/eslint-config/src/` | S0-01 |
+| Integration test set-up: containers, MSW | `apps/server/test/setup/`, `apps/server/test/msw/` | S0-02 |
 | Transaction with an outbox event and a Worker handler | `apps/server/src/platform/outbox/` | S0-04 |
 | UI component with variants and stories | `packages/ui/src/components/button.tsx` | S0-07 |
 | Server query, prefetch and hydration in the web | `apps/web/src/features/` (application shell) | S0-08 |

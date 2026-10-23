@@ -1,0 +1,36 @@
+# Dependency review and license check of pull requests (§2.10, §2.14, §16.1).
+fail-on-severity: high
+license-check: true
+vulnerability-check: true
+# Allowed licenses of npm dependencies (§2.14, "License policy").
+allow-licenses:
+  - MIT
+  - ISC
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - Apache-2.0
+  - 0BSD
+  - MIT-0
+  - BlueOak-1.0.0
+  - CC0-1.0
+  - Unlicense
+  - Python-2.0
+# Documented exceptions (§2.14), each with its reason.
+allow-dependencies-licenses:
+  # CC-BY-4.0 for data packages: browser support data of Browserslist.
+  - pkg:npm/caniuse-lite
+  # MPL-2.0 for development-only dependencies: CSS minifier of Vite and webpack (tests and build
+  # tooling, never part of the shipped applications), with its platform binaries.
+  - pkg:npm/lightningcss
+  - pkg:npm/lightningcss-android-arm64
+  - pkg:npm/lightningcss-darwin-arm64
+  - pkg:npm/lightningcss-darwin-x64
+  - pkg:npm/lightningcss-freebsd-x64
+  - pkg:npm/lightningcss-linux-arm-gnueabihf
+  - pkg:npm/lightningcss-linux-arm64-gnu
+  - pkg:npm/lightningcss-linux-arm64-musl
+  - pkg:npm/lightningcss-linux-x64-gnu
+  - pkg:npm/lightningcss-linux-x64-musl
+  - pkg:npm/lightningcss-win32-arm64-msvc
+  - pkg:npm/lightningcss-win32-x64-msvc
+comment-summary-in-pr: never

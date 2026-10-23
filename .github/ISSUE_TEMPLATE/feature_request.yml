@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest an idea or a change of behaviour
-labels: ["enhancement"]
+labels: ['enhancement']
 body:
   - type: markdown
     attributes:
@@ -26,4 +26,4 @@ body:
     id: spec
     attributes:
       label: Related specification sections
-      placeholder: "§5.2"
+      placeholder: '§5.2'

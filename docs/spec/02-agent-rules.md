@@ -289,7 +289,7 @@ Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components
 | Medium | 30 days |
 | Low | next planned update |
 
-If no fixed version exists, the agent documents the risk and the mitigation in the pull request or an ADR, and the vulnerability is tracked until it is fixed. Vulnerabilities in Trybun itself are handled through `SECURITY.md` ([§16.2](16-open-source.md)).
+If no fixed version exists, the agent documents the risk and the mitigation in the pull request or an ADR, and the vulnerability is tracked until it is fixed. An accepted advisory is listed with its reason in the audit configuration (`auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`) and removed as soon as a fixed version exists. Vulnerabilities in Trybun itself are handled through `SECURITY.md` ([§16.2](16-open-source.md)).
 
 ### Supply-chain hardening
 
@@ -424,7 +424,7 @@ These practices follow recommendations of the Claude Code team and apply to ever
   - a specific pitfall or technique → project memory (`.ai/memory/`, Rule 7),
   - a general working rule → a proposed change to `AGENTS.md` in the pull request, for human approval.
 - **Turn repeated work into skills.** When the agent performs the same sequence of steps repeatedly, it proposes a project skill in `.ai/skills/` instead of repeating the steps by hand.
-- **Fix the cause, never the gate.** When CI fails, the agent reads the logs and fixes the cause. It **never** disables, skips or weakens tests, lowers coverage or performance thresholds, removes quality gates or adds suppressions (e.g. lint-disable comments, `@ts-ignore`) to make CI pass. If a gate itself is wrong, the agent proposes changing it as a separate, explained change for human approval.
+- **Fix the cause, never the gate.** When CI fails, the agent reads the logs and fixes the cause. It **never** disables, skips or weakens tests, lowers coverage or performance thresholds, adds exclusions to the coverage configuration, removes quality gates or adds suppressions (e.g. lint-disable comments, `@ts-ignore`, coverage-ignore comments) to make CI pass. If a gate itself is wrong, the agent proposes changing it as a separate, explained change for human approval.
 - **Self-review before the pull request.** Before opening a pull request the agent reviews its own diff against the specification, the code patterns (Rule 12) and the Definition of Done and asks: *knowing everything I know now, is there a simpler, cleaner solution?* If so, it reworks the change before handing it over for review.
 
 ### Branching and merging
@@ -468,6 +468,22 @@ Every pull request passes at least the following in CI:
 | Domain modules of `apps/server` and `@trybun/contracts` | ≥ 80 % | ≥ 75 % |
 | Every other package and application | ≥ 70 % | – |
 
+- **Tests counted:** unit and integration tests. CI runs both together (`pnpm test:coverage`) and checks the thresholds once, on the combined result. A local `pnpm test` or `pnpm test:integration` run checks no thresholds, because a single run does not see the other half of the tests.
+- **Files measured:** the source files (`src/`) of every application and package, except this closed list:
+
+  | Excluded | Examples | Reason |
+  |---|---|---|
+  | Test code | `*.spec.ts(x)`, `*.integration.spec.ts`, the `test/` folders (factories, MSW handlers, set-up), `e2e/` | Not product code |
+  | Storybook stories | `*.stories.tsx` | Documentation of components; components are tested by their own tests |
+  | Process entry points that only bootstrap | `apps/server/src/main.ts`, `apps/server/src/worker.ts` | Start-up wiring; covered by starting the built application and by E2E tests |
+  | Generated code | Prisma client, `openapi-typescript` types, Keycloak theme messages generated from `@trybun/i18n` | Not written by hand; its source is tested |
+  | Configuration files | `*.config.ts`, `*.config.mjs` (Vitest, Next.js, Playwright, ESLint, Prisma) | Tooling, not product code |
+  | Type declarations | `*.d.ts` | No runtime code |
+  | Database seed scripts | `apps/server/prisma/seed.ts` and the demo dataset | Tooling; the demo data is exercised by E2E tests |
+
+- The list lives here and in one shared Vitest coverage configuration (the root `vitest.config.ts`); adding a pattern to it is a specification change for approval.
+- Coverage-ignore comments in the code (`/* v8 ignore … */`, `/* istanbul ignore … */`, `/* c8 ignore … */`) are suppressions and are not allowed, like `@ts-ignore` and lint-disable comments; lint reports them.
+
 **Tools of the gates:**
 
 | Gate | Tool |
@@ -478,7 +494,7 @@ Every pull request passes at least the following in CI:
 | Vulnerability audit of the lockfile | `pnpm audit` (high and critical block) |
 | Container image scan (release, [§15.4](15-deployment.md)) | Trivy |
 | SBOM (release) | Syft, CycloneDX format |
-| Commit messages | commitlint (Conventional Commits, closed scope list) |
+| Commit messages | commitlint (Conventional Commits, closed scope list) for the commits and the title of the pull request |
 | DCO ([§16.3](16-open-source.md)) | DCO check |
 | Specification consistency | link checker (lychee) and a project script for `§N.M` references |
 

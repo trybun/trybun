@@ -13,10 +13,17 @@
     "lint": "turbo run lint && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test && vitest run --project scripts",
+    "test:integration": "turbo run test:integration",
+    "test:coverage": "vitest run --coverage",
+    "lint:spec": "node scripts/check-spec-references.js"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@vitest/coverage-v8": "^5.0.4",
     "prettier": "3.9.10",
-    "turbo": "2.11.8"
+    "turbo": "2.11.8",
+    "vitest": "^5.0.4"
   }
 }

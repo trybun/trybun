@@ -195,6 +195,7 @@ packages/
   eslint-config/    @trybun/eslint-config  Shared lint rules, incl. Tailwind and boundary rules
 docker/
   postgres/         Dockerfile of ghcr.io/trybun/postgres (pgvector + Polish dictionary)
+scripts/            Repository tooling run by CI, e.g. the specification consistency check
 docs/
   user/             User documentation (Rule 3)
 ```
