@@ -4,6 +4,11 @@ packages:
 
 # Rule 10: a new version is installed only after a 7-day cooldown (in minutes).
 minimumReleaseAge: 10080
+# Security fixes skip the cooldown (§2.10); each entry pins the exact fixed version and is removed
+# once that version is older than 7 days.
+minimumReleaseAgeExclude:
+  # GHSA-27r3-jxmh-p828, body-parser >=2.0.0 <2.4.0: DoS through trailing bytes after a compressed body (high).
+  - body-parser@2.4.0
 
 # Dependencies allowed to run install scripts; every other one is refused.
 allowBuilds:

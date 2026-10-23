@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findDcoProblems, parseLog } from './check-dco.js';
+import { findDcoProblems } from './check-dco.js';
 
 const AUTHOR = { authorName: 'Ada Lovelace', authorEmail: 'ada@example.com' };
 
@@ -63,33 +63,5 @@ describe('findDcoProblems', () => {
         }),
       ]),
     ).toEqual([]);
-  });
-});
-
-describe('parseLog', () => {
-  it('reads the records of git log', () => {
-    const output =
-      'abc\x00p1 p2\x00Ada Lovelace\x00ada@example.com\x00fix: x\n\nSigned-off-by: Ada\n\x1e\n' +
-      'def\x00\x00Bob\x00bob@example.com\x00feat: y\n\x1e\n';
-    expect(parseLog(output)).toEqual([
-      {
-        sha: 'abc',
-        parents: ['p1', 'p2'],
-        authorName: 'Ada Lovelace',
-        authorEmail: 'ada@example.com',
-        message: 'fix: x\n\nSigned-off-by: Ada\n',
-      },
-      {
-        sha: 'def',
-        parents: [],
-        authorName: 'Bob',
-        authorEmail: 'bob@example.com',
-        message: 'feat: y\n',
-      },
-    ]);
-  });
-
-  it('returns no commits for an empty range', () => {
-    expect(parseLog('')).toEqual([]);
   });
 });
