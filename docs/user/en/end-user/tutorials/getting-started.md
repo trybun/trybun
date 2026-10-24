@@ -20,7 +20,7 @@ After signing in you see the **Home** page.
 
 ## Get help
 
-Select the help icon (question mark) in the header. It opens the help page about the view you are in. From there you can [search the help](../how-to/search-the-help.md) for any topic.
+Select the help icon (question mark) in the header, then **Help for this view**. It opens the help page about the view you are in. From there you can [search the help](../how-to/search-the-help.md) for any topic.
 
 ## Sign out
 

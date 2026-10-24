@@ -35,3 +35,4 @@ Non-obvious behaviour found when the monorepo was scaffolded (S0-01, October 202
 - **prettier-plugin-tailwindcss** reads `tailwindStylesheet` (`packages/ui/src/styles/globals.css`) and sorts classes in `className` and in calls of `cn` and `cva` (`tailwindFunctions`).
 - A dependency of `eslint-plugin-better-tailwindcss` (`@valibot/to-json-schema`) wants a newer `valibot` than the lockfile had; `pnpm update -r valibot` fixed the unmet peer.
 
+- **A root `.env` and `pnpm test:coverage`** (S0-10): with the `.env` of `pnpm dev` (copied from `.env.example`) in the repository root, the two token tests of `backchannel-logout/route.integration.spec.ts` return `400` in the combined coverage run (they pass alone and without `.env`, as in CI, which creates `.env` only in the E2E job). Move `.env` aside before the coverage run.

@@ -8,6 +8,7 @@ import {
   keycloakJwksHandler,
   signAccessToken,
 } from '../../../test/factories/access-token.factory.js';
+import { createProductTourProgress } from '../../../test/factories/product-tour-progress.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
@@ -21,7 +22,7 @@ import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
 import { UsersModule } from './users.module.js';
 
-describe('GET /api/v1/users/me', () => {
+describe('users endpoints', () => {
   const config = integrationConfig();
   let app: INestApplication<Server>;
   let prisma: PrismaService;
@@ -52,6 +53,12 @@ describe('GET /api/v1/users/me', () => {
     await app.close();
   });
 
+  async function signIn() {
+    const user = await createUser(prisma, { keycloakUserId: randomUUID() });
+    const token = await signAccessToken(config, { sub: user.keycloakUserId ?? '' });
+    return { user, authorization: `Bearer ${token}` };
+  }
+
   it('returns the account of the token subject', async () => {
     const user = await createUser(prisma, { keycloakUserId: randomUUID() });
     const token = await signAccessToken(config, { sub: user.keycloakUserId ?? '' });
@@ -74,5 +81,96 @@ describe('GET /api/v1/users/me', () => {
 
     expect(res.status).toBe(401);
     expect(res.body).toMatchObject({ code: 'authentication.required' });
+  });
+
+  describe('product tour progress', () => {
+    it('lists only the progress of the signed-in person', async () => {
+      const { user, authorization } = await signIn();
+      const other = await createUser(prisma);
+      await createProductTourProgress(prisma, user.id, {
+        tourId: 'first_login',
+        tourVersion: 2,
+        status: 'skipped',
+      });
+      await createProductTourProgress(prisma, other.id, { tourId: 'first_login' });
+      // A tour removed from the closed list is kept but not returned.
+      await createProductTourProgress(prisma, user.id, { tourId: 'removed_tour' });
+
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/users/me/product-tours')
+        .set('Authorization', authorization);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        items: [
+          {
+            tourId: 'first_login',
+            tourVersion: 2,
+            status: 'skipped',
+            updatedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.+Z$/) as unknown,
+          },
+        ],
+        nextCursor: null,
+      });
+    });
+
+    it('records a tour and replaces the record on the next end of it', async () => {
+      const { user, authorization } = await signIn();
+      const put = (body: object) =>
+        request(app.getHttpServer())
+          .put('/api/v1/users/me/product-tours/first_login')
+          .set('Authorization', authorization)
+          .send(body);
+
+      const skipped = await put({ tourVersion: 1, status: 'skipped' });
+      const completed = await put({ tourVersion: 2, status: 'completed' });
+
+      expect(skipped.status).toBe(200);
+      expect(skipped.body).toMatchObject({
+        tourId: 'first_login',
+        tourVersion: 1,
+        status: 'skipped',
+      });
+      expect(completed.status).toBe(200);
+      expect(completed.body).toMatchObject({ tourVersion: 2, status: 'completed' });
+      expect(
+        await prisma.productTourProgress.findMany({
+          where: { userId: user.id },
+          select: { tourId: true, tourVersion: true, status: true },
+        }),
+      ).toEqual([{ tourId: 'first_login', tourVersion: 2, status: 'completed' }]);
+    });
+
+    it.each([
+      ['an unknown tour', 'unknown_tour', { tourVersion: 1, status: 'completed' }, '/tourId'],
+      [
+        'an invalid version',
+        'first_login',
+        { tourVersion: 0, status: 'completed' },
+        '/tourVersion',
+      ],
+      ['an unknown status', 'first_login', { tourVersion: 1, status: 'started' }, '/status'],
+    ])('rejects %s with 422', async (_case, tourId, body, pointer) => {
+      const { authorization } = await signIn();
+
+      const res = await request(app.getHttpServer())
+        .put(`/api/v1/users/me/product-tours/${tourId}`)
+        .set('Authorization', authorization)
+        .send(body);
+
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        code: 'request.validation_failed',
+        errors: [expect.objectContaining({ pointer }) as unknown],
+      });
+    });
+
+    it('requires a signed-in account', async () => {
+      const res = await request(app.getHttpServer())
+        .put('/api/v1/users/me/product-tours/first_login')
+        .send({ tourVersion: 1, status: 'completed' });
+
+      expect(res.status).toBe(401);
+    });
   });
 });

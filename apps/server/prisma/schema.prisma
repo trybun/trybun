@@ -60,7 +60,33 @@ model User {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  productTourProgress ProductTourProgress[]
+
   @@map("users")
+}
+
+/// `product_tour_progress.status` (§2.4)
+enum ProductTourStatus {
+  completed
+  skipped
+
+  @@map("product_tour_status")
+}
+
+/// The version of a product tour a person completed or skipped (§2.4), so that the tour starts
+/// automatically only once on any device. One row per person and tour; a later record replaces it.
+model ProductTourProgress {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  userId      String            @map("user_id") @db.Uuid
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// `productTourIdSchema` of `@trybun/contracts`; a string, so a new tour needs no migration.
+  tourId      String            @map("tour_id")
+  tourVersion Int               @map("tour_version")
+  status      ProductTourStatus
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([userId, tourId])
+  @@map("product_tour_progresses")
 }
 
 /// Transactional outbox (§17.2): written in the transaction of a change, published by the Worker.

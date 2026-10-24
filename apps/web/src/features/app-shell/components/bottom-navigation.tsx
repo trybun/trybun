@@ -13,6 +13,7 @@ export function BottomNavigation() {
   return (
     <nav
       aria-label={t('mainNavigation')}
+      data-tour="app-shell-navigation"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-safe-offset-0 md:hidden"
     >
       <ul className="flex">

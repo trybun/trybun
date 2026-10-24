@@ -38,12 +38,46 @@
       "how-to": "Poradniki",
       "reference": "Informacje",
       "explanation": "Wyjaśnienia"
+    },
+    "forThisView": "Pomoc do tego widoku"
+  },
+  "productTours": {
+    "take": "Przejdź przewodnik: {name}",
+    "tours": {
+      "first_login": {
+        "name": "Pierwsze kroki",
+        "steps": {
+          "welcome": {
+            "title": "Witamy w systemie Trybun",
+            "description": "Trybun to miejsce, w którym zespół obsługuje zgłoszenia klientów i własną pracę. Ten przewodnik w czterech krótkich krokach pokaże, gdzie co jest."
+          },
+          "navigation": {
+            "title": "Nawigacja główna",
+            "description": "Tu są widoki systemu Trybun. Wybierz jeden, aby go otworzyć."
+          },
+          "help": {
+            "title": "Pomoc",
+            "description": "Otwórz pomoc do widoku, w którym jesteś. Stąd możesz też w każdej chwili ponownie przejść ten przewodnik."
+          },
+          "account": {
+            "title": "Twoje konto",
+            "description": "W menu konta zmienisz język albo się wylogujesz."
+          }
+        }
+      }
     }
   },
   "ui": {
     "close": "Zamknij",
     "toast": {
       "close": "Zamknij powiadomienie"
+    },
+    "tourTip": {
+      "progress": "Krok {step} z {count}",
+      "skip": "Pomiń przewodnik",
+      "back": "Wstecz",
+      "next": "Dalej",
+      "done": "Gotowe"
     }
   },
   "errors": {

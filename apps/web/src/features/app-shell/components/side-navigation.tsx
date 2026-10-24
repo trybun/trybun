@@ -20,6 +20,7 @@ export function SideNavigation() {
   return (
     <nav
       aria-label={t('mainNavigation')}
+      data-tour="app-shell-navigation"
       className={cn(
         'hidden shrink-0 border-r border-border md:block xl:w-60',
         isExpanded ? 'w-60' : 'w-16',

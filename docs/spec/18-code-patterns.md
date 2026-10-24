@@ -45,7 +45,8 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | Switching the language | The `changeLanguage` Server Action of `lib/i18n` | [§18.5](#185-web-application) |
 | A keyboard shortcut or palette command | One entry in the command registry | [§18.5](#185-web-application) |
 | A UI element | `@trybun/ui` component from shadcn/ui: presentational, composable, variants with cva | [§18.6](#186-ui-components) |
-| Help for a view | A page in `docs/user/` naming the view's route in `views`; the help icon of the application shell opens it | [§2.3](02-agent-rules.md), [§18.5](#185-web-application) |
+| Help for a view | A page in `docs/user/` naming the view's route in `views`; **Help for this view** in the help menu of the application shell opens it | [§2.3](02-agent-rules.md), [§18.5](#185-web-application) |
+| A product tour of a view | A definition in `features/product-tours/tours/` listed in the registry, its ID in `productTourIdSchema`, `data-tour` targets and catalogue texts | [§2.4](02-agent-rules.md), [§18.5](#185-web-application) |
 | Tests | Unit tests for rules, integration tests on real databases, test doubles only at external boundaries | [§18.7](#187-tests) |
 
 ## 18.3 Server application
@@ -151,7 +152,7 @@ Every endpoint follows the order of checks of [§17.2](17-conventions.md) throug
 - `@trybun/contracts` is organized by feature (`src/<feature>/`): request, response and event schemas of the feature's resources, their enums, action codes ([§18.3](#183-server-application)) and error codes. Shared building blocks (pagination envelope, Problem Details, error-code registry) have their own folders.
 - Request schemas are named after the action (`createTicketSchema`, type `CreateTicketDto`), response schemas after the resource (`ticketSchema`, type `Ticket`) ([§17.1](17-conventions.md)). Types are always inferred with `z.infer` and exported next to their schema; no application declares a second type for a shape that has a schema.
 - Enum values are the glossary codes, defined once with `z.enum`; a unit test verifies that each Prisma enum has the same values as its contract enum.
-- **Lists**: every list endpoint uses cursor pagination ([§12.1](12-api-webhooks-import.md)) with one envelope defined in the contracts – query parameters `cursor` and `limit`, response `{ items, nextCursor }` – from the first list endpoint on.
+- **Lists**: every list endpoint uses cursor pagination ([§12.1](12-api-webhooks-import.md)) with one envelope defined in the contracts (`pageSchema` of `@trybun/contracts/pagination`) – query parameters `cursor` and `limit`, response `{ items, nextCursor }` – from the first list endpoint on. A list bounded by a small closed set of the code (e.g. the product tour progress of a person, one entry per tour) returns all its items in one envelope with `nextCursor: null` and accepts no `cursor`.
 - Packages expose subpath entry points through `exports` (e.g. `@trybun/contracts/tickets`, `@trybun/ui/components/button`); no barrel file re-exports a whole package or folder.
 
 ## 18.5 Web application
@@ -211,6 +212,12 @@ No global client state library is used.
 - React Hook Form with the Zod resolver and the request schema from `@trybun/contracts` – the same schema the API validates ([§14.4](14-architecture.md#144-architectural-principles)) – rendered with the `Form` components of `@trybun/ui`.
 - A form submits through the feature's mutation hook. Field errors of a Problem Details response (`errors[].pointer`) are applied to the form fields by one helper; other errors show the translated message.
 - Watched field values are read with `useWatch({ control, name })`; `watch()` of `useForm()` is not used, because the React Compiler cannot memoize it.
+
+### Product tours
+
+- A tour ([§2.4](02-agent-rules.md)) is a definition in `features/product-tours/tours/<tour-id>.ts` – ID, version, view route, audience (the account kind of the views), steps with a `data-tour` target (or none), catalogue keys of title and text, and `isOptional` for a step about an action – listed in the registry `tours/index.ts`. The registry is the single source of the automatic start, the help menu and the E2E check; adding a tour means its definition, its ID in `productTourIdSchema` of `@trybun/contracts/product-tours`, the `data-tour` attributes of its targets and its texts in the `productTours` namespace, without new test code.
+- `ProductTourProvider` in the application shell runs the tours: the progress is a query (`features/product-tours/queries.ts`) prefetched with the current account, recorded by the mutation hook of `mutations.ts`; the running tour is state of the provider, never a global store. The tip is the `TourTip` of `@trybun/ui`.
+- The demo dataset records the current version of every tour as `completed` for the demo accounts except the newcomer, so a new tour or version updates its `PRODUCT_TOUR_VERSIONS`.
 
 ### Permissions, live updates, texts and errors
 
@@ -285,6 +292,7 @@ No global client state library is used.
 | Logging with the request ID, job logging context, health endpoints | `apps/server/src/platform/logging/`, `apps/server/src/platform/health/` | S0-17 |
 | Error messages in the web | `apps/web/src/lib/errors/` | S0-17 |
 | User documentation, help viewer, contextual help and help search | `docs/user/`, `apps/web/src/features/help/`, `apps/web/scripts/generate-help-content.ts`, `packages/ui/src/components/markdown.tsx` | S0-09 |
+| Product tours: definitions, runner, tip, progress endpoints, E2E target check; the first mutation hook | `apps/web/src/features/product-tours/` (`mutations.ts`), `packages/ui/src/components/tour-tip.tsx`, `apps/server/src/modules/users/`, `apps/web/e2e/product-tours.spec.ts` | S0-10 |
 | Feature module with endpoints, list, form and mutations | `modules/projects/`, `features/projects/` | S1-01 |
 | Abilities, `accessibleBy` queries, `allowedActions`, permission tests | `modules/projects/projects.abilities.ts` | S1-04 |
 | Real-time event and query invalidation | `modules/notifications/`, `lib/realtime/` | S1-15 |

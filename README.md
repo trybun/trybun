@@ -32,8 +32,9 @@ Opening <http://localhost:3000> leads to the Keycloak login screen. In the local
 | Administrator | `admin@example.com` | `trybun` |
 | Project manager | `manager@example.com` | `trybun` |
 | Developer | `developer@example.com` | `trybun` |
+| Newcomer – a team member without product tour progress, who sees the tours | `newcomer@example.com` | `trybun` |
 
-Team members always sign in with 2FA. The seeded accounts share one TOTP secret: add `ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ` to an authenticator app, or print the current code with `oathtool --totp -b ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ`. Keycloak imports these accounts only on the first start of an empty Keycloak database ([`docker/keycloak/dev/`](docker/keycloak/dev)); after `docker compose -f compose.yaml -f compose.dev.yaml down -v` they are imported again. Sign-in with GitHub, Microsoft or Google appears on the login screen once its variables are set in `.env`.
+Team members always sign in with 2FA. The seeded accounts share one TOTP secret: add `ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ` to an authenticator app, or print the current code with `oathtool --totp -b ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ`. Keycloak imports these accounts only on the first start of an empty Keycloak database ([`docker/keycloak/dev/`](docker/keycloak/dev)); after `docker compose -f compose.yaml -f compose.dev.yaml down -v` they are imported again. `pnpm db:seed` restores the demo data, also the tour progress: the other accounts have completed every tour, the newcomer none. Sign-in with GitHub, Microsoft or Google appears on the login screen once its variables are set in `.env`.
 
 ## Scripts
 

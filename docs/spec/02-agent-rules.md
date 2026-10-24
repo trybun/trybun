@@ -40,7 +40,7 @@ Per Rule 1:
 
 Per Rule 2:
 
-- Help is **contextual**: the help icon in a view opens the relevant documentation page. A page names the routes of the views it explains in `views`; when pages of several audiences name the same view, the reader receives the one of the most specific audience available to them. A view without a page opens the list of all topics.
+- Help is **contextual**: **Help for this view** in the help menu of the header (the help icon) opens the relevant documentation page; the menu also restarts the product tours of the view ([§2.4](#24-rule-4--interactive-in-app-help)). A page names the routes of the views it explains in `views`; when pages of several audiences name the same view, the reader receives the one of the most specific audience available to them. A view without a page opens the list of all topics.
 - How-to guides describe the shortest path to the goal, step by step.
 - Documentation is accessible from within the application and searchable: the search finds a page by any word of its title, description or body, also by the beginning of a word, with small typos and without diacritics.
 - **Filtering by audience**: the account kind decides which pages a reader receives ([§18.5](18-code-patterns.md)). End users receive only the `end-user` pages; the team receives the `end-user` and `team` pages, and the `administrator` pages are meant for Administrators only. Until the API tells the web application whether the reader is an Administrator (plan task S1-19), every team account receives the `administrator` pages too; they describe configuration, never customer data. A page not written for the reader is not listed, not found by their search (each language has one search index per account kind) and answers its address with "not found", like an invisible record ([§14.4](14-architecture.md)).
@@ -54,9 +54,9 @@ Rule 4 is **subordinate to Rules 1 and 2**.
 Per Rule 1 (practices of onboarding tools and tour libraries):
 
 - A tour is **short**: at most a few steps (about 5). Longer processes are split into separate tours.
-- A tour can be **skipped or closed** at any moment and **restarted** from the help menu.
+- A tour can be **skipped or closed** at any moment – Esc, the close button, **Skip tour**, or leaving the view – and **restarted** from the help menu (**Take the tour**, one item per tour of the current view) whatever its recorded progress. **Done** on the last step records the tour as `completed`, every other way of ending it as `skipped`.
 - A tour starts automatically **only once**: on a person's first visit to a given view. Completion or skipping is remembered **per user on the server** (product tour progress: user, tour, status `completed`/`skipped`, tour version), so it works the same on every device. Increasing a tour's version shows it again only when its steps change materially.
-- Tours are role-aware: end users never see steps about team-only features.
+- Tours are role-aware: end users never see steps about team-only features. A tour belongs to a view of the team application or of the end-user portal; a step about an action is optional and shown only when the view renders its target, which it does according to the API's `allowedActions`, so tours contain no permission logic ([§18.5](18-code-patterns.md)).
 - Elements targeted by tours are marked with stable attributes (e.g. `data-tour="…"`), never CSS classes, so visual changes do not break tours. E2E tests verify that all targets exist.
 - Tours are translated ([§13.1](13-non-functional.md)) and accessible ([§13.4](13-non-functional.md)): keyboard support, correct focus management, screen-reader labels, respect for reduced-motion settings.
 
@@ -64,7 +64,7 @@ Per Rule 2:
 
 - Tours work on phones and tablets (Rule 9).
 - A tour **complements** a well-designed UI; it never replaces it. If a view needs a long tour, that signals a UI design problem to be fixed first.
-- A tour never blocks work and never reappears unless the user asks for it.
+- A tour never blocks work and never reappears unless the user asks for it: the page is neither dimmed nor blocked, the target is marked with a ring, and pressing elsewhere leaves the tip open.
 
 Tours exist at least for: first login, creating a ticket, the triage queue, the Kanban board, the roadmap, the Gantt chart and the command palette.
 
@@ -237,7 +237,7 @@ Rule 9 is **directly subordinate to Rule 2** (and through it to Rule 1): on smal
 | Gantt chart ([§10.4](10-roadmap-gantt.md)) | Read-only timeline, scrollable; scheduling through ticket fields instead of dragging | Full chart with touch editing |
 | Command palette ([§8.4](08-team-views.md)) | Opened from the search button in the header | Opened from the search button or keyboard |
 | GFM editor ([§6.2](06-comments-notifications.md)) | Compact toolbar; images from camera and gallery | As on desktop |
-| Product tours (Rule 4) | Bottom-sheet tips instead of tooltips next to elements | As on desktop |
+| Product tours (Rule 4) | Bottom-sheet tips instead of tips next to elements; the target is scrolled into view and highlighted, and a tip about an element at the bottom edge opens at the top edge | As on desktop |
 | E-mails ([§6.5](06-comments-notifications.md)) | Responsive templates readable on phones | – |
 
 Keyboard shortcuts remain a desktop accelerator; every action they trigger is also reachable by touch.
