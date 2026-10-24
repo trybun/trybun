@@ -36,12 +36,14 @@ Per Rule 1:
 - Documentation follows **docs-as-code**: Markdown files in the repository, versioned with the code and reviewed in the same pull requests.
 - Its structure follows the **Diátaxis** model: tutorials (getting started), how-to guides ("how do I do X"), reference (fields, statuses, permissions) and explanations (how e.g. visibility or SLA works).
 - Documentation is bilingual (EN and PL, [§13.1](13-non-functional.md)) and organized by audience: end user, team, Administrator.
+- A page is the file `docs/user/<language>/<audience>/<category>/<name>.md` (audience `end-user`, `team` or `administrator`; category `tutorials`, `how-to`, `reference` or `explanation`) with a front matter of `title`, `description` and optional `views`. Every page exists in every language under the same path, which is also its address in the help viewer (`/help/<audience>/<category>/<name>`); the language is never part of the address ([§13.1](13-non-functional.md)). The rules for writers are in [`docs/user/README.md`](../user/README.md).
 
 Per Rule 2:
 
-- Help is **contextual**: the help icon in a view opens the relevant documentation page.
+- Help is **contextual**: the help icon in a view opens the relevant documentation page. A page names the routes of the views it explains in `views`; when pages of several audiences name the same view, the reader receives the one of the most specific audience available to them. A view without a page opens the list of all topics.
 - How-to guides describe the shortest path to the goal, step by step.
-- Documentation is accessible from within the application and searchable.
+- Documentation is accessible from within the application and searchable: the search finds a page by any word of its title, description or body, also by the beginning of a word, with small typos and without diacritics.
+- **Filtering by audience**: the account kind decides which pages a reader receives ([§18.5](18-code-patterns.md)). End users receive only the `end-user` pages; team accounts receive the pages of every audience. A page not written for the reader is not listed, not found by their search (each language has one search index per account kind) and answers its address with "not found", like an invisible record ([§14.4](14-architecture.md)).
 
 ## 2.4 Rule 4 – Interactive in-app help
 

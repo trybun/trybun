@@ -1,4 +1,5 @@
 import type { DehydratedState } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
@@ -28,5 +29,28 @@ describe('TeamLayout', () => {
     expect(get).toHaveBeenCalledWith('/api/v1/users/me', expect.anything());
     const { queries } = (element.props as { state: DehydratedState }).state;
     expect(queries).toMatchObject([{ queryKey: ['users', 'me'], state: { data: user } }]);
+  });
+
+  it('gives the help icon the help pages of the account kind', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const shell = (element.props as { children: ReactElement<{ help: ReactElement }> }).children;
+    expect(shell.props.help.props).toMatchObject({
+      views: { '/': 'team/tutorials/getting-started' },
+    });
+  });
+
+  it('gives only the end-user help pages when the account cannot be read', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockRejectedValue(new Error('The API is unavailable'));
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const shell = (element.props as { children: ReactElement<{ help: ReactElement }> }).children;
+    expect(shell.props.help.props).toMatchObject({
+      views: { '/': 'end-user/tutorials/getting-started' },
+    });
   });
 });

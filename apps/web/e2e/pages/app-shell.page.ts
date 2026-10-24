@@ -5,6 +5,7 @@ export class AppShellPage {
   readonly header: Locator;
   readonly navigation: Locator;
   readonly accountMenu: Locator;
+  readonly help: Locator;
   readonly heading: Locator;
 
   constructor(private readonly page: Page) {
@@ -12,6 +13,7 @@ export class AppShellPage {
     // Only one of the side and the bottom navigation is shown for a viewport.
     this.navigation = page.getByRole('navigation', { name: 'Main navigation' });
     this.accountMenu = page.getByRole('button', { name: 'Account menu' });
+    this.help = page.getByRole('banner').getByRole('link', { name: 'Help' });
     this.heading = page.getByRole('heading', { level: 1 });
   }
 

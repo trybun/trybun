@@ -44,7 +44,7 @@ Run from the repository root:
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications and generate the Keycloak login theme from the message catalogues |
-| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest |
+| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
@@ -53,6 +53,7 @@ Run from the repository root:
 | `pnpm test:coverage` | Unit, component and integration tests with the coverage thresholds of CI (needs Docker) |
 | `pnpm e2e` | E2E tests in Playwright on phone, tablet and desktop with axe, and the Lighthouse mobile budget of the key pages, against the local environment (needs `pnpm dev`; browsers: `pnpm --filter @trybun/web exec playwright install --with-deps chromium webkit`) |
 | `pnpm api:generate` | Write the OpenAPI document of the API (`apps/server/openapi.json`) and the typed API client of the web application generated from it, after a change of the endpoints |
+| `pnpm help:generate` | Generate the help content of the web application (pages and search indexes) from the user documentation in `docs/user/`, after a change of a page |
 | `pnpm storybook` | Start the component catalogue of `@trybun/ui` on <http://localhost:6006> |
 | `pnpm db:migrate` | Apply the database migrations (`prisma migrate deploy`) |
 | `pnpm db:seed` | Load the deterministic demo dataset; running it again restores the same records |
@@ -64,6 +65,10 @@ Run from the repository root:
 The browser talks only to the web application: the BFF endpoint `/api/v1/*` forwards every request to the same path of the API over the internal network and attaches the access token of the session on the server, so tokens never reach the browser ([§14.4](docs/spec/14-architecture.md)). Integrations call the same URL with an `Authorization` header, which is forwarded unchanged and without cookies; a request with both a session cookie and an `Authorization` header is rejected (`400`), and a state-changing request without an `Authorization` header needs the `Origin` of the web application (`403` otherwise, CSRF). Server Components call the API directly with the session's token.
 
 Both use the typed client generated from the OpenAPI document of the API (`openapi-typescript` + `openapi-fetch`), and client components read data through TanStack Query; the layout of the team views prefetches its data on the server and hydrates it into the browser ([§18.5](docs/spec/18-code-patterns.md)). After a change of the endpoints, run `pnpm api:generate` and commit `apps/server/openapi.json` and `apps/web/src/lib/api-client/schema.d.ts`; `pnpm test` and `pnpm lint` fail while either is out of date.
+
+## User documentation
+
+The user documentation lives in [`docs/user/`](docs/user/README.md) as Markdown – one folder per language (EN, PL), audience (end user, team, Administrator) and Diátaxis category ([§2.3](docs/spec/02-agent-rules.md)) – and is updated in the same pull request as the behaviour it describes. The web application shows it at `/help`: the help icon in the header opens the page of the current view, the search finds pages by any word in both languages, and end users receive only the pages written for them. After changing a page, run `pnpm help:generate` and commit `apps/web/src/features/help/content/`; `pnpm lint` fails while it is out of date.
 
 ## Database
 
@@ -95,7 +100,7 @@ pnpm workspaces with Turborepo ([§14.6](docs/spec/14-architecture.md)). Applica
 | `packages/i18n` | `@trybun/i18n` | Message catalogues (EN, PL) in ICU MessageFormat for web, server and the Keycloak login theme |
 | `packages/tsconfig` | `@trybun/tsconfig` | Shared TypeScript configuration (strict) |
 | `packages/eslint-config` | `@trybun/eslint-config` | Shared lint rules: naming conventions, package and layer boundaries, Tailwind classes |
-| `docs/` | | Specification, implementation plan, ADRs, brand |
+| `docs/` | | Specification, implementation plan, ADRs, brand, user documentation (`docs/user/`) |
 
 The code inside the applications follows the patterns of [§18](docs/spec/18-code-patterns.md); the technology choices are recorded in [`docs/adr/`](docs/adr/README.md).
 
@@ -130,7 +135,8 @@ The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a 
 - System specification: [`docs/spec/`](docs/spec/README.md)
 - Architecture decisions: [`docs/adr/`](docs/adr/README.md)
 - Instructions for AI agents: [`AGENTS.md`](AGENTS.md)
-- User documentation and API documentation: arrive with tasks S0-09 and S6
+- User documentation: [`docs/user/`](docs/user/README.md), shown in the application at `/help`
+- API documentation: arrives with task S6
 
 ## Contributing
 

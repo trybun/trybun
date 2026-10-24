@@ -22,6 +22,24 @@
   "home": {
     "title": "Strona główna"
   },
+  "help": {
+    "open": "Pomoc",
+    "title": "Pomoc",
+    "allTopics": "Wszystkie tematy pomocy",
+    "search": "Przeszukaj pomoc",
+    "results": "{count, plural, =0 {Żadna strona pomocy nie pasuje do wyszukiwania.} one {Znaleziono # stronę pomocy} few {Znaleziono # strony pomocy} many {Znaleziono # stron pomocy} other {Znaleziono # strony pomocy}}",
+    "audiences": {
+      "end-user": "Dla użytkowników",
+      "team": "Dla zespołu",
+      "administrator": "Dla Administratora"
+    },
+    "categories": {
+      "tutorials": "Samouczki",
+      "how-to": "Poradniki",
+      "reference": "Informacje",
+      "explanation": "Wyjaśnienia"
+    }
+  },
   "ui": {
     "close": "Zamknij",
     "toast": {

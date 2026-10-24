@@ -3,7 +3,12 @@
   "extends": ["//"],
   "tasks": {
     "lint": {
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/server/openapi.json"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/server/openapi.json",
+        "$TURBO_ROOT$/docs/user/**",
+        "$TURBO_ROOT$/packages/i18n/messages/**"
+      ]
     }
   }
 }

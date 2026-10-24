@@ -7,12 +7,13 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "lint": "eslint . && pnpm api:generate --check",
+    "lint": "eslint . && pnpm api:generate --check && node scripts/generate-help-content.ts --check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "postinstall": "prisma generate --schema ../server/prisma/schema.prisma --generator web",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "api:generate": "openapi-typescript ../server/openapi.json --output src/lib/api-client/schema.d.ts",
+    "help:generate": "node scripts/generate-help-content.ts",
     "e2e": "playwright test"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "client-only": "^0.0.1",
     "jose": "^6.2.12",
     "lucide-react": "^1.59.0",
+    "minisearch": "^7.2.0",
     "next": "^16.4.2",
     "next-auth": "^4.24.15",
     "next-intl": "^4.14.9",
@@ -42,6 +44,7 @@
     "@testcontainers/postgresql": "^12.2.1",
     "@trybun/eslint-config": "workspace:*",
     "@trybun/tsconfig": "workspace:*",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -51,9 +54,14 @@
     "msw": "^3.0.3",
     "openapi-typescript": "^7.13.0",
     "prisma": "^7.10.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
     "tailwindcss": "^4.3.3",
     "testcontainers": "^12.2.1",
     "typescript": "~6.0.3",
-    "vitest": "^5.0.5"
+    "unified": "^11.0.5",
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   }
 }

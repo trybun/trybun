@@ -45,6 +45,7 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | Switching the language | The `changeLanguage` Server Action of `lib/i18n` | [§18.5](#185-web-application) |
 | A keyboard shortcut or palette command | One entry in the command registry | [§18.5](#185-web-application) |
 | A UI element | `@trybun/ui` component from shadcn/ui: presentational, composable, variants with cva | [§18.6](#186-ui-components) |
+| Help for a view | A page in `docs/user/` naming the view's route in `views`; the help icon of the application shell opens it | [§2.3](02-agent-rules.md), [§18.5](#185-web-application) |
 | Tests | Unit tests for rules, integration tests on real databases, test doubles only at external boundaries | [§18.7](#187-tests) |
 
 ## 18.3 Server application
@@ -283,6 +284,7 @@ No global client state library is used.
 | Request pipeline, Problem Details, optimistic locking | `apps/server/src/platform/authorization/` (target record guard, `request-pipeline.spec.ts`), `apps/server/src/platform/errors/`, `apps/server/src/platform/http/expected-version.decorator.ts`, `apps/server/src/platform/database/optimistic-locking.ts` | S0-17 |
 | Logging with the request ID, job logging context, health endpoints | `apps/server/src/platform/logging/`, `apps/server/src/platform/health/` | S0-17 |
 | Error messages in the web | `apps/web/src/lib/errors/` | S0-17 |
+| User documentation, help viewer, contextual help and help search | `docs/user/`, `apps/web/src/features/help/`, `apps/web/scripts/generate-help-content.ts`, `packages/ui/src/components/markdown.tsx` | S0-09 |
 | Feature module with endpoints, list, form and mutations | `modules/projects/`, `features/projects/` | S1-01 |
 | Abilities, `accessibleBy` queries, `allowedActions`, permission tests | `modules/projects/projects.abilities.ts` | S1-04 |
 | Real-time event and query invalidation | `modules/notifications/`, `lib/realtime/` | S1-15 |

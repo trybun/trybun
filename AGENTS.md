@@ -17,6 +17,7 @@ Instructions for AI coding agents in the **Trybun** repository. The project is b
 | `docs/plan/` | Implementation plan and task status – mark a task `[x]` in the PR that completes it |
 | `docs/adr/` | Architecture Decision Records (MADR) |
 | `docs/brand/` | Logo, colours, typeface – never draw your own |
+| `docs/user/` | User documentation (EN, PL), shown in the help of the web application ([structure](docs/user/README.md)) |
 | `.ai/specs/` | Change specifications (`YYYY-MM-DD-slug.md`, `implemented/`, `archive/`) |
 | `.ai/memory/` | Project memory |
 | `.ai/skills/` | Project skills |
@@ -93,7 +94,8 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 | `pnpm storybook` | Component catalogue of `@trybun/ui` on port 6006 |
 | `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop, axe) and the Lighthouse budget against the local environment |
 | `pnpm api:generate` | OpenAPI document of the API and the typed API client of `web` after a change of the endpoints |
-| `pnpm lint` | Lint, formatting, Keycloak login theme up to date with the catalogues, Prisma checks (schema mappings, no Prisma ORM 8) and supply-chain checks (fork-safe triggers, SHA and digest pinning) |
+| `pnpm help:generate` | Help content of `web` (pages and search indexes) after a change of the user documentation in `docs/user/` |
+| `pnpm lint` | Lint, formatting, Keycloak login theme up to date with the catalogues, help content up to date with `docs/user/`, Prisma checks (schema mappings, no Prisma ORM 8) and supply-chain checks (fork-safe triggers, SHA and digest pinning) |
 | `pnpm lint:spec` | Specification consistency: `§N.M` references (links: lychee in CI) |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
