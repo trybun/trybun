@@ -1,5 +1,7 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { LOCALES } from '@trybun/i18n/catalogues';
+import { isTimeZone } from '@trybun/i18n/time-zones';
 import { z } from 'zod';
 
 /** The realm of Trybun in Keycloak (docker/keycloak/realm/trybun.yaml). */
@@ -17,6 +19,12 @@ export const configSchema = z
     TRYBUN_KEYCLOAK_URL: z.url({ protocol: /^https?$/ }),
     // Public URL of Keycloak, the base of the token issuer. Default: https://<domain>/auth (§15.5).
     TRYBUN_KEYCLOAK_PUBLIC_URL: z.url({ protocol: /^https?$/ }).optional(),
+    // The system default language and time zone (§13.1), set by the install script (§15.5).
+    TRYBUN_DEFAULT_LANGUAGE: z.enum(LOCALES).default('en'),
+    TRYBUN_DEFAULT_TIME_ZONE: z
+      .string()
+      .refine(isTimeZone, 'Invalid IANA time zone')
+      .default('UTC'),
     TRYBUN_WORKER_HEARTBEAT_FILE: z
       .string()
       .min(1)
@@ -31,6 +39,8 @@ export const configSchema = z
       issuer: `${env.TRYBUN_KEYCLOAK_PUBLIC_URL ?? `https://${env.TRYBUN_DOMAIN}/auth`}/realms/${KEYCLOAK_REALM}`,
       jwksUrl: `${env.TRYBUN_KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs`,
     },
+    defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
+    defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
     workerHeartbeatFile: env.TRYBUN_WORKER_HEARTBEAT_FILE,
   }));
 

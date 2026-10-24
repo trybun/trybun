@@ -15,10 +15,13 @@ editUsernameAllowed: false
 resetPasswordAllowed: true
 rememberMe: false
 
-# Translated login screens (§13.1, §15.5).
+# Translated login screens (§13.1, §15.5): the theme `trybun` is generated from the message
+# catalogues of @trybun/i18n (docker/keycloak/themes). Keycloak shows the language the web
+# application passes in `ui_locales`, else the browser language, else the default language.
 internationalizationEnabled: true
 supportedLocales: [en, pl]
 defaultLocale: $(env:TRYBUN_DEFAULT_LANGUAGE:-en)
+loginTheme: trybun
 
 # Brute-force detection (§14.4): 5 failures lock the account for 1 minute, the wait doubles up to
 # 15 minutes; never a permanent lockout.

@@ -20,6 +20,9 @@ overrides:
 
 # Dependencies allowed to run install scripts; every other one is refused.
 allowBuilds:
+  # Builds from source only when no prebuilt binary matches; the binaries come as optional
+  # dependencies (next-intl's message extraction, not used at run time).
+  '@parcel/watcher': false
   '@prisma/engines': true
   '@scarf/scarf': false
   '@swc/core': true

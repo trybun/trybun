@@ -38,6 +38,10 @@ export async function startKeycloak(network: StartedNetwork): Promise<TestKeyclo
       KC_BOOTSTRAP_ADMIN_USERNAME: 'admin',
       KC_BOOTSTRAP_ADMIN_PASSWORD: ADMIN_PASSWORD,
     })
+    // The login theme generated from the message catalogues, mounted as in compose.yaml.
+    .withCopyDirectoriesToContainer([
+      { source: join(KEYCLOAK_CONFIG_DIR, 'themes/trybun'), target: '/opt/keycloak/themes/trybun' },
+    ])
     .withExposedPorts(8080, 9000)
     .withWaitStrategy(Wait.forHttp('/auth/health/ready', 9000).withStartupTimeout(180_000))
     .start();

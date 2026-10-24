@@ -1,13 +1,19 @@
 // The realm configuration of the deployment package (docker/keycloak) applied by
 // keycloak-config-cli to a real Keycloak (§7.4, §14.4, §15.5).
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Network, type StartedNetwork } from 'testcontainers';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/platform/config/load-config.js';
 import { KeycloakAccessTokenVerifier } from '../../src/platform/authentication/keycloak-access-token-verifier.js';
 import { TEST_ENV } from '../env.js';
 import { refreshAccessToken, signIn } from './browser-sign-in.js';
-import { adminApi, applyRealmConfig, startKeycloak, type TestKeycloak } from './keycloak.js';
+import {
+  adminApi,
+  applyRealmConfig,
+  startKeycloak,
+  type TestKeycloak,
+  WEB_URL,
+} from './keycloak.js';
 
 interface Realm {
   defaultLocale?: string;
@@ -107,6 +113,48 @@ describe('Keycloak realm configuration', () => {
     expect(before.map((provider) => provider.alias)).not.toContain('github');
     expect(after.map((provider) => provider.alias)).toContain('github');
   }, 120_000);
+
+  describe('login screen', () => {
+    /** The login page of the sign-in of the web application. */
+    async function loginPage(
+      params: Record<string, string>,
+      headers: Record<string, string>,
+    ): Promise<string> {
+      const authorize = new URL(`${keycloak.url}/realms/trybun/protocol/openid-connect/auth`);
+      authorize.search = new URLSearchParams({
+        client_id: 'trybun-web',
+        redirect_uri: `${WEB_URL}/api/auth/callback/keycloak`,
+        response_type: 'code',
+        scope: 'openid',
+        code_challenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
+        code_challenge_method: 'S256',
+        ...params,
+      }).toString();
+      const response = await fetch(authorize, { headers });
+      return response.text();
+    }
+
+    it.each([
+      // The language of the web application wins over the browser language.
+      [
+        { ui_locales: 'pl' },
+        { 'accept-language': 'en-US,en;q=0.9' },
+        'pl',
+        'Zaloguj się do systemu Trybun',
+      ],
+      [{ ui_locales: 'en' }, { 'accept-language': 'pl-PL,pl;q=0.9' }, 'en', 'Sign in to Trybun'],
+      // Without it, the browser language.
+      [{}, { 'accept-language': 'pl-PL,pl;q=0.9' }, 'pl', 'Zaloguj się do systemu Trybun'],
+    ])(
+      'with %j and %j appears in %s with the texts of @trybun/i18n',
+      async (params, headers, lang, title) => {
+        const html = await loginPage(params, headers);
+
+        expect(html).toContain(`lang="${lang}"`);
+        expect(html).toContain(title);
+      },
+    );
+  });
 
   it('does not let a team member without 2FA complete the sign-in', async () => {
     const username = await createUser({ team: true, otp: false });

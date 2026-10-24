@@ -50,6 +50,12 @@ export function nextjs({ allowedPackages, root }) {
       },
     },
     {
+      name: 'trybun/next-intl-request-config',
+      // next-intl requires the request configuration as the default export.
+      files: ['src/lib/i18n/request.ts'],
+      rules: { 'import-x/no-default-export': 'off' },
+    },
+    {
       name: 'trybun/next-environment',
       // The environment module, the instrumentation hook and the integration test set-up, which
       // passes the database of its container to the migrations.

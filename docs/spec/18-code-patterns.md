@@ -41,7 +41,8 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | A form | React Hook Form with the Zod resolver and the contract schema | [§18.5](#185-web-application) |
 | Memoization | React Compiler; no manual `useMemo`, `useCallback` or `memo` in new code | [§18.5](#185-web-application) |
 | Live updates | Thin real-time event that invalidates queries | [§18.3](#183-server-application), [§18.5](#185-web-application) |
-| Texts, dates and numbers | `next-intl` messages and formatter | [§18.5](#185-web-application) |
+| Texts, dates and numbers | `next-intl` messages and formatter in the web; the `Translator` of `platform/i18n` in the server | [§18.3](#183-server-application), [§18.5](#185-web-application) |
+| Switching the language | The `changeLanguage` Server Action of `lib/i18n` | [§18.5](#185-web-application) |
 | A keyboard shortcut or palette command | One entry in the command registry | [§18.5](#185-web-application) |
 | A UI element | `@trybun/ui` component from shadcn/ui: presentational, composable, variants with cva | [§18.6](#186-ui-components) |
 | Tests | Unit tests for rules, integration tests on real databases, test doubles only at external boundaries | [§18.7](#187-tests) |
@@ -68,7 +69,7 @@ apps/server/
       <feature>-worker.module.ts  registers the processors and job schedulers
       domain/                     pure business rules, files named by concept (status-transitions.ts)
     platform/<concern>/         technical modules: config, database, authentication, authorization,
-                                errors, outbox, queues, logging, health, clock, mail, storage, …
+                                errors, outbox, queues, logging, health, clock, i18n, mail, storage, …
   test/                         factories, MSW handlers and set-up of integration tests
 ```
 
@@ -142,6 +143,7 @@ Every endpoint follows the order of checks of [§17.2](17-conventions.md) throug
 - **Configuration** is read only by `platform/config`, validated with Zod at start-up ([§14.4](14-architecture.md#144-architectural-principles)) and injected as a typed object; `process.env` is not used anywhere else.
 - **Logging** uses the injected Pino logger with constant messages and structured fields (`{ ticketId, code }`), never personal data or content ([§17.2](17-conventions.md)); `console` is not used.
 - **Time** comes from the injected clock (`platform/clock`); domain functions receive `now` as a parameter, and tests use a fixed clock.
+- **Texts** of the server – e-mails and API messages – come only from the injected `Translator` (`platform/i18n`) with the typed keys of `@trybun/i18n`, in the recipient's language (`localeOf`: the user's language, else the system default) and time zone ([§13.1](13-non-functional.md)); never string literals or `toLocaleString`.
 
 ## 18.4 Contracts and packages
 
@@ -214,7 +216,8 @@ No global client state library is used.
 - **Permissions**: the web application never derives permissions from roles or visibility. Actions are shown, hidden or disabled only according to `allowedActions` ([§18.3](#183-server-application)); the account kind returned by the API decides only between the portal and the team views.
 - **Live updates**: one real-time client (`lib/realtime`) holds the Socket.IO connection; feature hooks subscribe, and a received event only invalidates (or updates) the matching queries through the feature's query keys.
 - **Commands and keyboard shortcuts**: every action that has a shortcut or appears in the command palette is registered once in the command registry (`lib/commands`) with its shortcut, its label key and the action code it requires; views, the command palette and shortcut hints read the registry ([§8.4](08-team-views.md)). Components never bind keys on their own.
-- **Texts**: `next-intl` (`useTranslations`, `getTranslations`) with the keys of the feature's namespace ([§17.1](17-conventions.md)); no string literals in JSX.
+- **Texts**: `next-intl` (`useTranslations`, `getTranslations`) with the keys of the feature's namespace ([§17.1](17-conventions.md)); no string literals in JSX. The request configuration (`lib/i18n/request.ts`) resolves the language and the time zone of the request ([§13.1](13-non-functional.md)) and passes the catalogues without the server-only namespaces (`emails`, `keycloak`). Keys are typed from the English catalogue, so an unknown key fails the type check.
+- **Switching the language** calls the `changeLanguage` Server Action of `lib/i18n`, which stores the language cookie and refreshes the page; components never set the cookie themselves.
 - **Dates and numbers** are formatted only with the `next-intl` formatter in the user's locale and time zone ([§13.1](13-non-functional.md)); calculations use `date-fns` ([§14.2](14-architecture.md)); never `toLocaleString` or hand-made formats.
 - **Errors**: a Problem Details response becomes one typed error whose code is shown through `errors.<code>` ([§17.2](17-conventions.md)); a `404` from the API in a Server Component calls `notFound()`; unexpected errors reach the route's `error.tsx`.
 
@@ -274,6 +277,7 @@ No global client state library is used.
 | Server query, prefetch and hydration in the web | `apps/web/src/features/` (application shell) | S0-08 |
 | Authentication guard, principal, `@Public()` | `apps/server/src/platform/authentication/` | S0-05 |
 | Session read in the web (`getSession`, `requireSession`) | `apps/web/src/lib/auth/session.ts` | S0-05 |
+| Texts and language: catalogues, request configuration, language switch, server `Translator` | `packages/i18n/src/catalogues/`, `apps/web/src/lib/i18n/`, `apps/server/src/platform/i18n/` | S0-06 |
 | Request pipeline, Problem Details, optimistic locking | `apps/server/src/platform/` | S0-17 |
 | Feature module with endpoints, list, form and mutations | `modules/projects/`, `features/projects/` | S1-01 |
 | Abilities, `accessibleBy` queries, `allowedActions`, permission tests | `modules/projects/projects.abilities.ts` | S1-04 |

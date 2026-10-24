@@ -12,6 +12,9 @@ describe('parseEnv', () => {
       apiUrl: 'http://api:3001',
       databaseUrl: 'postgresql://trybun@localhost:5432/trybun',
       authSecret: 'a-test-secret-of-at-least-32-characters',
+      shouldUseSecureCookies: true,
+      defaultLanguage: 'en',
+      defaultTimeZone: 'UTC',
       keycloak: {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
         internalRealmUrl: 'http://keycloak:8080/auth/realms/trybun',
@@ -27,6 +30,21 @@ describe('parseEnv', () => {
     expect(env.keycloak.issuer).toBe('http://localhost:8080/auth/realms/trybun');
   });
 
+  it('takes the system default language and time zone', () => {
+    const env = parseEnv({
+      ...TEST_ENV,
+      NEXTAUTH_URL: 'http://localhost:3000',
+      TRYBUN_DEFAULT_LANGUAGE: 'pl',
+      TRYBUN_DEFAULT_TIME_ZONE: 'Europe/Warsaw',
+    });
+
+    expect(env).toMatchObject({
+      shouldUseSecureCookies: false,
+      defaultLanguage: 'pl',
+      defaultTimeZone: 'Europe/Warsaw',
+    });
+  });
+
   it.each([
     [{ ...TEST_ENV, TRYBUN_DOMAIN: undefined }, 'TRYBUN_DOMAIN'],
     [{ ...TEST_ENV, TRYBUN_API_URL: undefined }, 'TRYBUN_API_URL'],
@@ -36,6 +54,8 @@ describe('parseEnv', () => {
     [{ ...TEST_ENV, AUTH_SECRET: 'too short' }, 'AUTH_SECRET'],
     [{ ...TEST_ENV, TRYBUN_KEYCLOAK_URL: undefined }, 'TRYBUN_KEYCLOAK_URL'],
     [{ ...TEST_ENV, TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: '' }, 'TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET'],
+    [{ ...TEST_ENV, TRYBUN_DEFAULT_LANGUAGE: 'de' }, 'TRYBUN_DEFAULT_LANGUAGE'],
+    [{ ...TEST_ENV, TRYBUN_DEFAULT_TIME_ZONE: 'Europe/Nowhere' }, 'TRYBUN_DEFAULT_TIME_ZONE'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => parseEnv(env)).toThrow(InvalidEnvError);
     expect(() => parseEnv(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));

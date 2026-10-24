@@ -1,0 +1,13 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docker/keycloak/themes/trybun/**"],
+      "outputs": ["$TURBO_ROOT$/docker/keycloak/themes/trybun/**"]
+    },
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docker/keycloak/themes/trybun/**"]
+    }
+  }
+}

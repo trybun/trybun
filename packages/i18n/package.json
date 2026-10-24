@@ -5,13 +5,21 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    "./messages/*": "./messages/*.json"
+    "./catalogues": "./src/catalogues/index.ts",
+    "./time-zones": "./src/time-zones/index.ts"
   },
   "scripts": {
-    "lint": "eslint ."
+    "build": "node scripts/generate-keycloak-theme.js",
+    "lint": "eslint . && node scripts/generate-keycloak-theme.js --check",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "^3.5.21",
     "@trybun/eslint-config": "workspace:*",
-    "eslint": "^10.13.0"
+    "@trybun/tsconfig": "workspace:*",
+    "eslint": "^10.13.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.5"
   }
 }

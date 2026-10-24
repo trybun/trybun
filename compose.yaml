@@ -25,6 +25,9 @@ x-server: &server
     DATABASE_URL: postgresql://trybun:${TRYBUN_POSTGRES_PASSWORD}@postgres:5432/trybun
     TRYBUN_VALKEY_URL: redis://:${TRYBUN_VALKEY_PASSWORD}@valkey:6379
     TRYBUN_KEYCLOAK_URL: http://keycloak:8080/auth
+    # The system default language and time zone (§13.1).
+    TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
+    TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}
   mem_limit: 512m
 
 services:
@@ -44,6 +47,8 @@ services:
       # Auth.js calls Keycloak over the internal network; the issuer stays public (§15.5).
       TRYBUN_KEYCLOAK_URL: http://keycloak:8080/auth
       TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: ${TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET:?TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET must be set}
+      TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
+      TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}
     mem_limit: 512m
     healthcheck:
       test:
@@ -190,6 +195,9 @@ services:
       KC_FEATURES_DISABLED: impersonation
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${TRYBUN_KEYCLOAK_ADMIN_PASSWORD:?TRYBUN_KEYCLOAK_ADMIN_PASSWORD must be set}
+    volumes:
+      # The login theme generated from the message catalogues (§13.1).
+      - ./docker/keycloak/themes/trybun:/opt/keycloak/themes/trybun:ro
     networks: [internal, outbound]
     mem_limit: 1g
     healthcheck:
