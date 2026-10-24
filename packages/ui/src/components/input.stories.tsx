@@ -9,12 +9,12 @@ const meta = {
   component: Input,
   args: { id: 'title', placeholder: 'Short summary of the request' },
   decorators: [
-    (Story) => (
+    (story) => (
       <div className="flex max-w-sm flex-col gap-2">
         <label htmlFor="title" className="text-sm font-medium">
           Title
         </label>
-        <Story />
+        {story()}
       </div>
     ),
   ],

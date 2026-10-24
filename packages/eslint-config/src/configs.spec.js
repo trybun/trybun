@@ -7,6 +7,7 @@ import { library } from './library.js';
 import { nestjs } from './nestjs.js';
 import { nextjs } from './nextjs.js';
 import { react } from './react.js';
+import { tailwind } from './tailwind.js';
 
 const FIXTURES = join(import.meta.dirname, '../test/fixtures');
 
@@ -72,7 +73,11 @@ const web = nextjs({
   allowedPackages: ['@trybun/contracts', '@trybun/i18n', '@trybun/ui'],
   root: join(FIXTURES, 'web'),
 });
-const ui = [...library({ allowedPackages: ['@trybun/i18n'] }), ...react];
+const ui = [
+  ...library({ allowedPackages: ['@trybun/i18n'] }),
+  ...react,
+  ...tailwind({ entryPoint: join(FIXTURES, 'ui/src/styles/globals.css') }),
+];
 
 describe('lint rules', () => {
   // The first type-aware lint builds the TypeScript program of the fixture, which typescript-eslint
@@ -260,6 +265,38 @@ describe('lint rules', () => {
       'no-restricted-syntax',
     ],
     [
+      'an arbitrary colour (bg-[#E0482C])',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      "import { cn } from 'cn';\nexport const banner = cn('bg-[#E0482C]');\n",
+      'better-tailwindcss/no-restricted-classes',
+    ],
+    [
+      'an arbitrary spacing in JSX (p-[13px])',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      'export function Banner() {\n  return <div className="hover:p-[13px]" />;\n}\n',
+      'better-tailwindcss/no-restricted-classes',
+    ],
+    [
+      'a literal colour in an arbitrary property',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      "import { cva } from 'class-variance-authority';\nexport const banner = cva('[--tint:oklch(0.6_0.2_30)]');\n",
+      'better-tailwindcss/no-restricted-classes',
+    ],
+    [
+      'a colour outside the theme (bg-red-500)',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      "import { cn } from 'cn';\nexport const banner = cn('bg-red-500');\n",
+      'better-tailwindcss/no-unknown-classes',
+    ],
+    [
       'asChild',
       ui,
       'ui',
@@ -346,6 +383,20 @@ describe('lint rules', () => {
       'ui',
       'src/components/button.stories.tsx',
       'export function Primary() {\n  return <button type="button">Save</button>;\n}\n',
+    ],
+    [
+      'theme tokens, CSS variables and CSS-wide keywords in classes',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      "import { cn } from 'cn';\nexport const banner = cn('bg-primary text-brand-accent h-(--drawer-height) rounded-[inherit] [--bleed:3rem]');\n",
+    ],
+    [
+      'the default export of a story file',
+      ui,
+      'ui',
+      'src/components/button.stories.tsx',
+      "const meta = { title: 'Components/Button' };\nexport default meta;\n",
     ],
     [
       'a default export of a route file',

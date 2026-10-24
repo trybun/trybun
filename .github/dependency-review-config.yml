@@ -19,8 +19,14 @@ allow-licenses:
 allow-dependencies-licenses:
   # CC-BY-4.0 for data packages: browser support data of Browserslist.
   - pkg:npm/caniuse-lite
-  # MPL-2.0 for development-only dependencies: CSS minifier of Vite and webpack (tests and build
-  # tooling, never part of the shipped applications), with its platform binaries.
+  # MPL-2.0 for development-only dependencies: the accessibility engine of the story tests
+  # (@storybook/addon-a11y).
+  - pkg:npm/axe-core
+  # OFL-1.1 for fonts: the brand typeface Manrope (docs/brand/README.md), in Storybook of @trybun/ui.
+  - pkg:npm/%40fontsource-variable/manrope
+  # MPL-2.0 for development-only dependencies: CSS minifier of Vite and webpack and CSS compiler of
+  # Tailwind CSS (tests and build tooling, never part of the shipped applications), with its
+  # platform binaries.
   - pkg:npm/lightningcss
   - pkg:npm/lightningcss-android-arm64
   - pkg:npm/lightningcss-darwin-arm64

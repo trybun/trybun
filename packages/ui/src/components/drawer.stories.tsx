@@ -86,10 +86,10 @@ export const Phone: Story = {
   play: async ({ canvas }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Ticket actions' }));
     const drawer = await screen.findByRole('dialog', { name: 'Ticket actions' });
-    await waitFor(() => {
+    await waitFor(async () => {
       const { bottom, width } = drawer.getBoundingClientRect();
-      expect(Math.round(bottom)).toBe(window.innerHeight);
-      expect(width).toBe(window.innerWidth);
+      await expect(Math.round(bottom)).toBe(window.innerHeight);
+      await expect(width).toBe(window.innerWidth);
     });
     await swipeDown(drawer, 300);
     await waitFor(() => expect(drawer).not.toBeInTheDocument());

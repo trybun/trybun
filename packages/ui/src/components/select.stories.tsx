@@ -70,9 +70,9 @@ export const Phone: Story = {
   play: async () => {
     const options = await screen.findAllByRole('option');
     // After the opening animation of the popup.
-    await waitFor(() => {
+    await waitFor(async () => {
       for (const option of options) {
-        expect(option.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+        await expect(option.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
       }
     });
   },

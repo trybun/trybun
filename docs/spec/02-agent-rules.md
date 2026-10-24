@@ -502,7 +502,7 @@ Every pull request passes at least the following in CI:
 
 - Allowed for npm dependencies: MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, MIT-0, BlueOak-1.0.0, CC0-1.0, Unlicense, Python-2.0, and CC-BY-4.0 for data packages (e.g. `caniuse-lite`).
 - Denied for npm dependencies: AGPL, GPL, SSPL and other strong copyleft or source-available licenses.
-- Documented exceptions (listed in the allowlist configuration with a reason): MPL-2.0 for development-only dependencies (e.g. `axe-core`); LGPL for dynamically loaded optional binaries (e.g. libvips of `sharp`).
+- Documented exceptions (listed in the allowlist configuration with a reason): MPL-2.0 for development-only dependencies (e.g. `axe-core`); LGPL for dynamically loaded optional binaries (e.g. libvips of `sharp`); OFL-1.1 for fonts (e.g. the brand typeface Manrope).
 - Third-party services running in their own containers (e.g. ClamAV, GPL-2.0) are aggregated, not linked, and are allowed.
 
 ### Agent safety

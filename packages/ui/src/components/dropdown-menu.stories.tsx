@@ -89,9 +89,9 @@ export const Phone: Story = {
       screen.getAllByRole(role),
     );
     // After the zoom-in animation of the popup.
-    await waitFor(() => {
+    await waitFor(async () => {
       for (const item of items) {
-        expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+        await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
       }
     });
   },

@@ -65,10 +65,10 @@ export const Phone: Story = {
   globals: viewport('phone'),
   play: async () => {
     const dialog = await screen.findByRole('dialog');
-    await waitFor(() => {
+    await waitFor(async () => {
       const { bottom, width } = dialog.getBoundingClientRect();
-      expect(Math.round(bottom)).toBe(window.innerHeight);
-      expect(width).toBe(window.innerWidth);
+      await expect(Math.round(bottom)).toBe(window.innerHeight);
+      await expect(width).toBe(window.innerWidth);
     });
   },
 };
@@ -78,9 +78,9 @@ export const Tablet: Story = {
   globals: viewport('tablet'),
   play: async () => {
     const dialog = await screen.findByRole('dialog');
-    await waitFor(() => {
+    await waitFor(async () => {
       const { top, bottom } = dialog.getBoundingClientRect();
-      expect(Math.round(top)).toBe(Math.round(window.innerHeight - bottom));
+      await expect(Math.round(top)).toBe(Math.round(window.innerHeight - bottom));
     });
   },
 };

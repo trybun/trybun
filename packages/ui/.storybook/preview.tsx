@@ -6,11 +6,11 @@ import { VIEWPORTS } from './viewports.js';
 import './preview.css';
 
 /** Texts of the components in the language chosen in the toolbar (§18.6). */
-const withMessages: Decorator = (Story, { globals }) => {
+const withMessages: Decorator = (story, { globals }) => {
   const locale = globals.locale as Locale;
   return (
     <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="Europe/Warsaw">
-      <Story />
+      {story()}
     </NextIntlClientProvider>
   );
 };
