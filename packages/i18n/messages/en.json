@@ -11,6 +11,48 @@
       "close": "Close notification"
     }
   },
+  "errors": {
+    "request": {
+      "malformed": "The request could not be read. Reload the page and try again.",
+      "not_found": "This item does not exist or you do not have access to it.",
+      "forbidden": "You are not allowed to do this.",
+      "precondition_failed": "This item was changed by someone else – reload to see the latest version",
+      "too_large": "The data you sent is too large.",
+      "validation_failed": "Some fields are not valid. Correct them and try again.",
+      "precondition_required": "The version of this item is missing – reload the page and try again."
+    },
+    "authentication": {
+      "required": "Your session has ended. Sign in again.",
+      "second_factor_required": "Sign in again with two-factor authentication."
+    },
+    "server": {
+      "internal_error": "Something went wrong. Try again later.",
+      "unavailable": "Trybun is temporarily unavailable. Try again in a moment."
+    },
+    "string": {
+      "too_long": "Too long",
+      "too_short": "Too short",
+      "invalid_format": "Invalid format"
+    },
+    "array": {
+      "too_long": "Too many items",
+      "too_short": "Too few items"
+    },
+    "number": {
+      "too_large": "Too large",
+      "too_small": "Too small"
+    },
+    "date": {
+      "too_late": "Too late",
+      "too_early": "Too early"
+    },
+    "field": {
+      "invalid_type": "This field is required or has a value of the wrong type",
+      "invalid_value": "Choose one of the allowed values",
+      "unrecognized": "Unknown field",
+      "invalid": "Invalid value"
+    }
+  },
   "emails": {
     "footer": {
       "automatic": "This message was sent automatically by Trybun."

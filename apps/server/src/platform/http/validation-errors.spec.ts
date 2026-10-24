@@ -1,7 +1,7 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { toFieldErrorCode, toJsonPointer, toValidationProblem } from './validation-errors.js';
+import { toFieldErrorCode, toJsonPointer, toFieldErrors } from './validation-errors.js';
 
 function issuesOf(schema: z.ZodType, value: unknown): readonly StandardSchemaV1.Issue[] {
   const result = schema['~standard'].validate(value) as StandardSchemaV1.Result<unknown>;
@@ -38,19 +38,13 @@ describe('toJsonPointer', () => {
   });
 });
 
-describe('toValidationProblem', () => {
+describe('toFieldErrors', () => {
   it('lists every invalid field', () => {
     const issues = issuesOf(z.object({ title: z.string(), priority: z.number() }), {});
 
-    expect(toValidationProblem(issues)).toEqual({
-      type: 'about:blank',
-      title: 'Unprocessable Content',
-      status: 422,
-      code: 'request.validation_failed',
-      errors: [
-        { pointer: '/title', code: 'field.invalid_type' },
-        { pointer: '/priority', code: 'field.invalid_type' },
-      ],
-    });
+    expect(toFieldErrors(issues)).toEqual([
+      { pointer: '/title', code: 'field.invalid_type' },
+      { pointer: '/priority', code: 'field.invalid_type' },
+    ]);
   });
 });

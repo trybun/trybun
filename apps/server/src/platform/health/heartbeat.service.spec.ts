@@ -1,12 +1,14 @@
 import { mkdtemp, rm, stat, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Logger, type INestApplicationContext } from '@nestjs/common';
+import type { INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { PinoLogger } from 'nestjs-pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TEST_ENV } from '../../../test/env.js';
 import { ConfigModule } from '../config/config.module.js';
 import { loadConfig } from '../config/load-config.js';
+import { LoggingModule } from '../logging/logging.module.js';
 import { HEARTBEAT_INTERVAL_MS } from './heartbeat.service.js';
 import { HeartbeatModule } from './heartbeat.module.js';
 
@@ -16,8 +18,11 @@ async function startWorker(heartbeatFile: string): Promise<INestApplicationConte
     TRYBUN_WORKER_HEARTBEAT_FILE: heartbeatFile,
   });
   const app = await NestFactory.createApplicationContext(
-    { module: class WorkerTestModule {}, imports: [ConfigModule.forRoot(config), HeartbeatModule] },
-    { logger: false },
+    {
+      module: class WorkerTestModule {},
+      imports: [ConfigModule.forRoot(config), LoggingModule.forRoot(), HeartbeatModule],
+    },
+    { logger: false, abortOnError: false },
   );
   return app.init();
 }
@@ -60,11 +65,14 @@ describe('HeartbeatService', () => {
   });
 
   it('keeps the Worker running when the file cannot be written', async () => {
-    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const warn = vi.spyOn(PinoLogger.prototype, 'warn').mockImplementation(() => undefined);
 
     const app = await startWorker(join(dir, 'missing', 'worker.heartbeat'));
 
-    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/^Heartbeat not written/));
+    expect(warn).toHaveBeenCalledWith(
+      { err: expect.any(Error) as unknown },
+      'Heartbeat not written',
+    );
     await app.close();
   });
 });

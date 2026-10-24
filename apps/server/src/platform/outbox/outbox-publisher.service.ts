@@ -2,13 +2,14 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import {
   Inject,
   Injectable,
-  Logger,
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import type { Queue } from 'bullmq';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Clock } from '../clock/clock.js';
 import { PrismaService } from '../database/prisma.service.js';
+import type { OutboxEventJobData } from './outbox.jobs.js';
 import { lockPendingOutboxEvents } from './outbox.sql.js';
 
 /** The queues of the consumers of each event type. */
@@ -25,7 +26,6 @@ const RETENTION_MS = 7 * 24 * 60 * 60 * 1_000;
  */
 @Injectable()
 export class OutboxPublisherService implements OnApplicationBootstrap, OnApplicationShutdown {
-  private readonly logger = new Logger(OutboxPublisherService.name);
   private readonly stopping = new AbortController();
   private polling: Promise<void> | undefined;
 
@@ -33,6 +33,7 @@ export class OutboxPublisherService implements OnApplicationBootstrap, OnApplica
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     @Inject(OUTBOX_TARGETS) private readonly targets: OutboxTargets,
+    @InjectPinoLogger(OutboxPublisherService.name) private readonly logger: PinoLogger,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -53,7 +54,8 @@ export class OutboxPublisherService implements OnApplicationBootstrap, OnApplica
       const events = await lockPendingOutboxEvents(tx, OUTBOX_BATCH_SIZE);
       for (const event of events) {
         for (const queue of this.targets.get(event.type) ?? []) {
-          await queue.add(event.type, event.payload, { jobId: event.id });
+          const data: OutboxEventJobData = { payload: event.payload, requestId: event.requestId };
+          await queue.add(event.type, data, { jobId: event.id });
         }
       }
       await tx.outboxEvent.updateMany({
@@ -80,7 +82,7 @@ export class OutboxPublisherService implements OnApplicationBootstrap, OnApplica
         published = await this.publishPending();
       } catch (error) {
         // PostgreSQL or Valkey is unavailable; the events stay in the outbox (§17.2).
-        this.logger.warn(`Outbox events not published: ${String(error)}`);
+        this.logger.warn({ err: error }, 'Outbox events not published');
       }
       if (published < OUTBOX_BATCH_SIZE) {
         await sleep(OUTBOX_POLL_INTERVAL_MS, undefined, { signal }).catch(() => undefined);

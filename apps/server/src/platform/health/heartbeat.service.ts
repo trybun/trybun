@@ -2,10 +2,10 @@ import { writeFile } from 'node:fs/promises';
 import {
   Inject,
   Injectable,
-  Logger,
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { TRYBUN_CONFIG } from '../config/config.module.js';
 import type { TrybunConfig } from '../config/config.schema.js';
 
@@ -18,10 +18,12 @@ export const HEARTBEAT_INTERVAL_MS = 15_000;
  */
 @Injectable()
 export class HeartbeatService implements OnApplicationBootstrap, OnApplicationShutdown {
-  private readonly logger = new Logger(HeartbeatService.name);
   private timer: NodeJS.Timeout | undefined;
 
-  constructor(@Inject(TRYBUN_CONFIG) private readonly config: TrybunConfig) {}
+  constructor(
+    @Inject(TRYBUN_CONFIG) private readonly config: TrybunConfig,
+    @InjectPinoLogger(HeartbeatService.name) private readonly logger: PinoLogger,
+  ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     await this.beat();
@@ -37,7 +39,7 @@ export class HeartbeatService implements OnApplicationBootstrap, OnApplicationSh
       await writeFile(this.config.workerHeartbeatFile, '');
     } catch (error) {
       // A missed beat only shows in the health check; the Worker keeps processing jobs.
-      this.logger.warn(`Heartbeat not written: ${String(error)}`);
+      this.logger.warn({ err: error }, 'Heartbeat not written');
     }
   }
 }

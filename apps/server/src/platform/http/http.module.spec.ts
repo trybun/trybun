@@ -8,6 +8,11 @@ import request from 'supertest';
 import ts from 'typescript';
 import { afterAll, beforeAll, describe, expect, it, onTestFinished } from 'vitest';
 import { z } from 'zod';
+import { TEST_ENV } from '../../../test/env.js';
+import { ConfigModule } from '../config/config.module.js';
+import { loadConfig } from '../config/load-config.js';
+import { ErrorsModule } from '../errors/errors.module.js';
+import { LoggingModule } from '../logging/logging.module.js';
 import { API_PREFIX } from './api-prefix.js';
 import { HttpModule } from './http.module.js';
 import { createOpenApiDocument } from './openapi.js';
@@ -33,7 +38,12 @@ describe('HttpModule', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [HttpModule],
+      imports: [
+        ConfigModule.forRoot(loadConfig(TEST_ENV)),
+        LoggingModule.forRoot(),
+        ErrorsModule,
+        HttpModule,
+      ],
       controllers: [NotesController],
     }).compile();
     app = moduleRef.createNestApplication();

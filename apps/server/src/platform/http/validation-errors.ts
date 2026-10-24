@@ -1,6 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import { ERROR_HTTP_STATUS } from '@trybun/contracts/errors';
-import type { FieldError, FieldErrorCode, ProblemDetails } from '@trybun/contracts/problem-details';
+import type { FieldError, FieldErrorCode } from '@trybun/contracts/problem-details';
 
 type IssueDetails = { code?: string; origin?: string };
 
@@ -51,17 +50,10 @@ export function toJsonPointer(path: StandardSchemaV1.Issue['path']): string {
     .join('');
 }
 
-/** The body of a `422` response listing the invalid fields (§17.2). */
-export function toValidationProblem(issues: readonly StandardSchemaV1.Issue[]): ProblemDetails {
-  const errors: FieldError[] = issues.map((issue) => ({
+/** The invalid fields of a `422` response (§17.2), one entry per schema issue. */
+export function toFieldErrors(issues: readonly StandardSchemaV1.Issue[]): FieldError[] {
+  return issues.map((issue) => ({
     pointer: toJsonPointer(issue.path),
     code: toFieldErrorCode(issue),
   }));
-  return {
-    type: 'about:blank',
-    title: 'Unprocessable Content',
-    status: ERROR_HTTP_STATUS['request.validation_failed'],
-    code: 'request.validation_failed',
-    errors,
-  };
 }

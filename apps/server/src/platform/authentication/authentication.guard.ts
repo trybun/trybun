@@ -1,14 +1,7 @@
-import {
-  type CanActivate,
-  type ExecutionContext,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ERROR_HTTP_STATUS, type ErrorCode } from '@trybun/contracts/errors';
-import type { ProblemDetails } from '@trybun/contracts/problem-details';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
+import { AppError } from '../errors/app-error.js';
 import { ACCESS_TOKEN_VERIFIER, type AccessTokenVerifier } from './access-token-verifier.js';
 import { AuthenticationService } from './authentication.service.js';
 import type { Principal } from './principal.js';
@@ -44,37 +37,19 @@ export class AuthenticationGuard implements CanActivate {
     if (isPublic === true) {
       return true;
     }
-    const http = context.switchToHttp();
-    const request = http.getRequest<AuthenticatedRequest>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = BEARER_JWT.exec(request.headers.authorization ?? '')?.[1];
     // Every request goes through the verification; without a JWT it fails as an invalid token.
     const claims = await this.verifier.verify(token ?? '');
     const principal =
       claims === undefined ? undefined : await this.authentication.findPrincipal(claims.sub);
     if (claims === undefined || principal === undefined) {
-      throw unauthorized(http.getResponse<Response>(), 'authentication.required');
+      throw new AppError('authentication.required');
     }
     if (!isSecondFactorSatisfied(principal.userKind, claims.amr)) {
-      throw unauthorized(http.getResponse<Response>(), 'authentication.second_factor_required');
+      throw new AppError('authentication.second_factor_required');
     }
     request.principal = principal;
     return true;
   }
-}
-
-/** `401` with Problem Details and the `WWW-Authenticate` challenge (RFC 6750, RFC 9470). */
-function unauthorized(response: Response, code: ErrorCode): UnauthorizedException {
-  response.setHeader(
-    'WWW-Authenticate',
-    code === 'authentication.second_factor_required'
-      ? 'Bearer error="insufficient_user_authentication"'
-      : 'Bearer',
-  );
-  const problem: ProblemDetails = {
-    type: 'about:blank',
-    title: 'Unauthorized',
-    status: ERROR_HTTP_STATUS[code],
-    code,
-  };
-  return new UnauthorizedException(problem);
 }

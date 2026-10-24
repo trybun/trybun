@@ -25,6 +25,7 @@ export const configSchema = z
       .string()
       .refine(isTimeZone, 'Invalid IANA time zone')
       .default('UTC'),
+    TRYBUN_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'silent']).default('info'),
     TRYBUN_WORKER_HEARTBEAT_FILE: z
       .string()
       .min(1)
@@ -41,6 +42,7 @@ export const configSchema = z
     },
     defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
     defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
+    logLevel: env.TRYBUN_LOG_LEVEL,
     workerHeartbeatFile: env.TRYBUN_WORKER_HEARTBEAT_FILE,
   }));
 

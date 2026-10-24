@@ -12,3 +12,12 @@ export interface OutboxSubscription {
   queue: string;
   eventTypes: readonly string[];
 }
+
+/**
+ * The data of the job of an outbox event: the event's payload and the request ID of the API call
+ * that caused it, which the processor runs with (`LogContext.runJob`, §17.2).
+ */
+export interface OutboxEventJobData {
+  payload: Record<string, unknown>;
+  requestId: string | null;
+}

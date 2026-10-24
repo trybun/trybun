@@ -17,7 +17,9 @@ import { ConfigModule } from '../config/config.module.js';
 import { DatabaseModule } from '../database/database.module.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { API_PREFIX } from '../http/api-prefix.js';
+import { ErrorsModule } from '../errors/errors.module.js';
 import { HttpModule } from '../http/http.module.js';
+import { LoggingModule } from '../logging/logging.module.js';
 import { ResponseSchema } from '../http/response-schema.decorator.js';
 import { AuthenticationModule } from './authentication.module.js';
 import { CurrentPrincipal } from './current-principal.decorator.js';
@@ -66,7 +68,14 @@ describe('authentication', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot(config), DatabaseModule, HttpModule, AuthenticationModule],
+      imports: [
+        ConfigModule.forRoot(config),
+        LoggingModule.forRoot(),
+        DatabaseModule,
+        ErrorsModule,
+        HttpModule,
+        AuthenticationModule,
+      ],
       controllers: [PrincipalController],
     }).compile();
     app = moduleRef.createNestApplication();

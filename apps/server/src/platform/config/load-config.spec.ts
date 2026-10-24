@@ -17,8 +17,13 @@ describe('loadConfig', () => {
       },
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
+      logLevel: 'silent',
       workerHeartbeatFile: join(tmpdir(), 'trybun-worker.heartbeat'),
     });
+  });
+
+  it('logs at the info level by default', () => {
+    expect(loadConfig({ ...TEST_ENV, TRYBUN_LOG_LEVEL: undefined }).logLevel).toBe('info');
   });
 
   it('takes the system default language and time zone', () => {
@@ -51,6 +56,7 @@ describe('loadConfig', () => {
     [{ ...TEST_ENV, TRYBUN_KEYCLOAK_PUBLIC_URL: 'keycloak' }, 'TRYBUN_KEYCLOAK_PUBLIC_URL'],
     [{ ...TEST_ENV, TRYBUN_DEFAULT_LANGUAGE: 'de' }, 'TRYBUN_DEFAULT_LANGUAGE'],
     [{ ...TEST_ENV, TRYBUN_DEFAULT_TIME_ZONE: 'Mars/Olympus' }, 'TRYBUN_DEFAULT_TIME_ZONE'],
+    [{ ...TEST_ENV, TRYBUN_LOG_LEVEL: 'verbose' }, 'TRYBUN_LOG_LEVEL'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => loadConfig(env)).toThrow(InvalidConfigError);
     expect(() => loadConfig(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));
