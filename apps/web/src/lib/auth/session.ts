@@ -1,9 +1,15 @@
 import 'server-only';
 import { getServerSession, type Session } from 'next-auth';
+import { cookies } from 'next/headers.js';
 import { redirect } from 'next/navigation.js';
 import { connection } from 'next/server.js';
 import { cache } from 'react';
-import { createAuthOptions, SIGN_IN_PATH } from './auth-options.js';
+import {
+  createAuthOptions,
+  getAccessTokens,
+  SIGN_IN_PATH,
+  sessionCookieName,
+} from './auth-options.js';
 
 /**
  * The session of the request, read once per request (§18.5). Its row is looked up on every
@@ -25,3 +31,13 @@ export async function requireSession(callbackPath = '/'): Promise<Session> {
   }
   return session;
 }
+
+/**
+ * The access token of the request's session for the API, refreshed when it is about to expire;
+ * `undefined` without a session (§14.4). Read once per request, like the session.
+ */
+export const getAccessToken = cache(async (): Promise<string | undefined> => {
+  await connection();
+  const sessionToken = (await cookies()).get(sessionCookieName())?.value;
+  return sessionToken === undefined ? undefined : getAccessTokens().forSession(sessionToken);
+});

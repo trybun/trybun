@@ -3,6 +3,7 @@ import { decodeJwt } from 'jose';
 import type { Account, NextAuthOptions } from 'next-auth';
 import { getPrisma } from '../database/prisma.js';
 import { getEnv, type WebEnv } from '../env/env.js';
+import { type AccessTokens, createAccessTokens } from './access-tokens.js';
 import { KeycloakProvider } from './next-auth.js';
 import { createKeycloakClient, type KeycloakClient } from './keycloak-client.js';
 import { createSessionAdapter, type KeycloakTokens, type SignInTokens } from './session-adapter.js';
@@ -16,6 +17,11 @@ const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 /** The page that starts the sign-in with Keycloak. */
 export const SIGN_IN_PATH = '/sign-in';
+
+/** The cookie of Auth.js 4 that holds the opaque session token; `__Secure-` on HTTPS. */
+export function sessionCookieName(): string {
+  return `${getEnv().shouldUseSecureCookies ? '__Secure-' : ''}next-auth.session-token`;
+}
 
 /** The Keycloak tokens of a sign-in; `undefined` for an incomplete token response. */
 export function toKeycloakTokens(account: Account): KeycloakTokens | undefined {
@@ -37,18 +43,28 @@ export function toKeycloakTokens(account: Account): KeycloakTokens | undefined {
   };
 }
 
-let dependencies: { env: WebEnv; cipher: TokenCipher; keycloak: KeycloakClient } | undefined;
+let dependencies:
+  | { env: WebEnv; cipher: TokenCipher; keycloak: KeycloakClient; accessTokens: AccessTokens }
+  | undefined;
 
 function getDependencies() {
   if (dependencies === undefined) {
     const env = getEnv();
+    const cipher = createTokenCipher(env.authSecret);
+    const keycloak = createKeycloakClient(env.keycloak);
     dependencies = {
       env,
-      cipher: createTokenCipher(env.authSecret),
-      keycloak: createKeycloakClient(env.keycloak),
+      cipher,
+      keycloak,
+      accessTokens: createAccessTokens({ prisma: getPrisma(), cipher, keycloak }),
     };
   }
   return dependencies;
+}
+
+/** The access tokens of the sessions for the API (BFF proxy, server API client, §14.4). */
+export function getAccessTokens(): AccessTokens {
+  return getDependencies().accessTokens;
 }
 
 /** The Keycloak client of the web application (back-channel logout, sign-out). */

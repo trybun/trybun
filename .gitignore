@@ -13,3 +13,7 @@ apps/web/src/generated/
 .env
 .env.*
 !.env.example
+# Results of the E2E tests (Playwright)
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/e2e/.auth/
