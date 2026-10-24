@@ -15,8 +15,20 @@ describe('loadConfig', () => {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
         jwksUrl: 'http://keycloak:8080/auth/realms/trybun/protocol/openid-connect/certs',
       },
+      defaultLanguage: 'en',
+      defaultTimeZone: 'UTC',
       workerHeartbeatFile: join(tmpdir(), 'trybun-worker.heartbeat'),
     });
+  });
+
+  it('takes the system default language and time zone', () => {
+    const config = loadConfig({
+      ...TEST_ENV,
+      TRYBUN_DEFAULT_LANGUAGE: 'pl',
+      TRYBUN_DEFAULT_TIME_ZONE: 'Europe/Warsaw',
+    });
+
+    expect(config).toMatchObject({ defaultLanguage: 'pl', defaultTimeZone: 'Europe/Warsaw' });
   });
 
   it('takes the issuer from the public URL of Keycloak when it is set', () => {
@@ -37,6 +49,8 @@ describe('loadConfig', () => {
     [{ ...TEST_ENV, TRYBUN_VALKEY_URL: 'http://localhost:6379' }, 'TRYBUN_VALKEY_URL'],
     [{ ...TEST_ENV, TRYBUN_KEYCLOAK_URL: undefined }, 'TRYBUN_KEYCLOAK_URL'],
     [{ ...TEST_ENV, TRYBUN_KEYCLOAK_PUBLIC_URL: 'keycloak' }, 'TRYBUN_KEYCLOAK_PUBLIC_URL'],
+    [{ ...TEST_ENV, TRYBUN_DEFAULT_LANGUAGE: 'de' }, 'TRYBUN_DEFAULT_LANGUAGE'],
+    [{ ...TEST_ENV, TRYBUN_DEFAULT_TIME_ZONE: 'Mars/Olympus' }, 'TRYBUN_DEFAULT_TIME_ZONE'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => loadConfig(env)).toThrow(InvalidConfigError);
     expect(() => loadConfig(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));

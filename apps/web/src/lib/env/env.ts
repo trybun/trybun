@@ -1,4 +1,6 @@
 import 'server-only';
+import { LOCALES } from '@trybun/i18n/catalogues';
+import { isTimeZone } from '@trybun/i18n/time-zones';
 import { z } from 'zod';
 
 /** The realm of Trybun in Keycloak (docker/keycloak/realm/trybun.yaml). */
@@ -20,12 +22,22 @@ const envSchema = z
     // Public URL of Keycloak, the base of the token issuer. Default: https://<domain>/auth (§15.5).
     TRYBUN_KEYCLOAK_PUBLIC_URL: z.url({ protocol: /^https?$/ }).optional(),
     TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: z.string().min(1),
+    // The system default language and time zone (§13.1), set by the install script (§15.5).
+    TRYBUN_DEFAULT_LANGUAGE: z.enum(LOCALES).default('en'),
+    TRYBUN_DEFAULT_TIME_ZONE: z
+      .string()
+      .refine(isTimeZone, 'Invalid IANA time zone')
+      .default('UTC'),
   })
   .transform((env) => ({
     domain: env.TRYBUN_DOMAIN,
     apiUrl: env.TRYBUN_API_URL,
     databaseUrl: env.DATABASE_URL,
     authSecret: env.AUTH_SECRET,
+    // Auth.js 4 marks its cookies `Secure` by the same rule.
+    shouldUseSecureCookies: env.NEXTAUTH_URL.startsWith('https://'),
+    defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
+    defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
     keycloak: {
       issuer: `${env.TRYBUN_KEYCLOAK_PUBLIC_URL ?? `https://${env.TRYBUN_DOMAIN}/auth`}/realms/${KEYCLOAK_REALM}`,
       internalRealmUrl: `${env.TRYBUN_KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`,

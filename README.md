@@ -42,8 +42,8 @@ Run from the repository root:
 |---|---|
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
-| `pnpm build` | Build all applications |
-| `pnpm lint` | Lint all packages, check the formatting and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest |
+| `pnpm build` | Build all applications and generate the Keycloak login theme from the message catalogues |
+| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
@@ -82,7 +82,7 @@ pnpm workspaces with Turborepo ([§14.6](docs/spec/14-architecture.md)). Applica
 | `apps/server` | `@trybun/server` | NestJS backend: the API (`src/main.ts`) and the Worker (`src/worker.ts`) |
 | `packages/contracts` | `@trybun/contracts` | Zod schemas, types and error codes shared by web and server |
 | `packages/ui` | `@trybun/ui` | Component library (shadcn/ui on Base UI, Tailwind CSS) |
-| `packages/i18n` | `@trybun/i18n` | Message catalogues (EN, PL) for web and server |
+| `packages/i18n` | `@trybun/i18n` | Message catalogues (EN, PL) in ICU MessageFormat for web, server and the Keycloak login theme |
 | `packages/tsconfig` | `@trybun/tsconfig` | Shared TypeScript configuration (strict) |
 | `packages/eslint-config` | `@trybun/eslint-config` | Shared lint rules: naming conventions, package and layer boundaries |
 | `docs/` | | Specification, implementation plan, ADRs, brand |
@@ -92,6 +92,10 @@ The code inside the applications follows the patterns of [§18](docs/spec/18-cod
 ## Configuration
 
 All configuration comes from environment variables ([§15.3](docs/spec/15-deployment.md)); the system's own variables start with `TRYBUN_`. [`.env.example`](.env.example) lists every variable with its description. The API and the web application validate their variables at start-up and stop with a clear message when one is missing or invalid. The Keycloak realm is configuration as code in [`docker/keycloak/`](docker/keycloak), applied by the one-off `keycloak-config` service on every start ([§15.5](docs/spec/15-deployment.md)); optional parts – SMTP and each sign-in provider – are applied only when their variables are set.
+
+## Translations
+
+Every text of the web application, the server's e-mails and API messages, and the Keycloak login screens comes from the ICU message catalogues in [`packages/i18n/messages/`](packages/i18n/messages) – English (`en.json`, the reference) and Polish (`pl.json`) ([§13.1](docs/spec/13-non-functional.md)). Add a text to both catalogues under the namespace of its feature; `pnpm typecheck` rejects a key that is not in the catalogues, and `pnpm test` rejects a catalogue with missing, extra or malformed messages. The `keycloak` namespace becomes the login theme in [`docker/keycloak/themes/trybun/`](docker/keycloak/themes/trybun) on `pnpm build`; commit the generated files. The language is never in the URL: the web application uses the language chosen in the application, else the browser language, else `TRYBUN_DEFAULT_LANGUAGE`.
 
 ## Deployment
 

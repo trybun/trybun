@@ -5,9 +5,11 @@
 - The UI is available from the start in **English and Polish**. Further languages can be added without code changes, only by adding translation files.
 - No UI text is hard-coded. All texts come from translation resources (Rule 1).
 - Each user chooses their language in account settings. On first login it is set from the browser language; if unsupported, from the system default language (set by the Administrator, default Polish).
-- Dates, times and numbers are formatted according to the user's locale and shown in the user's time zone.
+- The language is never part of the URL. The web application takes the language of a request from the language chosen in the application (the `NEXT_LOCALE` cookie, set by the language switch), else from the browser language (`Accept-Language`), else from the system default language (`TRYBUN_DEFAULT_LANGUAGE`). Switching the language renders the current page again with every text in the new language, without loading another URL. The sign-in passes the language to Keycloak (`ui_locales`), so the login screen appears in the same language.
+- Dates, times and numbers are formatted according to the user's locale and shown in the user's time zone; until the user has set one, in the system default time zone (`TRYBUN_DEFAULT_TIME_ZONE`, an IANA name).
 - Also translated: public status names and descriptions ([§4.2](04-ticket-lifecycle.md)), e-mails (in the recipient's language), error and warning messages, templates ([§3.4](03-ticket-model.md)), product tours (Rule 4), login screens (Keycloak themes).
 - Content entered by users (tickets, comments) is not translated.
+- Every catalogue has exactly the keys of the English one, with valid ICU messages and the same arguments; CI fails on a missing, extra or malformed translation and on a key used in code that the catalogues do not define.
 
 ## 13.2 Personal data protection (GDPR)
 

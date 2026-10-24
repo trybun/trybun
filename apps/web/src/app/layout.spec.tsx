@@ -1,15 +1,31 @@
+import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
-import RootLayout from './layout.js';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('next-intl/server', () => ({
+  getLocale: () => Promise.resolve('pl'),
+  getTranslations: (namespace: string) => Promise.resolve((key: string) => `${namespace}.${key}`),
+}));
+// The provider passes the texts of the request to client components (a Server Component in Next.js).
+function PassThroughProvider({ children }: { children: ReactNode }) {
+  return children;
+}
+vi.mock('next-intl', () => ({ NextIntlClientProvider: PassThroughProvider }));
+
+const { default: RootLayout, generateMetadata } = await import('./layout.js');
 
 describe('RootLayout', () => {
-  it('renders the page inside the document', () => {
+  it('renders the page inside the document in the language of the request', async () => {
     expect(
       renderToStaticMarkup(
-        <RootLayout>
-          <main />
-        </RootLayout>,
+        await RootLayout({
+          children: <main />,
+        }),
       ),
-    ).toBe('<html lang="en"><head></head><body><main></main></body></html>');
+    ).toBe('<html lang="pl"><head></head><body><main></main></body></html>');
+  });
+
+  it('takes the title from the messages', async () => {
+    expect(await generateMetadata()).toEqual({ title: 'app.title' });
   });
 });

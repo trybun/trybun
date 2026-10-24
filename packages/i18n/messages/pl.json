@@ -1,1 +1,16 @@
-{}
+{
+  "app": {
+    "title": "Trybun"
+  },
+  "signIn": {
+    "redirecting": "Przekierowanie do logowania…"
+  },
+  "emails": {
+    "footer": {
+      "automatic": "Ta wiadomość została wysłana automatycznie przez system Trybun."
+    }
+  },
+  "keycloak": {
+    "loginAccountTitle": "Zaloguj się do systemu Trybun"
+  }
+}
