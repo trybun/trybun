@@ -15,5 +15,9 @@ export function SignInRedirect({ callbackUrl }: { callbackUrl: string }) {
   useEffect(() => {
     void signIn('keycloak', { callbackUrl }, { ui_locales: locale });
   }, [callbackUrl, locale]);
-  return <p role="status">{t('redirecting')}</p>;
+  return (
+    <main className="p-4">
+      <p role="status">{t('redirecting')}</p>
+    </main>
+  );
 }

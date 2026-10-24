@@ -50,6 +50,17 @@ export function nextjs({ allowedPackages, root }) {
       },
     },
     {
+      name: 'trybun/next-generated',
+      // The openapi-typescript types of the API, generated from its OpenAPI document (§14.2).
+      ignores: ['src/lib/api-client/schema.d.ts'],
+    },
+    {
+      name: 'trybun/next-module-declarations',
+      // Declarations of the default exports of Next.js entry points (`next/link`, `next/image`).
+      files: ['src/lib/next/next-modules.d.ts'],
+      rules: { 'import-x/no-default-export': 'off' },
+    },
+    {
       name: 'trybun/next-intl-request-config',
       // next-intl requires the request configuration as the default export.
       files: ['src/lib/i18n/request.ts'],

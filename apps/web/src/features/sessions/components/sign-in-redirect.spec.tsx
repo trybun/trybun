@@ -17,6 +17,6 @@ describe('SignInRedirect', () => {
           <SignInRedirect callbackUrl="/" />
         </NextIntlClientProvider>,
       ),
-    ).toBe(`<p role="status">${text}</p>`);
+    ).toBe(`<main class="p-4"><p role="status">${text}</p></main>`);
   });
 });

@@ -5,6 +5,23 @@
   "signIn": {
     "redirecting": "Redirecting to the sign-in…"
   },
+  "appShell": {
+    "skipToContent": "Skip to main content",
+    "mainNavigation": "Main navigation",
+    "expandNavigation": "Expand navigation",
+    "collapseNavigation": "Collapse navigation",
+    "home": "Home",
+    "accountMenu": "Account menu",
+    "language": "Language",
+    "signOut": "Sign out"
+  },
+  "languages": {
+    "en": "English",
+    "pl": "Polski"
+  },
+  "home": {
+    "title": "Home"
+  },
   "ui": {
     "close": "Close",
     "toast": {
