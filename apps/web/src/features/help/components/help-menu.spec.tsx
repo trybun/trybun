@@ -4,35 +4,31 @@ import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-const usePathname = vi.fn<() => string>();
-vi.mock('next/navigation.js', () => ({ usePathname }));
+vi.mock('next/navigation.js', () => ({ usePathname: () => '/' }));
 // Outside the App Router of Next.js: a plain link.
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 
-const { HelpButton } = await import('./help-button.js');
+const { HelpMenu } = await import('./help-menu.js');
 
-const VIEWS = { '/': 'team/tutorials/getting-started' };
-
-function renderButton(locale: 'en' | 'pl' = 'en') {
+function renderMenu(locale: 'en' | 'pl' = 'en') {
   return renderToStaticMarkup(
     <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
-      <HelpButton views={VIEWS} />
+      <HelpMenu views={{ '/': 'team/tutorials/getting-started' }} />
     </NextIntlClientProvider>,
   );
 }
 
-describe('HelpButton', () => {
-  it('opens the help page mapped to the current view', () => {
-    usePathname.mockReturnValue('/');
-
-    expect(renderButton()).toMatch(
-      /<a href="\/help\/team\/tutorials\/getting-started" aria-label="Help"/,
-    );
-  });
-
-  it('opens the help index for a view without a help page', () => {
-    usePathname.mockReturnValue('/settings');
-
-    expect(renderButton('pl')).toMatch(/<a href="\/help" aria-label="Pomoc"/);
-  });
+// The items of the open menu are checked by the E2E tests (e2e/help.spec.ts).
+describe('HelpMenu', () => {
+  it.each([
+    ['en', 'Help'],
+    ['pl', 'Pomoc'],
+  ] as const)(
+    'opens from a labelled button, the target of the product tours (%s)',
+    (locale, label) => {
+      expect(renderMenu(locale)).toMatch(
+        new RegExp(`<button[^>]*aria-label="${label}"[^>]*data-tour="app-header-help"`),
+      );
+    },
+  );
 });

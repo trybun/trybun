@@ -13,7 +13,7 @@ export class AppShellPage {
     // Only one of the side and the bottom navigation is shown for a viewport.
     this.navigation = page.getByRole('navigation', { name: 'Main navigation' });
     this.accountMenu = page.getByRole('button', { name: 'Account menu' });
-    this.help = page.getByRole('banner').getByRole('link', { name: 'Help' });
+    this.help = page.getByRole('banner').getByRole('button', { name: 'Help' });
     this.heading = page.getByRole('heading', { level: 1 });
   }
 
@@ -26,6 +26,12 @@ export class AppShellPage {
     return this.page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
+  }
+
+  /** Opens the help menu (§2.3, §2.4). */
+  async openHelpMenu(): Promise<Locator> {
+    await this.help.click();
+    return this.page.getByRole('menu');
   }
 
   async openAccountMenu(): Promise<Locator> {

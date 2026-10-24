@@ -7,7 +7,7 @@ export function helpHref(slug?: string): string {
 }
 
 /** Whether a route of a view matches a path; a segment in square brackets matches any value. */
-function matchesView(view: string, pathname: string): boolean {
+export function matchesView(view: string, pathname: string): boolean {
   const viewSegments = view.split('/');
   const pathSegments = pathname.split('/');
   return (

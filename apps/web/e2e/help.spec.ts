@@ -4,11 +4,12 @@ import { AppShellPage } from './pages/app-shell.page.js';
 import { HelpPage } from './pages/help.page.js';
 
 test.describe('help', () => {
-  test('the help icon opens the help page of the current view', async ({ page }) => {
+  test('the help menu opens the help page of the current view', async ({ page }) => {
     const shell = new AppShellPage(page);
     await shell.goto();
 
-    await shell.help.click();
+    const menu = await shell.openHelpMenu();
+    await menu.getByRole('menuitem', { name: 'Help for this view' }).click();
 
     await expect(page).toHaveURL('/help/team/tutorials/getting-started');
     await expect(shell.heading).toHaveText('Getting started for the team');

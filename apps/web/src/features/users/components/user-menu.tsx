@@ -48,6 +48,7 @@ export function UserMenu() {
       <DropdownMenuTrigger
         render={<Button variant="ghost" size="icon" className="rounded-full" />}
         aria-label={t('accountMenu')}
+        data-tour="app-header-account-menu"
       >
         {name === undefined ? (
           <UserIcon aria-hidden />

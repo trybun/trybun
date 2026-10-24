@@ -7,7 +7,7 @@ import { UserMenu } from '../../users/components/user-menu.js';
 export interface AppHeaderSlots {
   /** The search button that opens the command palette (§8.4, S2-05). */
   search?: ReactNode;
-  /** The help icon that opens the help page of the current view (§2.3, S0-09). */
+  /** The help menu: the help page of the current view and its product tours (§2.3, §2.4). */
   help?: ReactNode;
   /** The notification bell (§6.6). */
   notifications?: ReactNode;
