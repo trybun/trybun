@@ -70,7 +70,7 @@ The search and the notifications get their steps with their tasks (S1-xx), by in
 
 ### What the system does
 
-- **Server – product tour progress.** A new table `product_tour_progress` (Prisma model `ProductTourProgress`): `user_id` (→ `users`), `tour_id`, `tour_version`, `status` (`completed` / `skipped`), `updated_at`; one row per user and tour (unique `user_id, tour_id`). Two endpoints of the current user, in the `users` module:
+- **Server – product tour progress.** A new table `product_tour_progresses` (Prisma model `ProductTourProgress`): `user_id` (→ `users`), `tour_id`, `tour_version`, `status` (`completed` / `skipped`), `updated_at`; one row per user and tour (unique `user_id, tour_id`). Two endpoints of the current user, in the `users` module:
   - `GET /api/v1/users/me/product-tours` – the person's progress for all tours: `{ items: [{ tourId, tourVersion, status, updatedAt }] }`. The list is bounded by the number of tours (a few dozen), so it uses the envelope of [§18.4](../../../docs/spec/18-code-patterns.md) with `nextCursor` always `null` and accepts no `cursor` (see open question 7).
   - `PUT /api/v1/users/me/product-tours/{tourId}` with `{ tourVersion, status }` – records (creates or replaces) the progress and returns it. Idempotent; the row belongs only to the person, has no `version` and needs no `If-Match` ([§17.2](../../../docs/spec/17-conventions.md) "Concurrency"): the last write wins, which is correct for two devices finishing the same tour.
   - The tour identifiers are a closed enum in `@trybun/contracts` (`productTourIdSchema`); an unknown `tourId` returns `422`. The server stores no tour definitions or steps.
@@ -139,6 +139,8 @@ Implementation must not start until every question has an answer.
   - The tour identifier is `first_login`: enum values of the contracts are snake_case ([§17.1](../../../docs/spec/17-conventions.md)); the definition file stays `first-login.ts`.
   - A step whose target is missing is shown centred instead of ending the tour: the E2E check prevents missing targets, and a centred tip still never blocks work. The tour starts as soon as its view renders, before a dialog, sheet or menu can be opened, so no separate check for open overlays is needed.
   - On phones, a tip about an element at the bottom edge of the screen (the bottom navigation) opens as a sheet at the top edge, so the sheet does not cover its target.
+  - The table is `product_tour_progresses`: table names are the plural of the model name ([§17.1](../../../docs/spec/17-conventions.md), checked by `pnpm lint`).
+  - The tip component is loaded only when a tour starts, so the application shell keeps its Lighthouse budget.
   - The progress list uses the new envelope `pageSchema` of `@trybun/contracts/pagination` with `nextCursor: null`.
   - User documentation: a how-to for the team only (`team/how-to/take-a-product-tour-again`); end users get theirs with the first end-user tour, since the portal has no tour yet. The help pages that named the help icon now name **Help for this view**.
   - The help menu offers **All help topics** instead of **Help for this view** on a view without a help page.

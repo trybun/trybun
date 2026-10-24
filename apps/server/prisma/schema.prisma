@@ -86,7 +86,7 @@ model ProductTourProgress {
   updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([userId, tourId])
-  @@map("product_tour_progress")
+  @@map("product_tour_progresses")
 }
 
 /// Transactional outbox (§17.2): written in the transaction of a change, published by the Worker.

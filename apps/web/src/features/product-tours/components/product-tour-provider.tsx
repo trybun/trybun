@@ -2,17 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { ProductTourId, ProductTourStatus } from '@trybun/contracts/product-tours';
-import {
-  TourTip,
-  TourTipDescription,
-  TourTipFooter,
-  TourTipTitle,
-} from '@trybun/ui/components/tour-tip';
 import { usePathname } from 'next/navigation.js';
-import { useTranslations } from 'next-intl';
 import {
   createContext,
+  lazy,
   type ReactNode,
+  Suspense,
   use,
   useEffect,
   useState,
@@ -57,6 +52,11 @@ interface RunningTour {
 
 const subscribeToNothing = () => () => undefined;
 
+// The tip is loaded only when a tour starts (Lighthouse budget of the shell, §2.9).
+const ProductTourStepTip = lazy(() =>
+  import('./product-tour-step-tip.js').then((module) => ({ default: module.ProductTourStepTip })),
+);
+
 function isRendered(target: string): boolean {
   return findTourTarget(target) !== null;
 }
@@ -68,7 +68,6 @@ function isRendered(target: string): boolean {
  * `completed`; Skip, Esc, the close button and leaving the view record `skipped`.
  */
 export function ProductTourProvider({ children }: { children: ReactNode }) {
-  const t = useTranslations('productTours');
   const pathname = usePathname();
   // Only in the browser, after hydration: the tip measures the page and the viewport.
   const isHydrated = useSyncExternalStore(
@@ -162,26 +161,16 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
     <ProductToursContext value={{ tours, start }}>
       {children}
       {running !== null && step !== undefined && (
-        <TourTip
-          open
-          onOpenChange={(open) => {
-            if (!open) {
-              end('skipped');
-            }
-          }}
-          anchor={step.target === undefined ? null : () => findTourTarget(step.target ?? '')}
-          sheetSide={step.phoneSheetSide ?? 'bottom'}
-          step={running.stepIndex + 1}
-          stepCount={running.steps.length}
-        >
-          <TourTipTitle>{t(step.titleKey)}</TourTipTitle>
-          <TourTipDescription>{t(step.descriptionKey)}</TourTipDescription>
-          <TourTipFooter
+        <Suspense>
+          <ProductTourStepTip
+            step={step}
+            stepNumber={running.stepIndex + 1}
+            stepCount={running.steps.length}
             onBack={() => move(-1)}
             onNext={() => move(1)}
             onSkip={() => end('skipped')}
           />
-        </TourTip>
+        </Suspense>
       )}
     </ProductToursContext>
   );
