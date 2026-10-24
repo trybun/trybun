@@ -4,6 +4,7 @@ Non-obvious behaviour found when the E2E set-up was built (S0-08, October 2026, 
 
 - **Sign-in**: `apps/web/e2e/auth.setup.ts` signs in once as the seeded Developer (password + TOTP of `docker/keycloak/dev/`) and stores the browser state for all projects. Keycloak accepts a one-time code only once, so a second sign-in in the same 30-second window fails with "Invalid authenticator code."; `SignInPage` waits for the next code. Tests must not sign out with the shared state – that ends the Keycloak session of every other test.
 - The Keycloak login page has its own `banner` landmark; wait for an element of the application (the account menu) to know the sign-in completed.
+- The React Compiler check (`e2e/react-compiler.spec.ts`) found no React roots through the stubbed DevTools hook on WebKit in CI (#66); it runs in the Chromium projects only.
 - **WebKit** (the iPad project) needs system libraries: `playwright install --with-deps chromium webkit` (CI). On a machine without them, check the tablet project by temporarily setting `browserName: 'chromium'`.
 - **axe**: exclude `[data-base-ui-focus-guard]` as in Storybook (`e2e/accessibility.ts`).
 - **Lighthouse** has no Playwright integration: `e2e/lighthouse.spec.ts` starts a persistent Chromium context with `--remote-debugging-port` (Lighthouse opens its tab in the default context, which only a persistent context shares with the cookies) and calls `lighthouse(url, { port })`. Playwright's `expect` has no asymmetric numeric matchers (`expect.toBeGreaterThanOrEqual`); use `expect.soft` per metric.

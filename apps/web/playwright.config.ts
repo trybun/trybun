@@ -34,7 +34,9 @@ export default defineConfig({
       name: 'tablet',
       use: { ...devices['iPad (gen 11)'], storageState: TEAM_STORAGE_STATE },
       dependencies: ['setup'],
-      testIgnore: /lighthouse\.spec\.ts$/,
+      // The React Compiler check concerns the build, not the device: it runs in the Chromium
+      // projects, whose React DevTools hook it stubs (WebKit reports no React roots to it).
+      testIgnore: [/lighthouse\.spec\.ts$/, /react-compiler\.spec\.ts$/],
     },
     {
       name: 'desktop',
