@@ -5,10 +5,15 @@ import { execFileSync } from 'node:child_process';
 /**
  * Authors exempt from the per-commit checks, by e-mail address. Dependabot is GitHub's service:
  * its commits carry no `Signed-off-by` and it chooses the case of the subject itself ("Bump …").
- * Its pull requests are reviewed by a code owner like any other, and their title – the squash
- * commit on `main` – is still checked (§16.3, §2.14).
+ * The release app `trybun-release` commits the release pull requests of release-please without a
+ * `Signed-off-by` (ADR 0006); the user ID in its address is assigned by GitHub. Their pull
+ * requests are reviewed by a code owner like any other, and their title – the squash commit on
+ * `main` – is still checked (§16.3, §2.14).
  */
-const EXEMPT_AUTHORS = new Set(['49699333+dependabot[bot]@users.noreply.github.com']);
+const EXEMPT_AUTHORS = [
+  /^49699333\+dependabot\[bot\]@users\.noreply\.github\.com$/,
+  /^\d+\+trybun-release\[bot\]@users\.noreply\.github\.com$/,
+];
 
 const FIELD = '\x00';
 const RECORD = '\x1e';
@@ -27,7 +32,8 @@ const RECORD = '\x1e';
  * @param {Commit} commit
  */
 export function isExemptAuthor({ authorEmail }) {
-  return EXEMPT_AUTHORS.has(authorEmail.toLowerCase());
+  const email = authorEmail.toLowerCase();
+  return EXEMPT_AUTHORS.some((author) => author.test(email));
 }
 
 /**
