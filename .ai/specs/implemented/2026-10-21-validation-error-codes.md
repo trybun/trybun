@@ -10,14 +10,14 @@
 
 ## Context
 
-[§17.2](../../docs/spec/17-conventions.md) ("Errors") requires Problem Details with a stable error `code` for every error and, for validation errors, an `errors` member listing the invalid fields as `[{ "pointer": "/title", "code": "string.too_long" }]`. The web application translates codes with `errors.<code>` ([§17.1](../../docs/spec/17-conventions.md)).
+[§17.2](../../../docs/spec/17-conventions.md) ("Errors") requires Problem Details with a stable error `code` for every error and, for validation errors, an `errors` member listing the invalid fields as `[{ "pointer": "/title", "code": "string.too_long" }]`. The web application translates codes with `errors.<code>` ([§17.1](../../../docs/spec/17-conventions.md)).
 
 Two things are not specified:
 
 1. **The error code of a validation response** (the `code` member of the `422` response).
 2. **The field error codes** (the `code` of each entry of `errors`). The specification gives one example, `string.too_long`, but no list. Without a closed list, each schema could produce its own codes and the web application could not translate them.
 
-Task S0-01 needs both: the global validation pipe returns `422` with `errors[]` ([§18.3](../../docs/spec/18-code-patterns.md)). It uses the codes proposed below, defined in `@trybun/contracts` (`errors/`, `problem-details/`); this specification asks for their approval. The error-code registry as a whole is built in S0-17.
+Task S0-01 needs both: the global validation pipe returns `422` with `errors[]` ([§18.3](../../../docs/spec/18-code-patterns.md)). It uses the codes proposed below, defined in `@trybun/contracts` (`errors/`, `problem-details/`); this specification asks for their approval. The error-code registry as a whole is built in S0-17.
 
 ## Goals
 
@@ -27,7 +27,7 @@ Task S0-01 needs both: the global validation pipe returns `422` with `errors[]` 
 ## Non-goals
 
 - Error codes of other errors (S0-17 and the feature tasks).
-- Business-rule errors of fields (e.g. a visibility not allowed): they use their own error codes ([§17.2](../../docs/spec/17-conventions.md)).
+- Business-rule errors of fields (e.g. a visibility not allowed): they use their own error codes ([§17.2](../../../docs/spec/17-conventions.md)).
 - Translations of the codes (S0-06).
 
 ## Proposed change
