@@ -34,6 +34,9 @@ const envSchema = z
     apiUrl: env.TRYBUN_API_URL,
     databaseUrl: env.DATABASE_URL,
     authSecret: env.AUTH_SECRET,
+    // The origin that state-changing browser requests of the BFF must send (CSRF, §14.4):
+    // https://<TRYBUN_DOMAIN> in Compose, http://localhost:3000 in the local environment.
+    origin: new URL(env.NEXTAUTH_URL).origin,
     // Auth.js 4 marks its cookies `Secure` by the same rule.
     shouldUseSecureCookies: env.NEXTAUTH_URL.startsWith('https://'),
     defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,

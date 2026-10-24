@@ -1,0 +1,11 @@
+/* The design tokens and components of @trybun/ui (§2.6), and the classes of the web application. */
+@import '@trybun/ui/globals.css';
+
+@source '../';
+
+@layer base {
+  /* Popups of Base UI stack above the page (Base UI portals). */
+  body {
+    isolation: isolate;
+  }
+}

@@ -69,6 +69,36 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm build
 
+  e2e:
+    name: E2E and Lighthouse
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # Chromium for the phone, desktop and Lighthouse projects, WebKit for the tablet (§2.9).
+      - run: pnpm --filter @trybun/web exec playwright install --with-deps chromium webkit
+      # The local environment (§15.12) with the seeded accounts, without the optional services.
+      - name: Start the infrastructure
+        run: |
+          cp .env.example .env
+          sed -i 's/^COMPOSE_PROFILES=.*/COMPOSE_PROFILES=/' .env
+          docker compose -f compose.yaml -f compose.dev.yaml up -d --wait
+          docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config
+      - run: pnpm db:migrate && pnpm db:seed
+      # Production builds: the Lighthouse budget applies to them. Playwright starts the API and
+      # the web application (playwright.config.ts).
+      - run: pnpm build
+      - run: pnpm e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 14
+
   spec:
     name: Specification consistency
     runs-on: ubuntu-24.04

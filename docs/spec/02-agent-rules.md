@@ -244,7 +244,7 @@ Keyboard shortcuts remain a desktop accelerator; every action they trigger is al
 
 - Pages are usable on mobile networks: code splitting and lazy loading of heavy views (Gantt, editor), optimized images.
 - Performance budget checked in CI with Lighthouse (mobile profile): Performance and Accessibility scores of at least 90, LCP < 2.5 s, TBT < 200 ms and CLS < 0.1 for the **key pages**. Key pages are listed per stage and extended by the task that adds a page:
-  - Stage 0: sign-in redirect, empty application shell,
+  - Stage 0: sign-in redirect (the page of the web application; the Keycloak login screen it leads to is not part of the budget), empty application shell,
   - Stage 1: portal project home, ticket creation form, ticket view (end user and team), team list view, Kanban board,
   - later stages: triage queue, roadmap, Gantt chart, SLA report.
 

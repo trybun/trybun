@@ -103,6 +103,7 @@ Keycloak stores only credentials and sign-in factors. Everything else about a pe
 - Per-project team roles are stored as **project memberships** (`project_member`: user, project, role `developer` or `project_manager`). Personal access of end users to a project is stored as a project membership with role `end_user`; access through an organization is derived from the organization's projects.
 - The API keeps the Keycloak group `team` in sync through the Keycloak Admin API whenever an account becomes or stops being a `team` account.
 - Imported people without an account ([§12.5](12-api-webhooks-import.md)) get accounts in state `invited` without a Keycloak user; the Keycloak user is created when they accept an invitation.
+- The signed-in account reads its own identifier, display name, e-mail and kind with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles or permissions.
 
 ### Invitations
 

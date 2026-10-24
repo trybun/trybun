@@ -12,6 +12,7 @@ describe('parseEnv', () => {
       apiUrl: 'http://api:3001',
       databaseUrl: 'postgresql://trybun@localhost:5432/trybun',
       authSecret: 'a-test-secret-of-at-least-32-characters',
+      origin: 'https://trybun.example.com',
       shouldUseSecureCookies: true,
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
@@ -39,6 +40,7 @@ describe('parseEnv', () => {
     });
 
     expect(env).toMatchObject({
+      origin: 'http://localhost:3000',
       shouldUseSecureCookies: false,
       defaultLanguage: 'pl',
       defaultTimeZone: 'Europe/Warsaw',

@@ -23,12 +23,17 @@ export class ApiError extends Error {
 /** The `ApiError` of a failed response; a body that is not Problem Details keeps only its status. */
 export async function toApiError(response: Response): Promise<ApiError> {
   const body: unknown = await response.json().catch(() => undefined);
+  return apiErrorOf(response.status, body);
+}
+
+/** The `ApiError` of a failed response whose body has already been parsed (`openapi-fetch`). */
+export function apiErrorOf(status: number, body: unknown): ApiError {
   const problem = problemDetailsSchema.safeParse(body);
   if (problem.success) {
-    return new ApiError(response.status, problem.data.code, problem.data.errors);
+    return new ApiError(status, problem.data.code, problem.data.errors);
   }
   return new ApiError(
-    response.status,
-    UNAVAILABLE_STATUSES.has(response.status) ? 'server.unavailable' : 'server.internal_error',
+    status,
+    UNAVAILABLE_STATUSES.has(status) ? 'server.unavailable' : 'server.internal_error',
   );
 }

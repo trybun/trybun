@@ -91,7 +91,8 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 | `pnpm test:integration` | Integration tests (Vitest + Testcontainers; needs Docker) |
 | `pnpm test:coverage` | Unit, component and integration tests with the coverage thresholds of CI (needs Docker) |
 | `pnpm storybook` | Component catalogue of `@trybun/ui` on port 6006 |
-| `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop) – S0-08 |
+| `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop, axe) and the Lighthouse budget against the local environment |
+| `pnpm api:generate` | OpenAPI document of the API and the typed API client of `web` after a change of the endpoints |
 | `pnpm lint` | Lint, formatting, Keycloak login theme up to date with the catalogues, Prisma checks (schema mappings, no Prisma ORM 8) and supply-chain checks (fork-safe triggers, SHA and digest pinning) |
 | `pnpm lint:spec` | Specification consistency: `§N.M` references (links: lychee in CI) |
 | `pnpm format` | Format all files with Prettier |

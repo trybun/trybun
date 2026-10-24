@@ -15,7 +15,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate --generator client"
+    "postinstall": "prisma generate --generator client",
+    "openapi": "vitest run src/platform/http/openapi.spec.ts --update"
   },
   "dependencies": {
     "@nestjs/bullmq": "^12.0.0",

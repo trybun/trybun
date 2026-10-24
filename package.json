@@ -16,10 +16,12 @@
     "test": "turbo run test && vitest run --project scripts",
     "test:integration": "turbo run test:integration",
     "test:coverage": "vitest run --coverage",
+    "e2e": "pnpm --filter @trybun/web e2e",
     "storybook": "pnpm --filter @trybun/ui storybook",
     "lint:spec": "node scripts/check-spec-references.js",
     "db:migrate": "pnpm --filter @trybun/server db:migrate",
-    "db:seed": "pnpm --filter @trybun/server db:seed"
+    "db:seed": "pnpm --filter @trybun/server db:seed",
+    "api:generate": "pnpm --filter @trybun/server openapi && pnpm --filter @trybun/web api:generate"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
