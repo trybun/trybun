@@ -1,0 +1,154 @@
+/*
+ * Design tokens of Trybun (§2.6), derived from docs/brand/README.md. Components use only the
+ * utilities generated from this theme; Tailwind's default colour palette is removed.
+ */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* The components of this package, also when an application imports this file. */
+@source '../**/*.{ts,tsx}';
+
+:root {
+  /* Brand colours (docs/brand/README.md); not utilities, only the source of the tokens below. */
+  --ink: #141a2e;
+  --vermilion: #e0482c;
+  /* Vermilion for text and small elements: 5.9:1 on White. */
+  --vermilion-text: #b8341c;
+
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: #ffffff;
+  /* Ink 5 % on White. */
+  --secondary: #f3f4f5;
+  --secondary-foreground: var(--ink);
+  --muted: #f3f4f5;
+  /* Ink 70 % on White: 6.4:1 on --background, 5.8:1 on --muted. */
+  --muted-foreground: #5a5f6d;
+  --accent: #f3f4f5;
+  --accent-foreground: var(--ink);
+  /* Tailwind red-700, green-700, amber-700, blue-700: 6.6, 5.0, 5.1 and 6.8:1 with White. */
+  --destructive: #c10007;
+  --destructive-foreground: #ffffff;
+  --success: #008236;
+  --success-foreground: #ffffff;
+  --warning: #bb4d00;
+  --warning-foreground: #ffffff;
+  --info: #1447e6;
+  --info-foreground: #ffffff;
+  /* Ink 12 % on White: decorative lines. */
+  --border: #e3e4e6;
+  /* Ink 50 % on White: 3.3:1, the boundary of form fields (WCAG 1.4.11). */
+  --input: #8a8c96;
+  --ring: var(--vermilion-text);
+  --overlay: rgb(20 26 46 / 40%);
+  --brand-accent: var(--vermilion);
+  --radius: 0.625rem;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: var(--ink);
+  --foreground: #ffffff;
+  /* White 6 % on Ink. */
+  --card: #22283b;
+  --card-foreground: #ffffff;
+  --popover: #22283b;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: var(--ink);
+  /* White 12 % on Ink. */
+  --secondary: #303547;
+  --secondary-foreground: #ffffff;
+  --muted: #303547;
+  /* White 65 % on Ink: 7.9:1 on --background, 5.5:1 on --muted. */
+  --muted-foreground: #adafb6;
+  --accent: #303547;
+  --accent-foreground: #ffffff;
+  /* Tailwind red-400, green-400, amber-400, blue-400: 6.0, 9.7, 10.0 and 6.6:1 with Ink. */
+  --destructive: #ff6467;
+  --destructive-foreground: var(--ink);
+  --success: #05df72;
+  --success-foreground: var(--ink);
+  --warning: #ffb900;
+  --warning-foreground: var(--ink);
+  --info: #51a2ff;
+  --info-foreground: var(--ink);
+  /* White 15 % on Ink. */
+  --border: #373c4d;
+  /* White 40 % on Ink: 3.8:1 on --background, 3.2:1 on --popover. */
+  --input: #727682;
+  /* 4.2:1 on Ink. */
+  --ring: var(--vermilion);
+  --overlay: rgb(0 0 0 / 60%);
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-brand-accent: var(--brand-accent);
+
+  /* Manrope comes from next/font in the web application and from Fontsource in Storybook. */
+  --font-sans: var(--font-manrope, system-ui), system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Bottom padding of a spacing step plus the safe area of phones with a home indicator (§2.9),
+ * for elements at the bottom edge of the screen: `pb-safe-offset-4`.
+ */
+@utility pb-safe-offset-* {
+  padding-bottom: calc(var(--spacing) * --value(integer) + env(safe-area-inset-bottom, 0px));
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  body {
+    @apply bg-background font-sans text-foreground;
+  }
+}

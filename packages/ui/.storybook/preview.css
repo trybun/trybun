@@ -1,0 +1,6 @@
+@import '../src/styles/globals.css';
+@import '@fontsource-variable/manrope';
+
+:root {
+  --font-manrope: 'Manrope Variable';
+}
