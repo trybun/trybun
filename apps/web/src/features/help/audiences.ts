@@ -11,7 +11,8 @@ export type HelpCategory = (typeof HELP_CATEGORIES)[number];
 /**
  * The audiences whose pages an account kind receives (§2.3): the account kind decides only
  * between the portal and the team views (§18.5), so end users receive the end-user pages and the
- * team receives every page.
+ * team receives every page. The Administrator pages are meant for Administrators only, which needs
+ * the API to name the reader's audiences (plan task S1-19).
  */
 export const AUDIENCES_OF_KIND: Readonly<Record<UserKind, readonly HelpAudience[]>> = {
   end_user: ['end-user'],

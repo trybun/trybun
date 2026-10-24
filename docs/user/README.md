@@ -11,7 +11,7 @@ docs/user/<language>/<audience>/<category>/<name>.md
 | Part | Values | Meaning |
 |---|---|---|
 | `<language>` | `en`, `pl` – one folder per language of the message catalogues ([§13.1](../spec/13-non-functional.md#131-internationalization)) | Every page exists in every language with the same path |
-| `<audience>` | `end-user`, `team`, `administrator` | Who the page is written for. End users receive only `end-user` pages; team accounts receive the pages of every audience |
+| `<audience>` | `end-user`, `team`, `administrator` | Who the page is written for. End users receive only `end-user` pages; team accounts receive the pages of every audience (the `administrator` pages are meant for Administrators only, enforced with plan task S1-19) |
 | `<category>` | `tutorials`, `how-to`, `reference`, `explanation` | The [Diátaxis](https://diataxis.fr/) type of the page: learning by doing, the shortest path to a goal, facts to look up, and how something works |
 | `<name>` | kebab-case English name | Together with the audience and the category it forms the address of the page, e.g. `/help/end-user/how-to/change-language` in both languages |
 
