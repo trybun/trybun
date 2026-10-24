@@ -11,6 +11,9 @@ function storyTests(theme: 'light' | 'dark'): ViteUserConfig {
     define: { 'import.meta.env.STORYBOOK_THEME': JSON.stringify(theme) },
     test: {
       name: `ui-stories-${theme}`,
+      // After the Node.js projects: starting Chromium next to them starves type-aware lint tests
+      // of CPU on CI runners.
+      sequence: { groupOrder: 1 },
       browser: {
         enabled: true,
         headless: true,
