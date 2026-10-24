@@ -28,7 +28,7 @@
 | Drag and drop | `dnd-kit` (pointer, touch and keyboard sensors) |
 | Gantt chart | SVAR React Gantt, open-source MIT edition only (never the commercial PRO edition); scheduling logic lives in the API ([§10.4](10-roadmap-gantt.md)) |
 | Charts | Recharts (basis of the shadcn/ui `Chart` component) |
-| Product tours | `driver.js` (MIT), or own components built from `@trybun/ui` Popover and Drawer; libraries under AGPL or commercial licences (e.g. Intro.js, Shepherd.js) are not used. Tour progress is stored per user in the database ([§2.4](02-agent-rules.md)) |
+| Product tours | Own components of `@trybun/ui` – `TourTip`, built from its Popover (tablet and desktop) and Drawer (bottom sheet on phones) – driven by the tour definitions of the web application; libraries under AGPL or commercial licences (e.g. Intro.js, Shepherd.js) are not used. Tour progress is stored per user in the database ([§2.4](02-agent-rules.md)) |
 | User documentation | Markdown files from the repository (`docs/user/`) rendered in the web application; search with a MiniSearch (MIT) index per language and account kind, built from the pages by `pnpm help:generate` before the build and checked by `pnpm lint` ([§2.3](02-agent-rules.md)) |
 | Styling | Tailwind CSS 4 with the theme defined as design tokens (CSS variables, `@theme`); class-variance-authority for component variants, `cn` (the shadcn/ui package with the API of `twMerge(clsx(…))`) for combining classes |
 | UI components | Project component library (`packages/ui`, `@trybun/ui`) based on Base UI (the default primitives of shadcn/ui) and Tailwind CSS, using **shadcn/ui** (MIT) as the starting point: component source is copied into the library with the shadcn CLI and owned by the project; component catalog in Storybook (Rule 6) |
@@ -179,6 +179,7 @@ Following the IETF guidance for browser-based applications, access tokens never 
 | An external embedding API (e.g. a cloud AI provider) for semantic search | Rejected – ticket content would leave the installation (GDPR); a local model is sufficient for similarity search |
 | Commercial Gantt libraries or the SVAR PRO edition | Rejected – not compatible with an MIT project without paid licences; the scheduling logic required by [§10.4](10-roadmap-gantt.md) is implemented in the API |
 | Tour libraries under AGPL or commercial licences (Intro.js, Shepherd.js) | Rejected – not compatible with MIT distribution ([§16.1](16-open-source.md)) |
+| `driver.js` (MIT) for product tours | Not used – it renders its own popover markup and styles outside `@trybun/ui` (a second UI primitive and styling approach), has no bottom-sheet layout for phones and needs extra work for focus management and screen-reader labels, which Base UI provides |
 | Services of a specific cloud provider | Rejected – the system must run on any Linux server ([15-deployment.md](15-deployment.md)) |
 
 ## 14.6 Monorepo structure

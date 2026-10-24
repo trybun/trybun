@@ -93,7 +93,9 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Triage queue | – | Triage queue / Kolejka triage | One-by-one processing of new tickets ([§8.3](08-team-views.md)) |
 | Command palette | – | Command palette / Paleta poleceń | Ctrl+K search, navigation and actions ([§8.4](08-team-views.md)) |
 | Product tour | `product_tour` | Tour / Przewodnik | Interactive in-app guide (Rule 4) |
-| Product tour progress | `product_tour_progress` | – | Per-user, server-side record that a tour version was completed or skipped ([§2.4](02-agent-rules.md)) |
+| Product tour progress | `product_tour_progress` | – | Per-user, server-side record that a tour version was completed or skipped ([§2.4](02-agent-rules.md)); one per person and tour, replaced when the tour ends again |
+| Product tour progress status | `product_tour_progress.status`: `completed`, `skipped` | Completed / Ukończony, Skipped / Pominięty | How a person ended a version of a tour ([§2.4](02-agent-rules.md)) |
+| Product tour version | `product_tour.version` | Tour version / Wersja przewodnika | Integer from 1, increased when a tour's steps change materially, so the tour starts once more ([§2.4](02-agent-rules.md)) |
 | Help page | – | Help / Pomoc | A page of the user documentation in `docs/user/` for the audience `end-user`, `team` or `administrator`, shown in the help viewer at `/help` ([§2.3](02-agent-rules.md)) |
 | WIP limit | – | WIP limit / Limit WIP | Optional per-project limit of cards in a Kanban column; signalled, never blocking ([§8.2](08-team-views.md)) |
 | Predefined view | – | – | Saved view shipped with the system, e.g. "Unassigned" (PL: „Nieprzypisane”) or "Pending sharing approvals" (PL: „Oczekujące udostępnienia”) ([§8.1](08-team-views.md)) |

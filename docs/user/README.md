@@ -26,7 +26,7 @@ views: ['/']
 ```
 
 - `title` and `description` are required; the body starts below the front matter, without a level-1 heading (the viewer shows the title).
-- `views` (optional) lists the routes of the application for which the page is the contextual help: the help icon of such a view opens it. A route segment in square brackets (`/tickets/[id]`) matches any value. When pages of several audiences name the same view, a reader receives the one of the most specific audience available to them (`administrator`, then `team`, then `end-user`). Every language lists the same views.
+- `views` (optional) lists the routes of the application for which the page is the contextual help: **Help for this view** in the help menu of such a view opens it. A route segment in square brackets (`/tickets/[id]`) matches any value. When pages of several audiences name the same view, a reader receives the one of the most specific audience available to them (`administrator`, then `team`, then `end-user`). Every language lists the same views.
 - Links to other pages are relative links to their Markdown files (`../how-to/change-language.md`), so they work on GitHub and in the application.
 
 ## Writing

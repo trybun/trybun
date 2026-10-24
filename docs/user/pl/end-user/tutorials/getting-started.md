@@ -20,7 +20,7 @@ Po zalogowaniu widzisz **Stronę główną**.
 
 ## Skorzystaj z pomocy
 
-Wybierz ikonę pomocy (znak zapytania) w nagłówku. Otworzy się strona pomocy o widoku, w którym jesteś. Stamtąd możesz [przeszukać pomoc](../how-to/search-the-help.md) w dowolnym temacie.
+Wybierz ikonę pomocy (znak zapytania) w nagłówku, a następnie **Pomoc do tego widoku**. Otworzy się strona pomocy o widoku, w którym jesteś. Stamtąd możesz [przeszukać pomoc](../how-to/search-the-help.md) w dowolnym temacie.
 
 ## Wyloguj się
 

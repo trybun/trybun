@@ -156,7 +156,7 @@ pnpm dev
 
 1. starts the infrastructure with `docker compose -f compose.yaml -f compose.dev.yaml up -d --wait`: PostgreSQL, Valkey, SeaweedFS, Keycloak, ClamAV and Mailpit;
 2. applies the Keycloak configuration with the **development realm overlay**: seeded team accounts that sign in with a password and a TOTP secret listed in `README.md` ([§7.4](07-users-organizations-permissions.md)), imported by Keycloak on the first start of its database so they keep their fixed IDs, and a `trybun-web` client for `http://localhost:3000`;
-3. runs the database migrations and loads the seed and demo data (seeded Keycloak users and database users share fixed IDs);
+3. runs the database migrations and loads the seed and demo data (seeded Keycloak users and database users share fixed IDs). The demo team accounts have completed every product tour, except the newcomer (`newcomer@example.com`), who has no tour progress for trying the tours and their E2E tests; loading the demo data again restores this progress ([§2.4](02-agent-rules.md));
 4. starts the applications on the host with hot reload (`turbo dev`): the web application on `http://localhost:3000`, the API and the Worker.
 
 Mailpit shows all outgoing e-mail on `http://localhost:8025`. Session cookies are not marked `Secure` only on `localhost`.
