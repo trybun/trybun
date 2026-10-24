@@ -12,7 +12,7 @@ function PassThroughProvider({ children }: { children: ReactNode }) {
 }
 vi.mock('next-intl', () => ({ NextIntlClientProvider: PassThroughProvider }));
 // The font loader of Next.js replaces the call at build time.
-vi.mock('next/font/google', () => ({ Manrope: () => ({ variable: 'font-manrope' }) }));
+vi.mock('next/font/google', () => ({ Manrope: vi.fn(() => ({ variable: 'font-manrope' })) }));
 
 const { default: RootLayout, generateMetadata } = await import('./layout.js');
 

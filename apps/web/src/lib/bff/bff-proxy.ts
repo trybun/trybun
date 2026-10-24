@@ -10,7 +10,7 @@ const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const WEBHOOK_PATH = /^\/api\/v1\/webhooks\/(?:github|email\/[^/]+)$/;
 
 /**
- * Headers of the connection to the BFF (RFC 9110 §7.6.1) and the content length of the body,
+ * Headers of the connection to the BFF (RFC 9110, section 7.6.1) and the content length of the body,
  * which `fetch` sets again; the cookies of the browser never reach the API (§14.4).
  */
 const DROPPED_REQUEST_HEADERS = [
@@ -68,7 +68,7 @@ export function createBffProxy({
     const authorization = request.headers.get('authorization');
     if (authorization !== null) {
       // An API token of an integration (§12.2), forwarded unchanged; together with a session
-      // cookie the principal would be ambiguous (RFC 6750 §3.1: one method per request).
+      // cookie the principal would be ambiguous (RFC 6750, section 3.1: one method per request).
       return sessionToken === undefined
         ? { authorization }
         : { rejection: problemResponse('request.malformed') };
@@ -97,7 +97,11 @@ export function createBffProxy({
         headers.set('authorization', credentials.authorization);
       }
     }
-    return forward(request, `${apiUrl}${request.nextUrl.pathname}${request.nextUrl.search}`, headers);
+    return forward(
+      request,
+      `${apiUrl}${request.nextUrl.pathname}${request.nextUrl.search}`,
+      headers,
+    );
   };
 }
 

@@ -23,7 +23,9 @@ export function AppHeader({ search, help, notifications }: AppHeaderSlots) {
         className="flex min-h-11 items-center gap-2 rounded-lg px-1 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
       >
         <Image src="/icons/trybun-icon.svg" alt="" width={32} height={32} unoptimized priority />
-        <span className="sr-only text-lg font-extrabold lowercase md:not-sr-only">{t('title')}</span>
+        <span className="sr-only text-lg font-extrabold lowercase md:not-sr-only">
+          {t('title')}
+        </span>
       </Link>
       <div className="ml-auto flex items-center gap-1">
         {search}

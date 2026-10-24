@@ -51,9 +51,7 @@ export function SideNavigation() {
                   )}
                 >
                   <Icon aria-hidden className="size-5 shrink-0" />
-                  <span className={cn(!isExpanded && 'sr-only xl:not-sr-only')}>
-                    {t(labelKey)}
-                  </span>
+                  <span className={cn(!isExpanded && 'sr-only xl:not-sr-only')}>{t(labelKey)}</span>
                 </Link>
               </li>
             );

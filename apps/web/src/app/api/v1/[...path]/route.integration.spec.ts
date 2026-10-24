@@ -58,7 +58,10 @@ describe('BFF endpoint /api/v1/*', () => {
     return sessionToken;
   }
 
-  function request(path: string, init: { method?: string; headers?: HeadersInit; body?: string } = {}) {
+  function request(
+    path: string,
+    init: { method?: string; headers?: HeadersInit; body?: string } = {},
+  ) {
     return new NextRequest(`${WEB_URL}${path}`, init);
   }
 

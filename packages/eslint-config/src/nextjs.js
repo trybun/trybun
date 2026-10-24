@@ -68,9 +68,15 @@ export function nextjs({ allowedPackages, root }) {
     },
     {
       name: 'trybun/next-environment',
-      // The environment module, the instrumentation hook and the integration test set-up, which
-      // passes the database of its container to the migrations.
-      files: ['src/lib/env/**', 'src/instrumentation.ts', 'test/setup/containers.ts'],
+      // The environment module, the instrumentation hook, the integration test set-up, which
+      // passes the database of its container to the migrations, and the Playwright configuration,
+      // which reads whether it runs in CI.
+      files: [
+        'src/lib/env/**',
+        'src/instrumentation.ts',
+        'test/setup/containers.ts',
+        'playwright.config.ts',
+      ],
       rules: { 'no-restricted-properties': 'off' },
     },
   );

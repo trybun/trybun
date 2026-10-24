@@ -59,10 +59,13 @@ test.describe('application shell', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
-  test('has touch targets of at least 44 px', async ({}, testInfo) => {
+  test('has touch targets of at least 44 px', async () => {
     // The compact sizes of a precise pointer apply only on desktop (§18.6).
-    const minimum = testInfo.project.name === 'desktop' ? 32 : 44;
-    for (const target of [shell.accountMenu, shell.navigation.getByRole('link', { name: 'Home' })]) {
+    const minimum = test.info().project.name === 'desktop' ? 32 : 44;
+    for (const target of [
+      shell.accountMenu,
+      shell.navigation.getByRole('link', { name: 'Home' }),
+    ]) {
       const box = await target.boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(minimum);
       expect(box?.width).toBeGreaterThanOrEqual(minimum);

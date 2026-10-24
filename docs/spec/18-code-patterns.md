@@ -168,7 +168,7 @@ apps/web/src/
     queries.ts                  query keys and queryOptions factories of the feature
     mutations.ts                mutation hooks of the feature
     search-params.ts            Zod schema of the feature's URL state, if it has one
-  lib/<concern>/                api-client, auth, i18n, query-client, realtime, commands, errors, env
+  lib/<concern>/                api-client, auth, bff, i18n, query-client, realtime, commands, errors, env, next
   proxy.ts                      security headers and the CSP nonce (§13.5)
 ```
 
@@ -183,7 +183,7 @@ apps/web/src/
 - Data tables use TanStack Table 9 (`useTable`); a nested row or cell component that receives only table objects reads its state through `Subscribe`.
 - Data rendered only by Server Components is read with the server API client (internal network, the session's token, [§14.4](14-architecture.md#144-architectural-principles)). Data used by client components is defined once as a `queryOptions` factory in `features/<feature>/queries.ts`, prefetched on the server and passed to the client with `HydrationBoundary`; the client reuses the same query options.
 - Query keys are hierarchical and start with the feature (`['tickets', 'detail', id]`); they are built only in `queries.ts`. Paginated lists use `infiniteQueryOptions` with the cursor envelope ([§18.4](#184-contracts-and-packages)).
-- All API calls use the generated typed client (`openapi-fetch`); no `fetch` in components and no data fetching in `useEffect`.
+- All API calls use the generated typed client (`openapi-fetch`, types from the committed OpenAPI document of the API, `pnpm api:generate`): the server API client of `lib/api-client` in Server Components, the browser API client (the BFF) in client components, and `dataOf()` turns a failed response into its `ApiError`; no `fetch` in components and no data fetching in `useEffect`. A `queryOptions` factory takes the client as its parameter, so the server and the browser share it.
 - **No cross-request caching** of API data on the web server (`'use cache'`, cached `fetch` and similar): responses depend on the user's permissions. Only content that is identical for every user of an audience and language, such as rendered user documentation ([§2.3](02-agent-rules.md)), may be cached.
 - The session is read only through one server-only function of `lib/auth`, cached per request with React `cache()` and used by the server API client, layouts and pages; without a session it redirects to sign-in. `proxy.ts` makes only optimistic checks and is never the only check (Next.js authentication guidance). These checks only shape the UI; the API decides access ([§14.4](14-architecture.md#144-architectural-principles)).
 - Loading states use `<Suspense>` boundaries and `loading.tsx` with skeleton components of `@trybun/ui`.
@@ -276,7 +276,7 @@ No global client state library is used.
 | Integration test set-up: containers, MSW | `apps/server/test/setup/`, `apps/server/test/msw/` | S0-02 |
 | Transaction with an outbox event and a Worker handler | `apps/server/src/platform/outbox/` (job options, keys and timers: `apps/server/src/platform/queues/job-options.ts`) | S0-04 |
 | UI component with variants and stories | `packages/ui/src/components/button.tsx`, `button.stories.tsx` | S0-07 |
-| Server query, prefetch and hydration in the web | `apps/web/src/features/` (application shell) | S0-08 |
+| Server query, prefetch and hydration in the web | `apps/web/src/features/users/queries.ts`, `apps/web/src/app/(team)/layout.tsx`, `apps/web/src/features/users/components/user-menu.tsx` | S0-08 |
 | Authentication guard, principal, `@Public()` | `apps/server/src/platform/authentication/` | S0-05 |
 | Session read in the web (`getSession`, `requireSession`) | `apps/web/src/lib/auth/session.ts` | S0-05 |
 | Texts and language: catalogues, request configuration, language switch, server `Translator` | `packages/i18n/src/catalogues/`, `apps/web/src/lib/i18n/`, `apps/server/src/platform/i18n/` | S0-06 |

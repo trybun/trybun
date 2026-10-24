@@ -51,11 +51,19 @@ Run from the repository root:
 | `pnpm test` | Unit tests and the component tests of `@trybun/ui` (Vitest; every story in Chromium, light and dark, with axe) |
 | `pnpm test:integration` | Integration tests against PostgreSQL and Valkey in Testcontainers (needs Docker) |
 | `pnpm test:coverage` | Unit, component and integration tests with the coverage thresholds of CI (needs Docker) |
+| `pnpm e2e` | E2E tests in Playwright on phone, tablet and desktop with axe, and the Lighthouse mobile budget of the key pages, against the local environment (needs `pnpm dev`; browsers: `pnpm --filter @trybun/web exec playwright install --with-deps chromium webkit`) |
+| `pnpm api:generate` | Write the OpenAPI document of the API (`apps/server/openapi.json`) and the typed API client of the web application generated from it, after a change of the endpoints |
 | `pnpm storybook` | Start the component catalogue of `@trybun/ui` on <http://localhost:6006> |
 | `pnpm db:migrate` | Apply the database migrations (`prisma migrate deploy`) |
 | `pnpm db:seed` | Load the deterministic demo dataset; running it again restores the same records |
 
-E2E tests arrive with task S0-08.
+`pnpm e2e` signs in as the seeded Developer of the demo dataset and reuses the web application and the API of a running `pnpm dev`; without one, it starts both from their builds (`pnpm build`). The Lighthouse budget (Performance and Accessibility ≥ 90, LCP < 2.5 s, TBT < 200 ms, CLS < 0.1, [§2.9](docs/spec/02-agent-rules.md)) holds for the production build only, so measure it with `pnpm build` and without `pnpm dev`: `pnpm e2e --project=setup --project=lighthouse`.
+
+## Web application and API
+
+The browser talks only to the web application: the BFF endpoint `/api/v1/*` forwards every request to the same path of the API over the internal network and attaches the access token of the session on the server, so tokens never reach the browser ([§14.4](docs/spec/14-architecture.md)). Integrations call the same URL with an `Authorization` header, which is forwarded unchanged and without cookies; a request with both a session cookie and an `Authorization` header is rejected (`400`), and a state-changing request without an `Authorization` header needs the `Origin` of the web application (`403` otherwise, CSRF). Server Components call the API directly with the session's token.
+
+Both use the typed client generated from the OpenAPI document of the API (`openapi-typescript` + `openapi-fetch`), and client components read data through TanStack Query; the layout of the team views prefetches its data on the server and hydrates it into the browser ([§18.5](docs/spec/18-code-patterns.md)). After a change of the endpoints, run `pnpm api:generate` and commit `apps/server/openapi.json` and `apps/web/src/lib/api-client/schema.d.ts`; `pnpm test` and `pnpm lint` fail while either is out of date.
 
 ## Database
 
@@ -72,7 +80,7 @@ Database objects Prisma does not model (text search configurations, pgvector or 
 
 ## Continuous integration
 
-Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit, component and integration tests with coverage thresholds, build, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Run the same checks locally with the commands above before opening a pull request.
+Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit, component and integration tests with coverage thresholds, build, E2E tests with axe and the Lighthouse budget against the local environment in Docker Compose, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Run the same checks locally with the commands above before opening a pull request.
 
 ## Monorepo structure
 

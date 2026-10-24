@@ -12,5 +12,7 @@ export async function seriousViolations(page: Page): Promise<string[]> {
     .analyze();
   return results.violations
     .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
-    .map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target).join(', ')}`);
+    .map(
+      (violation) => `${violation.id}: ${violation.nodes.map((node) => node.target).join(', ')}`,
+    );
 }

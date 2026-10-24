@@ -60,7 +60,10 @@ export function createAccessTokens({
         if (isFresh(session.accessTokenExpiresAt, now)) {
           return cipher.decrypt(session.accessToken);
         }
-        const tokens = await keycloak.refreshTokens(await cipher.decrypt(session.refreshToken), now);
+        const tokens = await keycloak.refreshTokens(
+          await cipher.decrypt(session.refreshToken),
+          now,
+        );
         if (tokens === undefined) {
           // The Keycloak session has ended: the web session ends with it.
           await tx.session.deleteMany({ where: { tokenHash } });
