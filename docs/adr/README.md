@@ -15,3 +15,4 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 | [0003](0003-module-system-and-server-bundling.md) | Module system and server bundling | proposed |
 | [0004](0004-authjs-version-and-session-strategy.md) | Auth.js version and session strategy | proposed |
 | [0005](0005-github-app-as-agent-identity.md) | GitHub App as the identity of AI agents | accepted |
+| [0006](0006-release-pipeline.md) | Release pipeline | proposed |

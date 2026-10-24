@@ -38,21 +38,22 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
   - `postgres` – PostgreSQL with pgvector and the Polish full-text dictionary ([§14.4](14-architecture.md)), based on the official pgvector image pinned to a digest.
 
   The server only pulls ready images.
-- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the install, update, restore and backup scripts and an installation guide (`INSTALL.md`). Source code is not needed for installation.
+- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the install, update, restore and backup scripts and an installation guide (`INSTALL.md`). Its `compose.yaml` pulls the images of the release (`X.Y.Z`) and builds nothing. The release also contains the SBOM of every image and a `SHA256SUMS` file with the checksums of all its files. Source code is not needed for installation.
 - `CHANGELOG.md` follows the *Keep a Changelog* convention and is generated from commit messages in the Conventional Commits format. Release notes clearly mark breaking changes and any manual steps.
 
 ### Releasing a PATCH version (example)
 
 1. Fixes are merged into `main` as `fix:` commits through reviewed pull requests.
-2. release-please updates its release pull request (e.g. "release 1.4.1") with the version and changelog entry.
-3. Optionally, the build from `main` is deployed to the test environment and verified.
-4. The maintainer merges the release pull request – the only manual decision.
-5. Automation creates the tag `v1.4.1` and the GitHub Release, builds and scans the images `ghcr.io/trybun/<service>:1.4.1` (and moves `:1.4`, `:1`), attaches the SBOM and the deployment package.
-6. Administrators run the update script ([§15.7](#157-updates)).
+2. release-please updates its release pull request (e.g. "chore(release): 1.4.1") with the version and changelog entry.
+3. Optionally, the maintainer publishes the release candidate `1.4.1-rc.1` (Rule 11), which is deployed to the test environment and verified.
+4. The maintainer merges the release pull request – the decision to release.
+5. Automation creates the tag `v1.4.1` and a draft GitHub Release, builds the images `ghcr.io/trybun/<service>:1.4.1`, scans them and creates their SBOMs, and builds the deployment package.
+6. The maintainer approves the publication; automation pushes the images (and moves `:1.4`, `:1`), attaches the SBOMs and the deployment package and publishes the release.
+7. Administrators run the update script ([§15.7](#157-updates)).
 
 If `main` already contains `feat:` commits, the release becomes a MINOR version. To release only a fix, use a maintenance branch `release/1.4.x` as described in Rule 11.
 
-- Built images are scanned for vulnerabilities and every release includes an SBOM; no release ships with known critical vulnerabilities ([§2.10](02-agent-rules.md)).
+- Built images are scanned for vulnerabilities (Trivy) and every release includes an SBOM of each image (Syft, CycloneDX); no release ships with known critical vulnerabilities ([§2.10](02-agent-rules.md)): a vulnerability of severity `CRITICAL` in an image – with or without a fixed version – stops the release before anything is published.
 - The "About" page of the Administrator panel shows the installed system version, the license and the "Support the project" link ([§16.6](16-open-source.md)).
 
 ## 15.5 Installation
