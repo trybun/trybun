@@ -6,9 +6,12 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { QueryProvider } from '../lib/query-client/query-provider.js';
 
-// The UI typeface of the brand, self-hosted by Next.js (docs/brand/README.md).
+// The UI typeface of the brand, self-hosted by Next.js (docs/brand/README.md). `subsets` are the
+// preloaded files: every subset keeps its `@font-face` with a `unicode-range`, so the browser
+// fetches `latin-ext` (Polish letters) only for a page that uses them. Preloading it too pushed
+// the simulated LCP of the empty shell over the budget of §2.9 (#72).
 const manrope = Manrope({
-  subsets: ['latin', 'latin-ext'],
+  subsets: ['latin'],
   variable: '--font-manrope',
   display: 'swap',
 });

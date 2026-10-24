@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@trybun/ui/components/dropdown-menu';
 import { LogOutIcon, UserIcon } from 'lucide-react';
-import { signOut } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
@@ -23,6 +22,15 @@ import { changeLanguage } from '../../../lib/i18n/change-language.js';
 import { currentUserQueryOptions } from '../queries.js';
 
 /** Initials of a name for the avatar: the first letters of its first two words. */
+/**
+ * Signs out through Auth.js, which is loaded only then: every byte the shell requests before its
+ * first paint counts towards the simulated LCP of §2.9 (#72).
+ */
+async function signOutOfSession(): Promise<void> {
+  const { signOut } = await import('next-auth/react');
+  await signOut({ callbackUrl: '/' });
+}
+
 export function initialsOf(name: string): string {
   return name
     .split(/\s+/)
@@ -71,7 +79,7 @@ export function UserMenu() {
               )}
             </DropdownMenuLabel>
           )}
-          <DropdownMenuItem onClick={() => void signOut({ callbackUrl: '/' })}>
+          <DropdownMenuItem onClick={() => void signOutOfSession()}>
             <LogOutIcon aria-hidden />
             {t('signOut')}
           </DropdownMenuItem>
