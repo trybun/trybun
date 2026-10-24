@@ -291,7 +291,7 @@ Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components
 | Medium | 30 days |
 | Low | next planned update |
 
-If no fixed version exists, the agent documents the risk and the mitigation in the pull request or an ADR, and the vulnerability is tracked until it is fixed. An accepted advisory is listed with its reason in the audit configuration (`auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`) and removed as soon as a fixed version exists. Vulnerabilities in Trybun itself are handled through `SECURITY.md` ([§16.2](16-open-source.md)).
+If no fixed version exists, the agent documents the risk and the mitigation in the pull request or an ADR, and the vulnerability is tracked until it is fixed. An accepted advisory is listed with its reason in the audit configuration (`auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`) and removed as soon as a fixed version exists. The same applies to the image scan of a release: an accepted vulnerability of an image – e.g. of a base image without a fix, or in code the image never runs – is listed in `.trivyignore.yaml` with the affected package or path, its reason and an expiry date of at most 30 days, after which it blocks the release again unless a human renews it. Vulnerabilities in Trybun itself are handled through `SECURITY.md` ([§16.2](16-open-source.md)).
 
 ### Supply-chain hardening
 
@@ -345,13 +345,14 @@ release-please is configured accordingly (`bump-minor-pre-major: true`). The sta
 Releases are prepared by **release-please**:
 
 1. Changes are merged into `main` through reviewed pull requests ([§2.14](#214-agent-workflow)).
-2. release-please keeps an open **release pull request** with the next version number calculated from the commits and the generated `CHANGELOG.md` entry (Keep a Changelog format).
+2. release-please keeps an open **release pull request** with the next version number calculated from the commits and the generated `CHANGELOG.md` entry (Keep a Changelog format: Added, Changed, Fixed). Its pull requests pass the same checks as every other pull request.
 3. A **human decides** when to release by merging the release pull request (optionally after testing a release candidate, see below).
-4. Merging creates the tag `vX.Y.Z` and the GitHub Release; CI then builds, scans and publishes the images and the deployment package ([§15.4](15-deployment.md)).
+4. Merging creates the tag `vX.Y.Z` and a draft GitHub Release; CI then builds and scans the images and builds the deployment package ([§15.4](15-deployment.md)).
+5. After the maintainer approves the publication (GitHub Environment `release`), CI publishes the images, attaches the SBOMs and the deployment package and publishes the GitHub Release. A release whose scan fails stays an unpublished draft ([ADR 0006](../adr/0006-release-pipeline.md)).
 
-**Release candidates**: before a release that deserves testing, a pre-release `X.Y.Z-rc.N` is published and deployed to the test environment. Pre-releases are never marked as the latest release.
+**Release candidates**: before a release that deserves testing, a pre-release `X.Y.Z-rc.N` is published and deployed to the test environment. The maintainer starts it with "Run workflow" of the release workflow on `main` (or a maintenance branch): `X.Y.Z` is the version of the open release pull request, `N` counts the candidates of that version from 1. A candidate goes through the same scan and approval; its images get only the tag `X.Y.Z-rc.N`, and `CHANGELOG.md` records releases only. Pre-releases are never marked as the latest release.
 
-**Maintenance branches**: when a fix must be released without the new features already on `main` (e.g. an urgent security fix), a branch `release/X.Y.x` is created from the release tag, the fix is cherry-picked onto it, and release-please prepares a separate PATCH release from that branch.
+**Maintenance branches**: when a fix must be released without the new features already on `main` (e.g. an urgent security fix), a branch `release/X.Y.x` is created from the release tag, the fix is cherry-picked onto it, and release-please prepares a separate PATCH release from that branch; on a maintenance branch it increases only PATCH, whatever the commit types.
 
 ### Upgrade path and support
 
@@ -364,7 +365,7 @@ Releases are prepared by **release-please**:
 
 - the "About" page of the Administrator panel ([§15.4](15-deployment.md)),
 - the health endpoint (`/health`) of the API; the status of its dependencies is reported by `/health/ready` ([§17.2](17-conventions.md)),
-- container image tags: `ghcr.io/trybun/<service>:X.Y.Z`, plus moving tags `:X.Y` and `:X`. The deployment package always pins the exact version `X.Y.Z` and never uses `latest`.
+- container image tags: `ghcr.io/trybun/<service>:X.Y.Z`, plus moving tags `:X.Y` and `:X`, which point to the highest release of their series (a PATCH release of a maintenance branch does not move `:X` away from a newer MINOR release). The deployment package always pins the exact version `X.Y.Z` and never uses `latest`. The GitHub Release of the highest version is marked as the latest release.
 
 ## 2.12 Rule 12 – One pattern per problem
 
@@ -497,7 +498,7 @@ Every pull request passes at least the following in CI:
 | Vulnerability audit of the lockfile | `pnpm audit` (high and critical block) |
 | Container image scan (release, [§15.4](15-deployment.md)) | Trivy |
 | SBOM (release) | Syft, CycloneDX format |
-| Commit messages | commitlint (Conventional Commits, closed scope list) for the title of the pull request and its commits (project script `scripts/check-commit-messages.js`); Dependabot's commits are exempt – it chooses the case of their subject – and the title of its pull requests is corrected before merge |
+| Commit messages | commitlint (Conventional Commits, closed scope list) for the title of the pull request and its commits (project script `scripts/check-commit-messages.js`); Dependabot's commits are exempt – it chooses the case of their subject – and the title of its pull requests is corrected before merge; so are the commits of the release app of release-please ([ADR 0006](../adr/0006-release-pipeline.md)) |
 | DCO ([§16.3](16-open-source.md)) | Project script `scripts/check-dco.js` (job `DCO sign-off`) |
 | Specification consistency | link checker (lychee) and a project script for `§N.M` references |
 

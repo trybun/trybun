@@ -8,6 +8,15 @@ describe('isExemptAuthor', () => {
     ).toBe(true);
   });
 
+  it('exempts the release app with the user ID GitHub assigned to it', () => {
+    expect(
+      isExemptAuthor({ authorEmail: '123456789+trybun-release[bot]@users.noreply.github.com' }),
+    ).toBe(true);
+    expect(isExemptAuthor({ authorEmail: 'trybun-release[bot]@users.noreply.github.com' })).toBe(
+      false,
+    );
+  });
+
   it('does not exempt anyone else', () => {
     expect(isExemptAuthor({ authorEmail: 'ada@example.com' })).toBe(false);
   });

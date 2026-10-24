@@ -1,0 +1,19 @@
+# Accepted risks of the image scan of the release (Rule 10, §2.10): each with the image path, the
+# reason, and an expiry date after which it blocks the release again. Remove an entry as soon as
+# the base image ships a fix (Dependabot updates the digest).
+vulnerabilities:
+  # libxml2 of Debian 13 in the base image pgvector/pgvector of ghcr.io/trybun/postgres; Debian
+  # has no fixed version yet. A denial of service through crafted XML; Trybun stores no XML and
+  # runs no XML functions of PostgreSQL, and the database is reachable only on the internal network.
+  - id: CVE-2026-6653
+    purls:
+      - pkg:deb/debian/libxml2
+    expired_at: 2026-11-23
+    statement: No fixed version in Debian 13; Trybun runs no XML functions of PostgreSQL.
+  # Go standard library compiled into gosu of the base image of ghcr.io/trybun/postgres; the flaw is
+  # in crypto/tls, which gosu (switching the user at container start) never uses.
+  - id: CVE-2025-68121
+    paths:
+      - usr/local/bin/gosu
+    expired_at: 2026-11-23
+    statement: gosu makes no TLS connections; fixed once the base image rebuilds gosu.

@@ -86,7 +86,7 @@ Database objects Prisma does not model (text search configurations, pgvector or 
 
 ## Continuous integration
 
-Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit, component and integration tests with coverage thresholds, build, E2E tests with axe and the Lighthouse budget against the local environment in Docker Compose, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Run the same checks locally with the commands above before opening a pull request.
+Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit, component and integration tests with coverage thresholds, build, E2E tests with axe and the Lighthouse budget against the local environment in Docker Compose, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Releases run in their own workflow (see [Releases](#releases)). Run the same checks locally with the commands above before opening a pull request.
 
 ## Monorepo structure
 
@@ -102,6 +102,7 @@ pnpm workspaces with Turborepo ([§14.6](docs/spec/14-architecture.md)). Applica
 | `packages/tsconfig` | `@trybun/tsconfig` | Shared TypeScript configuration (strict) |
 | `packages/eslint-config` | `@trybun/eslint-config` | Shared lint rules: naming conventions, package and layer boundaries, Tailwind classes |
 | `docs/` | | Specification, implementation plan, ADRs, brand, user documentation (`docs/user/`) |
+| `deploy/` | | Files of the deployment package of a release that are not in the repository root or `docker/` (`INSTALL.md`) |
 
 The code inside the applications follows the patterns of [§18](docs/spec/18-code-patterns.md); the technology choices are recorded in [`docs/adr/`](docs/adr/README.md).
 
@@ -129,7 +130,17 @@ docker compose up --build --wait
 
 The API and the Worker log JSON lines to standard output (`docker compose logs api worker`) at the level of `TRYBUN_LOG_LEVEL`; every line of a request – and of the Worker jobs it causes – carries its request ID, which the API returns in `X-Request-Id`. On the internal network, `/health` of the API reports liveness and `/health/ready` readiness: it fails only without PostgreSQL and reports Valkey as `degraded` ([§17.2](docs/spec/17-conventions.md)).
 
-The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a certificate of Caddy's local authority). The release package with the install script arrives in Stage 0 (tasks S0-11, S0-12).
+The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a certificate of Caddy's local authority). `/health` also reports the installed version.
+
+## Releases
+
+Versions are calculated from the Conventional Commits by [release-please](https://github.com/googleapis/release-please) – before `1.0.0`, `feat:` increases MINOR and everything else PATCH ([§2.11](docs/spec/02-agent-rules.md)); never set a version or edit `CHANGELOG.md` by hand. The workflow [`release.yml`](.github/workflows/release.yml) ([ADR 0006](docs/adr/0006-release-pipeline.md)):
+
+1. keeps a release pull request open on `main` (and on every maintenance branch `release/X.Y.x`, PATCH only) with the next version and its changelog entry;
+2. when the maintainer merges it, tags `vX.Y.Z`, creates a draft GitHub Release, builds the images `ghcr.io/trybun/web`, `server` and `postgres`, scans them with Trivy – a critical vulnerability stops the release – creates their SBOMs (Syft, CycloneDX) and builds the deployment package;
+3. after the maintainer's approval in the environment `release`, pushes the images as `X.Y.Z` (and moves `X.Y` and `X`), attaches the SBOMs, the deployment package and `SHA256SUMS`, and publishes the release.
+
+"Run workflow" on `main` or a maintenance branch publishes the release candidate `X.Y.Z-rc.N` of its open release pull request the same way. The deployment package (`trybun-X.Y.Z.tar.gz`) holds `compose.yaml` pinned to the release's images, `.env.example`, the Caddy and Keycloak configuration and [`INSTALL.md`](deploy/INSTALL.md); build it locally with `node scripts/build-deployment-package.js <version> <folder>`.
 
 ## Documentation
 
