@@ -21,7 +21,8 @@
     "lint:spec": "node scripts/check-spec-references.js",
     "db:migrate": "pnpm --filter @trybun/server db:migrate",
     "db:seed": "pnpm --filter @trybun/server db:seed",
-    "api:generate": "pnpm --filter @trybun/server openapi && pnpm --filter @trybun/web api:generate"
+    "api:generate": "pnpm --filter @trybun/server openapi && pnpm --filter @trybun/web api:generate",
+    "help:generate": "pnpm --filter @trybun/web help:generate"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

@@ -1,0 +1,120 @@
+{
+  "pages": {
+    "en": [
+      {
+        "slug": "end-user/how-to/change-language",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Change the language",
+        "description": "Switch the interface between English and Polish.",
+        "views": [],
+        "body": "1. Select your account menu (your initials) in the header.\n2. Under **Language**, select the language you want.\n\nThe page you are on appears again in the chosen language, and Trybun remembers your choice in this browser."
+      },
+      {
+        "slug": "end-user/how-to/search-the-help",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Search the help",
+        "description": "Find a help page by a word from its title or text.",
+        "views": [
+          "/help"
+        ],
+        "body": "1. Select the help icon (question mark) in the header, then **All help topics**.\n2. Type a word into the search field, e.g. *language*.\n3. Select a page from the results.\n\nThe search also finds words that you have only started typing and words with small typos. You do not need to type Polish letters: *jezyk* finds *język*."
+      },
+      {
+        "slug": "end-user/tutorials/getting-started",
+        "audience": "end-user",
+        "category": "tutorials",
+        "title": "Getting started with Trybun",
+        "description": "Sign in, find your way around the screen, get help and sign out.",
+        "views": [
+          "/"
+        ],
+        "body": "Trybun is where you report problems and requests to the team and follow how they are handled. This tutorial walks you through the parts of the screen you will use every time.\n\n## Sign in\n\n1. Open the address of Trybun in your browser. The sign-in screen appears.\n2. Sign in with your account.\n\nAfter signing in you see the **Home** page.\n\n## Find your way around\n\n- The **header** at the top shows the Trybun logo, which always takes you back to **Home**. On its right are the help icon and your account menu.\n- The **main navigation** lists the places you can go. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left.\n\n## Get help\n\nSelect the help icon (question mark) in the header. It opens the help page about the view you are in. From there you can [search the help](../how-to/search-the-help.md) for any topic.\n\n## Sign out\n\n1. Select your account menu (your initials) in the header.\n2. Select **Sign out**.\n\n## Next steps\n\n- [Change the language](../how-to/change-language.md)"
+      },
+      {
+        "slug": "team/explanation/help-for-end-users",
+        "audience": "team",
+        "category": "explanation",
+        "title": "What end users see in the help",
+        "description": "How the help is divided between end users, the team and the Administrator.",
+        "views": [],
+        "body": "The help of Trybun has pages for three audiences:\n\n- **End users** – how to report and follow tickets.\n- **Team** – how to handle tickets and plan work.\n- **Administrator** – how to configure Trybun.\n\nEnd users receive only the pages for end users: the team and Administrator pages are not shown to them, are not found by their search and cannot be opened by their address. Team members receive the pages of every audience.\n\nWhen you point a customer to the help, send a link to a page for end users. Its address is the same in every language, and the page appears in the language the customer uses in Trybun."
+      },
+      {
+        "slug": "team/tutorials/getting-started",
+        "audience": "team",
+        "category": "tutorials",
+        "title": "Getting started for the team",
+        "description": "Sign in with GitHub and two-factor authentication, and find your way around Trybun.",
+        "views": [
+          "/"
+        ],
+        "body": "Trybun is where the team handles the tickets of customers and its own work. This tutorial shows how to sign in and what you see after signing in.\n\n## Sign in\n\n1. Open the address of Trybun in your browser. The sign-in screen appears.\n2. Select **GitHub** and sign in with your GitHub account.\n3. Enter the one-time code from your authenticator app. Two-factor authentication is required for every team member; on your first sign-in Trybun asks you to set up the authenticator app.\n\nAfter signing in you see the **Home** page.\n\n## Find your way around\n\n- The **header** at the top shows the Trybun logo, which always takes you back to **Home**. On its right are the help icon and your account menu with the language switch and **Sign out**.\n- The **main navigation** lists the views of Trybun. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left.\n\n## Get help\n\nThe help icon (question mark) in the header opens the help page about the current view. The team sees the pages for end users too, so you know what your customers read; [what end users see in the help](../explanation/help-for-end-users.md) explains the difference."
+      }
+    ],
+    "pl": [
+      {
+        "slug": "end-user/how-to/change-language",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Zmień język",
+        "description": "Przełącz interfejs między językiem polskim i angielskim.",
+        "views": [],
+        "body": "1. Wybierz menu konta (Twoje inicjały) w nagłówku.\n2. W sekcji **Język** wybierz język, którego chcesz używać.\n\nStrona, na której jesteś, pojawi się ponownie w wybranym języku, a Trybun zapamięta Twój wybór w tej przeglądarce."
+      },
+      {
+        "slug": "end-user/how-to/search-the-help",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Przeszukaj pomoc",
+        "description": "Znajdź stronę pomocy po słowie z jej tytułu lub treści.",
+        "views": [
+          "/help"
+        ],
+        "body": "1. Wybierz ikonę pomocy (znak zapytania) w nagłówku, a następnie **Wszystkie tematy pomocy**.\n2. Wpisz słowo w pole wyszukiwania, np. *język*.\n3. Wybierz stronę z wyników.\n\nWyszukiwanie znajduje też słowa, których początek dopiero wpisujesz, oraz słowa z drobnymi literówkami. Polskie znaki nie są wymagane: *jezyk* znajdzie *język*."
+      },
+      {
+        "slug": "end-user/tutorials/getting-started",
+        "audience": "end-user",
+        "category": "tutorials",
+        "title": "Pierwsze kroki w Trybunie",
+        "description": "Zaloguj się, poznaj układ ekranu, skorzystaj z pomocy i wyloguj się.",
+        "views": [
+          "/"
+        ],
+        "body": "W Trybunie zgłaszasz zespołowi problemy i prośby oraz śledzisz, jak są obsługiwane. Ten samouczek przeprowadzi Cię przez elementy ekranu, z których korzystasz na co dzień.\n\n## Zaloguj się\n\n1. Otwórz w przeglądarce adres Trybuna. Pojawi się ekran logowania.\n2. Zaloguj się na swoje konto.\n\nPo zalogowaniu widzisz **Stronę główną**.\n\n## Poznaj układ ekranu\n\n- **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem na **Stronę główną**. Po jego prawej stronie są ikona pomocy i menu konta.\n- **Nawigacja główna** zawiera miejsca, do których możesz przejść. Na telefonie jest na dole ekranu, na tablecie i komputerze – po lewej stronie.\n\n## Skorzystaj z pomocy\n\nWybierz ikonę pomocy (znak zapytania) w nagłówku. Otworzy się strona pomocy o widoku, w którym jesteś. Stamtąd możesz [przeszukać pomoc](../how-to/search-the-help.md) w dowolnym temacie.\n\n## Wyloguj się\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku.\n2. Wybierz **Wyloguj się**.\n\n## Co dalej\n\n- [Zmień język](../how-to/change-language.md)"
+      },
+      {
+        "slug": "team/explanation/help-for-end-users",
+        "audience": "team",
+        "category": "explanation",
+        "title": "Co użytkownicy widzą w pomocy",
+        "description": "Jak pomoc jest podzielona między użytkowników, zespół i Administratora.",
+        "views": [],
+        "body": "Pomoc Trybuna ma strony dla trzech grup odbiorców:\n\n- **Użytkownicy** – jak zgłaszać i śledzić zgłoszenia.\n- **Zespół** – jak obsługiwać zgłoszenia i planować pracę.\n- **Administrator** – jak konfigurować Trybuna.\n\nUżytkownicy otrzymują wyłącznie strony dla użytkowników: strony dla zespołu i Administratora nie są im pokazywane, ich wyszukiwanie ich nie znajduje i nie da się ich otworzyć po adresie. Członkowie zespołu otrzymują strony wszystkich grup odbiorców.\n\nGdy kierujesz klienta do pomocy, wyślij mu link do strony dla użytkowników. Jej adres jest taki sam w każdym języku, a strona pojawi się w języku, którego klient używa w Trybunie."
+      },
+      {
+        "slug": "team/tutorials/getting-started",
+        "audience": "team",
+        "category": "tutorials",
+        "title": "Pierwsze kroki dla zespołu",
+        "description": "Zaloguj się przez GitHub z uwierzytelnianiem dwuskładnikowym i poznaj układ Trybuna.",
+        "views": [
+          "/"
+        ],
+        "body": "W Trybunie zespół obsługuje zgłoszenia klientów i własną pracę. Ten samouczek pokazuje, jak się zalogować i co widzisz po zalogowaniu.\n\n## Zaloguj się\n\n1. Otwórz w przeglądarce adres Trybuna. Pojawi się ekran logowania.\n2. Wybierz **GitHub** i zaloguj się kontem GitHub.\n3. Wpisz jednorazowy kod z aplikacji uwierzytelniającej. Uwierzytelnianie dwuskładnikowe jest wymagane od każdego członka zespołu; przy pierwszym logowaniu Trybun poprosi Cię o skonfigurowanie aplikacji uwierzytelniającej.\n\nPo zalogowaniu widzisz **Stronę główną**.\n\n## Poznaj układ ekranu\n\n- **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem na **Stronę główną**. Po jego prawej stronie są ikona pomocy i menu konta z przełącznikiem języka i opcją **Wyloguj się**.\n- **Nawigacja główna** zawiera widoki Trybuna. Na telefonie jest na dole ekranu, na tablecie i komputerze – po lewej stronie.\n\n## Skorzystaj z pomocy\n\nIkona pomocy (znak zapytania) w nagłówku otwiera stronę pomocy o bieżącym widoku. Zespół widzi także strony dla użytkowników, więc wiesz, co czytają Twoi klienci; różnicę wyjaśnia strona [co użytkownicy widzą w pomocy](../explanation/help-for-end-users.md)."
+      }
+    ]
+  },
+  "views": {
+    "end_user": {
+      "/": "end-user/tutorials/getting-started",
+      "/help": "end-user/how-to/search-the-help"
+    },
+    "team": {
+      "/": "team/tutorials/getting-started",
+      "/help": "end-user/how-to/search-the-help"
+    }
+  }
+}

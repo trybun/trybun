@@ -22,6 +22,24 @@
   "home": {
     "title": "Home"
   },
+  "help": {
+    "open": "Help",
+    "title": "Help",
+    "allTopics": "All help topics",
+    "search": "Search the help",
+    "results": "{count, plural, =0 {No help page matches your search.} one {# help page found} other {# help pages found}}",
+    "audiences": {
+      "end-user": "For end users",
+      "team": "For the team",
+      "administrator": "For the Administrator"
+    },
+    "categories": {
+      "tutorials": "Tutorials",
+      "how-to": "How-to guides",
+      "reference": "Reference",
+      "explanation": "Explanations"
+    }
+  },
   "ui": {
     "close": "Close",
     "toast": {

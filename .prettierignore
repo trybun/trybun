@@ -3,6 +3,8 @@ apps/server/src/generated/
 # Generated: the OpenAPI document of the API and its openapi-typescript types (`pnpm api:generate`).
 apps/server/openapi.json
 apps/web/src/lib/api-client/schema.d.ts
+# Generated: the help content from docs/user (`pnpm help:generate`).
+apps/web/src/features/help/content/
 docs/
 .ai/
 *.md

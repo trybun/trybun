@@ -1,5 +1,16 @@
 {
   "extends": "@trybun/tsconfig/nextjs.json",
-  "include": ["next-env.d.ts", "src", "test", "e2e", "*.config.ts", ".next/types/**/*.ts"],
+  "compilerOptions": {
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "src",
+    "test",
+    "e2e",
+    "scripts",
+    "*.config.ts",
+    ".next/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }
