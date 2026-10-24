@@ -11,6 +11,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuLinkItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -60,6 +61,8 @@ const meta = {
           Delete
         </DropdownMenuItem>
         <DropdownMenuItem disabled>Merge</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLinkItem href="#help">Help for this view</DropdownMenuLinkItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ),

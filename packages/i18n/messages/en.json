@@ -38,12 +38,46 @@
       "how-to": "How-to guides",
       "reference": "Reference",
       "explanation": "Explanations"
+    },
+    "forThisView": "Help for this view"
+  },
+  "productTours": {
+    "take": "Take the tour: {name}",
+    "tours": {
+      "first_login": {
+        "name": "Getting started",
+        "steps": {
+          "welcome": {
+            "title": "Welcome to Trybun",
+            "description": "Trybun is where the team handles the tickets of customers and its own work. This tour shows you around in four short steps."
+          },
+          "navigation": {
+            "title": "Main navigation",
+            "description": "The views of Trybun are listed here. Select one to open it."
+          },
+          "help": {
+            "title": "Help",
+            "description": "Open the help for the view you are on. You can also take this tour again from here at any time."
+          },
+          "account": {
+            "title": "Your account",
+            "description": "Switch the language or sign out in your account menu."
+          }
+        }
+      }
     }
   },
   "ui": {
     "close": "Close",
     "toast": {
       "close": "Close notification"
+    },
+    "tourTip": {
+      "progress": "Step {step} of {count}",
+      "skip": "Skip tour",
+      "back": "Back",
+      "next": "Next",
+      "done": "Done"
     }
   },
   "errors": {
