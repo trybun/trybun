@@ -169,7 +169,8 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ env.VERSION }}
             org.opencontainers.image.licenses=MIT
-      # No release with known critical vulnerabilities (§2.10).
+      # No release with known critical vulnerabilities (§2.10); accepted risks with their expiry
+      # date are listed in .trivyignore.yaml.
       - name: Scan for critical vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -178,6 +179,7 @@ jobs:
           scanners: vuln
           severity: CRITICAL
           exit-code: '1'
+          trivyignores: .trivyignore.yaml
       - name: Create the SBOM
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:

@@ -149,3 +149,17 @@ describe('release-please configuration', () => {
     }
   });
 });
+
+describe('accepted risks of the image scan (.trivyignore.yaml)', () => {
+  const entries = readFileSync('.trivyignore.yaml', 'utf8')
+    .split(/^\s*- id: /m)
+    .slice(1);
+
+  it('give every accepted vulnerability a reason and an expiry date (§2.10)', () => {
+    for (const entry of entries) {
+      expect(entry).toMatch(/^\s*statement: \S/m);
+      const expiry = /^\s*expired_at: (\d{4}-\d{2}-\d{2})$/m.exec(entry)?.[1];
+      expect(expiry, entry).toBeDefined();
+    }
+  });
+});
