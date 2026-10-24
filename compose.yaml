@@ -1,7 +1,9 @@
 # Trybun on one server (§15.1, §15.9). Production, test and – with compose.dev.yaml – the local
 # infrastructure use this file. Variables come from `.env` (`.env.example` lists them all, §15.3).
 # Optional services are enabled by profiles in COMPOSE_PROFILES: `seaweedfs` (off with an external
-# S3 storage), `clamav` (off locally when memory is short).
+# S3 storage), `clamav` (off locally when memory is short). The deployment package of a release
+# ships this file without the `build:` sections and with the release's version instead of `latest`
+# (scripts/build-deployment-package.js, §15.4).
 
 name: trybun
 
@@ -69,8 +71,8 @@ services:
 
   api:
     <<: *server
-    # Builds the image of the API, the Worker and the migrations.
     build:
+      # The image of the API, the Worker and the migrations.
       context: .
       dockerfile: docker/server/Dockerfile
     healthcheck:

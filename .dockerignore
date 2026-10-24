@@ -14,3 +14,4 @@
 docs
 docker
 compose*.yaml
+deploy
