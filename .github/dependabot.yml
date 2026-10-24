@@ -25,6 +25,9 @@ updates:
       # TypeScript 7 waits until typescript-eslint and the NestJS CLI support it (ADR 0002).
       - dependency-name: typescript
         update-types: [version-update:semver-major]
+      # The @types/node major follows the Node.js runtime; it moves with the planned LTS move (§2.10).
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     commit-message:
       prefix: fix(deps)
       prefix-development: chore(deps)
