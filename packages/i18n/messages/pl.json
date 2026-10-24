@@ -11,6 +11,48 @@
       "close": "Zamknij powiadomienie"
     }
   },
+  "errors": {
+    "request": {
+      "malformed": "Nie udało się odczytać żądania. Odśwież stronę i spróbuj ponownie.",
+      "not_found": "Ten element nie istnieje lub nie masz do niego dostępu.",
+      "forbidden": "Nie masz uprawnień do wykonania tej czynności.",
+      "precondition_failed": "Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję",
+      "too_large": "Wysłane dane są zbyt duże.",
+      "validation_failed": "Niektóre pola są nieprawidłowe. Popraw je i spróbuj ponownie.",
+      "precondition_required": "Brakuje wersji tego elementu – odśwież stronę i spróbuj ponownie."
+    },
+    "authentication": {
+      "required": "Twoja sesja wygasła. Zaloguj się ponownie.",
+      "second_factor_required": "Zaloguj się ponownie z uwierzytelnianiem dwuskładnikowym."
+    },
+    "server": {
+      "internal_error": "Coś poszło nie tak. Spróbuj ponownie później.",
+      "unavailable": "Trybun jest chwilowo niedostępny. Spróbuj ponownie za chwilę."
+    },
+    "string": {
+      "too_long": "Za długie",
+      "too_short": "Za krótkie",
+      "invalid_format": "Nieprawidłowy format"
+    },
+    "array": {
+      "too_long": "Za dużo pozycji",
+      "too_short": "Za mało pozycji"
+    },
+    "number": {
+      "too_large": "Za duża wartość",
+      "too_small": "Za mała wartość"
+    },
+    "date": {
+      "too_late": "Za późna data",
+      "too_early": "Za wczesna data"
+    },
+    "field": {
+      "invalid_type": "To pole jest wymagane lub ma wartość niewłaściwego typu",
+      "invalid_value": "Wybierz jedną z dozwolonych wartości",
+      "unrecognized": "Nieznane pole",
+      "invalid": "Nieprawidłowa wartość"
+    }
+  },
   "emails": {
     "footer": {
       "automatic": "Ta wiadomość została wysłana automatycznie przez system Trybun."

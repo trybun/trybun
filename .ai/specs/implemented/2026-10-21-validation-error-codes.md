@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-10-21 |
 | Plan task | `S0-01` (validation pipe), `S0-17` (Problem Details and error codes) |
 | System specification sections | §17.1, §17.2 |
@@ -66,11 +66,12 @@ Implementation must not start until every question has an answer.
 
 ## Acceptance criteria
 
-- [ ] A request with an invalid body returns `422` with the code `request.validation_failed` and one entry per invalid field with a code from the list.
-- [ ] `@trybun/contracts` defines the codes as closed enums; §17.2 lists them.
+- [x] A request with an invalid body returns `422` with the code `request.validation_failed` and one entry per invalid field with a code from the list.
+- [x] `@trybun/contracts` defines the codes as closed enums; §17.2 lists them.
 - Works on phone, tablet and desktop (Rule 9): not applicable – no user interface.
 - User documentation and product tour: not applicable – no user-facing change.
 
 ## Changelog
 
 - 2026-10-21 – Created with task S0-01, which uses the proposed codes.
+- 2026-10-24 – Implemented: §17.2 lists the code `request.validation_failed` and the field error codes; S0-17 adds their translations (`errors.<code>`).

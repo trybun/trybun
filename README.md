@@ -103,7 +103,7 @@ All configuration comes from environment variables ([§15.3](docs/spec/15-deploy
 
 ## Translations
 
-Every text of the web application, the server's e-mails and API messages, and the Keycloak login screens comes from the ICU message catalogues in [`packages/i18n/messages/`](packages/i18n/messages) – English (`en.json`, the reference) and Polish (`pl.json`) ([§13.1](docs/spec/13-non-functional.md)). Add a text to both catalogues under the namespace of its feature; `pnpm typecheck` rejects a key that is not in the catalogues, and `pnpm test` rejects a catalogue with missing, extra or malformed messages. The `keycloak` namespace becomes the login theme in [`docker/keycloak/themes/trybun/`](docker/keycloak/themes/trybun) on `pnpm build`; commit the generated files. The language is never in the URL: the web application uses the language chosen in the application, else the browser language, else `TRYBUN_DEFAULT_LANGUAGE`.
+Every text of the web application, the server's e-mails and API messages, and the Keycloak login screens comes from the ICU message catalogues in [`packages/i18n/messages/`](packages/i18n/messages) – English (`en.json`, the reference) and Polish (`pl.json`) ([§13.1](docs/spec/13-non-functional.md)). Add a text to both catalogues under the namespace of its feature; an error code of the API gets its message under `errors.<code>` ([§17.2](docs/spec/17-conventions.md)); `pnpm typecheck` rejects a key that is not in the catalogues, and `pnpm test` rejects a catalogue with missing, extra or malformed messages. The `keycloak` namespace becomes the login theme in [`docker/keycloak/themes/trybun/`](docker/keycloak/themes/trybun) on `pnpm build`; commit the generated files. The language is never in the URL: the web application uses the language chosen in the application, else the browser language, else `TRYBUN_DEFAULT_LANGUAGE`.
 
 ## Deployment
 
@@ -112,6 +112,8 @@ Trybun runs on a single Linux server with Docker Compose ([15-deployment.md](doc
 ```sh
 docker compose up --build --wait
 ```
+
+The API and the Worker log JSON lines to standard output (`docker compose logs api worker`) at the level of `TRYBUN_LOG_LEVEL`; every line of a request – and of the Worker jobs it causes – carries its request ID, which the API returns in `X-Request-Id`. On the internal network, `/health` of the API reports liveness and `/health/ready` readiness: it fails only without PostgreSQL and reports Valkey as `degraded` ([§17.2](docs/spec/17-conventions.md)).
 
 The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a certificate of Caddy's local authority). The release package with the install script arrives in Stage 0 (tasks S0-11, S0-12).
 

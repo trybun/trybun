@@ -88,7 +88,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 - **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique and never reused even under concurrent creation. Numbers are consecutive except for tickets removed by undoing an import (see "Deleting data").
 - **Optimistic locking** protects records edited by people:
   - Versioned records: tickets, comments (including internal notes), milestones, labels, saved views, organizations, projects, SLA policies, business calendars, ticket templates and webhooks. Each has a `version` field.
-  - The API returns the version as a weak `ETag` (`W/"<version>"`). `PATCH`, `PUT` and `DELETE` of a versioned record must send `If-Match`; a missing header returns `428 Precondition Required` (code `request.precondition_required`), a stale one `412 Precondition Failed`, and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
+  - The API returns the version as a weak `ETag` (`W/"<version>"`). `PATCH`, `PUT` and `DELETE` of a versioned record must send `If-Match`; a missing header (or `*`, which would match any version) returns `428 Precondition Required` (code `request.precondition_required`), a stale one – or a value that is not the ETag of a version – `412 Precondition Failed` (code `request.precondition_failed`), and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
   - The ticket's `version` covers only the ticket's own fields (title, description, type, priority, status, assignee, milestone, dates, visibility, parent). Child records – comments, attachments, labels assigned, watchers, relations, "I have the same problem" – are separate resources and do not change the ticket's `version`.
   - Automatic changes by the system (e.g. GitHub, the requester-reply status return, SLA, occurrence counts, automatic closing) do not send `If-Match` but do increase `version`, so a person editing at the same time gets a conflict instead of overwriting them.
   - **Bulk actions** ([§8.1](08-team-views.md)) send `[{id, version}]` for at most 100 records. Each record is changed in its own transaction, and the response lists the result per record (`200`, `404`, `412`), so the UI can report the records that were not changed.
@@ -98,13 +98,45 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 - A record the user is not allowed to see returns **`404 Not Found`, never `403`**, so the existence of tickets, projects or organizations is not disclosed (ticket identifiers are sequential). `403` is used only for actions on records the user can see.
 - **Order of checks**: the visibility check (404) runs first, for the target record and for every record referenced in the request (e.g. the original ticket of a `duplicate`, a relation target, a milestone). Validation (`422`), preconditions (`412`, `428`), conflicts and `Idempotency-Key` replays are evaluated only afterwards, so their responses never reveal whether an invisible record exists.
-- The whole API (public and internal) returns errors in the *Problem Details* format (RFC 9457) with a stable, documented error `code` (e.g. `ticket.visibility_not_allowed`). The `type` member is `about:blank` until the project domain is confirmed ([§1.4](01-overview.md)), then `https://<domain>/problems/<code>`.
+- The whole API (public and internal) returns errors in the *Problem Details* format (RFC 9457, media type `application/problem+json`) with a stable, documented error `code` (e.g. `ticket.visibility_not_allowed`). The `type` member is `about:blank` until the project domain is confirmed ([§1.4](01-overview.md)), then `https://<domain>/problems/<code>`; `title` is the HTTP reason phrase of RFC 9110.
+- The error codes form one closed list in `@trybun/contracts/errors`, which also defines the HTTP status of each code. Feature tasks add the codes of their rules; the codes shared by every endpoint are:
+
+| Code | Status | Meaning |
+|---|---|---|
+| `request.malformed` | 400 | The body is not valid JSON |
+| `authentication.required` | 401 | No valid access token or API token, or no active account for it ([§14.4](14-architecture.md)) |
+| `authentication.second_factor_required` | 401 | A team member whose sign-in did not complete 2FA ([§7.4](07-users-organizations-permissions.md)) |
+| `request.forbidden` | 403 | An action the principal may not perform on a record they can see |
+| `request.not_found` | 404 | A missing route, or a record that does not exist or that the principal may not see |
+| `request.precondition_failed` | 412 | A stale `If-Match` (see "Concurrency") |
+| `request.too_large` | 413 | The body exceeds the size limit |
+| `request.validation_failed` | 422 | Invalid input (see below) |
+| `request.precondition_required` | 428 | A change of a versioned record without `If-Match` |
+| `server.internal_error` | 500 | An unexpected error; the response carries no details and the error is logged with the request ID |
+| `server.unavailable` | 503 | PostgreSQL is unavailable (see "Dependency failures") |
 - The web application translates error codes into messages in the user's language (translation key `errors.<code>`, [§17.1](#171-code-naming-conventions)); raw server messages are never shown to users.
-- Validation errors list the invalid fields in an `errors` member (`[{ "pointer": "/title", "code": "string.too_long" }]`, JSON Pointer to the field), so forms can show them next to the fields.
+- Validation errors return `422` with the code `request.validation_failed` and list the invalid fields in an `errors` member (`[{ "pointer": "/title", "code": "string.too_long" }]`, JSON Pointer to the field), so forms can show them next to the fields. Field error codes are `<kind>.<reason>` from a closed list, chosen by the failing schema rule; a new code is added to this list and to `@trybun/contracts/problem-details`:
+
+| Code | Schema rule |
+|---|---|
+| `string.too_long` / `string.too_short` | Maximum / minimum length of a string |
+| `string.invalid_format` | Format of a string (e-mail, URL, UUID, pattern, …) |
+| `array.too_long` / `array.too_short` | Maximum / minimum number of items |
+| `number.too_large` / `number.too_small` | Maximum / minimum of a number |
+| `date.too_late` / `date.too_early` | Latest / earliest date |
+| `field.invalid_type` | A value of the wrong type, including a missing required field |
+| `field.invalid_value` | A value outside the allowed values (e.g. an enum) |
+| `field.unrecognized` | A field the schema does not know |
+| `field.invalid` | Any other rule (e.g. a custom refinement) |
+
+- The web application translates field error codes like error codes (`errors.<code>`, e.g. `errors.string.too_long`).
 
 ### Logging and monitoring
 
-- Logs are structured JSON (`nestjs-pino`) with level, time, request ID and, for jobs, job ID. The request ID is returned in the `X-Request-Id` header and passed to Worker jobs.
+- Logs are structured JSON (`nestjs-pino`) on standard output with level, time, request ID and, for jobs, job ID; the level is set with `TRYBUN_LOG_LEVEL` (default `info`). The request ID is returned in the `X-Request-Id` header and passed to Worker jobs:
+  - The API keeps an `X-Request-Id` sent by the caller (the web application) when it has 1–64 letters, digits, `_` or `-`; otherwise it generates a UUID.
+  - An outbox event stores the request ID of the request (or job) that wrote it; the job of the event carries it in its data, and every line its handler logs carries it with the job ID.
+  - Each completed request is logged once with the method, the route template, the status and the response time; health checks are not logged. Errors are logged with their type, code and stack frames, without their message, which may quote personal data.
 - **What logs may contain**:
   - Allowed: pseudonymous IDs (UUIDs of users, tickets, projects, organizations, tokens), error codes, HTTP method, route template and status.
   - IP addresses only in access and security logs (Caddy, Keycloak events, rate limiting), kept for at most **14 days**.
@@ -112,7 +144,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 - **No secrets or search text in URLs**, because URLs end up in access logs, browser history and `Referer` headers: setup and invitation tokens are submitted in the request body (or the URL fragment, which is never sent to the server), and the search query of the global search ([§8.5](08-team-views.md)) is kept in client state and sent in the request body. Caddy access logs record paths without query strings and never log the `Authorization` or `Cookie` headers ([§15.9](15-deployment.md)).
 - **Health endpoints** of the API (internal network only, [§14.4](14-architecture.md)):
   - `/health` – liveness: returns `{ "status": "ok", "version": "X.Y.Z" }` without checking dependencies, so an outage of a dependency never makes Compose restart the API (Rule 11, [§2.11](02-agent-rules.md)).
-  - `/health/ready` – readiness: fails only when PostgreSQL is unavailable; the status of Valkey and the object storage is reported in the body as `ok` or `degraded` without failing the check (see "Dependency failures").
+  - `/health/ready` – readiness: fails only when PostgreSQL is unavailable (`503`, code `server.unavailable`); the status of Valkey and the object storage is reported in the body as `ok` or `degraded` without failing the check (see "Dependency failures"), e.g. `{ "status": "degraded", "database": "ok", "valkey": "degraded" }`; `status` is `degraded` when any of them is. A check that does not answer within 2 seconds counts as failed. The object storage joins the body with its adapter (S1-08).
   - The web application has its own liveness endpoint `/api/health`.
   - The Worker has no HTTP server ([§14.6](14-architecture.md)); it writes a heartbeat file every 15 seconds, and its Compose health check fails when the file is older than 60 seconds.
 

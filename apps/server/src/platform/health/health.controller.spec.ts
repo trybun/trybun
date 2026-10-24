@@ -43,6 +43,9 @@ describe('HealthController', () => {
   });
 
   it('is not part of the public OpenAPI document', () => {
-    expect(Object.keys(createOpenApiDocument(app).paths)).toEqual([]);
+    const paths = Object.keys(createOpenApiDocument(app).paths);
+
+    expect(paths).not.toContain('/health');
+    expect(paths).not.toContain('/health/ready');
   });
 });
