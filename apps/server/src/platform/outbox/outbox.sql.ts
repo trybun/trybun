@@ -4,6 +4,7 @@ export interface PendingOutboxEventRow {
   id: string;
   type: string;
   payload: Record<string, unknown>;
+  requestId: string | null;
 }
 
 /**
@@ -15,7 +16,7 @@ export function lockPendingOutboxEvents(
   limit: number,
 ): Promise<PendingOutboxEventRow[]> {
   return tx.$queryRaw<PendingOutboxEventRow[]>`
-    SELECT id::text AS id, type, payload
+    SELECT id::text AS id, type, payload, request_id AS "requestId"
     FROM outbox_events
     WHERE published_at IS NULL
     ORDER BY id

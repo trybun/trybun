@@ -30,7 +30,10 @@ describe('HealthController', () => {
     const res = await request(app.getHttpServer()).get('/health');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body).toEqual({
+      status: 'ok',
+      version: expect.stringMatching(/^\d+\.\d+\.\d+/) as unknown,
+    });
   });
 
   it('is not reachable through the BFF path', async () => {
@@ -40,6 +43,6 @@ describe('HealthController', () => {
   });
 
   it('is not part of the public OpenAPI document', () => {
-    expect(Object.keys(createOpenApiDocument(app).paths)).not.toContain('/health');
+    expect(Object.keys(createOpenApiDocument(app).paths)).toEqual([]);
   });
 });

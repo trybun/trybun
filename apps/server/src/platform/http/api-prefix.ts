@@ -2,4 +2,4 @@
 export const API_PREFIX = 'api/v1';
 
 /** Routes outside the global prefix: the health endpoints of the internal network (§17.2). */
-export const UNPREFIXED_ROUTES = ['health'];
+export const UNPREFIXED_ROUTES = ['health', 'health/ready'];

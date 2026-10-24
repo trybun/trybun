@@ -14,7 +14,7 @@ const SERVER_DIR = join(import.meta.dirname, '../..');
 const POSTGRES_DOCKERFILE_DIR = join(SERVER_DIR, '../../docker/postgres');
 const POSTGRES_IMAGE = 'trybun-postgres-test';
 // Pinned to a digest (§2.10).
-const VALKEY_IMAGE =
+export const VALKEY_IMAGE =
   'valkey/valkey:9.1.2-alpine3.24@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11';
 
 declare module 'vitest' {

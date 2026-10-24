@@ -70,6 +70,8 @@ model OutboxEvent {
   type        String
   /// Identifiers and changed values only, never content or personal data (§18.3).
   payload     Json      @db.JsonB
+  /// The request ID of the API call that caused the event, passed to its jobs (§17.2).
+  requestId   String?   @map("request_id")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   publishedAt DateTime? @map("published_at") @db.Timestamptz(3)
 
