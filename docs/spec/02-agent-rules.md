@@ -104,7 +104,7 @@ Per Rule 1:
 - Every UI component has a **component catalog entry** (Storybook) with usage examples and all states (e.g. empty, loading, error, disabled).
 - UI components are **presentational**: no domain logic and no API calls. They receive data and actions through props. Domain logic lives in the application layer and the API ([§14.4](14-architecture.md)).
 - Styling uses **Tailwind CSS** ([§14.2](14-architecture.md)) and is based on **design tokens** (colors, spacing, typography, radii, shadows) defined once in the Tailwind theme (`@theme`, CSS variables). Brand colours and the typeface come from [`docs/brand/`](../brand/README.md). Rules:
-  - only theme tokens are used – no arbitrary values such as `bg-[#E0482C]` or `p-[13px]` (enforced by lint),
+  - only theme tokens are used – no arbitrary values such as `bg-[#E0482C]` or `p-[13px]` (enforced by lint: `eslint-plugin-better-tailwindcss` reports classes unknown to the theme and arbitrary values in the utilities of the token categories – colours, spacing, sizing, typography, radii, shadows – and literal colours in any arbitrary value; references to CSS variables such as `h-(--drawer-height)`, which Base UI sets for its motion and positioning, and CSS-wide keywords are allowed). Tailwind's default colour palette is removed from the theme,
   - long class lists live inside `@trybun/ui` components, never copied across views; component variants use class-variance-authority, classes are combined with `cn` (the shadcn/ui package),
   - class order is sorted automatically (official Prettier plugin for Tailwind CSS),
   - dark mode is implemented through the tokens, not with separate classes in every component,
@@ -444,6 +444,7 @@ These practices follow recommendations of the Claude Code team and apply to ever
 
 - **Unit tests** (Vitest) for domain logic: visibility, permissions, status transitions, SLA calculation, scheduling.
 - **Integration tests** (Vitest + Testcontainers) run against real PostgreSQL and Valkey; the database is never mocked. External HTTP services (GitHub, e-mail provider) are simulated with MSW.
+- **Component tests**: every Storybook story of `@trybun/ui` runs as a test in Chromium (Vitest browser mode with `@storybook/addon-vitest`), once in the light and once in the dark theme: its interaction test (`play`) and the axe check of the accessibility gate below.
 - **Permission tests**: every row of the permission matrix ([§7.5](07-users-organizations-permissions.md)) is an automated test, for both allowed and denied cases.
 - **E2E tests** (Playwright) cover the key user paths on phone, tablet and desktop viewports (Rule 9) and include accessibility checks (axe).
 - Test data is created with **factories** (`@faker-js/faker`); tests never depend on each other's data. A separate, deterministic **demo dataset** is used for the local and test environments, documentation screenshots and product tours.
@@ -468,13 +469,13 @@ Every pull request passes at least the following in CI:
 | Domain modules of `apps/server` and `@trybun/contracts` | ≥ 80 % | ≥ 75 % |
 | Every other package and application | ≥ 70 % | – |
 
-- **Tests counted:** unit and integration tests. CI runs both together (`pnpm test:coverage`) and checks the thresholds once, on the combined result. A local `pnpm test` or `pnpm test:integration` run checks no thresholds, because a single run does not see the other half of the tests.
+- **Tests counted:** unit, component and integration tests. CI runs them together (`pnpm test:coverage`) and checks the thresholds once, on the combined result. A local `pnpm test` or `pnpm test:integration` run checks no thresholds, because a single run does not see the other half of the tests.
 - **Files measured:** the source files (`src/`) of every application and package, except this closed list:
 
   | Excluded | Examples | Reason |
   |---|---|---|
   | Test code | `*.spec.ts(x)`, `*.integration.spec.ts`, the `test/` folders (factories, MSW handlers, set-up), `e2e/` | Not product code |
-  | Storybook stories | `*.stories.tsx` | Documentation of components; components are tested by their own tests |
+  | Storybook stories | `*.stories.tsx` | Documentation and test cases of components; the components themselves are measured through them |
   | Process entry points that only bootstrap | `apps/server/src/main.ts`, `apps/server/src/worker.ts` | Start-up wiring; covered by starting the built application and by E2E tests |
   | Generated code | Prisma client, `openapi-typescript` types, Keycloak theme messages generated from `@trybun/i18n` | Not written by hand; its source is tested |
   | Configuration files | `*.config.ts`, `*.config.mjs` (Vitest, Next.js, Playwright, ESLint, Prisma) | Tooling, not product code |
@@ -502,7 +503,7 @@ Every pull request passes at least the following in CI:
 
 - Allowed for npm dependencies: MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, MIT-0, BlueOak-1.0.0, CC0-1.0, Unlicense, Python-2.0, and CC-BY-4.0 for data packages (e.g. `caniuse-lite`).
 - Denied for npm dependencies: AGPL, GPL, SSPL and other strong copyleft or source-available licenses.
-- Documented exceptions (listed in the allowlist configuration with a reason): MPL-2.0 for development-only dependencies (e.g. `axe-core`); LGPL for dynamically loaded optional binaries (e.g. libvips of `sharp`).
+- Documented exceptions (listed in the allowlist configuration with a reason): MPL-2.0 for development-only dependencies (e.g. `axe-core`); LGPL for dynamically loaded optional binaries (e.g. libvips of `sharp`); OFL-1.1 for fonts (e.g. the brand typeface Manrope).
 - Third-party services running in their own containers (e.g. ClamAV, GPL-2.0) are aggregated, not linked, and are allowed.
 
 ### Agent safety

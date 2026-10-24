@@ -5,6 +5,12 @@
   "signIn": {
     "redirecting": "Redirecting to the sign-in…"
   },
+  "ui": {
+    "close": "Close",
+    "toast": {
+      "close": "Close notification"
+    }
+  },
   "emails": {
     "footer": {
       "automatic": "This message was sent automatically by Trybun."

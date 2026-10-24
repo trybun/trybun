@@ -6,4 +6,5 @@ Claude Code finds them through the symbolic link `.claude/skills` → `.ai/skill
 
 | Skill | Use when |
 |---|---|
+| [`ui-component`](ui-component/SKILL.md) | Adding or adapting a component of `@trybun/ui` |
 | [`verify-change`](verify-change/SKILL.md) | Before committing or opening a pull request: runs the checks CI runs |

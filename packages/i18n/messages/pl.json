@@ -5,6 +5,12 @@
   "signIn": {
     "redirecting": "Przekierowanie do logowania…"
   },
+  "ui": {
+    "close": "Zamknij",
+    "toast": {
+      "close": "Zamknij powiadomienie"
+    }
+  },
   "emails": {
     "footer": {
       "automatic": "Ta wiadomość została wysłana automatycznie przez system Trybun."

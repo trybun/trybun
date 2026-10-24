@@ -4,5 +4,5 @@
     "lib": ["es2024", "dom", "dom.iterable"],
     "jsx": "react-jsx"
   },
-  "include": ["src", "*.config.ts"]
+  "include": ["src", ".storybook/*.ts", ".storybook/*.tsx", "*.config.ts"]
 }

@@ -12,7 +12,7 @@ Run from the repository root, in this order:
 3. `pnpm lint` – lint of every package and the Prettier check.
 4. `pnpm lint:spec` – `§N.M` references of the specification, after a change of Markdown files or of section numbers.
 5. `pnpm typecheck`
-6. `pnpm test`
+6. `pnpm test` – the story tests of `@trybun/ui` need Chromium, installed once with `pnpm --filter @trybun/ui exec playwright install chromium`.
 7. `pnpm test:coverage` – unit and integration tests with the coverage thresholds of CI; needs Docker. Without Docker, run `pnpm test` only and say so in the pull request.
 8. `pnpm build`
 

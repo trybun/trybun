@@ -16,7 +16,12 @@ export const FORBIDDEN_IMPORT_PATTERNS = [
 ];
 
 /** Configuration files and files whose default export a framework requires. */
-export const FRAMEWORK_FILES = ['**/*.config.{ts,js,mjs}'];
+export const FRAMEWORK_FILES = [
+  '**/*.config.{ts,js,mjs}',
+  // Storybook: the configuration and the component meta of every story file (CSF).
+  '**/.storybook/{main,preview}.{ts,tsx}',
+  '**/*.stories.tsx',
+];
 
 /**
  * `no-restricted-imports` with the patterns forbidden everywhere and the given extra patterns.

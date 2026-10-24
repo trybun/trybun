@@ -46,6 +46,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
+      # Chromium for the story tests of @trybun/ui (Vitest browser mode, §2.14).
+      - run: pnpm --filter @trybun/ui exec playwright install --with-deps --only-shell chromium
       # Unit and integration tests (Testcontainers on the runner's Docker) in one run; the
       # coverage thresholds are checked on the combined result.
       - run: pnpm test:coverage

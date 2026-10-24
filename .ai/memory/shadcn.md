@@ -8,3 +8,15 @@ Non-obvious behaviour of shadcn/ui found when the primitives were chosen (Octobe
 - Radix → Base UI: `asChild` becomes `render`; examples and agents' habits from older shadcn/ui code use `asChild`.
 - Since September 2026 `shadcn init` installs the `cn` package (shadcn-ui/cn, no dependencies) instead of `clsx` + `tailwind-merge`; `lib/utils.ts` only re-exports it, and registry components import `cn` directly. Custom class groups are configured with `cn/config` (`extend`, `override`, `prefix`, like `extendTailwindMerge`). `shadcn migrate cn` converts existing code.
 - In a monorepo every workspace has its own `components.json`; `style`, `iconLibrary` and `baseColor` must match, and `tailwind.config` is `""` for Tailwind 4. The ui package exports `./globals.css`, `./components/*`, `./lib/*` and `./hooks/*`; components are flat in `src/components/` (no `ui/` subfolder).
+
+## Set-up and adaptation (S0-07, shadcn 4.22, Base UI 1.9)
+
+- `shadcn add` in `packages/ui` fails with "Could not resolve the following aliases" until the aliases resolve: the package `exports` (`./components/*`, `./lib/*`, `./hooks/*`) are enough, no `paths` in `tsconfig.json`. Components import each other through the package name (`@trybun/ui/components/button`); TypeScript and Vite resolve it as a self-reference.
+- The CLI installed only `@base-ui/react` and `cn`; `class-variance-authority`, `lucide-react`, `tw-animate-css` and `shadcn` (for `shadcn/tailwind.css`, which defines the `data-open`/`data-closed` variants) had to be added by hand.
+- `shadcn init -p` takes the preset names `nova`, `vega`, … (the style becomes `base-nova`); `base-nova` itself is rejected.
+- base-nova components use arbitrary values (`text-[0.8rem]`, `rounded-[min(var(--radius-md),10px)]`, `ring-[3px]`, `min-w-[96px]`), Tailwind palette colours (`bg-black/10`) and focus rings at 50 % opacity (below 3:1); the adapted components replace them with tokens. The Drawer and Toast motion relies on CSS variables of Base UI in arbitrary properties – the lint rule of `@trybun/eslint-config/tailwind` allows variable references for that.
+- `cn` (like tailwind-merge) treats an unknown `text-*` class as a colour: `cn('text-body', 'text-success')` drops `text-body`. Custom font-size tokens therefore need `createCn` of `cn/config` – and the registry components import `cn` from `cn` directly, so the configured instance would have to replace those imports. The theme keeps Tailwind's type scale, which `cn` knows.
+- Base UI `Toast.Close` is `aria-hidden` until the toasts are expanded (hover, focus; F6 from the keyboard). Testing Library gives aria-hidden elements an empty accessible name even with `hidden: true` – query it with `getByLabelText`.
+- Base UI focus guards (`[data-base-ui-focus-guard]`, `aria-hidden` with `tabindex="0"`) make axe report `aria-hidden-focus` after a menu closes; the Storybook a11y context excludes them.
+- The Drawer swipes on touch events and on pointer events of other pointer types. A swipe-to-close test dispatches `TouchEvent`s (`touchstart`, ten `touchmove` 16 ms apart, `touchend`) on the popup (`drawer.stories.tsx`).
+
