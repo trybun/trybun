@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import { UserMenu } from '../../users/components/user-menu.js';
+import { LazyUserMenu } from '../../users/components/lazy-user-menu.js';
 
 export interface AppHeaderSlots {
   /** The search button that opens the command palette (§8.4, S2-05). */
@@ -31,7 +31,7 @@ export function AppHeader({ search, help, notifications }: AppHeaderSlots) {
         {search}
         {help}
         {notifications}
-        <UserMenu />
+        <LazyUserMenu />
       </div>
     </header>
   );

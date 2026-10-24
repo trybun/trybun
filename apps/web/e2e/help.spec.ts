@@ -70,6 +70,8 @@ test.describe('help', () => {
     const minimum = test.info().project.name === 'desktop' ? 32 : 44;
 
     for (const target of [shell.help, help.search, help.results.first()]) {
+      // A menu of the header is streamed after the page on the first request of a route.
+      await expect(target).toBeVisible();
       const box = await target.boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(minimum);
     }
