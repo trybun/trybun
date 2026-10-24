@@ -229,7 +229,9 @@ No global client state library is used.
 - **Variants** use class-variance-authority; every component accepts `className`, merged last with `cn`.
 - **Props** follow the naming of Base UI: `value` / `defaultValue` / `onValueChange`, `open` / `defaultOpen` / `onOpenChange`; event props start with `on`. `ref` is a regular prop (React 19); no `forwardRef` in new components.
 - **Texts**: content comes through props and children; texts owned by a component (e.g. the screen-reader label of a close button) come from the `ui` namespace of `@trybun/i18n` through `next-intl`.
-- Every component has stories for all states and the three viewports (Rules 6 and 9).
+- **Touch targets**: interactive elements are 44 px on phones and tablets; the compact sizes of shadcn/ui apply only on desktop with a precise pointer (`xl:pointer-fine:h-8`). Form fields use 16 px text below that (Rule 9).
+- **Overlays on phones**: `Dialog` is a bottom sheet below the tablet breakpoint (`md`) and a centered dialog from it on; `Drawer` is a bottom sheet with a swipe handle that closes with a swipe down. Elements at the bottom edge keep the safe area with `pb-safe-offset-*` (Rule 9).
+- **Stories**: every component has stories for all states and the three viewports `Phone`, `Tablet` and `Desktop` (`viewport()` of `.storybook/viewports.ts`), with `play` functions for its interactions and Rule 9 checks (target sizes, bottom sheet). Stories use content in English; the texts owned by a component come from the catalogues, also in Polish (Rules 6 and 9).
 
 ## 18.7 Tests
 
@@ -273,7 +275,7 @@ No global client state library is used.
 | Server and web layout, lint boundaries | `apps/server/src/`, `apps/web/src/`, `packages/eslint-config/src/` | S0-01 |
 | Integration test set-up: containers, MSW | `apps/server/test/setup/`, `apps/server/test/msw/` | S0-02 |
 | Transaction with an outbox event and a Worker handler | `apps/server/src/platform/outbox/` (job options, keys and timers: `apps/server/src/platform/queues/job-options.ts`) | S0-04 |
-| UI component with variants and stories | `packages/ui/src/components/button.tsx` | S0-07 |
+| UI component with variants and stories | `packages/ui/src/components/button.tsx`, `button.stories.tsx` | S0-07 |
 | Server query, prefetch and hydration in the web | `apps/web/src/features/` (application shell) | S0-08 |
 | Authentication guard, principal, `@Public()` | `apps/server/src/platform/authentication/` | S0-05 |
 | Session read in the web (`getSession`, `requireSession`) | `apps/web/src/lib/auth/session.ts` | S0-05 |

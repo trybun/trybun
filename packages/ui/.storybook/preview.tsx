@@ -40,6 +40,8 @@ const preview: Preview = {
       // The focus guards of Base UI popups (visually hidden, `aria-hidden`, focusable) move the
       // focus back into the popup and are never read; axe reports them as `aria-hidden-focus`.
       context: { include: ['body'], exclude: ['[data-base-ui-focus-guard]'] },
+      // The rule tags of the accessibility gate (§2.14).
+      options: { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] },
     },
   },
 };

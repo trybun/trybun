@@ -87,9 +87,10 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 |---|---|
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload |
-| `pnpm test` | Unit tests (Vitest) |
+| `pnpm test` | Unit tests and the story tests of `@trybun/ui` (Vitest; Chromium: `pnpm --filter @trybun/ui exec playwright install chromium`) |
 | `pnpm test:integration` | Integration tests (Vitest + Testcontainers; needs Docker) |
-| `pnpm test:coverage` | Unit and integration tests with the coverage thresholds of CI (needs Docker) |
+| `pnpm test:coverage` | Unit, component and integration tests with the coverage thresholds of CI (needs Docker) |
+| `pnpm storybook` | Component catalogue of `@trybun/ui` on port 6006 |
 | `pnpm e2e` | E2E tests (Playwright, phone/tablet/desktop) – S0-08 |
 | `pnpm lint` | Lint, formatting, Keycloak login theme up to date with the catalogues, Prisma checks (schema mappings, no Prisma ORM 8) and supply-chain checks (fork-safe triggers, SHA and digest pinning) |
 | `pnpm lint:spec` | Specification consistency: `§N.M` references (links: lychee in CI) |

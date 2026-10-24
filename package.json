@@ -16,6 +16,7 @@
     "test": "turbo run test && vitest run --project scripts",
     "test:integration": "turbo run test:integration",
     "test:coverage": "vitest run --coverage",
+    "storybook": "pnpm --filter @trybun/ui storybook",
     "lint:spec": "node scripts/check-spec-references.js",
     "db:migrate": "pnpm --filter @trybun/server db:migrate",
     "db:seed": "pnpm --filter @trybun/server db:seed"

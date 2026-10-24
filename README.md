@@ -11,6 +11,7 @@ The project is delivered with an **AI Engineering** approach: AI agents write th
 - **Node.js** in the version from [`.node-version`](.node-version) (24 LTS)
 - **pnpm** enabled through Corepack: `corepack enable` (the version comes from the `packageManager` field of [`package.json`](package.json))
 - **Docker** with the Compose plugin – runs the infrastructure services and the integration tests (Testcontainers)
+- **Chromium** for the component tests, installed once after `pnpm install`: `pnpm --filter @trybun/ui exec playwright install chromium`
 
 ## Getting started
 
@@ -47,9 +48,10 @@ Run from the repository root:
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
-| `pnpm test` | Unit tests (Vitest) |
+| `pnpm test` | Unit tests and the component tests of `@trybun/ui` (Vitest; every story in Chromium, light and dark, with axe) |
 | `pnpm test:integration` | Integration tests against PostgreSQL and Valkey in Testcontainers (needs Docker) |
-| `pnpm test:coverage` | Unit and integration tests with the coverage thresholds of CI (needs Docker) |
+| `pnpm test:coverage` | Unit, component and integration tests with the coverage thresholds of CI (needs Docker) |
+| `pnpm storybook` | Start the component catalogue of `@trybun/ui` on <http://localhost:6006> |
 | `pnpm db:migrate` | Apply the database migrations (`prisma migrate deploy`) |
 | `pnpm db:seed` | Load the deterministic demo dataset; running it again restores the same records |
 
@@ -70,7 +72,7 @@ Database objects Prisma does not model (text search configurations, pgvector or 
 
 ## Continuous integration
 
-Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit and integration tests with coverage thresholds, build, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Run the same checks locally with the commands above before opening a pull request.
+Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit, component and integration tests with coverage thresholds, build, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Run the same checks locally with the commands above before opening a pull request.
 
 ## Monorepo structure
 
@@ -84,10 +86,16 @@ pnpm workspaces with Turborepo ([§14.6](docs/spec/14-architecture.md)). Applica
 | `packages/ui` | `@trybun/ui` | Component library (shadcn/ui on Base UI, Tailwind CSS) |
 | `packages/i18n` | `@trybun/i18n` | Message catalogues (EN, PL) in ICU MessageFormat for web, server and the Keycloak login theme |
 | `packages/tsconfig` | `@trybun/tsconfig` | Shared TypeScript configuration (strict) |
-| `packages/eslint-config` | `@trybun/eslint-config` | Shared lint rules: naming conventions, package and layer boundaries |
+| `packages/eslint-config` | `@trybun/eslint-config` | Shared lint rules: naming conventions, package and layer boundaries, Tailwind classes |
 | `docs/` | | Specification, implementation plan, ADRs, brand |
 
 The code inside the applications follows the patterns of [§18](docs/spec/18-code-patterns.md); the technology choices are recorded in [`docs/adr/`](docs/adr/README.md).
+
+## Component library
+
+`@trybun/ui` holds the UI components: shadcn/ui on Base UI, styled with Tailwind CSS 4 and the design tokens of [`docs/brand/`](docs/brand/README.md) in [`packages/ui/src/styles/globals.css`](packages/ui/src/styles/globals.css) (light and dark). Applications import components by subpath (`@trybun/ui/components/button`) and the theme as `@trybun/ui/globals.css`. `pnpm storybook` shows every component in all states, in light and dark, in English and Polish, on phone, tablet and desktop viewports.
+
+A new component starts from shadcn/ui: `pnpm --filter @trybun/ui exec shadcn add <component>`, then it is adapted to the tokens, touch targets, translations and accessibility and gets its stories – the steps are in the [`ui-component`](.ai/skills/ui-component/SKILL.md) skill ([§2.6](docs/spec/02-agent-rules.md), [§18.6](docs/spec/18-code-patterns.md)). Lint rejects classes outside the theme and arbitrary values such as `bg-[#E0482C]`; Prettier sorts the classes.
 
 ## Configuration
 
