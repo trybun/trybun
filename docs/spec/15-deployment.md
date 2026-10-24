@@ -53,7 +53,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 
 If `main` already contains `feat:` commits, the release becomes a MINOR version. To release only a fix, use a maintenance branch `release/1.4.x` as described in Rule 11.
 
-- Built images are scanned for vulnerabilities (Trivy) and every release includes an SBOM of each image (Syft, CycloneDX); no release ships with known critical vulnerabilities ([§2.10](02-agent-rules.md)): a vulnerability of severity `CRITICAL` in an image – with or without a fixed version – stops the release before anything is published.
+- Built images are scanned for vulnerabilities (Trivy) and every release includes an SBOM of each image (Syft, CycloneDX); no release ships with known critical vulnerabilities ([§2.10](02-agent-rules.md)): a vulnerability of severity `CRITICAL` in an image – with or without a fixed version – stops the release before anything is published, unless it is an accepted risk with an expiry date ([§2.10](02-agent-rules.md)).
 - The "About" page of the Administrator panel shows the installed system version, the license and the "Support the project" link ([§16.6](16-open-source.md)).
 
 ## 15.5 Installation

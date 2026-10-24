@@ -291,7 +291,7 @@ Rule 10 is **subordinate to Rule 1** (OWASP: *Vulnerable and Outdated Components
 | Medium | 30 days |
 | Low | next planned update |
 
-If no fixed version exists, the agent documents the risk and the mitigation in the pull request or an ADR, and the vulnerability is tracked until it is fixed. An accepted advisory is listed with its reason in the audit configuration (`auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`) and removed as soon as a fixed version exists. Vulnerabilities in Trybun itself are handled through `SECURITY.md` ([§16.2](16-open-source.md)).
+If no fixed version exists, the agent documents the risk and the mitigation in the pull request or an ADR, and the vulnerability is tracked until it is fixed. An accepted advisory is listed with its reason in the audit configuration (`auditConfig.ignoreGhsas` in `pnpm-workspace.yaml`) and removed as soon as a fixed version exists. The same applies to the image scan of a release: an accepted vulnerability of an image – e.g. of a base image without a fix, or in code the image never runs – is listed in `.trivyignore.yaml` with the affected package or path, its reason and an expiry date of at most 30 days, after which it blocks the release again unless a human renews it. Vulnerabilities in Trybun itself are handled through `SECURITY.md` ([§16.2](16-open-source.md)).
 
 ### Supply-chain hardening
 
