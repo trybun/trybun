@@ -211,8 +211,9 @@ No global client state library is used.
 
 ### Forms
 
-- React Hook Form with the Zod resolver and the request schema from `@trybun/contracts` – the same schema the API validates ([§14.4](14-architecture.md#144-architectural-principles)) – rendered with the `Form` components of `@trybun/ui`.
-- A form submits through the feature's mutation hook. Field errors of a Problem Details response (`errors[].pointer`) are applied to the form fields by one helper; other errors show the translated message.
+- React Hook Form with the Zod resolver and the request schema from `@trybun/contracts` – the same schema the API validates ([§14.4](14-architecture.md#144-architectural-principles)) – rendered with the `Field` components of `@trybun/ui` (`Field` with `invalid`, `FieldLabel`, `FieldDescription`, `FieldError`; Base UI links the label, the description and the error to the control), each field through `Controller`.
+- The resolver gets the error map `FORM_ERROR_MAP` of `lib/errors/form-errors.ts`, so a form error holds the same field error code as the API (`toFieldErrorCode` of `@trybun/contracts/problem-details`), translated with `useErrorMessage()` where it is shown.
+- A form submits through the feature's mutation hook. Field errors of a Problem Details response (`errors[].pointer`) are applied to the form fields by one helper (`fieldErrorsOf()` of `lib/errors/form-errors.ts`): the field error code of a validation error, the code of a rule (e.g. `setup.email_taken`) otherwise; other errors show the translated message.
 - Watched field values are read with `useWatch({ control, name })`; `watch()` of `useForm()` is not used, because the React Compiler cannot memoize it.
 
 ### Product tours
