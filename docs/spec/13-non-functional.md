@@ -67,6 +67,8 @@ Anonymization of an account affects every store of personal data:
 
 ## 13.3 Attachments
 
+How these requirements are built – upload, quarantine and scan, type detection, EXIF stripping, the purge of drafts and the download through the BFF – is recorded in [ADR 0008](../adr/0008-attachment-serving.md).
+
 - Maximum file size configurable by the Administrator (default **25 MB per file**); at most **10 files per upload**.
 - Allowed file types are a fixed allowlist of extensions: `png`, `jpg`, `jpeg`, `gif`, `webp`, `pdf`, `txt`, `log`, `csv`, `json`, `docx`, `xlsx`, `pptx`, `odt`, `ods`, `zip`. Other types are rejected.
 - The file type is detected from the **file content** (magic bytes), not from the name or the type declared by the client. A file whose content does not match its extension, or is not on the allowlist, is rejected with the error code `attachment.type_not_allowed`. Encrypted ZIP archives are rejected, because they cannot be scanned.
