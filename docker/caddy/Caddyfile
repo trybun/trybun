@@ -1,7 +1,7 @@
 # The only public entry point (§14.4, §15.9): automatic HTTPS (§15.8) and routing by path.
+# The security headers, HSTS included, are set by the web application (apps/web/src/proxy.ts) and
+# by Keycloak for its own pages (§13.5).
 {$TRYBUN_DOMAIN} {
-	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
-
 	# Access logs without query strings and credentials (§15.9, §17.2).
 	log {
 		format filter {

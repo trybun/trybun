@@ -1,6 +1,7 @@
 import 'server-only';
 import type { PrismaClient } from '../database/prisma.js';
 import type { KeycloakClient } from './keycloak-client.js';
+import { recordSessionRequest } from './session-activity.js';
 import { hashSessionToken } from './session-adapter.js';
 import type { TokenCipher } from './token-cipher.js';
 
@@ -88,9 +89,18 @@ export function createAccessTokens({
       const tokenHash = hashSessionToken(sessionToken);
       const session = await prisma.session.findUnique({
         where: { tokenHash },
-        select: { accessToken: true, accessTokenExpiresAt: true, expiresAt: true },
+        select: {
+          accessToken: true,
+          accessTokenExpiresAt: true,
+          expiresAt: true,
+          idleExpiresAt: true,
+          idleTimeoutSeconds: true,
+        },
       });
-      if (session === null || session.expiresAt <= now) {
+      if (
+        session === null ||
+        !(await recordSessionRequest({ prisma, cipher, keycloak }, tokenHash, session, now))
+      ) {
         return undefined;
       }
       if (isFresh(session.accessTokenExpiresAt, now)) {

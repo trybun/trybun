@@ -1,4 +1,5 @@
 import 'server-only';
+import { headers } from 'next/headers.js';
 import { notFound } from 'next/navigation.js';
 import createClient from 'openapi-fetch';
 import { cache } from 'react';
@@ -10,15 +11,20 @@ import type { paths } from './schema.js';
 
 /**
  * The API client of Server Components (§14.4): calls the API directly over the internal network
- * with the access token of the request's session. Responses are never cached across requests,
- * because they depend on the user's permissions (§18.5).
+ * with the access token of the request's session, and with the client IP that Caddy set for the
+ * rate limits of the public endpoints. Responses are never cached across requests, because they
+ * depend on the user's permissions (§18.5).
  */
 export const getServerApiClient = cache(async (): Promise<ApiClient> => {
   const accessToken = await getAccessToken();
+  const forwardedFor = (await headers()).get('x-forwarded-for');
   return createClient<paths>({
     baseUrl: getEnv().apiUrl,
     cache: 'no-store',
-    headers: accessToken === undefined ? {} : { Authorization: `Bearer ${accessToken}` },
+    headers: {
+      ...(accessToken === undefined ? {} : { Authorization: `Bearer ${accessToken}` }),
+      ...(forwardedFor === null ? {} : { 'X-Forwarded-For': forwardedFor }),
+    },
   });
 });
 

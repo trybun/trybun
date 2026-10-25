@@ -1,7 +1,9 @@
 import type { Account } from 'next-auth';
 import { SignJWT } from 'jose';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { TEST_ENV } from '../../../test/env.js';
+import { mswServer } from '../../../test/msw/server.js';
 import type { SignInTokens } from './session-adapter.js';
 
 vi.mock('server-only', () => ({}));
@@ -45,22 +47,57 @@ describe('createAuthOptions', () => {
     for (const [name, value] of Object.entries(TEST_ENV)) {
       vi.stubEnv(name, value);
     }
+    mswServer.listen({ onUnhandledFrame: 'error' });
+  });
+
+  afterEach(() => {
+    mswServer.resetHandlers();
   });
 
   afterAll(() => {
+    mswServer.close();
     vi.unstubAllEnvs();
   });
+
+  /** The account of the API for the access token of the sign-in. */
+  function currentUser(response: HttpResponse<object>) {
+    mswServer.use(
+      http.get(`${TEST_ENV.TRYBUN_API_URL}/api/v1/users/me`, ({ request }) =>
+        request.headers.get('authorization') === 'Bearer access-token'
+          ? response
+          : new HttpResponse(null, { status: 401 }),
+      ),
+    );
+  }
 
   function signInCallback(signIn: SignInTokens | undefined, account: Account | null) {
     const callback = createAuthOptions(signIn).callbacks?.signIn;
     return callback?.({ user: { id: 'user-1' }, account });
   }
 
-  it('keeps the tokens of a sign-in for the session it creates', async () => {
+  it('keeps the tokens and the account kind of a sign-in for the session it creates', async () => {
+    currentUser(
+      HttpResponse.json({
+        id: '0190f2f4-7c1e-7000-8000-000000000001',
+        displayName: 'Ada Admin',
+        email: 'ada@example.com',
+        kind: 'end_user',
+        allowedActions: [],
+      }),
+    );
     const signIn: SignInTokens = {};
 
     expect(await signInCallback(signIn, ACCOUNT)).toBe(true);
     expect(signIn.current?.refreshToken).toBe('refresh-token');
+    expect(signIn.accountKind).toBe('end_user');
+  });
+
+  it('leaves the account kind unknown when the API refuses the account', async () => {
+    currentUser(new HttpResponse(null, { status: 401 }));
+    const signIn: SignInTokens = {};
+
+    expect(await signInCallback(signIn, ACCOUNT)).toBe(true);
+    expect(signIn.accountKind).toBeUndefined();
   });
 
   it.each([

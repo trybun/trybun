@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { http, HttpResponse } from 'msw';
 import type { Adapter } from 'next-auth/adapters';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYCLOAK_ENDPOINTS } from '../../../test/factories/keycloak-tokens.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { stubIntegrationEnv } from '../../../test/setup/environment.js';
+import type { SignInTokens } from './session-adapter.js';
 
 vi.mock('server-only', () => ({}));
 stubIntegrationEnv();
@@ -29,21 +30,51 @@ describe('session adapter', () => {
   const prisma = getPrisma();
   const cipher = createTokenCipher(getEnv().authSecret);
   let adapter: SessionAdapter;
+  /** The current time of the adapters; a test moves it forward. */
+  let now = new Date();
 
-  beforeAll(() => {
-    adapter = createSessionAdapter({
+  function adapterOf(signIn: SignInTokens): SessionAdapter {
+    return createSessionAdapter({
       prisma,
       cipher,
       keycloak: createKeycloakClient(getEnv().keycloak),
-      signIn: { current: TOKENS },
+      signIn,
+      now: () => now,
     }) as SessionAdapter;
+  }
+
+  beforeAll(() => {
+    adapter = adapterOf({ current: TOKENS, accountKind: 'end_user' });
   });
 
-  async function signIn(sub = randomUUID()) {
+  beforeEach(() => {
+    now = new Date();
+  });
+
+  async function signIn(sub = randomUUID(), signInAdapter = adapter) {
     const sessionToken = randomUUID();
-    const expires = new Date(Date.now() + 86_400_000);
-    await adapter.createSession({ sessionToken, userId: sub, expires });
+    const { expires } = await signInAdapter.createSession({
+      sessionToken,
+      userId: sub,
+      expires: new Date(now.getTime() + 86_400_000),
+    });
     return { sessionToken, sub, expires };
+  }
+
+  /** Records the logout requests of Keycloak. */
+  function keycloakLogout() {
+    const ended = vi.fn();
+    mswServer.use(
+      http.post(`${KEYCLOAK_ENDPOINTS}/logout`, async ({ request }) => {
+        ended(Object.fromEntries(new URLSearchParams(await request.text())));
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    return ended;
+  }
+
+  function minutesLater(count: number): Date {
+    return new Date(now.getTime() + count * 60_000);
   }
 
   it('links the session to the Keycloak user of the sign-in', async () => {
@@ -100,11 +131,73 @@ describe('session adapter', () => {
     ).rejects.toThrow('A session is created only by a sign-in with Keycloak');
   });
 
-  it('extends the expiry of a session', async () => {
-    const { sessionToken } = await signIn();
-    const expires = new Date(Date.now() + 2 * 86_400_000);
+  it('gives an end-user session the lifetimes of end users', async () => {
+    const { sessionToken, expires } = await signIn();
 
-    await adapter.updateSession({ sessionToken, expires });
+    expect(expires).toEqual(minutesLater(30 * 24 * 60));
+    expect(
+      await prisma.session.findUniqueOrThrow({
+        where: { tokenHash: hashSessionToken(sessionToken) },
+        select: { expiresAt: true, idleExpiresAt: true, idleTimeoutSeconds: true },
+      }),
+    ).toEqual({
+      expiresAt: expires,
+      idleExpiresAt: minutesLater(8 * 60),
+      idleTimeoutSeconds: 28_800,
+    });
+  });
+
+  it.each([
+    ['a team member', 'team' as const],
+    ['an account of unknown kind', undefined],
+  ])(
+    'ends an idle session of %s after 30 minutes with its Keycloak session',
+    async (_case, kind) => {
+      const { sessionToken } = await signIn(
+        randomUUID(),
+        adapterOf({ current: TOKENS, accountKind: kind }),
+      );
+      const ended = keycloakLogout();
+      const signedIn = now;
+
+      now = minutesLater(29);
+      await expect(adapter.getSessionAndUser(sessionToken)).resolves.not.toBeNull();
+      // 29 minutes after the last request.
+      now = new Date(signedIn.getTime() + 58 * 60_000);
+      await expect(adapter.getSessionAndUser(sessionToken)).resolves.not.toBeNull();
+      now = new Date(signedIn.getTime() + 88 * 60_000);
+
+      await expect(adapter.getSessionAndUser(sessionToken)).resolves.toBeNull();
+      expect(
+        await prisma.session.count({ where: { tokenHash: hashSessionToken(sessionToken) } }),
+      ).toBe(0);
+      expect(ended).toHaveBeenCalledWith(
+        expect.objectContaining({ refresh_token: TOKENS.refreshToken }),
+      );
+    },
+  );
+
+  it('ends an active team session after 12 hours', async () => {
+    const { sessionToken, expires } = await signIn(
+      randomUUID(),
+      adapterOf({ current: TOKENS, accountKind: 'team' }),
+    );
+    keycloakLogout();
+    const signedIn = now;
+    for (let minute = 25; minute < 12 * 60; minute += 25) {
+      now = new Date(signedIn.getTime() + minute * 60_000);
+      await expect(adapter.getSessionAndUser(sessionToken)).resolves.not.toBeNull();
+    }
+
+    now = expires;
+
+    await expect(adapter.getSessionAndUser(sessionToken)).resolves.toBeNull();
+  });
+
+  it('never extends the maximum lifetime of a session', async () => {
+    const { sessionToken, expires } = await signIn();
+
+    await adapter.updateSession({ sessionToken, expires: minutesLater(60 * 24 * 60) });
 
     const result = await adapter.getSessionAndUser(sessionToken);
     expect(result?.session.expires).toEqual(expires);
@@ -112,13 +205,7 @@ describe('session adapter', () => {
 
   it('deletes the session on sign-out and ends its Keycloak session', async () => {
     const { sessionToken } = await signIn();
-    const ended = vi.fn();
-    mswServer.use(
-      http.post(`${KEYCLOAK_ENDPOINTS}/logout`, async ({ request }) => {
-        ended(Object.fromEntries(new URLSearchParams(await request.text())));
-        return new HttpResponse(null, { status: 204 });
-      }),
-    );
+    const ended = keycloakLogout();
 
     await adapter.deleteSession(sessionToken);
 

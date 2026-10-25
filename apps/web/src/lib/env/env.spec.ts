@@ -16,6 +16,7 @@ describe('parseEnv', () => {
       shouldUseSecureCookies: true,
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
+      isDevelopment: false,
       keycloak: {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
         internalRealmUrl: 'http://keycloak:8080/auth/realms/trybun',
@@ -23,6 +24,10 @@ describe('parseEnv', () => {
         clientSecret: 'web-client-secret',
       },
     });
+  });
+
+  it('recognizes `next dev`', () => {
+    expect(parseEnv({ ...TEST_ENV, NODE_ENV: 'development' }).isDevelopment).toBe(true);
   });
 
   it('takes the issuer from the public URL of Keycloak when it is set', () => {

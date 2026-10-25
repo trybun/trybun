@@ -15,6 +15,8 @@ export function createSession(
       accessTokenExpiresAt: new Date(Date.now() + 300_000),
       refreshToken: 'encrypted-refresh-token',
       expiresAt: new Date(Date.now() + 86_400_000),
+      idleTimeoutSeconds: 1_800,
+      idleExpiresAt: new Date(Date.now() + 1_800_000),
       ...overrides,
     },
   });
