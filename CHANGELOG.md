@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/trybun/trybun/compare/v0.1.2...v0.2.0) (2026-10-25)
+
+
+### Added
+
+* **deploy:** add the uninstall command of the deployment package ([#102](https://github.com/trybun/trybun/issues/102)) ([c0297cf](https://github.com/trybun/trybun/commit/c0297cfe3d63b4a8fbee33e153e890e8e1a206f7))
+
+
+### Fixed
+
+* **deploy:** stop the installation when data of an earlier one exists ([#99](https://github.com/trybun/trybun/issues/99)) ([836f73d](https://github.com/trybun/trybun/commit/836f73d7d9a0c559d20489184e719829e6f1729f))
+
 ## [0.1.2](https://github.com/trybun/trybun/compare/v0.1.1...v0.1.2) (2026-10-25)
 
 
