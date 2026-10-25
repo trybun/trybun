@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { Transaction } from '../../platform/database/prisma.service.js';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Clock } from '../../platform/clock/clock.js';
+import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+
+/** How long the client IP of an entry is kept (§13.2). */
+export const IP_ADDRESS_RETENTION_MS = 14 * 24 * 60 * 60 * 1_000;
 
 /**
  * The actions of the administrative audit log (§13.5), `resource.event` (§17.1). Feature tasks add
@@ -18,9 +23,18 @@ export interface AuditLogEntryInput {
   ipAddress?: string;
 }
 
-/** The administrative audit log (§13.5): immutable entries, only ever added. */
+/**
+ * The administrative audit log (§13.5): entries are only ever added; the only change is the
+ * removal of their IP after 14 days.
+ */
 @Injectable()
 export class AuditLogEntriesService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+    @InjectPinoLogger(AuditLogEntriesService.name) private readonly logger: PinoLogger,
+  ) {}
+
   async record(tx: Transaction, entry: AuditLogEntryInput): Promise<void> {
     await tx.auditLogEntry.create({
       data: {
@@ -32,5 +46,21 @@ export class AuditLogEntriesService {
       },
       select: { id: true },
     });
+  }
+
+  /**
+   * Removes the IP of the entries older than 14 days (§13.2) and returns their number. A repeated
+   * run finds no entries, so the run is idempotent.
+   */
+  async expireIpAddresses(): Promise<number> {
+    const { count } = await this.prisma.auditLogEntry.updateMany({
+      where: {
+        ipAddress: { not: null },
+        createdAt: { lt: new Date(this.clock.now().getTime() - IP_ADDRESS_RETENTION_MS) },
+      },
+      data: { ipAddress: null },
+    });
+    this.logger.info({ count }, 'IP addresses of the audit log removed');
+    return count;
   }
 }

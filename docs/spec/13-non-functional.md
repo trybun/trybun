@@ -61,9 +61,9 @@ Anonymization of an account affects every store of personal data:
 | Completed background jobs ([§17.2](17-conventions.md)) | 24 hours |
 | Failed background jobs ([§17.2](17-conventions.md)) | 30 days |
 | Outgoing webhook delivery logs ([§12.4](12-api-webhooks-import.md)) | 30 days |
-| Security and access logs with IP addresses | 14 days |
+| Security and access logs with IP addresses, and the IP addresses of the administrative audit log ([§13.5](#135-security)) | 14 days |
 | Keycloak login and admin events | 90 days |
-| Administrative audit log | Kept for the lifetime of the installation |
+| Administrative audit log | Kept for the lifetime of the installation; the IP address of an entry is removed after 14 days |
 
 ## 13.3 Attachments
 
@@ -107,16 +107,16 @@ Anonymization of an account affects every store of personal data:
 ### Logs
 
 - Technical logs may contain **pseudonymous identifiers** (user, ticket, project and organization UUIDs). They never contain names, e-mail addresses, free text (ticket content, search queries), tokens or passwords ([§17.2](17-conventions.md)).
-- IP addresses appear only in security and access logs, with the retention given in [§13.2](#132-personal-data-protection-gdpr).
+- IP addresses appear only in security and access logs and in the security events of the administrative audit log, all with the retention given in [§13.2](#132-personal-data-protection-gdpr).
 - Access logs never record query strings, `Authorization` or `Cookie` headers. Secrets (invitation, setup and reply tokens) and search text are never placed in URL query strings.
 - Keycloak login and admin events are enabled, with the retention given in [§13.2](#132-personal-data-protection-gdpr).
 
 ### Administrative audit log
 
-The following are recorded with author, timestamp, target and (for security events) IP address. The log is immutable and available to the Administrator.
+The following are recorded with author, timestamp, target and (for security events) IP address. The log is immutable – except that the IP address of an entry is removed after 14 days ([§13.2](#132-personal-data-protection-gdpr)) – and available to the Administrator.
 
 - An entry (`audit_log_entries`) holds the action (`resource.event`, [§17.1](17-conventions.md), e.g. `setup_token.used`), the acting account (none for the system), the target record (model name and ID) and the client IP of a security event. It is written in the transaction of the change it records ([§18.3](18-code-patterns.md)).
-- Immutability is enforced by the database: a trigger refuses every `UPDATE`, `DELETE` and `TRUNCATE` of the table. The entries have no foreign keys, so they never block or follow the deletion of a record; anonymization keeps the IDs, which then point to the tombstone ([§13.2](#132-personal-data-protection-gdpr)).
+- Immutability is enforced by the database: a trigger refuses every `DELETE` and `TRUNCATE` of the table and every `UPDATE` except one that only sets the IP address of an entry to `NULL`. A recurring job of the Worker removes, every hour, the IP addresses of the entries older than 14 days ([§17.2](17-conventions.md)); the entry itself is kept. The entries have no foreign keys, so they never block or follow the deletion of a record; anonymization keeps the IDs, which then point to the tombstone ([§13.2](#132-personal-data-protection-gdpr)).
 - Recorded so far: the use of the setup token (`setup_token.used`, by the Administrator it created, with the client IP). Each feature task adds the entries of its actions from the list below.
 
 - Changes of roles, project membership, organizations and their members and e-mail domains, SLA policies, templates, integration configuration and GitHub repository linking.

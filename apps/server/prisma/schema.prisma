@@ -104,9 +104,10 @@ model SetupToken {
 }
 
 /// An entry of the administrative audit log (§13.5): who did what to which record, and when; the
-/// client IP for security events. The log is immutable – a trigger of the migration refuses every
-/// update and delete – and has no foreign keys, so no deletion elsewhere is blocked by it or
-/// removes it; anonymization keeps the IDs, which then point to the tombstone (§13.2).
+/// client IP for security events, removed after 14 days (§13.2). The log is immutable – a trigger of
+/// the migrations refuses every delete and every update except setting `ipAddress` to null – and has
+/// no foreign keys, so no deletion elsewhere is blocked by it or removes it; anonymization keeps
+/// the IDs, which then point to the tombstone (§13.2).
 model AuditLogEntry {
   id         String   @id @default(uuid(7)) @db.Uuid
   /// `resource.event` (§17.1), e.g. `setup_token.used`.
@@ -116,7 +117,7 @@ model AuditLogEntry {
   /// The Prisma model name of the target record, e.g. `User`.
   targetType String   @map("target_type")
   targetId   String   @map("target_id") @db.Uuid
-  /// The client IP of a security event.
+  /// The client IP of a security event; removed after 14 days by the Worker (§13.2).
   ipAddress  String?  @map("ip_address") @db.Inet
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 

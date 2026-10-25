@@ -1,4 +1,5 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { AuditLogEntriesWorkerModule } from './modules/audit-log-entries/audit-log-entries-worker.module.js';
 import type { TrybunConfig } from './platform/config/config.schema.js';
 import { ClockModule } from './platform/clock/clock.module.js';
 import { ConfigModule } from './platform/config/config.module.js';
@@ -26,6 +27,7 @@ export class WorkerModule {
         I18nModule,
         QueuesModule,
         OutboxWorkerModule.forRoot([]),
+        AuditLogEntriesWorkerModule,
         HeartbeatModule,
       ],
     };
