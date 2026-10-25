@@ -606,7 +606,9 @@ uninstall() {
     warn 'No external S3 storage is configured (TRYBUN_BACKUP_S3_URL), so no backup of Trybun will remain anywhere: the backups on this server are deleted too.'
   fi
   confirmation=$(ask "Type the domain of this installation ($domain) to delete Trybun from this server: " '')
-  [ -n "$domain" ] && [ "$confirmation" = "$domain" ] || fail 'Uninstall stopped. Nothing was changed.'
+  if [ -z "$domain" ] || [ "$confirmation" != "$domain" ]; then
+    fail 'Uninstall stopped. Nothing was changed.'
+  fi
 
   if [ -n "$s3_url" ] && [ -n "$volumes" ]; then
     run_backup uninstall ||
