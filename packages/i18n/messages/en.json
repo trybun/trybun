@@ -118,6 +118,9 @@
   },
   "ui": {
     "close": "Close",
+    "passwordInput": {
+      "show": "Show password"
+    },
     "toast": {
       "close": "Close notification"
     },
