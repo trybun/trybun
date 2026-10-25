@@ -76,7 +76,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 ### Background jobs and scheduling
 
 - All delayed and recurring work runs in the Worker on **BullMQ** ([§14.2](14-architecture.md)):
-  - recurring jobs (e.g. retention anonymization, GitHub delivery reconciliation, purging old records) use BullMQ job schedulers (`upsertJobScheduler` with a stable scheduler ID), so each run happens once regardless of the number of Worker replicas;
+  - recurring jobs (e.g. retention anonymization, GitHub delivery reconciliation, purging old records, removing the IP addresses of the audit log after 14 days) use BullMQ job schedulers (`upsertJobScheduler` with a stable scheduler ID), so each run happens once regardless of the number of Worker replicas;
   - timers (e.g. SLA deadlines, automatic closing after resolution confirmation, [§4.3](04-ticket-lifecycle.md)) and notification batching ([§6.7](06-comments-notifications.md)) are delayed jobs deduplicated by a key derived from the subject (e.g. `notification-batch-<recipientId>-<ticketId>`) in BullMQ's debounce mode (`replace`, `extend`), so rescheduling replaces the pending job instead of adding a second one. A timer job carries only identifiers; its handler reads the current state and does nothing when the timer no longer applies (e.g. the ticket has left `waiting_for_requester`), so timers are never cancelled. The delay of a notification batch is computed from the first pending change, which keeps the 10-minute limit of [§6.7](06-comments-notifications.md);
   - work that must be enqueued only once (outbox events, outgoing webhook deliveries) uses a custom `jobId` equal to the unique ID of its source; BullMQ ignores a second job with the same ID while the first one is kept.
 - Job IDs and deduplication keys never contain `:` (reserved by BullMQ) and never consist of digits only ([§17.1](#171-code-naming-conventions)).
@@ -140,7 +140,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
   - Each completed request is logged once with the method, the route template, the status and the response time; health checks are not logged. Errors are logged with their type, code and stack frames, without their message, which may quote personal data.
 - **What logs may contain**:
   - Allowed: pseudonymous IDs (UUIDs of users, tickets, projects, organizations, tokens), error codes, HTTP method, route template and status.
-  - IP addresses only in access and security logs (Caddy, Keycloak events, rate limiting), kept for at most **14 days**.
+  - IP addresses only in access and security logs (Caddy, Keycloak events, rate limiting) and in the security events of the administrative audit log ([§13.5](13-non-functional.md)), kept for at most **14 days**.
   - Never: names, e-mail addresses, ticket or comment content, search text, tokens, passwords, secrets or cookies ([§13.2](13-non-functional.md)).
 - **No secrets or search text in URLs**, because URLs end up in access logs, browser history and `Referer` headers: setup and invitation tokens are submitted in the request body (or the URL fragment, which is never sent to the server), and the search query of the global search ([§8.5](08-team-views.md)) is kept in client state and sent in the request body. Caddy access logs record paths without query strings and never log the `Authorization` or `Cookie` headers ([§15.9](15-deployment.md)).
 - **Health endpoints** of the API (internal network only, [§14.4](14-architecture.md)):

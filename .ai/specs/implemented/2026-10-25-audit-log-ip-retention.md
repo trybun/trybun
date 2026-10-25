@@ -2,19 +2,19 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-10-25 |
 | Plan task | `S0-21` |
 | System specification sections | §13.2, §13.5, §17.2, §18.3 |
-| Related issues / PRs | [#87](https://github.com/trybun/trybun/issues/87) (this task), [#86](https://github.com/trybun/trybun/pull/86) (S0-14, which found the contradiction) |
+| Related issues / PRs | [#87](https://github.com/trybun/trybun/issues/87) (this task), [#86](https://github.com/trybun/trybun/pull/86) (S0-14, which found the contradiction), [#88](https://github.com/trybun/trybun/pull/88) (specification) |
 
 ## Context
 
 The specification gives the IP addresses of the administrative audit log two retention rules:
 
-- [§13.5](../../docs/spec/13-non-functional.md) "Administrative audit log": entries are recorded "with author, timestamp, target and (for security events) IP address", and "the log is immutable".
-- [§13.2](../../docs/spec/13-non-functional.md) "Retention of technical records": "Security and access logs with IP addresses" are kept for **14 days**, the "Administrative audit log" for the **lifetime of the installation**.
-- [§13.5](../../docs/spec/13-non-functional.md) "Logs" and [§17.2](../../docs/spec/17-conventions.md) "Logging and monitoring": IP addresses appear **only** in security and access logs, kept for **at most 14 days**.
+- [§13.5](../../../docs/spec/13-non-functional.md) "Administrative audit log": entries are recorded "with author, timestamp, target and (for security events) IP address", and "the log is immutable".
+- [§13.2](../../../docs/spec/13-non-functional.md) "Retention of technical records": "Security and access logs with IP addresses" are kept for **14 days**, the "Administrative audit log" for the **lifetime of the installation**.
+- [§13.5](../../../docs/spec/13-non-functional.md) "Logs" and [§17.2](../../../docs/spec/17-conventions.md) "Logging and monitoring": IP addresses appear **only** in security and access logs, kept for **at most 14 days**.
 
 S0-14 followed §13.5 "Administrative audit log". The entry `setup_token.used` stores the client IP in `audit_log_entries.ip_address` (`inet`). The trigger `audit_log_entries_immutable_rows` refuses every `UPDATE` and `DELETE`, so the IP can never be removed. Every later security event of the audit log (use of the break-glass Administrator account, revocation of tokens, data exports) adds more entries of this kind.
 
@@ -29,7 +29,7 @@ An IP address is personal data. The 14 days of §13.2 are the period in which it
 
 ## Non-goals
 
-- Backups: the database backups keep the IPs until the backup expires (default 30 days, [§13.6](../../docs/spec/13-non-functional.md)), like every other removed personal data ([§13.2](../../docs/spec/13-non-functional.md), "Backups – not modified").
+- Backups: the database backups keep the IPs until the backup expires (default 30 days, [§13.6](../../../docs/spec/13-non-functional.md)), like every other removed personal data ([§13.2](../../../docs/spec/13-non-functional.md), "Backups – not modified").
 - The retention of the other records with IP addresses (Caddy access logs, Keycloak events, rate limiting): unchanged.
 - An Administrator view of the audit log: a later feature task.
 - A configurable retention period: 14 days are fixed, like the other periods of §13.2.
@@ -56,15 +56,15 @@ A new migration replaces the row trigger of `audit_log_entries`:
 - `DELETE` and `TRUNCATE`: still refused.
 - `UPDATE`: allowed only when `ip_address` changes from a value to `NULL` and every other column is unchanged (`IS NOT DISTINCT FROM`); any other `UPDATE` is refused with the existing message (`RAISE EXCEPTION`, `P0001`, see `.ai/memory/prisma.md`).
 - The trigger does not check the age of the entry (open question 2).
-- A partial index `audit_log_entries_ip_address_created_at_idx` on `created_at` `WHERE ip_address IS NOT NULL`, so the run reads only entries that still have an IP.
+- The run uses the existing index on `created_at`. A partial index on the entries that still have an IP was dropped while implementing: Prisma ORM 7 models partial indexes only as a preview feature, and an index the schema does not model would be dropped by the next generated migration; the audit log holds administrative actions only, so the range scan stays small.
 
 ### Retention job
 
-- The module `audit-log-entries` gets `audit-log-entries-worker.module.ts` with a queue `audit-log-entries` and a recurring job `audit-log-entries-ip-expiry`, registered with `upsertJobScheduler` under the same stable ID ([§17.2](../../docs/spec/17-conventions.md), [§18.3](../../docs/spec/18-code-patterns.md)), following the purge of the outbox (`OutboxWorkerModule`) as the reference implementation.
+- The module `audit-log-entries` gets `audit-log-entries-worker.module.ts` with a queue `audit-log-entries` and a recurring job `audit-log-entries-ip-expiry`, registered with `upsertJobScheduler` under the same stable ID ([§17.2](../../../docs/spec/17-conventions.md), [§18.3](../../../docs/spec/18-code-patterns.md)), following the purge of the outbox (`OutboxWorkerModule`) as the reference implementation.
 - It runs **every hour** (open question 1) and executes one statement:
   `UPDATE audit_log_entries SET ip_address = NULL WHERE ip_address IS NOT NULL AND created_at < now() - interval '14 days'`.
 - The statement is idempotent: a second run, or a run of another replica, finds no rows. The job scheduler with a stable ID makes one run per interval regardless of the number of Worker replicas.
-- The run logs the number of entries changed, never an IP ([§17.2](../../docs/spec/17-conventions.md)).
+- The run logs the number of entries changed, never an IP ([§17.2](../../../docs/spec/17-conventions.md)).
 - The run is not itself recorded in the audit log: it changes no record and would add one entry per hour; it is a technical retention step like the purge of the outbox, not an "automatic retention run" of the anonymization of §13.2.
 
 ## Changes to the system specification
@@ -81,21 +81,23 @@ New or changed glossary terms: none.
 
 ## Open questions
 
-Implementation must not start until every question has an answer. Each question has a proposed answer, approved by merging this pull request.
+Implementation must not start until every question has an answer. The answers were approved with the specification pull request (#88).
 
-1. How often does the retention job run? — **Proposed answer:** every hour, like the purge of the outbox. §17.2 says "at most 14 days"; a daily run would keep an IP for up to 15 days. An hourly run keeps it for at most 14 days and 1 hour and costs one indexed statement that usually changes no row.
-2. Does the trigger also check that the entry is older than 14 days? — **Proposed answer:** no. The only change it allows removes data, which never harms privacy, and the period stays in one place (the job). Checking the age in the trigger would duplicate the constant in a migration.
-3. Option A, B, C or D? — **Proposed answer:** A.
+1. How often does the retention job run? — **Answer:** every hour, like the purge of the outbox. §17.2 says "at most 14 days"; a daily run would keep an IP for up to 15 days. An hourly run keeps it for at most 14 days and 1 hour and costs one indexed statement that usually changes no row.
+2. Does the trigger also check that the entry is older than 14 days? — **Answer:** no. The only change it allows removes data, which never harms privacy, and the period stays in one place (the job). Checking the age in the trigger would duplicate the constant in a migration.
+3. Option A, B, C or D? — **Answer:** A.
 
 ## Acceptance criteria
 
-- [ ] §13.2, §13.5 and §17.2 state one retention rule for the IP addresses of the audit log
-- [ ] An entry with an IP keeps it for 14 days and has none after the next run; the entry itself remains (integration test, Testcontainers)
-- [ ] Every other `UPDATE` of an entry (another column, the IP changed to another value, the IP set together with another column) and every `DELETE` and `TRUNCATE` are refused by the database (integration test)
-- [ ] A second run changes no row; the job scheduler has one stable ID (integration test)
-- [ ] The run logs no IP address
+- [x] §13.2, §13.5 and §17.2 state one retention rule for the IP addresses of the audit log
+- [x] An entry with an IP keeps it for 14 days and has none after the next run; the entry itself remains (integration test, Testcontainers)
+- [x] Every other `UPDATE` of an entry (another column, the IP changed to another value, the IP set together with another column) and every `DELETE` and `TRUNCATE` are refused by the database (integration test)
+- [x] A second run changes no row; the job scheduler has one stable ID (integration test)
+- [x] The run logs no IP address
 - Rule 9 and user documentation and product tours: not affected (no user interface)
 
 ## Changelog
 
 - 2026-10-25 – Created.
+- 2026-10-25 – Approved (#88): option A, hourly run, no age check in the trigger.
+- 2026-10-25 – Implemented; the partial index was dropped (see "Database"). Status `implemented`.
