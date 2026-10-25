@@ -66,6 +66,8 @@ test.describe('application shell', () => {
       shell.accountMenu,
       shell.navigation.getByRole('link', { name: 'Home' }),
     ]) {
+      // A menu of the header is streamed after the page on the first request of a route.
+      await expect(target).toBeVisible();
       const box = await target.boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(minimum);
       expect(box?.width).toBeGreaterThanOrEqual(minimum);
