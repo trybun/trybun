@@ -43,7 +43,8 @@ quickLoginCheckMilliSeconds: 1000
 minimumQuickLoginWaitSeconds: 60
 
 # Lifetimes (§14.4): 5-minute access tokens, refresh tokens rotated on every use. The session
-# lifetimes are those of end users; the web session ends idle team sessions earlier (S0-14).
+# lifetimes are those of end users; the web session ends the sessions of the team earlier, with
+# their Keycloak session (apps/web/src/lib/auth/session-lifetimes.ts, which the tests check).
 accessTokenLifespan: 300
 ssoSessionIdleTimeout: 28800
 ssoSessionMaxLifespan: 2592000

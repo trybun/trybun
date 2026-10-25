@@ -95,7 +95,9 @@ Anonymization of an account affects every store of personal data:
 - Reference for security requirements: **OWASP ASVS** (Rule 1).
 - Dependencies are monitored for vulnerabilities and kept up to date according to Rule 10 ([§2.10](02-agent-rules.md)).
 - HTTPS only, with HSTS.
-- Security headers set in one place: a strict Content Security Policy with nonces (Next.js), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` with only the features used, and framing denied (`frame-ancestors 'none'`).
+- Security headers set in one place – the proxy of the web application (`apps/web/src/proxy.ts`, [§18.5](18-code-patterns.md)) for every page – a strict Content Security Policy with nonces (Next.js), HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` with only the features used, and framing denied (`frame-ancestors 'none'`, `X-Frame-Options: DENY`). Keycloak sets its own headers on its sign-in pages.
+  - The policy: `default-src 'self'`; scripts only with the nonce of the request (`script-src 'self' 'nonce-…' 'strict-dynamic'`, `'unsafe-eval'` only under `next dev`); style elements only with the nonce, style attributes allowed (`style-src-attr 'unsafe-inline'`: they cannot run scripts, and `next/image` and the positioning of overlays use them); images also from `data:` and `blob:`; `object-src 'none'`; `base-uri 'none'`; forms only to the web application and Keycloak; `upgrade-insecure-requests` on HTTPS.
+  - Every page is rendered per request, because Next.js adds the nonce while rendering. Browser code never needs `eval`: Zod validates without compiling its schemas (`jitless`, set in `instrumentation-client.ts`).
 - Passwords follow the password policy of [§7.4](07-users-organizations-permissions.md) (OWASP ASVS 5.0 V6, NIST SP 800-63B); its offline blocklist of common and breached passwords (`docker/keycloak/password-blocklists/`, from SecLists) is part of the deployment package and is updated with the dependencies (Rule 10); no password data is sent to an online breach service.
 - Protection against brute-force login attempts (brute-force detection in Keycloak), rate limiting of the API ([§14.4](14-architecture.md)), expiry of inactive sessions, CSRF protection.
 - Secrets (e.g. the GitHub App private key) are kept out of code and the repository, in a secure secret store / environment configuration ([§15.3](15-deployment.md)).
@@ -112,6 +114,10 @@ Anonymization of an account affects every store of personal data:
 ### Administrative audit log
 
 The following are recorded with author, timestamp, target and (for security events) IP address. The log is immutable and available to the Administrator.
+
+- An entry (`audit_log_entries`) holds the action (`resource.event`, [§17.1](17-conventions.md), e.g. `setup_token.used`), the acting account (none for the system), the target record (model name and ID) and the client IP of a security event. It is written in the transaction of the change it records ([§18.3](18-code-patterns.md)).
+- Immutability is enforced by the database: a trigger refuses every `UPDATE`, `DELETE` and `TRUNCATE` of the table. The entries have no foreign keys, so they never block or follow the deletion of a record; anonymization keeps the IDs, which then point to the tombstone ([§13.2](#132-personal-data-protection-gdpr)).
+- Recorded so far: the use of the setup token (`setup_token.used`, by the Administrator it created, with the client IP). Each feature task adds the entries of its actions from the list below.
 
 - Changes of roles, project membership, organizations and their members and e-mail domains, SLA policies, templates, integration configuration and GitHub repository linking.
 - Creation and revocation of tokens, webhook configuration, imports and their rollbacks.

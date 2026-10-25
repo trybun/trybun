@@ -125,7 +125,7 @@ If an update fails, the script prints the **restore** command with the ID of the
 
 ## 15.8 HTTPS
 
-The reverse proxy (Caddy) obtains and renews HTTPS certificates automatically. On a new server HTTPS works without manual configuration. HSTS is sent with `max-age=31536000; includeSubDomains` (without `preload`, so the Administrator can still move the domain).
+The reverse proxy (Caddy) obtains and renews HTTPS certificates automatically. On a new server HTTPS works without manual configuration. HSTS is sent with `max-age=31536000; includeSubDomains` (without `preload`, so the Administrator can still move the domain) by the web application with its other security headers ([§13.5](13-non-functional.md)), and by Keycloak on its sign-in pages.
 
 ## 15.9 Container configuration rules
 

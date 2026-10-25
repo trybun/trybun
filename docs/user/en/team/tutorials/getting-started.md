@@ -14,6 +14,8 @@ Trybun is where the team handles the tickets of customers and its own work. This
 
 After signing in you see the **Home** page, and a short tour shows you around it. Follow it with **Next**, or close it with **Esc** – you can [take it again](../how-to/take-a-product-tour-again.md) at any time.
 
+To protect the data of your customers, Trybun signs you out after 30 minutes without activity, and 12 hours after you signed in even if you keep working. Sign in again with your GitHub account and a new one-time code.
+
 ## Find your way around
 
 - The **header** at the top shows the Trybun logo, which always takes you back to **Home**. On its right are the help menu (question mark) and your account menu with the language switch and **Sign out**.

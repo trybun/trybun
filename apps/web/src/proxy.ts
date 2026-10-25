@@ -27,7 +27,7 @@ export function contentSecurityPolicy({
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,
     `style-src 'self' 'nonce-${nonce}'`,
-    // Positions and sizes of overlays and components are set as style attributes.
+    // Style attributes cannot run scripts; `next/image` and the positioning of overlays use them.
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
