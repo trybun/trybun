@@ -311,6 +311,27 @@ describe('./trybun install – .env', () => {
   });
 });
 
+describe('./trybun install on a system that is set up', () => {
+  it('ends successfully with the message of the setup-token command', () => {
+    writeFileSync(envPath(), 'TRYBUN_DOMAIN=trybun.example.com\n');
+    const result = trybun('install', {
+      STUB_RUNNING: 'caddy\n',
+      STUB_SETUP_OUTPUT: 'Trybun is already set up.',
+      STUB_SETUP_EXIT: '3',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Trybun is already set up.');
+  });
+
+  it('fails when the setup-token command fails', () => {
+    writeFileSync(envPath(), 'TRYBUN_DOMAIN=trybun.example.com\n');
+    const result = trybun('install', { STUB_RUNNING: 'caddy\n', STUB_SETUP_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+  });
+});
+
 describe('./trybun setup-token', () => {
   it('passes the output and the exit code of the setup-token command through', () => {
     const result = trybun('setup-token', {

@@ -268,7 +268,7 @@ describe('first-run wizard', () => {
 
       const code = await runSetupTokenCommand(setup, config.domain, output);
 
-      expect(code).toBe(1);
+      expect(code).toBe(3);
       expect(output.errors.join('')).toContain('already set up');
       expect(await prisma.setupToken.count()).toBe(0);
     });

@@ -269,6 +269,16 @@ setup_token() {
   docker compose exec -T api node dist/cli.js setup-token
 }
 
+# Exit code of setup-token once an Administrator exists (apps/server/src/modules/setup).
+ALREADY_SET_UP=3
+
+# The setup link at the end of the installation; a system that is already set up is complete.
+print_setup_link() {
+  status=0
+  setup_token || status=$?
+  [ "$status" -eq 0 ] || [ "$status" -eq "$ALREADY_SET_UP" ] || exit "$status"
+}
+
 install() {
   check_prerequisites
   if [ -e .env ]; then
@@ -281,7 +291,7 @@ install() {
   say 'Starting Trybun (docker compose up -d --wait). The first start downloads the images and takes a few minutes.'
   docker compose up -d --wait ||
     fail "Trybun did not start. See docker compose ps and docker compose logs <service>, fix the cause (often a setting in .env) and run ./trybun install again; .env is kept."
-  setup_token
+  print_setup_link
 }
 
 cd "$(dirname -- "$0")"

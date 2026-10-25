@@ -8,6 +8,12 @@ export interface CommandOutput {
 }
 
 /**
+ * The exit code once an Administrator exists: `./trybun install` treats it as a completed
+ * installation, `./trybun setup-token` passes it on.
+ */
+export const ALREADY_SET_UP_EXIT_CODE = 3;
+
+/**
  * `setup-token` (§15.6), run by `./trybun setup-token` in the `api` container: prints a new setup
  * link, or refuses once an Administrator exists. Returns the exit code.
  */
@@ -34,7 +40,7 @@ export async function runSetupTokenCommand(
       output.error(
         `Trybun is already set up: an Administrator exists. Sign in at https://${domain}.\n`,
       );
-      return 1;
+      return ALREADY_SET_UP_EXIT_CODE;
     }
     throw error;
   }
