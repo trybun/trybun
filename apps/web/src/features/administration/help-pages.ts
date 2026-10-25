@@ -1,0 +1,10 @@
+import type { GettingStartedItemId } from '@trybun/contracts/administration';
+
+/**
+ * The help page that explains each item of the getting-started checklist (§15.6): the settings
+ * live in `.env`, which the browser cannot change.
+ */
+export const GETTING_STARTED_HELP: Record<GettingStartedItemId, string> = {
+  configure_github_sign_in: 'administrator/how-to/configure-github-sign-in',
+  configure_email: 'administrator/how-to/configure-email',
+};

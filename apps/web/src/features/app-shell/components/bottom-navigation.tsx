@@ -1,15 +1,19 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@trybun/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
-import { isCurrent, NAVIGATION_ITEMS } from '../navigation.js';
+import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { currentUserQueryOptions } from '../../users/queries.js';
+import { isCurrent, navigationItemsFor } from '../navigation.js';
 
 /** The bottom navigation of phones (§2.9), above the home indicator. */
 export function BottomNavigation() {
   const t = useTranslations('appShell');
   const pathname = usePathname();
+  const { data: user } = useQuery(currentUserQueryOptions(browserApiClient));
   return (
     <nav
       aria-label={t('mainNavigation')}
@@ -17,7 +21,7 @@ export function BottomNavigation() {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-safe-offset-0 md:hidden"
     >
       <ul className="flex">
-        {NAVIGATION_ITEMS.map(({ href, labelKey, icon }) => {
+        {navigationItemsFor(user?.allowedActions, 'phone').map(({ href, labelKey, icon }) => {
           const Icon = icon;
           const isCurrentPage = isCurrent(href, pathname);
           return (

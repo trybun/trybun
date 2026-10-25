@@ -24,6 +24,7 @@ async function renderShell(locale: 'en' | 'pl' = 'en') {
     displayName: 'Dorota Developer',
     email: 'developer@example.com',
     kind: 'team',
+    allowedActions: [],
   });
   const { prelude } = await prerender(
     <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">

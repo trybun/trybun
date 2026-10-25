@@ -3,7 +3,9 @@
     "title": "Trybun"
   },
   "signIn": {
-    "redirecting": "Przekierowanie do logowania…"
+    "redirecting": "Przekierowanie do logowania…",
+    "notSetUpTitle": "Trybun nie jest jeszcze skonfigurowany",
+    "notSetUpText": "Otwórz link konfiguracyjny wypisany przez <command>./trybun install</command> albo uruchom na serwerze <command>./trybun setup-token</command>, aby otrzymać nowy link."
   },
   "appShell": {
     "skipToContent": "Przejdź do treści",
@@ -13,7 +15,8 @@
     "home": "Strona główna",
     "accountMenu": "Menu konta",
     "language": "Język",
-    "signOut": "Wyloguj się"
+    "signOut": "Wyloguj się",
+    "administration": "Administracja"
   },
   "languages": {
     "en": "English",
@@ -21,6 +24,52 @@
   },
   "home": {
     "title": "Strona główna"
+  },
+  "administration": {
+    "title": "Administracja",
+    "sections": "Sekcje panelu Administratora",
+    "gettingStarted": "Pierwsze kroki",
+    "about": "O systemie",
+    "progress": "Ukończono {done} z {total}",
+    "allDone": "Wszystko z tej listy jest skonfigurowane.",
+    "done": "Gotowe",
+    "toDo": "Do zrobienia",
+    "optional": "Opcjonalne",
+    "howTo": "Jak to zrobić",
+    "items": {
+      "configure_github_sign_in": {
+        "title": "Skonfiguruj logowanie przez GitHub",
+        "description": "Członkowie zespołu logują się przez GitHub. Wymagane, zanim zaprosisz zespół."
+      },
+      "configure_email": {
+        "title": "Skonfiguruj e-mail",
+        "description": "Bez serwera SMTP Trybun nie wysyła e-maili, więc linki z zaproszeniami trzeba przekazywać ręcznie."
+      }
+    },
+    "version": "Wersja",
+    "license": "Licencja",
+    "licenseName": "Licencja MIT"
+  },
+  "setup": {
+    "title": "Skonfiguruj Trybun",
+    "intro": "Utwórz pierwsze konto Administratora. Uwierzytelnianie dwuskładnikowe skonfigurujesz przy pierwszym logowaniu.",
+    "checking": "Sprawdzanie linku konfiguracyjnego…",
+    "invalidTitle": "Ten link konfiguracyjny jest nieprawidłowy lub wygasł",
+    "invalidText": "Uruchom na serwerze <command>./trybun setup-token</command>, aby otrzymać nowy link.",
+    "completedTitle": "Trybun jest już skonfigurowany",
+    "signIn": "Zaloguj się",
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "email": "Adres e-mail",
+    "password": "Hasło",
+    "passwordDescription": "Logujesz się tym hasłem i jednorazowym kodem z aplikacji uwierzytelniającej.",
+    "language": "Twój język",
+    "timeZone": "Twoja strefa czasowa",
+    "systemDefaults": "Domyślny język systemu: {language}; domyślna strefa czasowa: {timeZone}. Oba ustawienia są w pliku <file>.env</file> i tam się je zmienia, a potem uruchamia <command>docker compose up -d --wait</command>.",
+    "submit": "Utwórz konto Administratora",
+    "submitting": "Tworzenie konta…",
+    "doneTitle": "Twoje konto jest gotowe",
+    "doneText": "Zaloguj się adresem e-mail i hasłem. Trybun poprosi wtedy o skonfigurowanie uwierzytelniania dwuskładnikowego w aplikacji uwierzytelniającej."
   },
   "help": {
     "open": "Pomoc",
@@ -93,6 +142,12 @@
     "authentication": {
       "required": "Twoja sesja wygasła. Zaloguj się ponownie.",
       "second_factor_required": "Zaloguj się ponownie z uwierzytelnianiem dwuskładnikowym."
+    },
+    "setup": {
+      "token_invalid": "Ten link konfiguracyjny jest nieprawidłowy lub wygasł. Uruchom na serwerze ./trybun setup-token, aby otrzymać nowy link.",
+      "completed": "Trybun jest już skonfigurowany. Zaloguj się.",
+      "password_rejected": "To hasło nie spełnia zasad haseł. Wybierz dłuższe.",
+      "email_taken": "Konto z tym adresem e-mail już istnieje."
     },
     "server": {
       "internal_error": "Coś poszło nie tak. Spróbuj ponownie później.",

@@ -8,13 +8,15 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLinkItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@trybun/ui/components/dropdown-menu';
-import { LogOutIcon, UserIcon } from 'lucide-react';
+import { LogOutIcon, SettingsIcon, UserIcon } from 'lucide-react';
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
@@ -41,8 +43,9 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * The user menu of the header: the signed-in account, the language switch (§13.1) and the
- * sign-out. The account comes from the query prefetched by the application shell (§18.5).
+ * The user menu of the header: the signed-in account, the Administrator panel for Administrators,
+ * the language switch (§13.1) and the sign-out. The account comes from the query prefetched by
+ * the application shell (§18.5).
  */
 export function UserMenu() {
   const t = useTranslations('appShell');
@@ -78,6 +81,13 @@ export function UserMenu() {
                 <span className="truncate">{user.email}</span>
               )}
             </DropdownMenuLabel>
+          )}
+          {user?.allowedActions.includes('open_administration') === true && (
+            // The way to the Administrator panel on phones, whose bottom navigation leaves it out.
+            <DropdownMenuLinkItem render={<Link href="/admin" />}>
+              <SettingsIcon aria-hidden />
+              {t('administration')}
+            </DropdownMenuLinkItem>
           )}
           <DropdownMenuItem onClick={() => void signOutOfSession()}>
             <LogOutIcon aria-hidden />
