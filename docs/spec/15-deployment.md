@@ -39,7 +39,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
   - `backup` – the backup service ([§15.10](#1510-backups)): restic, rclone and the PostgreSQL client of the same major version, based on the official PostgreSQL Alpine image pinned to a digest.
 
   The server only pulls ready images.
-- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the `trybun` script, an installation guide (`INSTALL.md`) and `CHANGELOG.md`. `trybun` is one POSIX shell script with a subcommand per task – `install` and `setup-token` ([§15.5](#155-installation), [§15.6](#156-first-run-wizard)), and `update`, `restore` and `backup` ([§15.7](#157-updates), [§15.10](#1510-backups)) – and needs no Node.js on the server. Its `compose.yaml` pulls the images of the release (`X.Y.Z`) and builds nothing. The release also contains the SBOM of every image and a `SHA256SUMS` file with the checksums of all its files. Source code is not needed for installation.
+- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the `trybun` script, an installation guide (`INSTALL.md`) and `CHANGELOG.md`. `trybun` is one POSIX shell script with a subcommand per task – `install` and `setup-token` ([§15.5](#155-installation), [§15.6](#156-first-run-wizard)), `update`, `restore` and `backup` ([§15.7](#157-updates), [§15.10](#1510-backups)), and `uninstall` ([§15.5](#155-installation)) – and needs no Node.js on the server. Its `compose.yaml` pulls the images of the release (`X.Y.Z`) and builds nothing. The release also contains the SBOM of every image and a `SHA256SUMS` file with the checksums of all its files. Source code is not needed for installation.
 - `CHANGELOG.md` follows the *Keep a Changelog* convention and is generated from commit messages in the Conventional Commits format. Release notes clearly mark breaking changes and any manual steps.
 
 ### Releasing a PATCH version (example)
@@ -81,6 +81,14 @@ Installing on a new server:
 - Never overwrites an existing `.env`: when one exists, it skips the questions and the secrets, still runs the checks, starts the system and prints a new setup link while no Administrator exists – so re-running it is safe and resumes an interrupted installation.
 - Without `.env`, stops before the questions when Docker volumes of the installation's Compose project already exist: the database keeps the passwords of the `.env` it was created with, so new secrets cannot use it. It names the volumes and the two ways on: copy back the `.env` of that installation, or delete the data.
 - Finally starts the system (`docker compose up -d --wait`) and prints the first-run wizard URL with a **one-time setup token**.
+
+**Uninstall** (`./trybun uninstall`):
+
+- Removes Trybun from the server: the containers, networks and volumes of the installation's Compose project – both databases, the stored objects and the backups on the local volume – also of services whose profile is off, and the images of its services and containers. An image that another container of the server uses stays, with a warning. Docker itself and everything outside the project stay.
+- Needs `.env` (the Compose file needs it). It first says what it deletes and what stays – the folder of the package with `.env`, and the backups on the external S3 storage – and, without external S3 storage, warns that no backup will remain anywhere.
+- Deletes nothing until the Administrator types the domain of the installation (`TRYBUN_DOMAIN`).
+- With external S3 storage, it first takes a last backup (tag `uninstall`); when it fails, nothing is deleted.
+- Finally names the restore path (with S3) and the command that deletes the folder, after `.env` and the backup passphrase are kept outside the server. With nothing left, it reports that Trybun is not installed; so a re-run after a partial failure is safe.
 
 Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3 storage for backups, GitHub App and GitHub sign-in, Microsoft and Google sign-in) can be filled in `.env` now or later. The same SMTP settings are used by the server and by Keycloak (password reset, e-mail verification). Until SMTP is configured, the system works but sends no e-mails, invitation links are copied manually ([§7.4](07-users-organizations-permissions.md)), and the Administrator panel shows a warning. Until GitHub sign-in is configured, only the break-glass Administrator can sign in as a team member, and inviting team members is disabled with an explanation ([§15.6](#156-first-run-wizard)).
 
@@ -147,6 +155,7 @@ Containerization on Linux adds no significant performance overhead (containers a
 - Schedule and retention: daily at `TRYBUN_BACKUP_TIME` (`HH:MM` in UTC, default `03:00`); `restic forget --keep-daily N --keep-within Nd --prune` with `N` = `TRYBUN_BACKUP_KEEP_DAILY` (default 30, [§13.6](13-non-functional.md)), so the backups of the last 30 days and at least 30 daily ones are kept, relative to the newest backup.
 - `./trybun backup` creates a backup now and prints its IDs; `./trybun backup list` lists the backups of both repositories.
 - `./trybun restore [<backup>]` (default: the newest) asks for confirmation, stops all services, restores the snapshot from the local volume when it has it and else from the external S3 storage, brings back `.env` and the files of the deployment package, sets the passwords of the database users to those of `.env`, replaces both databases and the objects, and starts the system. So it can restore onto a clean server from the deployment package of any release, the `.env` kept outside the server – or a new `.env` of `./trybun install` with the passphrase and the S3 settings of the old one – and the passphrase alone.
+- `./trybun uninstall` ([§15.5](#155-installation)) deletes the backups on the local volume and keeps those on the external S3 storage, after a last backup to it.
 - Backups offered by the VPS provider (whole-machine snapshots) can be an additional safeguard but do not replace backups in another location.
 
 ## 15.11 Growth path

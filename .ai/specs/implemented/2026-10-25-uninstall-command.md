@@ -2,15 +2,15 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-10-25 |
 | Plan task | – |
 | System specification sections | §15.4, §15.5, §15.10 |
-| Related issues / PRs | [#99](https://github.com/trybun/trybun/pull/99) (the check for data of an earlier installation) |
+| Related issues / PRs | [#99](https://github.com/trybun/trybun/pull/99) (the check for data of an earlier installation), [#100](https://github.com/trybun/trybun/pull/100) (specification) |
 
 ## Context
 
-The `trybun` script of the deployment package installs, backs up, restores and updates Trybun ([§15.4](../../docs/spec/15-deployment.md)), but nothing removes it. An Administrator who tried Trybun on a server – the first test installation of 0.1.2 on a VPS – has to find the Docker commands themselves: stop the containers, delete the volumes and the networks, delete the images, in the right order (`docker compose down` needs `.env`). A forgotten volume breaks the next installation: a new `.env` cannot use the database of the old one ([#99](https://github.com/trybun/trybun/pull/99)).
+The `trybun` script of the deployment package installs, backs up, restores and updates Trybun ([§15.4](../../../docs/spec/15-deployment.md)), but nothing removes it. An Administrator who tried Trybun on a server – the first test installation of 0.1.2 on a VPS – has to find the Docker commands themselves: stop the containers, delete the volumes and the networks, delete the images, in the right order (`docker compose down` needs `.env`). A forgotten volume breaks the next installation: a new `.env` cannot use the database of the old one ([#99](https://github.com/trybun/trybun/pull/99)).
 
 ## Goals
 
@@ -21,7 +21,7 @@ The `trybun` script of the deployment package installs, backs up, restores and u
 ## Non-goals
 
 - Removing Docker itself, the membership of the group `docker` or anything outside the Compose project of the installation.
-- Deleting the backups on the external S3 storage: they stay under the retention of [§15.10](../../docs/spec/15-deployment.md); deleting them is a decision outside the server.
+- Deleting the backups on the external S3 storage: they stay under the retention of [§15.10](../../../docs/spec/15-deployment.md); deleting them is a decision outside the server.
 - Uninstalling without `.env`: the Compose file needs it. The message of `./trybun install` (#99) already names the commands for leftover data without `.env`.
 
 ## Proposed change
@@ -58,15 +58,21 @@ New or changed glossary terms: none.
 
 ## Acceptance criteria
 
-- [ ] `./trybun uninstall` deletes nothing unless the typed answer equals `TRYBUN_DOMAIN`; without a terminal answer it stops with "Nothing was changed."
-- [ ] With `TRYBUN_BACKUP_S3_URL` set, a backup tagged `uninstall` is taken first; a failed backup stops the command before anything is deleted.
-- [ ] Without it, the command warns that no backup will remain, before the confirmation.
-- [ ] Afterwards no container, network or volume with the label `com.docker.compose.project` of the installation exists, also for services of profiles that are off, and the images of the package's services are removed unless another container uses them.
-- [ ] The folder of the package and `.env` are unchanged; the output names `rm -rf <folder>` and the restore path.
-- [ ] `./trybun install` in the same folder after `uninstall` installs again from the kept `.env` (with its secrets) on empty volumes.
-- [ ] Script tests (`deploy/trybun.spec.js`) cover the confirmation, the backup with and without S3, a failing backup and a re-run; ShellCheck passes.
-- [ ] `./trybun --help`, `INSTALL.md` (EN) and the README describe the command; §15.4, §15.5 and §15.10 are updated.
+- [x] `./trybun uninstall` deletes nothing unless the typed answer equals `TRYBUN_DOMAIN`; without a terminal answer it stops with "Nothing was changed."
+- [x] With `TRYBUN_BACKUP_S3_URL` set, a backup tagged `uninstall` is taken first; a failed backup stops the command before anything is deleted.
+- [x] Without it, the command warns that no backup will remain, before the confirmation.
+- [x] Afterwards no container, network or volume with the label `com.docker.compose.project` of the installation exists, also for services of profiles that are off, and the images of the package's services are removed unless another container uses them.
+- [x] The folder of the package and `.env` are unchanged; the output names `rm -rf <folder>` and the restore path.
+- [ ] `./trybun install` in the same folder after `uninstall` installs again from the kept `.env` (with its secrets) on empty volumes – to be checked on the test VPS, see the changelog.
+- [x] Script tests (`deploy/trybun.spec.js`) cover the confirmation, the backup with and without S3, a failing backup and a re-run; ShellCheck passes.
+- [x] `./trybun --help`, `INSTALL.md` (EN) and the README describe the command; §15.4, §15.5 and §15.10 are updated.
 
 ## Changelog
 
 - 2026-10-25 – Created, with the answers of the maintainer to the open questions.
+- 2026-10-25 – Approved by merging #100.
+- 2026-10-25 – Implemented, with these refinements found while implementing:
+  - The images to delete are those of `docker compose config --images` and of the project's containers that are on the server; `--rmi all` of `docker compose down` is not used, because it fails on an image another container uses instead of keeping it.
+  - Leftover containers, volumes and networks of services whose profile is off are found by the label `com.docker.compose.project`, not with `--profile '*'`, which the oldest supported Compose (2.20.2) may not have.
+  - Without volumes (nothing to back up) no last backup is taken.
+  - The criterion "install again from the kept `.env`" is covered by the script tests of `install` with an existing `.env` and by #99, not by an end-to-end run: the only Docker host of the agents runs the maintainer's test installation.
