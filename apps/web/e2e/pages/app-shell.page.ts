@@ -31,11 +31,23 @@ export class AppShellPage {
   /** Opens the help menu (§2.3, §2.4). */
   async openHelpMenu(): Promise<Locator> {
     await this.help.click();
-    return this.page.getByRole('menu');
+    return this.openedMenu();
   }
 
   async openAccountMenu(): Promise<Locator> {
     await this.accountMenu.click();
-    return this.page.getByRole('menu');
+    return this.openedMenu();
+  }
+
+  /**
+   * The open menu once its opening animation has finished: during the fade-in its text is
+   * semi-transparent, and axe would measure a colour contrast nobody sees (#72).
+   */
+  private async openedMenu(): Promise<Locator> {
+    const menu = this.page.getByRole('menu');
+    await menu.evaluate((popup) =>
+      Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+    );
+    return menu;
   }
 }

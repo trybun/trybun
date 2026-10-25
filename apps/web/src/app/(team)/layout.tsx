@@ -1,10 +1,10 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { AppShell } from '../../features/app-shell/components/app-shell.js';
-import { HelpMenu } from '../../features/help/components/help-menu.js';
+import { LazyHelpMenu } from '../../features/help/components/lazy-help-menu.js';
 import { getHelpViews } from '../../features/help/help-content.js';
 import { getHelpReaderKind } from '../../features/help/reader.js';
-import { ProductTourMenuItems } from '../../features/product-tours/components/product-tour-menu-items.js';
+import { LazyProductTourMenuItems } from '../../features/product-tours/components/lazy-product-tour-menu-items.js';
 import { ProductTourProvider } from '../../features/product-tours/components/product-tour-provider.js';
 import { productTourProgressQueryOptions } from '../../features/product-tours/queries.js';
 import { currentUserQueryOptions } from '../../features/users/queries.js';
@@ -31,9 +31,9 @@ export default async function TeamLayout({ children }: { children: ReactNode }) 
       <ProductTourProvider>
         <AppShell
           help={
-            <HelpMenu views={helpViews}>
-              <ProductTourMenuItems />
-            </HelpMenu>
+            <LazyHelpMenu views={helpViews}>
+              <LazyProductTourMenuItems />
+            </LazyHelpMenu>
           }
         >
           {children}
