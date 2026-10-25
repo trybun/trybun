@@ -38,6 +38,9 @@ export const configSchema = z
       .string()
       .refine(isTimeZone, 'Invalid IANA time zone')
       .default('UTC'),
+    // Requests per minute of the API rate limits (§14.4).
+    TRYBUN_RATE_LIMIT_PER_USER: z.coerce.number().int().min(1).default(100),
+    TRYBUN_RATE_LIMIT_PER_IP: z.coerce.number().int().min(1).default(20),
     TRYBUN_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'silent']).default('info'),
     TRYBUN_WORKER_HEARTBEAT_FILE: z
       .string()
@@ -66,6 +69,7 @@ export const configSchema = z
     isBackupStorageConfigured: isSet(env.TRYBUN_BACKUP_S3_URL),
     defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
     defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
+    rateLimits: { user: env.TRYBUN_RATE_LIMIT_PER_USER, ip: env.TRYBUN_RATE_LIMIT_PER_IP },
     logLevel: env.TRYBUN_LOG_LEVEL,
     workerHeartbeatFile: env.TRYBUN_WORKER_HEARTBEAT_FILE,
   }));

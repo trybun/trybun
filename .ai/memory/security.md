@@ -18,7 +18,7 @@ Non-obvious behaviour found when the security baseline was built (S0-14, October
 - `ThrottlerGuard` sets `X-RateLimit-*` headers and throws `ThrottlerException`; `RateLimitGuard` overrides `handleRequest` for the IETF `RateLimit`/`RateLimit-Policy` headers and `AppError('request.rate_limited')`, and `generateKey` for one counter per user or IP across endpoints (the default key contains the controller and the handler).
 - `@nest-lab/throttler-storage-redis` 1.2 works with `ioredis` 6 when it gets an existing client. Without `enableOfflineQueue: false` an `ioredis` client queues commands while Valkey is down, and every request would hang instead of failing open.
 - Express `trust proxy` (`TRUSTED_PROXIES`) is set in `main.ts`; tests that need the client IP set it on their app too. `req.ip` of an IPv4 client of a dual-stack server is `::ffff:a.b.c.d`; PostgreSQL `inet` accepts both forms.
-- The E2E tests sign in as one seeded Developer in parallel; every page load counts against the limit of 100 requests per minute per user. If E2E starts to see `429`, spread the tests over more seeded accounts rather than raising the limit.
+- The E2E tests sign in as one seeded Developer in parallel; in CI they exceeded 100 requests per minute per user within a minute (#86: `request.rate_limited` in the web server log, menus and help pages empty). `playwright.config.ts` starts the API with `TRYBUN_RATE_LIMIT_PER_USER` and `_PER_IP` raised; a dev server reused locally keeps the defaults. The integration test of the rate limits checks the defaults.
 
 ## Session lifetimes (`apps/web/src/lib/auth/`)
 

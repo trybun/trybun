@@ -60,6 +60,9 @@ export default defineConfig({
       command: 'pnpm --filter @trybun/server start',
       url: 'http://localhost:3001/health',
       reuseExistingServer: !isCi,
+      // The parallel tests share the seeded accounts and the client IP, so the API they start
+      // allows more than the default rate limits; the integration tests check the defaults.
+      env: { TRYBUN_RATE_LIMIT_PER_USER: '10000', TRYBUN_RATE_LIMIT_PER_IP: '10000' },
     },
     {
       command: 'pnpm exec next start --port 3000',

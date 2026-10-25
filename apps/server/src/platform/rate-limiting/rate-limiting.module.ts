@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { RATE_LIMIT_THROTTLERS } from './rate-limits.js';
+import { TRYBUN_CONFIG } from '../config/config.module.js';
+import type { TrybunConfig } from '../config/config.schema.js';
+import { rateLimitThrottlers } from './rate-limits.js';
 import { RateLimitGuard } from './rate-limit.guard.js';
 import { ValkeyThrottlerStorage } from './valkey-throttler-storage.js';
 
@@ -16,9 +18,9 @@ class RateLimitStorageModule {}
   imports: [
     ThrottlerModule.forRootAsync({
       imports: [RateLimitStorageModule],
-      inject: [ValkeyThrottlerStorage],
-      useFactory: (storage: ValkeyThrottlerStorage) => ({
-        throttlers: RATE_LIMIT_THROTTLERS,
+      inject: [ValkeyThrottlerStorage, TRYBUN_CONFIG],
+      useFactory: (storage: ValkeyThrottlerStorage, config: TrybunConfig) => ({
+        throttlers: rateLimitThrottlers(config.rateLimits),
         storage,
       }),
     }),
