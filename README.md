@@ -86,7 +86,7 @@ Database objects Prisma does not model (text search configurations, pgvector or 
 
 ## Continuous integration
 
-Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit, component and integration tests with coverage thresholds, build, E2E tests with axe and the Lighthouse budget against the local environment in Docker Compose, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Releases run in their own workflow (see [Releases](#releases)). Run the same checks locally with the commands above before opening a pull request.
+Every pull request runs the quality gates of [§2.14](docs/spec/02-agent-rules.md) in GitHub Actions ([`.github/workflows/`](.github/workflows)): formatting and lint, type check, unit, component and integration tests with coverage thresholds, build, E2E tests with axe and the Lighthouse budget against the local environment in Docker Compose, specification consistency (links and `§N.M` references), vulnerability audit, dependency review with the license allowlist, CodeQL, and commitlint for the commit messages and the pull request title. Releases and the daily image scan run in their own workflows (see [Releases](#releases)). Run the same checks locally with the commands above before opening a pull request.
 
 ## Monorepo structure
 
@@ -141,6 +141,8 @@ Versions are calculated from the Conventional Commits by [release-please](https:
 3. after the maintainer's approval in the environment `release`, pushes the images as `X.Y.Z` (and moves `X.Y` and `X`), attaches the SBOMs, the deployment package and `SHA256SUMS`, and publishes the release.
 
 "Run workflow" on `main` or a maintenance branch publishes the release candidate `X.Y.Z-rc.N` of its open release pull request the same way. The deployment package (`trybun-X.Y.Z.tar.gz`) holds `compose.yaml` pinned to the release's images, `.env.example`, the Caddy and Keycloak configuration and [`INSTALL.md`](deploy/INSTALL.md); build it locally with `node scripts/build-deployment-package.js <version> <folder>`.
+
+The workflow [`image-scan.yml`](.github/workflows/image-scan.yml) scans every day (and with "Run workflow") the published images of the supported series and the images built from `main` with Trivy, with the accepted risks of [`.trivyignore.yaml`](.trivyignore.yaml); a critical vulnerability – or an accepted risk past its expiry date – opens an alert in GitHub code scanning ([§2.10](docs/spec/02-agent-rules.md), [§15.4](docs/spec/15-deployment.md)).
 
 ## Documentation
 

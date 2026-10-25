@@ -1,6 +1,7 @@
-# Accepted risks of the image scan of the release (Rule 10, §2.10): each with the image path, the
-# reason, and an expiry date after which it blocks the release again. Remove an entry as soon as
-# the base image ships a fix (Dependabot updates the digest).
+# Accepted risks of the image scans of the release and of the daily image scan (Rule 10, §2.10):
+# each with the image path, the reason, and an expiry date after which it blocks the release again
+# and the daily scan reports it as a code scanning alert. Remove an entry as soon as the base image
+# ships a fix (Dependabot updates the digest).
 vulnerabilities:
   # libxml2 of Debian 13 in the base image pgvector/pgvector of ghcr.io/trybun/postgres; Debian
   # has no fixed version yet. A denial of service through crafted XML; Trybun stores no XML and
