@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/trybun/trybun/compare/v0.1.0...v0.1.1) (2026-10-25)
+
+
+### Fixed
+
+* **ci:** run the release jobs after a skipped job before prepare ([#94](https://github.com/trybun/trybun/issues/94)) ([00cec3d](https://github.com/trybun/trybun/commit/00cec3d26a628a8ae738071b5608b56206027b92))
+
 ## 0.1.0 (2026-10-25)
 
 
