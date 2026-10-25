@@ -295,11 +295,23 @@ print_setup_link() {
   [ "$status" -eq 0 ] || [ "$status" -eq "$ALREADY_SET_UP" ] || exit "$status"
 }
 
+# The Compose project of the installation: `name` of compose.yaml.
+PROJECT=${COMPOSE_PROJECT_NAME:-trybun}
+
+# A new .env cannot use the data of an earlier installation: PostgreSQL keeps the passwords the
+# database was created with, so the database migrations would fail to sign in.
+check_no_earlier_data() {
+  volumes=$(docker volume ls -q --filter "label=com.docker.compose.project=$PROJECT" | tr '\n' ' ' | sed 's/ $//')
+  [ -z "$volumes" ] ||
+    fail "Data of an earlier installation of Trybun is on this server (Docker volumes: $volumes), but .env is missing, so its passwords are unknown. Copy the .env of that installation into this folder and run ./trybun install again. If the data is not needed, delete it (this cannot be undone): docker ps -aq --filter label=com.docker.compose.project=$PROJECT | xargs -r docker rm -f && docker volume rm $volumes, and run ./trybun install again. Nothing was changed."
+}
+
 install() {
   check_prerequisites
   if [ -e .env ]; then
     say '.env exists: keeping it unchanged, without questions and new secrets.'
   else
+    check_no_earlier_data
     ask_questions
     check_domain
     write_env

@@ -65,6 +65,8 @@ Once an Administrator exists, the command only reports that Trybun is already se
 
 Re-running `./trybun install` is safe: when `.env` exists, the script asks no questions, generates no secrets and never changes `.env`. It checks the server, starts Trybun and prints a new setup link while no Administrator exists. So it is also the way to resume an interrupted installation.
 
+The database keeps the passwords of the `.env` it was created with. So when `.env` is missing but the data of an earlier installation is still on the server, the script stops before the questions and names the Docker volumes: copy the `.env` of that installation into the folder, or – if the data is not needed – delete it with the command the script prints, then run `./trybun install` again.
+
 ## Changing the configuration
 
 Optional settings (e-mail, sign-in providers, backup storage) are described next to their variables in `.env`. A change of `.env` takes effect after running `docker compose up -d --wait` again.
