@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { HelpPage } from './pages/help.page.js';
+import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 test.describe('help', () => {
   test('the help menu opens the help page of the current view', async ({ page }) => {
@@ -66,14 +67,10 @@ test.describe('help', () => {
     const shell = new AppShellPage(page);
     const help = new HelpPage(page);
     await help.goto();
-    // The compact sizes of a precise pointer apply only on desktop (§18.6).
-    const minimum = test.info().project.name === 'desktop' ? 32 : 44;
+    const minimum = minimumTargetSize(test.info());
 
     for (const target of [shell.help, help.search, help.results.first()]) {
-      // A menu of the header is streamed after the page on the first request of a route.
-      await expect(target).toBeVisible();
-      const box = await target.boundingBox();
-      expect(box?.height).toBeGreaterThanOrEqual(minimum);
+      await expectTouchTarget(target, minimum);
     }
   });
 });
