@@ -41,6 +41,11 @@ export async function startKeycloak(network: StartedNetwork): Promise<TestKeyclo
     // The login theme generated from the message catalogues, mounted as in compose.yaml.
     .withCopyDirectoriesToContainer([
       { source: join(KEYCLOAK_CONFIG_DIR, 'themes/trybun'), target: '/opt/keycloak/themes/trybun' },
+      // The blocklist of the password policy, mounted as in compose.yaml.
+      {
+        source: join(KEYCLOAK_CONFIG_DIR, 'password-blocklists'),
+        target: '/opt/keycloak/data/password-blacklists',
+      },
     ])
     .withExposedPorts(8080, 9000)
     .withWaitStrategy(Wait.forHttp('/auth/health/ready', 9000).withStartupTimeout(180_000))

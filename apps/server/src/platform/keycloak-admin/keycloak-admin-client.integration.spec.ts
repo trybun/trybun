@@ -89,20 +89,18 @@ describe('KeycloakAdminClient', () => {
     );
   });
 
-  it('rejects a password the password policy refuses and creates no user', async () => {
-    await admin('PUT', '', { passwordPolicy: 'length(12)' });
-    const administrator = newAdministrator({ password: 'short' });
+  it.each([
+    ['too short', 'fourteen chars'],
+    ['on the blocklist', 'correcthorsebatterystaple'],
+  ])('rejects a password %s at its field and creates no user', async (_case, password) => {
+    const administrator = newAdministrator({ password });
 
-    try {
-      await expect(client.createAdministrator(administrator)).rejects.toEqual(
-        new AppError('setup.password_rejected', [{ pointer: '/password', code: 'field.invalid' }]),
-      );
-      expect(await admin('GET', `/users?email=${encodeURIComponent(administrator.email)}`)).toEqual(
-        [],
-      );
-    } finally {
-      await admin('PUT', '', { passwordPolicy: '' });
-    }
+    await expect(client.createAdministrator(administrator)).rejects.toEqual(
+      new AppError('setup.password_rejected', [{ pointer: '/password', code: 'field.invalid' }]),
+    );
+    expect(await admin('GET', `/users?email=${encodeURIComponent(administrator.email)}`)).toEqual(
+      [],
+    );
   });
 
   it('deletes a user and ignores one that no longer exists', async () => {

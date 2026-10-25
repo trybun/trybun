@@ -23,6 +23,13 @@ supportedLocales: [en, pl]
 defaultLocale: $(env:TRYBUN_DEFAULT_LANGUAGE:-en)
 loginTheme: trybun
 
+# Password policy (§7.4, §13.5): OWASP ASVS 5.0 and NIST SP 800-63B – at least 15 and at most 64
+# characters, not the e-mail address or user name, not in the blocklist of common passwords
+# (docker/keycloak/password-blocklists), no composition rules and no expiry; Argon2 hashing. Keycloak
+# checks it when a password is set. The lengths equal PASSWORD_MIN_LENGTH and PASSWORD_MAX_LENGTH of
+# @trybun/contracts/users (checked by its tests).
+passwordPolicy: length(15) and maxLength(64) and notEmail and notUsername and passwordBlacklist(trybun.txt) and hashAlgorithm(argon2)
+
 # Brute-force detection (§14.4): 5 failures lock the account for 1 minute, the wait doubles up to
 # 15 minutes; never a permanent lockout.
 bruteForceProtected: true

@@ -94,6 +94,27 @@ test.describe('first-run wizard', () => {
     await expect(setup.message).toHaveText('Your account is ready');
   });
 
+  test('states the password rule and refuses a short password before sending', async ({ page }) => {
+    await freshInstallation(page, { status: 201 });
+    const setup = new SetupPage(page);
+    await setup.goto('valid-token');
+    await expect(page.getByText('At least 15 characters.')).toBeVisible();
+    let isSent = false;
+    page.on('request', (request) => {
+      isSent ||= request.url().endsWith('/api/v1/setup/administrator');
+    });
+
+    await setup.firstName.fill('Ada');
+    await setup.lastName.fill('Admin');
+    await setup.email.fill('ada@example.com');
+    await setup.password.fill('fourteen chars');
+    await setup.submit.click();
+
+    await expect(setup.password).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByText('Too short')).toBeVisible();
+    expect(isSent).toBe(false);
+  });
+
   test('shows a rule of the API at its field', async ({ page }) => {
     await freshInstallation(page, {
       status: 422,

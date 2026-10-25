@@ -9,7 +9,7 @@ Gdy `./trybun install` uruchomi Trybun, wypisuje **link konfiguracyjny**. Link t
 ## Utwórz konto Administratora
 
 1. Otwórz link konfiguracyjny w przeglądarce.
-2. Wpisz imię, nazwisko, adres e-mail i hasło. Wybierz ikonę oka, aby sprawdzić, co wpisano.
+2. Wpisz imię, nazwisko, adres e-mail i hasło o długości co najmniej 15 znaków – dobrze sprawdza się fraza z kilku słów; nie może być Twoim adresem e-mail ani popularnym hasłem ([wybierz hasło](../../end-user/how-to/choose-a-password.md)). Wybierz ikonę oka, aby sprawdzić, co wpisano.
 3. Wybierz swój język i strefę czasową. Na początku mają wartości domyślne systemu, które strona też pokazuje.
 4. Wybierz **Utwórz konto Administratora**.
 

@@ -24,7 +24,7 @@ describe('setup contracts', () => {
     ['firstName', '   '],
     ['lastName', ''],
     ['email', 'not an e-mail'],
-    ['password', ''],
+    ['password', 'fourteen chars'],
     ['language', 'de'],
     ['timeZone', 'Nowhere/City'],
   ])('rejects an invalid %s', (field, value) => {

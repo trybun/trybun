@@ -9,7 +9,7 @@ After `./trybun install` has started Trybun, it prints a **setup link**. The lin
 ## Create the Administrator account
 
 1. Open the setup link in a browser.
-2. Enter your first name, last name, e-mail address and a password. Select the eye icon to check what you typed.
+2. Enter your first name, last name, e-mail address and a password of at least 15 characters – a phrase of several words works well; it must not be your e-mail address or a common password ([choose a password](../../end-user/how-to/choose-a-password.md)). Select the eye icon to check what you typed.
 3. Choose your own language and time zone. They start with the defaults of the system, which the page also shows.
 4. Select **Create Administrator account**.
 

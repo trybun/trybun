@@ -2,20 +2,20 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-10-25 |
 | Plan task | `S0-20` |
 | System specification sections | §7.4, §13.5, §15.5, §15.6, §15.12, §18.5 |
-| Related issues / PRs | [#80](https://github.com/trybun/trybun/pull/80) (S0-12, which found the gap) |
+| Related issues / PRs | [#80](https://github.com/trybun/trybun/pull/80) (S0-12, which found the gap), [#81](https://github.com/trybun/trybun/pull/81) (specification) |
 
 ## Context
 
-[§7.4](../../docs/spec/07-users-organizations-permissions.md) delegates passwords to Keycloak: "Password hashing is configured in Keycloak according to OWASP recommendations". [§13.5](../../docs/spec/13-non-functional.md) names OWASP ASVS as the reference for security requirements. Neither says which passwords Keycloak accepts.
+[§7.4](../../../docs/spec/07-users-organizations-permissions.md) delegates passwords to Keycloak: "Password hashing is configured in Keycloak according to OWASP recommendations". [§13.5](../../../docs/spec/13-non-functional.md) names OWASP ASVS as the reference for security requirements. Neither says which passwords Keycloak accepts.
 
 The realm configuration (`docker/keycloak/realm/trybun.yaml`) sets no `passwordPolicy`, so Keycloak accepts any password, even one character long. Passwords are set by:
 
-- the break-glass Administrator in the first-run wizard ([§15.6](../../docs/spec/15-deployment.md), S0-12);
-- end users when they register from an invitation ([§7.4](../../docs/spec/07-users-organizations-permissions.md), S1-03);
+- the break-glass Administrator in the first-run wizard ([§15.6](../../../docs/spec/15-deployment.md), S0-12);
+- end users when they register from an invitation ([§7.4](../../../docs/spec/07-users-organizations-permissions.md), S1-03);
 - anyone who resets a forgotten password.
 
 The hashing algorithm is Keycloak's default (Argon2 since Keycloak 24). It is not stated in the configuration, so a change of the default would go unnoticed.
@@ -31,14 +31,14 @@ The hashing algorithm is Keycloak's default (Argon2 since Keycloak 24). It is no
 
 - Checking passwords against an online breach service (e.g. Have I Been Pwned): it sends data about the password to a third party and needs outbound access; an offline blocklist is proposed instead (open question 2).
 - Forced periodic password changes, password history or composition rules: ASVS 5.0 and NIST SP 800-63B advise against them.
-- Mandatory 2FA for end users: unchanged, optional ([§7.4](../../docs/spec/07-users-organizations-permissions.md)).
+- Mandatory 2FA for end users: unchanged, optional ([§7.4](../../../docs/spec/07-users-organizations-permissions.md)).
 - Re-checking existing passwords: Keycloak checks the policy only when a password is set, so existing passwords keep working until they are changed.
 
 ## Proposed change
 
 ### The policy
 
-A managed setting of the realm, applied by keycloak-config-cli on installation and on every update ([§15.5](../../docs/spec/15-deployment.md)):
+A managed setting of the realm, applied by keycloak-config-cli on installation and on every update ([§15.5](../../../docs/spec/15-deployment.md)):
 
 ```
 length(15) and maxLength(64) and notEmail and notUsername and passwordBlacklist(<file>) and hashAlgorithm(argon2)
@@ -53,7 +53,7 @@ length(15) and maxLength(64) and notEmail and notUsername and passwordBlacklist(
 
 ### Where the rule is shown
 
-- **First-run wizard** ([§15.6](../../docs/spec/15-deployment.md)): the description under the password field states the rule ("At least 15 characters. A phrase of several words is easy to remember."). The contract schema checks the length in the browser, so a short password is reported before the request. Keycloak stays the authority: a refusal by the policy (e.g. a blocked password) still returns `setup.password_rejected` at the field, with a message naming the rule.
+- **First-run wizard** ([§15.6](../../../docs/spec/15-deployment.md)): the description under the password field states the rule ("At least 15 characters. A phrase of several words is easy to remember."). The contract schema checks the length in the browser, so a short password is reported before the request. Keycloak stays the authority: a refusal by the policy (e.g. a blocked password) still returns `setup.password_rejected` at the field, with a message naming the rule.
 - **Keycloak screens** (registration from an invitation, password reset, change of password): Keycloak shows its policy messages. Their texts come from the message catalogues of `@trybun/i18n` in EN and PL, like every other text of the login theme.
 
 ### One source for the number
@@ -62,7 +62,7 @@ The minimum and maximum length are constants of `@trybun/contracts/users` (`PASS
 
 ### Local environment and tests
 
-- **Demo accounts** keep the password `trybun`. Keycloak imports the development realm overlay on the first start of an empty database ([§15.12](../../docs/spec/15-deployment.md)), before keycloak-config-cli applies the policy, and the policy is checked only when a password is set. This is verified while implementing; if the import does check it, the overlay sets its own weaker policy for the local environment only (open question 3).
+- **Demo accounts** keep the password `trybun`. Keycloak imports the development realm overlay on the first start of an empty database ([§15.12](../../../docs/spec/15-deployment.md)), before keycloak-config-cli applies the policy, and the policy is checked only when a password is set. This is verified while implementing; if the import does check it, the overlay sets its own weaker policy for the local environment only (open question 3).
 - Integration tests that create Keycloak users through the Admin API use passwords that meet the policy.
 - **New tests:**
   - the realm integration test checks the applied policy and that a password of 14 characters is refused on registration and on reset;
@@ -94,18 +94,25 @@ Implementation must not start until every question has an answer.
 
 1. Minimum length 15 for everyone, including team members who also use 2FA? — **Answer:** 15 (decided by the maintainer, 2026-10-25). One rule is simpler to explain than a rule per account kind, and the break-glass Administrator must stay strong if 2FA is ever disabled or bypassed.
 2. An offline blocklist of common and breached passwords (`passwordBlacklist`)? — **Proposed answer:** yes. Use a list from SecLists (MIT License) filtered to the passwords the length rule would let through (15–64 characters), shipped in the deployment package and mounted into the Keycloak container like the realm configuration. ASVS 5.0 asks for a check against at least the 3,000 most common passwords that meet the policy. The file name and the list version are recorded in `docker/keycloak/` and updated with the dependencies (Rule 10). Approved by merging this specification.
-3. If the import of the development realm overlay checks the policy, may the overlay set a weaker policy for the local environment only? — **Proposed answer:** yes, only in `docker/keycloak/dev/`. The local environment already differs in the password sign-in of seeded accounts ([§7.4](../../docs/spec/07-users-organizations-permissions.md)), and changing the demo password would touch the README, the E2E set-up and every contributor's habit. Approved by merging this specification.
-4. Should the wizard also show a strength meter? — **Proposed answer:** no. A meter needs a dictionary-based estimator (e.g. zxcvbn, several hundred KB with its dictionaries) in the client bundle, which conflicts with the performance budget of [§2.9](../../docs/spec/02-agent-rules.md), and the length rule and the blocklist already cover what the meter would warn about. Approved by merging this specification.
+3. If the import of the development realm overlay checks the policy, may the overlay set a weaker policy for the local environment only? — **Proposed answer:** yes, only in `docker/keycloak/dev/`. The local environment already differs in the password sign-in of seeded accounts ([§7.4](../../../docs/spec/07-users-organizations-permissions.md)), and changing the demo password would touch the README, the E2E set-up and every contributor's habit. Approved by merging this specification.
+4. Should the wizard also show a strength meter? — **Proposed answer:** no. A meter needs a dictionary-based estimator (e.g. zxcvbn, several hundred KB with its dictionaries) in the client bundle, which conflicts with the performance budget of [§2.9](../../../docs/spec/02-agent-rules.md), and the length rule and the blocklist already cover what the meter would warn about. Approved by merging this specification.
 
 ## Acceptance criteria
 
-- [ ] A password of 14 characters is refused in the first-run wizard, on registration and on reset; one of 15 characters that is not on the blocklist is accepted.
-- [ ] A password equal to the e-mail address or on the blocklist is refused with a translated message (EN, PL), in the wizard at the password field.
-- [ ] The applied realm has `hashAlgorithm(argon2)` and the policy above; a unit test fails when the realm and the constants of `@trybun/contracts` disagree.
-- [ ] The demo accounts still sign in with `trybun` in the local environment.
-- [ ] Works on phone, tablet and desktop (Rule 9).
-- [ ] User documentation (EN, PL) updated (Rule 3).
+- [x] A password of 14 characters is refused in the first-run wizard, on registration and on reset; one of 15 characters that is not on the blocklist is accepted.
+- [x] A password equal to the e-mail address or on the blocklist is refused with a translated message (EN, PL), in the wizard at the password field.
+- [x] The applied realm has `hashAlgorithm(argon2)` and the policy above; a unit test fails when the realm and the constants of `@trybun/contracts` disagree.
+- [x] The demo accounts still sign in with `trybun` in the local environment.
+- [x] Works on phone, tablet and desktop (Rule 9).
+- [x] User documentation (EN, PL) updated (Rule 3).
 
 ## Changelog
 
 - 2026-10-25 – Created; open question 1 answered by the maintainer.
+- 2026-10-25 – Approved by merging #81 (open questions 2–4 as proposed).
+- 2026-10-25 – Implemented (S0-20), with these details found while implementing:
+  - The blocklist is `docker/keycloak/password-blocklists/trybun.txt`: `Pwdb_top-1000000.txt` of SecLists at commit `ab068333d7d44a9376e2037b0ed7d2e8ca5c6610`, the 5,329 passwords of 15–64 characters in lower case; its `README.md` holds the command that rebuilds it. Keycloak reads it from `/opt/keycloak/data/password-blacklists/` (the name of its SPI), mounted by `compose.yaml` and therefore part of the deployment package.
+  - Zod and Keycloak count the length in UTF-16 code units, so `passwordSchema` is `z.string().min(15).max(64)`; a too short password in the wizard shows the field error `string.too_short`, with the rule in the description of the field.
+  - The texts of the policy messages of Keycloak (`invalidPasswordMinLengthMessage`, `…MaxLength…`, `…NotEmail…`, `…NotUsername…`, `…Blacklisted…`) are in the `keycloak` namespace of the catalogues.
+  - The demo accounts import with their password `trybun` on a fresh local environment and sign in, so open question 3 needed no weaker local policy.
+  - The end-user how-to is `end-user/how-to/choose-a-password`, linked from the administrator tutorial.

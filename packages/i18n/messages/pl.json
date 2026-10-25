@@ -62,7 +62,7 @@
     "lastName": "Nazwisko",
     "email": "Adres e-mail",
     "password": "Hasło",
-    "passwordDescription": "Logujesz się tym hasłem i jednorazowym kodem z aplikacji uwierzytelniającej.",
+    "passwordDescription": "Co najmniej {min} znaków. Frazę z kilku słów łatwo zapamiętać. Logujesz się tym hasłem i jednorazowym kodem z aplikacji uwierzytelniającej.",
     "language": "Twój język",
     "timeZone": "Twoja strefa czasowa",
     "systemDefaults": "Domyślny język systemu: {language}; domyślna strefa czasowa: {timeZone}. Oba ustawienia są w pliku <file>.env</file> i tam się je zmienia, a potem uruchamia <command>docker compose up -d --wait</command>.",
@@ -149,7 +149,7 @@
     "setup": {
       "token_invalid": "Ten link konfiguracyjny jest nieprawidłowy lub wygasł. Uruchom na serwerze ./trybun setup-token, aby otrzymać nowy link.",
       "completed": "Trybun jest już skonfigurowany. Zaloguj się.",
-      "password_rejected": "To hasło nie spełnia zasad haseł. Wybierz dłuższe.",
+      "password_rejected": "Wybierz inne hasło: musi mieć co najmniej 15 znaków i nie może być Twoim adresem e-mail ani popularnym hasłem.",
       "email_taken": "Konto z tym adresem e-mail już istnieje."
     },
     "server": {
@@ -186,6 +186,11 @@
     }
   },
   "keycloak": {
-    "loginAccountTitle": "Zaloguj się do systemu Trybun"
+    "loginAccountTitle": "Zaloguj się do systemu Trybun",
+    "invalidPasswordMinLengthMessage": "Hasło musi mieć co najmniej {0} znaków.",
+    "invalidPasswordMaxLengthMessage": "Hasło może mieć najwyżej {0} znaki.",
+    "invalidPasswordNotEmailMessage": "Hasło nie może być Twoim adresem e-mail.",
+    "invalidPasswordNotUsernameMessage": "Hasło nie może być Twoją nazwą użytkownika.",
+    "invalidPasswordBlacklistedMessage": "To hasło jest zbyt popularne. Wybierz inne, np. frazę z kilku słów."
   }
 }
