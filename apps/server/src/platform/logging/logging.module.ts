@@ -10,9 +10,9 @@ import { loggerOptions } from './logger-options.js';
 export const LOG_DESTINATION = 'LOG_DESTINATION';
 
 /**
- * Structured JSON logging with `nestjs-pino` (§14.2, §17.2) for the API and the Worker; services
- * inject `PinoLogger` with `@InjectPinoLogger(<Class>.name)`. `forRoot()` is called when the root
- * module is built, after every `@InjectPinoLogger()` has registered its context.
+ * Structured JSON logging with `nestjs-pino` (§14.2, §17.2) for the API, the Worker and the command
+ * line; services inject `PinoLogger` with `@InjectPinoLogger(<Class>.name)`. `forRoot()` is called
+ * when the root module is built, after every `@InjectPinoLogger()` has registered its context.
  */
 @Global()
 @Module({})

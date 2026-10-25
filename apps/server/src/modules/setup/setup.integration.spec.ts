@@ -4,6 +4,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { CliModule } from '../../cli.module.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { keycloakAdminFake, type KeycloakAdminFake } from '../../../test/msw/keycloak-admin.js';
 import { mswServer } from '../../../test/msw/server.js';
@@ -287,6 +288,21 @@ describe('first-run wizard', () => {
       expect(code).toBe(3);
       expect(output.errors.join('')).toContain('already set up');
       expect(await prisma.setupToken.count()).toBe(0);
+    });
+
+    it('runs with the root module of the command line', async () => {
+      const cli = await Test.createTestingModule({
+        imports: [CliModule.forRoot(config)],
+      }).compile();
+      const output = capture();
+
+      try {
+        const code = await runSetupTokenCommand(cli.get(SetupService), config.domain, output);
+
+        expect(code).toBe(0);
+      } finally {
+        await cli.close();
+      }
     });
   });
 });
