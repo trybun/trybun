@@ -8,6 +8,30 @@ export type UserKind = z.infer<typeof userKindSchema>;
 export const userStateSchema = z.enum(['invited', 'active', 'deactivated', 'anonymized']);
 export type UserState = z.infer<typeof userStateSchema>;
 
+/** A supported language (§13.1): the languages of the message catalogues of `@trybun/i18n`. */
+export const languageSchema = z.enum(['en', 'pl']);
+export type Language = z.infer<typeof languageSchema>;
+
+/** An IANA time-zone name known to the runtime, e.g. `Europe/Warsaw` (§13.1). */
+export const timeZoneSchema = z
+  .string()
+  .max(64)
+  .refine((value) => {
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: value });
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+/**
+ * The global actions of an account (§18.3): actions that belong to no record, sent with the
+ * current account. `open_administration` – the Administrator panel (§15.6).
+ */
+export const currentUserActionSchema = z.enum(['open_administration']);
+export type CurrentUserAction = z.infer<typeof currentUserActionSchema>;
+
 /**
  * The account of the request's principal (`GET /api/v1/users/me`): what the application shell
  * shows in the user menu (§18.5). The account kind decides only between the portal and the team
@@ -18,5 +42,6 @@ export const currentUserSchema = z.object({
   displayName: z.string().nullable(),
   email: z.string().nullable(),
   kind: userKindSchema,
+  allowedActions: z.array(currentUserActionSchema),
 });
 export type CurrentUser = z.infer<typeof currentUserSchema>;

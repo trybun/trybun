@@ -32,13 +32,23 @@
                         "team",
                         "end_user"
                       ]
+                    },
+                    "allowedActions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "open_administration"
+                        ]
+                      }
                     }
                   },
                   "required": [
                     "id",
                     "displayName",
                     "email",
-                    "kind"
+                    "kind",
+                    "allowedActions"
                   ],
                   "additionalProperties": false
                 }
@@ -211,6 +221,304 @@
         },
         "tags": [
           "Users"
+        ]
+      }
+    },
+    "/api/v1/setup": {
+      "get": {
+        "operationId": "SetupController_find",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "available",
+                        "completed"
+                      ]
+                    },
+                    "defaultLanguage": {
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "pl"
+                      ]
+                    },
+                    "defaultTimeZone": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "defaultLanguage",
+                    "defaultTimeZone"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Setup"
+        ]
+      }
+    },
+    "/api/v1/setup/token-verification": {
+      "post": {
+        "operationId": "SetupController_verifyToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "available",
+                        "completed"
+                      ]
+                    },
+                    "defaultLanguage": {
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "pl"
+                      ]
+                    },
+                    "defaultTimeZone": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "defaultLanguage",
+                    "defaultTimeZone"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Setup"
+        ]
+      }
+    },
+    "/api/v1/setup/administrator": {
+      "post": {
+        "operationId": "SetupController_createAdministrator",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "en",
+                      "pl"
+                    ]
+                  },
+                  "timeZone": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "token",
+                  "firstName",
+                  "lastName",
+                  "email",
+                  "password",
+                  "language",
+                  "timeZone"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Setup"
+        ]
+      }
+    },
+    "/api/v1/administration/getting-started": {
+      "get": {
+        "operationId": "AdministrationController_findGettingStarted",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "enum": [
+                              "configure_github_sign_in",
+                              "configure_email"
+                            ]
+                          },
+                          "isDone": {
+                            "type": "boolean"
+                          },
+                          "isOptional": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "isDone",
+                          "isOptional"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Administration"
+        ]
+      }
+    },
+    "/api/v1/administration/about": {
+      "get": {
+        "operationId": "AdministrationController_findAbout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    },
+                    "license": {
+                      "type": "string",
+                      "enum": [
+                        "MIT"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "license"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Administration"
         ]
       }
     }

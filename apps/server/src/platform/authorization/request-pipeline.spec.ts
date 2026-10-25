@@ -79,7 +79,7 @@ describe('request pipeline', () => {
         LoggingModule.forRoot(),
         ErrorsModule,
         HttpModule,
-        AuthorizationModule,
+        AuthorizationModule.forRoot([]),
       ],
       controllers: [NotesController],
     })

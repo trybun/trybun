@@ -1,4 +1,4 @@
-// Bundles the API and the Worker (§14.6, ADR 0003): the @trybun/* workspace packages are
+// Bundles the API, the Worker and the command line (§14.6, ADR 0003): the @trybun/* workspace packages are
 // inlined from their TypeScript source, npm dependencies stay external.
 import nodeExternals from 'webpack-node-externals';
 
@@ -17,6 +17,7 @@ export default function rspackConfig(options) {
     entry: {
       main: './src/main.ts',
       worker: './src/worker.ts',
+      cli: './src/cli.ts',
     },
     output: {
       ...options.output,

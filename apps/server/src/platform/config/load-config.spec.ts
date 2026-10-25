@@ -14,7 +14,12 @@ describe('loadConfig', () => {
       keycloak: {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
         jwksUrl: 'http://keycloak:8080/auth/realms/trybun/protocol/openid-connect/certs',
+        tokenUrl: 'http://keycloak:8080/auth/realms/trybun/protocol/openid-connect/token',
+        adminUrl: 'http://keycloak:8080/auth/admin/realms/trybun',
+        serverClientSecret: 'server-client-secret',
       },
+      isGithubSignInConfigured: false,
+      isSmtpConfigured: false,
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
       logLevel: 'silent',
@@ -34,6 +39,22 @@ describe('loadConfig', () => {
     });
 
     expect(config).toMatchObject({ defaultLanguage: 'pl', defaultTimeZone: 'Europe/Warsaw' });
+  });
+
+  it.each([
+    [{ TRYBUN_GITHUB_CLIENT_ID: 'id', TRYBUN_GITHUB_CLIENT_SECRET: 'secret' }, true],
+    [{ TRYBUN_GITHUB_CLIENT_ID: 'id' }, false],
+    [{ TRYBUN_GITHUB_CLIENT_ID: 'id', TRYBUN_GITHUB_CLIENT_SECRET: '' }, false],
+  ])('GitHub sign-in with %j is configured: %s', (env, isConfigured) => {
+    expect(loadConfig({ ...TEST_ENV, ...env }).isGithubSignInConfigured).toBe(isConfigured);
+  });
+
+  it.each([
+    [{ TRYBUN_SMTP_HOST: 'smtp.example.com', TRYBUN_MAIL_FROM: 'trybun@example.com' }, true],
+    [{ TRYBUN_SMTP_HOST: '' }, false],
+    [{}, false],
+  ])('SMTP with %j is configured: %s', (env, isConfigured) => {
+    expect(loadConfig({ ...TEST_ENV, ...env }).isSmtpConfigured).toBe(isConfigured);
   });
 
   it('takes the issuer from the public URL of Keycloak when it is set', () => {
@@ -57,6 +78,11 @@ describe('loadConfig', () => {
     [{ ...TEST_ENV, TRYBUN_DEFAULT_LANGUAGE: 'de' }, 'TRYBUN_DEFAULT_LANGUAGE'],
     [{ ...TEST_ENV, TRYBUN_DEFAULT_TIME_ZONE: 'Mars/Olympus' }, 'TRYBUN_DEFAULT_TIME_ZONE'],
     [{ ...TEST_ENV, TRYBUN_LOG_LEVEL: 'verbose' }, 'TRYBUN_LOG_LEVEL'],
+    [
+      { ...TEST_ENV, TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET: undefined },
+      'TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET',
+    ],
+    [{ ...TEST_ENV, TRYBUN_SMTP_HOST: 'smtp.example.com' }, 'TRYBUN_MAIL_FROM'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => loadConfig(env)).toThrow(InvalidConfigError);
     expect(() => loadConfig(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));

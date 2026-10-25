@@ -24,5 +24,6 @@ COPY --from=build /repo/apps/server/prisma.config.ts ./
 COPY --from=build /repo/apps/server/prisma ./prisma
 USER node
 EXPOSE 3001
-# The API; the Worker runs `node dist/worker.js`, the migrations `prisma migrate deploy`.
+# The API; the Worker runs `node dist/worker.js`, the command line `node dist/cli.js` (§15.5),
+# the migrations `prisma migrate deploy`.
 CMD ["node", "dist/main.js"]

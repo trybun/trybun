@@ -13,6 +13,7 @@ import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
+import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
 import { DatabaseModule } from '../../platform/database/database.module.js';
 import { PrismaService } from '../../platform/database/prisma.service.js';
@@ -20,6 +21,7 @@ import { ErrorsModule } from '../../platform/errors/errors.module.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
+import { administrationAbilities } from '../administration/administration.abilities.js';
 import { UsersModule } from './users.module.js';
 
 describe('users endpoints', () => {
@@ -36,6 +38,7 @@ describe('users endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
+        AuthorizationModule.forRoot([administrationAbilities]),
         UsersModule,
       ],
     }).compile();
@@ -73,7 +76,26 @@ describe('users endpoints', () => {
       displayName: user.displayName,
       email: user.email,
       kind: 'end_user',
+      allowedActions: [],
     });
+  });
+
+  it('allows an Administrator to open the Administrator panel', async () => {
+    const user = await createUser(prisma, {
+      kind: 'team',
+      isAdmin: true,
+      keycloakUserId: randomUUID(),
+    });
+    const token = await signAccessToken(config, {
+      sub: user.keycloakUserId ?? '',
+      amr: ['pwd', 'otp'],
+    });
+
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.body).toMatchObject({ kind: 'team', allowedActions: ['open_administration'] });
   });
 
   it('requires a signed-in account', async () => {

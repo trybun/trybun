@@ -10,6 +10,10 @@ import { I18nModule } from './platform/i18n/i18n.module.js';
 import { HealthModule } from './platform/health/health.module.js';
 import { HttpModule } from './platform/http/http.module.js';
 import { LoggingModule } from './platform/logging/logging.module.js';
+import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.module.js';
+import { administrationAbilities } from './modules/administration/administration.abilities.js';
+import { AdministrationModule } from './modules/administration/administration.module.js';
+import { SetupModule } from './modules/setup/setup.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 /** Root module of the API process (§14.6). */
@@ -27,9 +31,12 @@ export class ApiModule {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule,
+        AuthorizationModule.forRoot([administrationAbilities]),
+        KeycloakAdminModule,
         HealthModule,
         UsersModule,
+        SetupModule,
+        AdministrationModule,
       ],
     };
   }
