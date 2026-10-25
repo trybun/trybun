@@ -24,7 +24,7 @@ declare module 'vitest' {
   }
 }
 
-async function migrate(databaseUrl: string): Promise<void> {
+export async function migrate(databaseUrl: string): Promise<void> {
   await promisify(execFile)(join(SERVER_DIR, 'node_modules/.bin/prisma'), ['migrate', 'deploy'], {
     cwd: SERVER_DIR,
     env: { ...process.env, DATABASE_URL: databaseUrl },

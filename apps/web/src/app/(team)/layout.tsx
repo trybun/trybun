@@ -25,11 +25,13 @@ export default async function TeamLayout({ children }: { children: ReactNode }) 
     queryClient.prefetchQuery(currentUserQueryOptions(client)),
     queryClient.prefetchQuery(productTourProgressQueryOptions(client)),
   ]);
+  const user = queryClient.getQueryData(currentUserQueryOptions(client).queryKey);
   const helpViews = getHelpViews(await getHelpReaderKind());
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <ProductTourProvider>
         <AppShell
+          allowedActions={user?.allowedActions ?? []}
           help={
             <LazyHelpMenu views={helpViews}>
               <LazyProductTourMenuItems />

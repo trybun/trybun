@@ -38,7 +38,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
   - `postgres` – PostgreSQL with pgvector and the Polish full-text dictionary ([§14.4](14-architecture.md)), based on the official pgvector image pinned to a digest.
 
   The server only pulls ready images.
-- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the install, update, restore and backup scripts and an installation guide (`INSTALL.md`). Its `compose.yaml` pulls the images of the release (`X.Y.Z`) and builds nothing. The release also contains the SBOM of every image and a `SHA256SUMS` file with the checksums of all its files. Source code is not needed for installation.
+- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the `trybun` script and an installation guide (`INSTALL.md`). `trybun` is one POSIX shell script with a subcommand per task – `install` and `setup-token` ([§15.5](#155-installation), [§15.6](#156-first-run-wizard)), and `update`, `restore` and `backup` ([§15.7](#157-updates), [§15.10](#1510-backups)) – and needs no Node.js on the server. Its `compose.yaml` pulls the images of the release (`X.Y.Z`) and builds nothing. The release also contains the SBOM of every image and a `SHA256SUMS` file with the checksums of all its files. Source code is not needed for installation.
 - `CHANGELOG.md` follows the *Keep a Changelog* convention and is generated from commit messages in the Conventional Commits format. Release notes clearly mark breaking changes and any manual steps.
 
 ### Releasing a PATCH version (example)
@@ -63,18 +63,22 @@ Installing on a new server:
 
 1. Prepare the server: install Docker Engine with the Compose plugin, point the domain to the server, open ports 80 and 443.
 2. Download and unpack the deployment package of the chosen release.
-3. Run the **install script**.
+3. Run the **install script**: `./trybun install`.
 4. Finish the configuration in the **first-run wizard** in the browser ([§15.6](#156-first-run-wizard)).
 
-**Install script:**
+**Install script** (`./trybun install`):
 
-- Checks prerequisites: Docker and Compose versions, available RAM ([§15.2](#152-server-requirements)), free ports 80 and 443, the domain pointing to the server.
-- Asks a few questions: domain, Administrator e-mail, default system language, time zone.
-- **Generates all secrets** (database, Keycloak database, Valkey, SeaweedFS and Keycloak passwords, the `trybun-web` and `trybun-server` Keycloak client secrets, application keys, the backup passphrase) as cryptographically random values. The Administrator does not have to invent them.
-- Prints the **backup passphrase** (`TRYBUN_BACKUP_PASSPHRASE`) once and requires the Administrator to confirm that it is stored outside the server; without it, off-site backups cannot be restored after the server is lost ([§15.10](#1510-backups)).
-- Writes `.env` with permissions restricted to the owner.
-- Never overwrites an existing `.env`, so re-running it is safe.
-- Finally starts the system and prints the first-run wizard URL with a **one-time setup token**.
+- **Checks prerequisites** and stops before it changes anything when one fails, saying what is wrong and how to fix it:
+  - Docker Engine and the Docker Compose plugin in at least the oldest versions that support every feature of `compose.yaml` (today Docker Engine 25.0 and Compose 2.20.2, for the health check option `start_interval`); the versions are constants of the script, raised with `compose.yaml`;
+  - total memory (`MemTotal`) of at least 8 GB (8 × 10⁹ bytes, so a server sold as "8 GB" passes), with a warning below 16 GB ([§15.2](#152-server-requirements));
+  - free ports 80 and 443 (TCP, and 443 UDP for HTTP/3); ports held by the installation's own `caddy` container count as free, so a re-run on a running system passes;
+  - the domain pointing to the server: when the addresses of the domain differ from those of the server, a warning with a confirmation, because servers behind NAT or with a floating IP do not see their public address.
+- Asks for the domain, the default system language (`en` or `pl`) and the default time zone (default: the server's time zone, else `UTC`), validated as the server validates them at start-up. The Administrator's e-mail address is asked by the first-run wizard, where it is needed.
+- **Generates all secrets** (database, Keycloak database, Valkey, SeaweedFS and Keycloak passwords, the `trybun-web` and `trybun-server` Keycloak client secrets, application keys, the backup passphrase) as 32 random bytes from `/dev/urandom`. The Administrator does not have to invent them.
+- Prints the **backup passphrase** (`TRYBUN_BACKUP_PASSPHRASE`) once and requires the Administrator to type `stored` to confirm that it is kept outside the server; without it, off-site backups cannot be restored after the server is lost ([§15.10](#1510-backups)).
+- Writes `.env` from `.env.example`, keeping its descriptions, with permissions restricted to the owner (mode `600`); it writes a temporary file and moves it into place only when no `.env` exists.
+- Never overwrites an existing `.env`: when one exists, it skips the questions and the secrets, still runs the checks, starts the system and prints a new setup link while no Administrator exists – so re-running it is safe and resumes an interrupted installation.
+- Finally starts the system (`docker compose up -d --wait`) and prints the first-run wizard URL with a **one-time setup token**.
 
 Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3 storage for backups, GitHub App and GitHub sign-in, Microsoft and Google sign-in) can be filled in `.env` now or later. The same SMTP settings are used by the server and by Keycloak (password reset, e-mail verification). Until SMTP is configured, the system works but sends no e-mails, invitation links are copied manually ([§7.4](07-users-organizations-permissions.md)), and the Administrator panel shows a warning. Until GitHub sign-in is configured, only the break-glass Administrator can sign in as a team member, and inviting team members is disabled with an explanation ([§15.6](#156-first-run-wizard)).
 
@@ -95,11 +99,14 @@ Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3
 
 ## 15.6 First-run wizard
 
-- Available only while no Administrator account exists, and protected by the one-time setup token, so nobody else can take over a fresh installation. The token expires after **24 hours** or after first use; a new one can be generated with the install script.
-- The API stores only a hash of the setup token with its expiry. The wizard endpoint requires no session, is rate-limited ([§14.4](14-architecture.md)) and returns the same error for an unknown, expired or used token.
-- Guides through: creating the first Administrator account, confirming the default language and time zone, sending a test e-mail (if an e-mail provider is configured). The API creates the Keycloak user through the Admin API with the required actions "set password" and "configure OTP"; Keycloak itself then enforces the password and 2FA setup at the first sign-in, so the system implements no 2FA of its own ([§7.4](07-users-organizations-permissions.md)).
+- Available only while no Administrator account exists, and protected by the one-time setup token, so nobody else can take over a fresh installation. The token expires after **24 hours** or after first use. `./trybun setup-token` generates a new one (the `setup-token` command of the `server` image, run in the `api` container), which replaces every earlier token, so only the latest link works; once an Administrator exists, it refuses.
+- The setup link is `https://<domain>/setup#token=<token>`: the token is in the URL fragment, which the browser never sends to a server, so it appears in no access log or `Referer` header; the wizard sends it in the request body.
+- The API stores only a hash of the setup token (SHA-256) with its expiry (`setup_token`). The wizard endpoints require no session and return the same error (`setup.token_invalid`) for an unknown, expired, replaced or used token, and `setup.completed` once an Administrator exists. Rate limiting by client IP ([§14.4](14-architecture.md)) comes with plan task S0-14.
+- The wizard is one step: the Administrator's first name, last name (both required by the user profile of Keycloak), e-mail address and password (with a show/hide toggle instead of a repeated field), and their own language and time zone, prefilled with the system defaults. It shows the system default language and time zone read-only and explains that they are changed in `.env`, followed by `docker compose up -d --wait`.
+- The API creates the Keycloak user through the Admin API with the password as a credential – Keycloak's password policy applies, and the system never stores or logs the password ([§7.4](07-users-organizations-permissions.md)) – as a member of the group `team` with the required action "configure OTP", then the account (`kind` `team`, Administrator, `active`), claiming the token in the same transaction with a conditional update, so of two simultaneous requests only one succeeds; when the transaction fails, the Keycloak user is deleted again. Keycloak itself then enforces the 2FA setup at the first sign-in, so the system implements no 2FA of its own ([§7.4](07-users-organizations-permissions.md)).
+- After success, **Sign in** leads to the getting-started checklist. While no Administrator exists, the sign-in page points to the setup link instead of starting a sign-in no account could complete.
 - Disabled permanently after completion.
-- Afterwards the Administrator panel shows a **getting-started checklist**: create a project, configure GitHub sign-in (required before inviting team members), invite the team, create an organization (optional), configure e-mail, configure backup storage, connect the GitHub App (optional). Completed items are ticked automatically.
+- Afterwards the Administrator panel (`/admin`, the **Administration** item of the side navigation and, on phones, of the account menu) shows a **getting-started checklist**: create a project, configure GitHub sign-in (required before inviting team members), invite the team, create an organization (optional), configure e-mail, configure backup storage, connect the GitHub App (optional). Completed items are ticked automatically from the configuration and the data – nothing about the checklist is stored, so an item is never ticked while its setting is missing – and each links to the help page that explains it. Each item arrives with the task that builds its feature; "Configure e-mail" offers to send a test e-mail once the system sends e-mail.
 
 ## 15.7 Updates
 
@@ -145,7 +152,7 @@ A single server is a single point of failure; this must be reflected in the decl
 
 The local environment starts with one command after cloning the repository (Rule 5, [§2.5](02-agent-rules.md)).
 
-**Prerequisites:** Docker Engine (or Docker Desktop) with the Compose plugin, Node.js in the version from `.node-version` (LTS), and pnpm enabled through Corepack (`corepack enable`; the version comes from the `packageManager` field). At least 8 GB RAM; ClamAV can be disabled locally with a Compose profile when memory is short (uploads then stay in quarantine, [§17.2](17-conventions.md)).
+**Prerequisites:** Docker Engine (or Docker Desktop) with the Compose plugin, Node.js in the version from `.node-version` (LTS), and pnpm enabled through Corepack (`corepack enable`; the version comes from the `packageManager` field); ShellCheck for `pnpm lint`. At least 8 GB RAM; ClamAV can be disabled locally with a Compose profile when memory is short (uploads then stay in quarantine, [§17.2](17-conventions.md)).
 
 **Starting:**
 

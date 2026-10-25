@@ -22,8 +22,8 @@ test.describe('help', () => {
 
     await help.search.fill('authenticator');
 
-    await expect(help.results).toHaveCount(1);
-    await expect(help.results).toContainText('Getting started for the team');
+    // The team also reads the pages for Administrators, which name the authenticator app too.
+    await expect(help.results.filter({ hasText: 'Getting started for the team' })).toHaveCount(1);
 
     const menu = await new AppShellPage(page).openAccountMenu();
     await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
@@ -33,9 +33,9 @@ test.describe('help', () => {
 
     await help.search.fill('uwierzytelniajacej');
 
-    await expect(help.results).toHaveCount(1);
-    await expect(help.results).toContainText('Pierwsze kroki dla zespołu');
-    await help.results.click();
+    const result = help.results.filter({ hasText: 'Pierwsze kroki dla zespołu' });
+    await expect(result).toHaveCount(1);
+    await result.click();
     await expect(page).toHaveURL('/help/team/tutorials/getting-started');
   });
 

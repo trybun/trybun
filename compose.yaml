@@ -27,6 +27,13 @@ x-server: &server
     DATABASE_URL: postgresql://trybun:${TRYBUN_POSTGRES_PASSWORD}@postgres:5432/trybun
     TRYBUN_VALKEY_URL: redis://:${TRYBUN_VALKEY_PASSWORD}@valkey:6379
     TRYBUN_KEYCLOAK_URL: http://keycloak:8080/auth
+    # The service account of the Keycloak Admin API (§15.5).
+    TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET: ${TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET:?TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET must be set}
+    # Read by the getting-started checklist of the Administrator panel (§15.6).
+    TRYBUN_GITHUB_CLIENT_ID: ${TRYBUN_GITHUB_CLIENT_ID:-}
+    TRYBUN_GITHUB_CLIENT_SECRET: ${TRYBUN_GITHUB_CLIENT_SECRET:-}
+    TRYBUN_SMTP_HOST: ${TRYBUN_SMTP_HOST:-}
+    TRYBUN_MAIL_FROM: ${TRYBUN_MAIL_FROM:-}
     # The system default language and time zone (§13.1).
     TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
     TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}

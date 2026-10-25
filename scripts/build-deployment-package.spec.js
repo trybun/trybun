@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -62,7 +62,7 @@ describe('buildDeploymentPackage', () => {
   const output = mkdtempSync(join(tmpdir(), 'trybun-package-'));
   afterAll(() => rmSync(output, { recursive: true, force: true }));
 
-  it('packs compose.yaml with everything it mounts, .env.example and INSTALL.md (§15.4)', () => {
+  it('packs compose.yaml with everything it mounts, .env.example, INSTALL.md and trybun (§15.4)', () => {
     const archive = buildDeploymentPackage('0.1.0', output);
 
     expect(archive).toBe(join(output, 'trybun-0.1.0.tar.gz'));
@@ -72,6 +72,7 @@ describe('buildDeploymentPackage', () => {
         'trybun-0.1.0/compose.yaml',
         'trybun-0.1.0/.env.example',
         'trybun-0.1.0/INSTALL.md',
+        'trybun-0.1.0/trybun',
         'trybun-0.1.0/LICENSE',
         'trybun-0.1.0/docker/caddy/Caddyfile',
         'trybun-0.1.0/docker/keycloak/apply-config.sh',
@@ -80,6 +81,7 @@ describe('buildDeploymentPackage', () => {
       ]),
     );
     expect(files.filter((file) => file.includes('/dev/'))).toEqual([]);
+    expect(statSync(join(output, 'trybun-0.1.0', 'trybun')).mode & 0o111).toBe(0o111);
     const compose = readFileSync(join(output, 'trybun-0.1.0', 'compose.yaml'), 'utf8');
     expect(compose).not.toMatch(/^\s*build:/m);
     expect(compose).toContain('ghcr.io/trybun/server:${TRYBUN_VERSION:-0.1.0}');

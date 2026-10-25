@@ -6,10 +6,12 @@ import {
   productTourIdSchema,
   type RecordProductTourProgressDto,
 } from '@trybun/contracts/product-tours';
-import type { CurrentUser } from '@trybun/contracts/users';
+import type { CurrentUser, CurrentUserAction } from '@trybun/contracts/users';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
+import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import { PrismaService } from '../../platform/database/prisma.service.js';
+import { ADMINISTRATION } from '../administration/administration.abilities.js';
 
 const PRODUCT_TOUR_PROGRESS_SELECT = {
   tourId: true,
@@ -34,17 +36,25 @@ function toProductTourProgressResponse(row: ProductTourProgressRow): ProductTour
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly abilities: AbilityFactory,
+  ) {}
 
   /**
-   * The account of the principal itself (§7.4). The authentication guard has already resolved it
-   * as an active account, so it exists.
+   * The account of the principal itself (§7.4) with its global actions (§18.3). The
+   * authentication guard has already resolved it as an active account, so it exists.
    */
-  findCurrent(principal: UserPrincipal): Promise<CurrentUser> {
-    return this.prisma.user.findUniqueOrThrow({
+  async findCurrent(principal: UserPrincipal): Promise<CurrentUser> {
+    const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: principal.userId },
       select: { id: true, displayName: true, email: true, kind: true },
     });
+    const ability = this.abilities.forPrincipal(principal);
+    const allowedActions: CurrentUserAction[] = ability.can('read', ADMINISTRATION)
+      ? ['open_administration']
+      : [];
+    return { ...user, allowedActions };
   }
 
   /**

@@ -17,6 +17,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FILES = [
   { from: '.env.example', to: '.env.example' },
   { from: 'deploy/INSTALL.md', to: 'INSTALL.md' },
+  // The command of the package (`./trybun install`); the copy keeps its executable bit.
+  { from: 'deploy/trybun', to: 'trybun' },
   { from: 'LICENSE', to: 'LICENSE' },
 ];
 

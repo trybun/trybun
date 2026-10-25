@@ -210,7 +210,7 @@ docs/
 ### Backend: one application, two processes
 
 - `apps/server` contains all backend modules (domain, Prisma schema and migrations, integrations).
-- It has two entry points: `src/main.ts` starts the **API** (HTTP and WebSocket), `src/worker.ts` starts the **Worker** (queues, scheduled jobs, no HTTP server, NestJS application context).
+- It has two entry points: `src/main.ts` starts the **API** (HTTP and WebSocket), `src/worker.ts` starts the **Worker** (queues, scheduled jobs, no HTTP server, NestJS application context). A third, `src/cli.ts`, is the **command line** of the image (`node dist/cli.js <command>`, a NestJS application context with only the modules its commands use), run by the `trybun` script of the deployment package, e.g. `setup-token` ([§15.6](15-deployment.md)).
 - Both processes are built into **one container image** (`ghcr.io/trybun/server`) and started as two Compose services with different commands. They remain separate processes as described in [§14.1](#141-system-components).
 - This keeps the domain code in one place without an extra package, following the NestJS convention.
 - **Module system and build.** All applications and packages are ES modules (`"type": "module"`, TypeScript `module` and `moduleResolution` set to `nodenext`). `apps/server` is **bundled** for production with the rspack builder of the NestJS CLI (webpack is deprecated in the NestJS 12 CLI): the `@trybun/*` workspace packages are inlined into the bundle from their TypeScript source, while npm dependencies stay external ([ADR 0003](../adr/0003-module-system-and-server-bundling.md)).

@@ -2,6 +2,55 @@
   "pages": {
     "en": [
       {
+        "slug": "administrator/how-to/change-default-language-and-time-zone",
+        "audience": "administrator",
+        "category": "how-to",
+        "title": "Change the default language and time zone",
+        "description": "Change the language and time zone Trybun uses for people who have not chosen their own.",
+        "views": [],
+        "body": "The default language is used by the sign-in pages, by e-mail and by everyone whose browser language Trybun does not support; the default time zone shows dates and times until a person sets their own. `./trybun install` sets both. Each person can still choose their own language in the account menu.\n\n1. On the server, open `.env` in the folder of the installation.\n2. Change the variables:\n\n   ```sh\n   TRYBUN_DEFAULT_LANGUAGE=pl\n   TRYBUN_DEFAULT_TIME_ZONE=Europe/Warsaw\n   ```\n\n   The language is `en` or `pl`; the time zone is an IANA name such as `Europe/Warsaw` or `UTC`.\n\n3. Apply the change:\n\n   ```sh\n   docker compose up -d --wait\n   ```"
+      },
+      {
+        "slug": "administrator/how-to/configure-email",
+        "audience": "administrator",
+        "category": "how-to",
+        "title": "Configure e-mail",
+        "description": "Connect Trybun to an SMTP server, so that it sends e-mail, including password resets.",
+        "views": [],
+        "body": "Trybun sends e-mail through an SMTP server of your choice – your mail provider or a transactional e-mail service. Until it is configured, Trybun sends no e-mail and invitation links have to be passed on by hand. The same settings are used by the sign-in (password reset, e-mail verification).\n\n1. On the server, open `.env` in the folder of the installation.\n2. Set the variables of the **E-mail** section:\n\n   ```sh\n   TRYBUN_SMTP_HOST=smtp.example.com\n   TRYBUN_SMTP_PORT=587\n   TRYBUN_SMTP_SECURITY=starttls\n   TRYBUN_SMTP_USER=trybun@example.com\n   TRYBUN_SMTP_PASSWORD=…\n   TRYBUN_MAIL_FROM=trybun@example.com\n   ```\n\n   `TRYBUN_SMTP_SECURITY` is `starttls` (port 587), `tls` (port 465) or `none`. `TRYBUN_MAIL_FROM` is the sender address and is required.\n\n3. Apply the change:\n\n   ```sh\n   docker compose up -d --wait\n   ```\n\nThe item **Configure e-mail** of **Administration** › **Getting started** is ticked as soon as `TRYBUN_SMTP_HOST` is set."
+      },
+      {
+        "slug": "administrator/how-to/configure-github-sign-in",
+        "audience": "administrator",
+        "category": "how-to",
+        "title": "Configure GitHub sign-in",
+        "description": "Let team members sign in with their GitHub accounts through a GitHub OAuth app.",
+        "views": [],
+        "body": "Team members sign in with GitHub, which also links their accounts to GitHub for issue assignment. Until GitHub sign-in is configured, only the first Administrator can sign in as a team member, and inviting team members is not possible.\n\n1. On GitHub, open **Settings** › **Developer settings** › **OAuth Apps** › **New OAuth App** – of your organization or of your own account.\n2. Fill in:\n   - **Homepage URL**: `https://<your domain>`\n   - **Authorization callback URL**: `https://<your domain>/auth/realms/trybun/broker/github/endpoint`\n3. Select **Register application**, then **Generate a new client secret**.\n4. On the server, set the client ID and the secret in `.env` in the folder of the installation:\n\n   ```sh\n   TRYBUN_GITHUB_CLIENT_ID=…\n   TRYBUN_GITHUB_CLIENT_SECRET=…\n   ```\n\n5. Apply the change:\n\n   ```sh\n   docker compose up -d --wait\n   ```\n\nThe sign-in page now offers GitHub, and the item **Configure GitHub sign-in** of **Administration** › **Getting started** is ticked. Team members still set up two-factor authentication at their first sign-in."
+      },
+      {
+        "slug": "administrator/reference/about-trybun",
+        "audience": "administrator",
+        "category": "reference",
+        "title": "About Trybun",
+        "description": "Where to find the installed version of Trybun and its license.",
+        "views": [
+          "/admin/about"
+        ],
+        "body": "**Administration** › **About** shows:\n\n- **Version** – the version of Trybun installed on this server, in the form `MAJOR.MINOR.PATCH`. It is the version of the deployment package you installed or last updated to, and the one to name when you report a problem. The release notes of each version are on the [releases page](https://github.com/trybun/trybun/releases).\n- **License** – Trybun is free software under the MIT License; the link opens the license text of the installed version."
+      },
+      {
+        "slug": "administrator/tutorials/set-up-trybun",
+        "audience": "administrator",
+        "category": "tutorials",
+        "title": "Set up Trybun after installation",
+        "description": "Create the first Administrator account in the first-run wizard, sign in with two-factor authentication and work through the getting-started checklist.",
+        "views": [
+          "/admin"
+        ],
+        "body": "After `./trybun install` has started Trybun, it prints a **setup link**. The link creates the first Administrator account – the only account that does not need an invitation. It works once and expires after 24 hours.\n\n## Create the Administrator account\n\n1. Open the setup link in a browser.\n2. Enter your first name, last name, e-mail address and a password. Select the eye icon to check what you typed.\n3. Choose your own language and time zone. They start with the defaults of the system, which the page also shows.\n4. Select **Create Administrator account**.\n\nIf the page says that the link is invalid or has expired, run this command in the folder of the installation on the server and open the new link:\n\n```sh\n./trybun setup-token\n```\n\nA new link replaces every earlier one. Once the Administrator account exists, the setup page only offers to sign in.\n\n## Sign in for the first time\n\n1. Select **Sign in** and enter your e-mail address and password.\n2. Trybun asks you to set up **two-factor authentication**: scan the QR code with an authenticator app (for example FreeOTP, Google Authenticator or Microsoft Authenticator) and enter the code it shows.\n\nFrom now on you sign in with your password and a code from the app. This account keeps working even when GitHub sign-in is unavailable, so keep its password and authenticator app safe.\n\n## Work through the getting-started checklist\n\nAfter the first sign-in, Trybun opens **Administration** › **Getting started**. Each item shows whether it is done and links to a page that explains it. Items tick themselves as soon as their setting exists – you never tick them by hand:\n\n- [Configure GitHub sign-in](../how-to/configure-github-sign-in.md) – team members sign in with GitHub; required before you can invite the team.\n- [Configure e-mail](../how-to/configure-email.md) – without an SMTP server Trybun sends no e-mail.\n\nYou find **Administration** in the side navigation on a tablet or a computer, and in the account menu on a phone.\n\n## If you mistype the password\n\nThe password is the one you entered in the wizard. If you cannot sign in with it, reset it in the Keycloak administration console, which is reachable only through an SSH tunnel to the server: user `admin`, password `TRYBUN_KEYCLOAK_ADMIN_PASSWORD` from `.env`, realm `trybun`, **Users** › your account › **Credentials** › **Reset password**."
+      },
+      {
         "slug": "end-user/how-to/change-language",
         "audience": "end-user",
         "category": "how-to",
@@ -63,6 +112,55 @@
       }
     ],
     "pl": [
+      {
+        "slug": "administrator/how-to/change-default-language-and-time-zone",
+        "audience": "administrator",
+        "category": "how-to",
+        "title": "Zmień domyślny język i strefę czasową",
+        "description": "Zmień język i strefę czasową, których Trybun używa dla osób, które nie wybrały własnych.",
+        "views": [],
+        "body": "Domyślnego języka używają strony logowania, e-maile i wszyscy, których języka przeglądarki Trybun nie obsługuje; domyślna strefa czasowa pokazuje daty i godziny, dopóki ktoś nie ustawi własnej. `./trybun install` ustawia oba. Każda osoba może nadal wybrać własny język w menu konta.\n\n1. Na serwerze otwórz plik `.env` w folderze instalacji.\n2. Zmień zmienne:\n\n   ```sh\n   TRYBUN_DEFAULT_LANGUAGE=pl\n   TRYBUN_DEFAULT_TIME_ZONE=Europe/Warsaw\n   ```\n\n   Język to `en` albo `pl`; strefa czasowa to nazwa IANA, np. `Europe/Warsaw` albo `UTC`.\n\n3. Zastosuj zmianę:\n\n   ```sh\n   docker compose up -d --wait\n   ```"
+      },
+      {
+        "slug": "administrator/how-to/configure-email",
+        "audience": "administrator",
+        "category": "how-to",
+        "title": "Skonfiguruj e-mail",
+        "description": "Połącz Trybun z serwerem SMTP, aby wysyłał e-maile, także linki do resetu hasła.",
+        "views": [],
+        "body": "Trybun wysyła e-maile przez wybrany serwer SMTP – Twojego dostawcę poczty albo usługę e-maili transakcyjnych. Dopóki go nie skonfigurujesz, Trybun nie wysyła e-maili, a linki z zaproszeniami trzeba przekazywać ręcznie. Te same ustawienia wykorzystuje logowanie (reset hasła, weryfikacja adresu e-mail).\n\n1. Na serwerze otwórz plik `.env` w folderze instalacji.\n2. Ustaw zmienne sekcji **E-mail**:\n\n   ```sh\n   TRYBUN_SMTP_HOST=smtp.example.com\n   TRYBUN_SMTP_PORT=587\n   TRYBUN_SMTP_SECURITY=starttls\n   TRYBUN_SMTP_USER=trybun@example.com\n   TRYBUN_SMTP_PASSWORD=…\n   TRYBUN_MAIL_FROM=trybun@example.com\n   ```\n\n   `TRYBUN_SMTP_SECURITY` to `starttls` (port 587), `tls` (port 465) albo `none`. `TRYBUN_MAIL_FROM` to adres nadawcy i jest wymagany.\n\n3. Zastosuj zmianę:\n\n   ```sh\n   docker compose up -d --wait\n   ```\n\nPozycja **Skonfiguruj e-mail** w **Administracja** › **Pierwsze kroki** zaznacza się, gdy tylko ustawiono `TRYBUN_SMTP_HOST`."
+      },
+      {
+        "slug": "administrator/how-to/configure-github-sign-in",
+        "audience": "administrator",
+        "category": "how-to",
+        "title": "Skonfiguruj logowanie przez GitHub",
+        "description": "Pozwól członkom zespołu logować się kontami GitHub przez aplikację OAuth GitHub.",
+        "views": [],
+        "body": "Członkowie zespołu logują się przez GitHub, co łączy też ich konta z GitHubem na potrzeby przypisywania zgłoszeń. Dopóki logowanie przez GitHub nie jest skonfigurowane, jako członek zespołu może się zalogować tylko pierwszy Administrator, a zapraszanie członków zespołu nie jest możliwe.\n\n1. Na GitHubie otwórz **Settings** › **Developer settings** › **OAuth Apps** › **New OAuth App** – swojej organizacji albo własnego konta.\n2. Wypełnij:\n   - **Homepage URL**: `https://<Twoja domena>`\n   - **Authorization callback URL**: `https://<Twoja domena>/auth/realms/trybun/broker/github/endpoint`\n3. Wybierz **Register application**, a potem **Generate a new client secret**.\n4. Na serwerze ustaw identyfikator klienta i sekret w pliku `.env` w folderze instalacji:\n\n   ```sh\n   TRYBUN_GITHUB_CLIENT_ID=…\n   TRYBUN_GITHUB_CLIENT_SECRET=…\n   ```\n\n5. Zastosuj zmianę:\n\n   ```sh\n   docker compose up -d --wait\n   ```\n\nStrona logowania proponuje teraz GitHub, a pozycja **Skonfiguruj logowanie przez GitHub** w **Administracja** › **Pierwsze kroki** jest zaznaczona. Członkowie zespołu nadal konfigurują uwierzytelnianie dwuskładnikowe przy pierwszym logowaniu."
+      },
+      {
+        "slug": "administrator/reference/about-trybun",
+        "audience": "administrator",
+        "category": "reference",
+        "title": "O systemie Trybun",
+        "description": "Gdzie znaleźć zainstalowaną wersję Trybuna i jego licencję.",
+        "views": [
+          "/admin/about"
+        ],
+        "body": "**Administracja** › **O systemie** pokazuje:\n\n- **Wersja** – wersję Trybuna zainstalowaną na tym serwerze, w postaci `MAJOR.MINOR.PATCH`. To wersja paczki wdrożeniowej, którą zainstalowano lub do której ostatnio zaktualizowano, i to ją podajesz, zgłaszając problem. Informacje o zmianach w każdej wersji są na [stronie wydań](https://github.com/trybun/trybun/releases).\n- **Licencja** – Trybun jest wolnym oprogramowaniem na licencji MIT; link otwiera tekst licencji zainstalowanej wersji."
+      },
+      {
+        "slug": "administrator/tutorials/set-up-trybun",
+        "audience": "administrator",
+        "category": "tutorials",
+        "title": "Konfiguracja Trybuna po instalacji",
+        "description": "Utwórz pierwsze konto Administratora w kreatorze pierwszego uruchomienia, zaloguj się z uwierzytelnianiem dwuskładnikowym i przejdź listę pierwszych kroków.",
+        "views": [
+          "/admin"
+        ],
+        "body": "Gdy `./trybun install` uruchomi Trybun, wypisuje **link konfiguracyjny**. Link tworzy pierwsze konto Administratora – jedyne konto, które nie wymaga zaproszenia. Działa jeden raz i wygasa po 24 godzinach.\n\n## Utwórz konto Administratora\n\n1. Otwórz link konfiguracyjny w przeglądarce.\n2. Wpisz imię, nazwisko, adres e-mail i hasło. Wybierz ikonę oka, aby sprawdzić, co wpisano.\n3. Wybierz swój język i strefę czasową. Na początku mają wartości domyślne systemu, które strona też pokazuje.\n4. Wybierz **Utwórz konto Administratora**.\n\nJeśli strona informuje, że link jest nieprawidłowy lub wygasł, uruchom to polecenie w folderze instalacji na serwerze i otwórz nowy link:\n\n```sh\n./trybun setup-token\n```\n\nNowy link zastępuje wszystkie wcześniejsze. Gdy konto Administratora już istnieje, strona konfiguracji proponuje tylko logowanie.\n\n## Zaloguj się pierwszy raz\n\n1. Wybierz **Zaloguj się** i wpisz adres e-mail oraz hasło.\n2. Trybun poprosi o skonfigurowanie **uwierzytelniania dwuskładnikowego**: zeskanuj kod QR aplikacją uwierzytelniającą (np. FreeOTP, Google Authenticator lub Microsoft Authenticator) i wpisz pokazany w niej kod.\n\nOd teraz logujesz się hasłem i kodem z aplikacji. To konto działa także wtedy, gdy logowanie przez GitHub jest niedostępne, więc chroń jego hasło i aplikację uwierzytelniającą.\n\n## Przejdź listę pierwszych kroków\n\nPo pierwszym logowaniu Trybun otwiera **Administracja** › **Pierwsze kroki**. Każda pozycja pokazuje, czy jest gotowa, i prowadzi do strony, która ją wyjaśnia. Pozycje zaznaczają się same, gdy tylko istnieje ich ustawienie – nigdy nie zaznaczasz ich ręcznie:\n\n- [Skonfiguruj logowanie przez GitHub](../how-to/configure-github-sign-in.md) – członkowie zespołu logują się przez GitHub; wymagane, zanim zaprosisz zespół.\n- [Skonfiguruj e-mail](../how-to/configure-email.md) – bez serwera SMTP Trybun nie wysyła e-maili.\n\n**Administrację** znajdziesz w bocznej nawigacji na tablecie lub komputerze, a na telefonie w menu konta.\n\n## Jeśli pomylisz hasło\n\nHasło to to, które wpisano w kreatorze. Jeśli nie możesz się nim zalogować, zresetuj je w konsoli administracyjnej Keycloak, dostępnej tylko przez tunel SSH do serwera: użytkownik `admin`, hasło `TRYBUN_KEYCLOAK_ADMIN_PASSWORD` z `.env`, realm `trybun`, **Users** › Twoje konto › **Credentials** › **Reset password**."
+      },
       {
         "slug": "end-user/how-to/change-language",
         "audience": "end-user",
@@ -132,6 +230,8 @@
     },
     "team": {
       "/": "team/tutorials/getting-started",
+      "/admin": "administrator/tutorials/set-up-trybun",
+      "/admin/about": "administrator/reference/about-trybun",
       "/help": "end-user/how-to/search-the-help"
     }
   }

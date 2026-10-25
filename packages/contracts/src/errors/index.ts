@@ -14,6 +14,10 @@ export const errorCodeSchema = z.enum([
   'request.precondition_required',
   'authentication.required',
   'authentication.second_factor_required',
+  'setup.token_invalid',
+  'setup.completed',
+  'setup.password_rejected',
+  'setup.email_taken',
   'server.internal_error',
   'server.unavailable',
 ]);
@@ -37,6 +41,14 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'authentication.required': 401,
   // A team member whose sign-in did not complete 2FA (§7.4).
   'authentication.second_factor_required': 401,
+  // An unknown, expired or used setup token, all with the same response (§15.6).
+  'setup.token_invalid': 404,
+  // The first-run wizard after an Administrator exists: disabled permanently (§15.6).
+  'setup.completed': 409,
+  // A password the password policy of Keycloak refuses (§7.4).
+  'setup.password_rejected': 422,
+  // An e-mail address that already has a Keycloak account.
+  'setup.email_taken': 422,
   // An unexpected error; the response carries no details (§18.3).
   'server.internal_error': 500,
   // PostgreSQL is unavailable (§17.2).

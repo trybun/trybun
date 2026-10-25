@@ -3,7 +3,9 @@
     "title": "Trybun"
   },
   "signIn": {
-    "redirecting": "Redirecting to the sign-in…"
+    "redirecting": "Redirecting to the sign-in…",
+    "notSetUpTitle": "Trybun is not set up yet",
+    "notSetUpText": "Open the setup link printed by <command>./trybun install</command>, or run <command>./trybun setup-token</command> on the server for a new link."
   },
   "appShell": {
     "skipToContent": "Skip to main content",
@@ -13,7 +15,8 @@
     "home": "Home",
     "accountMenu": "Account menu",
     "language": "Language",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "administration": "Administration"
   },
   "languages": {
     "en": "English",
@@ -21,6 +24,52 @@
   },
   "home": {
     "title": "Home"
+  },
+  "administration": {
+    "title": "Administration",
+    "sections": "Sections of the Administrator panel",
+    "gettingStarted": "Getting started",
+    "about": "About",
+    "progress": "{done} of {total} done",
+    "allDone": "Everything on this list is set up.",
+    "done": "Done",
+    "toDo": "To do",
+    "optional": "Optional",
+    "howTo": "How to do it",
+    "items": {
+      "configure_github_sign_in": {
+        "title": "Configure GitHub sign-in",
+        "description": "Team members sign in with GitHub. Required before you can invite the team."
+      },
+      "configure_email": {
+        "title": "Configure e-mail",
+        "description": "Without an SMTP server Trybun sends no e-mail, so invitation links have to be passed on by hand."
+      }
+    },
+    "version": "Version",
+    "license": "License",
+    "licenseName": "MIT License"
+  },
+  "setup": {
+    "title": "Set up Trybun",
+    "intro": "Create the first Administrator account. You set up two-factor authentication when you sign in for the first time.",
+    "checking": "Checking the setup link…",
+    "invalidTitle": "This setup link is invalid or has expired",
+    "invalidText": "Run <command>./trybun setup-token</command> on the server for a new link.",
+    "completedTitle": "Trybun is already set up",
+    "signIn": "Sign in",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "E-mail address",
+    "password": "Password",
+    "passwordDescription": "You sign in with this password and a one-time code from an authenticator app.",
+    "language": "Your language",
+    "timeZone": "Your time zone",
+    "systemDefaults": "Default language of the system: {language}; default time zone: {timeZone}. Both are set in <file>.env</file> and changed there, followed by <command>docker compose up -d --wait</command>.",
+    "submit": "Create Administrator account",
+    "submitting": "Creating the account…",
+    "doneTitle": "Your account is ready",
+    "doneText": "Sign in with your e-mail address and password. Trybun then asks you to set up two-factor authentication with an authenticator app."
   },
   "help": {
     "open": "Help",
@@ -69,6 +118,9 @@
   },
   "ui": {
     "close": "Close",
+    "passwordInput": {
+      "show": "Show password"
+    },
     "toast": {
       "close": "Close notification"
     },
@@ -93,6 +145,12 @@
     "authentication": {
       "required": "Your session has ended. Sign in again.",
       "second_factor_required": "Sign in again with two-factor authentication."
+    },
+    "setup": {
+      "token_invalid": "This setup link is invalid or has expired. Run ./trybun setup-token on the server for a new link.",
+      "completed": "Trybun is already set up. Sign in instead.",
+      "password_rejected": "This password does not meet the password policy. Choose a longer one.",
+      "email_taken": "An account with this e-mail address already exists."
     },
     "server": {
       "internal_error": "Something went wrong. Try again later.",

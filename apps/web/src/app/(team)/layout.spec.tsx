@@ -10,6 +10,7 @@ const user = {
   displayName: 'Dorota Developer',
   email: 'developer@example.com',
   kind: 'team',
+  allowedActions: [],
 };
 const progress = [
   {

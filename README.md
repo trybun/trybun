@@ -12,6 +12,7 @@ The project is delivered with an **AI Engineering** approach: AI agents write th
 - **pnpm** enabled through Corepack: `corepack enable` (the version comes from the `packageManager` field of [`package.json`](package.json))
 - **Docker** with the Compose plugin – runs the infrastructure services and the integration tests (Testcontainers)
 - **Chromium** for the component tests, installed once after `pnpm install`: `pnpm --filter @trybun/ui exec playwright install chromium`
+- **ShellCheck** for `pnpm lint`, which checks the `trybun` script of the deployment package: `apt install shellcheck` (preinstalled on the CI runners)
 
 ## Getting started
 
@@ -34,7 +35,7 @@ Opening <http://localhost:3000> leads to the Keycloak login screen. In the local
 | Developer | `developer@example.com` | `trybun` |
 | Newcomer – a team member without product tour progress, who sees the tours | `newcomer@example.com` | `trybun` |
 
-Team members always sign in with 2FA. The seeded accounts share one TOTP secret: add `ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ` to an authenticator app, or print the current code with `oathtool --totp -b ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ`. Keycloak imports these accounts only on the first start of an empty Keycloak database ([`docker/keycloak/dev/`](docker/keycloak/dev)); after `docker compose -f compose.yaml -f compose.dev.yaml down -v` they are imported again. `pnpm db:seed` restores the demo data, also the tour progress: the other accounts have completed every tour, the newcomer none. Sign-in with GitHub, Microsoft or Google appears on the login screen once its variables are set in `.env`.
+Team members always sign in with 2FA. The seeded accounts share one TOTP secret: add `ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ` to an authenticator app, or print the current code with `oathtool --totp -b ORZHSYTVNYWWY33DMFWC2MTGMEWWWZLZ`. Keycloak imports these accounts only on the first start of an empty Keycloak database ([`docker/keycloak/dev/`](docker/keycloak/dev)); after `docker compose -f compose.yaml -f compose.dev.yaml down -v` they are imported again. `pnpm db:seed` restores the demo data, also the tour progress: the other accounts have completed every tour, the newcomer none. Sign-in with GitHub, Microsoft or Google appears on the login screen once its variables are set in `.env`. The Administrator also opens **Administration** (`/admin`): the getting-started checklist and the "About" page. The demo dataset has an Administrator, so the first-run wizard (`/setup`) only says that Trybun is set up; on an empty database, `pnpm --filter @trybun/server exec node --env-file=../../.env dist/cli.js setup-token` (after `pnpm build`) prints a setup link.
 
 ## Scripts
 
@@ -45,7 +46,7 @@ Run from the repository root:
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications and generate the Keycloak login theme from the message catalogues |
-| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest |
+| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest, and check the `trybun` script with ShellCheck |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
@@ -102,7 +103,7 @@ pnpm workspaces with Turborepo ([§14.6](docs/spec/14-architecture.md)). Applica
 | `packages/tsconfig` | `@trybun/tsconfig` | Shared TypeScript configuration (strict) |
 | `packages/eslint-config` | `@trybun/eslint-config` | Shared lint rules: naming conventions, package and layer boundaries, Tailwind classes |
 | `docs/` | | Specification, implementation plan, ADRs, brand, user documentation (`docs/user/`) |
-| `deploy/` | | Files of the deployment package of a release that are not in the repository root or `docker/` (`INSTALL.md`) |
+| `deploy/` | | Files of the deployment package of a release that are not in the repository root or `docker/` (`INSTALL.md`, the `trybun` script and its tests) |
 
 The code inside the applications follows the patterns of [§18](docs/spec/18-code-patterns.md); the technology choices are recorded in [`docs/adr/`](docs/adr/README.md).
 
@@ -132,6 +133,8 @@ The API and the Worker log JSON lines to standard output (`docker compose logs a
 
 The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a certificate of Caddy's local authority). `/health` also reports the installed version.
 
+An installation from a release uses the `trybun` script of the deployment package ([`deploy/trybun`](deploy/trybun), [`INSTALL.md`](deploy/INSTALL.md), [§15.5](docs/spec/15-deployment.md)): `./trybun install` checks the server (Docker and Compose versions, 8 GB RAM, free ports 80 and 443, the domain), asks for the domain, the default language and time zone, generates every secret and the backup passphrase into `.env` – never changing an existing one, so a re-run is safe – starts the system and prints the link of the first-run wizard, which creates the first Administrator with 2FA in Keycloak. `./trybun setup-token` prints a new link (valid 24 hours, single use) while no Administrator exists; the `server` image runs it as `node dist/cli.js setup-token` in the `api` container.
+
 ## Releases
 
 Versions are calculated from the Conventional Commits by [release-please](https://github.com/googleapis/release-please) – before `1.0.0`, `feat:` increases MINOR and everything else PATCH ([§2.11](docs/spec/02-agent-rules.md)); never set a version or edit `CHANGELOG.md` by hand. The workflow [`release.yml`](.github/workflows/release.yml) ([ADR 0006](docs/adr/0006-release-pipeline.md)):
@@ -140,7 +143,7 @@ Versions are calculated from the Conventional Commits by [release-please](https:
 2. when the maintainer merges it, tags `vX.Y.Z`, creates a draft GitHub Release, builds the images `ghcr.io/trybun/web`, `server` and `postgres`, scans them with Trivy – a critical vulnerability stops the release – creates their SBOMs (Syft, CycloneDX) and builds the deployment package;
 3. after the maintainer's approval in the environment `release`, pushes the images as `X.Y.Z` (and moves `X.Y` and `X`), attaches the SBOMs, the deployment package and `SHA256SUMS`, and publishes the release.
 
-"Run workflow" on `main` or a maintenance branch publishes the release candidate `X.Y.Z-rc.N` of its open release pull request the same way. The deployment package (`trybun-X.Y.Z.tar.gz`) holds `compose.yaml` pinned to the release's images, `.env.example`, the Caddy and Keycloak configuration and [`INSTALL.md`](deploy/INSTALL.md); build it locally with `node scripts/build-deployment-package.js <version> <folder>`.
+"Run workflow" on `main` or a maintenance branch publishes the release candidate `X.Y.Z-rc.N` of its open release pull request the same way. The deployment package (`trybun-X.Y.Z.tar.gz`) holds `compose.yaml` pinned to the release's images, `.env.example`, the Caddy and Keycloak configuration, the `trybun` script and [`INSTALL.md`](deploy/INSTALL.md); build it locally with `node scripts/build-deployment-package.js <version> <folder>`.
 
 The workflow [`image-scan.yml`](.github/workflows/image-scan.yml) scans every day (and with "Run workflow") the published images of the supported series and the images built from `main` with Trivy, with the accepted risks of [`.trivyignore.yaml`](.trivyignore.yaml); a critical vulnerability – or an accepted risk past its expiry date – opens an alert in GitHub code scanning ([§2.10](docs/spec/02-agent-rules.md), [§15.4](docs/spec/15-deployment.md)).
 

@@ -59,6 +59,7 @@ apps/server/
   src/
     main.ts                     API entry point (ApiModule)
     worker.ts                   Worker entry point (WorkerModule, application context)
+    cli.ts                      command line entry point (CliModule, application context)
     api.module.ts               root module of the API process
     worker.module.ts            root module of the Worker process
     modules/<feature>/          domain feature modules, e.g. tickets, comments, projects
@@ -71,7 +72,8 @@ apps/server/
       <feature>-worker.module.ts  registers the processors and job schedulers
       domain/                     pure business rules, files named by concept (status-transitions.ts)
     platform/<concern>/         technical modules: config, database, authentication, authorization,
-                                errors, outbox, queues, logging, health, clock, i18n, mail, storage, …
+                                errors, outbox, queues, logging, health, clock, i18n, keycloak-admin,
+                                mail, storage, …
   test/                         factories, MSW handlers and set-up of integration tests
 ```
 
@@ -103,10 +105,10 @@ Every endpoint follows the order of checks of [§17.2](17-conventions.md) throug
 ### Authorization
 
 - **Principal**: every request and job acts as a principal – a user (session or personal access token limited by its scope), an integration token or the system ([§12.2](12-api-webhooks-import.md)). It is resolved once per request and passed to service methods as their first parameter.
-- **Abilities**: one ability factory (`platform/authorization`) builds the CASL ability of a principal from the rules each module defines in `<feature>.abilities.ts`. Global restrictions – the token scope ([§12.2](12-api-webhooks-import.md)) and the archived state of projects ([§7.5](07-users-organizations-permissions.md)) – are added last as `cannot` rules, so they override every other rule. A rule that stands for a state of a record carries its error code as the reason (e.g. `project.archived`), which is returned with that code's status instead of `403`.
+- **Abilities**: one ability factory (`platform/authorization`, `AbilityFactory.forPrincipal()`) builds the CASL ability of a principal from the rules each module defines in `<feature>.abilities.ts`, passed to `AuthorizationModule.forRoot()` by the root module. A part of the system without records (e.g. the Administrator panel) is a subject named after it (`Administration`). Global restrictions – the token scope ([§12.2](12-api-webhooks-import.md)) and the archived state of projects ([§7.5](07-users-organizations-permissions.md)) – are added last as `cannot` rules, so they override every other rule. A rule that stands for a state of a record carries its error code as the reason (e.g. `project.archived`), which is returned with that code's status instead of `403`.
 - Subjects are the Prisma model names; actions are snake_case codes from a closed list per subject in `@trybun/contracts` (e.g. `read`, `update`, `change_status`, `assign`, `redact`).
 - **Queries**: every query that returns records to a principal adds `accessibleBy(ability, action)` to its `where`. Lists and details use the same rule, so a list never returns a record its detail would refuse ([§14.4](14-architecture.md#144-architectural-principles)). A record is never loaded first and checked for visibility afterwards.
-- **Allowed actions**: responses of records the UI acts on contain `allowedActions` – the codes of the actions the principal may perform on that record, computed with the same ability. Actions on a project come with the project; global actions (e.g. creating a project) with the current account. The web application adapts the UI only to these values ([§18.5](#185-web-application)).
+- **Allowed actions**: responses of records the UI acts on contain `allowedActions` – the codes of the actions the principal may perform on that record, computed with the same ability. Actions on a project come with the project; global actions (e.g. creating a project, opening the Administrator panel) with the current account (`GET /api/v1/users/me`). The web application adapts the UI only to these values ([§18.5](#185-web-application)).
 - **Permission tests**: `<feature>.abilities.spec.ts` lists the rows of [§7.5](07-users-organizations-permissions.md) for the module as a table, each with an allowed and a denied case.
 
 ### Writing data
@@ -209,8 +211,9 @@ No global client state library is used.
 
 ### Forms
 
-- React Hook Form with the Zod resolver and the request schema from `@trybun/contracts` – the same schema the API validates ([§14.4](14-architecture.md#144-architectural-principles)) – rendered with the `Form` components of `@trybun/ui`.
-- A form submits through the feature's mutation hook. Field errors of a Problem Details response (`errors[].pointer`) are applied to the form fields by one helper; other errors show the translated message.
+- React Hook Form with the Zod resolver and the request schema from `@trybun/contracts` – the same schema the API validates ([§14.4](14-architecture.md#144-architectural-principles)) – rendered with the `Field` components of `@trybun/ui` (`Field` with `invalid`, `FieldLabel`, `FieldDescription`, `FieldError`; Base UI links the label, the description and the error to the control), each field through `Controller`.
+- The resolver gets the error map `FORM_ERROR_MAP` of `lib/errors/form-errors.ts`, so a form error holds the same field error code as the API (`toFieldErrorCode` of `@trybun/contracts/problem-details`), translated with `useErrorMessage()` where it is shown.
+- A form submits through the feature's mutation hook. Field errors of a Problem Details response (`errors[].pointer`) are applied to the form fields by one helper (`fieldErrorsOf()` of `lib/errors/form-errors.ts`): the field error code of a validation error, the code of a rule (e.g. `setup.email_taken`) otherwise; other errors show the translated message.
 - Watched field values are read with `useWatch({ control, name })`; `watch()` of `useForm()` is not used, because the React Compiler cannot memoize it.
 
 ### Product tours
@@ -293,6 +296,7 @@ No global client state library is used.
 | Error messages in the web | `apps/web/src/lib/errors/` | S0-17 |
 | User documentation, help viewer, contextual help and help search | `docs/user/`, `apps/web/src/features/help/`, `apps/web/scripts/generate-help-content.ts`, `packages/ui/src/components/markdown.tsx` | S0-09 |
 | Product tours: definitions, runner, tip, progress endpoints, E2E target check; the first mutation hook | `apps/web/src/features/product-tours/` (`mutations.ts`), `packages/ui/src/components/tour-tip.tsx`, `apps/server/src/modules/users/`, `apps/web/e2e/product-tours.spec.ts` | S0-10 |
+| Adapter of an external service tested against its container; command line entry point; the ability factory with its first rule and global `allowedActions`; the first form | `apps/server/src/platform/keycloak-admin/`, `apps/server/src/cli.ts` and `apps/server/src/modules/setup/setup-token.command.ts`, `apps/server/src/platform/authorization/ability-factory.ts` and `apps/server/src/modules/administration/administration.abilities.ts` (until S1-04 extends them), `apps/web/src/features/setup/` | S0-12 |
 | Feature module with endpoints, list, form and mutations | `modules/projects/`, `features/projects/` | S1-01 |
 | Abilities, `accessibleBy` queries, `allowedActions`, permission tests | `modules/projects/projects.abilities.ts` | S1-04 |
 | Real-time event and query invalidation | `modules/notifications/`, `lib/realtime/` | S1-15 |

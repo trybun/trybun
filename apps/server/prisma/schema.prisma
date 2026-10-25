@@ -89,6 +89,20 @@ model ProductTourProgress {
   @@map("product_tour_progresses")
 }
 
+/// The one-time setup token of the first-run wizard (§15.6), valid 24 hours and used once. Only its
+/// hash is stored; issuing a new token replaces the earlier ones, so only the latest link works.
+model SetupToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  /// SHA-256 of the token, base64url.
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  /// Set in the transaction that creates the first Administrator.
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("setup_tokens")
+}
+
 /// Transactional outbox (§17.2): written in the transaction of a change, published by the Worker.
 model OutboxEvent {
   id          String    @id @default(uuid(7)) @db.Uuid
