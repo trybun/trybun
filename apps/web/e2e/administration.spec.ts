@@ -12,10 +12,11 @@ test.describe('Administrator panel', () => {
     await panel.goto();
 
     await expect(panel.heading).toHaveText('Administration');
-    await expect(panel.checklistItems).toHaveCount(2);
+    await expect(panel.checklistItems).toHaveCount(3);
     await expect(panel.checklistItems.first()).toContainText('Configure GitHub sign-in');
-    await panel.checklistItems.nth(1).getByRole('link', { name: 'How to do it' }).click();
-    await expect(page).toHaveURL('/help/administrator/how-to/configure-email');
+    await expect(panel.checklistItems.nth(2)).toContainText('Configure backup storage');
+    await panel.checklistItems.nth(2).getByRole('link', { name: 'How to do it' }).click();
+    await expect(page).toHaveURL('/help/administrator/how-to/configure-backup-storage');
   });
 
   test('the About page shows the version that /health reports', async ({ page, request }) => {
