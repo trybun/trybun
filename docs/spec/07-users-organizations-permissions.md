@@ -108,7 +108,7 @@ Keycloak stores only credentials and sign-in factors. Everything else about a pe
 
 ### Invitations
 
-Invitations are managed by the application (not by Keycloak e-mails), so the link can always be copied manually.
+Invitations are managed by the application (not by Keycloak e-mails), so the link can always be copied manually. How they are built on Keycloak, with the options considered: [ADR 0009](../adr/0009-invitation-flow.md).
 
 | Field | Description |
 |---|---|

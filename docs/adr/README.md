@@ -18,3 +18,4 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 | [0006](0006-release-pipeline.md) | Release pipeline | proposed |
 | [0007](0007-throttler-storage-on-nestjs-12.md) | Rate-limit storage on NestJS 12 | proposed |
 | [0008](0008-attachment-serving.md) | Attachment serving | proposed |
+| [0009](0009-invitation-flow.md) | Invitation flow | proposed |
