@@ -1,3 +1,4 @@
+import type { CurrentUserAction } from '@trybun/contracts/users';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { type AppHeaderSlots, AppHeader } from './app-header.js';
@@ -6,9 +7,15 @@ import { SideNavigation } from './side-navigation.js';
 
 /**
  * The application shell (§2.9), mobile-first: header and bottom navigation on phones, side
- * navigation from the tablet width on (collapsible on tablets).
+ * navigation from the tablet width on (collapsible on tablets). The global actions of the account
+ * (`allowedActions`, §18.3) decide which destinations the navigation offers; the layout passes
+ * them from its prefetched account, so the navigation loads no API client before the first paint.
  */
-export function AppShell({ children, ...slots }: AppHeaderSlots & { children: ReactNode }) {
+export function AppShell({
+  children,
+  allowedActions,
+  ...slots
+}: AppHeaderSlots & { children: ReactNode; allowedActions: readonly CurrentUserAction[] }) {
   const t = useTranslations('appShell');
   return (
     <div className="flex min-h-dvh flex-col">
@@ -20,7 +27,7 @@ export function AppShell({ children, ...slots }: AppHeaderSlots & { children: Re
       </a>
       <AppHeader {...slots} />
       <div className="flex flex-1">
-        <SideNavigation />
+        <SideNavigation allowedActions={allowedActions} />
         <main
           id="main"
           tabIndex={-1}
@@ -29,7 +36,7 @@ export function AppShell({ children, ...slots }: AppHeaderSlots & { children: Re
           {children}
         </main>
       </div>
-      <BottomNavigation />
+      <BottomNavigation allowedActions={allowedActions} />
     </div>
   );
 }

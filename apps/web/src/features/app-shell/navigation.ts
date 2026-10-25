@@ -32,13 +32,13 @@ export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
 
 /** The destinations the account may open, from the `allowedActions` of the API (§18.5). */
 export function navigationItemsFor(
-  allowedActions: readonly CurrentUserAction[] | undefined,
+  allowedActions: readonly CurrentUserAction[],
   device: 'phone' | 'wide',
 ): NavigationItem[] {
   return NAVIGATION_ITEMS.filter(
     (item) =>
       (device === 'wide' || item.isOnPhones) &&
-      (item.requiredAction === undefined || (allowedActions ?? []).includes(item.requiredAction)),
+      (item.requiredAction === undefined || allowedActions.includes(item.requiredAction)),
   );
 }
 

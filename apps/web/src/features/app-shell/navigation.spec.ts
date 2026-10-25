@@ -18,7 +18,6 @@ describe('navigationItemsFor', () => {
     [['open_administration'] as const, 'wide', ['/', '/admin']],
     [['open_administration'] as const, 'phone', ['/']],
     [[] as const, 'wide', ['/']],
-    [undefined, 'wide', ['/']],
   ] as const)('with %j on %s shows %j', (allowedActions, device, hrefs) => {
     expect(navigationItemsFor(allowedActions, device).map((item) => item.href)).toEqual(hrefs);
   });

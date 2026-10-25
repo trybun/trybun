@@ -21,13 +21,15 @@ describe('help content', () => {
   it.each(['en', 'pl'] as const)('gives the team the pages of every audience (%s)', (locale) => {
     const audiences = new Set(getHelpPages(locale, 'team').map((page) => page.audience));
 
-    expect(audiences).toEqual(new Set(['end-user', 'team']));
+    expect(audiences).toEqual(new Set(['administrator', 'end-user', 'team']));
     expect(getHelpPage(locale, 'team', TEAM_PAGE)?.audience).toBe('team');
   });
 
   it('opens the help of the most specific audience of the reader for a view', () => {
     expect(getHelpViews('end_user')['/']).toBe('end-user/tutorials/getting-started');
     expect(getHelpViews('team')['/']).toBe(TEAM_PAGE);
+    expect(getHelpViews('team')['/admin']).toBe('administrator/tutorials/set-up-trybun');
+    expect(getHelpViews('end_user')['/admin']).toBeUndefined();
   });
 
   it.each([

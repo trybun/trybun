@@ -29,7 +29,7 @@ async function renderShell(locale: 'en' | 'pl' = 'en') {
   const { prelude } = await prerender(
     <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
       <QueryClientProvider client={queryClient}>
-        <AppShell help={<button type="button">help-slot</button>}>
+        <AppShell allowedActions={[]} help={<button type="button">help-slot</button>}>
           <h1>Page</h1>
         </AppShell>
       </QueryClientProvider>

@@ -1,4 +1,5 @@
-import { Button } from '@trybun/ui/components/button';
+import { buttonVariants } from '@trybun/ui/components/button';
+import { cn } from '@trybun/ui/lib/utils';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -24,9 +25,10 @@ export function SetupMessage({
       </h2>
       {children !== undefined && <p className="text-muted-foreground">{children}</p>}
       {signIn && (
-        <Button className="w-fit" render={<Link href={SIGN_IN_HREF} />} nativeButton={false}>
+        // A link styled as a button: it navigates, so it keeps the role of a link.
+        <Link href={SIGN_IN_HREF} className={cn(buttonVariants(), 'w-fit')}>
           {t('signIn')}
-        </Button>
+        </Link>
       )}
     </section>
   );

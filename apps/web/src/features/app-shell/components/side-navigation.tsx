@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import type { CurrentUserAction } from '@trybun/contracts/users';
 import { Button } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react';
@@ -8,18 +8,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { currentUserQueryOptions } from '../../users/queries.js';
 import { isCurrent, navigationItemsFor } from '../navigation.js';
 
 /**
  * The side navigation from the tablet width on (§2.9): collapsible to icons on tablets, always
  * expanded on desktop.
  */
-export function SideNavigation() {
+export function SideNavigation({
+  allowedActions,
+}: {
+  allowedActions: readonly CurrentUserAction[];
+}) {
   const t = useTranslations('appShell');
   const pathname = usePathname();
-  const { data: user } = useQuery(currentUserQueryOptions(browserApiClient));
   const [isExpanded, setIsExpanded] = useState(false);
   return (
     <nav
@@ -42,7 +43,7 @@ export function SideNavigation() {
           {isExpanded ? <PanelLeftCloseIcon aria-hidden /> : <PanelLeftOpenIcon aria-hidden />}
         </Button>
         <ul className="flex flex-col gap-1">
-          {navigationItemsFor(user?.allowedActions, 'wide').map(({ href, labelKey, icon }) => {
+          {navigationItemsFor(allowedActions, 'wide').map(({ href, labelKey, icon }) => {
             const Icon = icon;
             const isCurrentPage = isCurrent(href, pathname);
             return (
