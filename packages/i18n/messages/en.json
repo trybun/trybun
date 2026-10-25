@@ -62,7 +62,7 @@
     "lastName": "Last name",
     "email": "E-mail address",
     "password": "Password",
-    "passwordDescription": "You sign in with this password and a one-time code from an authenticator app.",
+    "passwordDescription": "At least {min} characters. A phrase of several words is easy to remember. You sign in with this password and a one-time code from an authenticator app.",
     "language": "Your language",
     "timeZone": "Your time zone",
     "systemDefaults": "Default language of the system: {language}; default time zone: {timeZone}. Both are set in <file>.env</file> and changed there, followed by <command>docker compose up -d --wait</command>.",
@@ -149,7 +149,7 @@
     "setup": {
       "token_invalid": "This setup link is invalid or has expired. Run ./trybun setup-token on the server for a new link.",
       "completed": "Trybun is already set up. Sign in instead.",
-      "password_rejected": "This password does not meet the password policy. Choose a longer one.",
+      "password_rejected": "Choose another password: it must have at least 15 characters and must not be your e-mail address or a common password.",
       "email_taken": "An account with this e-mail address already exists."
     },
     "server": {
@@ -186,6 +186,11 @@
     }
   },
   "keycloak": {
-    "loginAccountTitle": "Sign in to Trybun"
+    "loginAccountTitle": "Sign in to Trybun",
+    "invalidPasswordMinLengthMessage": "The password must have at least {0} characters.",
+    "invalidPasswordMaxLengthMessage": "The password may have at most {0} characters.",
+    "invalidPasswordNotEmailMessage": "The password must not be your e-mail address.",
+    "invalidPasswordNotUsernameMessage": "The password must not be your user name.",
+    "invalidPasswordBlacklistedMessage": "This password is too common. Choose another one, e.g. a phrase of several words."
   }
 }

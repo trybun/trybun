@@ -96,6 +96,7 @@ Anonymization of an account affects every store of personal data:
 - Dependencies are monitored for vulnerabilities and kept up to date according to Rule 10 ([§2.10](02-agent-rules.md)).
 - HTTPS only, with HSTS.
 - Security headers set in one place: a strict Content Security Policy with nonces (Next.js), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` with only the features used, and framing denied (`frame-ancestors 'none'`).
+- Passwords follow the password policy of [§7.4](07-users-organizations-permissions.md) (OWASP ASVS 5.0 V6, NIST SP 800-63B); its offline blocklist of common and breached passwords (`docker/keycloak/password-blocklists/`, from SecLists) is part of the deployment package and is updated with the dependencies (Rule 10); no password data is sent to an online breach service.
 - Protection against brute-force login attempts (brute-force detection in Keycloak), rate limiting of the API ([§14.4](14-architecture.md)), expiry of inactive sessions, CSRF protection.
 - Secrets (e.g. the GitHub App private key) are kept out of code and the repository, in a secure secret store / environment configuration ([§15.3](15-deployment.md)).
 - API tokens ([§12.2](12-api-webhooks-import.md)) are stored only as hashes.

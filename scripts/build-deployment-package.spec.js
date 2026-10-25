@@ -78,6 +78,7 @@ describe('buildDeploymentPackage', () => {
         'trybun-0.1.0/docker/keycloak/apply-config.sh',
         'trybun-0.1.0/docker/keycloak/realm/trybun.yaml',
         'trybun-0.1.0/docker/keycloak/themes/trybun/login/theme.properties',
+        'trybun-0.1.0/docker/keycloak/password-blocklists/trybun.txt',
       ]),
     );
     expect(files.filter((file) => file.includes('/dev/'))).toEqual([]);

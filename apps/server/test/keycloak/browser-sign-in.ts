@@ -106,3 +106,66 @@ export async function refreshAccessToken(
   const { access_token: accessToken } = (await response.json()) as { access_token: string };
   return accessToken;
 }
+
+export interface RequiredActionPage {
+  /** The HTML of the page Keycloak shows after the password, e.g. the form of a required action. */
+  html: string;
+  /** Submits the form of the page and returns the HTML of the next page. */
+  submit(form: Record<string, string>): Promise<string>;
+}
+
+/**
+ * Signs in with a password up to the page of a required action (e.g. "update password"), in the
+ * language of `ui_locales`, as a browser would.
+ */
+export async function signInToRequiredAction(
+  keycloak: TestKeycloak,
+  credentials: { username: string; password: string; locale?: string },
+): Promise<RequiredActionPage> {
+  const cookies = new Map<string, string>();
+  async function send(url: string, form?: Record<string, string>): Promise<Response> {
+    const response = await fetch(url, {
+      method: form === undefined ? 'GET' : 'POST',
+      redirect: 'manual',
+      headers: { cookie: [...cookies].map(([name, value]) => `${name}=${value}`).join('; ') },
+      body: form === undefined ? undefined : new URLSearchParams(form),
+    });
+    for (const cookie of response.headers.getSetCookie()) {
+      const [pair = ''] = cookie.split(';');
+      const index = pair.indexOf('=');
+      cookies.set(pair.slice(0, index), pair.slice(index + 1));
+    }
+    const location = response.headers.get('location');
+    return location !== null && !location.startsWith(REDIRECT_URI) ? send(location) : response;
+  }
+  const formAction = (html: string): string =>
+    (/<form[^>]*action="([^"]+)"/.exec(html)?.[1] ?? '').replaceAll('&amp;', '&');
+
+  const authorize = new URL(`${keycloak.url}/realms/trybun/protocol/openid-connect/auth`);
+  authorize.search = new URLSearchParams({
+    client_id: 'trybun-web',
+    redirect_uri: REDIRECT_URI,
+    response_type: 'code',
+    scope: 'openid',
+    state: randomBytes(8).toString('hex'),
+    code_challenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
+    code_challenge_method: 'S256',
+    ...(credentials.locale === undefined ? {} : { ui_locales: credentials.locale }),
+  }).toString();
+  const login = await (await send(authorize.href)).text();
+  let html = await (
+    await send(formAction(login), {
+      username: credentials.username,
+      password: credentials.password,
+    })
+  ).text();
+  return {
+    get html() {
+      return html;
+    },
+    async submit(form) {
+      html = await (await send(formAction(html), form)).text();
+      return html;
+    },
+  };
+}

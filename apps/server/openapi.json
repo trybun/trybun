@@ -370,8 +370,8 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 256
+                    "minLength": 15,
+                    "maxLength": 64
                   },
                   "language": {
                     "type": "string",

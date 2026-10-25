@@ -6,7 +6,7 @@ import {
   createAdministratorSchema,
   type Setup,
 } from '@trybun/contracts/setup';
-import type { Language } from '@trybun/contracts/users';
+import { type Language, PASSWORD_MIN_LENGTH } from '@trybun/contracts/users';
 import { Button } from '@trybun/ui/components/button';
 import {
   Field,
@@ -129,7 +129,9 @@ export function AdministratorForm({
             <Field invalid={fieldState.invalid}>
               <FieldLabel>{t('password')}</FieldLabel>
               <PasswordInput {...field} autoComplete="new-password" />
-              <FieldDescription>{t('passwordDescription')}</FieldDescription>
+              <FieldDescription>
+                {t('passwordDescription', { min: PASSWORD_MIN_LENGTH })}
+              </FieldDescription>
               <FieldError
                 errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
               />

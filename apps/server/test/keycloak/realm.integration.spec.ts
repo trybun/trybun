@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/platform/config/load-config.js';
 import { KeycloakAccessTokenVerifier } from '../../src/platform/authentication/keycloak-access-token-verifier.js';
 import { TEST_ENV } from '../env.js';
-import { refreshAccessToken, signIn } from './browser-sign-in.js';
+import { refreshAccessToken, signIn, signInToRequiredAction } from './browser-sign-in.js';
 import {
   adminApi,
   applyRealmConfig,
@@ -17,6 +17,7 @@ import {
 
 interface Realm {
   defaultLocale?: string;
+  passwordPolicy?: string;
   failureFactor?: number;
   displayNameHtml?: string;
   bruteForceProtected?: boolean;
@@ -24,6 +25,8 @@ interface Realm {
 }
 
 const OTP_SECRET = 'integration-test-otp';
+/** A password that meets the password policy of the realm (§7.4). */
+const PASSWORD = 'a passphrase for the tests';
 
 describe('Keycloak realm configuration', () => {
   let network: StartedNetwork;
@@ -41,7 +44,7 @@ describe('Keycloak realm configuration', () => {
       enabled: true,
       groups: options.team ? ['/team'] : [],
       credentials: [
-        { type: 'password', value: 'password', temporary: false },
+        { type: 'password', value: PASSWORD, temporary: false },
         ...(options.otp
           ? [
               {
@@ -81,6 +84,64 @@ describe('Keycloak realm configuration', () => {
       bruteForceProtected: true,
       failureFactor: 5,
       registrationAllowed: false,
+    });
+  });
+
+  describe('password policy', () => {
+    async function userWithTemporaryPassword(): Promise<{ id: string; username: string }> {
+      const username = `${randomUUID()}@example.com`;
+      await admin('POST', '/users', {
+        username,
+        email: username,
+        firstName: 'Test',
+        lastName: 'User',
+        emailVerified: true,
+        enabled: true,
+        credentials: [{ type: 'password', value: PASSWORD, temporary: true }],
+      });
+      const [user] = await admin<{ id: string }[]>(
+        'GET',
+        `/users?exact=true&username=${encodeURIComponent(username)}`,
+      );
+      return { id: user?.id ?? '', username };
+    }
+
+    it('applies the policy with Argon2', async () => {
+      expect((await admin<Realm>('GET', '')).passwordPolicy).toBe(
+        'length(15) and maxLength(64) and notEmail and notUsername and passwordBlacklist(trybun.txt) and hashAlgorithm(argon2)',
+      );
+    });
+
+    it.each([
+      ['14 characters', 'fourteen chars', /minimum length/i],
+      ['a password of the blocklist', 'correcthorsebatterystaple', /blacklist/i],
+    ])('refuses %s on reset', async (_case, password, message) => {
+      const { id } = await userWithTemporaryPassword();
+
+      await expect(
+        admin('PUT', `/users/${id}/reset-password`, { type: 'password', value: password }),
+      ).rejects.toThrow(message);
+      await admin('PUT', `/users/${id}/reset-password`, {
+        type: 'password',
+        value: 'fifteen chars!!',
+        temporary: false,
+      });
+    });
+
+    it.each([
+      ['en', 'The password must have at least 15 characters.'],
+      ['pl', 'Hasło musi mieć co najmniej 15 znaków.'],
+    ])('explains a refused password on the Keycloak screen (%s)', async (locale, message) => {
+      const { username } = await userWithTemporaryPassword();
+      const page = await signInToRequiredAction(keycloak, { username, password: PASSWORD, locale });
+      expect(page.html).toContain('password-new');
+
+      const html = await page.submit({
+        'password-new': 'fourteen chars',
+        'password-confirm': 'fourteen chars',
+      });
+
+      expect(html).toContain(message);
     });
   });
 
@@ -159,7 +220,7 @@ describe('Keycloak realm configuration', () => {
   it('does not let a team member without 2FA complete the sign-in', async () => {
     const username = await createUser({ team: true, otp: false });
 
-    const result = await signIn(keycloak, { username, password: 'password' });
+    const result = await signIn(keycloak, { username, password: PASSWORD });
 
     expect(result.accessToken).toBeUndefined();
     expect(result.stoppedAt).toMatch(/\/login-actions\/required-action\?.*CONFIGURE_TOTP/);
@@ -181,7 +242,7 @@ describe('Keycloak realm configuration', () => {
 
       const { accessToken } = await signIn(keycloak, {
         username,
-        password: 'password',
+        password: PASSWORD,
         otpSecret: OTP_SECRET,
       });
 
@@ -193,7 +254,7 @@ describe('Keycloak realm configuration', () => {
       const username = await createUser({ team: true, otp: true });
       const { refreshToken } = await signIn(keycloak, {
         username,
-        password: 'password',
+        password: PASSWORD,
         otpSecret: OTP_SECRET,
       });
       await new Promise((resolve) => setTimeout(resolve, 2_000));
@@ -207,7 +268,7 @@ describe('Keycloak realm configuration', () => {
     it('signs an end user in with a password only', async () => {
       const username = await createUser({ team: false, otp: false });
 
-      const { accessToken } = await signIn(keycloak, { username, password: 'password' });
+      const { accessToken } = await signIn(keycloak, { username, password: PASSWORD });
 
       const claims = await verifier().verify(accessToken ?? '');
       expect(claims?.amr).toEqual(['pwd']);

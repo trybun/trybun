@@ -209,6 +209,8 @@ services:
     volumes:
       # The login theme generated from the message catalogues (§13.1).
       - ./docker/keycloak/themes/trybun:/opt/keycloak/themes/trybun:ro
+      # The blocklist of the password policy (§7.4).
+      - ./docker/keycloak/password-blocklists:/opt/keycloak/data/password-blacklists:ro
     networks: [internal, outbound]
     mem_limit: 1g
     healthcheck:
