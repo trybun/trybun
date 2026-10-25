@@ -4,6 +4,7 @@ import { z } from 'zod';
 import packageJson from '../../../package.json' with { type: 'json' };
 import { Public } from '../authentication/public.decorator.js';
 import { ResponseSchema } from '../http/response-schema.decorator.js';
+import { SkipRateLimit } from '../rate-limiting/skip-rate-limit.decorator.js';
 import { HealthService } from './health.service.js';
 
 const healthSchema = z.object({ status: z.literal('ok'), version: z.string() });
@@ -18,10 +19,11 @@ const readinessSchema = z.object({
 
 /**
  * Health endpoints of the API for the Compose health check and monitoring (§15.9, §17.2).
- * Reachable only on the internal network (§14.4).
+ * Reachable only on the internal network (§14.4), so they are not rate-limited.
  */
 @ApiExcludeController()
 @Public()
+@SkipRateLimit()
 @Controller('health')
 export class HealthController {
   constructor(private readonly health: HealthService) {}

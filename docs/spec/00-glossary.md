@@ -133,7 +133,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Optimistic locking | `version` | – | Conflict detection with `ETag`/`If-Match` when two people edit the same record ([§17.2](17-conventions.md)) |
 | Archived | `project.state`, `organization.state`: `active`, `archived` | Active / Aktywne, Archived / Zarchiwizowane | Read-only project or organization that can no longer be changed ([§7.3](07-users-organizations-permissions.md)) |
 | Resolution confirmation | `project.confirm_resolution` | – | Optional request to the requester to confirm that the problem is solved ([§4.3](04-ticket-lifecycle.md)) |
-| Audit log | `audit_log_entry` | Audit log / Dziennik zdarzeń | Immutable log of administrative actions ([§13.5](13-non-functional.md)) |
+| Audit log | `audit_log_entry`; `audit_log_entry.action`: `setup_token.used` | Audit log / Dziennik zdarzeń | Immutable log of administrative actions ([§13.5](13-non-functional.md)); feature tasks add the actions they record |
 | Anonymization | – | Anonymization / Anonimizacja | GDPR erasure that keeps history ([§13.2](13-non-functional.md)) |
 | Deployment package | – | – | Release assets needed to install the system ([§15.4](15-deployment.md)) |
 | Setup token | `setup_token` | Setup token / Token konfiguracji | One-time token protecting the first-run wizard, valid 24 hours ([§15.6](15-deployment.md)) |

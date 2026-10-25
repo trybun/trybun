@@ -14,6 +14,8 @@ W Trybunie zespół obsługuje zgłoszenia klientów i własną pracę. Ten samo
 
 Po zalogowaniu widzisz **Stronę główną**, a krótki przewodnik pokazuje, co na niej jest. Przejdź go przyciskiem **Dalej** albo zamknij klawiszem **Esc** – w każdej chwili możesz [przejść go ponownie](../how-to/take-a-product-tour-again.md).
 
+Aby chronić dane Twoich klientów, Trybun wylogowuje Cię po 30 minutach bez aktywności, a także 12 godzin po zalogowaniu, nawet jeśli cały czas pracujesz. Zaloguj się ponownie kontem GitHub i nowym jednorazowym kodem.
+
 ## Poznaj układ ekranu
 
 - **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem na **Stronę główną**. Po jego prawej stronie są menu pomocy (znak zapytania) i menu konta z przełącznikiem języka i opcją **Wyloguj się**.

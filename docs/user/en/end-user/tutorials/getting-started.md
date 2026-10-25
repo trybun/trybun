@@ -27,6 +27,8 @@ Select the help icon (question mark) in the header, then **Help for this view**.
 1. Select your account menu (your initials) in the header.
 2. Select **Sign out**.
 
+Trybun also signs you out by itself after 8 hours without activity, and 30 days after you signed in. Then sign in again.
+
 ## Next steps
 
 - [Change the language](../how-to/change-language.md)

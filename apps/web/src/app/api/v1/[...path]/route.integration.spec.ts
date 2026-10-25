@@ -88,6 +88,32 @@ describe('BFF endpoint /api/v1/*', () => {
     expect(received[0]?.headers.get('authorization')).toBeNull();
   });
 
+  it('passes the client IP that Caddy set on to the rate limits of the API', async () => {
+    await GET(request('/api/v1/setup', { headers: { 'x-forwarded-for': '203.0.113.7' } }));
+
+    expect(received[0]?.headers.get('x-forwarded-for')).toBe('203.0.113.7');
+  });
+
+  it('ends an idle session and forwards the request without credentials', async () => {
+    const sessionToken = await signIn();
+    await prisma.session.updateMany({
+      where: { tokenHash: hashSessionToken(sessionToken) },
+      data: { idleExpiresAt: new Date(Date.now() - 1_000) },
+    });
+    mswServer.use(
+      http.post(`${KEYCLOAK_ENDPOINTS}/logout`, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    await GET(
+      request('/api/v1/users/me', { headers: { cookie: `${SESSION_COOKIE}=${sessionToken}` } }),
+    );
+
+    expect(received[0]?.headers.get('authorization')).toBeNull();
+    expect(
+      await prisma.session.count({ where: { tokenHash: hashSessionToken(sessionToken) } }),
+    ).toBe(0);
+  });
+
   describe('token refresh', () => {
     let refreshes: URLSearchParams[];
 

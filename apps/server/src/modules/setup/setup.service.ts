@@ -7,6 +7,7 @@ import type {
   VerifySetupTokenDto,
 } from '@trybun/contracts/setup';
 import { Clock } from '../../platform/clock/clock.js';
+import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { TRYBUN_CONFIG } from '../../platform/config/config.module.js';
 import type { TrybunConfig } from '../../platform/config/config.schema.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
@@ -31,6 +32,7 @@ export class SetupService {
     private readonly clock: Clock,
     @Inject(KEYCLOAK_ADMIN) private readonly keycloak: KeycloakAdmin,
     @Inject(TRYBUN_CONFIG) private readonly config: TrybunConfig,
+    private readonly auditLog: AuditLogEntriesService,
   ) {}
 
   /** Whether the wizard is available, with the system defaults of `.env` (§13.1). */
@@ -64,10 +66,14 @@ export class SetupService {
   /**
    * Creates the first Administrator, the break-glass account (§7.4): the Keycloak user with the
    * password and the required OTP set-up, then the account, claiming the token in the same
-   * transaction. Of two simultaneous requests only one claims the token; when the transaction
-   * fails, the Keycloak user is deleted again, so a retry starts clean.
+   * transaction, with the use of the token in the audit log (§13.5). Of two simultaneous requests
+   * only one claims the token; when the transaction fails, the Keycloak user is deleted again, so
+   * a retry starts clean.
    */
-  async createAdministrator(input: CreateAdministratorDto): Promise<CreatedAdministrator> {
+  async createAdministrator(
+    input: CreateAdministratorDto,
+    clientIp?: string,
+  ): Promise<CreatedAdministrator> {
     const tokenHash = hashSetupToken(input.token);
     await this.assertTokenUsable(tokenHash);
     const email = input.email.toLowerCase();
@@ -91,7 +97,7 @@ export class SetupService {
         if (await this.isCompleted(tx)) {
           throw new AppError('setup.completed');
         }
-        return tx.user.create({
+        const created = await tx.user.create({
           data: {
             keycloakUserId,
             email,
@@ -104,6 +110,13 @@ export class SetupService {
           },
           select: { id: true },
         });
+        await this.auditLog.record(tx, {
+          action: 'setup_token.used',
+          actorId: created.id,
+          target: { type: 'User', id: created.id },
+          ipAddress: clientIp,
+        });
+        return created;
       });
     } catch (error) {
       await this.keycloak.deleteUser(keycloakUserId);

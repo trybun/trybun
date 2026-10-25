@@ -38,6 +38,10 @@ peerDependencyRules:
   allowedVersions:
     # openapi-typescript 7 declares TypeScript 5 only; verified with TypeScript 6 in S0-01.
     openapi-typescript>typescript: '6'
+    # @nest-lab/throttler-storage-redis 1.2 declares NestJS up to 11 (jmcdo29/nest-lab#75); verified
+    # with NestJS 12 on Valkey by rate-limiting.integration.spec.ts (ADR 0007).
+    '@nest-lab/throttler-storage-redis>@nestjs/common': '12'
+    '@nest-lab/throttler-storage-redis>@nestjs/core': '12'
 
 # Accepted risks of the vulnerability audit (Rule 10, §2.10): advisories without a fixed version,
 # each with the reason and the mitigation. Remove an entry as soon as a fixed version exists.

@@ -112,6 +112,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 | `request.too_large` | 413 | The body exceeds the size limit |
 | `request.validation_failed` | 422 | Invalid input (see below) |
 | `request.precondition_required` | 428 | A change of a versioned record without `If-Match` |
+| `request.rate_limited` | 429 | More requests than the rate limit of the principal or the client IP allows ([§14.4](14-architecture.md)) |
 | `server.internal_error` | 500 | An unexpected error; the response carries no details and the error is logged with the request ID |
 | `server.unavailable` | 503 | PostgreSQL is unavailable (see "Dependency failures") |
 - The web application translates error codes into messages in the user's language (translation key `errors.<code>`, [§17.1](#171-code-naming-conventions)); raw server messages are never shown to users.

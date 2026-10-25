@@ -16,3 +16,4 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 | [0004](0004-authjs-version-and-session-strategy.md) | Auth.js version and session strategy | proposed |
 | [0005](0005-github-app-as-agent-identity.md) | GitHub App as the identity of AI agents | accepted |
 | [0006](0006-release-pipeline.md) | Release pipeline | proposed |
+| [0007](0007-throttler-storage-on-nestjs-12.md) | Rate-limit storage on NestJS 12 | proposed |

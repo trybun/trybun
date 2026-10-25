@@ -28,6 +28,8 @@ const envSchema = z
       .string()
       .refine(isTimeZone, 'Invalid IANA time zone')
       .default('UTC'),
+    // Set by Next.js: `development` for `next dev`.
+    NODE_ENV: z.string().optional(),
   })
   .transform((env) => ({
     domain: env.TRYBUN_DOMAIN,
@@ -41,6 +43,7 @@ const envSchema = z
     shouldUseSecureCookies: env.NEXTAUTH_URL.startsWith('https://'),
     defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
     defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
+    isDevelopment: env.NODE_ENV === 'development',
     keycloak: {
       issuer: `${env.TRYBUN_KEYCLOAK_PUBLIC_URL ?? `https://${env.TRYBUN_DOMAIN}/auth`}/realms/${KEYCLOAK_REALM}`,
       internalRealmUrl: `${env.TRYBUN_KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`,

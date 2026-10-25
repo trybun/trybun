@@ -4,16 +4,19 @@ import type { Account, NextAuthOptions } from 'next-auth';
 import { getPrisma } from '../database/prisma.js';
 import { getEnv, type WebEnv } from '../env/env.js';
 import { type AccessTokens, createAccessTokens } from './access-tokens.js';
+import { accountKindOf } from './account-kind.js';
 import { KeycloakProvider } from './next-auth.js';
 import { createKeycloakClient, type KeycloakClient } from './keycloak-client.js';
 import { createSessionAdapter, type KeycloakTokens, type SignInTokens } from './session-adapter.js';
+import { SESSION_LIFETIMES } from './session-lifetimes.js';
 import { createTokenCipher, type TokenCipher } from './token-cipher.js';
 
 /**
- * Maximum lifetime of a web session: the longest Keycloak session (end users, §14.4). Keycloak
- * ends sessions earlier through back-channel logout and when a refresh fails.
+ * Lifetime of the session cookie: the longest session (end users, §14.4). The session row holds
+ * the lifetimes of the account kind; Keycloak ends sessions earlier through back-channel logout
+ * and when a refresh fails.
  */
-const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+const SESSION_MAX_AGE_SECONDS = SESSION_LIFETIMES.end_user.maxLifetimeSeconds;
 
 /** The page that starts the sign-in with Keycloak. */
 export const SIGN_IN_PATH = '/sign-in';
@@ -98,12 +101,13 @@ export function createAuthOptions(signIn?: SignInTokens): NextAuthOptions {
     session: { strategy: 'database', maxAge: SESSION_MAX_AGE_SECONDS },
     pages: { signIn: SIGN_IN_PATH },
     callbacks: {
-      signIn({ account }) {
+      async signIn({ account }) {
         const tokens = account === null ? undefined : toKeycloakTokens(account);
         if (signIn === undefined || tokens === undefined) {
           return false;
         }
         signIn.current = tokens;
+        signIn.accountKind = await accountKindOf(env.apiUrl, tokens.accessToken);
         return true;
       },
       // The browser-visible session (`/api/auth/session`) carries neither tokens nor user data.

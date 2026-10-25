@@ -11,6 +11,7 @@ import { HealthModule } from './platform/health/health.module.js';
 import { HttpModule } from './platform/http/http.module.js';
 import { LoggingModule } from './platform/logging/logging.module.js';
 import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.module.js';
+import { RateLimitingModule } from './platform/rate-limiting/rate-limiting.module.js';
 import { administrationAbilities } from './modules/administration/administration.abilities.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
@@ -31,6 +32,8 @@ export class ApiModule {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
+        // After the authentication guard: the rate limit is keyed by the principal (§14.4).
+        RateLimitingModule,
         AuthorizationModule.forRoot([administrationAbilities]),
         KeycloakAdminModule,
         HealthModule,

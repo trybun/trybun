@@ -27,6 +27,8 @@ Wybierz ikonę pomocy (znak zapytania) w nagłówku, a następnie **Pomoc do teg
 1. Wybierz menu konta (Twoje inicjały) w nagłówku.
 2. Wybierz **Wyloguj się**.
 
+Trybun wylogowuje Cię także sam po 8 godzinach bez aktywności oraz 30 dni po zalogowaniu. Wtedy zaloguj się ponownie.
+
 ## Co dalej
 
 - [Zmień język](../how-to/change-language.md)

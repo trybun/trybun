@@ -10,13 +10,14 @@ import {
   verifySetupTokenSchema,
 } from '@trybun/contracts/setup';
 import { Public } from '../../platform/authentication/public.decorator.js';
+import { ClientIp } from '../../platform/http/client-ip.decorator.js';
 import { ResponseSchema } from '../../platform/http/response-schema.decorator.js';
 import { SetupService } from './setup.service.js';
 
 /**
  * The first-run wizard (§15.6). It needs no session: the setup token protects it until the first
- * Administrator exists, and then it is disabled permanently. Rate limiting by client IP comes with
- * S0-14 (§14.4).
+ * Administrator exists, and then it is disabled permanently. Like every public endpoint it is
+ * rate-limited by client IP (§14.4), and the use of the token is recorded in the audit log.
  */
 @Public()
 @Controller('setup')
@@ -45,7 +46,8 @@ export class SetupController {
   @ResponseSchema(createdAdministratorSchema)
   createAdministrator(
     @Body({ schema: createAdministratorSchema }) input: CreateAdministratorDto,
+    @ClientIp() clientIp: string | undefined,
   ): Promise<CreatedAdministrator> {
-    return this.setup.createAdministrator(input);
+    return this.setup.createAdministrator(input, clientIp);
   }
 }

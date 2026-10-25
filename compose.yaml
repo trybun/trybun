@@ -38,6 +38,9 @@ x-server: &server
     # The system default language and time zone (§13.1).
     TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
     TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}
+    # The API rate limits per minute (§14.4).
+    TRYBUN_RATE_LIMIT_PER_USER: ${TRYBUN_RATE_LIMIT_PER_USER:-100}
+    TRYBUN_RATE_LIMIT_PER_IP: ${TRYBUN_RATE_LIMIT_PER_IP:-20}
     # Level of the JSON logs of the API and the Worker (§17.2).
     TRYBUN_LOG_LEVEL: ${TRYBUN_LOG_LEVEL:-info}
   mem_limit: 512m

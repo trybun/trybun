@@ -23,6 +23,7 @@ describe('loadConfig', () => {
       isBackupStorageConfigured: false,
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
+      rateLimits: { user: 100, ip: 20 },
       logLevel: 'silent',
       workerHeartbeatFile: join(tmpdir(), 'trybun-worker.heartbeat'),
     });

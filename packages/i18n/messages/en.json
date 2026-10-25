@@ -144,7 +144,8 @@
       "precondition_failed": "This item was changed by someone else – reload to see the latest version",
       "too_large": "The data you sent is too large.",
       "validation_failed": "Some fields are not valid. Correct them and try again.",
-      "precondition_required": "The version of this item is missing – reload the page and try again."
+      "precondition_required": "The version of this item is missing – reload the page and try again.",
+      "rate_limited": "Too many requests. Wait a moment and try again."
     },
     "authentication": {
       "required": "Your session has ended. Sign in again.",
