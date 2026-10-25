@@ -1,0 +1,297 @@
+#!/bin/sh
+# Command of the Trybun deployment package (§15.4, §15.5): installs Trybun and prints the setup
+# link of the first-run wizard. Needs only sh, awk, od and Docker. Run `./trybun --help`.
+set -eu
+
+# Oldest versions that support every feature compose.yaml uses (health check `start_interval`).
+# Raise them when compose.yaml needs a newer feature.
+MIN_DOCKER_VERSION=25.0
+MIN_COMPOSE_VERSION=2.20.2
+
+# Total memory of the server (§15.2), in bytes: a server sold as "8 GB" reports a little less than
+# 8 GiB but more than 8 × 10⁹ bytes.
+MIN_MEMORY_BYTES=8000000000
+RECOMMENDED_MEMORY_BYTES=16000000000
+
+# Variables of .env.example generated as 32 random bytes in hex.
+SECRETS='TRYBUN_POSTGRES_PASSWORD TRYBUN_KEYCLOAK_DB_PASSWORD TRYBUN_KEYCLOAK_ADMIN_PASSWORD
+TRYBUN_VALKEY_PASSWORD TRYBUN_S3_ACCESS_KEY_ID TRYBUN_S3_SECRET_ACCESS_KEY AUTH_SECRET
+TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET TRYBUN_BACKUP_PASSPHRASE'
+
+# Paths read from the server; the tests replace them.
+MEMINFO=${TRYBUN_MEMINFO:-/proc/meminfo}
+ZONEINFO=${TRYBUN_ZONEINFO:-/usr/share/zoneinfo}
+ETC=${TRYBUN_ETC:-/etc}
+
+usage() {
+  cat <<'EOF'
+Usage: ./trybun <command>
+
+Commands:
+  install       Check the server, create .env with generated secrets, start Trybun and print
+                the setup link. Safe to re-run: an existing .env is never changed.
+  setup-token   Print a new setup link for the first-run wizard (valid for 24 hours, works once).
+  --help        Show this help.
+
+Documentation: INSTALL.md
+EOF
+}
+
+say() {
+  printf '%s\n' "$*"
+}
+
+warn() {
+  printf 'Warning: %s\n' "$*" >&2
+}
+
+# Prints what is wrong and how to fix it, and stops.
+fail() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
+}
+
+# Asks a question; prints the answer, or the default for an empty answer.
+ask() {
+  printf '%s' "$1" >&2
+  answer=
+  if ! IFS= read -r answer; then
+    printf '\n' >&2
+    fail "No answer to \"$1\". Run ./trybun install in a terminal and answer the questions. Nothing was changed."
+  fi
+  if [ -z "$answer" ]; then
+    answer=${2-}
+  fi
+  printf '%s' "$answer"
+}
+
+# Succeeds when version $1 is at least version $2 (dotted numbers, an optional leading v).
+version_at_least() {
+  awk -v actual="$1" -v minimum="$2" 'BEGIN {
+    sub(/^v/, "", actual)
+    n = split(actual, a, "."); m = split(minimum, b, ".")
+    for (i = 1; i <= (n > m ? n : m); i++) {
+      x = a[i] + 0; y = b[i] + 0
+      if (x != y) exit !(x > y)
+    }
+    exit 0
+  }'
+}
+
+check_docker() {
+  command -v docker >/dev/null 2>&1 ||
+    fail "Docker is not installed. Install Docker Engine $MIN_DOCKER_VERSION or newer with the Docker Compose plugin (https://docs.docker.com/engine/install/) and run ./trybun install again."
+  docker_version=$(docker version --format '{{.Server.Version}}' 2>/dev/null) ||
+    fail "Docker Engine is not running or this user may not use it. Start Docker (systemctl start docker), or run ./trybun as root or as a member of the group docker, and run ./trybun install again."
+  version_at_least "$docker_version" "$MIN_DOCKER_VERSION" ||
+    fail "Docker Engine $docker_version is too old; Trybun needs $MIN_DOCKER_VERSION or newer. Update Docker Engine (https://docs.docker.com/engine/install/) and run ./trybun install again."
+  compose_version=$(docker compose version --short 2>/dev/null) ||
+    fail "The Docker Compose plugin is not installed. Install it (https://docs.docker.com/compose/install/linux/) and run ./trybun install again."
+  version_at_least "$compose_version" "$MIN_COMPOSE_VERSION" ||
+    fail "Docker Compose $compose_version is too old; Trybun needs $MIN_COMPOSE_VERSION or newer. Update the Docker Compose plugin (https://docs.docker.com/compose/install/linux/) and run ./trybun install again."
+}
+
+check_memory() {
+  [ -r "$MEMINFO" ] || fail "Cannot read $MEMINFO to check the memory of the server. Run ./trybun install on Linux."
+  memory=$(awk '$1 == "MemTotal:" { printf "%.0f", $2 * 1024 }' "$MEMINFO")
+  [ -n "$memory" ] || fail "$MEMINFO has no MemTotal line. Run ./trybun install on Linux."
+  gigabytes=$(awk -v bytes="$memory" 'BEGIN { printf "%.1f", bytes / 1e9 }')
+  if awk -v bytes="$memory" -v minimum="$MIN_MEMORY_BYTES" 'BEGIN { exit !(bytes < minimum) }'; then
+    fail "The server has $gigabytes GB of memory; Trybun needs at least 8 GB. Run it on a server with 8 GB or more (16 GB recommended)."
+  fi
+  if awk -v bytes="$memory" -v recommended="$RECOMMENDED_MEMORY_BYTES" 'BEGIN { exit !(bytes < recommended) }'; then
+    warn "The server has $gigabytes GB of memory; 16 GB are recommended. Trybun runs, but may be slow under load."
+  fi
+}
+
+# Succeeds when the caddy container of this installation is running; its ports count as free.
+own_caddy_running() {
+  docker compose ps --status running --services 2>/dev/null | grep -qx caddy
+}
+
+check_ports() {
+  command -v ss >/dev/null 2>&1 ||
+    fail "The command ss is missing, so the ports cannot be checked. Install it (package iproute2) and run ./trybun install again."
+  if own_caddy_running; then
+    return
+  fi
+  taken=$( {
+    ss -Hltn | awk '$4 ~ /:(80|443)$/ { sub(/.*:/, "", $4); print "TCP " $4 }'
+    ss -Hlun | awk '$4 ~ /:443$/ { print "UDP 443" }'
+  } | sort -u | tr '\n' ',' | sed 's/,$//; s/,/, /g')
+  [ -z "$taken" ] ||
+    fail "Port(s) $taken already in use. Trybun's reverse proxy needs TCP ports 80 and 443 and UDP port 443. Stop the program that uses them (see: sudo ss -ltnup) and run ./trybun install again."
+}
+
+check_prerequisites() {
+  check_docker
+  check_memory
+  check_ports
+}
+
+# Domain name rules of the server (a host name: labels of letters, digits and hyphens).
+valid_domain() {
+  [ "${#1}" -le 253 ] &&
+    printf '%s\n' "$1" | grep -Eqx '([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?'
+}
+
+# An IANA time zone name the server knows.
+valid_time_zone() {
+  case $1 in
+    UTC) return 0 ;;
+    '' | /* | *..* | *[!A-Za-z0-9_+/-]*) return 1 ;;
+  esac
+  [ ! -d "$ZONEINFO" ] || [ -f "$ZONEINFO/$1" ]
+}
+
+# The time zone of the server, else UTC.
+server_time_zone() {
+  zone=
+  if [ -r "$ETC/timezone" ]; then
+    zone=$(head -n 1 "$ETC/timezone")
+  elif [ -L "$ETC/localtime" ]; then
+    zone=$(readlink "$ETC/localtime" | sed -n 's|.*/zoneinfo/||p')
+  fi
+  if [ -n "$zone" ] && valid_time_zone "$zone"; then
+    printf '%s' "$zone"
+  else
+    printf 'UTC'
+  fi
+}
+
+ask_questions() {
+  while :; do
+    domain=$(ask 'Domain of Trybun, e.g. trybun.example.com: ' '')
+    domain=$(printf '%s' "$domain" | tr '[:upper:]' '[:lower:]')
+    valid_domain "$domain" && break
+    say "\"$domain\" is not a domain name. Enter the name without https:// and without a path." >&2
+  done
+  while :; do
+    language=$(ask 'Default language, en or pl [en]: ' en)
+    case $language in en | pl) break ;; esac
+    say "\"$language\" is not supported. Enter en or pl." >&2
+  done
+  default_zone=$(server_time_zone)
+  while :; do
+    time_zone=$(ask "Default time zone, an IANA name such as Europe/Warsaw [$default_zone]: " "$default_zone")
+    valid_time_zone "$time_zone" && break
+    say "\"$time_zone\" is not an IANA time zone. Enter a name such as Europe/Warsaw or UTC." >&2
+  done
+}
+
+# Warns when the domain does not resolve to an address of this server; servers behind NAT or with
+# a floating IP do not see their public address, so the Administrator may continue.
+check_domain() {
+  domain_addresses=$(getent ahosts "$domain" 2>/dev/null | awk '{ print $1 }' | sort -u) || domain_addresses=
+  server_addresses=$( {
+    ip -o addr show 2>/dev/null | awk '{ sub(/\/.*/, "", $4); print $4 }'
+    hostname -I 2>/dev/null | tr ' ' '\n'
+  } | sort -u) || server_addresses=
+  for address in $domain_addresses; do
+    if printf '%s\n' "$server_addresses" | grep -qxF "$address"; then
+      return
+    fi
+  done
+  if [ -z "$domain_addresses" ]; then
+    warn "$domain does not resolve to any address."
+  else
+    warn "$domain resolves to $(printf '%s' "$domain_addresses" | paste -sd ' ' -), not to an address of this server."
+  fi
+  say 'Caddy cannot obtain the HTTPS certificate until the domain points to this server. Behind NAT or a floating IP the server does not see its public address, and this warning can be ignored.' >&2
+  confirmation=$(ask 'Continue anyway? [y/N]: ' n)
+  case $confirmation in
+    y | Y | yes | YES) ;;
+    *) fail "Installation stopped. Point an A or AAAA record of $domain to this server and run ./trybun install again. Nothing was changed." ;;
+  esac
+}
+
+random_secret() {
+  od -An -tx1 -N32 /dev/urandom | tr -d ' \n'
+}
+
+# Prints the backup passphrase once and waits for the Administrator to confirm it is stored.
+confirm_passphrase() {
+  say ''
+  say 'Backup passphrase. It encrypts the backups; without it, off-site backups cannot be restored'
+  say 'after the server is lost. Store it outside this server now, e.g. in a password manager:'
+  say ''
+  say "    $1"
+  say ''
+  while :; do
+    confirmation=$(ask 'Type "stored" once the passphrase is stored outside this server: ' '')
+    [ "$confirmation" = stored ] && break
+  done
+}
+
+# Writes .env from .env.example with the answers and the generated secrets. The file appears
+# complete or not at all, and an existing .env is never replaced.
+write_env() {
+  [ -r .env.example ] || fail ".env.example is missing. Run ./trybun from the unpacked deployment package."
+  passphrase=
+  for name in $SECRETS; do
+    secret=$(random_secret)
+    [ "$name" != TRYBUN_BACKUP_PASSPHRASE ] || passphrase=$secret
+    export "TRYBUN_SECRET_$name=$secret"
+  done
+  confirm_passphrase "$passphrase"
+  umask 077
+  temporary=$(mktemp .env.XXXXXX)
+  trap 'rm -f "$temporary"' EXIT
+  trap 'exit 130' HUP INT TERM
+  # Values pass through the environment, not the command line, which other users can see.
+  TRYBUN_ANSWER_DOMAIN=$domain TRYBUN_ANSWER_LANGUAGE=$language TRYBUN_ANSWER_TIME_ZONE=$time_zone \
+    awk -v secrets="$SECRETS" '
+      BEGIN {
+        n = split(secrets, names, /[ \n]+/)
+        for (i = 1; i <= n; i++) if (names[i] != "") value[names[i]] = ENVIRON["TRYBUN_SECRET_" names[i]]
+        value["TRYBUN_DOMAIN"] = ENVIRON["TRYBUN_ANSWER_DOMAIN"]
+        value["TRYBUN_DEFAULT_LANGUAGE"] = ENVIRON["TRYBUN_ANSWER_LANGUAGE"]
+        value["TRYBUN_DEFAULT_TIME_ZONE"] = ENVIRON["TRYBUN_ANSWER_TIME_ZONE"]
+      }
+      match($0, /^(# )?[A-Z_][A-Z0-9_]*=/) {
+        name = substr($0, 1, RLENGTH - 1); sub(/^# /, "", name)
+        if (name in value) { print name "=" value[name]; written[name] = 1; next }
+      }
+      { print }
+      END { for (name in value) if (!(name in written)) { print name > "/dev/stderr"; missing = 1 }; exit missing + 0 }
+    ' .env.example >"$temporary" ||
+    fail ".env.example does not contain the variables listed above. Use the .env.example of the deployment package and run ./trybun install again. Nothing was changed."
+  chmod 600 "$temporary"
+  # ln never replaces an existing file.
+  ln "$temporary" .env 2>/dev/null ||
+    fail ".env was created by someone else meanwhile and was left unchanged. Run ./trybun install again."
+  rm -f "$temporary"
+  trap - EXIT HUP INT TERM
+  say 'Created .env (readable only by its owner).'
+}
+
+setup_token() {
+  docker compose exec -T api node dist/cli.js setup-token
+}
+
+install() {
+  check_prerequisites
+  if [ -e .env ]; then
+    say '.env exists: keeping it unchanged, without questions and new secrets.'
+  else
+    ask_questions
+    check_domain
+    write_env
+  fi
+  say 'Starting Trybun (docker compose up -d --wait). The first start downloads the images and takes a few minutes.'
+  docker compose up -d --wait ||
+    fail "Trybun did not start. See docker compose ps and docker compose logs <service>, fix the cause (often a setting in .env) and run ./trybun install again; .env is kept."
+  setup_token
+}
+
+cd "$(dirname -- "$0")"
+
+case ${1-} in
+  install) install ;;
+  setup-token) setup_token ;;
+  '' | -h | --help | help) usage ;;
+  *)
+    usage >&2
+    fail "Unknown command \"$1\". Use one of the commands above."
+    ;;
+esac
