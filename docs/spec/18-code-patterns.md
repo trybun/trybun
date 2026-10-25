@@ -40,6 +40,7 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | View state | URL search parameters parsed with Zod (never free text); otherwise local state | [§18.5](#185-web-application) |
 | A form | React Hook Form with the Zod resolver and the contract schema | [§18.5](#185-web-application) |
 | Memoization | React Compiler; no manual `useMemo`, `useCallback` or `memo` in new code | [§18.5](#185-web-application) |
+| Code the first paint does not need | `React.lazy` behind `Suspense` in a `lazy-*.tsx` wrapper; `await import()` for the module of an action | [§18.5](#185-web-application) |
 | Live updates | Thin real-time event that invalidates queries | [§18.3](#183-server-application), [§18.5](#185-web-application) |
 | Texts, dates and numbers | `next-intl` messages and formatter in the web; the `Translator` of `platform/i18n` in the server | [§18.3](#183-server-application), [§18.5](#185-web-application) |
 | Switching the language | The `changeLanguage` Server Action of `lib/i18n` | [§18.5](#185-web-application) |
@@ -191,6 +192,7 @@ apps/web/src/
 - **No cross-request caching** of API data on the web server (`'use cache'`, cached `fetch` and similar): responses depend on the user's permissions. Only content that is identical for every user of an audience and language, such as rendered user documentation ([§2.3](02-agent-rules.md)), may be cached.
 - The session is read only through one server-only function of `lib/auth`, cached per request with React `cache()` and used by the server API client, layouts and pages; without a session it redirects to sign-in. `proxy.ts` makes only optimistic checks and is never the only check (Next.js authentication guidance). These checks only shape the UI; the API decides access ([§14.4](14-architecture.md#144-architectural-principles)).
 - Loading states use `<Suspense>` boundaries and `loading.tsx` with skeleton components of `@trybun/ui`.
+- **Code that the first paint does not need loads after it** (the Lighthouse budget of [§2.9](02-agent-rules.md)): a client component that only opens, appears or reacts later – a menu, popup, dialog, tip, editor – is loaded with `React.lazy` behind a `<Suspense>` boundary, from a wrapper `components/lazy-<name>.tsx` of its feature. A server component imports the wrapper, never the component itself, because every client module a server component imports joins the initial chunks; content passed into the component as children is lazy too. A component rendered on the server keeps its HTML while its code loads. A module needed only for an action (signing out, parsing an error response) is imported with `await import()` when the action runs. `next/dynamic` is not used: in the App Router it wraps `React.lazy`, and its `ssr: false` is not allowed in Server Components.
 
 ### Changing data
 
@@ -251,6 +253,7 @@ No global client state library is used.
 - **Test doubles only at external boundaries**: MSW for external HTTP services, the fixed clock, adapters of services without a container. The project's own services, Prisma and the database are never mocked.
 - **Factories**: one per model (`test/factories/<model>.factory.ts`) with `@faker-js/faker` defaults and overrides.
 - **E2E tests** (Playwright) use one page object per view and locate elements by role, label or text (`getByRole`); `data-tour` attributes only for tours; never CSS classes.
+- **Lazily loaded components** ([§18.5](#185-web-application)): a unit test of their server HTML renders with `prerender` of `react-dom/static`, which waits for `Suspense` (`renderToStaticMarkup` does not); an E2E test measures an element with `expect.poll()` until the value is stable (`expectTouchTarget()` of `apps/web/e2e/touch-targets.ts`), because a lazy component may be streamed after the page or replaced while it hydrates.
 
 ## 18.8 Alternatives considered
 
@@ -294,6 +297,7 @@ No global client state library is used.
 | Request pipeline, Problem Details, optimistic locking | `apps/server/src/platform/authorization/` (target record guard, `request-pipeline.spec.ts`), `apps/server/src/platform/errors/`, `apps/server/src/platform/http/expected-version.decorator.ts`, `apps/server/src/platform/database/optimistic-locking.ts` | S0-17 |
 | Logging with the request ID, job logging context, health endpoints | `apps/server/src/platform/logging/`, `apps/server/src/platform/health/` | S0-17 |
 | Error messages in the web | `apps/web/src/lib/errors/` | S0-17 |
+| Loading after the first paint | `apps/web/src/features/users/components/lazy-user-menu.tsx`, `apps/web/src/features/product-tours/components/product-tour-provider.tsx` (`ProductTourStepTip`), `apps/web/src/lib/api-client/api-client.ts` (`dataOf()`), `apps/web/src/features/app-shell/components/app-shell.spec.tsx` | S0-10, #75 |
 | User documentation, help viewer, contextual help and help search | `docs/user/`, `apps/web/src/features/help/`, `apps/web/scripts/generate-help-content.ts`, `packages/ui/src/components/markdown.tsx` | S0-09 |
 | Product tours: definitions, runner, tip, progress endpoints, E2E target check; the first mutation hook | `apps/web/src/features/product-tours/` (`mutations.ts`), `packages/ui/src/components/tour-tip.tsx`, `apps/server/src/modules/users/`, `apps/web/e2e/product-tours.spec.ts` | S0-10 |
 | Adapter of an external service tested against its container; command line entry point; the ability factory with its first rule and global `allowedActions`; the first form | `apps/server/src/platform/keycloak-admin/`, `apps/server/src/cli.ts` and `apps/server/src/modules/setup/setup-token.command.ts`, `apps/server/src/platform/authorization/ability-factory.ts` and `apps/server/src/modules/administration/administration.abilities.ts` (until S1-04 extends them), `apps/web/src/features/setup/` | S0-12 |
