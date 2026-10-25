@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/trybun/trybun/compare/v0.1.1...v0.1.2) (2026-10-25)
+
+
+### Fixed
+
+* **server:** start the setup-token command with the logging module ([#96](https://github.com/trybun/trybun/issues/96)) ([9930a58](https://github.com/trybun/trybun/commit/9930a58a7d0a832c4896abaaa5b2a3adc52d78f3))
+
 ## [0.1.1](https://github.com/trybun/trybun/compare/v0.1.0...v0.1.1) (2026-10-25)
 
 
