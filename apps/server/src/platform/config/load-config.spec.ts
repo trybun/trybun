@@ -20,6 +20,7 @@ describe('loadConfig', () => {
       },
       isGithubSignInConfigured: false,
       isSmtpConfigured: false,
+      isBackupStorageConfigured: false,
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
       logLevel: 'silent',
@@ -55,6 +56,14 @@ describe('loadConfig', () => {
     [{}, false],
   ])('SMTP with %j is configured: %s', (env, isConfigured) => {
     expect(loadConfig({ ...TEST_ENV, ...env }).isSmtpConfigured).toBe(isConfigured);
+  });
+
+  it.each([
+    [{ TRYBUN_BACKUP_S3_URL: 'https://s3.example.com/backups' }, true],
+    [{ TRYBUN_BACKUP_S3_URL: '' }, false],
+    [{}, false],
+  ])('the backup storage with %j is configured: %s', (env, isConfigured) => {
+    expect(loadConfig({ ...TEST_ENV, ...env }).isBackupStorageConfigured).toBe(isConfigured);
   });
 
   it('takes the issuer from the public URL of Keycloak when it is set', () => {

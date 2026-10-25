@@ -44,6 +44,10 @@
       "configure_email": {
         "title": "Skonfiguruj e-mail",
         "description": "Bez serwera SMTP Trybun nie wysyła e-maili, więc linki z zaproszeniami trzeba przekazywać ręcznie."
+      },
+      "configure_backup_storage": {
+        "title": "Skonfiguruj miejsce na kopie zapasowe",
+        "description": "Bez magazynu S3 w innej lokalizacji codzienne kopie zapasowe są tylko na tym serwerze i przepadną razem z nim."
       }
     },
     "version": "Wersja",

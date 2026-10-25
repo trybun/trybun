@@ -34,6 +34,7 @@ Po pierwszym logowaniu Trybun otwiera **Administracja** › **Pierwsze kroki**. 
 
 - [Skonfiguruj logowanie przez GitHub](../how-to/configure-github-sign-in.md) – członkowie zespołu logują się przez GitHub; wymagane, zanim zaprosisz zespół.
 - [Skonfiguruj e-mail](../how-to/configure-email.md) – bez serwera SMTP Trybun nie wysyła e-maili.
+- [Skonfiguruj miejsce na kopie zapasowe](../how-to/configure-backup-storage.md) – bez magazynu S3 w innej lokalizacji codzienne kopie zapasowe zostają na serwerze i przepadną razem z nim.
 
 **Administrację** znajdziesz w bocznej nawigacji na tablecie lub komputerze, a na telefonie w menu konta.
 

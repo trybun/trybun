@@ -12,7 +12,7 @@ The project is delivered with an **AI Engineering** approach: AI agents write th
 - **pnpm** enabled through Corepack: `corepack enable` (the version comes from the `packageManager` field of [`package.json`](package.json))
 - **Docker** with the Compose plugin – runs the infrastructure services and the integration tests (Testcontainers)
 - **Chromium** for the component tests, installed once after `pnpm install`: `pnpm --filter @trybun/ui exec playwright install chromium`
-- **ShellCheck** for `pnpm lint`, which checks the `trybun` script of the deployment package: `apt install shellcheck` (preinstalled on the CI runners)
+- **ShellCheck** for `pnpm lint`, which checks the shell scripts (`trybun`, the backup service, the restore test): `apt install shellcheck` (preinstalled on the CI runners)
 
 ## Getting started
 
@@ -46,7 +46,7 @@ Run from the repository root:
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications and generate the Keycloak login theme from the message catalogues |
-| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest, and check the `trybun` script with ShellCheck |
+| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest, and check the shell scripts (`trybun`, the backup service, the restore test) with ShellCheck |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
@@ -123,7 +123,7 @@ Every text of the web application, the server's e-mails and API messages, and th
 
 ## Deployment
 
-Trybun runs on a single Linux server with Docker Compose ([15-deployment.md](docs/spec/15-deployment.md)). [`compose.yaml`](compose.yaml) defines every service: `web`, `api` and `worker` (one `server` image, two commands), PostgreSQL with pgvector and the Polish dictionary, Valkey, SeaweedFS, Keycloak, ClamAV, the one-off services `migrate` (database migrations) and `keycloak-config`, and Caddy as the only public entry point with automatic HTTPS. The images are built from [`docker/`](docker). To try the production set-up locally, set the variables of `.env` and run:
+Trybun runs on a single Linux server with Docker Compose ([15-deployment.md](docs/spec/15-deployment.md)). [`compose.yaml`](compose.yaml) defines every service: `web`, `api` and `worker` (one `server` image, two commands), PostgreSQL with pgvector and the Polish dictionary, Valkey, SeaweedFS, Keycloak, ClamAV, the one-off services `migrate` (database migrations) and `keycloak-config`, the backup service `backup` (restic), and Caddy as the only public entry point with automatic HTTPS. The images are built from [`docker/`](docker). To try the production set-up locally, set the variables of `.env` and run:
 
 ```sh
 docker compose up --build --wait
@@ -135,12 +135,14 @@ The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a 
 
 An installation from a release uses the `trybun` script of the deployment package ([`deploy/trybun`](deploy/trybun), [`INSTALL.md`](deploy/INSTALL.md), [§15.5](docs/spec/15-deployment.md)): `./trybun install` checks the server (Docker and Compose versions, 8 GB RAM, free ports 80 and 443, the domain), asks for the domain, the default language and time zone, generates every secret and the backup passphrase into `.env` – never changing an existing one, so a re-run is safe – starts the system and prints the link of the first-run wizard, which creates the first Administrator with 2FA in Keycloak. `./trybun setup-token` prints a new link (valid 24 hours, single use) while no Administrator exists; the `server` image runs it as `node dist/cli.js setup-token` in the `api` container.
 
+The service `backup` ([`docker/backup`](docker/backup), [§15.10](docs/spec/15-deployment.md)) backs up both databases, the objects of SeaweedFS and the configuration (`.env` and the files of the deployment package) every day with restic, encrypted with `TRYBUN_BACKUP_PASSPHRASE`, to its volume and – with `TRYBUN_BACKUP_S3_URL` – to external S3 storage. `./trybun backup` backs up now (`backup list` lists the backups), `./trybun restore [<backup>]` restores a backup with the version it was taken with – also onto a new server from the package, `.env` and the passphrase – and `./trybun update <version>` downloads and checks a release, backs up, then installs and starts it, printing the restore command of that backup if the new version does not start ([§15.7](docs/spec/15-deployment.md)).
+
 ## Releases
 
 Versions are calculated from the Conventional Commits by [release-please](https://github.com/googleapis/release-please) – before `1.0.0`, `feat:` increases MINOR and everything else PATCH ([§2.11](docs/spec/02-agent-rules.md)); never set a version or edit `CHANGELOG.md` by hand. The workflow [`release.yml`](.github/workflows/release.yml) ([ADR 0006](docs/adr/0006-release-pipeline.md)):
 
 1. keeps a release pull request open on `main` (and on every maintenance branch `release/X.Y.x`, PATCH only) with the next version and its changelog entry;
-2. when the maintainer merges it, tags `vX.Y.Z`, creates a draft GitHub Release, builds the images `ghcr.io/trybun/web`, `server` and `postgres`, scans them with Trivy – a critical vulnerability stops the release – creates their SBOMs (Syft, CycloneDX) and builds the deployment package;
+2. when the maintainer merges it, tags `vX.Y.Z`, creates a draft GitHub Release, builds the images `ghcr.io/trybun/web`, `server`, `postgres` and `backup`, scans them with Trivy – a critical vulnerability stops the release – creates their SBOMs (Syft, CycloneDX), builds the deployment package and runs the restore test [`scripts/restore-test.sh`](scripts/restore-test.sh) on them ([§13.6](docs/spec/13-non-functional.md)) – a failed restore stops the release;
 3. after the maintainer's approval in the environment `release`, pushes the images as `X.Y.Z` (and moves `X.Y` and `X`), attaches the SBOMs, the deployment package and `SHA256SUMS`, and publishes the release.
 
 "Run workflow" on `main` or a maintenance branch publishes the release candidate `X.Y.Z-rc.N` of its open release pull request the same way. The deployment package (`trybun-X.Y.Z.tar.gz`) holds `compose.yaml` pinned to the release's images, `.env.example`, the Caddy and Keycloak configuration, the `trybun` script and [`INSTALL.md`](deploy/INSTALL.md); build it locally with `node scripts/build-deployment-package.js <version> <folder>`.

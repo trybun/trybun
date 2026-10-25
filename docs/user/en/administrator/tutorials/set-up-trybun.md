@@ -34,6 +34,7 @@ After the first sign-in, Trybun opens **Administration** › **Getting started**
 
 - [Configure GitHub sign-in](../how-to/configure-github-sign-in.md) – team members sign in with GitHub; required before you can invite the team.
 - [Configure e-mail](../how-to/configure-email.md) – without an SMTP server Trybun sends no e-mail.
+- [Configure backup storage](../how-to/configure-backup-storage.md) – without S3 storage in another location, the daily backups stay on the server and are lost with it.
 
 You find **Administration** in the side navigation on a tablet or a computer, and in the account menu on a phone.
 

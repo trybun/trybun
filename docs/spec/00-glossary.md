@@ -113,7 +113,8 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Reply domain | – | – | Domain of personal reply addresses (`TRYBUN_REPLY_DOMAIN`, default `reply.<domain>`) ([§6.3](06-comments-notifications.md)) |
 | Realtime ticket | – | – | One-time, 30-second credential for opening a WebSocket connection ([§14.4](14-architecture.md)) |
 | Session | – | – | Server-side web session; the cookie holds only an opaque identifier ([§14.4](14-architecture.md)) |
-| Backup service | – | – | Compose service creating encrypted backups with restic ([§15.10](15-deployment.md)) |
+| Backup service | – | – | Compose service `backup` (image `ghcr.io/trybun/backup`) creating encrypted backups with restic; also run by `./trybun backup`, `restore` and `update` ([§15.10](15-deployment.md)) |
+| Backup | – | Backup / Kopia zapasowa | One encrypted restic snapshot of both databases, the objects and the configuration, identified by its ID ([§15.10](15-deployment.md)) |
 | Outgoing webhook | `webhook` | Webhook / Webhook | HTTP notification sent to external systems ([§12.4](12-api-webhooks-import.md)) |
 | Import batch | `import_batch` | Import / Import | One run of the import wizard; can be undone ([§12.5](12-api-webhooks-import.md)) |
 | Change specification | – | – | Dated description of one change (`.ai/specs/YYYY-MM-DD-slug.md`) with status `draft` → `approved` → `implemented` / `archived` ([§2.8](02-agent-rules.md)) |
@@ -136,5 +137,5 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Anonymization | – | Anonymization / Anonimizacja | GDPR erasure that keeps history ([§13.2](13-non-functional.md)) |
 | Deployment package | – | – | Release assets needed to install the system ([§15.4](15-deployment.md)) |
 | Setup token | `setup_token` | Setup token / Token konfiguracji | One-time token protecting the first-run wizard, valid 24 hours ([§15.6](15-deployment.md)) |
-| Getting-started item | `getting_started_item`: `configure_github_sign_in`, `configure_email` | Configure GitHub sign-in / Skonfiguruj logowanie przez GitHub, Configure e-mail / Skonfiguruj e-mail | An item of the getting-started checklist of the Administrator panel, ticked automatically; later tasks add theirs ([§15.6](15-deployment.md)) |
+| Getting-started item | `getting_started_item`: `configure_github_sign_in`, `configure_email`, `configure_backup_storage` | Configure GitHub sign-in / Skonfiguruj logowanie przez GitHub, Configure e-mail / Skonfiguruj e-mail, Configure backup storage / Skonfiguruj miejsce na kopie zapasowe | An item of the getting-started checklist of the Administrator panel, ticked automatically; later tasks add theirs ([§15.6](15-deployment.md)) |
 | Administrator panel | – | Administration / Administracja | The pages of the Administrator (`/admin`): the getting-started checklist and the "About" page ([§15.6](15-deployment.md)) |

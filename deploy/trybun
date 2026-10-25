@@ -1,6 +1,8 @@
 #!/bin/sh
-# Command of the Trybun deployment package (§15.4, §15.5): installs Trybun and prints the setup
-# link of the first-run wizard. Needs only sh, awk, od and Docker. Run `./trybun --help`.
+# Command of the Trybun deployment package (§15.4): installs Trybun and prints the setup link of
+# the first-run wizard (§15.5, §15.6), backs it up, restores a backup and updates it to a new
+# release (§15.7, §15.10). Needs only sh, awk, od, tar and Docker, and for updates curl or wget
+# and sha256sum. Run `./trybun --help`.
 set -eu
 
 # Oldest versions that support every feature compose.yaml uses (health check `start_interval`).
@@ -18,6 +20,13 @@ SECRETS='TRYBUN_POSTGRES_PASSWORD TRYBUN_KEYCLOAK_DB_PASSWORD TRYBUN_KEYCLOAK_AD
 TRYBUN_VALKEY_PASSWORD TRYBUN_S3_ACCESS_KEY_ID TRYBUN_S3_SECRET_ACCESS_KEY AUTH_SECRET
 TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET TRYBUN_BACKUP_PASSPHRASE'
 
+# Where the releases are published; the tests replace it.
+RELEASES=${TRYBUN_RELEASES_URL:-https://github.com/trybun/trybun/releases}
+
+# Files of the deployment package, which `update` replaces and `restore` brings back; `.env` is
+# never part of a package.
+PACKAGE_FILES='compose.yaml .env.example INSTALL.md LICENSE CHANGELOG.md docker trybun'
+
 # Paths read from the server; the tests replace them.
 MEMINFO=${TRYBUN_MEMINFO:-/proc/meminfo}
 ZONEINFO=${TRYBUN_ZONEINFO:-/usr/share/zoneinfo}
@@ -31,6 +40,13 @@ Commands:
   install       Check the server, create .env with generated secrets, start Trybun and print
                 the setup link. Safe to re-run: an existing .env is never changed.
   setup-token   Print a new setup link for the first-run wizard (valid for 24 hours, works once).
+  backup        Back up both databases, the objects and the configuration now.
+  backup list   List the backups on this server and on the external S3 storage.
+  restore [<backup>]
+                Replace all data and the configuration with a backup (default: the newest) and
+                start the version it was taken with. Also restores onto a new server.
+  update <version>
+                Back up, then install and start the release <version>, e.g. 1.4.1.
   --help        Show this help.
 
 Documentation: INSTALL.md
@@ -57,7 +73,7 @@ ask() {
   answer=
   if ! IFS= read -r answer; then
     printf '\n' >&2
-    fail "No answer to \"$1\". Run ./trybun install in a terminal and answer the questions. Nothing was changed."
+    fail "No answer to \"$1\". Run ./trybun $COMMAND in a terminal and answer the questions. Nothing was changed."
   fi
   if [ -z "$answer" ]; then
     answer=${2-}
@@ -80,15 +96,15 @@ version_at_least() {
 
 check_docker() {
   command -v docker >/dev/null 2>&1 ||
-    fail "Docker is not installed. Install Docker Engine $MIN_DOCKER_VERSION or newer with the Docker Compose plugin (https://docs.docker.com/engine/install/) and run ./trybun install again."
+    fail "Docker is not installed. Install Docker Engine $MIN_DOCKER_VERSION or newer with the Docker Compose plugin (https://docs.docker.com/engine/install/) and run ./trybun $COMMAND again."
   docker_version=$(docker version --format '{{.Server.Version}}' 2>/dev/null) ||
-    fail "Docker Engine is not running or this user may not use it. Start Docker (systemctl start docker), or run ./trybun as root or as a member of the group docker, and run ./trybun install again."
+    fail "Docker Engine is not running or this user may not use it. Start Docker (systemctl start docker), or run ./trybun as root or as a member of the group docker, and run ./trybun $COMMAND again."
   version_at_least "$docker_version" "$MIN_DOCKER_VERSION" ||
-    fail "Docker Engine $docker_version is too old; Trybun needs $MIN_DOCKER_VERSION or newer. Update Docker Engine (https://docs.docker.com/engine/install/) and run ./trybun install again."
+    fail "Docker Engine $docker_version is too old; Trybun needs $MIN_DOCKER_VERSION or newer. Update Docker Engine (https://docs.docker.com/engine/install/) and run ./trybun $COMMAND again."
   compose_version=$(docker compose version --short 2>/dev/null) ||
-    fail "The Docker Compose plugin is not installed. Install it (https://docs.docker.com/compose/install/linux/) and run ./trybun install again."
+    fail "The Docker Compose plugin is not installed. Install it (https://docs.docker.com/compose/install/linux/) and run ./trybun $COMMAND again."
   version_at_least "$compose_version" "$MIN_COMPOSE_VERSION" ||
-    fail "Docker Compose $compose_version is too old; Trybun needs $MIN_COMPOSE_VERSION or newer. Update the Docker Compose plugin (https://docs.docker.com/compose/install/linux/) and run ./trybun install again."
+    fail "Docker Compose $compose_version is too old; Trybun needs $MIN_COMPOSE_VERSION or newer. Update the Docker Compose plugin (https://docs.docker.com/compose/install/linux/) and run ./trybun $COMMAND again."
 }
 
 check_memory() {
@@ -294,11 +310,250 @@ install() {
   print_setup_link
 }
 
-cd "$(dirname -- "$0")"
+# --- Backups (§15.10) ---
 
-case ${1-} in
+# The value of a variable in .env.
+env_value() {
+  sed -n "s/^$1=//p" .env | tail -n 1
+}
+
+require_env() {
+  [ -f .env ] ||
+    fail ".env is missing. Run ./trybun in the folder of the installation. On a new server, copy the .env of the installation (kept outside the old server) into this folder and run ./trybun $COMMAND again."
+}
+
+# Runs a backup with the tag $1 and keeps the ID of its snapshot on this server in $snapshot.
+run_backup() {
+  say 'Backing up both databases, the objects and the configuration.'
+  output=$(docker compose run --rm -T backup backup "$1") || return 1
+  snapshot=$(printf '%s\n' "$output" | awk '$1 == "local" { print $2 }')
+  [ -n "$snapshot" ] || return 1
+  printf '%s\n' "$output" | while read -r repository id; do
+    case $repository in
+      local) say "Backup $id stored on this server." ;;
+      s3) say "Backup $id stored on the external S3 storage." ;;
+    esac
+  done
+}
+
+backup() {
+  require_env
+  case ${1-} in
+    '')
+      check_docker
+      run_backup manual ||
+        fail 'The backup failed. See the messages above and docker compose logs backup.'
+      ;;
+    list) docker compose run --rm -T --no-deps backup list ;;
+    *) fail "Unknown argument \"$1\". Use ./trybun backup or ./trybun backup list." ;;
+  esac
+}
+
+# Replaces the file or folder $1 with the one in the folder $2.
+replace() {
+  if [ -d "$2/$1" ]; then
+    rm -rf "$1.previous"
+    [ ! -e "$1" ] || mv "$1" "$1.previous"
+    mv "$2/$1" "$1"
+    rm -rf "$1.previous"
+  else
+    # A rename: a running ./trybun keeps reading its own, old file.
+    mv -f "$2/$1" "$1"
+  fi
+}
+
+# Brings back .env and the files of the deployment package of the fetched backup.
+restore_configuration() {
+  temporary=$(mktemp -d .restore.XXXXXX)
+  trap 'rm -rf "$temporary"' EXIT
+  trap 'exit 130' HUP INT TERM
+  docker compose run --rm -T --no-deps backup configuration >"$temporary/configuration.tar" ||
+    fail 'The configuration of the backup could not be read. Nothing was changed.'
+  mkdir "$temporary/files"
+  tar -xf "$temporary/configuration.tar" -C "$temporary/files"
+  [ -f "$temporary/files/.env" ] || fail 'The backup contains no .env. Nothing was changed.'
+  chmod 600 "$temporary/files/.env"
+  for name in $PACKAGE_FILES .env; do
+    [ ! -e "$temporary/files/$name" ] || replace "$name" "$temporary/files"
+  done
+  rm -rf "$temporary"
+  trap - EXIT HUP INT TERM
+}
+
+# Sets the passwords of the database users to those of .env, also when the database volume was
+# created with other ones (§15.5): over the local socket of the container, through stdin.
+set_database_passwords() {
+  postgres_password=$(env_value TRYBUN_POSTGRES_PASSWORD | sed "s/'/''/g")
+  keycloak_password=$(env_value TRYBUN_KEYCLOAK_DB_PASSWORD | sed "s/'/''/g")
+  printf "ALTER ROLE trybun PASSWORD '%s';\nALTER ROLE keycloak PASSWORD '%s';\n" \
+    "$postgres_password" "$keycloak_password" |
+    docker compose exec -T postgres psql --username=trybun --dbname=postgres --quiet --set=ON_ERROR_STOP=1
+}
+
+restore() {
+  backup_id=${1:-latest}
+  printf '%s\n' "$backup_id" | grep -Eqx 'latest|[0-9a-f]{8,64}' ||
+    fail "\"$backup_id\" is not a backup. Name the ID of a backup listed by ./trybun backup list, or nothing for the newest one."
+  require_env
+  check_docker
+  say "This replaces all data and the configuration of Trybun with the backup $backup_id and starts the version it was taken with."
+  confirmation=$(ask 'Continue? [y/N]: ' n)
+  case $confirmation in
+    y | Y | yes | YES) ;;
+    *) fail 'Restore stopped. Nothing was changed.' ;;
+  esac
+  say 'Stopping Trybun.'
+  docker compose stop
+  docker compose run --rm -T --no-deps backup fetch "$backup_id" ||
+    fail "The backup $backup_id could not be read. Nothing was changed; start Trybun again with docker compose up -d --wait."
+  restore_configuration
+  say 'Restoring both databases and the objects.'
+  { docker compose up -d --wait postgres && set_database_passwords &&
+    docker compose run --rm -T backup restore-data; } ||
+    fail "Restoring the data failed. See the messages above, fix the cause and run ./trybun restore $backup_id again."
+  say 'Starting Trybun (docker compose up -d --wait).'
+  docker compose up -d --wait ||
+    fail 'Trybun did not start after the restore. See docker compose ps and docker compose logs <service>.'
+  say "Restored the backup $backup_id."
+}
+
+# --- Updates (§15.7) ---
+
+# awk function: a sort key of a version X.Y.Z or X.Y.Z-rc.N; a release sorts after its release
+# candidates.
+VERSION_KEY='function version_key(v, parts, core, n) {
+  n = split(v, parts, "-rc.")
+  split(parts[1], core, ".")
+  return sprintf("%09d%09d%09d%09d", core[1], core[2], core[3], n > 1 ? parts[2] : 999999999)
+}'
+
+# Prints -1, 0 or 1 when version $1 is lower than, equal to or higher than version $2.
+compare_versions() {
+  awk -v a="$1" -v b="$2" "$VERSION_KEY"'
+    BEGIN { x = version_key(a); y = version_key(b); print (x < y ? -1 : x > y ? 1 : 0) }'
+}
+
+valid_version() {
+  printf '%s\n' "$1" | grep -Eqx '(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.[1-9][0-9]*)?'
+}
+
+# The version of this deployment package: the default of TRYBUN_VERSION in compose.yaml.
+installed_version() {
+  sed -n 's/^ *image: ghcr\.io\/trybun\/server:[$]{TRYBUN_VERSION:-\([^}]*\)}$/\1/p' compose.yaml | head -n 1
+}
+
+download() {
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "$2" "$1"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -O "$2" "$1"
+  else
+    fail 'Neither curl nor wget is installed. Install one of them and run ./trybun update again.'
+  fi
+}
+
+# Prints the entries of the changelog $1 newer than version $2, up to version $3.
+show_changes() {
+  [ -f "$1" ] || return 0
+  awk -v current="$(compare_key "$2")" -v target="$(compare_key "$3")" "$VERSION_KEY"'
+    /^##? \[?[0-9]+\.[0-9]+\.[0-9]+/ {
+      version = $2
+      gsub(/[][]|\(.*/, "", version)
+      key = version_key(version)
+      show = key > current && key <= target
+    }
+    show { print }
+  ' "$1"
+}
+
+compare_key() {
+  awk -v v="$1" "$VERSION_KEY"' BEGIN { print version_key(v) }'
+}
+
+# Pulls the images of the enabled services of the compose file $1 that are not on the server yet,
+# before anything changes; the images of a release never change.
+pull_images() {
+  images=$(docker compose -f "$1" --project-directory . config --images | sort -u) || return 1
+  for image in $images; do
+    docker image inspect "$image" >/dev/null 2>&1 || docker pull --quiet "$image" >/dev/null || return 1
+  done
+}
+
+update() {
+  target=${1-}
+  [ -n "$target" ] ||
+    fail "Name the version to update to, e.g. ./trybun update 1.4.1. The releases and their notes: $RELEASES"
+  valid_version "$target" || fail "\"$target\" is not a version such as 1.4.1 or 1.5.0-rc.1."
+  require_env
+  current=$(installed_version)
+  valid_version "$current" ||
+    fail 'This folder is not the deployment package of a release, so it cannot be updated.'
+  ! grep -q '^TRYBUN_VERSION=' .env ||
+    fail "TRYBUN_VERSION is set in .env and would keep the old images. Remove the line and run ./trybun update $target again."
+  case $(compare_versions "$target" "$current") in
+    0)
+      say "Trybun $current is already installed."
+      return
+      ;;
+    -1) fail "$target is older than the installed $current. To return to an earlier version, restore the backup taken before the update to the current one: ./trybun restore <backup> (see ./trybun backup list)." ;;
+  esac
+  check_docker
+  command -v sha256sum >/dev/null 2>&1 ||
+    fail 'The command sha256sum is missing (package coreutils). Install it and run ./trybun update again.'
+
+  temporary=$(mktemp -d .update.XXXXXX)
+  trap 'rm -rf "$temporary"' EXIT
+  trap 'exit 130' HUP INT TERM
+  archive=trybun-$target.tar.gz
+  say "Downloading Trybun $target."
+  { download "$RELEASES/download/v$target/$archive" "$temporary/$archive" &&
+    download "$RELEASES/download/v$target/SHA256SUMS" "$temporary/SHA256SUMS"; } ||
+    fail "Trybun $target could not be downloaded from $RELEASES. Check the version and the connection. Nothing was changed."
+  { grep -q " $archive\$" "$temporary/SHA256SUMS" &&
+    (cd "$temporary" && sha256sum --check --ignore-missing --status SHA256SUMS); } ||
+    fail "The download of Trybun $target does not match its checksum in SHA256SUMS. Nothing was changed."
+  tar -xzf "$temporary/$archive" -C "$temporary"
+  package=$temporary/trybun-$target
+  for name in compose.yaml trybun; do
+    [ -f "$package/$name" ] || fail "The archive of Trybun $target has no $name. Nothing was changed."
+  done
+
+  say ''
+  say "Changes from $current to $target (release notes: $RELEASES/tag/v$target):"
+  show_changes "$package/CHANGELOG.md" "$current" "$target"
+  say ''
+  if [ "${current%%.*}" != "${target%%.*}" ]; then
+    say "$target is a new MAJOR version. Read its breaking changes and manual steps above first."
+    confirmation=$(ask "Update from $current to $target? [y/N]: " n)
+    case $confirmation in
+      y | Y | yes | YES) ;;
+      *) fail 'Update stopped. Nothing was changed.' ;;
+    esac
+  fi
+
+  say "Pulling the images of Trybun $target."
+  pull_images "$package/compose.yaml" ||
+    fail "The images of Trybun $target could not be pulled. Check the connection and run ./trybun update $target again. Nothing was changed."
+  run_backup pre-update ||
+    fail 'The backup before the update failed, so nothing was changed. See the messages above and docker compose logs backup.'
+  for name in $PACKAGE_FILES; do
+    [ ! -e "$package/$name" ] || replace "$name" "$package"
+  done
+  say "Starting Trybun $target: migrating the databases and applying the sign-in configuration."
+  docker compose up -d --wait --remove-orphans ||
+    fail "The update to $target failed. To return to version $current with the data from before the update, run: ./trybun restore $snapshot"
+  say "Updated Trybun from $current to $target. The backup from before the update is $snapshot."
+}
+
+cd "$(dirname -- "$0")"
+COMMAND=${1-}
+
+case $COMMAND in
   install) install ;;
   setup-token) setup_token ;;
+  backup) backup "${2-}" ;;
+  restore) restore "${2-}" ;;
+  update) update "${2-}" ;;
   '' | -h | --help | help) usage ;;
   *)
     usage >&2

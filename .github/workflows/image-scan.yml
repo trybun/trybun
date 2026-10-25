@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [web, server, postgres]
+        service: [web, server, postgres, backup]
         # `main`: built from the branch; `current` and `previous`: the published `X.Y` tags of
         # the supported series. Each slot keeps its code scanning category when the series moves.
         slot: [main, current, previous]
@@ -69,6 +69,9 @@ jobs:
           - service: postgres
             context: docker/postgres
             dockerfile: docker/postgres/Dockerfile
+          - service: backup
+            context: docker/backup
+            dockerfile: docker/backup/Dockerfile
     env:
       SERIES: ${{ matrix.slot == 'current' && needs.series.outputs.current || matrix.slot == 'previous' && needs.series.outputs.previous || '' }}
       SARIF: trivy-${{ matrix.service }}-${{ matrix.slot }}.sarif

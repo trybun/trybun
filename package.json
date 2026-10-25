@@ -10,7 +10,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "docker compose -f compose.yaml -f compose.dev.yaml up -d --wait && docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config && pnpm db:migrate && pnpm db:seed && turbo run dev",
-    "lint": "turbo run lint && prettier --check . && node scripts/check-prisma.js && node scripts/check-supply-chain.js && shellcheck deploy/trybun",
+    "lint": "turbo run lint && prettier --check . && node scripts/check-prisma.js && node scripts/check-supply-chain.js && shellcheck deploy/trybun docker/backup/backup.sh scripts/restore-test.sh",
     "format": "prettier --write .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && vitest run --project scripts",

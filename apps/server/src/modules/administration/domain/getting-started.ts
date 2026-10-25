@@ -4,6 +4,7 @@ import type { GettingStartedItem } from '@trybun/contracts/administration';
 export interface GettingStartedState {
   isGithubSignInConfigured: boolean;
   isSmtpConfigured: boolean;
+  isBackupStorageConfigured: boolean;
 }
 
 /**
@@ -15,5 +16,11 @@ export function gettingStartedItems(state: GettingStartedState): GettingStartedI
     // Required before team members can be invited (§15.5).
     { id: 'configure_github_sign_in', isDone: state.isGithubSignInConfigured, isOptional: false },
     { id: 'configure_email', isDone: state.isSmtpConfigured, isOptional: false },
+    // Without it the backups stay on the server (§15.2).
+    {
+      id: 'configure_backup_storage',
+      isDone: state.isBackupStorageConfigured,
+      isOptional: false,
+    },
   ];
 }

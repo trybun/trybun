@@ -71,7 +71,13 @@ describe('administration endpoints', () => {
   });
 
   describe('with no optional setting', () => {
-    beforeEach(() => start({ isGithubSignInConfigured: false, isSmtpConfigured: false }));
+    beforeEach(() =>
+      start({
+        isGithubSignInConfigured: false,
+        isSmtpConfigured: false,
+        isBackupStorageConfigured: false,
+      }),
+    );
 
     it('shows the checklist to an Administrator with nothing done', async () => {
       const res = await get('getting-started', await signIn(true));
@@ -81,6 +87,7 @@ describe('administration endpoints', () => {
         items: [
           { id: 'configure_github_sign_in', isDone: false, isOptional: false },
           { id: 'configure_email', isDone: false, isOptional: false },
+          { id: 'configure_backup_storage', isDone: false, isOptional: false },
         ],
         nextCursor: null,
       });
@@ -110,8 +117,12 @@ describe('administration endpoints', () => {
     });
   });
 
-  it('ticks "Configure e-mail" once SMTP is configured', async () => {
-    await start({ isGithubSignInConfigured: true, isSmtpConfigured: true });
+  it('ticks the items once their settings are configured', async () => {
+    await start({
+      isGithubSignInConfigured: true,
+      isSmtpConfigured: true,
+      isBackupStorageConfigured: true,
+    });
 
     const res = await get('getting-started', await signIn(true));
 
@@ -119,6 +130,7 @@ describe('administration endpoints', () => {
       items: [
         { id: 'configure_github_sign_in', isDone: true },
         { id: 'configure_email', isDone: true },
+        { id: 'configure_backup_storage', isDone: true },
       ],
     });
   });

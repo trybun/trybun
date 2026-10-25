@@ -347,7 +347,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            id: "configure_github_sign_in" | "configure_email";
+                            id: "configure_github_sign_in" | "configure_email" | "configure_backup_storage";
                             isDone: boolean;
                             isOptional: boolean;
                         }[];

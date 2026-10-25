@@ -9,6 +9,7 @@ Knowledge gained while working on this project that is not in the specification 
 
 ## Topics
 
+- `.ai/memory/backups.md` – restic exit codes and fixed host, Keycloak `admin-cli` tokens without `sub`, `pg_restore --create`, database passwords after a restore, Compose `required: false`, `config --images` and pulls of local images, the host gateway in tests, `gosu` in the postgres Alpine image, rclone without a configuration file, `set -e` in conditions – read when changing `docker/backup/`, the commands `backup`, `restore` or `update` of `./trybun`, or the restore test.
 - `.ai/memory/bullmq.md` – BullMQ 6: forbidden job ID characters, ignored duplicate IDs, debounce deduplication for timers, retention and retries, Valkey compatibility – read when adding queues, jobs, timers or schedulers.
 - `.ai/memory/docker.md` – Docker Compose, images and infrastructure services: `up --wait` and one-off services, shared server image, Keycloak readiness, keycloak-config-cli versions, the sjp.pl dictionary archive, SeaweedFS credentials, internal networks, PostgreSQL 18 volume path, Dependabot and image pinning – read when changing `compose*.yaml`, `docker/` or the infrastructure services.
 - `.ai/memory/e2e.md` – Playwright E2E set-up: seeded sign-in and one-time code reuse, several seeded sign-ins, tour tests on two devices, WebKit system libraries, axe exclusions, Lighthouse over the DevTools protocol, what moves the simulated LCP, measuring the sign-in redirect – read when writing E2E tests, adding a key page or when the Lighthouse budget fails.

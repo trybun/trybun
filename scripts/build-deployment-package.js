@@ -3,7 +3,7 @@
 // Usage: node scripts/build-deployment-package.js <version> <output directory>
 // Writes `trybun-<version>.tar.gz` with the folder `trybun-<version>/`.
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseVersion } from './release.js';
@@ -20,6 +20,8 @@ const FILES = [
   // The command of the package (`./trybun install`); the copy keeps its executable bit.
   { from: 'deploy/trybun', to: 'trybun' },
   { from: 'LICENSE', to: 'LICENSE' },
+  // `./trybun update` shows its entries (§15.7); release-please writes it with the first release.
+  { from: 'CHANGELOG.md', to: 'CHANGELOG.md', isOptional: true },
 ];
 
 const BUILD = /^(\s*)build:/;
@@ -89,7 +91,10 @@ export function buildDeploymentPackage(version, output) {
   const compose = readFileSync(join(ROOT, 'compose.yaml'), 'utf8');
   writeFileSync(join(folder, 'compose.yaml'), packageCompose(compose, version));
   const files = [...FILES, ...bindMounts(compose).map((path) => ({ from: path, to: path }))];
-  for (const { from, to } of files) {
+  for (const { from, to, isOptional } of files) {
+    if (isOptional && !existsSync(join(ROOT, from))) {
+      continue;
+    }
     cpSync(join(ROOT, from), join(folder, to), { recursive: true });
   }
   const archive = join(output, `${name}.tar.gz`);
