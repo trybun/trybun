@@ -1,8 +1,11 @@
-// Versions of a release (§2.11, §15.4), used by `.github/workflows/release.yml`.
+// Versions of a release (§2.11, §15.4), used by `.github/workflows/release.yml` and
+// `.github/workflows/image-scan.yml`.
 // Usage:
 //   node scripts/release.js metadata <tag>      outputs of the release with the tag (GITHUB_OUTPUT)
 //   node scripts/release.js candidate <version> the next release candidate of the version
 //   node scripts/release.js set-version <version> writes the version into the package.json files
+//   node scripts/release.js supported-series <releases.json> image tags of the supported series
+//                                               (GITHUB_OUTPUT) from `gh release list --json`
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -152,6 +155,47 @@ export function releaseMetadata(tag, releasedVersions) {
 }
 
 /**
+ * @typedef {object} PublishedRelease a GitHub Release, as listed by `gh release list --json`
+ * @property {string} tagName
+ * @property {string} publishedAt
+ * @property {boolean} isDraft
+ * @property {boolean} isPrerelease
+ */
+
+/** How long the last release of the previous MAJOR series stays supported (§2.11). */
+const PREVIOUS_SERIES_MONTHS = 6;
+
+/**
+ * The supported series whose published images the daily image scan checks (§2.10, §2.11): the
+ * `X.Y` tag of the highest release, and for 6 months after the first release of a new MAJOR
+ * version the `X.Y` tag of the last release of the previous series. Drafts and pre-releases are
+ * not published images.
+ * @param {PublishedRelease[]} releases
+ * @param {Date} now
+ * @returns {{ current: string, previous: string }} image tags, empty when there is none
+ */
+export function supportedSeries(releases, now) {
+  const published = releases
+    .filter((release) => !release.isDraft && !release.isPrerelease)
+    .map((release) => ({ ...release, version: parseVersion(release.tagName) }))
+    .filter(({ version }) => version !== undefined && version.prerelease === undefined)
+    .sort((a, b) => compareVersions(a.version, b.version));
+  const highest = published.at(-1);
+  if (!highest) {
+    return { current: '', previous: '' };
+  }
+  const series = ({ major, minor }) => `${major}.${minor}`;
+  const firstOfMajor = published.find(({ version }) => version.major === highest.version.major);
+  const lastOfPrevious = published.findLast(({ version }) => version.major < highest.version.major);
+  const supportEnds = new Date(firstOfMajor.publishedAt);
+  supportEnds.setUTCMonth(supportEnds.getUTCMonth() + PREVIOUS_SERIES_MONTHS);
+  return {
+    current: series(highest.version),
+    previous: lastOfPrevious && now < supportEnds ? series(lastOfPrevious.version) : '',
+  };
+}
+
+/**
  * The package.json files whose version release-please updates (`release-please-config.json`).
  * @returns {string[]} paths relative to the repository root
  */
@@ -193,9 +237,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.stdout.write(`${nextCandidate(argument, releasedTags())}\n`);
   } else if (command === 'set-version' && argument) {
     setVersion(argument);
+  } else if (command === 'supported-series' && argument) {
+    const series = supportedSeries(JSON.parse(readFileSync(argument, 'utf8')), new Date());
+    process.stdout.write(`current=${series.current}\nprevious=${series.previous}\n`);
   } else {
     process.stderr.write(
-      'Usage: node scripts/release.js metadata <tag> | candidate <version> | set-version <version>\n',
+      'Usage: node scripts/release.js metadata <tag> | candidate <version> | set-version <version>' +
+        ' | supported-series <releases.json>\n',
     );
     process.exit(2);
   }

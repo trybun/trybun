@@ -7,6 +7,7 @@ import {
   nextCandidate,
   parseVersion,
   releaseMetadata,
+  supportedSeries,
   versionedPackageFiles,
 } from './release.js';
 
@@ -124,6 +125,57 @@ describe('releaseMetadata', () => {
   });
 });
 
+describe('supportedSeries', () => {
+  const release = (tagName, publishedAt, flags = {}) => ({
+    tagName,
+    publishedAt: `${publishedAt}T12:00:00Z`,
+    isDraft: false,
+    isPrerelease: false,
+    ...flags,
+  });
+  const now = new Date('2027-06-15T00:00:00Z');
+
+  it('has nothing to scan before the first release', () => {
+    expect(supportedSeries([], now)).toEqual({ current: '', previous: '' });
+  });
+
+  it('scans the series of the highest release, also when it is not the newest (§2.11)', () => {
+    const releases = [
+      release('v1.4.2', '2027-05-01'),
+      release('v1.5.0', '2027-04-01'),
+      release('v1.3.0', '2027-02-01'),
+    ];
+    expect(supportedSeries(releases, now)).toEqual({ current: '1.5', previous: '' });
+  });
+
+  it('ignores drafts, pre-releases and other tags', () => {
+    const releases = [
+      release('v0.3.0', '2027-06-01'),
+      release('v0.4.0', '2027-06-10', { isDraft: true }),
+      release('v0.4.0-rc.1', '2027-06-09', { isPrerelease: true }),
+      release('nightly', '2027-06-11'),
+    ];
+    expect(supportedSeries(releases, now)).toEqual({ current: '0.3', previous: '' });
+  });
+
+  it('keeps the last release of the previous series for 6 months after a new MAJOR', () => {
+    const releases = [
+      release('v1.9.3', '2027-02-01'),
+      release('v1.9.4', '2027-03-01'),
+      release('v2.0.0', '2027-01-15'),
+      release('v2.1.0', '2027-05-01'),
+    ];
+    expect(supportedSeries(releases, new Date('2027-07-15T11:59:59Z'))).toEqual({
+      current: '2.1',
+      previous: '1.9',
+    });
+    expect(supportedSeries(releases, new Date('2027-07-15T12:00:00Z'))).toEqual({
+      current: '2.1',
+      previous: '',
+    });
+  });
+});
+
 describe('release-please configuration', () => {
   const config = readJson('release-please-config.json');
   const maintenance = readJson('release-please-config.maintenance.json');
@@ -161,5 +213,25 @@ describe('accepted risks of the image scan (.trivyignore.yaml)', () => {
       const expiry = /^\s*expired_at: (\d{4}-\d{2}-\d{2})$/m.exec(entry)?.[1];
       expect(expiry, entry).toBeDefined();
     }
+  });
+});
+
+describe('daily image scan (.github/workflows/image-scan.yml)', () => {
+  const workflow = readFileSync('.github/workflows/image-scan.yml', 'utf8');
+
+  it('has no access to secrets and only reads, apart from uploading its results (§2.10)', () => {
+    expect(workflow).not.toMatch(/\bsecrets\./);
+    expect(workflow).not.toMatch(/^\s*environment:/m);
+    expect(workflow).toMatch(/^permissions: \{\}$/m);
+    const permissions = [...workflow.matchAll(/^\s+([a-z-]+): (read|write)$/gm)].map(
+      ([, scope, access]) => `${scope}: ${access}`,
+    );
+    expect(new Set(permissions)).toEqual(
+      new Set(['contents: read', 'packages: read', 'security-events: write']),
+    );
+  });
+
+  it('applies the accepted risks of the release scan', () => {
+    expect(workflow).toMatch(/^\s+trivyignores: \.trivyignore\.yaml$/m);
   });
 });

@@ -1,0 +1,130 @@
+# Daily image scan (§2.10, §15.4): Trivy scans the published images of the supported series
+# (§2.11) and the images built from `main` for critical vulnerabilities, with the accepted risks of
+# .trivyignore.yaml, and uploads the results to GitHub code scanning. A finding opens a code
+# scanning alert; an accepted risk past its expiry date is reported again; a vulnerability that is
+# gone closes its alert with the next upload of the same category. No secrets, read-only
+# permissions plus the upload of the results.
+name: Image scan
+
+on:
+  schedule:
+    - cron: '43 4 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  series:
+    name: Supported series
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      current: ${{ steps.series.outputs.current }}
+      previous: ${{ steps.series.outputs.previous }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - id: series
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 \
+            --json tagName,publishedAt,isDraft,isPrerelease > "$RUNNER_TEMP/releases.json"
+          node scripts/release.js supported-series "$RUNNER_TEMP/releases.json" | tee -a "$GITHUB_OUTPUT"
+
+  scan:
+    name: Scan ${{ matrix.service }} (${{ matrix.slot }})
+    needs: series
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [web, server, postgres]
+        # `main`: built from the branch; `current` and `previous`: the published `X.Y` tags of
+        # the supported series. Each slot keeps its code scanning category when the series moves.
+        slot: [main, current, previous]
+        include:
+          - service: web
+            context: .
+            dockerfile: docker/web/Dockerfile
+          - service: server
+            context: .
+            dockerfile: docker/server/Dockerfile
+          - service: postgres
+            context: docker/postgres
+            dockerfile: docker/postgres/Dockerfile
+    env:
+      SERIES: ${{ matrix.slot == 'current' && needs.series.outputs.current || matrix.slot == 'previous' && needs.series.outputs.previous || '' }}
+      SARIF: trivy-${{ matrix.service }}-${{ matrix.slot }}.sarif
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Choose the image
+        id: image
+        env:
+          SERVICE: ${{ matrix.service }}
+          SLOT: ${{ matrix.slot }}
+        run: |
+          if [ "$SLOT" = main ]; then
+            echo "ref=trybun-scan/$SERVICE:main" >> "$GITHUB_OUTPUT"
+          elif [ -n "$SERIES" ]; then
+            echo "ref=ghcr.io/trybun/$SERVICE:$SERIES" >> "$GITHUB_OUTPUT"
+          fi
+      - if: ${{ matrix.slot == 'main' }}
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - if: ${{ matrix.slot == 'main' }}
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          load: true
+          push: false
+          provenance: false
+          tags: ${{ steps.image.outputs.ref }}
+      # The packages stay private until the maintainer makes them public (ADR 0006).
+      - if: ${{ matrix.slot != 'main' && steps.image.outputs.ref != '' }}
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Scan for critical vulnerabilities
+        if: ${{ steps.image.outputs.ref != '' }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.0
+          image-ref: ${{ steps.image.outputs.ref }}
+          scanners: vuln
+          severity: CRITICAL
+          # Without it the SARIF report contains every severity.
+          limit-severities-for-sarif: true
+          format: sarif
+          output: ${{ env.SARIF }}
+          trivyignores: .trivyignore.yaml
+      # A slot without an image (no release yet, or the previous series no longer supported)
+      # uploads an empty result, which closes the alerts left in its category.
+      - name: Report no image
+        if: ${{ steps.image.outputs.ref == '' }}
+        run: |
+          echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"Trivy","informationUri":"https://github.com/aquasecurity/trivy","rules":[]}},"results":[]}]}' > "$SARIF"
+      - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          sarif_file: ${{ env.SARIF }}
+          category: image-scan/${{ matrix.service }}/${{ matrix.slot }}
