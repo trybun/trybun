@@ -2,9 +2,9 @@
 # release-please keeps the release pull request up to date; merging it – the human decision –
 # creates the tag `vX.Y.Z` and a draft GitHub Release. "Run workflow" on such a branch tags a
 # release candidate `X.Y.Z-rc.N` of its open release pull request instead. The images are then
-# built and scanned – a critical vulnerability blocks the release – and, after the maintainer's
-# approval of the environment `release`, pushed to ghcr.io with the SBOMs and the deployment
-# package, and the release is published.
+# built and scanned – a critical vulnerability blocks the release –, a restore test runs on them
+# (§13.6) and, after the maintainer's approval of the environment `release`, they are pushed to
+# ghcr.io with the SBOMs and the deployment package, and the release is published.
 name: Release
 
 on:
@@ -137,6 +137,9 @@ jobs:
           - service: postgres
             context: docker/postgres
             dockerfile: docker/postgres/Dockerfile
+          - service: backup
+            context: docker/backup
+            dockerfile: docker/backup/Dockerfile
     env:
       IMAGE: ghcr.io/trybun/${{ matrix.service }}:${{ needs.prepare.outputs.version }}
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -226,9 +229,36 @@ jobs:
           path: out/trybun-${{ needs.prepare.outputs.version }}.tar.gz
           retention-days: 7
 
+  # A backup restored on a clean server signs in the same users and has the same objects (§13.6):
+  # the deployment package with exactly the scanned images.
+  restore-test:
+    name: Restore test
+    needs: [prepare, images, deployment-package]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Load the images
+        run: |
+          for image in artifacts/image-*.tar.gz; do
+            docker load --input "$image"
+          done
+      - env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: scripts/restore-test.sh "artifacts/trybun-$VERSION.tar.gz"
+
   publish:
     name: Publish
-    needs: [prepare, images, deployment-package]
+    needs: [prepare, images, deployment-package, restore-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     # Waits for the maintainer's approval; runs no code of the repository.
@@ -255,7 +285,7 @@ jobs:
           password: ${{ github.token }}
       - name: Push the images
         run: |
-          for service in web server postgres; do
+          for service in web server postgres backup; do
             docker load --input "artifacts/image-$service.tar.gz"
             for tag in $IMAGE_TAGS; do
               docker tag "ghcr.io/trybun/$service:$VERSION" "ghcr.io/trybun/$service:$tag"

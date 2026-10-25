@@ -1,4 +1,5 @@
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   chmodSync,
   copyFileSync,
@@ -15,8 +16,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-// Runs `deploy/trybun` in a copy of the deployment package, with stubs of docker, ss, getent and
-// ip on PATH and a fake /proc/meminfo (§15.5).
+// Runs `deploy/trybun` in a copy of the deployment package, with stubs of docker, ss, getent, ip
+// and curl on PATH and a fake /proc/meminfo (§15.5, §15.7, §15.10).
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ENV_EXAMPLE = readFileSync(join(ROOT, '.env.example'), 'utf8');
@@ -44,6 +45,19 @@ case "$*" in
   "compose ps --status running --services") [ -e .env ] || exit 1; printf '%s' "$STUB_RUNNING" ;;
   "compose up -d --wait") exit "$STUB_UP_EXIT" ;;
   "compose exec -T api node dist/cli.js setup-token") echo "$STUB_SETUP_OUTPUT"; exit "$STUB_SETUP_EXIT" ;;
+  "compose run --rm -T backup backup "*) printf '%b' "$STUB_BACKUP_OUTPUT"; exit "$STUB_BACKUP_EXIT" ;;
+  "compose run --rm -T --no-deps backup list") echo 'Backups on the local backup volume:' ;;
+  "compose stop") ;;
+  "compose run --rm -T --no-deps backup fetch "*) exit "$STUB_FETCH_EXIT" ;;
+  "compose run --rm -T --no-deps backup configuration") cat "$STUB_CONFIGURATION" ;;
+  "compose up -d --wait postgres") ;;
+  "compose exec -T postgres "*) cat >"$STUB_STDIN" ;;
+  "compose run --rm -T backup restore-data") exit "$STUB_RESTORE_EXIT" ;;
+  "compose -f "*" --project-directory . config --images") printf 'ghcr.io/trybun/server:0.3.0\nvalkey:9\nghcr.io/trybun/server:0.3.0\n' ;;
+  "image inspect valkey:9") ;;
+  "image inspect "*) exit 1 ;;
+  "pull --quiet "*) exit "$STUB_PULL_EXIT" ;;
+  "compose up -d --wait --remove-orphans") exit "$STUB_UP_EXIT" ;;
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
 `,
@@ -65,6 +79,13 @@ echo "2: eth0    inet6 2001:db8::10/64 scope global"
 `,
   hostname: `#!/bin/sh
 exit 1
+`,
+  // Serves the releases from a folder: curl -fsSL -o <file> <url>.
+  curl: `#!/bin/sh
+echo "curl $*" >>"$STUB_LOG"
+file="$STUB_RELEASES/\${4#"$TRYBUN_RELEASES_URL"/download/}"
+[ -f "$file" ] || exit 22
+cp "$file" "$3"
 `,
 };
 
@@ -102,7 +123,8 @@ function meminfo(kilobytes) {
 
 function trybun(command, { input = ANSWERS, memory = GIB_16, ...stubs } = {}) {
   meminfo(memory);
-  const result = spawnSync('sh', [join(folder, 'package/trybun'), command], {
+  const args = Array.isArray(command) ? command : [command];
+  const result = spawnSync('sh', [join(folder, 'package/trybun'), ...args], {
     input,
     encoding: 'utf8',
     env: {
@@ -121,6 +143,15 @@ function trybun(command, { input = ANSWERS, memory = GIB_16, ...stubs } = {}) {
       STUB_SETUP_OUTPUT:
         'https://trybun.example.com/setup#token=abc (valid until 2026-10-26 12:00 UTC)',
       STUB_SETUP_EXIT: '0',
+      STUB_BACKUP_OUTPUT: 'local 1a2b3c4d\\ns3 5e6f7a8b\\n',
+      STUB_BACKUP_EXIT: '0',
+      STUB_FETCH_EXIT: '0',
+      STUB_RESTORE_EXIT: '0',
+      STUB_PULL_EXIT: '0',
+      STUB_CONFIGURATION: join(folder, 'configuration.tar'),
+      STUB_STDIN: join(folder, 'stdin'),
+      STUB_RELEASES: join(folder, 'releases'),
+      TRYBUN_RELEASES_URL: 'https://releases.example.com/trybun',
       ...stubs,
     },
   });
@@ -354,9 +385,305 @@ describe('./trybun --help', () => {
   });
 
   it('refuses an unknown command', () => {
-    const result = trybun('update');
+    const result = trybun('upgrade');
 
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain('Unknown command "update"');
+    expect(result.stderr).toContain('Unknown command "upgrade"');
+  });
+});
+
+/** Writes the files of an object `{ path: content }` into a folder. */
+function writeFiles(base, files) {
+  for (const [path, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(base, path)), { recursive: true });
+    writeFileSync(join(base, path), content);
+  }
+}
+
+const composeOf = (version) =>
+  `x-server: &server\n  image: ghcr.io/trybun/server:\${TRYBUN_VERSION:-${version}}\n`;
+
+const INSTALLED_ENV = 'TRYBUN_DOMAIN=trybun.example.com\nTRYBUN_POSTGRES_PASSWORD=current\n';
+
+/** An installation of version 0.2.0 with its .env. */
+function installed() {
+  writeFiles(join(folder, 'package'), {
+    'compose.yaml': composeOf('0.2.0'),
+    'docker/caddy/Caddyfile': 'old',
+    'docker/obsolete.txt': 'old',
+    '.env': INSTALLED_ENV,
+  });
+  chmodSync(envPath(), 0o600);
+}
+
+const order = (log, ...commands) => commands.map((command) => log.indexOf(command));
+
+describe('./trybun backup', () => {
+  beforeEach(installed);
+
+  it('backs up and says where each backup is stored', () => {
+    const result = trybun('backup');
+
+    expect(result.status).toBe(0);
+    expect(result.log).toContain('docker compose run --rm -T backup backup manual');
+    expect(result.stdout).toContain('Backup 1a2b3c4d stored on this server.');
+    expect(result.stdout).toContain('Backup 5e6f7a8b stored on the external S3 storage.');
+  });
+
+  it('fails when the backup fails', () => {
+    const result = trybun('backup', { STUB_BACKUP_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('The backup failed');
+  });
+
+  it('lists the backups', () => {
+    const result = trybun(['backup', 'list']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Backups on the local backup volume:');
+  });
+});
+
+describe('./trybun restore', () => {
+  const RESTORED_ENV =
+    "TRYBUN_DOMAIN=trybun.example.com\nTRYBUN_POSTGRES_PASSWORD=it's-old\nTRYBUN_KEYCLOAK_DB_PASSWORD=keycloak-old\n";
+
+  beforeEach(() => {
+    installed();
+    const backup = join(folder, 'backup');
+    writeFiles(backup, {
+      '.env': RESTORED_ENV,
+      'compose.yaml': composeOf('0.1.0'),
+      'docker/caddy/Caddyfile': 'restored',
+      trybun: '#!/bin/sh\n',
+    });
+    execFileSync('tar', ['-cf', join(folder, 'configuration.tar'), '-C', backup, '.']);
+  });
+
+  it('restores the configuration and the data of the backup and starts its version', () => {
+    const result = trybun(['restore', '1a2b3c4d'], { input: 'y\n' });
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(envPath(), 'utf8')).toBe(RESTORED_ENV);
+    expect(statSync(envPath()).mode & 0o777).toBe(0o600);
+    expect(readFileSync(join(folder, 'package/compose.yaml'), 'utf8')).toBe(composeOf('0.1.0'));
+    expect(readFileSync(join(folder, 'package/docker/caddy/Caddyfile'), 'utf8')).toBe('restored');
+    expect(existsSync(join(folder, 'package/docker/obsolete.txt'))).toBe(false);
+    const steps = order(
+      result.log,
+      'compose stop',
+      'backup fetch 1a2b3c4d',
+      'compose up -d --wait postgres',
+      'compose exec -T postgres',
+      'backup restore-data',
+      'compose up -d --wait\n',
+    );
+    expect(steps.every((index) => index >= 0)).toBe(true);
+    expect([...steps].sort((a, b) => a - b)).toEqual(steps);
+    // The passwords of the restored .env, through stdin only.
+    expect(readFileSync(join(folder, 'stdin'), 'utf8')).toBe(
+      "ALTER ROLE trybun PASSWORD 'it''s-old';\nALTER ROLE keycloak PASSWORD 'keycloak-old';\n",
+    );
+    expect(result.log).not.toContain('old');
+    expect(result.stdout).toContain('Restored the backup 1a2b3c4d.');
+  });
+
+  it('restores the newest backup by default', () => {
+    const result = trybun('restore', { input: 'y\n' });
+
+    expect(result.status).toBe(0);
+    expect(result.log).toContain('backup fetch latest');
+  });
+
+  it('changes nothing without confirmation', () => {
+    const result = trybun('restore', { input: 'n\n' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Restore stopped. Nothing was changed.');
+    expect(result.log).not.toContain('compose stop');
+    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+  });
+
+  it('changes nothing when the backup cannot be read', () => {
+    const result = trybun('restore', { input: 'y\n', STUB_FETCH_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('The backup latest could not be read. Nothing was changed');
+    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+    expect(result.log).not.toContain('restore-data');
+  });
+
+  it('refuses an argument that is not a backup ID', () => {
+    const result = trybun(['restore', '../backup'], { input: 'y\n' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('"../backup" is not a backup');
+    expect(result.log).toBe('');
+  });
+
+  it('explains how to restore onto a new server without .env', () => {
+    rmSync(envPath());
+    const result = trybun('restore', { input: 'y\n' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('copy the .env of the installation');
+  });
+});
+
+describe('./trybun update', () => {
+  const CHANGELOG = `# Changelog
+
+## [0.3.0](https://github.com/trybun/trybun/compare/v0.2.0...v0.3.0) (2026-11-15)
+
+* the feature of 0.3.0
+
+## [0.2.0](https://github.com/trybun/trybun/compare/v0.1.0...v0.2.0) (2026-11-01)
+
+* the feature of 0.2.0
+`;
+
+  /** Publishes the deployment package of a release in the stub's release folder. */
+  function release(version, { checksum } = {}) {
+    const name = `trybun-${version}`;
+    const source = join(folder, 'source');
+    rmSync(source, { recursive: true, force: true });
+    writeFiles(join(source, name), {
+      'compose.yaml': composeOf(version),
+      trybun: '#!/bin/sh\necho new\n',
+      '.env.example': 'TRYBUN_DOMAIN=\n',
+      'CHANGELOG.md': `# Changelog\n\n## [${version}](https://example.com) (2026-12-01)\n\n* the feature of ${version}\n\n${CHANGELOG.slice(13)}`,
+      'docker/caddy/Caddyfile': 'new',
+    });
+    const download = join(folder, 'releases', `v${version}`);
+    mkdirSync(download, { recursive: true });
+    const archive = join(download, `${name}.tar.gz`);
+    execFileSync('tar', ['-czf', archive, '-C', source, name]);
+    const sum = checksum ?? createHash('sha256').update(readFileSync(archive)).digest('hex');
+    writeFileSync(join(download, 'SHA256SUMS'), `${sum}  ${name}.tar.gz\n`);
+  }
+
+  beforeEach(installed);
+
+  it('backs up, then installs and starts the new release and keeps .env', () => {
+    release('0.3.0');
+    const result = trybun(['update', '0.3.0']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('* the feature of 0.3.0');
+    expect(result.stdout).not.toContain('the feature of 0.2.0');
+    expect(readFileSync(join(folder, 'package/compose.yaml'), 'utf8')).toBe(composeOf('0.3.0'));
+    expect(readFileSync(join(folder, 'package/trybun'), 'utf8')).toBe('#!/bin/sh\necho new\n');
+    expect(readFileSync(join(folder, 'package/docker/caddy/Caddyfile'), 'utf8')).toBe('new');
+    expect(existsSync(join(folder, 'package/docker/obsolete.txt'))).toBe(false);
+    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+    const steps = order(
+      result.log,
+      'curl -fsSL -o',
+      'docker pull --quiet ghcr.io/trybun/server:0.3.0',
+      'backup backup pre-update',
+      'compose up -d --wait --remove-orphans',
+    );
+    // Images on the server are not pulled again, each image only once.
+    expect(result.log).not.toContain('pull --quiet valkey');
+    expect(result.log.split('docker pull').length).toBe(2);
+    expect(steps.every((index) => index >= 0)).toBe(true);
+    expect([...steps].sort((a, b) => a - b)).toEqual(steps);
+    expect(result.stdout).toContain('Updated Trybun from 0.2.0 to 0.3.0');
+    expect(result.stdout).toContain('1a2b3c4d');
+  });
+
+  it('names the one command that returns to the previous version when the update fails', () => {
+    release('0.3.0');
+    const result = trybun(['update', '0.3.0'], { STUB_UP_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'To return to version 0.2.0 with the data from before the update, run: ./trybun restore 1a2b3c4d',
+    );
+  });
+
+  it('changes nothing when the download does not match its checksum', () => {
+    release('0.3.0', { checksum: '0'.repeat(64) });
+    const result = trybun(['update', '0.3.0']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('does not match its checksum');
+    expect(result.log).not.toContain('backup');
+    expect(readFileSync(join(folder, 'package/compose.yaml'), 'utf8')).toBe(composeOf('0.2.0'));
+  });
+
+  it('changes nothing when the images cannot be pulled', () => {
+    release('0.3.0');
+    const result = trybun(['update', '0.3.0'], { STUB_PULL_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('could not be pulled');
+    expect(result.log).not.toContain('backup');
+    expect(readFileSync(join(folder, 'package/compose.yaml'), 'utf8')).toBe(composeOf('0.2.0'));
+  });
+
+  it('changes nothing when the backup before the update fails', () => {
+    release('0.3.0');
+    const result = trybun(['update', '0.3.0'], { STUB_BACKUP_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('The backup before the update failed, so nothing was changed');
+    expect(result.log).not.toContain('compose up');
+    expect(readFileSync(join(folder, 'package/compose.yaml'), 'utf8')).toBe(composeOf('0.2.0'));
+  });
+
+  it('asks before a new MAJOR version and changes nothing without confirmation', () => {
+    release('1.0.0');
+    const result = trybun(['update', '1.0.0'], { input: 'n\n' });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('1.0.0 is a new MAJOR version');
+    expect(result.stdout).toContain('* the feature of 1.0.0');
+    expect(result.log).not.toContain('backup');
+  });
+
+  it('updates to a new MAJOR version after confirmation', () => {
+    release('1.0.0');
+    const result = trybun(['update', '1.0.0'], { input: 'y\n' });
+
+    expect(result.status).toBe(0);
+    expect(readFileSync(join(folder, 'package/compose.yaml'), 'utf8')).toBe(composeOf('1.0.0'));
+  });
+
+  it('accepts a release candidate of the next version', () => {
+    release('0.3.0-rc.1');
+    const result = trybun(['update', '0.3.0-rc.1']);
+
+    expect(result.status).toBe(0);
+  });
+
+  it.each([
+    ['', 'Name the version to update to'],
+    ['v0.3.0', '"v0.3.0" is not a version'],
+    ['0.1.9', '0.1.9 is older than the installed 0.2.0'],
+    ['0.2.0-rc.1', '0.2.0-rc.1 is older than the installed 0.2.0'],
+  ])('refuses the version "%s"', (version, message) => {
+    const result = trybun(['update', version]);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(message);
+    expect(result.log).toBe('');
+  });
+
+  it('does nothing when the version is installed', () => {
+    const result = trybun(['update', '0.2.0']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Trybun 0.2.0 is already installed.');
+    expect(result.log).toBe('');
+  });
+
+  it('refuses a TRYBUN_VERSION in .env, which would keep the old images', () => {
+    writeFileSync(envPath(), `${INSTALLED_ENV}TRYBUN_VERSION=0.2.0\n`);
+    const result = trybun(['update', '0.3.0']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('TRYBUN_VERSION is set in .env');
   });
 });

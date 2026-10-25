@@ -35,10 +35,11 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 - Images are built **in CI** (GitHub Actions), tagged with the version and published to GitHub Container Registry as `ghcr.io/trybun/<service>` ([§1.4](01-overview.md)):
   - `web` – the web application,
   - `server` – the API and the Worker, which run from the same image with different commands ([§14.6](14-architecture.md)),
-  - `postgres` – PostgreSQL with pgvector and the Polish full-text dictionary ([§14.4](14-architecture.md)), based on the official pgvector image pinned to a digest.
+  - `postgres` – PostgreSQL with pgvector and the Polish full-text dictionary ([§14.4](14-architecture.md)), based on the official pgvector image pinned to a digest;
+  - `backup` – the backup service ([§15.10](#1510-backups)): restic, rclone and the PostgreSQL client of the same major version, based on the official PostgreSQL Alpine image pinned to a digest.
 
   The server only pulls ready images.
-- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the `trybun` script and an installation guide (`INSTALL.md`). `trybun` is one POSIX shell script with a subcommand per task – `install` and `setup-token` ([§15.5](#155-installation), [§15.6](#156-first-run-wizard)), and `update`, `restore` and `backup` ([§15.7](#157-updates), [§15.10](#1510-backups)) – and needs no Node.js on the server. Its `compose.yaml` pulls the images of the release (`X.Y.Z`) and builds nothing. The release also contains the SBOM of every image and a `SHA256SUMS` file with the checksums of all its files. Source code is not needed for installation.
+- Every release is published as a GitHub Release and contains a **deployment package**: `compose.yaml`, `.env.example`, Caddy configuration, Keycloak configuration, the `trybun` script, an installation guide (`INSTALL.md`) and `CHANGELOG.md`. `trybun` is one POSIX shell script with a subcommand per task – `install` and `setup-token` ([§15.5](#155-installation), [§15.6](#156-first-run-wizard)), and `update`, `restore` and `backup` ([§15.7](#157-updates), [§15.10](#1510-backups)) – and needs no Node.js on the server. Its `compose.yaml` pulls the images of the release (`X.Y.Z`) and builds nothing. The release also contains the SBOM of every image and a `SHA256SUMS` file with the checksums of all its files. Source code is not needed for installation.
 - `CHANGELOG.md` follows the *Keep a Changelog* convention and is generated from commit messages in the Conventional Commits format. Release notes clearly mark breaking changes and any manual steps.
 
 ### Releasing a PATCH version (example)
@@ -47,7 +48,7 @@ Development and test environments (e.g. a VPS at OVH) use the same Compose file 
 2. release-please updates its release pull request (e.g. "chore(release): 1.4.1") with the version and changelog entry.
 3. Optionally, the maintainer publishes the release candidate `1.4.1-rc.1` (Rule 11), which is deployed to the test environment and verified.
 4. The maintainer merges the release pull request – the decision to release.
-5. Automation creates the tag `v1.4.1` and a draft GitHub Release, builds the images `ghcr.io/trybun/<service>:1.4.1`, scans them and creates their SBOMs, and builds the deployment package.
+5. Automation creates the tag `v1.4.1` and a draft GitHub Release, builds the images `ghcr.io/trybun/<service>:1.4.1`, scans them and creates their SBOMs, builds the deployment package and runs the restore test on them ([§13.6](13-non-functional.md)); a failed restore test stops the release.
 6. The maintainer approves the publication; automation pushes the images (and moves `:1.4`, `:1`), attaches the SBOMs and the deployment package and publishes the release.
 7. Administrators run the update script ([§15.7](#157-updates)).
 
@@ -106,19 +107,21 @@ Optional settings (SMTP server for outgoing e-mail, incoming e-mail provider, S3
 - The API creates the Keycloak user through the Admin API with the password as a credential – Keycloak's password policy applies, and the system never stores or logs the password ([§7.4](07-users-organizations-permissions.md)) – as a member of the group `team` with the required action "configure OTP", then the account (`kind` `team`, Administrator, `active`), claiming the token in the same transaction with a conditional update, so of two simultaneous requests only one succeeds; when the transaction fails, the Keycloak user is deleted again. Keycloak itself then enforces the 2FA setup at the first sign-in, so the system implements no 2FA of its own ([§7.4](07-users-organizations-permissions.md)).
 - After success, **Sign in** leads to the getting-started checklist. While no Administrator exists, the sign-in page points to the setup link instead of starting a sign-in no account could complete.
 - Disabled permanently after completion.
-- Afterwards the Administrator panel (`/admin`, the **Administration** item of the side navigation and, on phones, of the account menu) shows a **getting-started checklist**: create a project, configure GitHub sign-in (required before inviting team members), invite the team, create an organization (optional), configure e-mail, configure backup storage, connect the GitHub App (optional). Completed items are ticked automatically from the configuration and the data – nothing about the checklist is stored, so an item is never ticked while its setting is missing – and each links to the help page that explains it. Each item arrives with the task that builds its feature; "Configure e-mail" offers to send a test e-mail once the system sends e-mail.
+- Afterwards the Administrator panel (`/admin`, the **Administration** item of the side navigation and, on phones, of the account menu) shows a **getting-started checklist**: create a project, configure GitHub sign-in (required before inviting team members), invite the team, create an organization (optional), configure e-mail, configure backup storage, connect the GitHub App (optional). Completed items are ticked automatically from the configuration and the data – nothing about the checklist is stored, so an item is never ticked while its setting is missing – and each links to the help page that explains it. Each item arrives with the task that builds its feature ("Configure backup storage" is ticked once `TRYBUN_BACKUP_S3_URL` is set); "Configure e-mail" offers to send a test e-mail once the system sends e-mail.
 
 ## 15.7 Updates
 
-An update to a new version is performed with one command of the update script included in the deployment package. The script:
+An update to a new version is performed with one command of the deployment package, `./trybun update <version>` (e.g. `./trybun update 1.4.1`; the version is named, because a `0.x` release is never marked as the latest one, [§2.11](02-agent-rules.md)). The script:
 
-1. Shows breaking changes and manual steps from the release notes and asks for confirmation if the MAJOR version changes.
-2. Creates an **automatic backup** of both databases and the configuration before any change, on a local backup volume and additionally on the external S3 storage if configured ([§15.10](#1510-backups)).
-3. Pulls the new images.
-4. Runs database migrations (as a one-off service before the API starts) and applies Keycloak configuration changes (`keycloak-config-cli`, [§15.5](#155-installation)).
-5. Starts the new versions of the services and checks their health checks.
+1. Downloads the deployment package of the release from its GitHub Release and checks it against `SHA256SUMS`; it refuses a version that is not newer than the installed one (the default of `TRYBUN_VERSION` in `compose.yaml`) and a `TRYBUN_VERSION` set in `.env`, which would keep the old images.
+2. Shows the entries of `CHANGELOG.md` between the installed and the new version – breaking changes and manual steps included – and asks for confirmation if the MAJOR version changes.
+3. Pulls the images of the new version that are not on the server yet; if it fails, the update stops with nothing changed.
+4. Creates an **automatic backup** of both databases, the objects and the configuration before any change, on the local backup volume and additionally on the external S3 storage if configured ([§15.10](#1510-backups)); if it fails, the update stops with nothing changed.
+5. Replaces the files of the deployment package in the folder of the installation (`.env` is never changed).
+6. Runs database migrations (as a one-off service before the API starts) and applies Keycloak configuration changes (`keycloak-config-cli`, [§15.5](#155-installation)).
+7. Starts the new versions of the services and checks their health checks (`docker compose up -d --wait`).
 
-If an update fails, the **restore** command restores the backup taken before the update and starts the previous version. Changing the version number alone is not enough to roll back, because migrations may have changed the database schema.
+If an update fails, the script prints the **restore** command with the ID of the backup taken before the update (`./trybun restore <backup>`), which restores it and starts the previous version, because the backup contains the files of the deployment package of that version. Changing the version number alone is not enough to roll back, because migrations may have changed the database schema.
 
 ## 15.8 HTTPS
 
@@ -137,11 +140,12 @@ Containerization on Linux adds no significant performance overhead (containers a
 
 ## 15.10 Backups
 
-- A dedicated **backup service** in Compose (restic, [§14.2](14-architecture.md)) owns both scheduling and execution of backups, so backups also run when the application is down.
-- Every backup is one consistent set of: the system database and the Keycloak database (`pg_dump` in custom format), the object storage bucket and the `.env` configuration.
-- Backups are encrypted with `TRYBUN_BACKUP_PASSPHRASE` ([§15.5](#155-installation)) and stored on the external S3 storage configured in `.env`; without external storage they are kept only on a local volume ([§15.2](#152-server-requirements)).
-- Schedule and retention: daily, keeping 30 daily backups by default (configurable, [§13.6](13-non-functional.md)).
-- The update script ([§15.7](#157-updates)) and the restore command use the same service. The restore command can restore onto a clean server from the deployment package, `.env` and the passphrase alone.
+- A dedicated **backup service** in Compose (`backup`, image `ghcr.io/trybun/backup`, restic, [§14.2](14-architecture.md)) owns both scheduling and execution of backups, so backups also run when the application is down. The commands `backup`, `restore` and `update` of the `trybun` script run the same image as a one-off container.
+- Every backup is one restic snapshot of one consistent set: the system database and the Keycloak database (`pg_dump` in custom format, uncompressed so that restic deduplicates them), the objects of the object storage (copied with rclone from the SeaweedFS of Compose; an external S3 storage of the objects, [§15.3](#153-configuration-twelve-factor-app), is added to the backup with its variables by plan task S1-08) and the configuration – `.env` and the files of the deployment package, so a restore starts the version the backup was taken with. Valkey is not backed up: it holds only queues and caches ([§14.2](14-architecture.md)).
+- Backups are encrypted with `TRYBUN_BACKUP_PASSPHRASE` ([§15.5](#155-installation)) and always stored in a restic repository on the local volume `backup-data`, and additionally in one on the external S3 storage configured in `.env` (`TRYBUN_BACKUP_S3_URL`, `TRYBUN_BACKUP_S3_ACCESS_KEY_ID`, `TRYBUN_BACKUP_S3_SECRET_ACCESS_KEY`, optional `TRYBUN_BACKUP_S3_REGION`); without external storage they are kept only on the local volume ([§15.2](#152-server-requirements)). The service creates missing repositories when it starts and stops with a clear message when a repository cannot be reached or the passphrase does not open it, so `docker compose up --wait` reports a wrong setting.
+- Schedule and retention: daily at `TRYBUN_BACKUP_TIME` (`HH:MM` in UTC, default `03:00`); `restic forget --keep-daily N --keep-within Nd --prune` with `N` = `TRYBUN_BACKUP_KEEP_DAILY` (default 30, [§13.6](13-non-functional.md)), so the backups of the last 30 days and at least 30 daily ones are kept, relative to the newest backup.
+- `./trybun backup` creates a backup now and prints its IDs; `./trybun backup list` lists the backups of both repositories.
+- `./trybun restore [<backup>]` (default: the newest) asks for confirmation, stops all services, restores the snapshot from the local volume when it has it and else from the external S3 storage, brings back `.env` and the files of the deployment package, sets the passwords of the database users to those of `.env`, replaces both databases and the objects, and starts the system. So it can restore onto a clean server from the deployment package of any release, the `.env` kept outside the server – or a new `.env` of `./trybun install` with the passphrase and the S3 settings of the old one – and the passphrase alone.
 - Backups offered by the VPS provider (whole-machine snapshots) can be an additional safeguard but do not replace backups in another location.
 
 ## 15.11 Growth path

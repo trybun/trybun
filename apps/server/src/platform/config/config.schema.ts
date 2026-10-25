@@ -30,6 +30,8 @@ export const configSchema = z
     TRYBUN_GITHUB_CLIENT_SECRET: z.string().optional(),
     TRYBUN_SMTP_HOST: z.string().optional(),
     TRYBUN_MAIL_FROM: z.string().optional(),
+    // The external S3 storage of the backups (§15.10).
+    TRYBUN_BACKUP_S3_URL: z.string().optional(),
     // The system default language and time zone (§13.1), set by the install script (§15.5).
     TRYBUN_DEFAULT_LANGUAGE: z.enum(LOCALES).default('en'),
     TRYBUN_DEFAULT_TIME_ZONE: z
@@ -61,6 +63,7 @@ export const configSchema = z
     isGithubSignInConfigured:
       isSet(env.TRYBUN_GITHUB_CLIENT_ID) && isSet(env.TRYBUN_GITHUB_CLIENT_SECRET),
     isSmtpConfigured: isSet(env.TRYBUN_SMTP_HOST),
+    isBackupStorageConfigured: isSet(env.TRYBUN_BACKUP_S3_URL),
     defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
     defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
     logLevel: env.TRYBUN_LOG_LEVEL,

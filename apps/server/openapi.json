@@ -447,7 +447,8 @@
                             "type": "string",
                             "enum": [
                               "configure_github_sign_in",
-                              "configure_email"
+                              "configure_email",
+                              "configure_backup_storage"
                             ]
                           },
                           "isDone": {

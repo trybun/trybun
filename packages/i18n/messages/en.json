@@ -44,6 +44,10 @@
       "configure_email": {
         "title": "Configure e-mail",
         "description": "Without an SMTP server Trybun sends no e-mail, so invitation links have to be passed on by hand."
+      },
+      "configure_backup_storage": {
+        "title": "Configure backup storage",
+        "description": "Without S3 storage in another location, the daily backups are kept only on this server and are lost with it."
       }
     },
     "version": "Version",

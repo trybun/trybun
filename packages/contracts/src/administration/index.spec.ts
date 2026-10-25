@@ -4,7 +4,10 @@ import { administrationActionSchema, gettingStartedItemIdSchema } from './index.
 describe('administration enums', () => {
   it.each([
     [administrationActionSchema, ['read']],
-    [gettingStartedItemIdSchema, ['configure_github_sign_in', 'configure_email']],
+    [
+      gettingStartedItemIdSchema,
+      ['configure_github_sign_in', 'configure_email', 'configure_backup_storage'],
+    ],
   ])('lists the glossary codes', (schema, codes) => {
     expect(schema.options).toEqual(codes);
   });

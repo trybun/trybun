@@ -9,7 +9,11 @@ export type AdministrationAction = z.infer<typeof administrationActionSchema>;
  * `getting_started_item` (§15.6): the closed list of the getting-started checklist, in the order
  * it is shown. Each task that builds a feature with an item adds it here.
  */
-export const gettingStartedItemIdSchema = z.enum(['configure_github_sign_in', 'configure_email']);
+export const gettingStartedItemIdSchema = z.enum([
+  'configure_github_sign_in',
+  'configure_email',
+  'configure_backup_storage',
+]);
 export type GettingStartedItemId = z.infer<typeof gettingStartedItemIdSchema>;
 
 /** An item of the checklist; its state comes from the configuration, never from a record. */

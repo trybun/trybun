@@ -34,6 +34,7 @@ x-server: &server
     TRYBUN_GITHUB_CLIENT_SECRET: ${TRYBUN_GITHUB_CLIENT_SECRET:-}
     TRYBUN_SMTP_HOST: ${TRYBUN_SMTP_HOST:-}
     TRYBUN_MAIL_FROM: ${TRYBUN_MAIL_FROM:-}
+    TRYBUN_BACKUP_S3_URL: ${TRYBUN_BACKUP_S3_URL:-}
     # The system default language and time zone (§13.1).
     TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
     TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}
@@ -283,6 +284,53 @@ services:
       start_period: 150s
       start_interval: 5s
 
+  # Daily encrypted backups of both databases, the objects and the configuration (§15.10); the
+  # commands `backup`, `restore` and `update` of ./trybun run it as a one-off container.
+  backup:
+    <<: *service
+    image: ghcr.io/trybun/backup:${TRYBUN_VERSION:-latest}
+    build: docker/backup
+    environment:
+      # The version recorded with each backup.
+      TRYBUN_VERSION: ${TRYBUN_VERSION:-latest}
+      TRYBUN_BACKUP_TIME: ${TRYBUN_BACKUP_TIME:-03:00}
+      TRYBUN_BACKUP_KEEP_DAILY: ${TRYBUN_BACKUP_KEEP_DAILY:-30}
+      RESTIC_PASSWORD: ${TRYBUN_BACKUP_PASSPHRASE:?TRYBUN_BACKUP_PASSPHRASE must be set}
+      # The external S3 storage of the backups (§15.2); optional.
+      TRYBUN_BACKUP_S3_URL: ${TRYBUN_BACKUP_S3_URL:-}
+      AWS_ACCESS_KEY_ID: ${TRYBUN_BACKUP_S3_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${TRYBUN_BACKUP_S3_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${TRYBUN_BACKUP_S3_REGION:-us-east-1}
+      PGHOST: postgres
+      PGUSER: trybun
+      PGPASSWORD: ${TRYBUN_POSTGRES_PASSWORD}
+      # The objects are backed up from SeaweedFS when its profile is enabled.
+      COMPOSE_PROFILES: ${COMPOSE_PROFILES:-}
+      RCLONE_CONFIG_OBJECTS_TYPE: s3
+      RCLONE_CONFIG_OBJECTS_PROVIDER: SeaweedFS
+      RCLONE_CONFIG_OBJECTS_ENDPOINT: http://seaweedfs:8333
+      RCLONE_CONFIG_OBJECTS_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_OBJECTS_SECRET_ACCESS_KEY: ${TRYBUN_S3_SECRET_ACCESS_KEY:-}
+    volumes:
+      - backup-data:/backup
+      # The installation folder: `.env` and the files of the deployment package.
+      - .:/install:ro
+    # The external S3 storage is outside the server.
+    networks: [internal, outbound]
+    mem_limit: 1g
+    healthcheck:
+      # Written once the settings are valid and the repositories are reachable.
+      test: [CMD, test, -f, /tmp/trybun-backup.ready]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+        required: false
+
   # The only service with published ports (§15.9).
   caddy:
     <<: *service
@@ -322,3 +370,4 @@ volumes:
   clamav-data:
   caddy-data:
   caddy-config:
+  backup-data:
