@@ -12,6 +12,7 @@ export const errorCodeSchema = z.enum([
   'request.too_large',
   'request.validation_failed',
   'request.precondition_required',
+  'request.rate_limited',
   'authentication.required',
   'authentication.second_factor_required',
   'setup.token_invalid',
@@ -37,6 +38,8 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'request.validation_failed': 422,
   // A change of a versioned record without `If-Match` (§17.2).
   'request.precondition_required': 428,
+  // More requests than the rate limit of the principal or the client IP allows (§14.4).
+  'request.rate_limited': 429,
   // No valid access token or API token, or no active account for it (§14.4).
   'authentication.required': 401,
   // A team member whose sign-in did not complete 2FA (§7.4).

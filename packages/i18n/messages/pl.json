@@ -144,7 +144,8 @@
       "precondition_failed": "Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję",
       "too_large": "Wysłane dane są zbyt duże.",
       "validation_failed": "Niektóre pola są nieprawidłowe. Popraw je i spróbuj ponownie.",
-      "precondition_required": "Brakuje wersji tego elementu – odśwież stronę i spróbuj ponownie."
+      "precondition_required": "Brakuje wersji tego elementu – odśwież stronę i spróbuj ponownie.",
+      "rate_limited": "Zbyt wiele żądań. Odczekaj chwilę i spróbuj ponownie."
     },
     "authentication": {
       "required": "Twoja sesja wygasła. Zaloguj się ponownie.",

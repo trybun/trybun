@@ -1,5 +1,6 @@
 import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -17,6 +18,7 @@ import { PrismaService } from '../../platform/database/prisma.service.js';
 import { ErrorsModule } from '../../platform/errors/errors.module.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
+import { TRUSTED_PROXIES } from '../../platform/http/trusted-proxies.js';
 import { KeycloakAdminModule } from '../../platform/keycloak-admin/keycloak-admin.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
 import { SetupModule } from './setup.module.js';
@@ -67,9 +69,11 @@ describe('first-run wizard', () => {
         SetupModule,
       ],
     }).compile();
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix(API_PREFIX);
-    await app.init();
+    const nestApp = moduleRef.createNestApplication<NestExpressApplication>();
+    nestApp.setGlobalPrefix(API_PREFIX);
+    nestApp.set('trust proxy', TRUSTED_PROXIES);
+    await nestApp.init();
+    app = nestApp;
     prisma = app.get(PrismaService);
     setup = app.get(SetupService);
   });
@@ -152,6 +156,18 @@ describe('first-run wizard', () => {
       isAdmin: true,
       state: 'active',
     });
+  });
+
+  it('records the use of the token in the audit log with the client IP', async () => {
+    const res = await createAdministrator(await issueToken()).set('X-Forwarded-For', '203.0.113.7');
+
+    const { id } = res.body as { id: string };
+    expect(
+      await prisma.auditLogEntry.findMany({
+        where: { targetType: 'User', targetId: id },
+        select: { action: true, actorId: true, ipAddress: true },
+      }),
+    ).toEqual([{ action: 'setup_token.used', actorId: id, ipAddress: '203.0.113.7' }]);
   });
 
   it.each([
