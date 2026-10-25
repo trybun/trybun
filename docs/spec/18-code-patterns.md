@@ -253,7 +253,7 @@ No global client state library is used.
 - **Test doubles only at external boundaries**: MSW for external HTTP services, the fixed clock, adapters of services without a container. The project's own services, Prisma and the database are never mocked.
 - **Factories**: one per model (`test/factories/<model>.factory.ts`) with `@faker-js/faker` defaults and overrides.
 - **E2E tests** (Playwright) use one page object per view and locate elements by role, label or text (`getByRole`); `data-tour` attributes only for tours; never CSS classes.
-- **Lazily loaded components** ([§18.5](#185-web-application)): a unit test of their server HTML renders with `prerender` of `react-dom/static`, which waits for `Suspense` (`renderToStaticMarkup` does not); an E2E test waits for an element (`toBeVisible()`) before it measures it, because on the first request of a route a lazy component is streamed after the page.
+- **Lazily loaded components** ([§18.5](#185-web-application)): a unit test of their server HTML renders with `prerender` of `react-dom/static`, which waits for `Suspense` (`renderToStaticMarkup` does not); an E2E test measures an element with `expect.poll()` until the value is stable (`expectTouchTarget()` of `apps/web/e2e/touch-targets.ts`), because a lazy component may be streamed after the page or replaced while it hydrates.
 
 ## 18.8 Alternatives considered
 
