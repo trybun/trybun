@@ -1,8 +1,8 @@
 #!/bin/sh
 # Command of the Trybun deployment package (§15.4): installs Trybun and prints the setup link of
-# the first-run wizard (§15.5, §15.6), backs it up, restores a backup and updates it to a new
-# release (§15.7, §15.10). Needs only sh, awk, od, tar and Docker, and for updates curl or wget
-# and sha256sum. Run `./trybun --help`.
+# the first-run wizard (§15.5, §15.6), backs it up, restores a backup, updates it to a new release
+# and removes it from the server (§15.5, §15.7, §15.10). Needs only sh, awk, od, tar and Docker,
+# and for updates curl or wget and sha256sum. Run `./trybun --help`.
 set -eu
 
 # Oldest versions that support every feature compose.yaml uses (health check `start_interval`).
@@ -47,6 +47,8 @@ Commands:
                 start the version it was taken with. Also restores onto a new server.
   update <version>
                 Back up, then install and start the release <version>, e.g. 1.4.1.
+  uninstall     Delete Trybun from this server: containers, all data, the backups on this server
+                and the images. Keeps this folder with .env and the backups on the S3 storage.
   --help        Show this help.
 
 Documentation: INSTALL.md
@@ -557,6 +559,86 @@ update() {
   say "Updated Trybun from $current to $target. The backup from before the update is $snapshot."
 }
 
+# --- Uninstall (§15.5) ---
+
+# The containers, volumes or networks ($1: ps, volume, network) of the Compose project.
+project_objects() {
+  case $1 in
+    ps) docker ps -aq --filter "label=com.docker.compose.project=$project" ;;
+    *) docker "$1" ls -q --filter "label=com.docker.compose.project=$project" ;;
+  esac
+}
+
+# The images of the services and of the containers of the installation that are on this server.
+installed_images() {
+  {
+    docker compose config --images
+    for container in $containers; do
+      docker inspect --format '{{.Config.Image}}' "$container"
+    done
+  } | sort -u | while read -r image; do
+    if docker image inspect "$image" >/dev/null 2>&1; then
+      printf '%s\n' "$image"
+    fi
+  done
+}
+
+uninstall() {
+  require_env
+  check_docker
+  domain=$(env_value TRYBUN_DOMAIN)
+  project=$(env_value COMPOSE_PROJECT_NAME)
+  project=${project:-$PROJECT}
+  containers=$(project_objects ps)
+  volumes=$(project_objects volume)
+  images=$(installed_images)
+  if [ -z "$containers$volumes$images" ]; then
+    say 'Trybun is not installed on this server: no containers, data or images of it are left. Nothing was changed.'
+    return
+  fi
+
+  say "This deletes Trybun ($domain) from this server: the containers, both databases, the stored"
+  say 'files, the backups on this server and the images. This folder with .env stays.'
+  s3_url=$(env_value TRYBUN_BACKUP_S3_URL)
+  if [ -n "$s3_url" ]; then
+    say 'A last backup is stored on the external S3 storage first; the backups there stay.'
+  else
+    warn 'No external S3 storage is configured (TRYBUN_BACKUP_S3_URL), so no backup of Trybun will remain anywhere: the backups on this server are deleted too.'
+  fi
+  confirmation=$(ask "Type the domain of this installation ($domain) to delete Trybun from this server: " '')
+  if [ -z "$domain" ] || [ "$confirmation" != "$domain" ]; then
+    fail 'Uninstall stopped. Nothing was changed.'
+  fi
+
+  if [ -n "$s3_url" ] && [ -n "$volumes" ]; then
+    run_backup uninstall ||
+      fail 'The last backup failed, so nothing was deleted. See the messages above and docker compose logs backup.'
+  fi
+
+  say 'Deleting the containers, networks and data of Trybun.'
+  docker compose down --volumes --remove-orphans ||
+    fail 'Trybun could not be deleted completely. See the messages above, fix the cause and run ./trybun uninstall again.'
+  # Also the containers, volumes and networks of services whose profile is off.
+  { project_objects ps | xargs -r docker rm -f >/dev/null &&
+    project_objects volume | xargs -r docker volume rm >/dev/null &&
+    project_objects network | xargs -r docker network rm >/dev/null; } ||
+    fail 'Trybun could not be deleted completely. See the messages above, fix the cause and run ./trybun uninstall again.'
+  say 'Deleting the images of Trybun.'
+  for image in $images; do
+    docker image rm "$image" >/dev/null 2>&1 ||
+      warn "Kept the image $image: another container on this server uses it."
+  done
+
+  say ''
+  say 'Trybun is deleted from this server.'
+  if [ -n "$s3_url" ]; then
+    say 'To restore it, on this or a new server: unpack the deployment package of any release, copy'
+    say 'this .env into its folder and run ./trybun restore; the backup comes from the S3 storage.'
+  fi
+  say 'Keep .env and the backup passphrase outside this server, then delete this folder with:'
+  say "    rm -rf '$(pwd)'"
+}
+
 cd "$(dirname -- "$0")"
 COMMAND=${1-}
 
@@ -566,6 +648,7 @@ case $COMMAND in
   backup) backup "${2-}" ;;
   restore) restore "${2-}" ;;
   update) update "${2-}" ;;
+  uninstall) uninstall ;;
   '' | -h | --help | help) usage ;;
   *)
     usage >&2

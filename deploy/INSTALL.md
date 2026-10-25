@@ -14,7 +14,7 @@ The install script checks these requirements and stops before it changes anythin
 
 | File | Purpose |
 |---|---|
-| `trybun` | The command of the package: `./trybun install`, `setup-token`, `backup`, `restore`, `update`, `--help` |
+| `trybun` | The command of the package: `./trybun install`, `setup-token`, `backup`, `restore`, `update`, `uninstall`, `--help` |
 | `compose.yaml` | All services, pinned to the images of this release |
 | `.env.example` | Every setting with its description |
 | `docker/caddy/` | Configuration of the reverse proxy |
@@ -101,3 +101,16 @@ It asks for confirmation, then replaces all data and the configuration with the 
 ## Testing a restore
 
 Restore onto a separate server at least once a quarter: follow "Restoring a backup" on a new server with the backups of the S3 storage, then sign in with two-factor authentication and check that your data and files are there. Every release passes the same restore automatically before it is published.
+
+## Uninstalling
+
+```sh
+./trybun uninstall
+```
+
+The command deletes Trybun from the server: its containers and networks, both databases, the stored files, the backups on this server and the images. Images that another container on the server uses stay. It deletes nothing until you type the domain of the installation.
+
+- With external S3 storage, it first stores a last backup there; the backups on the S3 storage stay. If the backup fails, nothing is deleted.
+- Without it, no backup remains anywhere – the command warns before it asks. Run `./trybun backup` and keep a copy elsewhere first if you may need the data.
+
+The folder of the package with `.env` stays. Keep `.env` and the backup passphrase outside the server – with them and the backups on the S3 storage, `./trybun restore` brings Trybun back, as described in "Restoring a backup". Then delete the folder with the command the script prints (`rm -rf <folder>`).

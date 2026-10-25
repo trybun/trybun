@@ -42,7 +42,7 @@ echo "docker $*" >>"$STUB_LOG"
 case "$*" in
   "version --format {{.Server.Version}}") echo "$STUB_DOCKER_VERSION" ;;
   "compose version --short") echo "$STUB_COMPOSE_VERSION" ;;
-  "volume ls -q --filter label=com.docker.compose.project=trybun") printf '%b' "$STUB_VOLUMES" ;;
+  "volume ls -q --filter label=com.docker.compose.project="*) printf '%b' "$STUB_VOLUMES" ;;
   "compose ps --status running --services") [ -e .env ] || exit 1; printf '%s' "$STUB_RUNNING" ;;
   "compose up -d --wait") exit "$STUB_UP_EXIT" ;;
   "compose exec -T api node dist/cli.js setup-token") echo "$STUB_SETUP_OUTPUT"; exit "$STUB_SETUP_EXIT" ;;
@@ -55,8 +55,14 @@ case "$*" in
   "compose exec -T postgres "*) cat >"$STUB_STDIN" ;;
   "compose run --rm -T backup restore-data") exit "$STUB_RESTORE_EXIT" ;;
   "compose -f "*" --project-directory . config --images") printf 'ghcr.io/trybun/server:0.3.0\nvalkey:9\nghcr.io/trybun/server:0.3.0\n' ;;
-  "image inspect valkey:9") ;;
-  "image inspect "*) exit 1 ;;
+  "image inspect "*) case " $STUB_PRESENT_IMAGES " in *" $3 "*) ;; *) exit 1 ;; esac ;;
+  "ps -aq --filter label=com.docker.compose.project="*) printf '%b' "$STUB_CONTAINERS" ;;
+  "network ls -q --filter label=com.docker.compose.project="*) printf '%b' "$STUB_NETWORKS" ;;
+  "compose config --images") printf '%b' "$STUB_IMAGES" ;;
+  "inspect --format {{.Config.Image}} "*) echo "$STUB_CONTAINER_IMAGE" ;;
+  "compose down --volumes --remove-orphans") exit "$STUB_DOWN_EXIT" ;;
+  "rm -f "* | "volume rm "* | "network rm "*) ;;
+  "image rm "*) case " $STUB_USED_IMAGES " in *" $3 "*) exit 1 ;; esac ;;
   "pull --quiet "*) exit "$STUB_PULL_EXIT" ;;
   "compose up -d --wait --remove-orphans") exit "$STUB_UP_EXIT" ;;
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
@@ -138,6 +144,13 @@ function trybun(command, { input = ANSWERS, memory = GIB_16, ...stubs } = {}) {
       STUB_COMPOSE_VERSION: '2.29.7',
       STUB_RUNNING: '',
       STUB_VOLUMES: '',
+      STUB_CONTAINERS: '',
+      STUB_NETWORKS: '',
+      STUB_IMAGES: '',
+      STUB_CONTAINER_IMAGE: '',
+      STUB_PRESENT_IMAGES: 'valkey:9',
+      STUB_USED_IMAGES: '',
+      STUB_DOWN_EXIT: '0',
       STUB_SS_TCP: 'LISTEN 0 128 0.0.0.0:22 0.0.0.0:*\n',
       STUB_SS_UDP: 'UNCONN 0 0 127.0.0.53%lo:53 0.0.0.0:*\n',
       STUB_DOMAIN_ADDRESS: '203.0.113.10',
@@ -700,5 +713,120 @@ describe('./trybun update', () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('TRYBUN_VERSION is set in .env');
+  });
+});
+
+describe('./trybun uninstall', () => {
+  // A running installation: its containers, volumes, network and images.
+  const RUNNING = {
+    STUB_CONTAINERS: 'c1\\nc2\\n',
+    STUB_VOLUMES: 'trybun_postgres-data\\ntrybun_backup-data\\n',
+    STUB_NETWORKS: 'n1\\n',
+    STUB_IMAGES: 'ghcr.io/trybun/server:0.2.0\\ncaddy:2\\nclamav/clamav:1\\n',
+    STUB_CONTAINER_IMAGE: 'ghcr.io/trybun/server:0.2.0',
+    STUB_PRESENT_IMAGES: 'ghcr.io/trybun/server:0.2.0 caddy:2',
+  };
+  const CONFIRMED = 'trybun.example.com\n';
+
+  beforeEach(installed);
+
+  const withS3 = () =>
+    writeFileSync(envPath(), `${INSTALLED_ENV}TRYBUN_BACKUP_S3_URL=s3:https://s3.example.com/b\n`);
+
+  it('deletes the containers, data, networks and images after the domain is typed', () => {
+    const result = trybun('uninstall', { input: CONFIRMED, ...RUNNING });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain('no backup of Trybun will remain anywhere');
+    expect(result.log).not.toContain('backup backup');
+    const steps = order(
+      result.log,
+      'compose down --volumes --remove-orphans',
+      'docker rm -f c1 c2',
+      'docker volume rm trybun_postgres-data trybun_backup-data',
+      'docker network rm n1',
+      'docker image rm caddy:2',
+      'docker image rm ghcr.io/trybun/server:0.2.0',
+    );
+    expect(steps.every((index) => index >= 0)).toBe(true);
+    // An image that is not on the server is not deleted.
+    expect(result.log).not.toContain('image rm clamav');
+    // The folder and .env stay.
+    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+    expect(result.stdout).toContain('Trybun is deleted from this server.');
+    expect(result.stdout).toContain(`rm -rf '${join(folder, 'package')}'`);
+  });
+
+  it('changes nothing unless the domain of the installation is typed', () => {
+    for (const input of ['y\n', 'trybun.example.org\n', '']) {
+      const result = trybun('uninstall', { input, ...RUNNING });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/Uninstall stopped. Nothing was changed.|Nothing was changed./);
+      expect(result.log).not.toMatch(/compose down|docker rm|volume rm|image rm/);
+    }
+  });
+
+  it('backs up to the S3 storage first when one is configured', () => {
+    withS3();
+
+    const result = trybun('uninstall', { input: CONFIRMED, ...RUNNING });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain('no backup of Trybun will remain');
+    const [backup, down] = order(result.log, 'backup backup uninstall', 'compose down');
+    expect(backup).toBeGreaterThanOrEqual(0);
+    expect(down).toBeGreaterThan(backup);
+    expect(result.stdout).toContain('Backup 5e6f7a8b stored on the external S3 storage.');
+    expect(result.stdout).toContain('run ./trybun restore');
+  });
+
+  it('deletes nothing when the last backup fails', () => {
+    withS3();
+
+    const result = trybun('uninstall', { input: CONFIRMED, ...RUNNING, STUB_BACKUP_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('The last backup failed, so nothing was deleted.');
+    expect(result.log).not.toMatch(/compose down|docker rm|volume rm|image rm/);
+  });
+
+  it('keeps an image another container uses and says so', () => {
+    const result = trybun('uninstall', {
+      input: CONFIRMED,
+      ...RUNNING,
+      STUB_USED_IMAGES: 'caddy:2',
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain(
+      'Kept the image caddy:2: another container on this server uses it.',
+    );
+    expect(result.log).toContain('docker image rm ghcr.io/trybun/server:0.2.0');
+  });
+
+  it('asks to run it again when deleting fails', () => {
+    const result = trybun('uninstall', { input: CONFIRMED, ...RUNNING, STUB_DOWN_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('run ./trybun uninstall again');
+  });
+
+  it('reports that nothing is installed when nothing is left', () => {
+    const result = trybun('uninstall', { input: '' });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Trybun is not installed on this server');
+    expect(result.log).not.toMatch(/compose down|image rm/);
+  });
+
+  it('needs the .env of the installation', () => {
+    rmSync(envPath());
+
+    const result = trybun('uninstall', { input: CONFIRMED, ...RUNNING });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('.env is missing');
+    expect(result.log).not.toContain('compose down');
   });
 });
