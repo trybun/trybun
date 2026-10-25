@@ -117,9 +117,12 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           node scripts/release.js metadata "$TAG" >> "$GITHUB_OUTPUT"
 
+  # Without its own `if`, a job runs only when every job before it succeeded, also the skipped
+  # `release-please` or `candidate` of `prepare`: each job after `prepare` checks its needs itself.
   images:
     name: Image ${{ matrix.service }}
     needs: prepare
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -207,6 +210,7 @@ jobs:
   deployment-package:
     name: Deployment package
     needs: prepare
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -234,6 +238,7 @@ jobs:
   restore-test:
     name: Restore test
     needs: [prepare, images, deployment-package]
+    if: ${{ !cancelled() && needs.images.result == 'success' && needs.deployment-package.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -259,6 +264,7 @@ jobs:
   publish:
     name: Publish
     needs: [prepare, images, deployment-package, restore-test]
+    if: ${{ !cancelled() && needs.restore-test.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     # Waits for the maintainer's approval; runs no code of the repository.
