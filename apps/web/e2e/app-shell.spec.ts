@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
+import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 test.describe('application shell', () => {
   let shell: AppShellPage;
@@ -60,17 +61,12 @@ test.describe('application shell', () => {
   });
 
   test('has touch targets of at least 44 px', async () => {
-    // The compact sizes of a precise pointer apply only on desktop (§18.6).
-    const minimum = test.info().project.name === 'desktop' ? 32 : 44;
+    const minimum = minimumTargetSize(test.info());
     for (const target of [
       shell.accountMenu,
       shell.navigation.getByRole('link', { name: 'Home' }),
     ]) {
-      // A menu of the header is streamed after the page on the first request of a route.
-      await expect(target).toBeVisible();
-      const box = await target.boundingBox();
-      expect(box?.height).toBeGreaterThanOrEqual(minimum);
-      expect(box?.width).toBeGreaterThanOrEqual(minimum);
+      await expectTouchTarget(target, minimum, ['height', 'width']);
     }
   });
 });
