@@ -135,4 +135,6 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Audit log | `audit_log_entry` | Audit log / Dziennik zdarzeń | Immutable log of administrative actions ([§13.5](13-non-functional.md)) |
 | Anonymization | – | Anonymization / Anonimizacja | GDPR erasure that keeps history ([§13.2](13-non-functional.md)) |
 | Deployment package | – | – | Release assets needed to install the system ([§15.4](15-deployment.md)) |
-| Setup token | – | – | One-time token protecting the first-run wizard ([§15.6](15-deployment.md)) |
+| Setup token | `setup_token` | Setup token / Token konfiguracji | One-time token protecting the first-run wizard, valid 24 hours ([§15.6](15-deployment.md)) |
+| Getting-started item | `getting_started_item`: `configure_github_sign_in`, `configure_email` | Configure GitHub sign-in / Skonfiguruj logowanie przez GitHub, Configure e-mail / Skonfiguruj e-mail | An item of the getting-started checklist of the Administrator panel, ticked automatically; later tasks add theirs ([§15.6](15-deployment.md)) |
+| Administrator panel | – | Administration / Administracja | The pages of the Administrator (`/admin`): the getting-started checklist and the "About" page ([§15.6](15-deployment.md)) |
