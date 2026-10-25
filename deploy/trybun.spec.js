@@ -42,6 +42,7 @@ echo "docker $*" >>"$STUB_LOG"
 case "$*" in
   "version --format {{.Server.Version}}") echo "$STUB_DOCKER_VERSION" ;;
   "compose version --short") echo "$STUB_COMPOSE_VERSION" ;;
+  "volume ls -q --filter label=com.docker.compose.project=trybun") printf '%b' "$STUB_VOLUMES" ;;
   "compose ps --status running --services") [ -e .env ] || exit 1; printf '%s' "$STUB_RUNNING" ;;
   "compose up -d --wait") exit "$STUB_UP_EXIT" ;;
   "compose exec -T api node dist/cli.js setup-token") echo "$STUB_SETUP_OUTPUT"; exit "$STUB_SETUP_EXIT" ;;
@@ -136,6 +137,7 @@ function trybun(command, { input = ANSWERS, memory = GIB_16, ...stubs } = {}) {
       STUB_DOCKER_VERSION: '27.3.1',
       STUB_COMPOSE_VERSION: '2.29.7',
       STUB_RUNNING: '',
+      STUB_VOLUMES: '',
       STUB_SS_TCP: 'LISTEN 0 128 0.0.0.0:22 0.0.0.0:*\n',
       STUB_SS_UDP: 'UNCONN 0 0 127.0.0.53%lo:53 0.0.0.0:*\n',
       STUB_DOMAIN_ADDRESS: '203.0.113.10',
@@ -283,6 +285,19 @@ describe('./trybun install – .env', () => {
     expect(result.stdout).toContain('.env exists: keeping it unchanged');
     expect(readFileSync(envPath()).equals(before)).toBe(true);
     expect(statSync(envPath()).mode & 0o777).toBe(0o600);
+  });
+
+  it('stops before the questions when data of an earlier installation exists without .env', () => {
+    const result = trybun('install', {
+      STUB_VOLUMES: 'trybun_backup-data\\ntrybun_postgres-data\\n',
+    });
+
+    expectNothingChanged(result);
+    expect(result.stdout).not.toContain('Backup passphrase');
+    expect(result.stderr).toContain(
+      'Data of an earlier installation of Trybun is on this server (Docker volumes: trybun_backup-data trybun_postgres-data), but .env is missing',
+    );
+    expect(result.stderr).toContain('docker volume rm trybun_backup-data trybun_postgres-data');
   });
 
   it('writes nothing until the backup passphrase is confirmed', () => {
