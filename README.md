@@ -156,7 +156,7 @@ The workflow [`image-scan.yml`](.github/workflows/image-scan.yml) scans every da
 - System specification: [`docs/spec/`](docs/spec/README.md)
 - Architecture decisions: [`docs/adr/`](docs/adr/README.md)
 - Instructions for AI agents: [`AGENTS.md`](AGENTS.md)
-- Delivery process, review rules and protected contracts: [`SDLC.md`](SDLC.md), [`CODE_REVIEW.md`](CODE_REVIEW.md), [`BACKWARD_COMPATIBILITY.md`](BACKWARD_COMPATIBILITY.md)
+- Delivery process, review rules and protected contracts: [`SDLC.md`](SDLC.md), [`CODE_REVIEW.md`](CODE_REVIEW.md), [`BACKWARD_COMPATIBILITY.md`](BACKWARD_COMPATIBILITY.md); the agent skills are restored with `npx skills experimental_install` ([`.ai/skills/`](.ai/skills/README.md))
 - User documentation: [`docs/user/`](docs/user/README.md), shown in the application at `/help`
 - API documentation: arrives with task S6
 

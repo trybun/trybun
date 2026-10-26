@@ -1,9 +1,87 @@
-# Labels required by docs/spec/16-open-source.md §16.2. This file is a definition only:
-# GitHub does not read it. The maintainer creates the labels on the repository
-# (see CONTRIBUTING.md and the task report of S0-15).
+# Labels of the repository. This file is a definition only: GitHub does not read it.
+# The maintainer creates the labels on the repository (see CONTRIBUTING.md and the
+# task report of S0-15); the agent pipeline creates its own labels with the
+# om-setup-agent-pipeline skill (ensure-label-taxonomy in .ai/trackers/github.md).
+
+# Required by docs/spec/16-open-source.md §16.2.
 - name: good first issue
   color: 7057ff
   description: Suitable for new contributors
 - name: help wanted
-  color: 008672
+  color: '008672'
   description: Extra attention is needed from the community
+
+# Agent pipeline (SDLC.md, .ai/agentic.config.json). bug, dependencies and documentation
+# are GitHub's default labels and keep their existing colours.
+- name: review
+  color: 0366d6
+  description: Ready for code review
+- name: changes-requested
+  color: b60205
+  description: Reviewer requested changes
+- name: qa
+  color: fbca04
+  description: Manual QA in progress
+- name: qa-failed
+  color: b60205
+  description: Manual QA failed
+- name: merge-queue
+  color: 0e8a16
+  description: Approved, ready to merge
+- name: blocked
+  color: b60205
+  description: Blocked by a dependency
+- name: do-not-merge
+  color: b60205
+  description: Hard merge block
+- name: feature
+  color: a2eeef
+  description: New capability
+- name: refactor
+  color: cfd3d7
+  description: No behavior change
+- name: security
+  color: b60205
+  description: Security-relevant change
+- name: needs-qa
+  color: fbca04
+  description: Requires manual QA before merge
+- name: skip-qa
+  color: 0e8a16
+  description: Low risk, QA not required
+- name: qa-approved
+  color: 0e8a16
+  description: Manual QA passed
+- name: qa-self-verified
+  color: c5def5
+  description: Self-QA exception used
+- name: in-progress
+  color: c5def5
+  description: An automated skill is working on this
+- name: ci-monitoring
+  color: d4c5f9
+  description: Work complete and reported; agent is watching CI results
+- name: do-not-close
+  color: c5def5
+  description: 'Humans only: never auto-close this issue'
+- name: priority-low
+  color: e4e669
+  description: Cosmetic or follow-up work
+- name: priority-medium
+  color: fbca04
+  description: Ordinary bug or feature
+- name: priority-high
+  color: d93f0b
+  description: Release-blocking
+- name: priority-extreme
+  color: b60205
+  description: Outage or security incident
+- name: risk-low
+  color: 0e8a16
+  description: Isolated, low blast radius
+- name: risk-medium
+  color: fbca04
+  description: Ordinary change with tests
+- name: risk-high
+  color: b60205
+  description: Wide blast radius, review deeply
