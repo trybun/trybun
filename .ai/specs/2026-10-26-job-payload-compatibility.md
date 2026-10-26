@@ -36,8 +36,9 @@ Job data and internal event payloads change **additively within a MAJOR series**
 1. A new field of job data or of an event payload is optional in the schema, and the handler has a defined behaviour when it is missing (a default, or reading the current state – handlers already load the current state, [§18.3](../../docs/spec/18-code-patterns.md)).
 2. A field is never removed, renamed or given a new meaning within a series; it may be ignored by the handler.
 3. A queue name, job name or event type is never removed within a series while jobs of it can still exist: its processor stays registered (delegating to the new handler) until the next MAJOR release. Job scheduler templates are excepted – `upsertJobScheduler` replaces them when the new Worker starts.
-4. A change that cannot be additive is a breaking change of the next MAJOR release, marked as such ([§2.11](../../docs/spec/02-agent-rules.md)); its migration path is described in the change specification that introduces it (see open question 2).
+4. A change that cannot be additive waits for the next MAJOR release and is marked as breaking ([§2.11](../../docs/spec/02-agent-rules.md)). Because a new MAJOR is reached only through the latest release of the previous series ([§2.11](../../docs/spec/02-agent-rules.md), "Upgrade path and support"), the new MAJOR still processes the job data and events of that latest release; the processors and schema branches for older shapes are removed one MAJOR later. Jobs are never rewritten in Valkey and never dropped by an update.
 5. Every changed job schema gets a unit test that parses job data of the previous shape.
+6. The rules apply from now on, also to `0.x` releases: the whole `0.x` line counts as one series, so before `1.0.0` job data changes only additively, even in a MINOR release that carries other breaking changes, and `1.0.0` is its first boundary under item 4.
 
 **Alternative considered: draining the queues on update.** `./trybun update` would stop new work and wait until the queues are empty before migrating. Rejected for the proposal: delayed jobs (SLA timers, auto-close) cannot be drained without running them early or losing them, and failed jobs kept for retry would be lost.
 
@@ -45,8 +46,8 @@ Job data and internal event payloads change **additively within a MAJOR series**
 
 | Section | Change |
 |---|---|
-| §17.2 Background jobs and scheduling | New rule "Payload compatibility": items 1–4 above |
-| §18.3 Events and background jobs | Handlers accept job data of every earlier release of the MAJOR series; link to §17.2 |
+| §17.2 Background jobs and scheduling | New rule "Payload compatibility": items 1–4 and 6 above |
+| §18.3 Events and background jobs | Handlers accept job data of every earlier release of the MAJOR series and, after a MAJOR boundary, of the latest release of the previous series; link to §17.2 |
 | §18.7 Tests | A changed job schema has a test with job data of the previous shape (item 5) |
 
 No new glossary terms.
@@ -55,9 +56,9 @@ No new glossary terms.
 
 Implementation must not start until every question has an answer.
 
-1. Is the window "the whole MAJOR series" (proposed, required by direct updates within a series) or only the previous MINOR release? — **Answer:** …
-2. At a MAJOR boundary, what happens to leftover jobs of the old shape: the last release of the previous series (which every update to a new MAJOR goes through) converts them, or the new MAJOR's migration step moves them, or they are documented as dropped? — **Answer:** …
-3. Do the rules also bind the `0.x` releases, or only from `1.0.0`? Proposed: from now on, because installations already update between `0.x` releases. — **Answer:** …
+1. Is the window "the whole MAJOR series" (proposed, required by direct updates within a series) or only the previous MINOR release? — **Answer:** the whole MAJOR series, because any release of a series updates directly to its latest release (recommended answer adopted at the maintainer's request, 2026-10-26; confirmed by approving this PR).
+2. At a MAJOR boundary, what happens to leftover jobs of the old shape: the last release of the previous series (which every update to a new MAJOR goes through) converts them, or the new MAJOR's migration step moves them, or they are documented as dropped? — **Answer:** the new MAJOR processes the job data and events of the latest release of the previous series, the only shape that can be left over; older shapes are removed one MAJOR later; no rewriting in Valkey, nothing dropped (item 4; recommended answer adopted at the maintainer's request, 2026-10-26; confirmed by approving this PR).
+3. Do the rules also bind the `0.x` releases, or only from `1.0.0`? Proposed: from now on, because installations already update between `0.x` releases. — **Answer:** from now on; the `0.x` line is one series with `1.0.0` as its first boundary (item 6; recommended answer adopted at the maintainer's request, 2026-10-26; confirmed by approving this PR).
 
 ## Acceptance criteria
 
@@ -70,3 +71,4 @@ Implementation must not start until every question has an answer.
 ## Changelog
 
 - 2026-10-26 – Created.
+- 2026-10-26 – Open questions answered with the recommended answers; items 4 and 6 of the proposed change follow them.
