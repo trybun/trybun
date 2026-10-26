@@ -25,8 +25,8 @@
     "help:generate": "pnpm --filter @trybun/web help:generate"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@vitest/coverage-v8": "^5.0.5",
     "prettier": "3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
