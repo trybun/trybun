@@ -17,3 +17,7 @@ apps/web/src/generated/
 apps/web/test-results/
 apps/web/playwright-report/
 apps/web/e2e/.auth/
+# QA working state of the agent pipeline (.ai/agentic.config.json), generated per run
+.ai/qa/artifacts_*/
+.ai/qa/test-env.json
+.ai/qa/test-env.env

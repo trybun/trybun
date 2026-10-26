@@ -21,6 +21,8 @@ Instructions for AI coding agents in the **Trybun** repository. The project is b
 | `.ai/specs/` | Change specifications (`YYYY-MM-DD-slug.md`, `implemented/`, `archive/`) |
 | `.ai/memory/` | Project memory |
 | `.ai/skills/` | Project skills |
+| `.ai/agentic.config.json`, `.ai/trackers/`, `.ai/browsers/` | Agent pipeline configuration: validation gate, labels, QA gate, GitHub and browser operations ([`SDLC.md`](SDLC.md)) |
+| `SDLC.md`, `CODE_REVIEW.md`, `BACKWARD_COMPATIBILITY.md` | Delivery process (labels, QA gate, claims), review rules, protected contract surfaces |
 | `.ai/cezar/` | Managed by Cezar – do not edit its state files |
 
 ## Rules
