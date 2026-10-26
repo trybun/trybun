@@ -27,7 +27,7 @@ The specification does not say whether such jobs must still work. Processors val
 
 - Payloads of outgoing webhooks – already versioned in `@trybun/contracts` ([§12.4](../../docs/spec/12-api-webhooks-import.md)).
 - Draining queues during `./trybun update` (the alternative below).
-- Protecting queue or job data as a public contract: they stay internal (`BACKWARD_COMPATIBILITY.md`, added in #107).
+- Protecting queue or job data as a public contract: they stay internal ([`BACKWARD_COMPATIBILITY.md`](../../BACKWARD_COMPATIBILITY.md)).
 
 ## Proposed change
 
