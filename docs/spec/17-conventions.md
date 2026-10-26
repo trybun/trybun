@@ -82,6 +82,12 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 - Job IDs and deduplication keys never contain `:` (reserved by BullMQ) and never consist of digits only ([§17.1](#171-code-naming-conventions)).
 - **Retention**: completed jobs are removed after 24 hours; failed jobs are kept for 30 days and are visible to the Administrator ([§13.2](13-non-functional.md)).
 - Jobs that fail are retried with exponential backoff; after the last attempt they stay in the failed set. A failed job is retried manually with `job.retry()` – a new job with the same ID would be ignored. A manual redelivery of an outgoing webhook ([§12.4](12-api-webhooks-import.md)) creates a new delivery with its own ID.
+- **Payload compatibility**: queued, delayed and failed jobs and unpublished outbox events survive an update ([§15.7](15-deployment.md)) and are processed by the new Worker, so job data and internal event payloads change **additively within a MAJOR series** ([§2.11](02-agent-rules.md)):
+  - a new field is optional in the schema, and the handler has a defined behaviour when it is missing (a default, or reading the current state);
+  - a field is never removed, renamed or given a new meaning within a series; the handler may ignore it;
+  - a queue name, job name or event type is not removed within a series: its processor stays registered (delegating to the new handler) until the next MAJOR release. Job scheduler templates are excepted, because `upsertJobScheduler` replaces them when the new Worker starts;
+  - a change that cannot be additive waits for the next MAJOR release and is marked as breaking. A new MAJOR is reached only through the latest release of the previous series ([§2.11](02-agent-rules.md)), so it still processes the job data and events of that release; the processors and schema branches of older shapes are removed one MAJOR later. An update never rewrites jobs in Valkey and never drops them;
+  - before `1.0.0` the whole `0.x` line counts as one series: job data changes only additively, also in a MINOR release that carries other breaking changes, and `1.0.0` is the first boundary.
 
 ### Concurrency
 

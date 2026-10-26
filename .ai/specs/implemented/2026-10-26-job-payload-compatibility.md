@@ -2,21 +2,21 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-10-26 |
 | Plan task | – (found while writing `BACKWARD_COMPATIBILITY.md` of the agent pipeline) |
 | System specification sections | §17.2, §18.3, §15.7, §2.11 |
-| Related issues / PRs | [#107](https://github.com/trybun/trybun/pull/107) |
+| Related issues / PRs | [#107](https://github.com/trybun/trybun/pull/107), [#108](https://github.com/trybun/trybun/pull/108) (specification) |
 
 ## Context
 
-`./trybun update` ([§15.7](../../docs/spec/15-deployment.md)) replaces the images and runs the migrations, but the queues in Valkey and the unpublished rows of `outbox_events` survive it. After an update the new Worker therefore processes jobs written by the previous version:
+`./trybun update` ([§15.7](../../../docs/spec/15-deployment.md)) replaces the images and runs the migrations, but the queues in Valkey and the unpublished rows of `outbox_events` survive it. After an update the new Worker therefore processes jobs written by the previous version:
 
-- delayed jobs – SLA timers, automatic closing, notification batches ([§17.2](../../docs/spec/17-conventions.md)) – that can wait for days or weeks;
-- failed jobs, kept for 30 days and retried manually with `job.retry()` ([§17.2](../../docs/spec/17-conventions.md));
+- delayed jobs – SLA timers, automatic closing, notification batches ([§17.2](../../../docs/spec/17-conventions.md)) – that can wait for days or weeks;
+- failed jobs, kept for 30 days and retried manually with `job.retry()` ([§17.2](../../../docs/spec/17-conventions.md));
 - outbox events not yet published, and jobs enqueued but not yet run.
 
-The specification does not say whether such jobs must still work. Processors validate their job data with their schema ([§18.3](../../docs/spec/18-code-patterns.md)), so a changed job schema makes a leftover job fail – an SLA timer that was due silently does nothing. Any version of a MAJOR series updates directly to its latest release ([§2.11](../../docs/spec/02-agent-rules.md)), so "the previous release" can be any release of the series. Agents do not decide this gap themselves (Rule 8); it is proposed here.
+The specification does not say whether such jobs must still work. Processors validate their job data with their schema ([§18.3](../../../docs/spec/18-code-patterns.md)), so a changed job schema makes a leftover job fail – an SLA timer that was due silently does nothing. Any version of a MAJOR series updates directly to its latest release ([§2.11](../../../docs/spec/02-agent-rules.md)), so "the previous release" can be any release of the series. Agents do not decide this gap themselves (Rule 8); it is proposed here.
 
 ## Goals
 
@@ -25,18 +25,18 @@ The specification does not say whether such jobs must still work. Processors val
 
 ## Non-goals
 
-- Payloads of outgoing webhooks – already versioned in `@trybun/contracts` ([§12.4](../../docs/spec/12-api-webhooks-import.md)).
+- Payloads of outgoing webhooks – already versioned in `@trybun/contracts` ([§12.4](../../../docs/spec/12-api-webhooks-import.md)).
 - Draining queues during `./trybun update` (the alternative below).
-- Protecting queue or job data as a public contract: they stay internal ([`BACKWARD_COMPATIBILITY.md`](../../BACKWARD_COMPATIBILITY.md)).
+- Protecting queue or job data as a public contract: they stay internal ([`BACKWARD_COMPATIBILITY.md`](../../../BACKWARD_COMPATIBILITY.md)).
 
 ## Proposed change
 
 Job data and internal event payloads change **additively within a MAJOR series**:
 
-1. A new field of job data or of an event payload is optional in the schema, and the handler has a defined behaviour when it is missing (a default, or reading the current state – handlers already load the current state, [§18.3](../../docs/spec/18-code-patterns.md)).
+1. A new field of job data or of an event payload is optional in the schema, and the handler has a defined behaviour when it is missing (a default, or reading the current state – handlers already load the current state, [§18.3](../../../docs/spec/18-code-patterns.md)).
 2. A field is never removed, renamed or given a new meaning within a series; it may be ignored by the handler.
 3. A queue name, job name or event type is never removed within a series while jobs of it can still exist: its processor stays registered (delegating to the new handler) until the next MAJOR release. Job scheduler templates are excepted – `upsertJobScheduler` replaces them when the new Worker starts.
-4. A change that cannot be additive waits for the next MAJOR release and is marked as breaking ([§2.11](../../docs/spec/02-agent-rules.md)). Because a new MAJOR is reached only through the latest release of the previous series ([§2.11](../../docs/spec/02-agent-rules.md), "Upgrade path and support"), the new MAJOR still processes the job data and events of that latest release; the processors and schema branches for older shapes are removed one MAJOR later. Jobs are never rewritten in Valkey and never dropped by an update.
+4. A change that cannot be additive waits for the next MAJOR release and is marked as breaking ([§2.11](../../../docs/spec/02-agent-rules.md)). Because a new MAJOR is reached only through the latest release of the previous series ([§2.11](../../../docs/spec/02-agent-rules.md), "Upgrade path and support"), the new MAJOR still processes the job data and events of that latest release; the processors and schema branches for older shapes are removed one MAJOR later. Jobs are never rewritten in Valkey and never dropped by an update.
 5. Every changed job schema gets a unit test that parses job data of the previous shape.
 6. The rules apply from now on, also to `0.x` releases: the whole `0.x` line counts as one series, so before `1.0.0` job data changes only additively, even in a MINOR release that carries other breaking changes, and `1.0.0` is its first boundary under item 4.
 
@@ -62,13 +62,14 @@ Implementation must not start until every question has an answer.
 
 ## Acceptance criteria
 
-- [ ] §17.2, §18.3 and §18.7 contain the rules above
-- [ ] `BACKWARD_COMPATIBILITY.md` refers to the §17.2 rule instead of its TODO
-- [ ] `CODE_REVIEW.md` lists the check for changed job schemas
-- [ ] Works on phone, tablet and desktop (Rule 9) – n/a, no UI
-- [ ] User documentation and product tour updated where relevant (Rules 3, 4) – n/a
+- [x] §17.2, §18.3 and §18.7 contain the rules above
+- [x] `BACKWARD_COMPATIBILITY.md` refers to the §17.2 rule instead of its TODO
+- [x] `CODE_REVIEW.md` lists the check for changed job schemas
+- [x] Works on phone, tablet and desktop (Rule 9) – n/a, no UI
+- [x] User documentation and product tour updated where relevant (Rules 3, 4) – n/a
 
 ## Changelog
 
 - 2026-10-26 – Created.
 - 2026-10-26 – Open questions answered with the recommended answers; items 4 and 6 of the proposed change follow them.
+- 2026-10-26 – Implemented in §17.2 ("Payload compatibility"), §18.3 and §18.7; no code changed: the job data of the outbox (`OutboxEventJobData`) is the same in every release from `v0.1.0` to `v0.2.1`, and the only other processor runs a job scheduler (audit log IP removal), which the rule excepts – it binds the next change of a job schema.
