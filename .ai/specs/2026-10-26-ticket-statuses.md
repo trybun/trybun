@@ -59,7 +59,7 @@ The specification leaves several questions open, and S1-06 depends on records th
 | Target `waiting_for_requester` from a terminal status | A reopen; `statusBeforeWaiting` is `triage`, so a later return after the requester's reply (S1-12) never goes back to a terminal status ([Q20](#open-questions)) |
 | Target `done`, resolution confirmation on, source `user`, current status non-terminal and not already waiting for confirmation | The ticket goes to `waiting_for_requester` with reason `confirmation` instead. The response carries the actual status, so the client can explain the redirect |
 | Target `done` while waiting for confirmation | `done` directly. The team overrides the wait ([Q5](#open-questions)) |
-| From a terminal to a non-terminal status | A **reopen**: `closedAt` is cleared, the event carries `reopen: true` ([Q6](#open-questions)) |
+| From a terminal to a non-terminal status | A **reopen**: `closedAt` is cleared, the event carries `reopen: true` ([Q6](#open-questions)). An assignee who is no longer an active team member of the project is removed in the same transaction, with S1-05's automatic `assignee_changed` event ([Q22](#open-questions)) |
 | Leaving `duplicate` (to any status) | The `duplicate_of` relation is deleted, with a `duplicate_link_removed` event |
 | Leaving `rejected` | `rejectionReason` is cleared |
 | Into a terminal status (also from another terminal status) | `closedAt = now` ([Q12](#open-questions)) |
@@ -197,7 +197,7 @@ The `tickets` namespace of `@trybun/i18n` gains, in EN and PL, the labels of the
 |---|---|
 | §4.3 | A team move to `waiting_for_requester` sets reason `information`; `confirmation` is set only by the redirect from `done` (Q4); after a reopen into waiting, the status before waiting is `triage` (Q20) |
 | §4.3 | Moving a ticket that waits for confirmation to `done` closes it directly (Q5) |
-| §4.3 | A reopen is a move from a terminal to a non-terminal status; terminal → terminal is not a reopen (Q6) |
+| §4.3 | A reopen is a move from a terminal to a non-terminal status; terminal → terminal is not a reopen (Q6); a reopen removes an assignee who is no longer eligible (Q22) |
 | §4.3 | "7 calendar days" means 7 × 24 hours after the request; in an archived project the automatic close waits until the project is unarchived (Q7, Q19) |
 | §4.3 | When a ticket becomes a duplicate, its own duplicates are re-pointed to the new original (Q8); the original may be in any status other than `duplicate` (Q9) |
 | §4.3 | The duplicate effects on watchers and affected users are implemented by the tasks that introduce those records (Q10) |
@@ -239,6 +239,7 @@ Implementation must not start until every question has an answer. Each answer be
 19. **Automatic close in an archived project.** §7.3 stops all jobs except those required by law. — **Answer (proposed, awaiting approval):** the close job changes nothing while the project is archived and checks again every 24 hours. It closes the ticket on the first run after unarchiving when the 7 days have passed, so unarchiving needs no hook. Alternative: unarchiving restarts the 7 days, which needs a hook in S1-01's unarchive use case.
 20. **Status before waiting after a reopen.** A team move from a terminal status to `waiting_for_requester` would store a terminal status as the status before waiting, and the return rule of S1-12 would close the ticket again on the requester's reply. — **Answer (proposed, awaiting approval):** store `triage`, the status a requester comment reopens a `done` ticket to (§4.3). Alternative: forbid entering `waiting_for_requester` from a terminal status.
 21. **Public events for a change of the waiting reason.** `information` → `confirmation` keeps the public status `awaiting_reply` but changes its public description (§4.2). — **Answer (proposed, awaiting approval):** follow §4.5 literally: a status event is public only when the public status changes. The portal still shows the current description, which it derives from the ticket's `waitingReason`.
+22. **Assignee of a reopened ticket.** S1-05 unassigns only open tickets when a member is deactivated or removed from the project (§7.4), so a terminal ticket can keep an assignee who is no longer eligible (§3.2). — **Answer (proposed, awaiting approval):** a reopen removes such an assignee in the same transaction, with the same automatic `assignee_changed` event S1-05 records for the unassignment. The ticket then appears in "Unassigned". The S1-05 specification leaves this decision to S1-06.
 
 ## Implementation plan
 
@@ -268,7 +269,7 @@ Each step leaves the application working and has its tests.
 - [ ] "Yes, solved" moves the ticket to `done`, "No, still a problem" to `in_progress`; without an answer, it moves to `done` 7 days after the request with an automatic, public `status_changed` event
 - [ ] `PUT …/status` to `rejected` without a reason returns `422 request.validation_failed` with pointer `/rejectionReason`, and nothing changes
 - [ ] Marking a ticket a duplicate of a duplicate links it to the original; its own duplicates are re-pointed; an original in another project returns `422 ticket.duplicate_other_project`, an invisible one `404`
-- [ ] Reopening a `duplicate` removes the relation and records `duplicate_link_removed`; reopening any terminal ticket records `reopen: true` and clears `closedAt`
+- [ ] Reopening a `duplicate` removes the relation and records `duplicate_link_removed`; reopening any terminal ticket records `reopen: true`, clears `closedAt` and removes an assignee who is no longer an active team member of the project
 - [ ] Every ticket response carries the public status of §4.2; end-user responses never carry `status` or `rejectionReason`
 - [ ] With resolution confirmation on, `done` on a ticket with source `user` lands in `waiting_for_requester` with reason `confirmation`; with it off, or for source `developer`, in `done`
 - [ ] Only the requester can answer, only while the ticket waits for confirmation; `allowedActions` lists `confirm_resolution` exactly then
