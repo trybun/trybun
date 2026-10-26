@@ -216,7 +216,9 @@ schedule() {
     log "Next backup at $time UTC, in $wait_seconds seconds."
     sleep "$wait_seconds" &
     wait $!
-    backup daily >/dev/null || log 'Error: the daily backup failed; the next one runs tomorrow.'
+    # In a subshell, which closes the lock when it ends: the service runs on, and a lock held by
+    # this shell would block every later `./trybun backup`, `restore` and `update`.
+    (backup daily) >/dev/null || log 'Error: the daily backup failed; the next one runs tomorrow.'
   done
 }
 
