@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/trybun/trybun/compare/v0.2.0...v0.2.1) (2026-10-26)
+
+
+### Fixed
+
+* **deploy:** release the backup lock after the daily backup ([#103](https://github.com/trybun/trybun/issues/103)) ([3396743](https://github.com/trybun/trybun/commit/3396743378eda2ef10110b0a95c917fd21338f41))
+
 ## [0.2.0](https://github.com/trybun/trybun/compare/v0.1.2...v0.2.0) (2026-10-25)
 
 
