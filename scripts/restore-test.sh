@@ -141,6 +141,18 @@ TRYBUN_BACKUP_S3_SECRET_ACCESS_KEY=restore-test-secret
 EOF
 docker compose up -d --wait
 
+step 'A scheduled backup, then one of ./trybun'
+# The service keeps running after its daily backup; the backup of ./trybun must not wait for it.
+printf 'TRYBUN_BACKUP_TIME=%s\n' "$(date -u -d '+2 minutes' +%H:%M)" >>.env
+docker compose up -d --wait backup
+waited=0
+until [ "$(docker compose logs backup | grep -c 'Next backup at')" -ge 2 ]; do
+  [ "$waited" -lt 240 ] || fail 'the scheduled backup did not run.'
+  sleep 5
+  waited=$((waited + 5))
+done
+timeout 300 ./trybun backup || fail 'the backup of ./trybun did not finish after a scheduled one.'
+
 step 'Creating the data'
 password=$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')
 user=$(create_user "$password")
