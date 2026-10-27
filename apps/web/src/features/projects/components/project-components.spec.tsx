@@ -18,6 +18,8 @@ const { ProjectSettings } = await import('./project-settings.js');
 const { ProjectGeneralForm } = await import('./project-general-form.js');
 const { ProjectDangerZone } = await import('./project-danger-zone.js');
 const { ProjectMembers } = await import('./project-members.js');
+const { ProjectStateTabs } = await import('./project-state-tabs.js');
+const { NewProjectDialog } = await import('./new-project-dialog.js');
 
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
 
@@ -220,5 +222,26 @@ describe('ProjectMembers', () => {
     expect(html).toContain('Project manager');
     expect(html).not.toContain('Remove');
     expect(html).not.toContain('Add member');
+  });
+});
+
+describe('ProjectStateTabs', () => {
+  it('shows the Active and Archived tabs with the list of the current one', () => {
+    const html = render(<ProjectStateTabs state="archived" />, (client) =>
+      client.setQueryData(['projects', 'list', 'archived'], page([project({ state: 'archived' })])),
+    );
+
+    expect(html).toContain('Active');
+    expect(html).toContain('Archived');
+    expect(html).toContain('Customer portal');
+  });
+});
+
+describe('NewProjectDialog', () => {
+  it('renders its button, the dialog opening on request', () => {
+    const html = render(<NewProjectDialog />);
+
+    expect(html).toContain('New project');
+    expect(html).not.toContain('Create project');
   });
 });

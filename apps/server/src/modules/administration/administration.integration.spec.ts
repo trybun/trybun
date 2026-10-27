@@ -3,7 +3,7 @@ import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import packageJson from '../../../package.json' with { type: 'json' };
 import {
   keycloakJwksHandler,
@@ -13,6 +13,7 @@ import { createProject } from '../../../test/factories/project.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
+import { createOwnDatabase } from '../../../test/setup/own-database.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
@@ -30,9 +31,16 @@ describe('administration endpoints', () => {
   let config: TrybunConfig;
   let app: INestApplication<Server>;
   let prisma: PrismaService;
+  // The checklist reads the whole system (e.g. whether any project exists), so this file has a
+  // database of its own: the other test files create projects in parallel.
+  let databaseUrl: string;
+
+  beforeAll(async () => {
+    databaseUrl = await createOwnDatabase();
+  });
 
   async function start(overrides: Partial<TrybunConfig> = {}): Promise<void> {
-    config = { ...integrationConfig(), ...overrides };
+    config = { ...integrationConfig(), databaseUrl, ...overrides };
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot(config),
