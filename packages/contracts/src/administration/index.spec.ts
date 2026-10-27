@@ -6,7 +6,7 @@ describe('administration enums', () => {
     [administrationActionSchema, ['read']],
     [
       gettingStartedItemIdSchema,
-      ['configure_github_sign_in', 'configure_email', 'configure_backup_storage'],
+      ['create_project', 'configure_github_sign_in', 'configure_email', 'configure_backup_storage'],
     ],
   ])('lists the glossary codes', (schema, codes) => {
     expect(schema.options).toEqual(codes);

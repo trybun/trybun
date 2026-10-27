@@ -124,6 +124,7 @@ describe('projects endpoints', () => {
         key,
         state: 'active',
         confirmResolution: false,
+        role: null,
         version: 1,
       });
       expect((res.body as ProjectResponse).allowedActions).toContain('archive');
@@ -253,7 +254,11 @@ describe('projects endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers.etag).toBe('W/"1"');
-      expect(res.body).toMatchObject({ id: project.id, allowedActions: ['read', 'read_members'] });
+      expect(res.body).toMatchObject({
+        id: project.id,
+        role: 'developer',
+        allowedActions: ['read', 'read_members'],
+      });
     });
 
     it('returns 404 to a Developer of project A for project B and its members', async () => {

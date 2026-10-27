@@ -2,6 +2,8 @@ import type { GettingStartedItem } from '@trybun/contracts/administration';
 
 /** What the getting-started checklist reads (§15.6); later tasks add their records and settings. */
 export interface GettingStartedState {
+  /** Any project exists, active or archived (§3.1). */
+  hasProject: boolean;
   isGithubSignInConfigured: boolean;
   isSmtpConfigured: boolean;
   isBackupStorageConfigured: boolean;
@@ -13,6 +15,7 @@ export interface GettingStartedState {
  */
 export function gettingStartedItems(state: GettingStartedState): GettingStartedItem[] {
   return [
+    { id: 'create_project', isDone: state.hasProject, isOptional: false },
     // Required before team members can be invited (§15.5).
     { id: 'configure_github_sign_in', isDone: state.isGithubSignInConfigured, isOptional: false },
     { id: 'configure_email', isDone: state.isSmtpConfigured, isOptional: false },

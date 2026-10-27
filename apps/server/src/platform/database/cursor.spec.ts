@@ -32,7 +32,12 @@ describe('cursor', () => {
     [[1, 2], 2, [1, 2], false],
     [[], 2, [], false],
   ])('pages %j by %i', (rows, limit, items, hasNext) => {
-    const page = toPage(rows, limit, (row) => row, (row) => [row]);
+    const page = toPage(
+      rows,
+      limit,
+      (row) => row,
+      (row) => [row],
+    );
 
     expect(page.items).toEqual(items);
     expect(page.nextCursor === null).toBe(!hasNext);

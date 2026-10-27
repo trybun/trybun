@@ -88,8 +88,8 @@ model Project {
   id                String       @id @default(uuid(7)) @db.Uuid
   /// Trimmed, 1–100 characters, not unique.
   name              String
-  /// `^[A-Z][A-Z0-9]{1,9}$`, unique across active and archived projects; a check constraint of the
-  /// migrations enforces the pattern too.
+  /// A capital letter, then 1–9 capitals or digits (§3.1), unique across active and archived
+  /// projects; a check constraint of the migrations enforces the pattern too.
   key               String       @unique
   state             ProjectState @default(active)
   /// Resolution confirmation (§4.3).

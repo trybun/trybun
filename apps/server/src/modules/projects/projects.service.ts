@@ -66,6 +66,7 @@ function toProjectResponse(row: ProjectRow, ability: AppAbility): Project {
     version: row.version,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+    role: row.members[0]?.role ?? null,
     allowedActions: projectActionSchema.options.filter((action) => ability.can(action, record)),
   };
 }

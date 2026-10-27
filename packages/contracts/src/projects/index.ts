@@ -53,7 +53,10 @@ export const updateProjectSchema = z
   .refine((input) => Object.values(input).some((value) => value !== undefined));
 export type UpdateProjectDto = z.infer<typeof updateProjectSchema>;
 
-/** A project (§3.1) with the actions the principal may perform on it (§18.3). */
+/**
+ * A project (§3.1) with the role of the principal in it – `null` for an Administrator who is not
+ * a member – and the actions the principal may perform on it (§18.3).
+ */
 export const projectSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -63,6 +66,7 @@ export const projectSchema = z.object({
   version: z.int(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+  role: projectRoleSchema.nullable(),
   allowedActions: z.array(projectActionSchema),
 });
 export type Project = z.infer<typeof projectSchema>;

@@ -42,6 +42,35 @@ describe('demo dataset', () => {
     }
   });
 
+  it('restores the demo projects with their members on a second run', async () => {
+    const prisma = new PrismaService(integrationConfig());
+    const { projects, projectMembers } = buildDemoDataset();
+    const [project] = projects;
+    try {
+      await seedDemoData(prisma);
+      await prisma.project.update({
+        where: { id: project?.id },
+        data: { state: 'archived', version: { increment: 1 } },
+      });
+      await prisma.projectMember.deleteMany({ where: { projectId: project?.id } });
+      await seedDemoData(prisma);
+
+      const ids = projects.map(({ id }) => id ?? '');
+      expect(
+        await prisma.project.findMany({
+          where: { id: { in: ids } },
+          select: { key: true, state: true, version: true },
+          orderBy: { id: 'asc' },
+        }),
+      ).toEqual(projects.map(({ key, state }) => ({ key, state, version: 1 })));
+      expect(await prisma.projectMember.count({ where: { projectId: { in: ids } } })).toBe(
+        projectMembers.length,
+      );
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
+
   it('restores the tour progress: none for the newcomer, completed for the other team accounts', async () => {
     const prisma = new PrismaService(integrationConfig());
     const team = buildDemoDataset().users.filter((user) => user.kind === 'team');
