@@ -11,11 +11,12 @@ describe('suggestKey', () => {
     ['Helpdesk', 'HELP'],
     ['Łódź office', 'LO'],
     ['Zażółć', 'ZAZO'],
-    ['2026 roadmap', 'R'],
+    ['2026 roadmap', 'ROAD'],
+    ['A', 'A'],
     ['ERP 2', 'E2'],
     ['', ''],
     ['  —  ', ''],
-  ])('suggests %j for %j', (name, key) => {
+  ])('suggests for %j the key %j', (name, key) => {
     expect(suggestKey(name)).toBe(key);
   });
 });
