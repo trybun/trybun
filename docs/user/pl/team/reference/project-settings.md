@@ -10,7 +10,7 @@ Ustawienia projektu otwierasz z **Projektów**. Strona ma trzy zakładki.
 
 | Ustawienie | Znaczenie | Kto może zmieniać |
 |---|---|---|
-| **Nazwa** | Nazwa projektu | Kierownicy projektu i Administrator |
+| **Nazwa** | Nazwa projektu | Tylko Administrator; dla pozostałych tylko do odczytu |
 | **Klucz** | Prefiks identyfikatorów zgłoszeń, np. `ERP` | Tylko Administrator; dla pozostałych tylko do odczytu |
 | **Potwierdzanie rozwiązania** | Przełącznik: prosi zgłaszającego o potwierdzenie, że problem jest rozwiązany | Kierownicy projektu i Administrator |
 

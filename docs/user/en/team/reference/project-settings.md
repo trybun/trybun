@@ -10,7 +10,7 @@ Open the settings of a project from **Projects**. The page has three tabs.
 
 | Setting | Meaning | Who can change it |
 |---|---|---|
-| **Name** | Name of the project | Project managers of the project and the Administrator |
+| **Name** | Name of the project | Administrator only; read-only for others |
 | **Key** | Prefix of ticket identifiers, e.g. `ERP` | Administrator only; read-only for others |
 | **Resolution confirmation** | Switch: asks the requester to confirm that the problem is solved | Project managers of the project and the Administrator |
 
