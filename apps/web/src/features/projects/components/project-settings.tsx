@@ -6,9 +6,10 @@ import { Badge } from '@trybun/ui/components/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trybun/ui/components/tabs';
 import { ArchiveIcon, ChevronLeftIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation.js';
+import { notFound, useRouter } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { ApiError } from '../../../lib/errors/api-error.js';
 import { projectQueryOptions } from '../queries.js';
 import {
   type ProjectSettingsTab,
@@ -33,7 +34,11 @@ export function ProjectSettings({
 }) {
   const t = useTranslations('projects');
   const router = useRouter();
-  const { data: project } = useQuery(projectQueryOptions(browserApiClient, projectId));
+  const { data: project, error } = useQuery(projectQueryOptions(browserApiClient, projectId));
+  // The project became invisible, e.g. a Project manager removed themselves from it.
+  if (error instanceof ApiError && error.status === 404) {
+    notFound();
+  }
   if (project === undefined) {
     return null;
   }
@@ -74,7 +79,9 @@ export function ProjectSettings({
       <Tabs
         value={current}
         onValueChange={(value) =>
-          router.replace(projectSettingsHref(project.id, projectSettingsTabSchema.parse(value)))
+          router.replace(projectSettingsHref(project.id, projectSettingsTabSchema.parse(value)), {
+            scroll: false,
+          })
         }
       >
         <TabsList aria-label={t('settings.tabs.label')}>

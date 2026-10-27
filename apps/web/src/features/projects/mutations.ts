@@ -22,7 +22,9 @@ type ProjectVersion = Pick<Project, 'id' | 'version'>;
 
 /**
  * Invalidates every query of the projects: lists, the detail and the members. A change of one
- * project can move it between the lists (archiving) or change its actions.
+ * project can move it between the lists (archiving) or change its actions; a change of a
+ * membership can change the principal's own role and actions (a Project manager who demotes or
+ * removes themselves).
  */
 function useInvalidateProjects() {
   const queryClient = useQueryClient();
@@ -112,19 +114,9 @@ export function useDeleteProject() {
   });
 }
 
-/** Invalidates the members of a project, their counts and the member candidates. */
-function useInvalidateMembers() {
-  const queryClient = useQueryClient();
-  return (projectId: string) =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['projects', 'members', projectId] }),
-      queryClient.invalidateQueries({ queryKey: ['projects', 'member-candidates', projectId] }),
-    ]);
-}
-
 /** Adds an active team account to a project (§7.4). */
 export function useAddProjectMember(projectId: string) {
-  const invalidateMembers = useInvalidateMembers();
+  const invalidateProjects = useInvalidateProjects();
   return useMutation({
     mutationFn: (input: AddProjectMemberDto) =>
       dataOf(
@@ -133,13 +125,14 @@ export function useAddProjectMember(projectId: string) {
           body: input,
         }),
       ),
-    onSuccess: () => invalidateMembers(projectId),
+    // A conflict means the members changed elsewhere: refresh them and the candidates too.
+    onSettled: () => invalidateProjects(),
   });
 }
 
 /** Changes the team role of a member (§7.4). Memberships have no version. */
 export function useChangeProjectMemberRole(projectId: string) {
-  const invalidateMembers = useInvalidateMembers();
+  const invalidateProjects = useInvalidateProjects();
   return useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: ProjectRole }) =>
       dataOf(
@@ -148,13 +141,13 @@ export function useChangeProjectMemberRole(projectId: string) {
           body: { role },
         }),
       ),
-    onSuccess: () => invalidateMembers(projectId),
+    onSuccess: () => invalidateProjects(),
   });
 }
 
 /** Removes a member from a project (§7.4). */
 export function useRemoveProjectMember(projectId: string) {
-  const invalidateMembers = useInvalidateMembers();
+  const invalidateProjects = useInvalidateProjects();
   return useMutation({
     mutationFn: (userId: string) =>
       dataOf(
@@ -162,6 +155,6 @@ export function useRemoveProjectMember(projectId: string) {
           params: { path: { projectId, userId } },
         }),
       ),
-    onSuccess: () => invalidateMembers(projectId),
+    onSuccess: () => invalidateProjects(),
   });
 }
