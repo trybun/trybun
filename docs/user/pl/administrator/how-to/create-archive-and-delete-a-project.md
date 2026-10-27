@@ -13,7 +13,7 @@ Projekty tworzy, archiwizuje, przywraca z archiwum i usuwa tylko Administrator.
 3. Sprawdź **Klucz**: 2–10 wielkich liter lub cyfr, zaczynając od litery (np. `ERP`). Musi być unikalny wśród wszystkich projektów, aktywnych i zarchiwizowanych.
 4. Wybierz **Utwórz projekt**.
 
-Ustawienia nowego projektu otwierają się na **Członkowie**, gdzie [dodajesz zespół](../../team/how-to/manage-project-members.md).
+Ustawienia nowego projektu otwierają się na zakładce **Członkowie**, gdzie [dodajesz zespół](../../team/how-to/manage-project-members.md).
 
 ## Zarchiwizuj projekt
 
