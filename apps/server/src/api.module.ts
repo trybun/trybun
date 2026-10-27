@@ -14,6 +14,10 @@ import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.mo
 import { RateLimitingModule } from './platform/rate-limiting/rate-limiting.module.js';
 import { administrationAbilities } from './modules/administration/administration.abilities.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
+import {
+  archivedProjectsRestriction,
+  projectsAbilities,
+} from './modules/projects/projects.abilities.js';
 import { SetupModule } from './modules/setup/setup.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -34,7 +38,10 @@ export class ApiModule {
         AuthenticationModule,
         // After the authentication guard: the rate limit is keyed by the principal (§14.4).
         RateLimitingModule,
-        AuthorizationModule.forRoot([administrationAbilities]),
+        AuthorizationModule.forRoot({
+          rules: [administrationAbilities, projectsAbilities],
+          restrictions: [archivedProjectsRestriction],
+        }),
         KeycloakAdminModule,
         HealthModule,
         UsersModule,

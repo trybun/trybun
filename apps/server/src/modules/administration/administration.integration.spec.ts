@@ -40,7 +40,7 @@ describe('administration endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule.forRoot([administrationAbilities]),
+        AuthorizationModule.forRoot({ rules: [administrationAbilities], restrictions: [] }),
         AdministrationModule,
       ],
     }).compile();

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@casl/ability": "^7.0.2",
+    "@casl/prisma": "^2.0.2",
     "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs/bullmq": "^12.0.0",
     "@nestjs/common": "^12.2.0",

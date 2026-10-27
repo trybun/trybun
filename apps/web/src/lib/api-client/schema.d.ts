@@ -165,7 +165,7 @@ export interface operations {
                         email: string | null;
                         /** @enum {string} */
                         kind: "team" | "end_user";
-                        allowedActions: "open_administration"[];
+                        allowedActions: ("open_administration" | "create_project")[];
                     };
                 };
             };

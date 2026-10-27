@@ -22,6 +22,7 @@ import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
 import { administrationAbilities } from '../administration/administration.abilities.js';
+import { projectsAbilities } from '../projects/projects.abilities.js';
 import { UsersModule } from './users.module.js';
 
 describe('users endpoints', () => {
@@ -38,7 +39,10 @@ describe('users endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule.forRoot([administrationAbilities]),
+        AuthorizationModule.forRoot({
+          rules: [administrationAbilities, projectsAbilities],
+          restrictions: [],
+        }),
         UsersModule,
       ],
     }).compile();
@@ -95,7 +99,10 @@ describe('users endpoints', () => {
       .get('/api/v1/users/me')
       .set('Authorization', `Bearer ${token}`);
 
-    expect(res.body).toMatchObject({ kind: 'team', allowedActions: ['open_administration'] });
+    expect(res.body).toMatchObject({
+      kind: 'team',
+      allowedActions: ['open_administration', 'create_project'],
+    });
   });
 
   it('requires a signed-in account', async () => {

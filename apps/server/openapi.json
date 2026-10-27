@@ -38,7 +38,8 @@
                       "items": {
                         "type": "string",
                         "enum": [
-                          "open_administration"
+                          "open_administration",
+                          "create_project"
                         ]
                       }
                     }
