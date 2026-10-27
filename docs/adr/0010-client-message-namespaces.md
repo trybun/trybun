@@ -1,6 +1,6 @@
 # 0010 – Texts in the browser by route
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-27
 - Deciders: the maintainer (`@dtk7c2`)
 - Specification: [§2.9](../spec/02-agent-rules.md), [§13.1](../spec/13-non-functional.md), [§18.5](../spec/18-code-patterns.md)
