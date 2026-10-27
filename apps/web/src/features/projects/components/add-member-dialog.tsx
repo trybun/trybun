@@ -72,6 +72,8 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
     enabled: isOpen,
   });
   const items = candidates.data?.items ?? [];
+  // A search that hides the chosen account also withdraws the choice from the submit.
+  const isChosenShown = items.some((candidate) => candidate.id === userId);
 
   const close = () => {
     setIsOpen(false);
@@ -132,6 +134,7 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
                     <p className="text-sm text-muted-foreground">{t('members.noCandidates')}</p>
                   ) : (
                     <RadioGroup
+                      inputRef={field.ref}
                       name={field.name}
                       value={field.value}
                       onValueChange={field.onChange}
@@ -140,7 +143,10 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
                       {items.map((candidate) => (
                         <FieldLabel key={candidate.id}>
                           <Field orientation="horizontal" invalid={fieldState.invalid}>
-                            <RadioGroupItem value={candidate.id} />
+                            <RadioGroupItem
+                              value={candidate.id}
+                              aria-invalid={fieldState.invalid}
+                            />
                             <FieldContent className="min-w-0">
                               <FieldTitle className="truncate">
                                 {candidate.displayName ?? t('members.noName')}
@@ -202,7 +208,7 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
             <DialogClose render={<Button variant="outline" type="button" />}>
               {t('members.cancel')}
             </DialogClose>
-            <Button type="submit" disabled={userId === '' || form.formState.isSubmitting}>
+            <Button type="submit" disabled={!isChosenShown || form.formState.isSubmitting}>
               {form.formState.isSubmitting ? t('members.adding') : t('members.submit')}
             </Button>
           </DialogFooter>
