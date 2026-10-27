@@ -133,6 +133,19 @@ describe('audit log', () => {
           data: { ipAddress: null, action: 'setup_token.issued' },
         }),
     ],
+    [
+      'given details',
+      (targetId: string) =>
+        prisma.auditLogEntry.updateMany({ where: { targetId }, data: { details: { role: 'x' } } }),
+    ],
+    [
+      'given details together with the removal of its IP',
+      (targetId: string) =>
+        prisma.auditLogEntry.updateMany({
+          where: { targetId },
+          data: { ipAddress: null, details: { role: 'x' } },
+        }),
+    ],
     ['deleted', (targetId: string) => prisma.auditLogEntry.deleteMany({ where: { targetId } })],
     ['truncated', () => prisma.$executeRaw`TRUNCATE audit_log_entries`],
   ])('cannot be %s', async (_case, change) => {
@@ -145,6 +158,23 @@ describe('audit log', () => {
         where: { targetId, actorId: targetId, ipAddress: IP_ADDRESS },
       }),
     ).toBe(1);
+  });
+
+  it('records the details of an action', async () => {
+    const targetId = randomUUID();
+    const userId = randomUUID();
+
+    await prisma.$transaction((tx) =>
+      auditLog.record(tx, {
+        action: 'project_member.role_changed',
+        actorId: null,
+        target: { type: 'Project', id: targetId },
+        details: { userId, role: 'project_manager', previousRole: 'developer' },
+      }),
+    );
+
+    const entry = await prisma.auditLogEntry.findFirstOrThrow({ where: { targetId } });
+    expect(entry.details).toEqual({ userId, role: 'project_manager', previousRole: 'developer' });
   });
 
   it('refuses an update of an entry without an IP', async () => {

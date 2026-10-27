@@ -157,6 +157,14 @@
       "password_rejected": "Choose another password: it must have at least 15 characters and must not be your e-mail address or a common password.",
       "email_taken": "An account with this e-mail address already exists."
     },
+    "project": {
+      "archived": "This project is archived and read-only. Unarchive it to make changes.",
+      "key_taken": "Another project already uses this key."
+    },
+    "project_member": {
+      "exists": "This person is already a member of the project.",
+      "user_not_eligible": "Only active team members can be added to a project."
+    },
     "server": {
       "internal_error": "Something went wrong. Try again later.",
       "unavailable": "Trybun is temporarily unavailable. Try again in a moment."

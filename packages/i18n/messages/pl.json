@@ -157,6 +157,14 @@
       "password_rejected": "Wybierz inne hasło: musi mieć co najmniej 15 znaków i nie może być Twoim adresem e-mail ani popularnym hasłem.",
       "email_taken": "Konto z tym adresem e-mail już istnieje."
     },
+    "project": {
+      "archived": "Ten projekt jest zarchiwizowany i tylko do odczytu. Przywróć go z archiwum, aby wprowadzić zmiany.",
+      "key_taken": "Ten klucz ma już inny projekt."
+    },
+    "project_member": {
+      "exists": "Ta osoba jest już członkiem projektu.",
+      "user_not_eligible": "Do projektu można dodać tylko aktywnych członków zespołu."
+    },
     "server": {
       "internal_error": "Coś poszło nie tak. Spróbuj ponownie później.",
       "unavailable": "Trybun jest chwilowo niedostępny. Spróbuj ponownie za chwilę."
