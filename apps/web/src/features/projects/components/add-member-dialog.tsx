@@ -1,7 +1,12 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { type ProjectRole, projectRoleSchema } from '@trybun/contracts/projects';
+import {
+  type AddProjectMemberDto,
+  addProjectMemberSchema,
+  projectRoleSchema,
+} from '@trybun/contracts/projects';
 import { Button } from '@trybun/ui/components/button';
 import {
   Dialog,
@@ -13,8 +18,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@trybun/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@trybun/ui/components/field';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from '@trybun/ui/components/field';
 import { Input } from '@trybun/ui/components/input';
+import { RadioGroup, RadioGroupItem } from '@trybun/ui/components/radio-group';
 import {
   Select,
   SelectContent,
@@ -23,12 +39,14 @@ import {
   SelectValue,
 } from '@trybun/ui/components/select';
 import { toast } from '@trybun/ui/components/toast';
-import { cn } from '@trybun/ui/lib/utils';
 import { UserPlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useDeferredValue, useState } from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
 import { useAddProjectMember } from '../mutations.js';
 import { memberCandidatesQueryOptions } from '../queries.js';
 
@@ -43,40 +61,44 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
   const addMember = useAddProjectMember(projectId);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
-  const [role, setRole] = useState<ProjectRole>('developer');
+  const form = useForm<AddProjectMemberDto>({
+    resolver: zodResolver(addProjectMemberSchema, FORM_ERROR_MAP),
+    defaultValues: { userId: '', role: 'developer' },
+  });
+  const userId = useWatch({ control: form.control, name: 'userId' });
   const deferredSearch = useDeferredValue(search.trim());
   const candidates = useQuery({
     ...memberCandidatesQueryOptions(browserApiClient, projectId, deferredSearch),
     enabled: isOpen,
   });
   const items = candidates.data?.items ?? [];
-  const chosen = items.find((candidate) => candidate.id === userId);
 
   const close = () => {
     setIsOpen(false);
     setSearch('');
-    setUserId(null);
-    setRole('developer');
+    form.reset();
   };
 
-  const submit = () => {
-    if (chosen === undefined) {
-      return;
-    }
-    addMember.mutate(
-      { userId: chosen.id, role },
-      {
-        onSuccess: () => {
-          toast.add({
-            title: t('members.added', { name: chosen.displayName ?? chosen.githubLogin ?? '' }),
-            type: 'success',
-          });
-          close();
-        },
-      },
-    );
-  };
+  const submit = form.handleSubmit((input) => {
+    const chosen = items.find((candidate) => candidate.id === input.userId);
+    const name = chosen?.displayName ?? chosen?.githubLogin ?? t('members.noName');
+    return addMember
+      .mutateAsync(input)
+      .then(() => {
+        toast.add({ title: t('members.added', { name }), type: 'success' });
+        close();
+      })
+      .catch((error: unknown) => {
+        // The messages of the form hold error codes, translated where they are shown.
+        const fieldErrors = error instanceof ApiError ? fieldErrorsOf(error) : [];
+        for (const { field, code } of fieldErrors) {
+          form.setError(field as keyof AddProjectMemberDto, { message: code });
+        }
+        if (fieldErrors.length === 0) {
+          form.setError('root', { message: error instanceof ApiError ? error.code : undefined });
+        }
+      });
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => (open ? setIsOpen(true) : close())}>
@@ -85,90 +107,106 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
         {t('members.add')}
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('members.addTitle')}</DialogTitle>
-          <DialogDescription>{t('members.addDescription')}</DialogDescription>
-        </DialogHeader>
-        <FieldGroup>
-          <Field>
-            <FieldLabel>{t('members.search')}</FieldLabel>
-            <Input
-              type="search"
-              value={search}
-              autoComplete="off"
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </Field>
-          <FieldSet>
-            <FieldLegend variant="label">{t('members.candidates')}</FieldLegend>
-            {candidates.isSuccess && items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('members.noCandidates')}</p>
-            ) : (
-              <ul className="flex max-h-64 flex-col gap-1 overflow-y-auto">
-                {items.map((candidate) => (
-                  <li key={candidate.id}>
-                    <label
-                      className={cn(
-                        'flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2 has-checked:border-primary has-checked:bg-muted has-focus-visible:ring-3 has-focus-visible:ring-ring',
-                      )}
+        <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{t('members.addTitle')}</DialogTitle>
+            <DialogDescription>{t('members.addDescription')}</DialogDescription>
+          </DialogHeader>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>{t('members.search')}</FieldLabel>
+              <Input
+                type="search"
+                value={search}
+                autoComplete="off"
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </Field>
+            <Controller
+              control={form.control}
+              name="userId"
+              render={({ field, fieldState }) => (
+                <FieldSet>
+                  <FieldLegend variant="label">{t('members.candidates')}</FieldLegend>
+                  {candidates.isSuccess && items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t('members.noCandidates')}</p>
+                  ) : (
+                    <RadioGroup
+                      name={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      className="max-h-64 overflow-y-auto"
                     >
-                      <input
-                        type="radio"
-                        name="member-candidate"
-                        className="size-4 accent-primary"
-                        checked={candidate.id === userId}
-                        onChange={() => setUserId(candidate.id)}
-                      />
-                      <span className="flex min-w-0 flex-col">
-                        <span className="truncate font-medium">
-                          {candidate.displayName ?? t('members.noName')}
-                        </span>
-                        {candidate.githubLogin !== null && (
-                          <span className="truncate text-sm text-muted-foreground">
-                            @{candidate.githubLogin}
-                          </span>
-                        )}
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </FieldSet>
-          <Field>
-            <FieldLabel>{t('members.role')}</FieldLabel>
-            <Select
-              items={projectRoleSchema.options.map((value) => ({
-                value,
-                label: t(`roles.${value}`),
-              }))}
-              value={role}
-              onValueChange={(value) => setRole(projectRoleSchema.parse(value))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {projectRoleSchema.options.map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {t(`roles.${value}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </FieldGroup>
-        {addMember.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {errorMessage(addMember.error)}
-          </p>
-        )}
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>{t('members.cancel')}</DialogClose>
-          <Button disabled={chosen === undefined || addMember.isPending} onClick={submit}>
-            {addMember.isPending ? t('members.adding') : t('members.submit')}
-          </Button>
-        </DialogFooter>
+                      {items.map((candidate) => (
+                        <FieldLabel key={candidate.id}>
+                          <Field orientation="horizontal" invalid={fieldState.invalid}>
+                            <RadioGroupItem value={candidate.id} />
+                            <FieldContent className="min-w-0">
+                              <FieldTitle className="truncate">
+                                {candidate.displayName ?? t('members.noName')}
+                              </FieldTitle>
+                              {candidate.githubLogin !== null && (
+                                <FieldDescription className="truncate">
+                                  @{candidate.githubLogin}
+                                </FieldDescription>
+                              )}
+                            </FieldContent>
+                          </Field>
+                        </FieldLabel>
+                      ))}
+                    </RadioGroup>
+                  )}
+                  <FieldError
+                    errors={[
+                      fieldState.error && { message: errorMessage(fieldState.error.message) },
+                    ]}
+                  />
+                </FieldSet>
+              )}
+            />
+            <Controller
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>{t('members.role')}</FieldLabel>
+                  <Select
+                    items={projectRoleSchema.options.map((value) => ({
+                      value,
+                      label: t(`roles.${value}`),
+                    }))}
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(projectRoleSchema.parse(value))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projectRoleSchema.options.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {t(`roles.${value}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+          </FieldGroup>
+          {form.formState.errors.root !== undefined && (
+            <p role="alert" className="text-sm text-destructive">
+              {errorMessage(form.formState.errors.root.message)}
+            </p>
+          )}
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" type="button" />}>
+              {t('members.cancel')}
+            </DialogClose>
+            <Button type="submit" disabled={userId === '' || form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? t('members.adding') : t('members.submit')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
