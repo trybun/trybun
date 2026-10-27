@@ -18,6 +18,7 @@ import {
   archivedProjectsRestriction,
   projectsAbilities,
 } from './modules/projects/projects.abilities.js';
+import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -47,6 +48,7 @@ export class ApiModule {
         UsersModule,
         SetupModule,
         AdministrationModule,
+        ProjectsModule,
       ],
     };
   }
