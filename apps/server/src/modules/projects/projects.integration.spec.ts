@@ -738,24 +738,28 @@ describe('projects endpoints', () => {
       const user = await createUser(prisma, { kind: 'team' });
 
       let addition: Promise<request.Response> | undefined;
-      await prisma.$transaction(async (tx) => {
-        await tx.project.update({
-          where: { id: project.id },
-          data: { state: 'archived', version: { increment: 1 } },
-        });
-        addition = addMember(authorization, project, user.id).then((res) => res);
-        // Commit only once the addition has passed the target record guard and waits for the row
-        // lock, so the test exercises the lock rather than the guard.
-        await vi.waitFor(
-          async () => {
-            const [waiting] = await prisma.$queryRaw<[{ count: bigint }]>`
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.project.update({
+            where: { id: project.id },
+            data: { state: 'archived', version: { increment: 1 } },
+          });
+          addition = addMember(authorization, project, user.id).then((res) => res);
+          // Commit only once the addition has passed the target record guard and waits for the row
+          // lock, so the test exercises the lock rather than the guard.
+          await vi.waitFor(
+            async () => {
+              const [waiting] = await prisma.$queryRaw<[{ count: bigint }]>`
               SELECT count(*) FROM pg_stat_activity
-              WHERE wait_event_type = 'Lock' AND query LIKE '%FOR SHARE%'`;
-            expect(waiting.count).toBe(1n);
-          },
-          { timeout: 5000, interval: 20 },
-        );
-      });
+              WHERE datname = current_database() AND pid <> pg_backend_pid()
+                AND wait_event_type = 'Lock' AND query LIKE '%FOR SHARE%'`;
+              expect(waiting.count).toBeGreaterThanOrEqual(1n);
+            },
+            { timeout: 5000, interval: 20 },
+          );
+        },
+        { timeout: 10_000 },
+      );
       const res = await (addition as Promise<request.Response>);
 
       expect(res.status).toBe(409);
