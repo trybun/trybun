@@ -19,17 +19,9 @@ export type RecordAccessDecision =
   { outcome: 'allowed' } | { outcome: 'not_found' } | { outcome: 'denied'; code: ErrorCode };
 
 /**
- * Looks up a target record through the principal's ability (§18.3). The abilities and their
- * `accessibleBy` lookups arrive with the permission layer (S1-04); until then no subject exists,
- * and every record is reported as not found.
+ * Looks up a target record through the principal's ability (§18.3): the implementation of the
+ * request pipeline is `PrismaRecordAccess`; tests of the pipeline replace it.
  */
 export abstract class RecordAccess {
   abstract decide(principal: Principal, target: TargetRecord): Promise<RecordAccessDecision>;
-}
-
-/** The record access before the permission layer: no subject has records yet. */
-export class NoSubjectRecordAccess extends RecordAccess {
-  decide(): Promise<RecordAccessDecision> {
-    return Promise.resolve({ outcome: 'not_found' });
-  }
 }

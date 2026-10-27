@@ -48,7 +48,7 @@ Rules:
   - the user keeps read and comment access to the tickets they created with visibility `only_me`, even if they no longer have access to the project; creating new tickets requires current access to the project,
   - the user keeps access to shared tickets of projects they still have access to,
   - tickets of the old organization with visibility `my_organization` – including those the user created – are no longer visible to them, and the user is removed from their watchers ([§6.7](06-comments-notifications.md)).
-- **Archiving instead of deleting**: organizations and projects are not deleted but **archived**. Only organizations and projects without tickets can be deleted. Archiving and unarchiving are done by the Administrator and recorded in the audit log.
+- **Archiving instead of deleting**: organizations and projects are not deleted but **archived**. Only organizations and projects without tickets can be deleted; an archived project is deleted only after it is unarchived, because deleting is a change (`project.archived`). Archiving and unarchiving are done by the Administrator and recorded in the audit log.
   - **Archived project**: read-only for every role, including the Administrator – all user-facing changes are rejected with the error code `project.archived`. It is hidden from navigation; members keep read access to the tickets they could see. SLA clocks stop and keep their state; integration tokens of the project are rejected; incoming GitHub events for it are ignored and logged; outgoing webhooks for it stop; pending invitations to it are revoked. Jobs required by law (GDPR anonymization and retention, [§13.2](13-non-functional.md)) still run.
   - **Archived organization**: its members keep their accounts and read access to the tickets they created, lose access granted through the organization and cannot create tickets through it; domain matching is off.
   - The Administrator can **unarchive** a project or organization; it then works as before.
@@ -81,7 +81,7 @@ If no organization exists in the system (e.g. an internal deployment in one comp
   - Users cannot change their e-mail address themselves (the Keycloak account console does not allow it), because the address decides organization membership, notifications and e-mail replies. The Administrator changes it on request.
 - Password reset uses a one-time link with limited validity ([§13.5](13-non-functional.md)).
 - **Deactivating an account** (e.g. a customer's employee leaves) is done by the Administrator. It blocks login, **immediately ends all sessions** (in Keycloak and in the web application, [§14.4](14-architecture.md)) and **revokes all API tokens** of the account; it keeps their tickets and comments in the history. Open tickets assigned to a deactivated team member are unassigned with an automatic event and appear in the predefined list view "Unassigned" ([§8.1](08-team-views.md)). The Administrator can reactivate the account.
-- **Removing a team member from a project** (or their last role in it) unassigns them from the project's open tickets in the same way; watchers without access are removed at the next notification ([§6.7](06-comments-notifications.md)). Removing a project's last Project manager is allowed (the Administrator covers the role), but a warning is shown.
+- **Removing a team member from a project** (or their last role in it) unassigns them from the project's open tickets in the same way; watchers without access are removed at the next notification ([§6.7](06-comments-notifications.md)). Removing a project's last Project manager – or changing their role to Developer – is allowed (the Administrator covers the role), but a warning is shown.
 - Each user sets their language and time zone in account settings ([§13.1](13-non-functional.md)).
 - **Local environment**: in the local development environment only ([§15.1](15-deployment.md)), seeded team accounts can sign in with a password, so contributors do not need their own GitHub OAuth application. This is disabled in the test and production environments.
 
@@ -101,10 +101,10 @@ Keycloak stores only credentials and sign-in factors. Everything else about a pe
 | State (`user.state`) | `invited` (account created by an invitation or import, not yet signed in), `active`, `deactivated`, `anonymized` ([§13.2](13-non-functional.md)) |
 | GitHub login | For team accounts, from the GitHub sign-in ([§11.4](11-github-integration.md)) |
 
-- Per-project team roles are stored as **project memberships** (`project_member`: user, project, role `developer` or `project_manager`). Personal access of end users to a project is stored as a project membership with role `end_user`; access through an organization is derived from the organization's projects.
+- Per-project team roles are stored as **project memberships** (`project_member`: user, project, role `developer` or `project_manager`). The Administrator and the project's Project managers add existing active team accounts to a project directly, choose their role, change it and remove them; the member picker lists the active team accounts that are not members of the project – display name and GitHub login, never the e-mail address – to whoever may manage the members of that project. Invitations by e-mail add existing accounts through the same membership change. Personal access of end users to a project is stored as a project membership with role `end_user`; access through an organization is derived from the organization's projects.
 - The API keeps the Keycloak group `team` in sync through the Keycloak Admin API whenever an account becomes or stops being a `team` account.
 - Imported people without an account ([§12.5](12-api-webhooks-import.md)) get accounts in state `invited` without a Keycloak user; the Keycloak user is created when they accept an invitation.
-- The signed-in account reads its own identifier, display name, e-mail and kind with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel, [§18.3](18-code-patterns.md)).
+- The signed-in account reads its own identifier, display name, e-mail and kind with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel and `create_project` for creating projects, [§18.3](18-code-patterns.md)).
 
 ### Invitations
 
@@ -172,6 +172,7 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Create GitHub issues from tickets | – | ✅ | ✅ | ✅ |
 | View SLA deadlines | – | ✅ | ✅ | ✅ |
 | SLA reports ([§9.6](09-sla.md)) | – | – | ✅ | ✅ |
+| View project members (display name, GitHub login, role) of own project | – | ✅ | ✅ | ✅ |
 | Manage project members: invite team members and grant or remove the roles Developer and Project manager in own project | – | – | ✅ | ✅ |
 | Invite individual end users to the project | – | – | ✅ | ✅ |
 | Project settings: resolution confirmation, WIP limits ([§8.2](08-team-views.md)) | – | – | ✅ | ✅ |

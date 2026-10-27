@@ -5,6 +5,7 @@ import type { Principal } from '../../platform/authentication/principal.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import { TRYBUN_CONFIG } from '../../platform/config/config.module.js';
 import type { TrybunConfig } from '../../platform/config/config.schema.js';
+import { PrismaService } from '../../platform/database/prisma.service.js';
 import { AppError } from '../../platform/errors/app-error.js';
 import { ADMINISTRATION } from './administration.abilities.js';
 import { gettingStartedItems } from './domain/getting-started.js';
@@ -13,13 +14,15 @@ import { gettingStartedItems } from './domain/getting-started.js';
 export class AdministrationService {
   constructor(
     private readonly abilities: AbilityFactory,
+    private readonly prisma: PrismaService,
     @Inject(TRYBUN_CONFIG) private readonly config: TrybunConfig,
   ) {}
 
   /** The getting-started checklist (§15.6), a list bounded by its closed set of items (§18.4). */
-  findGettingStarted(principal: Principal): GettingStartedPage {
+  async findGettingStarted(principal: Principal): Promise<GettingStartedPage> {
     this.assertCanRead(principal);
-    return { items: gettingStartedItems(this.config), nextCursor: null };
+    const hasProject = (await this.prisma.project.count({ take: 1 })) > 0;
+    return { items: gettingStartedItems({ ...this.config, hasProject }), nextCursor: null };
   }
 
   /** The "About" page (§15.4): the same version as `/health`. */

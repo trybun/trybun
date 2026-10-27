@@ -11,3 +11,17 @@ export function pageSchema<Item extends z.ZodType>(item: Item) {
     nextCursor: z.string().nullable(),
   });
 }
+
+/** The default and the largest number of items of one page (§18.4). */
+export const DEFAULT_PAGE_LIMIT = 50;
+export const MAX_PAGE_LIMIT = 100;
+
+/**
+ * The query parameters of every list endpoint (§12.1, §18.4): the opaque `cursor` of the page,
+ * as returned in `nextCursor` (none for the first page), and the number of items per page.
+ */
+export const pageQuerySchema = z.object({
+  cursor: z.string().min(1).max(512).optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(DEFAULT_PAGE_LIMIT),
+});
+export type PageQuery = z.infer<typeof pageQuerySchema>;

@@ -3,15 +3,17 @@ import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import packageJson from '../../../package.json' with { type: 'json' };
 import {
   keycloakJwksHandler,
   signAccessToken,
 } from '../../../test/factories/access-token.factory.js';
+import { createProject } from '../../../test/factories/project.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
+import { createOwnDatabase } from '../../../test/setup/own-database.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
@@ -29,9 +31,16 @@ describe('administration endpoints', () => {
   let config: TrybunConfig;
   let app: INestApplication<Server>;
   let prisma: PrismaService;
+  // The checklist reads the whole system (e.g. whether any project exists), so this file has a
+  // database of its own: the other test files create projects in parallel.
+  let databaseUrl: string;
+
+  beforeAll(async () => {
+    databaseUrl = await createOwnDatabase();
+  });
 
   async function start(overrides: Partial<TrybunConfig> = {}): Promise<void> {
-    config = { ...integrationConfig(), ...overrides };
+    config = { ...integrationConfig(), databaseUrl, ...overrides };
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot(config),
@@ -40,7 +49,7 @@ describe('administration endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule.forRoot([administrationAbilities]),
+        AuthorizationModule.forRoot({ rules: [administrationAbilities], restrictions: [] }),
         AdministrationModule,
       ],
     }).compile();
@@ -85,6 +94,7 @@ describe('administration endpoints', () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
         items: [
+          { id: 'create_project', isDone: false, isOptional: false },
           { id: 'configure_github_sign_in', isDone: false, isOptional: false },
           { id: 'configure_email', isDone: false, isOptional: false },
           { id: 'configure_backup_storage', isDone: false, isOptional: false },
@@ -123,11 +133,13 @@ describe('administration endpoints', () => {
       isSmtpConfigured: true,
       isBackupStorageConfigured: true,
     });
+    await createProject(prisma, { state: 'archived' });
 
     const res = await get('getting-started', await signIn(true));
 
     expect(res.body).toMatchObject({
       items: [
+        { id: 'create_project', isDone: true },
         { id: 'configure_github_sign_in', isDone: true },
         { id: 'configure_email', isDone: true },
         { id: 'configure_backup_storage', isDone: true },

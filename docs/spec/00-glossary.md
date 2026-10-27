@@ -20,7 +20,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Account | `user` | Account / Konto | A person's account in the system; roles are stored only in the application database ([§7.4](07-users-organizations-permissions.md)) |
 | Account kind | `user.kind`: `team`, `end_user` | Team / Zespół, End user / Użytkownik | Mutually exclusive kind of an account; decides sign-in method and 2FA ([§7.1](07-users-organizations-permissions.md)) |
 | Account state | `user.state`: `invited`, `active`, `deactivated`, `anonymized` | Invited / Zaproszony, Active / Aktywny, Deactivated / Dezaktywowany, Anonymized / Zanonimizowany | Lifecycle of an account ([§7.4](07-users-organizations-permissions.md)) |
-| Project member | `project_member` | Project member / Członek projektu | A team account with a team role (`developer`, `project_manager`) in one project ([§7.4](07-users-organizations-permissions.md)) |
+| Project member | `project_member`, `project_member.role` | Project member / Członek projektu | A team account with a team role (`developer`, `project_manager`) in one project ([§7.4](07-users-organizations-permissions.md)) |
 | Invitation | `invitation` | Invitation / Zaproszenie | Single-use link valid 7 days that creates or extends access; targets a project role, an organization or the Administrator role ([§7.4](07-users-organizations-permissions.md)) |
 | Team group | – | – | Keycloak group `team`, kept in sync by the API; members must use 2FA ([§7.4](07-users-organizations-permissions.md)) |
 | Deleted user | – | Deleted user / Użytkownik usunięty | Tombstone that replaces an anonymized account in history ([§13.2](13-non-functional.md)) |
@@ -132,7 +132,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | BFF (Backend for Frontend) | – | – | The web application's proxy endpoint `/api/v1/*` that attaches the user's token on the server side ([§14.4](14-architecture.md)) |
 | Optimistic locking | `version` | – | Conflict detection with `ETag`/`If-Match` when two people edit the same record ([§17.2](17-conventions.md)) |
 | Archived | `project.state`, `organization.state`: `active`, `archived` | Active / Aktywne, Archived / Zarchiwizowane | Read-only project or organization that can no longer be changed ([§7.3](07-users-organizations-permissions.md)) |
-| Resolution confirmation | `project.confirm_resolution` | – | Optional request to the requester to confirm that the problem is solved ([§4.3](04-ticket-lifecycle.md)) |
+| Resolution confirmation | `project.confirm_resolution` | Resolution confirmation / Potwierdzanie rozwiązania | Optional request to the requester to confirm that the problem is solved ([§4.3](04-ticket-lifecycle.md)) |
 | Audit log | `audit_log_entry`; `audit_log_entry.action`: `setup_token.used` | Audit log / Dziennik zdarzeń | Immutable log of administrative actions ([§13.5](13-non-functional.md)); feature tasks add the actions they record |
 | Anonymization | – | Anonymization / Anonimizacja | GDPR erasure that keeps history ([§13.2](13-non-functional.md)) |
 | Deployment package | – | – | Release assets needed to install the system ([§15.4](15-deployment.md)) |

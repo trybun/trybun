@@ -12,10 +12,11 @@ test.describe('Administrator panel', () => {
     await panel.goto();
 
     await expect(panel.heading).toHaveText('Administration');
-    await expect(panel.checklistItems).toHaveCount(3);
-    await expect(panel.checklistItems.first()).toContainText('Configure GitHub sign-in');
-    await expect(panel.checklistItems.nth(2)).toContainText('Configure backup storage');
-    await panel.checklistItems.nth(2).getByRole('link', { name: 'How to do it' }).click();
+    await expect(panel.checklistItems).toHaveCount(4);
+    await expect(panel.checklistItems.first()).toContainText('Create a project');
+    await expect(panel.checklistItems.nth(1)).toContainText('Configure GitHub sign-in');
+    await expect(panel.checklistItems.nth(3)).toContainText('Configure backup storage');
+    await panel.checklistItems.nth(3).getByRole('link', { name: 'How to do it' }).click();
     await expect(page).toHaveURL('/help/administrator/how-to/configure-backup-storage');
   });
 

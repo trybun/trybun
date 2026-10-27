@@ -1,6 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { AppShell } from '../../features/app-shell/components/app-shell.js';
+import { LazyToaster } from '../../features/app-shell/components/lazy-toaster.js';
 import { LazyHelpMenu } from '../../features/help/components/lazy-help-menu.js';
 import { getHelpViews } from '../../features/help/help-content.js';
 import { getHelpReaderKind } from '../../features/help/reader.js';
@@ -40,6 +41,7 @@ export default async function TeamLayout({ children }: { children: ReactNode }) 
         >
           {children}
         </AppShell>
+        <LazyToaster />
       </ProductTourProvider>
     </HydrationBoundary>
   );

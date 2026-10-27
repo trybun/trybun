@@ -18,7 +18,25 @@ const PRODUCT_TOUR_VERSIONS: Record<ProductTourId, number> = { first_login: 1 };
 export interface DemoDataset {
   users: Prisma.UserCreateManyInput[];
   productTourProgress: Prisma.ProductTourProgressCreateManyInput[];
+  projects: Prisma.ProjectCreateManyInput[];
+  projectMembers: Prisma.ProjectMemberCreateManyInput[];
 }
+
+/**
+ * The demo projects (§3.1): two active ones and an archived one, with the manager as Project
+ * manager and the other team accounts as Developers; the Administrator belongs to none, as the
+ * role covers every project.
+ */
+const DEMO_PROJECTS = [
+  { name: 'Customer portal', key: 'CP', state: 'active', members: ['manager', 'developer'] },
+  {
+    name: 'ERP',
+    key: 'ERP',
+    state: 'active',
+    members: ['manager', 'developer', 'newcomer'],
+  },
+  { name: 'Legacy intranet', key: 'LEGACY', state: 'archived', members: ['manager', 'developer'] },
+] as const;
 
 /** UUIDv7 of the demo record number `n` (§17.2). */
 export function demoId(n: number): string {
@@ -77,15 +95,39 @@ export function buildDemoDataset(): DemoDataset {
       })),
     )
     .map((progress, index) => ({ ...progress, id: demoId(200 + index) }));
-  return { users: [...team, ...endUsers], productTourProgress };
+  const teamByName = {
+    manager: team[1]?.id ?? '',
+    developer: team[2]?.id ?? '',
+    newcomer: team[3]?.id ?? '',
+  };
+  const projects = DEMO_PROJECTS.map(
+    ({ name, key, state }, index): Prisma.ProjectCreateManyInput => ({
+      id: demoId(300 + index),
+      name,
+      key,
+      state,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    }),
+  );
+  const projectMembers = DEMO_PROJECTS.flatMap(({ members }, index) =>
+    members.map((member): Prisma.ProjectMemberCreateManyInput => ({
+      projectId: demoId(300 + index),
+      userId: teamByName[member],
+      role: member === 'manager' ? 'project_manager' : 'developer',
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    })),
+  );
+  return { users: [...team, ...endUsers], productTourProgress, projects, projectMembers };
 }
 
 /**
  * Loads the demo dataset; running it again restores the same records – also the tour progress,
- * so the newcomer sees the tours again.
+ * so the newcomer sees the tours again, and the demo projects with their members.
  */
 export async function seedDemoData(prisma: PrismaClient): Promise<void> {
-  const { users, productTourProgress } = buildDemoDataset();
+  const { users, productTourProgress, projects, projectMembers } = buildDemoDataset();
   await prisma.$transaction(async (tx) => {
     for (const user of users) {
       await tx.user.upsert({ where: { id: user.id }, create: user, update: user });
@@ -94,5 +136,14 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
       where: { userId: { in: users.map((user) => user.id ?? '') } },
     });
     await tx.productTourProgress.createMany({ data: productTourProgress });
+    for (const project of projects) {
+      // The version is restored too, so a state changed during a demo comes back.
+      const data = { ...project, version: 1 };
+      await tx.project.upsert({ where: { id: project.id }, create: data, update: data });
+    }
+    await tx.projectMember.deleteMany({
+      where: { projectId: { in: projects.map((project) => project.id ?? '') } },
+    });
+    await tx.projectMember.createMany({ data: projectMembers });
   });
 }

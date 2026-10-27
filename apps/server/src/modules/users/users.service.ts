@@ -12,6 +12,7 @@ import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import { PrismaService } from '../../platform/database/prisma.service.js';
 import { ADMINISTRATION } from '../administration/administration.abilities.js';
+import { CREATE, PROJECT } from '../projects/projects.abilities.js';
 
 const PRODUCT_TOUR_PROGRESS_SELECT = {
   tourId: true,
@@ -51,9 +52,13 @@ export class UsersService {
       select: { id: true, displayName: true, email: true, kind: true },
     });
     const ability = this.abilities.forPrincipal(principal);
-    const allowedActions: CurrentUserAction[] = ability.can('read', ADMINISTRATION)
-      ? ['open_administration']
-      : [];
+    const allowedActions: CurrentUserAction[] = [];
+    if (ability.can('read', ADMINISTRATION)) {
+      allowedActions.push('open_administration');
+    }
+    if (ability.can(CREATE, PROJECT)) {
+      allowedActions.push('create_project');
+    }
     return { ...user, allowedActions };
   }
 
