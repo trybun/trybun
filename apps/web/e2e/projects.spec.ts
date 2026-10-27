@@ -32,8 +32,11 @@ test.describe('projects of the Administrator', () => {
     await projects.settingsTab('Danger zone').click();
     await page.getByRole('button', { name: 'Archive project' }).click();
     await expect(projects.archivedBanner).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible();
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(projects.archivedBanner).toBeHidden();
 
+    await page.getByRole('button', { name: 'Archive project' }).click();
+    await expect(projects.archivedBanner).toBeVisible();
     await page.getByRole('button', { name: 'Unarchive project' }).click();
     await expect(projects.archivedBanner).toBeHidden();
     await expect(page.getByRole('button', { name: 'Archive project' })).toBeVisible();
