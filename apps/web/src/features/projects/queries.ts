@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import type { ProjectRole, ProjectState } from '@trybun/contracts/projects';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
+import { ApiError } from '../../lib/errors/api-error.js';
 
 /** The number of member candidates the picker shows for a search (§7.4). */
 const MEMBER_CANDIDATES_LIMIT = 20;
@@ -21,7 +22,10 @@ export function projectsQueryOptions(client: ApiClient, state: ProjectState) {
   });
 }
 
-/** A project with the actions the person may perform on it (§18.3). */
+/**
+ * A project with the actions the person may perform on it (§18.3). A `4xx` is an answer, not a
+ * failure to retry: a project that became invisible shows the not-found page at once.
+ */
 export function projectQueryOptions(client: ApiClient, projectId: string) {
   return queryOptions({
     queryKey: ['projects', 'detail', projectId],
@@ -32,6 +36,8 @@ export function projectQueryOptions(client: ApiClient, projectId: string) {
           signal,
         }),
       ),
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && error.status < 500) && failureCount < 3,
   });
 }
 

@@ -109,11 +109,11 @@ export function ProjectGeneralForm({ project }: { project: Project }) {
                 className="font-mono"
                 onChange={(event) => field.onChange(normalizeKeyInput(event.target.value))}
               />
-              <FieldDescription>
-                {canUpdate
-                  ? t('create.keyDescription')
-                  : project.state === 'active' && t('general.readOnly')}
-              </FieldDescription>
+              {(canUpdate || project.state === 'active') && (
+                <FieldDescription>
+                  {canUpdate ? t('create.keyDescription') : t('general.readOnly')}
+                </FieldDescription>
+              )}
               <FieldError
                 errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
               />
