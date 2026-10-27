@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
-import { expect, fn } from 'storybook/test';
+import { expect, fn, waitFor } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs.js';
 
@@ -41,7 +41,8 @@ export const Default: Story = {
     );
     await userEvent.click(canvas.getByRole('tab', { name: 'Members' }));
     await expect(args.onValueChange).toHaveBeenCalledWith('members', expect.anything());
-    await expect(canvas.getByRole('tabpanel')).toHaveTextContent('Members panel');
+    // The previous panel stays in the document until its exit transition ends.
+    await waitFor(() => expect(canvas.getByRole('tabpanel')).toHaveTextContent('Members panel'));
   },
 };
 
