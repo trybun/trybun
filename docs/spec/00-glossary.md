@@ -20,7 +20,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Account | `user` | Account / Konto | A person's account in the system; roles are stored only in the application database ([§7.4](07-users-organizations-permissions.md)) |
 | Account kind | `user.kind`: `team`, `end_user` | Team / Zespół, End user / Użytkownik | Mutually exclusive kind of an account; decides sign-in method and 2FA ([§7.1](07-users-organizations-permissions.md)) |
 | Account state | `user.state`: `invited`, `active`, `deactivated`, `anonymized` | Invited / Zaproszony, Active / Aktywny, Deactivated / Dezaktywowany, Anonymized / Zanonimizowany | Lifecycle of an account ([§7.4](07-users-organizations-permissions.md)) |
-| Project member | `project_member` | Project member / Członek projektu | A team account with a team role (`developer`, `project_manager`) in one project ([§7.4](07-users-organizations-permissions.md)) |
+| Project member | `project_member`, `project_member.role` | Project member / Członek projektu | A team account with a team role (`developer`, `project_manager`) in one project ([§7.4](07-users-organizations-permissions.md)) |
 | Invitation | `invitation` | Invitation / Zaproszenie | Single-use link valid 7 days that creates or extends access; targets a project role, an organization or the Administrator role ([§7.4](07-users-organizations-permissions.md)) |
 | Team group | – | – | Keycloak group `team`, kept in sync by the API; members must use 2FA ([§7.4](07-users-organizations-permissions.md)) |
 | Deleted user | – | Deleted user / Użytkownik usunięty | Tombstone that replaces an anonymized account in history ([§13.2](13-non-functional.md)) |
