@@ -8,7 +8,7 @@ import type {
   Project as ProjectResponse,
 } from '@trybun/contracts/projects';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Project } from '../../generated/prisma/client.js';
 import {
   keycloakJwksHandler,
@@ -276,6 +276,22 @@ describe('projects endpoints', () => {
       expect([detail.status, members.status]).toEqual([404, 404]);
     });
 
+    it('shows an end user no project and answers 404 for one and its members', async () => {
+      const project = await createProject(prisma);
+      const { authorization } = await signIn('end_user');
+
+      const list = await http().get('/api/v1/projects').set('Authorization', authorization);
+      const detail = await http()
+        .get(`/api/v1/projects/${project.id}`)
+        .set('Authorization', authorization);
+      const members = await http()
+        .get(`/api/v1/projects/${project.id}/members`)
+        .set('Authorization', authorization);
+
+      expect(list.body).toEqual({ items: [], nextCursor: null });
+      expect([detail.status, members.status]).toEqual([404, 404]);
+    });
+
     it('requires a signed-in account', async () => {
       expect((await http().get('/api/v1/projects')).status).toBe(401);
     });
@@ -374,6 +390,27 @@ describe('projects endpoints', () => {
         .send({ key: other.key });
 
       expect(res.body).toMatchObject({ code: 'project.key_taken' });
+    });
+
+    it('gives one key to only one of two concurrent changes', async () => {
+      const projects = [await createProject(prisma), await createProject(prisma)];
+      const { authorization } = await signIn('admin');
+      const key = buildProjectKey();
+
+      const responses = await Promise.all(
+        projects.map((project) =>
+          http()
+            .patch(`/api/v1/projects/${project.id}`)
+            .set('Authorization', authorization)
+            .set('If-Match', ifMatch(project))
+            .send({ key }),
+        ),
+      );
+
+      expect(responses.map((res) => res.status).sort()).toEqual([200, 422]);
+      expect(responses.find((res) => res.status === 422)?.body).toMatchObject({
+        code: 'project.key_taken',
+      });
     });
 
     it.each([
@@ -653,6 +690,22 @@ describe('projects endpoints', () => {
       expect(res.body).toMatchObject({ code: 'project_member.exists' });
     });
 
+    it('adds one of two concurrent additions of one account', async () => {
+      const project = await createProject(prisma);
+      const { authorization } = await signIn('admin');
+      const user = await createUser(prisma, { kind: 'team' });
+
+      const responses = await Promise.all(
+        [1, 2].map(() => addMember(authorization, project, user.id)),
+      );
+
+      expect(responses.map((res) => res.status).sort()).toEqual([201, 409]);
+      expect(responses.find((res) => res.status === 409)?.body).toMatchObject({
+        code: 'project_member.exists',
+      });
+      expect(await prisma.projectMember.count({ where: { projectId: project.id } })).toBe(1);
+    });
+
     it.each([
       ['changed', 'patch'],
       ['removed', 'delete'],
@@ -690,9 +743,18 @@ describe('projects endpoints', () => {
           where: { id: project.id },
           data: { state: 'archived', version: { increment: 1 } },
         });
-        // The addition has passed the target record guard and waits for the row lock.
         addition = addMember(authorization, project, user.id).then((res) => res);
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Commit only once the addition has passed the target record guard and waits for the row
+        // lock, so the test exercises the lock rather than the guard.
+        await vi.waitFor(
+          async () => {
+            const [waiting] = await prisma.$queryRaw<[{ count: bigint }]>`
+              SELECT count(*) FROM pg_stat_activity
+              WHERE wait_event_type = 'Lock' AND query LIKE '%FOR SHARE%'`;
+            expect(waiting.count).toBe(1n);
+          },
+          { timeout: 5000, interval: 20 },
+        );
       });
       const res = await (addition as Promise<request.Response>);
 
