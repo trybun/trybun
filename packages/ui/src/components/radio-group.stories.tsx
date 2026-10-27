@@ -75,6 +75,27 @@ export const Disabled: Story = {
   },
 };
 
+export const Invalid: Story = {
+  render: (args) => (
+    <FieldSet>
+      <FieldLegend variant="label">Notify</FieldLegend>
+      <RadioGroup {...args}>
+        {['Everyone', 'Only me'].map((label) => (
+          <Field key={label} orientation="horizontal" invalid>
+            <RadioGroupItem value={label} aria-invalid />
+            <FieldLabel>{label}</FieldLabel>
+          </Field>
+        ))}
+      </RadioGroup>
+    </FieldSet>
+  ),
+  play: async ({ canvas }) => {
+    for (const option of canvas.getAllByRole('radio')) {
+      await expect(option).toHaveAttribute('aria-invalid', 'true');
+    }
+  },
+};
+
 /** Choice cards: the whole card is the label and the hit area. */
 export const ChoiceCards: Story = {
   render: (args) => (
