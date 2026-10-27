@@ -12,6 +12,14 @@ test.describe('application shell', () => {
     await expect(shell.heading).toHaveText('Home');
   });
 
+  test('embeds no texts of a feature in the empty shell', async ({ page }) => {
+    const html = await (await page.request.get('/')).text();
+
+    expect(html).toContain('Home');
+    // A text of the `projects` namespace (§18.5): only the project views pass it to the browser.
+    expect(html.includes('No projects yet.'), 'a text of the project views').toBe(false);
+  });
+
   test('fits the viewport without horizontal scroll', async () => {
     await expect(shell.header).toBeVisible();
     expect(await shell.horizontalOverflow()).toBe(0);

@@ -1,4 +1,6 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AppShell } from '../../features/app-shell/components/app-shell.js';
 import { LazyHelpMenu } from '../../features/help/components/lazy-help-menu.js';
@@ -10,12 +12,14 @@ import { productTourProgressQueryOptions } from '../../features/product-tours/qu
 import { currentUserQueryOptions } from '../../features/users/queries.js';
 import { getServerApiClient } from '../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../lib/auth/session.js';
+import { pickClientMessages } from '../../lib/i18n/messages.js';
 import { getServerQueryClient } from '../../lib/query-client/server-query-client.js';
 
 /**
  * The views of the team inside the application shell. The signed-in account and its product tour
  * progress are prefetched on the server and hydrated into the query cache of the browser (§18.5);
  * the account kind decides the contextual help of the help menu (§2.3) and the tours (§2.4).
+ * The browser gets the texts of the shell; a feature's layout adds its own namespace.
  */
 export default async function TeamLayout({ children }: { children: ReactNode }) {
   await requireSession();
@@ -27,20 +31,23 @@ export default async function TeamLayout({ children }: { children: ReactNode }) 
   ]);
   const user = queryClient.getQueryData(currentUserQueryOptions(client).queryKey);
   const helpViews = getHelpViews(await getHelpReaderKind());
+  const messages = pickClientMessages(await getMessages(), 'team');
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ProductTourProvider>
-        <AppShell
-          allowedActions={user?.allowedActions ?? []}
-          help={
-            <LazyHelpMenu views={helpViews}>
-              <LazyProductTourMenuItems />
-            </LazyHelpMenu>
-          }
-        >
-          {children}
-        </AppShell>
-      </ProductTourProvider>
+      <NextIntlClientProvider messages={messages}>
+        <ProductTourProvider>
+          <AppShell
+            allowedActions={user?.allowedActions ?? []}
+            help={
+              <LazyHelpMenu views={helpViews}>
+                <LazyProductTourMenuItems />
+              </LazyHelpMenu>
+            }
+          >
+            {children}
+          </AppShell>
+        </ProductTourProvider>
+      </NextIntlClientProvider>
     </HydrationBoundary>
   );
 }

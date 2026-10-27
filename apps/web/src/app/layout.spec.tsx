@@ -1,13 +1,17 @@
+import { CATALOGUES } from '@trybun/i18n/catalogues';
 import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('next-intl/server', () => ({
   getLocale: () => Promise.resolve('pl'),
+  getMessages: () => Promise.resolve(CATALOGUES.pl),
   getTranslations: (namespace: string) => Promise.resolve((key: string) => `${namespace}.${key}`),
 }));
-// The provider passes the texts of the request to client components (a Server Component in Next.js).
-function PassThroughProvider({ children }: { children: ReactNode }) {
+// The provider passes the texts to client components (a Server Component in Next.js).
+const providedMessages = vi.fn();
+function PassThroughProvider({ children, messages }: { children: ReactNode; messages: object }) {
+  providedMessages(messages);
   return children;
 }
 vi.mock('next-intl', () => ({ NextIntlClientProvider: PassThroughProvider }));
@@ -25,6 +29,12 @@ describe('RootLayout', () => {
         }),
       ),
     ).toBe('<html lang="pl" class="font-manrope"><head></head><body><main></main></body></html>');
+  });
+
+  it('passes only the shared texts to the browser', async () => {
+    renderToStaticMarkup(await RootLayout({ children: <main /> }));
+
+    expect(providedMessages).toHaveBeenCalledWith({ ui: CATALOGUES.pl.ui });
   });
 
   it('takes the title from the messages', async () => {

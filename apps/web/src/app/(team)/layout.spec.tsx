@@ -1,4 +1,5 @@
 import type { DehydratedState } from '@tanstack/react-query';
+import { CATALOGUES } from '@trybun/i18n/catalogues';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -31,14 +32,23 @@ vi.mock('../../lib/api-client/server-api-client.js', () => ({
   getServerApiClient: () => Promise.resolve({ GET: get }),
 }));
 
+vi.mock('next-intl/server', () => ({ getMessages: () => Promise.resolve(CATALOGUES.en) }));
+
 const { default: TeamLayout } = await import('./layout.js');
 
 type Parent<Child> = ReactElement<{ children: Child }>;
 
-/** The application shell inside the hydration boundary and the product tour provider. */
-function shellOf(element: ReactElement) {
-  return (element as Parent<Parent<ReactElement<{ help: ReactElement }>>>).props.children.props
+/** The texts provider inside the hydration boundary. */
+function messagesProviderOf(element: ReactElement) {
+  return (element as Parent<ReactElement<{ messages: object; children: ReactElement }>>).props
     .children;
+}
+
+/** The application shell inside the texts provider and the product tour provider. */
+function shellOf(element: ReactElement) {
+  return (
+    messagesProviderOf(element).props.children as Parent<ReactElement<{ help: ReactElement }>>
+  ).props.children;
 }
 
 describe('TeamLayout', () => {
@@ -55,6 +65,16 @@ describe('TeamLayout', () => {
       { queryKey: ['users', 'me'], state: { data: user } },
       { queryKey: ['product-tours', 'progress'], state: { data: progress } },
     ]);
+  });
+
+  it('passes the texts of the shell to the browser, without those of a feature', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const { messages } = messagesProviderOf(element).props;
+    expect(Object.keys(messages)).toEqual(expect.arrayContaining(['appShell', 'productTours']));
+    expect(Object.keys(messages)).not.toContain('projects');
   });
 
   it('gives the help menu the help pages of the account kind', async () => {

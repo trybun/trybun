@@ -9,3 +9,12 @@ test('sends a visitor to the Keycloak login screen in their language', async ({ 
   await page.waitForURL(/\/auth\/realms\/trybun\/protocol\/openid-connect\/auth/);
   await expect(page.getByRole('heading', { name: 'Zaloguj się do systemu Trybun' })).toBeVisible();
 });
+
+test('embeds no texts of a feature in the sign-in page', async ({ request }) => {
+  const response = await request.get('/sign-in');
+
+  expect(response.ok()).toBe(true);
+  // A text of the `projects` namespace (§18.5): only the project views pass it to the browser.
+  const html = await response.text();
+  expect(html.includes('No projects yet.'), 'a text of the project views').toBe(false);
+});
