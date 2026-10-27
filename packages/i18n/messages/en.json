@@ -16,7 +16,8 @@
     "accountMenu": "Account menu",
     "language": "Language",
     "signOut": "Sign out",
-    "administration": "Administration"
+    "administration": "Administration",
+    "projects": "Projects"
   },
   "languages": {
     "en": "English",
@@ -37,6 +38,10 @@
     "optional": "Optional",
     "howTo": "How to do it",
     "items": {
+      "create_project": {
+        "title": "Create a project",
+        "description": "Create the first project and add the team to it."
+      },
       "configure_github_sign_in": {
         "title": "Configure GitHub sign-in",
         "description": "Team members sign in with GitHub. Required before you can invite the team."
@@ -53,6 +58,98 @@
     "version": "Version",
     "license": "License",
     "licenseName": "MIT License"
+  },
+  "projects": {
+    "title": "Projects",
+    "tabs": {
+      "label": "Project state",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "list": {
+      "emptyActive": "No projects yet.",
+      "emptyArchived": "No archived projects.",
+      "noRole": "Administrator",
+      "loadMore": "Show more",
+      "loadingMore": "Loading…"
+    },
+    "roles": {
+      "developer": "Developer",
+      "project_manager": "Project manager"
+    },
+    "create": {
+      "open": "New project",
+      "title": "New project",
+      "description": "Name the project; its key prefixes the identifiers of its tickets.",
+      "name": "Name",
+      "key": "Key",
+      "keyDescription": "2–10 capital letters or digits, starting with a letter, e.g. ERP.",
+      "submit": "Create project",
+      "submitting": "Creating…",
+      "cancel": "Cancel"
+    },
+    "settings": {
+      "title": "Project settings",
+      "back": "Projects",
+      "tabs": {
+        "label": "Project settings",
+        "general": "General",
+        "members": "Members",
+        "danger": "Danger zone"
+      }
+    },
+    "archivedBanner": "This project is archived and read-only.",
+    "general": {
+      "readOnly": "Only the Administrator changes the name and the key.",
+      "confirmResolution": "Resolution confirmation",
+      "confirmResolutionDescription": "Ask the requester to confirm that the problem is solved.",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Changes saved"
+    },
+    "members": {
+      "title": "Members",
+      "empty": "The project has no members yet.",
+      "noName": "No name",
+      "roleOf": "Role of {name}",
+      "add": "Add member",
+      "addTitle": "Add member",
+      "addDescription": "Add an active team member to the project.",
+      "search": "Search by name or GitHub login",
+      "candidates": "Team members",
+      "noCandidates": "No active team members match.",
+      "role": "Role",
+      "submit": "Add",
+      "adding": "Adding…",
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "removeOf": "Remove {name}",
+      "removeTitle": "Remove {name} from the project?",
+      "removeConfirm": "Remove",
+      "demoteTitle": "Make {name} a Developer?",
+      "demoteConfirm": "Change role",
+      "lastManagerWarning": "This project will have no Project manager. The Administrator covers the role.",
+      "added": "{name} added to the project",
+      "removed": "{name} removed from the project"
+    },
+    "danger": {
+      "archive": "Archive project",
+      "archiveDescription": "The project becomes read-only for everyone, the Administrator included, until it is unarchived.",
+      "archived": "Project archived",
+      "undo": "Undo",
+      "unarchive": "Unarchive project",
+      "unarchiveDescription": "The project can be changed again.",
+      "unarchived": "Project unarchived",
+      "delete": "Delete project",
+      "deleteDescription": "Deletes the project and its memberships. This cannot be undone.",
+      "deleteArchived": "Unarchive the project before you delete it.",
+      "deleteTitle": "Delete {name}?",
+      "deleteConfirmLabel": "Type {key} to confirm",
+      "deleteConfirm": "Delete project",
+      "deleting": "Deleting…",
+      "cancel": "Cancel",
+      "deleted": "Project deleted"
+    }
   },
   "setup": {
     "title": "Set up Trybun",

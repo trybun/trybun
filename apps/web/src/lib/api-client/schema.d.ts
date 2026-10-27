@@ -443,7 +443,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            id: "configure_github_sign_in" | "configure_email" | "configure_backup_storage";
+                            id: "create_project" | "configure_github_sign_in" | "configure_email" | "configure_backup_storage";
                             isDone: boolean;
                             isOptional: boolean;
                         }[];
@@ -508,6 +508,8 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
+                            /** @enum {string|null} */
+                            role: "developer" | "project_manager" | null;
                             allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                         }[];
                         nextCursor: string | null;
@@ -550,6 +552,8 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };
@@ -585,6 +589,8 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };
@@ -647,6 +653,8 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };
@@ -682,6 +690,8 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };

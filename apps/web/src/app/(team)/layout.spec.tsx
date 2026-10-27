@@ -32,13 +32,18 @@ vi.mock('../../lib/api-client/server-api-client.js', () => ({
 }));
 
 const { default: TeamLayout } = await import('./layout.js');
+const { LazyToaster } = await import('../../features/app-shell/components/lazy-toaster.js');
 
 type Parent<Child> = ReactElement<{ children: Child }>;
 
-/** The application shell inside the hydration boundary and the product tour provider. */
+/** The children of the product tour provider inside the hydration boundary. */
+function providerChildrenOf(element: ReactElement) {
+  return (element as Parent<Parent<ReactElement[]>>).props.children.props.children;
+}
+
+/** The application shell: the first child of the product tour provider. */
 function shellOf(element: ReactElement) {
-  return (element as Parent<Parent<ReactElement<{ help: ReactElement }>>>).props.children.props
-    .children;
+  return providerChildrenOf(element)[0] as ReactElement<{ help: ReactElement }>;
 }
 
 describe('TeamLayout', () => {
@@ -55,6 +60,7 @@ describe('TeamLayout', () => {
       { queryKey: ['users', 'me'], state: { data: user } },
       { queryKey: ['product-tours', 'progress'], state: { data: progress } },
     ]);
+    expect(providerChildrenOf(element)[1]).toMatchObject({ type: LazyToaster });
   });
 
   it('gives the help menu the help pages of the account kind', async () => {

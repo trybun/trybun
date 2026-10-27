@@ -16,7 +16,8 @@
     "accountMenu": "Menu konta",
     "language": "Język",
     "signOut": "Wyloguj się",
-    "administration": "Administracja"
+    "administration": "Administracja",
+    "projects": "Projekty"
   },
   "languages": {
     "en": "English",
@@ -37,6 +38,10 @@
     "optional": "Opcjonalne",
     "howTo": "Jak to zrobić",
     "items": {
+      "create_project": {
+        "title": "Utwórz projekt",
+        "description": "Utwórz pierwszy projekt i dodaj do niego zespół."
+      },
       "configure_github_sign_in": {
         "title": "Skonfiguruj logowanie przez GitHub",
         "description": "Członkowie zespołu logują się przez GitHub. Wymagane, zanim zaprosisz zespół."
@@ -53,6 +58,98 @@
     "version": "Wersja",
     "license": "Licencja",
     "licenseName": "Licencja MIT"
+  },
+  "projects": {
+    "title": "Projekty",
+    "tabs": {
+      "label": "Stan projektów",
+      "active": "Aktywne",
+      "archived": "Zarchiwizowane"
+    },
+    "list": {
+      "emptyActive": "Nie ma jeszcze projektów.",
+      "emptyArchived": "Nie ma zarchiwizowanych projektów.",
+      "noRole": "Administrator",
+      "loadMore": "Pokaż więcej",
+      "loadingMore": "Wczytywanie…"
+    },
+    "roles": {
+      "developer": "Developer",
+      "project_manager": "Kierownik projektu"
+    },
+    "create": {
+      "open": "Nowy projekt",
+      "title": "Nowy projekt",
+      "description": "Nazwij projekt; jego klucz poprzedza identyfikatory zgłoszeń.",
+      "name": "Nazwa",
+      "key": "Klucz",
+      "keyDescription": "Od 2 do 10 wielkich liter lub cyfr, zaczynając od litery, np. ERP.",
+      "submit": "Utwórz projekt",
+      "submitting": "Tworzenie…",
+      "cancel": "Anuluj"
+    },
+    "settings": {
+      "title": "Ustawienia projektu",
+      "back": "Projekty",
+      "tabs": {
+        "label": "Ustawienia projektu",
+        "general": "Ogólne",
+        "members": "Członkowie",
+        "danger": "Strefa zagrożenia"
+      }
+    },
+    "archivedBanner": "Ten projekt jest zarchiwizowany i tylko do odczytu.",
+    "general": {
+      "readOnly": "Nazwę i klucz zmienia tylko Administrator.",
+      "confirmResolution": "Potwierdzanie rozwiązania",
+      "confirmResolutionDescription": "Proś zgłaszającego o potwierdzenie, że problem został rozwiązany.",
+      "save": "Zapisz zmiany",
+      "saving": "Zapisywanie…",
+      "saved": "Zmiany zapisane"
+    },
+    "members": {
+      "title": "Członkowie",
+      "empty": "Projekt nie ma jeszcze członków.",
+      "noName": "Bez nazwy",
+      "roleOf": "Rola: {name}",
+      "add": "Dodaj członka",
+      "addTitle": "Dodaj członka",
+      "addDescription": "Dodaj do projektu aktywnego członka zespołu.",
+      "search": "Szukaj po nazwie lub loginie GitHub",
+      "candidates": "Członkowie zespołu",
+      "noCandidates": "Żaden aktywny członek zespołu nie pasuje.",
+      "role": "Rola",
+      "submit": "Dodaj",
+      "adding": "Dodawanie…",
+      "cancel": "Anuluj",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {name}",
+      "removeTitle": "Usunąć {name} z projektu?",
+      "removeConfirm": "Usuń",
+      "demoteTitle": "Zmienić rolę {name} na Developer?",
+      "demoteConfirm": "Zmień rolę",
+      "lastManagerWarning": "Projekt nie będzie miał kierownika projektu. Tę rolę przejmuje Administrator.",
+      "added": "Dodano do projektu: {name}",
+      "removed": "Usunięto z projektu: {name}"
+    },
+    "danger": {
+      "archive": "Zarchiwizuj projekt",
+      "archiveDescription": "Projekt stanie się tylko do odczytu dla wszystkich, także dla Administratora, dopóki nie zostanie przywrócony z archiwum.",
+      "archived": "Projekt zarchiwizowany",
+      "undo": "Cofnij",
+      "unarchive": "Przywróć projekt z archiwum",
+      "unarchiveDescription": "Projekt będzie można znów zmieniać.",
+      "unarchived": "Projekt przywrócony z archiwum",
+      "delete": "Usuń projekt",
+      "deleteDescription": "Usuwa projekt i jego członkostwa. Tego nie można cofnąć.",
+      "deleteArchived": "Przed usunięciem przywróć projekt z archiwum.",
+      "deleteTitle": "Usunąć {name}?",
+      "deleteConfirmLabel": "Wpisz {key}, aby potwierdzić",
+      "deleteConfirm": "Usuń projekt",
+      "deleting": "Usuwanie…",
+      "cancel": "Anuluj",
+      "deleted": "Projekt usunięty"
+    }
   },
   "setup": {
     "title": "Skonfiguruj Trybun",
