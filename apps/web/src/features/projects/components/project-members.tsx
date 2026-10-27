@@ -74,7 +74,10 @@ export function ProjectMembers({ project }: { project: Project }) {
     }
     removeMember.mutate(change.member.user.id, {
       onSuccess: () => {
-        toast.add({ title: t('members.removed', { name: nameOf(change.member) }) });
+        toast.add({
+          title: t('members.removed', { name: nameOf(change.member) }),
+          type: 'success',
+        });
         setPending(null);
       },
       onError: showError,
@@ -122,6 +125,7 @@ export function ProjectMembers({ project }: { project: Project }) {
                     label: t(`roles.${value}`),
                   }))}
                   value={member.role}
+                  disabled={changeRole.isPending && changeRole.variables.userId === member.user.id}
                   onValueChange={(value) => requestRole(member, projectRoleSchema.parse(value))}
                 >
                   <SelectTrigger
