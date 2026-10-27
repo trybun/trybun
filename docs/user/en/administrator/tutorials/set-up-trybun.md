@@ -32,6 +32,7 @@ From now on you sign in with your password and a code from the app. This account
 
 After the first sign-in, Trybun opens **Administration** › **Getting started**. Each item shows whether it is done and links to a page that explains it. Items tick themselves as soon as their setting exists – you never tick them by hand:
 
+- [Create a project](../how-to/create-archive-and-delete-a-project.md) – tickets live in projects; it ticks once any project exists.
 - [Configure GitHub sign-in](../how-to/configure-github-sign-in.md) – team members sign in with GitHub; required before you can invite the team.
 - [Configure e-mail](../how-to/configure-email.md) – without an SMTP server Trybun sends no e-mail.
 - [Configure backup storage](../how-to/configure-backup-storage.md) – without S3 storage in another location, the daily backups stay on the server and are lost with it.
