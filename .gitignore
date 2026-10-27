@@ -25,3 +25,6 @@ apps/web/e2e/.auth/
 .agents/
 .ai/skills/om-*/
 .ai/cezar/
+.ai/qa/test-env-build-cache.json
+.ai/qa/test-env.lock/
+.ai/qa/logs/
