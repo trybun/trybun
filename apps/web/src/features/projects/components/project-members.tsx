@@ -56,7 +56,8 @@ export function ProjectMembers({ project }: { project: Project }) {
     changeRole.mutate({ userId: member.user.id, role }, { onError: showError });
 
   const requestRole = (member: ProjectMember, role: ProjectRole) => {
-    if (role === member.role) {
+    // One change at a time: the select shows the requested role until the refetch.
+    if (role === member.role || changeRole.isPending) {
       return;
     }
     if (role === 'developer' && isLastManager(member)) {
@@ -124,8 +125,11 @@ export function ProjectMembers({ project }: { project: Project }) {
                     value,
                     label: t(`roles.${value}`),
                   }))}
-                  value={member.role}
-                  disabled={changeRole.isPending && changeRole.variables.userId === member.user.id}
+                  value={
+                    changeRole.isPending && changeRole.variables.userId === member.user.id
+                      ? changeRole.variables.role
+                      : member.role
+                  }
                   onValueChange={(value) => requestRole(member, projectRoleSchema.parse(value))}
                 >
                   <SelectTrigger
