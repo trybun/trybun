@@ -40,9 +40,9 @@ None beyond a docs-only change.
 
 ### Phase 1: Already landed on this PR (reconstructed)
 
-- [x] 1.1 Change specification for S1-02 proposed
+- [x] 1.1 Change specification for S1-02 proposed — 68a37fa
 
 ### Phase 2: Apply the maintainer's answers
 
-- [ ] 2.1 Mark the specification approved and its open questions answered
+- [x] 2.1 Mark the specification approved and its open questions answered — ab7ccb9
 - [ ] 2.2 Promote the PR from draft to ready
