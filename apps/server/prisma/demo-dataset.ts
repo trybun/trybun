@@ -13,7 +13,10 @@ export const NEWCOMER_EMAIL = 'newcomer@example.com';
  * The current version of every product tour (`apps/web/src/features/product-tours/tours/`): the
  * other team accounts have completed them, so the tours interrupt neither demos nor E2E tests.
  */
-const PRODUCT_TOUR_VERSIONS: Record<ProductTourId, number> = { first_login: 1 };
+const PRODUCT_TOUR_VERSIONS: Record<ProductTourId, number> = {
+  first_login: 1,
+  organization_detail: 1,
+};
 
 export interface DemoDataset {
   users: Prisma.UserCreateManyInput[];

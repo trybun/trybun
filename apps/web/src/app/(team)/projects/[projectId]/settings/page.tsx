@@ -1,12 +1,14 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { notFound } from 'next/navigation.js';
 import { z } from 'zod';
+import { organizationsQueryOptions } from '../../../../../features/organizations/queries.js';
 import { ProjectSettings } from '../../../../../features/projects/components/project-settings.js';
 import {
   projectMembersQueryOptions,
   projectQueryOptions,
 } from '../../../../../features/projects/queries.js';
 import { projectSettingsSearchParamsSchema } from '../../../../../features/projects/search-params.js';
+import { currentUserQueryOptions } from '../../../../../features/users/queries.js';
 import {
   dataOrNotFound,
   getServerApiClient,
@@ -40,12 +42,27 @@ export default async function ProjectSettingsPage({
     client.GET('/api/v1/projects/{projectId}', { params: { path: { projectId } } }),
   );
   queryClient.setQueryData(projectQueryOptions(client, projectId).queryKey, project);
-  if (project.allowedActions.includes('read_members')) {
-    await queryClient.prefetchInfiniteQuery(projectMembersQueryOptions(client, projectId));
+  await Promise.all([
+    project.allowedActions.includes('read_members')
+      ? queryClient.prefetchInfiniteQuery(projectMembersQueryOptions(client, projectId))
+      : undefined,
+    queryClient.prefetchQuery(currentUserQueryOptions(client)),
+  ]);
+  // The organizations answer only the Administrator, who administers them (§7.5).
+  const canSeeOrganizations =
+    queryClient
+      .getQueryData(currentUserQueryOptions(client).queryKey)
+      ?.allowedActions.includes('create_organization') === true;
+  if (canSeeOrganizations) {
+    await Promise.all(
+      (['active', 'archived'] as const).map((state) =>
+        queryClient.prefetchInfiniteQuery(organizationsQueryOptions(client, state, projectId)),
+      ),
+    );
   }
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ProjectSettings projectId={projectId} tab={tab} />
+      <ProjectSettings projectId={projectId} tab={tab} canSeeOrganizations={canSeeOrganizations} />
     </HydrationBoundary>
   );
 }

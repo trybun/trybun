@@ -19,18 +19,23 @@ import {
 import { ProjectDangerZone } from './project-danger-zone.js';
 import { ProjectGeneralForm } from './project-general-form.js';
 import { ProjectMembers } from './project-members.js';
+import { ProjectOrganizations } from './project-organizations.js';
 
 /**
  * The project settings (§3.1, §7.3, §7.4): the General, Members and Danger zone tabs, shown by
  * the project's `allowedActions` (§18.5); the tab is URL state. An archived project shows a
- * banner and offers only reading and unarchiving.
+ * banner and offers only reading and unarchiving. The Administrator also sees the organizations
+ * with access on the General tab.
  */
 export function ProjectSettings({
   projectId,
   tab,
+  canSeeOrganizations = false,
 }: {
   projectId: string;
   tab: ProjectSettingsTab;
+  /** Whether the person administers organizations (`create_organization`, §7.5). */
+  canSeeOrganizations?: boolean;
 }) {
   const t = useTranslations('projects');
   const router = useRouter();
@@ -91,8 +96,9 @@ export function ProjectSettings({
             </TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value="general" className="pt-4">
+        <TabsContent value="general" className="flex flex-col gap-8 pt-4">
           <ProjectGeneralForm key={project.version} project={project} />
+          {canSeeOrganizations && <ProjectOrganizations projectId={project.id} />}
         </TabsContent>
         {tabs.includes('members') && (
           <TabsContent value="members" className="pt-4">

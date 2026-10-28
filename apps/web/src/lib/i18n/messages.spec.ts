@@ -47,6 +47,7 @@ const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   administration: ['administration'],
   'app-shell': ['team'],
   help: ['team'],
+  organizations: ['organizations'],
   'product-tours': ['team'],
   projects: ['projects'],
   sessions: ['signIn'],
@@ -84,6 +85,7 @@ describe('CLIENT_NAMESPACES', () => {
     }
     expect(routes.administration).toEqual(expect.arrayContaining([...team]));
     expect(routes.projects).toEqual(expect.arrayContaining([...team]));
+    expect(routes.organizations).toEqual(expect.arrayContaining([...routes.administration]));
   });
 
   it('provide the namespaces of the components of @trybun/ui on every route', () => {

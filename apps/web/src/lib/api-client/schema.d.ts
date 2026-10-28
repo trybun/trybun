@@ -364,7 +364,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            tourId: "first_login";
+                            tourId: "first_login" | "organization_detail";
                             tourVersion: number;
                             /** @enum {string} */
                             status: "completed" | "skipped";
@@ -382,7 +382,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                tourId: "first_login";
+                tourId: "first_login" | "organization_detail";
             };
             cookie?: never;
         };
@@ -403,7 +403,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         /** @enum {string} */
-                        tourId: "first_login";
+                        tourId: "first_login" | "organization_detail";
                         tourVersion: number;
                         /** @enum {string} */
                         status: "completed" | "skipped";
