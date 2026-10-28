@@ -5,10 +5,20 @@
 #   2026-10-27 generated: the local environment of §15.12 as the E2E job of CI runs it –
 #              Compose infrastructure, migrations and the demo dataset, production builds of the
 #              API (3001) and the web application (3000); cold 39s (Turbo cache warm), warm 0s (reused)
+#   2026-10-28 its own Compose project `trybun-test`: the project `trybun` of compose.yaml is also the
+#              one of an installation (deploy/trybun) and of `pnpm dev`, whose containers, networks
+#              and volumes the test environment must never reuse or stop; refuses while another
+#              Compose project publishes the fixed ports of the infrastructure
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
-COMPOSE="docker compose -f compose.yaml -f compose.dev.yaml"
+# Its own Compose project: `trybun` (compose.yaml) is shared by an installation and `pnpm dev`, so
+# the test environment never reuses or stops their containers or volumes. Keep test-env-down.sh in
+# sync.
+COMPOSE_PROJECT=trybun-test
+COMPOSE="docker compose -p $COMPOSE_PROJECT -f compose.yaml -f compose.dev.yaml"
+# The host ports compose.dev.yaml publishes; .env reaches the infrastructure there.
+INFRA_PORTS="5432 6379 8333 8080 3310 8025 1025"
 WEB_PORT=3000                       # fixed: Keycloak's redirect URIs and the sessions use it
 API_PORT=3001                       # fixed: the web application reaches the API there (.env)
 BASE_URL="http://localhost:$WEB_PORT"
@@ -127,6 +137,17 @@ for port in "$WEB_PORT" "$API_PORT"; do
   fi
 done
 
+# The infrastructure publishes fixed host ports: a container of another Compose project holding one
+# (e.g. `pnpm dev`, project `trybun`) is never taken over or stopped – it must be stopped first.
+for port in $INFRA_PORTS; do
+  holder=$(docker ps --filter "publish=$port" --format '{{.Names}} {{.Label "com.docker.compose.project"}}' |
+    awk -v own="$COMPOSE_PROJECT" '$2 != own { print $1 " (project " ($2 == "" ? "none" : $2) ")"; exit }')
+  if [ -n "$holder" ]; then
+    log "port $port is published by $holder – stop it first; the test environment runs as the Compose project $COMPOSE_PROJECT"
+    exit 1
+  fi
+done
+
 # --- services: the Compose infrastructure of the local environment (§15.12), as in CI
 if [ ! -f .env ]; then
   cp .env.example .env
@@ -203,11 +224,12 @@ cat > "$DESCRIPTOR" <<EOF
   "baseUrl": "$BASE_URL",
   "startedByThisRepo": true,
   "servicesStartedByScript": $SERVICES_STARTED,
+  "composeProject": "$COMPOSE_PROJECT",
   "startScript": ".ai/scripts/test-env-up.sh",
   "stopScript": ".ai/scripts/test-env-down.sh",
   "app": { "startCommand": "$API_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "webPid": "$WEB_PID", "apiUrl": "http://localhost:$API_PORT" },
   "services": [
-    { "type": "compose", "command": "$COMPOSE", "note": "PostgreSQL 5432, Valkey 6379, SeaweedFS 8333, Keycloak 8080, Mailpit 8025" }
+    { "type": "compose", "command": "$COMPOSE", "note": "Compose project $COMPOSE_PROJECT, its own containers and volumes; PostgreSQL 5432, Valkey 6379, SeaweedFS 8333, Keycloak 8080, Mailpit 8025" }
   ],
   "credentials": [
     { "role": "admin", "username": "admin@example.com", "passwordEnv": "TEST_ADMIN_PASSWORD", "totpSecretEnv": "TEST_TOTP_SECRET" },
