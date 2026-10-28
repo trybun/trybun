@@ -4,11 +4,14 @@
 # history:
 #   2026-10-27 generated: stops the API and the web application the up script started and the
 #              Compose infrastructure when it started it; never removes volumes
+#   2026-10-28 the Compose project `trybun-test` of test-env-up.sh, so `down` never stops an
+#              installation or `pnpm dev` (project `trybun`)
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 DESCRIPTOR=.ai/qa/test-env.json
-COMPOSE="docker compose -f compose.yaml -f compose.dev.yaml"
+# The Compose project of test-env-up.sh (keep in sync): never `trybun`, the project of an installation.
+COMPOSE="docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml"
 KEEP_SERVICES=0
 [ "${1:-}" = "--keep-services" ] && KEEP_SERVICES=1
 [ -f "$DESCRIPTOR" ] || { echo "No test environment recorded."; exit 0; }
