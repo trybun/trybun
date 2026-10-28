@@ -45,4 +45,4 @@ None beyond a docs-only change.
 ### Phase 2: Apply the maintainer's answers
 
 - [x] 2.1 Mark the specification approved and its open questions answered — ab7ccb9
-- [ ] 2.2 Promote the PR from draft to ready
+- [x] 2.2 Promote the PR from draft to ready — 34eedff
