@@ -105,6 +105,34 @@ describe('ProjectSettingsPage', () => {
     GET.mockImplementation((path: string) => respond(path));
   });
 
+  it('prefetches the organizations with access for the Administrator only', async () => {
+    const settings = () =>
+      ProjectSettingsPage({
+        params: Promise.resolve({ projectId: PROJECT_ID }),
+        searchParams: Promise.resolve({}),
+      }) as Promise<ReactElement<{ children: ReactElement<{ canSeeOrganizations: boolean }> }>>;
+
+    expect((await settings()).props.children.props.canSeeOrganizations).toBe(false);
+    expect(GET).not.toHaveBeenCalledWith('/api/v1/organizations', expect.anything());
+
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/users/me'
+        ? Promise.resolve({
+            data: { allowedActions: ['open_administration', 'create_organization'] },
+            response: new Response(),
+          })
+        : respond(path),
+    );
+
+    expect((await settings()).props.children.props.canSeeOrganizations).toBe(true);
+    for (const state of ['active', 'archived']) {
+      expect(GET).toHaveBeenCalledWith('/api/v1/organizations', {
+        params: { query: { state, projectId: PROJECT_ID } },
+        signal: expect.anything() as AbortSignal,
+      });
+    }
+  });
+
   it('prefetches the project and its members', async () => {
     await ProjectSettingsPage({
       params: Promise.resolve({ projectId: PROJECT_ID }),
