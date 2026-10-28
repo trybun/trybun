@@ -56,8 +56,9 @@ export function OrganizationDetail({ organizationId }: { organizationId: string 
           <AlertDescription className="flex flex-col gap-3">
             {t('detail.archivedDescription')}
             {organization.allowedActions.includes('unarchive') && (
+              // Opaque, so its label keeps its contrast on the warning colour in both themes.
               <Button
-                variant="outline"
+                variant="secondary"
                 className="w-full md:w-fit"
                 disabled={isUnarchiving}
                 onClick={() => unarchive(organization)}
