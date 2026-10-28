@@ -30,7 +30,7 @@ An organization represents a **customer company** (pattern: Zendesk, Jira Servic
 
 | Field | Description |
 |---|---|
-| Name | Company name |
+| Name | Company name, 1–100 characters, unique case-insensitively across active and archived organizations |
 | E-mail domains | E.g. `company.com`; users invited with an e-mail address in this domain are assigned to the organization automatically (rules below) |
 | Projects | Projects the organization has access to (set by the Administrator) |
 | Members | End users belonging to the organization |
@@ -40,17 +40,18 @@ Rules:
 
 - An end user belongs to **at most one** organization. They may belong to none (e.g. an individual customer). Only the Administrator adds users to an organization, removes them or moves them to another one; every change is recorded in the audit log ([§13.5](13-non-functional.md)).
 - **E-mail domains**:
-  - each domain belongs to at most one organization,
-  - public mail domains (e.g. `gmail.com`, `outlook.com`; a maintained blocklist) cannot be added,
+  - each domain belongs to at most one organization, also while that organization is archived (`organization.domain_taken`); to reuse a domain, the Administrator removes it from the organization after unarchiving it, or deletes the organization,
+  - a domain is stored lower-case in ASCII (an internationalized name in its punycode form) with at least two labels, without a wildcard, an `@` or a trailing dot; it matches an e-mail address **exactly** – `company.com` does not match `pl.company.com`, which is added as a domain of its own,
+  - public mail domains (e.g. `gmail.com`, `outlook.com`) cannot be added (`organization.domain_public`): the blocklist is a vendored copy of a maintained MIT-licensed list of free mail domains, updated with the dependencies like the password blocklist ([§13.5](13-non-functional.md)); there is no online lookup,
   - domain matching is applied only when an account is created from an invitation, and only if the inviting project is among the organization's projects; otherwise the user is created without an organization and gets personal access to the inviting project. The inviting person is shown "This person will join the organization X" (PL: „Ta osoba dołączy do organizacji X”) before sending the invitation,
   - adding or removing a domain later never moves existing users.
 - **Changing a user's organization**: tickets stay with the organization in which they were created, because they are the company's data (the ticket's organization is a snapshot taken at creation, [§3.2](03-ticket-model.md)). After the change:
   - the user keeps read and comment access to the tickets they created with visibility `only_me`, even if they no longer have access to the project; creating new tickets requires current access to the project,
   - the user keeps access to shared tickets of projects they still have access to,
   - tickets of the old organization with visibility `my_organization` – including those the user created – are no longer visible to them, and the user is removed from their watchers ([§6.7](06-comments-notifications.md)).
-- **Archiving instead of deleting**: organizations and projects are not deleted but **archived**. Only organizations and projects without tickets can be deleted; an archived project is deleted only after it is unarchived, because deleting is a change (`project.archived`). Archiving and unarchiving are done by the Administrator and recorded in the audit log.
+- **Archiving instead of deleting**: organizations and projects are not deleted but **archived**. Only organizations and projects without tickets can be deleted (`organization.not_empty`); an archived project is deleted only after it is unarchived, because deleting is a change (`project.archived`), while an archived organization can be deleted as it is. Deleting an organization removes its domains, project access and memberships, with an audit entry for each removed member; the members keep their accounts and their personal project access. Archiving and unarchiving are done by the Administrator and recorded in the audit log.
   - **Archived project**: read-only for every role, including the Administrator – all user-facing changes are rejected with the error code `project.archived`. It is hidden from navigation; members keep read access to the tickets they could see. SLA clocks stop and keep their state; integration tokens of the project are rejected; incoming GitHub events for it are ignored and logged; outgoing webhooks for it stop; pending invitations to it are revoked. Jobs required by law (GDPR anonymization and retention, [§13.2](13-non-functional.md)) still run.
-  - **Archived organization**: its members keep their accounts and read access to the tickets they created, lose access granted through the organization and cannot create tickets through it; domain matching is off.
+  - **Archived organization**: read-only until it is unarchived – changes of its name, domains, projects and members are rejected with the error code `organization.archived`, except the removal of a membership caused by a change of the account (the kind change to `team`, anonymization). Its members keep their accounts and read access to the tickets they created, lose access granted through the organization and cannot create tickets through it; its domains stay reserved and domain matching is off; pending invitations to it are revoked and new ones are rejected. The access of an organization to an archived project can be neither granted nor removed (`project.archived`).
   - The Administrator can **unarchive** a project or organization; it then works as before.
 - Team members do not belong to customer organizations and see tickets of all organizations in their projects.
 - A project can serve **many organizations**, and an organization can access **many projects**.
@@ -65,7 +66,7 @@ Rules:
 
 ### System without organizations
 
-If no organization exists in the system (e.g. an internal deployment in one company), the UI hides all organization-related elements: the organization field and filter, the visibility option `my_organization` and the organization count on shared tickets. These elements appear automatically once the first organization is created, with no separate setting (Rule 2).
+An organization exists when one exists in any state, because archived organizations still appear in ticket snapshots and filters. If no organization exists in the system (e.g. an internal deployment in one company), the UI hides all organization-related elements: the organization field and filter, the visibility option `my_organization` and the organization count on shared tickets. These elements appear automatically once the first organization is created, with no separate setting (Rule 2).
 
 ## 7.4 Accounts and authentication
 
@@ -132,7 +133,7 @@ Invitations are managed by the application (not by Keycloak e-mails), so the lin
 
 All permission decisions are made by the API; the UI only adapts to them ([§14.4](14-architecture.md)). Two rules apply on top of the matrix:
 
-- In an **archived project** every change is forbidden for every role, including the Administrator, until it is unarchived ([§7.3](#73-organizations)).
+- In an **archived project** and an **archived organization** every change is forbidden for every role, including the Administrator, until it is unarchived (`project.archived`, `organization.archived`, [§7.3](#73-organizations)).
 - Actions on records the user cannot see return `404`, never `403` ([§17.2](17-conventions.md)).
 
 | Action | End user | Developer | Project manager | Admin |

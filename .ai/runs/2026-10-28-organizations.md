@@ -1,6 +1,6 @@
 # Execution plan – Organizations (S1-02)
 
-Source doc: .ai/specs/2026-10-26-organizations.md
+Source doc: .ai/specs/implemented/2026-10-26-organizations.md
 Plan task: S1-02 (docs/plan/implementation-plan.md)
 Spec PR: #112 (merged)
 Branch: S1-02-organizations
