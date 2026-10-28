@@ -15,6 +15,20 @@ export async function lockOrganizationForShare(
 }
 
 /**
+ * Locks the row of an organization for the rest of the transaction for an update (§18.3, raw
+ * SQL): a deletion waits for the membership changes holding the share lock, and new ones wait for
+ * it. Returns whether the organization exists.
+ */
+export async function lockOrganizationForUpdate(
+  tx: Transaction,
+  organizationId: string,
+): Promise<boolean> {
+  const rows = await tx.$queryRaw<{ id: string }[]>`
+    SELECT "id" FROM "organizations" WHERE "id" = ${organizationId}::uuid FOR UPDATE`;
+  return rows.length > 0;
+}
+
+/**
  * Whether another organization has the name, compared case-insensitively like the unique index
  * on `lower(name)` (§7.3).
  */
@@ -31,8 +45,9 @@ export async function isOrganizationNameTaken(
 }
 
 /**
- * The account with an e-mail address, compared case-insensitively (§7.3); an anonymized account
- * has no address and is never found.
+ * The account with an e-mail address, compared case-insensitively (§7.3); of two addresses that
+ * differ only in letter case, the exact one wins. An anonymized account has no address and is
+ * never found. (A table scan: `users.email` has no index on its lower-case form.)
  */
 export async function findAccountByEmail(
   tx: Transaction,
@@ -41,7 +56,7 @@ export async function findAccountByEmail(
   const rows = await tx.$queryRaw<{ id: string; kind: 'team' | 'end_user' }[]>`
     SELECT "id", "kind"::text AS "kind" FROM "users"
     WHERE lower("email") = lower(${email})
-    ORDER BY "id"
+    ORDER BY ("email" = ${email}) DESC, "id"
     LIMIT 1`;
   return rows[0] ?? null;
 }

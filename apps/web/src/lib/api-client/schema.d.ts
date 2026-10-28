@@ -1052,6 +1052,8 @@ export interface operations {
                             id: string;
                             key: string;
                             name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
                         }[];
                     };
                 };
@@ -1093,6 +1095,8 @@ export interface operations {
                             id: string;
                             key: string;
                             name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
                         }[];
                     };
                 };
@@ -1161,6 +1165,8 @@ export interface operations {
                             id: string;
                             key: string;
                             name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
                         }[];
                     };
                 };
@@ -1202,6 +1208,8 @@ export interface operations {
                             id: string;
                             key: string;
                             name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
                         }[];
                     };
                 };

@@ -352,7 +352,7 @@ describe('organizations endpoints', () => {
       expect(res.body).toMatchObject({
         id: organization.id,
         domains: [domain],
-        projects: [{ id: project.id, key: project.key, name: project.name }],
+        projects: [{ id: project.id, key: project.key, name: project.name, state: 'active' }],
       });
     });
   });
@@ -578,6 +578,34 @@ describe('organizations endpoints', () => {
       );
     });
 
+    it('records the removal of a member added while the organization is deleted', async () => {
+      const { authorization } = await signIn();
+      const organization = await createOrganization(prisma);
+      const members = await Promise.all([1, 2, 3].map(() => createUser(prisma)));
+
+      await Promise.all([
+        ...members.map((member) =>
+          http()
+            .post(`/api/v1/organizations/${organization.id}/members`)
+            .set('Authorization', authorization)
+            .send({ email: member.email }),
+        ),
+        http()
+          .delete(`/api/v1/organizations/${organization.id}`)
+          .set('Authorization', authorization)
+          .set('If-Match', ifMatch(organization)),
+      ]);
+
+      const entries = await auditEntries(organization.id);
+      const added = entries.filter(({ action }) => action === 'organization.member_added');
+      const removed = entries.filter(({ action }) => action === 'organization.member_removed');
+      expect(entries.at(-1)).toMatchObject({ action: 'organization.deleted' });
+      expect(removed.map(({ details }) => details)).toEqual(
+        expect.arrayContaining(added.map(({ details }) => details)),
+      );
+      expect(removed).toHaveLength(added.length);
+    });
+
     it('deletes an organization with its domains, access and members', async () => {
       const { user, authorization } = await signIn();
       const { organization, domain } = await organizationWithDomain('archived');
@@ -754,6 +782,26 @@ describe('organizations endpoints', () => {
       expect(responses.find((res) => res.status === 409)?.body).toMatchObject({
         code: 'organization.member_of_other_organization',
       });
+    });
+
+    it('removes a member once when two removals run at once', async () => {
+      const { authorization } = await signIn();
+      const organization = await createOrganization(prisma);
+      const member = await createUser(prisma);
+      await prisma.organizationMember.create({
+        data: { organizationId: organization.id, userId: member.id },
+      });
+
+      const responses = await Promise.all(
+        [1, 2].map(() =>
+          http()
+            .delete(`/api/v1/organizations/${organization.id}/members/${member.id}`)
+            .set('Authorization', authorization),
+        ),
+      );
+
+      expect(responses.map((res) => res.status).sort()).toEqual([204, 404]);
+      expect(await auditEntries(organization.id)).toHaveLength(1);
     });
 
     it('removes a member with an audit entry and answers a non-member with 404', async () => {

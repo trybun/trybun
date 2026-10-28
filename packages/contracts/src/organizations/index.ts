@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { pageQuerySchema, pageSchema } from '../pagination/index.js';
+import { projectStateSchema } from '../projects/index.js';
 import { userStateSchema } from '../users/index.js';
 
 /** `organization.state` (§7.3): an archived organization is read-only until it is unarchived. */
@@ -62,11 +63,15 @@ export const updateOrganizationSchema = z
   .refine((input) => Object.values(input).some((value) => value !== undefined));
 export type UpdateOrganizationDto = z.infer<typeof updateOrganizationSchema>;
 
-/** A project an organization may access (§7.3). */
+/**
+ * A project an organization may access (§7.3); the access to an archived project can be neither
+ * granted nor removed.
+ */
 export const organizationProjectSchema = z.object({
   id: z.uuid(),
   key: z.string(),
   name: z.string(),
+  state: projectStateSchema,
 });
 export type OrganizationProject = z.infer<typeof organizationProjectSchema>;
 

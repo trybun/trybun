@@ -1919,12 +1919,20 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "archived"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "key",
-                          "name"
+                          "name",
+                          "state"
                         ],
                         "additionalProperties": false
                       }
@@ -2047,12 +2055,20 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "archived"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "key",
-                          "name"
+                          "name",
+                          "state"
                         ],
                         "additionalProperties": false
                       }
@@ -2208,12 +2224,20 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "archived"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "key",
-                          "name"
+                          "name",
+                          "state"
                         ],
                         "additionalProperties": false
                       }
@@ -2359,12 +2383,20 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "archived"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "key",
-                          "name"
+                          "name",
+                          "state"
                         ],
                         "additionalProperties": false
                       }

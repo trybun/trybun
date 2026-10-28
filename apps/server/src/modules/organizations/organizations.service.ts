@@ -40,6 +40,7 @@ import {
   findAccountByEmail,
   isOrganizationNameTaken,
   lockOrganizationForShare,
+  lockOrganizationForUpdate,
 } from './organizations.sql.js';
 
 const SUMMARY_SELECT = {
@@ -90,6 +91,7 @@ function toOrganizationResponse(row: DetailRow, ability: AppAbility): Organizati
       id: project.id,
       key: project.key,
       name: project.name,
+      state: project.state,
     })),
   };
 }
@@ -215,7 +217,7 @@ export class OrganizationsService {
       throw new AppError('request.forbidden');
     }
     const domains = parseDomains(input.domains);
-    return this.withUniqueRules(() =>
+    return this.withUniqueRules({ domains, organizationId: null }, () =>
       this.prisma.$transaction(async (tx) => {
         if (await isOrganizationNameTaken(tx, input.name, null)) {
           throw nameTaken();
@@ -244,7 +246,7 @@ export class OrganizationsService {
   ): Promise<Organization> {
     const ability = this.abilities.forPrincipal(principal);
     const domains = input.domains === undefined ? undefined : parseDomains(input.domains);
-    return this.withUniqueRules(() =>
+    return this.withUniqueRules({ domains: domains ?? [], organizationId: target.id }, () =>
       this.prisma.$transaction(async (tx) => {
         const row = await this.findVisible(tx, ability, target.id);
         if (input.name !== undefined || domains !== undefined) {
@@ -321,6 +323,11 @@ export class OrganizationsService {
   async delete(principal: UserPrincipal, target: VersionedTarget): Promise<void> {
     const ability = this.abilities.forPrincipal(principal);
     await this.prisma.$transaction(async (tx) => {
+      // Membership changes hold a share lock of the row: the update lock waits for them, so the
+      // members read below are exactly those the deletion removes, each with its audit entry.
+      if (!(await lockOrganizationForUpdate(tx, target.id))) {
+        throw new AppError('request.not_found');
+      }
       this.assertCan(ability, 'delete', await this.findVisible(tx, ability, target.id));
       const members = await tx.organizationMember.findMany({
         where: { organizationId: target.id },
@@ -401,7 +408,10 @@ export class OrganizationsService {
           }
           // Moving changes the old organization too, which an archive keeps unchanged (§7.3).
           await this.lockForMembership(tx, ability, current.organizationId);
-          await this.deleteMembership(tx, principal, account.id, current.organizationId);
+          if (!(await this.deleteMembership(tx, principal, account.id, current.organizationId))) {
+            // A concurrent change moved or removed the person first: nothing is moved unseen.
+            throw new AppError('organization.member_of_other_organization');
+          }
         }
         const row = await tx.organizationMember.create({
           data: { userId: account.id, organizationId },
@@ -431,14 +441,9 @@ export class OrganizationsService {
     const ability = this.abilities.forPrincipal(principal);
     await this.prisma.$transaction(async (tx) => {
       await this.lockForMembership(tx, ability, organizationId);
-      const member = await tx.organizationMember.findFirst({
-        where: { userId, organizationId },
-        select: { userId: true },
-      });
-      if (member === null) {
+      if (!(await this.deleteMembership(tx, principal, userId, organizationId))) {
         throw new AppError('request.not_found');
       }
-      await this.deleteMembership(tx, principal, userId, organizationId);
     });
   }
 
@@ -539,17 +544,25 @@ export class OrganizationsService {
     await this.findVisible(tx, ability, organizationId, 'manage_members');
   }
 
+  /**
+   * Ends a membership with its audit entry; `false` when a concurrent change ended it first, so
+   * the caller answers as if it had read no membership.
+   */
   private async deleteMembership(
     tx: Transaction,
     principal: UserPrincipal,
     userId: string,
     organizationId: string,
-  ): Promise<void> {
-    await tx.organizationMember.delete({ where: { userId } });
+  ): Promise<boolean> {
+    const { count } = await tx.organizationMember.deleteMany({ where: { userId, organizationId } });
+    if (count === 0) {
+      return false;
+    }
     await this.record(tx, principal, organizationId, {
       action: 'organization.member_removed',
       details: { userId },
     });
+    return true;
   }
 
   /** `409 organization.domain_taken` at the field of each domain of another organization. */
@@ -690,14 +703,31 @@ export class OrganizationsService {
 
   /**
    * A duplicate that only a unique index caught – concurrent writes – answered with the code of
-   * its rule (§18.3): a domain of another organization, otherwise the name.
+   * its rule (§18.3): a domain of another organization – at the fields of the domains the
+   * organization did not have yet – otherwise the name.
    */
-  private async withUniqueRules<T>(write: () => Promise<T>): Promise<T> {
+  private async withUniqueRules<T>(
+    input: { domains: readonly string[]; organizationId: string | null },
+    write: () => Promise<T>,
+  ): Promise<T> {
     try {
       return await write();
     } catch (error) {
       if (isUniqueViolation(error, 'organization_domains_domain_key')) {
-        throw new AppError('organization.domain_taken');
+        const owned = new Set(
+          input.organizationId === null
+            ? []
+            : (
+                await this.prisma.organizationDomain.findMany({
+                  where: { organizationId: input.organizationId },
+                  select: { domain: true },
+                })
+              ).map(({ domain }) => domain),
+        );
+        throw new AppError(
+          'organization.domain_taken',
+          domainFieldErrors(input.domains, (domain) => !owned.has(domain)),
+        );
       }
       if (isUniqueViolation(error, 'organizations_name_lower_key')) {
         throw nameTaken();
