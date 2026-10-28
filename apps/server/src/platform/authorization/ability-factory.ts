@@ -10,7 +10,8 @@ import type { Principal } from '../authentication/principal.js';
  * `Administration`). A record carries only the fields its rules read. Feature tasks add their
  * models.
  */
-export type AppSubject = Subjects<{ Project: ProjectRuleRecord }> | 'Administration';
+export type AppSubject =
+  Subjects<{ Project: ProjectRuleRecord; Organization: OrganizationRuleRecord }> | 'Administration';
 
 /**
  * A project as its rules read it: its state and the memberships of the principal, loaded with
@@ -20,6 +21,12 @@ export type ProjectRuleRecord = {
   id: string;
   state: string;
   members: { userId: string; role: string }[];
+};
+
+/** An organization as its rules read it: its state (§7.3). */
+export type OrganizationRuleRecord = {
+  id: string;
+  state: string;
 };
 
 /** The conditions of a rule: the Prisma `WhereInput` of its subject. */

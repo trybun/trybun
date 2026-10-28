@@ -17,7 +17,7 @@ describe('user enums', () => {
     [userKindSchema, ['team', 'end_user']],
     [userStateSchema, ['invited', 'active', 'deactivated', 'anonymized']],
     [languageSchema, ['en', 'pl']],
-    [currentUserActionSchema, ['open_administration', 'create_project']],
+    [currentUserActionSchema, ['open_administration', 'create_project', 'create_organization']],
   ])('lists the glossary codes', (schema, codes) => {
     expect(schema.options).toEqual(codes);
   });
