@@ -18,6 +18,11 @@ import {
   archivedProjectsRestriction,
   projectsAbilities,
 } from './modules/projects/projects.abilities.js';
+import {
+  archivedOrganizationsRestriction,
+  organizationsAbilities,
+} from './modules/organizations/organizations.abilities.js';
+import { OrganizationsModule } from './modules/organizations/organizations.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -40,8 +45,8 @@ export class ApiModule {
         // After the authentication guard: the rate limit is keyed by the principal (§14.4).
         RateLimitingModule,
         AuthorizationModule.forRoot({
-          rules: [administrationAbilities, projectsAbilities],
-          restrictions: [archivedProjectsRestriction],
+          rules: [administrationAbilities, projectsAbilities, organizationsAbilities],
+          restrictions: [archivedProjectsRestriction, archivedOrganizationsRestriction],
         }),
         KeycloakAdminModule,
         HealthModule,
@@ -49,6 +54,7 @@ export class ApiModule {
         SetupModule,
         AdministrationModule,
         ProjectsModule,
+        OrganizationsModule,
       ],
     };
   }

@@ -99,9 +99,13 @@ export type Organization = z.infer<typeof organizationSchema>;
 export const organizationParamsSchema = z.object({ organizationId: z.uuid() });
 export type OrganizationParams = z.infer<typeof organizationParamsSchema>;
 
-/** `GET /api/v1/organizations`: the organizations in one state, sorted by name. */
+/**
+ * `GET /api/v1/organizations`: the organizations in one state, sorted by name; `projectId` keeps
+ * those that may access the project (the project settings, §7.3).
+ */
 export const listOrganizationsQuerySchema = pageQuerySchema.extend({
   state: organizationStateSchema.default('active'),
+  projectId: z.uuid().optional(),
 });
 export type ListOrganizationsQuery = z.infer<typeof listOrganizationsQuerySchema>;
 

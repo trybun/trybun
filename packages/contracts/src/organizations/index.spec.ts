@@ -39,9 +39,9 @@ describe('createOrganizationSchema', () => {
   });
 
   it('trims the domains', () => {
-    expect(createOrganizationSchema.parse({ name: 'Acme', domains: [' acme.com '] }).domains).toEqual(
-      ['acme.com'],
-    );
+    expect(
+      createOrganizationSchema.parse({ name: 'Acme', domains: [' acme.com '] }).domains,
+    ).toEqual(['acme.com']);
   });
 });
 

@@ -46,6 +46,10 @@
         "title": "Skonfiguruj logowanie przez GitHub",
         "description": "Członkowie zespołu logują się przez GitHub. Wymagane, zanim zaprosisz zespół."
       },
+      "create_organization": {
+        "title": "Utwórz organizację",
+        "description": "Zgrupuj użytkowników końcowych firmy klienta, aby widzieli zgłoszenia swojej firmy. Organizacje są opcjonalne."
+      },
       "configure_email": {
         "title": "Skonfiguruj e-mail",
         "description": "Bez serwera SMTP Trybun nie wysyła e-maili, więc linki z zaproszeniami trzeba przekazywać ręcznie."

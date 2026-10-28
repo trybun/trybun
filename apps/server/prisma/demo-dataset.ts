@@ -20,6 +20,10 @@ export interface DemoDataset {
   productTourProgress: Prisma.ProductTourProgressCreateManyInput[];
   projects: Prisma.ProjectCreateManyInput[];
   projectMembers: Prisma.ProjectMemberCreateManyInput[];
+  organizations: Prisma.OrganizationCreateManyInput[];
+  organizationDomains: Prisma.OrganizationDomainCreateManyInput[];
+  organizationProjects: Prisma.OrganizationProjectCreateManyInput[];
+  organizationMembers: Prisma.OrganizationMemberCreateManyInput[];
 }
 
 /**
@@ -37,6 +41,17 @@ const DEMO_PROJECTS = [
   },
   { name: 'Legacy intranet', key: 'LEGACY', state: 'archived', members: ['manager', 'developer'] },
 ] as const;
+
+/**
+ * The demo organization (§7.3): the company of the end users, by their e-mail domain, with access
+ * to the customer portal and the first end users as members; the others belong to none.
+ */
+const DEMO_ORGANIZATION = {
+  name: 'Customer company',
+  domain: 'customer.example.com',
+  projectKeys: ['CP'],
+  memberCount: 6,
+} as const;
 
 /** UUIDv7 of the demo record number `n` (§17.2). */
 export function demoId(n: number): string {
@@ -119,15 +134,45 @@ export function buildDemoDataset(): DemoDataset {
       updatedAt: CREATED_AT,
     })),
   );
-  return { users: [...team, ...endUsers], productTourProgress, projects, projectMembers };
+  const organizationId = demoId(400);
+  return {
+    users: [...team, ...endUsers],
+    productTourProgress,
+    projects,
+    projectMembers,
+    organizations: [
+      {
+        id: organizationId,
+        name: DEMO_ORGANIZATION.name,
+        createdAt: CREATED_AT,
+        updatedAt: CREATED_AT,
+      },
+    ],
+    organizationDomains: [
+      {
+        id: demoId(401),
+        organizationId,
+        domain: DEMO_ORGANIZATION.domain,
+        createdAt: CREATED_AT,
+      },
+    ],
+    organizationProjects: projects
+      .filter(({ key }) => (DEMO_ORGANIZATION.projectKeys as readonly string[]).includes(key))
+      .map(({ id }) => ({ organizationId, projectId: id ?? '', createdAt: CREATED_AT })),
+    organizationMembers: endUsers
+      .slice(0, DEMO_ORGANIZATION.memberCount)
+      .map(({ id }) => ({ organizationId, userId: id ?? '', createdAt: CREATED_AT })),
+  };
 }
 
 /**
  * Loads the demo dataset; running it again restores the same records – also the tour progress,
- * so the newcomer sees the tours again, and the demo projects with their members.
+ * so the newcomer sees the tours again, the demo projects with their members and the demo
+ * organization with its domain, project access and members.
  */
 export async function seedDemoData(prisma: PrismaClient): Promise<void> {
-  const { users, productTourProgress, projects, projectMembers } = buildDemoDataset();
+  const dataset = buildDemoDataset();
+  const { users, productTourProgress, projects, projectMembers, organizations } = dataset;
   await prisma.$transaction(async (tx) => {
     for (const user of users) {
       await tx.user.upsert({ where: { id: user.id }, create: user, update: user });
@@ -145,5 +190,20 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
       where: { projectId: { in: projects.map((project) => project.id ?? '') } },
     });
     await tx.projectMember.createMany({ data: projectMembers });
+    // Deleting the organization removes its domains, project access and members (§7.3).
+    await tx.organization.deleteMany({
+      where: { id: { in: organizations.map((organization) => organization.id ?? '') } },
+    });
+    // A member moved or a domain taken over during a demo comes back too.
+    await tx.organizationMember.deleteMany({
+      where: { userId: { in: dataset.organizationMembers.map(({ userId }) => userId) } },
+    });
+    await tx.organizationDomain.deleteMany({
+      where: { domain: { in: dataset.organizationDomains.map(({ domain }) => domain) } },
+    });
+    await tx.organization.createMany({ data: organizations });
+    await tx.organizationDomain.createMany({ data: dataset.organizationDomains });
+    await tx.organizationProject.createMany({ data: dataset.organizationProjects });
+    await tx.organizationMember.createMany({ data: dataset.organizationMembers });
   });
 }

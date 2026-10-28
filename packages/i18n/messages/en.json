@@ -46,6 +46,10 @@
         "title": "Configure GitHub sign-in",
         "description": "Team members sign in with GitHub. Required before you can invite the team."
       },
+      "create_organization": {
+        "title": "Create an organization",
+        "description": "Group the end users of a customer company and let them see the company's tickets. Organizations are optional."
+      },
       "configure_email": {
         "title": "Configure e-mail",
         "description": "Without an SMTP server Trybun sends no e-mail, so invitation links have to be passed on by hand."
