@@ -10,6 +10,16 @@ test('sends a visitor to the Keycloak login screen in their language', async ({ 
   await expect(page.getByRole('heading', { name: 'Zaloguj się do systemu Trybun' })).toBeVisible();
 });
 
+test('returns a visitor to the opened view after the sign-in', async ({ page }) => {
+  const signIn = page.waitForRequest((request) => new URL(request.url()).pathname === '/sign-in');
+
+  await page.goto('/projects?state=archived');
+
+  expect(new URL((await signIn).url()).searchParams.get('callbackUrl')).toBe(
+    '/projects?state=archived',
+  );
+});
+
 test('embeds no texts of a feature in the sign-in page', async ({ request }) => {
   const response = await request.get('/sign-in');
 

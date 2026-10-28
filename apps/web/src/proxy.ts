@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server.js';
+import { REQUEST_PATH_HEADER } from './lib/auth/callback-path.js';
 import { getEnv } from './lib/env/env.js';
 
 export interface SecurityHeadersOptions {
@@ -59,7 +60,8 @@ export function securityHeaders(options: SecurityHeadersOptions): Record<string,
 /**
  * The security headers and the CSP nonce of the pages (§13.5, §18.5). Next.js reads the nonce from
  * the `Content-Security-Policy` request header and adds it to the scripts it renders, so every page
- * is rendered per request.
+ * is rendered per request. The path of the page goes to the rendering too, so the sign-in returns
+ * to it.
  */
 export function proxy(request: NextRequest): NextResponse {
   const env = getEnv();
@@ -71,6 +73,7 @@ export function proxy(request: NextRequest): NextResponse {
   });
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('Content-Security-Policy', headers['Content-Security-Policy'] ?? '');
+  requestHeaders.set(REQUEST_PATH_HEADER, request.nextUrl.pathname + request.nextUrl.search);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   for (const [name, value] of Object.entries(headers)) {
     response.headers.set(name, value);
