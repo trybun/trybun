@@ -19,7 +19,7 @@ export default async function ProjectsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { state } = projectsSearchParamsSchema.parse(await searchParams);
-  await requireSession(state === 'active' ? '/projects' : `/projects?state=${state}`);
+  await requireSession();
   const [t, client] = await Promise.all([getTranslations('projects'), getServerApiClient()]);
   const queryClient = getServerQueryClient();
   await Promise.all([

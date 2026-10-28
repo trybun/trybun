@@ -7,7 +7,7 @@ import { requireSession } from '../../../lib/auth/session.js';
 
 /** The help index (§2.3): the search and every help page the reader receives. */
 export default async function HelpPage() {
-  await requireSession('/help');
+  await requireSession();
   const [locale, kind, t] = await Promise.all([
     getLocale(),
     getHelpReaderKind(),

@@ -6,10 +6,7 @@ import {
   projectMembersQueryOptions,
   projectQueryOptions,
 } from '../../../../../features/projects/queries.js';
-import {
-  projectSettingsHref,
-  projectSettingsSearchParamsSchema,
-} from '../../../../../features/projects/search-params.js';
+import { projectSettingsSearchParamsSchema } from '../../../../../features/projects/search-params.js';
 import {
   dataOrNotFound,
   getServerApiClient,
@@ -36,7 +33,7 @@ export default async function ProjectSettingsPage({
   }
   const { projectId } = parsed.data;
   const { tab } = projectSettingsSearchParamsSchema.parse(await searchParams);
-  await requireSession(projectSettingsHref(projectId, tab));
+  await requireSession();
   const client = await getServerApiClient();
   const queryClient = getServerQueryClient();
   const project = await dataOrNotFound(

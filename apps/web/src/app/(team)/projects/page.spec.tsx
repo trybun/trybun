@@ -72,13 +72,13 @@ describe('ProjectsPage', () => {
   });
 
   it.each([
-    [{}, '/projects', 'active'],
-    [{ state: 'archived' }, '/projects?state=archived', 'archived'],
-    [{ state: 'other' }, '/projects', 'active'],
-  ])('prefetches the projects of %j', async (searchParams, callbackUrl, state) => {
+    [{}, 'active'],
+    [{ state: 'archived' }, 'archived'],
+    [{ state: 'other' }, 'active'],
+  ])('prefetches the projects of %j', async (searchParams, state) => {
     const element = await ProjectsPage({ searchParams: Promise.resolve(searchParams) });
 
-    expect(requireSession).toHaveBeenCalledWith(callbackUrl);
+    expect(requireSession).toHaveBeenCalledWith();
     expect(GET).toHaveBeenCalledWith('/api/v1/projects', {
       params: { query: { state } },
       signal: expect.anything() as AbortSignal,
@@ -111,7 +111,7 @@ describe('ProjectSettingsPage', () => {
       searchParams: Promise.resolve({ tab: 'members' }),
     });
 
-    expect(requireSession).toHaveBeenCalledWith(`/projects/${PROJECT_ID}/settings?tab=members`);
+    expect(requireSession).toHaveBeenCalledWith();
     expect(GET).toHaveBeenCalledWith('/api/v1/projects/{projectId}/members', expect.anything());
   });
 

@@ -49,11 +49,4 @@ describe('requireSession', () => {
 
     await expect(requireSession()).rejects.toThrow(`redirect ${url}`);
   });
-
-  it('prefers the path given by the page', async () => {
-    getServerSession.mockResolvedValue(null);
-    requestHeaders.set(REQUEST_PATH_HEADER, '/projects');
-
-    await expect(requireSession('/help')).rejects.toThrow('redirect /sign-in?callbackUrl=%2Fhelp');
-  });
 });
