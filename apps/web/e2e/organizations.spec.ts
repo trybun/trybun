@@ -24,6 +24,9 @@ test.describe('organizations of the Administrator', () => {
   test('creates an organization, manages its domains and members, archives and deletes it', async ({
     page,
   }, testInfo) => {
+    // The whole life of an organization in one flow: longer than the default 30 seconds on a busy
+    // runner.
+    test.slow();
     const organizations = new OrganizationsPage(page);
     const stamp = `${testInfo.project.name}-${Date.now().toString(36)}`;
     const name = `E2E ${stamp}`;
@@ -41,7 +44,10 @@ test.describe('organizations of the Administrator', () => {
     // A public mail domain is rejected at the field.
     await organizations.addDomain('gmail.com');
     await expect(
-      page.getByText('Public mail domains such as gmail.com cannot be added.'),
+      // At the field of its section; an error toast may repeat the message.
+      organizations.domains.getByText('Public mail domains such as gmail.com cannot be added.', {
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(organizations.domainField).toHaveAttribute('aria-invalid', 'true');
     await organizations.addDomain(`shop.e2e-${stamp}.example.org`);
