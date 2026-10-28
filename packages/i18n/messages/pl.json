@@ -30,6 +30,7 @@
     "title": "Administracja",
     "sections": "Sekcje panelu Administratora",
     "gettingStarted": "Pierwsze kroki",
+    "organizations": "Organizacje",
     "about": "O systemie",
     "progress": "Ukończono {done} z {total}",
     "allDone": "Wszystko z tej listy jest skonfigurowane.",
@@ -153,6 +154,124 @@
       "deleting": "Usuwanie…",
       "cancel": "Anuluj",
       "deleted": "Projekt usunięty"
+    },
+    "organizations": {
+      "title": "Organizacje z dostępem",
+      "description": "Członkowie tych organizacji mają dostęp do projektu. Dostęp zmienisz w organizacji.",
+      "empty": "Żadna organizacja nie ma dostępu do projektu.",
+      "archived": "Zarchiwizowana",
+      "loadMore": "Pokaż więcej"
+    }
+  },
+  "organizations": {
+    "title": "Organizacje",
+    "description": "Firmy klientów: ich użytkownicy końcowi, domeny e-mail i projekty, do których mają dostęp.",
+    "tabs": {
+      "label": "Stan organizacji",
+      "active": "Aktywne",
+      "archived": "Zarchiwizowane"
+    },
+    "list": {
+      "emptyActive": "Nie ma jeszcze organizacji. Organizacja grupuje użytkowników końcowych firmy klienta, aby widzieli zgłoszenia swojej firmy. Organizacje są opcjonalne.",
+      "emptyArchived": "Brak zarchiwizowanych organizacji.",
+      "noDomains": "Brak domen e-mail",
+      "memberCount": "Członkowie: {count}",
+      "loadMore": "Pokaż więcej",
+      "loadingMore": "Ładowanie…"
+    },
+    "create": {
+      "open": "Nowa organizacja",
+      "title": "Nowa organizacja",
+      "description": "Podaj nazwę firmy klienta. Użytkownicy końcowi zaproszeni z adresem w jej domenach e-mail dołączą do niej.",
+      "name": "Nazwa",
+      "domains": "Domeny e-mail (opcjonalnie)",
+      "domainsDescription": "Kilka domen oddziel przecinkami, np. firma.com, firma.pl.",
+      "submit": "Utwórz organizację",
+      "submitting": "Tworzenie…",
+      "cancel": "Anuluj"
+    },
+    "detail": {
+      "back": "Organizacje",
+      "archivedBanner": "Ta organizacja jest zarchiwizowana",
+      "archivedDescription": "Jest tylko do odczytu, dopóki nie zostanie przywrócona z archiwum."
+    },
+    "general": {
+      "title": "Ogólne",
+      "name": "Nazwa",
+      "save": "Zapisz",
+      "saving": "Zapisywanie…",
+      "saved": "Zmiany zapisane"
+    },
+    "domains": {
+      "title": "Domeny e-mail",
+      "description": "Użytkownicy końcowi zaproszeni z adresem w tych domenach dołączają do organizacji. Nie można dodać publicznych domen poczty, takich jak gmail.com.",
+      "empty": "Brak domen e-mail.",
+      "add": "Dodaj domenę",
+      "domain": "Domena",
+      "adding": "Dodawanie…",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {domain}",
+      "added": "Dodano: {domain}",
+      "removed": "Usunięto: {domain}"
+    },
+    "projects": {
+      "title": "Projekty",
+      "description": "Członkowie organizacji mają dostęp do tych projektów.",
+      "empty": "Organizacja nie ma jeszcze dostępu do żadnego projektu.",
+      "project": "Projekt",
+      "choose": "Wybierz projekt",
+      "noCandidates": "Wszystkie aktywne projekty są już dodane.",
+      "add": "Dodaj projekt",
+      "adding": "Dodawanie…",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {name}",
+      "added": "Dodano: {name}",
+      "removed": "Usunięto: {name}",
+      "loadMore": "Pokaż więcej projektów"
+    },
+    "members": {
+      "title": "Członkowie",
+      "description": "Użytkownicy końcowi firmy klienta. Osoba należy najwyżej do jednej organizacji.",
+      "empty": "Organizacja nie ma jeszcze członków.",
+      "noName": "Bez nazwy",
+      "noEmail": "Brak adresu e-mail",
+      "email": "Adres e-mail",
+      "add": "Dodaj członka",
+      "adding": "Dodawanie…",
+      "added": "Dodano do organizacji: {name}",
+      "alreadyMember": "Już jest członkiem: {name}",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {name}",
+      "removed": "Usunięto z organizacji: {name}",
+      "undo": "Cofnij",
+      "joined": "Data dołączenia: {date}",
+      "states": {
+        "invited": "Zaproszony",
+        "active": "Aktywny",
+        "deactivated": "Dezaktywowany",
+        "anonymized": "Zanonimizowany"
+      },
+      "moveTitle": "Przenieść {email} do tej organizacji?",
+      "moveDescription": "Ta osoba należy już do innej organizacji. Przeniesienie zmienia zgłoszenia, które widzi.",
+      "moveConfirm": "Przenieś",
+      "cancel": "Anuluj"
+    },
+    "danger": {
+      "title": "Strefa niebezpieczna",
+      "archive": "Zarchiwizuj organizację",
+      "archiveDescription": "Organizacja stanie się tylko do odczytu, dopóki nie zostanie przywrócona z archiwum. Jej domeny e-mail pozostają zarezerwowane.",
+      "archived": "Organizacja zarchiwizowana",
+      "undo": "Cofnij",
+      "unarchive": "Przywróć organizację z archiwum",
+      "unarchiveDescription": "Organizację będzie można znów zmieniać.",
+      "unarchived": "Organizacja przywrócona z archiwum",
+      "delete": "Usuń organizację",
+      "deleteDescription": "Usuwa organizację z jej domenami e-mail, dostępem do projektów i członkostwami. Konta członków pozostają. Tego nie można cofnąć.",
+      "deleteTitle": "Usunąć {name}?",
+      "deleteConfirm": "Usuń organizację",
+      "deleting": "Usuwanie…",
+      "cancel": "Anuluj",
+      "deleted": "Organizacja usunięta"
     }
   },
   "setup": {
@@ -216,6 +335,23 @@
           "account": {
             "title": "Twoje konto",
             "description": "W menu konta zmienisz język albo się wylogujesz."
+          }
+        }
+      },
+      "organization_detail": {
+        "name": "Organizacja",
+        "steps": {
+          "domains": {
+            "title": "Domeny e-mail",
+            "description": "Użytkownicy końcowi zaproszeni z adresem w tych domenach dołączają do organizacji."
+          },
+          "projects": {
+            "title": "Projekty",
+            "description": "Wybierz projekty, do których mają dostęp członkowie organizacji."
+          },
+          "members": {
+            "title": "Członkowie",
+            "description": "Dodawaj użytkowników końcowych po adresie e-mail lub usuwaj ich z możliwością cofnięcia."
           }
         }
       }
