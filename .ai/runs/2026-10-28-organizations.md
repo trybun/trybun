@@ -42,6 +42,7 @@ As in the spec: no effects on ticket visibility (S1-11); no invitations or domai
 - The blocklist of public mail domains is a vendored data file (Q1); its licence must be MIT-compatible.
 - `organization_members` and the archived restriction must not block `removeMembership` for account changes (Q4).
 - Size: nine steps across server, contracts and web; the run commits and pushes per phase so `om-auto-continue-pr` can resume.
+- E2E tests (`apps/web/e2e/organizations.spec.ts`) are written but were not run on the agents' host: the local Compose project shares its name with the maintainer's installation (`.ai/memory/docker.md`); they run in CI.
 - The configured `baseBranch` (`auto`) does not exist on the remote; the run targets `main`, the repository's default branch.
 
 ## Progress
@@ -56,11 +57,11 @@ PR: #149
 - [x] 1.2 E-mail domain rules and blocklist — 51aa800
 - [x] 1.3 Organization abilities, record access, create_organization — 96af112
 - [x] 1.4 Organization endpoints with audit entries — 82b4124
-- [ ] 1.5 Web: list, create dialog, detail with domains, checklist item
+- [x] 1.5 Web: list, create dialog, detail with domains, checklist item — 87917b3
 
 ### Phase 2: Project access and membership
 
 - [x] 2.1 Project access and findForInvitation — 82b4124
 - [x] 2.2 Members endpoints, move, removeMembership — 82b4124
-- [ ] 2.3 Web: projects and members sections, project settings section
-- [ ] 2.4 User documentation, product tour, specification updates
+- [x] 2.3 Web: projects and members sections, project settings section — 87917b3, 44b90b0, b4bca8f
+- [x] 2.4 User documentation, product tour, specification updates — 5c0911a, 8cf43e1, 11f882c, 4c5de1f
