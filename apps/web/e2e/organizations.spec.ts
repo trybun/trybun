@@ -34,7 +34,9 @@ test.describe('organizations of the Administrator', () => {
 
     await expect(page).toHaveURL(/\/admin\/organizations\/[\da-f-]+$/);
     await expect(organizations.heading).toHaveText(name);
-    await expect(page.getByText(`e2e-${stamp}.example.org`)).toBeVisible();
+    await expect(
+      organizations.domains.getByText(`e2e-${stamp}.example.org`, { exact: true }),
+    ).toBeVisible();
 
     // A public mail domain is rejected at the field.
     await organizations.addDomain('gmail.com');
@@ -43,7 +45,10 @@ test.describe('organizations of the Administrator', () => {
     ).toBeVisible();
     await expect(organizations.domainField).toHaveAttribute('aria-invalid', 'true');
     await organizations.addDomain(`shop.e2e-${stamp}.example.org`);
-    await expect(page.getByText(`shop.e2e-${stamp}.example.org`)).toBeVisible();
+    // The domain is listed in its section; its toast repeats the text.
+    await expect(
+      organizations.domains.getByText(`shop.e2e-${stamp}.example.org`, { exact: true }),
+    ).toBeVisible();
 
     await page.getByLabel('Project', { exact: true }).click();
     await page.getByRole('option', { name: /Customer portal/ }).click();

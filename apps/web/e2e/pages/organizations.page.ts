@@ -8,6 +8,7 @@ export class OrganizationsPage {
   readonly archivedBanner: Locator;
   readonly domainField: Locator;
   readonly emailField: Locator;
+  readonly domains: Locator;
   readonly members: Locator;
 
   constructor(private readonly page: Page) {
@@ -19,6 +20,7 @@ export class OrganizationsPage {
     });
     this.domainField = page.getByLabel('Domain', { exact: true });
     this.emailField = page.getByLabel('E-mail address');
+    this.domains = page.getByRole('region', { name: 'E-mail domains' });
     this.members = page.getByRole('region', { name: 'Members' }).getByRole('listitem');
   }
 
