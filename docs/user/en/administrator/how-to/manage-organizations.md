@@ -10,10 +10,12 @@ An organization is a customer company: its e-mail domains, the projects it may a
 
 1. Open **Administration**, then **Organizations**, and select **New organization**.
 2. Enter the **Name**. It must be unique among all organizations, active and archived, regardless of letter case.
-3. Optionally add the **E-mail domains** of the company, for example `company.com`.
+3. Optionally enter the **E-mail domains** of the company, separated by commas, for example `company.com, company.pl`.
 4. Select **Create organization**. The organization opens.
 
 ## E-mail domains
+
+Under **E-mail domains**, enter a domain and select **Add domain**, or select **Remove** next to one.
 
 The domains tell which e-mail addresses belong to the company. A domain matches exactly – `company.com` does not cover `pl.company.com`; add a subdomain as a domain of its own. A domain belongs to one organization only, also while that organization is archived. Public mail domains such as `gmail.com` cannot be added, because their users are not one company.
 
@@ -32,6 +34,8 @@ Team members never belong to organizations. To remove a member, select **Remove*
 
 ## Archive, unarchive and delete
 
-- **Archive organization** makes it read-only until you unarchive it: its name, domains, projects and members cannot be changed. Its domains stay reserved.
-- **Unarchive organization** restores it.
-- **Delete organization** removes it with its domains, project access and memberships; the members keep their accounts. It cannot be undone. An organization with tickets cannot be deleted – archive it instead.
+Open the organization:
+
+- **Archive organization**, under **Danger zone**, makes it read-only until you unarchive it: its name, domains, projects and members cannot be changed. Its domains stay reserved.
+- **Unarchive organization**, in the banner of an archived organization, restores it. Archiving also offers **Undo** for a moment.
+- **Delete organization**, under **Danger zone**, removes it with its domains, project access and memberships; the members keep their accounts. It cannot be undone. An organization with tickets cannot be deleted – archive it instead.

@@ -10,10 +10,12 @@ Organizacja to firma klienta: jej domeny e-mail, projekty, do których ma dostę
 
 1. Otwórz **Administrację**, potem **Organizacje**, i wybierz **Nowa organizacja**.
 2. Wpisz **Nazwę**. Musi być unikalna wśród wszystkich organizacji, aktywnych i zarchiwizowanych, bez względu na wielkość liter.
-3. Opcjonalnie dodaj **Domeny e-mail** firmy, np. `firma.pl`.
+3. Opcjonalnie wpisz **Domeny e-mail** firmy, oddzielone przecinkami, np. `firma.pl, firma.com`.
 4. Wybierz **Utwórz organizację**. Organizacja się otworzy.
 
 ## Domeny e-mail
+
+W sekcji **Domeny e-mail** wpisz domenę i wybierz **Dodaj domenę** albo wybierz **Usuń** obok domeny.
 
 Domeny wskazują, które adresy e-mail należą do firmy. Domena pasuje dokładnie – `firma.pl` nie obejmuje `oddzial.firma.pl`; subdomenę dodaj jako osobną domenę. Domena należy tylko do jednej organizacji, także gdy ta organizacja jest zarchiwizowana. Nie można dodać publicznych domen poczty, takich jak `gmail.com`, bo ich użytkownicy nie są jedną firmą.
 
@@ -32,6 +34,8 @@ Członkowie zespołu nigdy nie należą do organizacji. Aby usunąć członka, w
 
 ## Zarchiwizuj, przywróć i usuń
 
-- **Zarchiwizuj organizację** sprawia, że jest tylko do odczytu, dopóki jej nie przywrócisz: nie można zmienić jej nazwy, domen, projektów ani członków. Jej domeny pozostają zarezerwowane.
-- **Przywróć organizację z archiwum** przywraca ją.
-- **Usuń organizację** usuwa ją razem z domenami, dostępem do projektów i członkostwami; członkowie zachowują konta. Tego nie można cofnąć. Organizacji ze zgłoszeniami nie można usunąć – zamiast tego ją zarchiwizuj.
+Otwórz organizację:
+
+- **Zarchiwizuj organizację** w **Strefie niebezpiecznej** sprawia, że jest tylko do odczytu, dopóki jej nie przywrócisz: nie można zmienić jej nazwy, domen, projektów ani członków. Jej domeny pozostają zarezerwowane.
+- **Przywróć organizację z archiwum** w banerze zarchiwizowanej organizacji przywraca ją. Po zarchiwizowaniu komunikat przez chwilę oferuje też **Cofnij**.
+- **Usuń organizację** w **Strefie niebezpiecznej** usuwa ją razem z domenami, dostępem do projektów i członkostwami; członkowie zachowują konta. Tego nie można cofnąć. Organizacji ze zgłoszeniami nie można usunąć – zamiast tego ją zarchiwizuj.
