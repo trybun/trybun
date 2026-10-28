@@ -3,6 +3,7 @@ import { AlertTriangleIcon, InfoIcon, OctagonAlertIcon } from 'lucide-react';
 import { expect } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
 import { Alert, AlertDescription, AlertTitle } from './alert.js';
+import { Button } from './button.js';
 
 const meta = {
   title: 'Components/Alert',
@@ -52,6 +53,28 @@ export const WithIcon: Story = {
   ),
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('status').querySelector('svg')).not.toBeNull();
+  },
+};
+
+// An action on a coloured alert, e.g. Unarchive on a warning: an opaque secondary button keeps its
+// contrast in both themes (an outline one is translucent in the dark theme).
+export const WithAction: Story = {
+  args: { variant: 'warning' },
+  render: (args) => (
+    <Alert {...args}>
+      <AlertTriangleIcon aria-hidden />
+      <AlertTitle>This organization is archived</AlertTitle>
+      <AlertDescription className="flex flex-col gap-3">
+        It is read-only until it is unarchived.
+        <Button variant="secondary" className="w-fit">
+          Unarchive
+        </Button>
+      </AlertDescription>
+    </Alert>
+  ),
+  play: async ({ canvas }) => {
+    const style = getComputedStyle(canvas.getByRole('button', { name: 'Unarchive' }));
+    await expect(style.color).not.toBe(style.backgroundColor);
   },
 };
 

@@ -115,7 +115,8 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn('font-heading text-base leading-none font-medium', className)}
+      // A long word – e.g. an e-mail address – wraps instead of widening the dialog past the phone.
+      className={cn('font-heading text-base leading-snug font-medium wrap-anywhere', className)}
       {...props}
     />
   );
