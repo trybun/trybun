@@ -22,7 +22,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-`pnpm dev` starts the infrastructure in Docker Compose (`compose.yaml` with `compose.dev.yaml`: PostgreSQL, Valkey, SeaweedFS, Keycloak, ClamAV and Mailpit, ports bound to `127.0.0.1`), applies the Keycloak configuration, runs the database migrations, loads the demo dataset, and then starts the web application on <http://localhost:3000>, the API on <http://localhost:3001/api/v1> and the Worker. Keycloak answers on <http://localhost:8080/auth>, Mailpit shows all outgoing e-mail on <http://localhost:8025>. When memory is short, remove `clamav` from `COMPOSE_PROFILES` in `.env`. A change of the API or the Worker rebuilds and restarts both ([§15.12](docs/spec/15-deployment.md)); `docker compose -f compose.yaml -f compose.dev.yaml down` stops the infrastructure.
+`pnpm dev` starts the infrastructure in Docker Compose (`compose.yaml` with `compose.dev.yaml`, Compose project `trybun-dev`: PostgreSQL, Valkey, SeaweedFS, Keycloak, ClamAV and Mailpit, ports bound to `127.0.0.1`), applies the Keycloak configuration, runs the database migrations, loads the demo dataset, and then starts the web application on <http://localhost:3000>, the API on <http://localhost:3001/api/v1> and the Worker. Keycloak answers on <http://localhost:8080/auth>, Mailpit shows all outgoing e-mail on <http://localhost:8025>. When memory is short, remove `clamav` from `COMPOSE_PROFILES` in `.env`. A change of the API or the Worker rebuilds and restarts both ([§15.12](docs/spec/15-deployment.md)); `docker compose -f compose.yaml -f compose.dev.yaml down` stops the infrastructure.
 
 ### Signing in locally
 
