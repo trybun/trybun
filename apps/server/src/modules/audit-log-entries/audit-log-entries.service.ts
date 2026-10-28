@@ -21,6 +21,17 @@ interface AuditDetailsByAction {
   'project_member.added': { userId: string; role: ProjectRole };
   'project_member.role_changed': { userId: string; role: ProjectRole; previousRole: ProjectRole };
   'project_member.removed': { userId: string; role: ProjectRole };
+  'organization.created': null;
+  'organization.renamed': null;
+  'organization.domain_added': { domain: string };
+  'organization.domain_removed': { domain: string };
+  'organization.project_added': { projectId: string };
+  'organization.project_removed': { projectId: string };
+  'organization.member_added': { userId: string };
+  'organization.member_removed': { userId: string };
+  'organization.archived': null;
+  'organization.unarchived': null;
+  'organization.deleted': null;
 }
 
 export type AuditAction = keyof AuditDetailsByAction;

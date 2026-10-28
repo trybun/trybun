@@ -9,6 +9,7 @@ import {
   keycloakJwksHandler,
   signAccessToken,
 } from '../../../test/factories/access-token.factory.js';
+import { createOrganization } from '../../../test/factories/organization.factory.js';
 import { createProject } from '../../../test/factories/project.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
@@ -96,6 +97,7 @@ describe('administration endpoints', () => {
         items: [
           { id: 'create_project', isDone: false, isOptional: false },
           { id: 'configure_github_sign_in', isDone: false, isOptional: false },
+          { id: 'create_organization', isDone: false, isOptional: true },
           { id: 'configure_email', isDone: false, isOptional: false },
           { id: 'configure_backup_storage', isDone: false, isOptional: false },
         ],
@@ -134,6 +136,7 @@ describe('administration endpoints', () => {
       isBackupStorageConfigured: true,
     });
     await createProject(prisma, { state: 'archived' });
+    await createOrganization(prisma, { state: 'archived' });
 
     const res = await get('getting-started', await signIn(true));
 
@@ -141,6 +144,7 @@ describe('administration endpoints', () => {
       items: [
         { id: 'create_project', isDone: true },
         { id: 'configure_github_sign_in', isDone: true },
+        { id: 'create_organization', isDone: true },
         { id: 'configure_email', isDone: true },
         { id: 'configure_backup_storage', isDone: true },
       ],

@@ -21,8 +21,18 @@ export class AdministrationService {
   /** The getting-started checklist (§15.6), a list bounded by its closed set of items (§18.4). */
   async findGettingStarted(principal: Principal): Promise<GettingStartedPage> {
     this.assertCanRead(principal);
-    const hasProject = (await this.prisma.project.count({ take: 1 })) > 0;
-    return { items: gettingStartedItems({ ...this.config, hasProject }), nextCursor: null };
+    const [projects, organizations] = await Promise.all([
+      this.prisma.project.count({ take: 1 }),
+      this.prisma.organization.count({ take: 1 }),
+    ]);
+    return {
+      items: gettingStartedItems({
+        ...this.config,
+        hasProject: projects > 0,
+        hasOrganization: organizations > 0,
+      }),
+      nextCursor: null,
+    };
   }
 
   /** The "About" page (§15.4): the same version as `/health`. */

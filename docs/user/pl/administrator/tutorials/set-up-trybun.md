@@ -34,6 +34,7 @@ Po pierwszym logowaniu Trybun otwiera **Administracja** › **Pierwsze kroki**. 
 
 - [Utwórz projekt](../how-to/create-archive-and-delete-a-project.md) – zgłoszenia żyją w projektach; pozycja zaznacza się, gdy istnieje jakikolwiek projekt.
 - [Skonfiguruj logowanie przez GitHub](../how-to/configure-github-sign-in.md) – członkowie zespołu logują się przez GitHub; wymagane, zanim zaprosisz zespół.
+- [Utwórz organizację](../how-to/manage-organizations.md) (opcjonalnie) – grupuje użytkowników końcowych firmy klienta; pozycja zaznacza się, gdy istnieje jakakolwiek organizacja.
 - [Skonfiguruj e-mail](../how-to/configure-email.md) – bez serwera SMTP Trybun nie wysyła e-maili.
 - [Skonfiguruj miejsce na kopie zapasowe](../how-to/configure-backup-storage.md) – bez magazynu S3 w innej lokalizacji codzienne kopie zapasowe zostają na serwerze i przepadną razem z nim.
 

@@ -12,6 +12,10 @@ import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import { PrismaService } from '../../platform/database/prisma.service.js';
 import { ADMINISTRATION } from '../administration/administration.abilities.js';
+import {
+  CREATE as CREATE_ORGANIZATION,
+  ORGANIZATION,
+} from '../organizations/organizations.abilities.js';
 import { CREATE, PROJECT } from '../projects/projects.abilities.js';
 
 const PRODUCT_TOUR_PROGRESS_SELECT = {
@@ -58,6 +62,9 @@ export class UsersService {
     }
     if (ability.can(CREATE, PROJECT)) {
       allowedActions.push('create_project');
+    }
+    if (ability.can(CREATE_ORGANIZATION, ORGANIZATION)) {
+      allowedActions.push('create_organization');
     }
     return { ...user, allowedActions };
   }

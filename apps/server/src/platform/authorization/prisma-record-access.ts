@@ -1,10 +1,15 @@
-import { subject } from '@casl/ability';
+import { type ForcedSubject, subject } from '@casl/ability';
 import { accessibleBy } from '@casl/prisma/runtime';
 import { Injectable } from '@nestjs/common';
 import { type ErrorCode, errorCodeSchema } from '@trybun/contracts/errors';
 import type { Principal } from '../authentication/principal.js';
 import { PrismaService } from '../database/prisma.service.js';
-import { type AppAbility, AbilityFactory, type ProjectRuleRecord } from './ability-factory.js';
+import {
+  type AppAbility,
+  AbilityFactory,
+  type OrganizationRuleRecord,
+  type ProjectRuleRecord,
+} from './ability-factory.js';
 import { RecordAccess, type RecordAccessDecision, type TargetRecord } from './record-access.js';
 
 /**
@@ -24,11 +29,10 @@ export class PrismaRecordAccess extends RecordAccess {
 
   async decide(principal: Principal, target: TargetRecord): Promise<RecordAccessDecision> {
     const ability = this.abilities.forPrincipal(principal);
-    const record = await this.find(ability, principal, target);
-    if (record === null) {
+    const subjectRecord = await this.find(ability, principal, target);
+    if (subjectRecord === null) {
       return { outcome: 'not_found' };
     }
-    const subjectRecord = subject(target.subject as 'Project', record);
     if (ability.can(target.action, subjectRecord)) {
       return { outcome: 'allowed' };
     }
@@ -38,14 +42,15 @@ export class PrismaRecordAccess extends RecordAccess {
     };
   }
 
-  private find(
+  /** The record as its rules read it, as a subject of the ability; `null` when invisible. */
+  private async find(
     ability: AppAbility,
     principal: Principal,
     target: TargetRecord,
-  ): Promise<ProjectRuleRecord | null> {
+  ): Promise<SubjectRecord | null> {
     switch (target.subject) {
-      case 'Project':
-        return this.prisma.project.findFirst({
+      case 'Project': {
+        const record = await this.prisma.project.findFirst({
           where: { AND: [accessibleBy(ability, 'read').ofType('Project'), { id: target.id }] },
           select: {
             id: true,
@@ -56,11 +61,26 @@ export class PrismaRecordAccess extends RecordAccess {
             },
           },
         });
+        return record === null ? null : subject('Project', record);
+      }
+      case 'Organization': {
+        const record = await this.prisma.organization.findFirst({
+          where: {
+            AND: [accessibleBy(ability, 'read').ofType('Organization'), { id: target.id }],
+          },
+          select: { id: true, state: true },
+        });
+        return record === null ? null : subject('Organization', record);
+      }
       default:
-        return Promise.resolve(null);
+        return null;
     }
   }
 }
+
+type SubjectRecord =
+  | (ProjectRuleRecord & ForcedSubject<'Project'>)
+  | (OrganizationRuleRecord & ForcedSubject<'Organization'>);
 
 /** The error code a denying rule carries as its reason (§18.3); `403` without one. */
 export function reasonCode(reason: string | undefined): ErrorCode {

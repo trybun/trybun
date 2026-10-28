@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { OrganizationSummary } from '@trybun/contracts/organizations';
 import type { Project, ProjectAction, ProjectMemberPage } from '@trybun/contracts/projects';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
 import { NextIntlClientProvider } from 'next-intl';
@@ -20,6 +21,7 @@ const { ProjectDangerZone } = await import('./project-danger-zone.js');
 const { ProjectMembers } = await import('./project-members.js');
 const { ProjectStateTabs } = await import('./project-state-tabs.js');
 const { NewProjectDialog } = await import('./new-project-dialog.js');
+const { ProjectOrganizations } = await import('./project-organizations.js');
 
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
 
@@ -130,6 +132,16 @@ describe('ProjectSettings', () => {
   it('shows the Danger zone only with an action of it', () => {
     expect(renderSettings(project())).not.toContain('Danger zone');
     expect(renderSettings(project({ allowedActions: ADMIN_ACTIONS }))).toContain('Danger zone');
+  });
+
+  it('shows the organizations with access to the Administrator only', () => {
+    expect(renderSettings(project())).not.toContain('Organizations with access');
+    const html = render(
+      <ProjectSettings projectId={PROJECT_ID} tab="general" canSeeOrganizations />,
+      (client) => client.setQueryData(['projects', 'detail', PROJECT_ID], project()),
+    );
+
+    expect(html).toContain('Organizations with access');
   });
 
   it('shows the banner of an archived project', () => {
@@ -243,5 +255,50 @@ describe('NewProjectDialog', () => {
 
     expect(html).toContain('New project');
     expect(html).not.toContain('Create project');
+  });
+});
+
+describe('ProjectOrganizations', () => {
+  const organizationPage = (items: OrganizationSummary[]) => ({
+    pages: [{ items, nextCursor: null }],
+    pageParams: [null],
+  });
+  const organization: OrganizationSummary = {
+    id: '0199a3f0-0000-7000-8000-000000000020',
+    name: 'Acme',
+    state: 'active',
+    domains: ['acme.com'],
+    memberCount: 2,
+    version: 1,
+    createdAt: '2026-10-27T09:00:00.000Z',
+    updatedAt: '2026-10-27T09:00:00.000Z',
+    allowedActions: ['read'],
+  };
+
+  it('links each organization with access, the archived ones marked', () => {
+    const html = render(<ProjectOrganizations projectId={PROJECT_ID} />, (client) => {
+      client.setQueryData(
+        ['organizations', 'list', 'active', PROJECT_ID],
+        organizationPage([organization]),
+      );
+      client.setQueryData(
+        ['organizations', 'list', 'archived', PROJECT_ID],
+        organizationPage([{ ...organization, id: 'old', name: 'Old Co', state: 'archived' }]),
+      );
+    });
+
+    expect(html).toContain(`href="/admin/organizations/${organization.id}"`);
+    expect(html).toContain('Acme');
+    expect(html).toContain('Old Co');
+    expect(html.match(/>Archived</g)).toHaveLength(1);
+  });
+
+  it('says when no organization may access the project', () => {
+    const html = render(<ProjectOrganizations projectId={PROJECT_ID} />, (client) => {
+      client.setQueryData(['organizations', 'list', 'active', PROJECT_ID], organizationPage([]));
+      client.setQueryData(['organizations', 'list', 'archived', PROJECT_ID], organizationPage([]));
+    });
+
+    expect(html).toContain('No organization may access the project.');
   });
 });

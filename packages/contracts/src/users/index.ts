@@ -42,9 +42,13 @@ export const timeZoneSchema = z
 /**
  * The global actions of an account (§18.3): actions that belong to no record, sent with the
  * current account. `open_administration` – the Administrator panel (§15.6); `create_project` –
- * creating a project (§7.5).
+ * creating a project, `create_organization` – creating an organization (§7.5).
  */
-export const currentUserActionSchema = z.enum(['open_administration', 'create_project']);
+export const currentUserActionSchema = z.enum([
+  'open_administration',
+  'create_project',
+  'create_organization',
+]);
 export type CurrentUserAction = z.infer<typeof currentUserActionSchema>;
 
 /**

@@ -1,27 +1,66 @@
-import { devices, expect, test } from '@playwright/test';
+import { devices, expect, type Page, test } from '@playwright/test';
 import { PRODUCT_TOURS } from '../src/features/product-tours/tours/index.js';
 import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { ProductTourPage } from './pages/product-tour.page.js';
-import { NEWCOMER_STORAGE_STATE } from './storage-state.js';
+import { ADMIN_STORAGE_STATE, NEWCOMER_STORAGE_STATE } from './storage-state.js';
 
 const PHONE = { ...devices['Pixel 7'], viewport: { width: 360, height: 780 } };
 const DESKTOP = { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } };
+
+/**
+ * The page of a view with route parameters: a record of the demo dataset – the organization is
+ * `demoId(400)` of `apps/server/prisma/demo-dataset.ts`.
+ */
+const PATHS_OF_VIEWS: Readonly<Record<string, string>> = {
+  '/admin/organizations/[organizationId]':
+    '/admin/organizations/019b8d00-0000-7000-8000-000000000190',
+};
+
+/** The views of the Administrator panel, which only the Administrator opens (§15.6). */
+function isAdministration(view: string): boolean {
+  return view === '/admin' || view.startsWith('/admin/');
+}
+
+/** Checks that every step of the tours targets one visible element of its view. */
+async function expectTourTargets(
+  page: Page,
+  tours: readonly (typeof PRODUCT_TOURS)[number][],
+): Promise<void> {
+  const tour = new ProductTourPage(page);
+  for (const { view, steps } of tours) {
+    const path = PATHS_OF_VIEWS[view] ?? view;
+    expect(path, `add a page of ${view} to PATHS_OF_VIEWS`).not.toContain('[');
+    await page.goto(path);
+    for (const { target } of steps) {
+      if (target !== undefined) {
+        await expect(tour.target(target), `data-tour="${target}" on ${view}`).toHaveCount(1);
+      }
+    }
+  }
+}
 
 test.describe('product tours', () => {
   // The signed-in team member has completed every tour (demo dataset), so none starts by itself.
   test('every step targets an element of its view', async ({ page }) => {
     // The end-user portal does not exist yet; its first tour signs in as an end user here.
     expect(PRODUCT_TOURS.map((tour) => tour.audience)).not.toContain('end_user');
-    const tour = new ProductTourPage(page);
-    for (const { view, steps } of PRODUCT_TOURS) {
-      await page.goto(view);
-      for (const { target } of steps) {
-        if (target !== undefined) {
-          await expect(tour.target(target), `data-tour="${target}" on ${view}`).toHaveCount(1);
-        }
-      }
-    }
+    await expectTourTargets(
+      page,
+      PRODUCT_TOURS.filter((tour) => !isAdministration(tour.view)),
+    );
+  });
+
+  test.describe('of the Administrator panel', () => {
+    test.use({ storageState: ADMIN_STORAGE_STATE });
+
+    // Optional steps included: the Administrator may perform every action of the demo records.
+    test('every step targets an element of its view', async ({ page }) => {
+      await expectTourTargets(
+        page,
+        PRODUCT_TOURS.filter((tour) => isAdministration(tour.view)),
+      );
+    });
   });
 
   test('closes with Esc and starts again from the help menu', async ({ page }) => {

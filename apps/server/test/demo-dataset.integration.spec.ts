@@ -1,3 +1,4 @@
+import { productTourIdSchema } from '@trybun/contracts/product-tours';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -71,6 +72,42 @@ describe('demo dataset', () => {
     }
   });
 
+  it('restores the demo organization with its domain, access and members on a second run', async () => {
+    const prisma = new PrismaService(integrationConfig());
+    const { organizations, organizationDomains, organizationProjects, organizationMembers } =
+      buildDemoDataset();
+    const organizationId = organizations[0]?.id ?? '';
+    try {
+      await seedDemoData(prisma);
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: { state: 'archived', version: { increment: 1 } },
+      });
+      await prisma.organizationMember.deleteMany({ where: { organizationId } });
+      await prisma.organizationDomain.deleteMany({ where: { organizationId } });
+      await seedDemoData(prisma);
+
+      expect(
+        await prisma.organization.findUnique({
+          where: { id: organizationId },
+          select: {
+            state: true,
+            version: true,
+            domains: { select: { domain: true } },
+            _count: { select: { projects: true, members: true } },
+          },
+        }),
+      ).toEqual({
+        state: 'active',
+        version: 1,
+        domains: organizationDomains.map(({ domain }) => ({ domain })),
+        _count: { projects: organizationProjects.length, members: organizationMembers.length },
+      });
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
+
   it('restores the tour progress: none for the newcomer, completed for the other team accounts', async () => {
     const prisma = new PrismaService(integrationConfig());
     const team = buildDemoDataset().users.filter((user) => user.kind === 'team');
@@ -90,12 +127,16 @@ describe('demo dataset', () => {
       const progress = await prisma.productTourProgress.findMany({
         where: { userId: { in: team.map((user) => user.id ?? '') } },
         select: { userId: true, tourId: true, status: true },
-        orderBy: { userId: 'asc' },
+        orderBy: [{ userId: 'asc' }, { tourId: 'asc' }],
       });
       expect(progress).toEqual(
         team
           .filter((user) => user !== newcomer)
-          .map((user) => ({ userId: user.id, tourId: 'first_login', status: 'completed' })),
+          .flatMap((user) =>
+            [...productTourIdSchema.options]
+              .sort()
+              .map((tourId) => ({ userId: user.id, tourId, status: 'completed' })),
+          ),
       );
     } finally {
       await prisma.$disconnect();

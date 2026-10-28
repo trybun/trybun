@@ -30,6 +30,7 @@
     "title": "Administration",
     "sections": "Sections of the Administrator panel",
     "gettingStarted": "Getting started",
+    "organizations": "Organizations",
     "about": "About",
     "progress": "{done} of {total} done",
     "allDone": "Everything on this list is set up.",
@@ -45,6 +46,10 @@
       "configure_github_sign_in": {
         "title": "Configure GitHub sign-in",
         "description": "Team members sign in with GitHub. Required before you can invite the team."
+      },
+      "create_organization": {
+        "title": "Create an organization",
+        "description": "Group the end users of a customer company and let them see the company's tickets. Organizations are optional."
       },
       "configure_email": {
         "title": "Configure e-mail",
@@ -149,6 +154,125 @@
       "deleting": "Deleting…",
       "cancel": "Cancel",
       "deleted": "Project deleted"
+    },
+    "organizations": {
+      "title": "Organizations with access",
+      "description": "The members of these organizations may access the project. Change the access in the organization.",
+      "empty": "No organization may access the project.",
+      "archived": "Archived",
+      "loadMore": "Show more"
+    }
+  },
+  "organizations": {
+    "title": "Organizations",
+    "description": "Customer companies: their end users, e-mail domains and the projects they may access.",
+    "tabs": {
+      "label": "Organization state",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "list": {
+      "emptyActive": "No organizations yet. An organization groups the end users of a customer company, so they can see the company’s tickets. Organizations are optional.",
+      "emptyArchived": "No archived organizations.",
+      "noDomains": "No e-mail domains",
+      "memberCount": "{count, plural, one {# member} other {# members}}",
+      "loadMore": "Show more",
+      "loadingMore": "Loading…"
+    },
+    "create": {
+      "open": "New organization",
+      "title": "New organization",
+      "description": "Name the customer company. End users invited with an address of its e-mail domains join it.",
+      "name": "Name",
+      "domains": "E-mail domains (optional)",
+      "domainsDescription": "Separate several domains with commas, e.g. company.com, company.pl.",
+      "submit": "Create organization",
+      "submitting": "Creating…",
+      "cancel": "Cancel"
+    },
+    "detail": {
+      "back": "Organizations",
+      "archivedBanner": "This organization is archived",
+      "archivedDescription": "It is read-only until it is unarchived."
+    },
+    "general": {
+      "title": "General",
+      "name": "Name",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Changes saved"
+    },
+    "domains": {
+      "title": "E-mail domains",
+      "description": "End users invited with an address of these domains join the organization. Public mail domains such as gmail.com cannot be added.",
+      "empty": "No e-mail domains.",
+      "add": "Add domain",
+      "domain": "Domain",
+      "adding": "Adding…",
+      "remove": "Remove",
+      "removeOf": "Remove {domain}",
+      "added": "{domain} added",
+      "removed": "{domain} removed"
+    },
+    "projects": {
+      "title": "Projects",
+      "description": "The members of the organization may access these projects.",
+      "empty": "The organization may access no projects yet.",
+      "project": "Project",
+      "archived": "Archived",
+      "choose": "Choose a project",
+      "noCandidates": "Every active project is already added.",
+      "add": "Add project",
+      "adding": "Adding…",
+      "remove": "Remove",
+      "removeOf": "Remove {name}",
+      "added": "{name} added",
+      "removed": "{name} removed",
+      "loadMore": "Show more projects"
+    },
+    "members": {
+      "title": "Members",
+      "description": "End users of the customer company. A person belongs to one organization at most.",
+      "empty": "The organization has no members yet.",
+      "noName": "No name",
+      "noEmail": "No e-mail address",
+      "email": "E-mail address",
+      "add": "Add member",
+      "adding": "Adding…",
+      "added": "{name} added to the organization",
+      "alreadyMember": "{name} is already a member",
+      "remove": "Remove",
+      "removeOf": "Remove {name}",
+      "removed": "{name} removed from the organization",
+      "undo": "Undo",
+      "joined": "Joined {date}",
+      "states": {
+        "invited": "Invited",
+        "active": "Active",
+        "deactivated": "Deactivated",
+        "anonymized": "Anonymized"
+      },
+      "moveTitle": "Move {email} to this organization?",
+      "moveDescription": "This person already belongs to another organization. Moving them changes which tickets they can see.",
+      "moveConfirm": "Move",
+      "cancel": "Cancel"
+    },
+    "danger": {
+      "title": "Danger zone",
+      "archive": "Archive organization",
+      "archiveDescription": "The organization becomes read-only until it is unarchived. Its e-mail domains stay reserved.",
+      "archived": "Organization archived",
+      "undo": "Undo",
+      "unarchive": "Unarchive organization",
+      "unarchiveDescription": "The organization can be changed again.",
+      "unarchived": "Organization unarchived",
+      "delete": "Delete organization",
+      "deleteDescription": "Deletes the organization with its e-mail domains, project access and memberships. The accounts of the members stay. This cannot be undone.",
+      "deleteTitle": "Delete {name}?",
+      "deleteConfirm": "Delete organization",
+      "deleting": "Deleting…",
+      "cancel": "Cancel",
+      "deleted": "Organization deleted"
     }
   },
   "setup": {
@@ -214,6 +338,23 @@
             "description": "Switch the language or sign out in your account menu."
           }
         }
+      },
+      "organization_detail": {
+        "name": "Organization",
+        "steps": {
+          "domains": {
+            "title": "E-mail domains",
+            "description": "End users invited with an address of these domains join the organization."
+          },
+          "projects": {
+            "title": "Projects",
+            "description": "Choose the projects the members of the organization may access."
+          },
+          "members": {
+            "title": "Members",
+            "description": "Add end users by their e-mail address, or remove them with Undo."
+          }
+        }
       }
     }
   },
@@ -261,6 +402,16 @@
     "project_member": {
       "exists": "This person is already a member of the project.",
       "user_not_eligible": "Only active team members can be added to a project."
+    },
+    "organization": {
+      "name_taken": "Another organization already has this name.",
+      "domain_public": "Public mail domains such as gmail.com cannot be added.",
+      "domain_taken": "This domain belongs to another organization.",
+      "archived": "This organization is archived and read-only. Unarchive it to make changes.",
+      "not_empty": "This organization has tickets and cannot be deleted. Archive it instead.",
+      "member_not_found": "No account has this e-mail address.",
+      "member_not_end_user": "Only end users can belong to an organization.",
+      "member_of_other_organization": "This person already belongs to another organization."
     },
     "server": {
       "internal_error": "Something went wrong. Try again later.",
