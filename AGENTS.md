@@ -1,6 +1,6 @@
 # AGENTS.md – Trybun
 
-Instructions for AI coding agents in the **Trybun** repository. The project is built with an **AI Engineering** approach: agents implement, humans review and approve every change. This file is a short entry point – the details live in the specification; read only what your task needs.
+Instructions for AI coding agents in the **Trybun** repository. The project is built with an **AI Engineering** approach: agents implement and review, the maintainer decides which delivery workflows approve and merge (`SDLC.md`, ADR 0011), and every change of requirements is approved by a human. This file is a short entry point – the details live in the specification; read only what your task needs.
 
 ## Start of every session
 
@@ -63,7 +63,7 @@ Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2
 - **Learn from corrections**: a specific pitfall → `.ai/memory/`; a general working rule → propose an `AGENTS.md` change.
 - **Repeated work** → propose a skill in `.ai/skills/`.
 - **Self-review before the PR**: knowing what you know now, is there a simpler, cleaner solution?
-- Trunk-based, squash merge; Conventional Commits with the closed scope list ([§2.14](docs/spec/02-agent-rules.md)); branch names `KEY-123-short-description` (tickets) or `S0-01-short-description` (plan tasks); DCO `Signed-off-by` on every commit.
+- Trunk-based, squash merge; Conventional Commits with the closed scope list ([§2.14](docs/spec/02-agent-rules.md)); branch names `<type>/<short-description>` (`feat/`, `fix/issue-123-…`, `docs/`, … as the om-* skills create them) or `S0-01-short-description` (plan tasks); DCO `Signed-off-by` on every commit.
 - New dependency: exists, maintained, widely used, no known vulnerabilities, MIT-compatible licence – and only if really needed; add a stable version with an explicit range, never by dist-tag (`latest` may be a release candidate).
 
 ## Definition of Done
@@ -80,7 +80,7 @@ Checklist (full text: [§2.13](docs/spec/02-agent-rules.md)):
 - [ ] Conventional Commits; breaking changes marked (Rule 11)
 - [ ] Code follows the pattern catalogue; new or changed patterns proposed for approval (Rule 12)
 - [ ] Tests added and passing; all CI gates green
-- [ ] Human review approved
+- [ ] Reviewed and approved – by a human or the review and QA gates of the workflow (`SDLC.md`); requirement changes by the maintainer
 
 ## Commands
 
