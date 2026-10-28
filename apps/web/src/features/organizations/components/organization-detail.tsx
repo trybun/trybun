@@ -25,7 +25,7 @@ import { useUnarchive } from './use-unarchive.js';
  */
 export function OrganizationDetail({ organizationId }: { organizationId: string }) {
   const t = useTranslations('organizations');
-  const unarchive = useUnarchive();
+  const { unarchive, isPending: isUnarchiving } = useUnarchive();
   const { data: organization, error } = useQuery(
     organizationQueryOptions(browserApiClient, organizationId),
   );
@@ -59,6 +59,7 @@ export function OrganizationDetail({ organizationId }: { organizationId: string 
               <Button
                 variant="outline"
                 className="w-full md:w-fit"
+                disabled={isUnarchiving}
                 onClick={() => unarchive(organization)}
               >
                 {t('danger.unarchive')}

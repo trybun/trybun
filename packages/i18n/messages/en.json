@@ -219,6 +219,7 @@
       "description": "The members of the organization may access these projects.",
       "empty": "The organization may access no projects yet.",
       "project": "Project",
+      "archived": "Archived",
       "choose": "Choose a project",
       "noCandidates": "Every active project is already added.",
       "add": "Add project",

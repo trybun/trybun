@@ -63,14 +63,11 @@ export function OrganizationMembers({ organization }: { organization: Organizati
     member.user.displayName ?? member.user.email ?? t('noName');
 
   const add = async (email: string, move: boolean) => {
-    const isAlreadyMember = items.some(
-      (member) => member.user.email?.toLowerCase() === email.toLowerCase(),
-    );
-    const added = await addMember.mutateAsync({ email, move });
+    const { member, isNew } = await addMember.mutateAsync({ email, move });
     toast.add({
-      title: isAlreadyMember
-        ? t('alreadyMember', { name: nameOf(added) })
-        : t('added', { name: nameOf(added) }),
+      title: isNew
+        ? t('added', { name: nameOf(member) })
+        : t('alreadyMember', { name: nameOf(member) }),
       type: 'success',
     });
     form.reset();

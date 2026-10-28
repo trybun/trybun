@@ -43,7 +43,7 @@ export function OrganizationDangerZone({ organization }: { organization: Organiz
   const errorMessage = useErrorMessage();
   const router = useRouter();
   const archive = useArchiveOrganization();
-  const unarchive = useUnarchive();
+  const { unarchive } = useUnarchive();
   const deleteOrganization = useDeleteOrganization();
   const [isDeleting, setIsDeleting] = useState(false);
   const showError = (error: unknown) => toast.add({ title: errorMessage(error), type: 'error' });

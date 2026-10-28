@@ -126,13 +126,15 @@ export function useDeleteOrganization() {
 export function useAddOrganizationMember(organizationId: string) {
   const invalidateOrganizations = useInvalidateOrganizations();
   return useMutation({
-    mutationFn: (input: AddOrganizationMemberDto) =>
-      dataOf(
-        browserApiClient.POST('/api/v1/organizations/{organizationId}/members', {
-          params: { path: { organizationId } },
-          body: input,
-        }),
-      ),
+    // `isNew` is `false` when the API answers `200`: the person was a member already (§7.3).
+    mutationFn: async (input: AddOrganizationMemberDto) => {
+      const result = browserApiClient.POST('/api/v1/organizations/{organizationId}/members', {
+        params: { path: { organizationId } },
+        body: input,
+      });
+      const member = await dataOf(result);
+      return { member, isNew: (await result).response.status === 201 };
+    },
     // A conflict means the members changed elsewhere: refresh them too.
     onSettled: () => invalidateOrganizations(),
   });

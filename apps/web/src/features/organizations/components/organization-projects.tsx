@@ -77,8 +77,10 @@ export function OrganizationProjects({ organization }: { organization: Organizat
                 <Badge variant="outline" className="font-mono">
                   {project.key}
                 </Badge>
+                {project.state === 'archived' && <Badge variant="outline">{t('archived')}</Badge>}
               </span>
-              {canManage && (
+              {/* The access to an archived project can be neither granted nor removed (§7.3). */}
+              {canManage && project.state === 'active' && (
                 <Button
                   variant="outline"
                   aria-label={t('removeOf', { name: project.name })}

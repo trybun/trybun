@@ -49,7 +49,14 @@ function organization(overrides: Partial<Organization> = {}): Organization {
     createdAt: '2026-10-27T09:00:00.000Z',
     updatedAt: '2026-10-27T09:00:00.000Z',
     allowedActions: ACTIVE_ACTIONS,
-    projects: [{ id: '0199a3f0-0000-7000-8000-000000000010', key: 'CP', name: 'Customer portal' }],
+    projects: [
+      {
+        id: '0199a3f0-0000-7000-8000-000000000010',
+        key: 'CP',
+        name: 'Customer portal',
+        state: 'active',
+      },
+    ],
     ...overrides,
   };
 }
@@ -247,6 +254,27 @@ describe('OrganizationProjects', () => {
     );
 
     expect(html).toContain('Every active project is already added.');
+  });
+
+  it('marks an archived project and offers no Remove for it', () => {
+    const value = organization({
+      projects: [
+        {
+          id: '0199a3f0-0000-7000-8000-000000000014',
+          key: 'OLD',
+          name: 'Legacy',
+          state: 'archived',
+        },
+      ],
+    });
+
+    const html = render(<OrganizationProjects organization={value} />, (client) =>
+      seedDetail(client, value),
+    );
+
+    expect(html).toContain('Legacy');
+    expect(html).toContain('Archived');
+    expect(html).not.toContain('aria-label="Remove Legacy"');
   });
 
   it('says when the organization may access no projects', () => {

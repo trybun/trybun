@@ -219,6 +219,7 @@
       "description": "Członkowie organizacji mają dostęp do tych projektów.",
       "empty": "Organizacja nie ma jeszcze dostępu do żadnego projektu.",
       "project": "Projekt",
+      "archived": "Zarchiwizowany",
       "choose": "Wybierz projekt",
       "noCandidates": "Wszystkie aktywne projekty są już dodane.",
       "add": "Dodaj projekt",
