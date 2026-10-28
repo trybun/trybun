@@ -83,7 +83,8 @@
                           "tourId": {
                             "type": "string",
                             "enum": [
-                              "first_login"
+                              "first_login",
+                              "organization_detail"
                             ]
                           },
                           "tourVersion": {
@@ -144,7 +145,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "first_login"
+                "first_login",
+                "organization_detail"
               ]
             }
           }
@@ -188,7 +190,8 @@
                     "tourId": {
                       "type": "string",
                       "enum": [
-                        "first_login"
+                        "first_login",
+                        "organization_detail"
                       ]
                     },
                     "tourVersion": {
