@@ -46,19 +46,21 @@ As in the spec: no effects on ticket visibility (S1-11); no invitations or domai
 
 ## Progress
 
+PR: #149
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Organizations and domains
 
-- [ ] 1.1 Prisma models, migration, contracts, factories, enum test
-- [ ] 1.2 E-mail domain rules and blocklist
-- [ ] 1.3 Organization abilities, record access, create_organization
-- [ ] 1.4 Organization endpoints with audit entries
+- [x] 1.1 Prisma models, migration, contracts, factories, enum test — 6b2373a
+- [x] 1.2 E-mail domain rules and blocklist — 51aa800
+- [x] 1.3 Organization abilities, record access, create_organization — 96af112
+- [x] 1.4 Organization endpoints with audit entries — 82b4124
 - [ ] 1.5 Web: list, create dialog, detail with domains, checklist item
 
 ### Phase 2: Project access and membership
 
-- [ ] 2.1 Project access and findForInvitation
-- [ ] 2.2 Members endpoints, move, removeMembership
+- [x] 2.1 Project access and findForInvitation — 82b4124
+- [x] 2.2 Members endpoints, move, removeMembership — 82b4124
 - [ ] 2.3 Web: projects and members sections, project settings section
 - [ ] 2.4 User documentation, product tour, specification updates
