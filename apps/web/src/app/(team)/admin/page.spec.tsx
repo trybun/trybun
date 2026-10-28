@@ -67,7 +67,7 @@ describe('Administrator panel', () => {
       expect(html).toContain(done);
       expect(html).toContain(toDo);
       expect(html).toContain('href="/help/administrator/how-to/configure-email"');
-      expect(requireSession).toHaveBeenCalledWith('/admin');
+      expect(requireSession).toHaveBeenCalledWith();
     },
   );
 

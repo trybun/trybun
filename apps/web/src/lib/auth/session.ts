@@ -24,12 +24,12 @@ export const getSession = cache(async (): Promise<Session | null> => {
 
 /**
  * The session of the request; without one, the user is sent to the sign-in, which returns to
- * `callbackPath` – by default the page the user opened, passed on by `proxy.ts`.
+ * the page the user opened, passed on by `proxy.ts`.
  */
-export async function requireSession(callbackPath?: string): Promise<Session> {
+export async function requireSession(): Promise<Session> {
   const session = await getSession();
   if (session === null) {
-    const callbackUrl = callbackPathOf(callbackPath ?? (await headers()).get(REQUEST_PATH_HEADER));
+    const callbackUrl = callbackPathOf((await headers()).get(REQUEST_PATH_HEADER));
     return redirect(`${SIGN_IN_PATH}?${new URLSearchParams({ callbackUrl }).toString()}`);
   }
   return session;
