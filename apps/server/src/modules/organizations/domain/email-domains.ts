@@ -3,7 +3,14 @@ import type { FieldError } from '@trybun/contracts/problem-details';
 import { AppError } from '../../../platform/errors/app-error.js';
 import publicMailDomainList from './public-mail-domains.json' with { type: 'json' };
 
-/** The blocklist of public mail domains (§7.3); its source and update: `README.md` here. */
+/**
+ * The blocklist of public mail domains (§7.3): a domain on it, e.g. `gmail.com`, cannot be added to
+ * an organization. Source: `domains.json` of `free-email-domains` 1.15.9 (MIT License,
+ * https://github.com/Kikobeats/free-email-domains), 31,163 lower-case ASCII domains, disposable ones
+ * included. Update it with the dependencies (Rule 10), with a version older than the release-age
+ * cooldown: `npm pack free-email-domains@<version>`, copy its `package/domains.json` over
+ * `public-mail-domains.json`, format it with Prettier and update the version and count here.
+ */
 const PUBLIC_MAIL_DOMAINS: ReadonlySet<string> = new Set(publicMailDomainList);
 
 /** A label of a host name: letters, digits and inner hyphens, at most 63 characters (RFC 1035). */
