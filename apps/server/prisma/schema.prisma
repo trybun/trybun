@@ -62,6 +62,7 @@ model User {
 
   productTourProgress ProductTourProgress[]
   projectMemberships  ProjectMember[]
+  organizationMember  OrganizationMember?
 
   @@map("users")
 }
@@ -98,7 +99,8 @@ model Project {
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  members ProjectMember[]
+  members       ProjectMember[]
+  organizations OrganizationProject[]
 
   @@index([name, id])
   @@map("projects")
@@ -228,4 +230,70 @@ model Session {
   @@index([keycloakUserId])
   @@index([keycloakSessionId])
   @@map("sessions")
+}
+
+/// `organization.state` (§7.3): an archived organization is read-only until it is unarchived.
+enum OrganizationState {
+  active
+  archived
+
+  @@map("organization_state")
+}
+
+/// A customer company that groups end users (§7.3); only the Administrator manages it (§7.5).
+model Organization {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  /// Trimmed, 1–100 characters, unique case-insensitively across active and archived
+  /// organizations; the unique index on the lower-case name is created by the migrations.
+  name      String
+  state     OrganizationState @default(active)
+  version   Int               @default(1)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  domains  OrganizationDomain[]
+  projects OrganizationProject[]
+  members  OrganizationMember[]
+
+  @@index([name, id])
+  @@map("organizations")
+}
+
+/// An e-mail domain of an organization (§7.3), unique across all organizations, archived ones
+/// included; stored lower-case in ASCII (punycode).
+model OrganizationDomain {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  domain         String       @unique
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organizationId])
+  @@map("organization_domains")
+}
+
+/// The access of an organization to a project (§7.3).
+model OrganizationProject {
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String       @map("project_id") @db.Uuid
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([organizationId, projectId])
+  @@index([projectId])
+  @@map("organization_projects")
+}
+
+/// `organization_member` (§7.3): an end-user account belongs to at most one organization, by the
+/// primary key on the account; `createdAt` is the date the person joined.
+model OrganizationMember {
+  userId         String       @id @map("user_id") @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organizationId])
+  @@map("organization_members")
 }

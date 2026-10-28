@@ -262,6 +262,16 @@
       "exists": "Ta osoba jest już członkiem projektu.",
       "user_not_eligible": "Do projektu można dodać tylko aktywnych członków zespołu."
     },
+    "organization": {
+      "name_taken": "Inna organizacja ma już tę nazwę.",
+      "domain_public": "Nie można dodać publicznych domen poczty, takich jak gmail.com.",
+      "domain_taken": "Ta domena należy do innej organizacji.",
+      "archived": "Ta organizacja jest zarchiwizowana i tylko do odczytu. Przywróć ją z archiwum, aby wprowadzić zmiany.",
+      "not_empty": "Tej organizacji nie można usunąć, bo ma zgłoszenia. Zarchiwizuj ją.",
+      "member_not_found": "Żadne konto nie ma tego adresu e-mail.",
+      "member_not_end_user": "Do organizacji mogą należeć tylko użytkownicy końcowi.",
+      "member_of_other_organization": "Ta osoba należy już do innej organizacji."
+    },
     "server": {
       "internal_error": "Coś poszło nie tak. Spróbuj ponownie później.",
       "unavailable": "Trybun jest chwilowo niedostępny. Spróbuj ponownie za chwilę."
