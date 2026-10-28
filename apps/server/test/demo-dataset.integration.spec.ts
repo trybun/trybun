@@ -1,3 +1,4 @@
+import { productTourIdSchema } from '@trybun/contracts/product-tours';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -126,12 +127,16 @@ describe('demo dataset', () => {
       const progress = await prisma.productTourProgress.findMany({
         where: { userId: { in: team.map((user) => user.id ?? '') } },
         select: { userId: true, tourId: true, status: true },
-        orderBy: { userId: 'asc' },
+        orderBy: [{ userId: 'asc' }, { tourId: 'asc' }],
       });
       expect(progress).toEqual(
         team
           .filter((user) => user !== newcomer)
-          .map((user) => ({ userId: user.id, tourId: 'first_login', status: 'completed' })),
+          .flatMap((user) =>
+            [...productTourIdSchema.options]
+              .sort()
+              .map((tourId) => ({ userId: user.id, tourId, status: 'completed' })),
+          ),
       );
     } finally {
       await prisma.$disconnect();
