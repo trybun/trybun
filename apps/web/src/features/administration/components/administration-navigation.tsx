@@ -7,11 +7,12 @@ import { useTranslations } from 'next-intl';
 
 const SECTIONS = [
   { href: '/admin', labelKey: 'gettingStarted' },
+  { href: '/admin/accounts', labelKey: 'accounts' },
   { href: '/admin/organizations', labelKey: 'organizations' },
   { href: '/admin/about', labelKey: 'about' },
 ] as const;
 
-/** The sections of the Administrator panel; later tasks add theirs (users, settings). */
+/** The sections of the Administrator panel; later tasks add theirs (settings). */
 export function AdministrationNavigation() {
   const t = useTranslations('administration');
   const pathname = usePathname();

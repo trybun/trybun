@@ -19,8 +19,8 @@ export class SignInPage {
    */
   private async enterOneTimeCode(): Promise<void> {
     const rejection = this.page.getByText('Invalid authenticator code.');
-    // The application shell after the sign-in.
-    const signedIn = this.page.getByRole('button', { name: 'Account menu' });
+    // The application shell after the sign-in, in the language of the account (§13.1).
+    const signedIn = this.page.getByRole('button', { name: /^(Account menu|Menu konta)$/ });
     await this.submitCode();
     await expect(signedIn.or(rejection)).toBeVisible();
     if (await rejection.isVisible()) {

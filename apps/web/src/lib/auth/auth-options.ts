@@ -2,12 +2,13 @@ import 'server-only';
 import { decodeJwt } from 'jose';
 import type { Account, NextAuthOptions } from 'next-auth';
 import { getPrisma } from '../database/prisma.js';
+import { storeLanguage } from '../i18n/language-cookie.js';
 import { getEnv, type WebEnv } from '../env/env.js';
 import { type AccessTokens, createAccessTokens } from './access-tokens.js';
-import { accountKindOf } from './account-kind.js';
 import { KeycloakProvider } from './next-auth.js';
 import { createKeycloakClient, type KeycloakClient } from './keycloak-client.js';
 import { createSessionAdapter, type KeycloakTokens, type SignInTokens } from './session-adapter.js';
+import { signedInAccountOf } from './signed-in-account.js';
 import { SESSION_LIFETIMES } from './session-lifetimes.js';
 import { createTokenCipher, type TokenCipher } from './token-cipher.js';
 
@@ -107,7 +108,12 @@ export function createAuthOptions(signIn?: SignInTokens): NextAuthOptions {
           return false;
         }
         signIn.current = tokens;
-        signIn.accountKind = await accountKindOf(env.apiUrl, tokens.accessToken);
+        const signedIn = await signedInAccountOf(env.apiUrl, tokens.accessToken);
+        signIn.accountKind = signedIn?.kind;
+        // The language of the account follows the person to every device (§13.1).
+        if (signedIn?.language != null) {
+          await storeLanguage(signedIn.language);
+        }
         return true;
       },
       // The browser-visible session (`/api/auth/session`) carries neither tokens nor user data.

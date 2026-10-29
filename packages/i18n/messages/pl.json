@@ -17,7 +17,8 @@
     "language": "Język",
     "signOut": "Wyloguj się",
     "administration": "Administracja",
-    "projects": "Projekty"
+    "projects": "Projekty",
+    "accountSettings": "Ustawienia konta"
   },
   "languages": {
     "en": "English",
@@ -62,7 +63,8 @@
     },
     "version": "Wersja",
     "license": "Licencja",
-    "licenseName": "Licencja MIT"
+    "licenseName": "Licencja MIT",
+    "accounts": "Konta"
   },
   "projects": {
     "title": "Projekty",
@@ -274,6 +276,69 @@
       "deleting": "Usuwanie…",
       "cancel": "Anuluj",
       "deleted": "Organizacja usunięta"
+    }
+  },
+  "users": {
+    "accounts": {
+      "title": "Konta",
+      "description": "Wszyscy, którzy mogą się zalogować do Trybuna lub zostali zaproszeni: członkowie zespołu i użytkownicy.",
+      "filters": "Filtry",
+      "kind": "Rodzaj",
+      "state": "Stan",
+      "search": "Szukaj",
+      "searchPlaceholder": "Imię i nazwisko lub adres e-mail",
+      "allKinds": "Wszystkie rodzaje",
+      "allStates": "Wszystkie stany",
+      "kinds": {
+        "team": "Zespół",
+        "end_user": "Użytkownik"
+      },
+      "states": {
+        "invited": "Zaproszony",
+        "active": "Aktywny",
+        "deactivated": "Dezaktywowany",
+        "anonymized": "Zanonimizowany"
+      },
+      "name": "Imię i nazwisko",
+      "email": "Adres e-mail",
+      "administrator": "Administrator",
+      "actions": "Działania",
+      "noName": "Jeszcze bez nazwy",
+      "noEmail": "Bez adresu e-mail",
+      "actionsOf": "Działania dla: {name}",
+      "empty": "Żadne konto nie pasuje do tych filtrów.",
+      "loadMore": "Pokaż więcej",
+      "loadingMore": "Wczytywanie…",
+      "deactivate": "Dezaktywuj",
+      "reactivate": "Aktywuj ponownie",
+      "grantAdmin": "Nadaj rolę Administratora",
+      "revokeAdmin": "Odbierz rolę Administratora",
+      "deactivateTitle": "Dezaktywować konto {name}?",
+      "deactivateDescription": "Ta osoba zostanie od razu wylogowana na wszystkich urządzeniach i nie zaloguje się ponownie, dopóki konto nie zostanie aktywowane. Jej oczekujące zaproszenia zostaną odwołane. Dostęp do projektów i organizacji zostanie zachowany.",
+      "deactivateConfirm": "Dezaktywuj",
+      "deactivating": "Dezaktywowanie…",
+      "revokeAdminTitle": "Odebrać rolę Administratora: {name}?",
+      "revokeAdminDescription": "Ta osoba nie otworzy już panelu Administratora ani nie będzie zarządzać wszystkimi projektami.",
+      "revokeAdminConfirm": "Odbierz rolę",
+      "cancel": "Anuluj",
+      "deactivated": "Konto {name} jest dezaktywowane.",
+      "reactivated": "Konto {name} jest znowu aktywne.",
+      "adminGranted": "{name} jest teraz Administratorem.",
+      "adminRevoked": "{name} nie jest już Administratorem."
+    },
+    "settings": {
+      "title": "Ustawienia konta",
+      "description": "Twój język i strefa czasowa obowiązują na każdym urządzeniu, na którym się logujesz.",
+      "language": "Język",
+      "timeZone": "Strefa czasowa",
+      "timeZonePlaceholder": "Domyślna systemu ({timeZone})",
+      "timeZoneDescription": "Daty i godziny są pokazywane w tej strefie czasowej. Bez niej obowiązuje domyślna strefa systemu.",
+      "noTimeZone": "Nie znaleziono strefy czasowej.",
+      "timeZones": "Strefy czasowe",
+      "useDeviceTimeZone": "Użyj strefy czasowej tego urządzenia ({timeZone})",
+      "save": "Zapisz",
+      "saving": "Zapisywanie…",
+      "saved": "Ustawienia zapisane."
     }
   },
   "setup": {

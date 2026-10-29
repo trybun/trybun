@@ -52,7 +52,7 @@ const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   projects: ['projects'],
   sessions: ['signIn'],
   setup: ['setup'],
-  users: ['team'],
+  users: ['accounts', 'settings'],
 };
 
 /** The source files of a folder, without tests and stories. */
@@ -86,6 +86,8 @@ describe('CLIENT_NAMESPACES', () => {
     expect(routes.administration).toEqual(expect.arrayContaining([...team]));
     expect(routes.projects).toEqual(expect.arrayContaining([...team]));
     expect(routes.organizations).toEqual(expect.arrayContaining([...routes.administration]));
+    expect(routes.accounts).toEqual(expect.arrayContaining([...routes.administration]));
+    expect(routes.settings).toEqual(expect.arrayContaining([...team]));
   });
 
   it('provide the namespaces of the components of @trybun/ui on every route', () => {
