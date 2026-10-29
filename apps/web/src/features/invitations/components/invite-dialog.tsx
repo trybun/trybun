@@ -20,8 +20,9 @@ import { InvitationIssued } from './invitation-issued.js';
 /**
  * **Invite** of the Accounts page (§7.4): an e-mail address with any target – a project with a
  * role, an organization or the Administrator role – the preview of what sending will do, and after
- * an invitation its link with Copy link. For an existing `invited` account without a working link
- * (e.g. after a reactivation) the address is filled in and only the targets of its kind are offered.
+ * an invitation its link with Copy link. For an existing `invited` account without a working
+ * link (e.g. after a reactivation) the address is filled in and only the targets of its kind are
+ * offered.
  */
 export function InviteDialog({ email, kind }: { email?: string; kind?: UserKind }) {
   const t = useTranslations('invitations.invite');

@@ -73,7 +73,10 @@ const ROLES_OF_KIND: Record<UserKind, readonly ProjectMemberRole[]> = {
   team: ['developer', 'project_manager'],
 };
 
-/** The targets of an account kind (§7.4): organizations take end users, the Administrator role team members. */
+/**
+ * The targets of an account kind (§7.4): organizations take end users, the Administrator role
+ * team members.
+ */
 const TARGETS_OF_KIND: Record<UserKind, readonly InvitationTargetType[]> = {
   end_user: ['project', 'organization'],
   team: ['project', 'administrator'],
@@ -114,7 +117,7 @@ export function InvitationForm({
   /** The kind of an existing account: only its targets and roles are offered. */
   kind?: UserKind;
   defaultEmail?: string;
-  /** The access was granted to an active account directly, named by its display name or address. */
+  /** The access was granted to an active account directly: its display name or address. */
   onGranted: (name: string) => void;
   onInvited: (invitation: IssuedInvitation) => void;
 }) {
@@ -209,7 +212,11 @@ export function InvitationForm({
                   onValueChange={(value) => field.onChange(invitationTargetTypeSchema.parse(value))}
                 >
                   {targetTypes.map((value) => (
-                    <FieldLabel key={value}>
+                    // A 44 px touch target below the desktop with a precise pointer (§2.9).
+                    <FieldLabel
+                      key={value}
+                      className="min-h-11 justify-center xl:pointer-fine:min-h-0"
+                    >
                       <Field orientation="horizontal">
                         <RadioGroupItem value={value} />
                         <FieldTitle>{t(`targetTypes.${value}`)}</FieldTitle>
