@@ -50,4 +50,4 @@ None beyond a docs-only change.
 
 - [x] 2.1 Mark the specification approved and its open questions answered — 0ecb0b8
 - [x] 2.2 Add the invitation e-mails to S1-15 and a plan task for the kind and e-mail change — dc56e25
-- [ ] 2.3 Promote the PR from draft to ready
+- [x] 2.3 Promote the PR from draft to ready — 318515e
