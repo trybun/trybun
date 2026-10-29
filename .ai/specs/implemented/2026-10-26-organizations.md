@@ -6,7 +6,7 @@
 | Created | 2026-10-26 |
 | Plan task | `S1-02` |
 | System specification sections | §7.3, §7.5 (also §3.2, §13.5, §15.6, §17.2, §18.3) |
-| Related issues / PRs | S1-01 (projects, change specification in parallel), S1-03 (invitations, [`2026-10-25-invitation-acceptance.md`](../2026-10-25-invitation-acceptance.md)), S1-04 (permission layer), S1-11 (visibility after an organization change) |
+| Related issues / PRs | S1-01 (projects, change specification in parallel), S1-03 (invitations, [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md)), S1-04 (permission layer), S1-11 (visibility after an organization change) |
 
 ## Context
 
