@@ -35,15 +35,15 @@ Additionally:
 
 - Anyone can contribute through a fork and a pull request. Write access is granted only to trusted contributors after a history of good contributions (contributor → reviewer → maintainer).
 - Larger contributions (new functionality, changes of behavior) start with a change specification in `.ai/specs/` proposed as a pull request, so the idea can be discussed before any code is written ([§2.8](02-agent-rules.md)).
-- Every pull request must pass all CI quality gates and be approved by a maintainer ([§2.14](02-agent-rules.md)). An approval means an approval by a **code owner** (`.github/CODEOWNERS`, a human maintainer); approvals by the project's GitHub App ([§16.5](#165-repository-security)) never count.
-- **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line with the name and e-mail address of its author, confirming that the author has the right to submit the code. CI checks every commit of a pull request and blocks it otherwise; merge commits, Dependabot and the release app of release-please ([ADR 0006](../adr/0006-release-pipeline.md)), which cannot sign off, are exempt. No Contributor License Agreement (CLA) is required. The project's own agents ([§16.5](#165-repository-security)) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0005](../adr/0005-github-app-as-agent-identity.md)).
+- Every pull request must pass all CI quality gates and is merged only by an account with write access – a maintainer or a collaborator ([§2.14](02-agent-rules.md)); a contributor never merges their own pull request. A code owner (`.github/CODEOWNERS`) is asked for the review; a maintainer approves contributors' pull requests or runs the delivery workflow that reviews them ([ADR 0011](../adr/0011-maintainer-account-and-workflow-approval.md)).
+- **Developer Certificate of Origin (DCO):** every commit contains a `Signed-off-by` line with the name and e-mail address of its author, confirming that the author has the right to submit the code. CI checks every commit of a pull request and blocks it otherwise; merge commits, Dependabot and the release app of release-please ([ADR 0006](../adr/0006-release-pipeline.md)), which cannot sign off, are exempt. No Contributor License Agreement (CLA) is required. The project's own agents ([§16.5](#165-repository-security)) act as the maintainer: they commit with the maintainer's identity and add the maintainer's sign-off; the maintainer is responsible for the workflows they run ([ADR 0011](../adr/0011-maintainer-account-and-workflow-approval.md)).
 - First responses to issues and pull requests should be fast and friendly; this is one of the strongest factors in whether contributors return.
 
 ## 16.4 AI-assisted contributions
 
 The project itself is built with AI agents ([§1.2](01-overview.md)), and contributors may use them too. `CONTRIBUTING.md` states:
 
-- The author of a pull request is responsible for every line of it and must understand it. The author may be the project's GitHub App ([§16.5](#165-repository-security)); then its human operator is responsible for the pull request.
+- The author of a pull request is responsible for every line of it and must understand it. The project's own agents act with the maintainer's account ([§16.5](#165-repository-security)); the maintainer is responsible for their pull requests.
 - AI agents must follow `AGENTS.md`, the rules ([02-agent-rules.md](02-agent-rules.md)) and the Definition of Done, like any other contributor.
 - Pull requests that ignore the specification or the Definition of Done are closed without detailed review.
 
@@ -53,9 +53,9 @@ The project itself is built with AI agents ([§1.2](01-overview.md)), and contri
 - CI workflows triggered by pull requests from forks never have access to secrets: workflows use the `pull_request` trigger, never `pull_request_target` or `workflow_run`, which run with the repository's secrets; `pnpm lint` checks it.
 - Dependabot alerts, security updates and version updates ([§2.10](02-agent-rules.md)) and GitHub private vulnerability reporting are enabled.
 - The main branch is protected ([§2.14](02-agent-rules.md)).
-- The project's AI agents act on GitHub as a **GitHub App** owned by the maintainer ([ADR 0005](../adr/0005-github-app-as-agent-identity.md)), installed only on this repository. Its permissions are the limit of what agents can do: it never gets the Administration permission, so its tokens cannot change the protection of the main branch. Its installation tokens expire after an hour; its private key stays on the machine where the agents run.
-- Release credentials are stored only in GitHub Environments that accept the branches `main` and `release/*`; publishing a release requires the maintainer's approval in the environment `release`, and only the release app of release-please may create, move or delete `v*` tags (tag ruleset, [ADR 0006](../adr/0006-release-pipeline.md)). The agents' GitHub App can reach neither.
-- Maintainer credentials are never stored on machines or OS users where agents run.
+- The project's AI agents act on GitHub with the **maintainer's account** through `gh` on the machine where they run ([ADR 0011](../adr/0011-maintainer-account-and-workflow-approval.md)). The token stays on that machine, never in the repository or in `GH_TOKEN`. Its permissions include administration, so the limits are rules: agents never change repository settings, rulesets, environments or secrets, never approve a deployment of the environment `release` and never push or move `v*` tags.
+- Release credentials are stored only in GitHub Environments that accept the branches `main` and `release/*`; publishing a release requires the maintainer's approval in the environment `release`, and only the release app of release-please may create, move or delete `v*` tags (tag ruleset, [ADR 0006](../adr/0006-release-pipeline.md)). Agents never approve the environment `release` and never create `v*` tags.
+- The maintainer's `gh` token is the only credential of the maintainer on the machine where agents run; other credentials of the maintainer (password, 2FA, SSH keys of other projects) are never stored there.
 
 ## 16.6 Voluntary financial support
 
