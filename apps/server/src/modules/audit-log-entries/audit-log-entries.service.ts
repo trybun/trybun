@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { InvitationTargetType } from '@trybun/contracts/invitations';
 import type { ProjectMemberRole } from '@trybun/contracts/projects';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Clock } from '../../platform/clock/clock.js';
@@ -36,6 +37,15 @@ interface AuditDetailsByAction {
   'organization.archived': null;
   'organization.unarchived': null;
   'organization.deleted': null;
+  'invitation.issued': { userId: string; target: InvitationTargetType };
+  'invitation.resent': { userId: string };
+  /** By a person (`revoked`), or by the system as an effect of another change (§7.3, §7.4). */
+  'invitation.revoked': {
+    userId: string;
+    reason: 'revoked' | 'project_archived' | 'organization_archived' | 'user_deactivated';
+  };
+  'invitation.accepted': { userId: string };
+  'user.admin_granted': null;
 }
 
 export type AuditAction = keyof AuditDetailsByAction;

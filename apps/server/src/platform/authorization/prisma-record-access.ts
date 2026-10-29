@@ -7,6 +7,7 @@ import { PrismaService } from '../database/prisma.service.js';
 import {
   type AppAbility,
   AbilityFactory,
+  type InvitationRuleRecord,
   type OrganizationRuleRecord,
   type ProjectRuleRecord,
 } from './ability-factory.js';
@@ -72,6 +73,23 @@ export class PrismaRecordAccess extends RecordAccess {
         });
         return record === null ? null : subject('Organization', record);
       }
+      case 'Invitation': {
+        const record = await this.prisma.invitation.findFirst({
+          where: { AND: [accessibleBy(ability, 'read').ofType('Invitation'), { id: target.id }] },
+          select: {
+            target: true,
+            project: {
+              select: {
+                members: {
+                  where: { userId: principal.userId },
+                  select: { userId: true, role: true },
+                },
+              },
+            },
+          },
+        });
+        return record === null ? null : subject('Invitation', record);
+      }
       default:
         return null;
     }
@@ -80,7 +98,8 @@ export class PrismaRecordAccess extends RecordAccess {
 
 type SubjectRecord =
   | (ProjectRuleRecord & ForcedSubject<'Project'>)
-  | (OrganizationRuleRecord & ForcedSubject<'Organization'>);
+  | (OrganizationRuleRecord & ForcedSubject<'Organization'>)
+  | (InvitationRuleRecord & ForcedSubject<'Invitation'>);
 
 /** The error code a denying rule carries as its reason (§18.3); `403` without one. */
 export function reasonCode(reason: string | undefined): ErrorCode {

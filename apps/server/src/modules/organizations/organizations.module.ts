@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuditLogEntriesModule } from '../audit-log-entries/audit-log-entries.module.js';
+import { InvitationRevocationsModule } from '../invitations/invitation-revocations.module.js';
 import { OrganizationsController } from './organizations.controller.js';
 import { OrganizationsService } from './organizations.service.js';
 
@@ -8,7 +9,7 @@ import { OrganizationsService } from './organizations.service.js';
  * Administrator manages them (§7.5).
  */
 @Module({
-  imports: [AuditLogEntriesModule],
+  imports: [AuditLogEntriesModule, InvitationRevocationsModule],
   controllers: [OrganizationsController],
   providers: [OrganizationsService],
   exports: [OrganizationsService],

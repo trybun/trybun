@@ -422,7 +422,9 @@
       "github_sign_in_missing": "Team members sign in with GitHub. Configure GitHub sign-in before inviting them.",
       "not_pending": "This invitation was already accepted or revoked.",
       "account_mismatch": "This invitation belongs to another account. Sign out and open the link again.",
-      "token_invalid": "This invitation link is not valid. It may have expired, been used or been replaced. Ask the person who invited you for a new link."
+      "token_invalid": "This invitation link is not valid. It may have expired, been used or been replaced. Ask the person who invited you for a new link.",
+      "password_rejected": "Choose another password: it must have at least 15 characters and must not be your e-mail address or a common password.",
+      "email_taken": "Another sign-in already uses this e-mail address. Ask the Administrator for help."
     },
     "user": {
       "last_administrator": "The last active Administrator cannot be deactivated or lose the Administrator role."

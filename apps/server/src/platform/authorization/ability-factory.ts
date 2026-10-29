@@ -11,7 +11,12 @@ import type { Principal } from '../authentication/principal.js';
  * models.
  */
 export type AppSubject =
-  Subjects<{ Project: ProjectRuleRecord; Organization: OrganizationRuleRecord }> | 'Administration';
+  | Subjects<{
+      Project: ProjectRuleRecord;
+      Organization: OrganizationRuleRecord;
+      Invitation: InvitationRuleRecord;
+    }>
+  | 'Administration';
 
 /**
  * A project as its rules read it: its state and the memberships of the principal, loaded with
@@ -27,6 +32,15 @@ export type ProjectRuleRecord = {
 export type OrganizationRuleRecord = {
   id: string;
   state: string;
+};
+
+/**
+ * An invitation as its rules read it (§7.4): its target and, for a project, the memberships of the
+ * principal in it. A new invitation is checked as such a record before it exists.
+ */
+export type InvitationRuleRecord = {
+  target: string;
+  project: { members: { userId: string; role: string }[] } | null;
 };
 
 /** The conditions of a rule: the Prisma `WhereInput` of its subject. */

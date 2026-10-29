@@ -149,6 +149,157 @@ authenticationFlows:
         requirement: REQUIRED
         priority: 20
         authenticatorFlow: false
+  # The first sign-in through GitHub, Microsoft or Google (ADR 0009): a Keycloak user is created
+  # only when the sign-in was started from an invitation, which requests the optional client scope
+  # `invitation`; otherwise the provider can only be linked to an existing Keycloak user, after a
+  # sign-in to it. The scope is a front-channel marker, not a security boundary: a Keycloak user
+  # gives no access until the API binds it to an account with a valid invitation, and users without
+  # an account are deleted after 24 hours.
+  - alias: trybun first broker login
+    description: First sign-in through an identity provider; new users only from an invitation.
+    providerId: basic-flow
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: idp-review-profile
+        authenticatorConfig: trybun review profile
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - flowAlias: trybun first broker login from an invitation
+        requirement: CONDITIONAL
+        priority: 20
+        authenticatorFlow: true
+      - flowAlias: trybun first broker login without an invitation
+        requirement: CONDITIONAL
+        priority: 30
+        authenticatorFlow: true
+  - alias: trybun first broker login from an invitation
+    description: Creates the Keycloak user, or links an existing one after a sign-in to it.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: conditional-client-scope
+        authenticatorConfig: trybun invitation requested
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - flowAlias: trybun first broker login create or link
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: true
+  - alias: trybun first broker login create or link
+    description: Creates a user if none has the address, else links the existing one.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: idp-create-user-if-unique
+        authenticatorConfig: trybun create unique user
+        requirement: ALTERNATIVE
+        priority: 10
+        authenticatorFlow: false
+      - flowAlias: trybun first broker login link existing user
+        requirement: ALTERNATIVE
+        priority: 20
+        authenticatorFlow: true
+  - alias: trybun first broker login link existing user
+    description: Links an existing user after confirmation and a sign-in to it.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: idp-confirm-link
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - flowAlias: trybun first broker login reauthentication
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: true
+  - alias: trybun first broker login without an invitation
+    description: Links an existing user only; never creates one.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: conditional-client-scope
+        authenticatorConfig: trybun invitation not requested
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - authenticator: idp-detect-existing-broker-user
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: false
+      - authenticator: idp-confirm-link
+        requirement: REQUIRED
+        priority: 30
+        authenticatorFlow: false
+      - flowAlias: trybun first broker login reauthentication without an invitation
+        requirement: REQUIRED
+        priority: 40
+        authenticatorFlow: true
+  # Never linked by a matching e-mail address alone (§7.4): the person signs in to the existing
+  # user with its password and, if configured, its one-time password. No e-mail verification:
+  # Keycloak sends no e-mails (ADR 0009).
+  - alias: trybun first broker login reauthentication
+    description: Sign-in to the existing user before it is linked.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: idp-username-password-form
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - flowAlias: trybun first broker login otp
+        requirement: CONDITIONAL
+        priority: 20
+        authenticatorFlow: true
+  - alias: trybun first broker login otp
+    description: One-time password of a user who has one.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: conditional-user-configured
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - authenticator: auth-otp-form
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: false
+  - alias: trybun first broker login reauthentication without an invitation
+    description: Sign-in to the existing user before it is linked.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: idp-username-password-form
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - flowAlias: trybun first broker login otp without an invitation
+        requirement: CONDITIONAL
+        priority: 20
+        authenticatorFlow: true
+  - alias: trybun first broker login otp without an invitation
+    description: One-time password of a user who has one.
+    providerId: basic-flow
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: conditional-user-configured
+        requirement: REQUIRED
+        priority: 10
+        authenticatorFlow: false
+      - authenticator: auth-otp-form
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: false
 authenticatorConfig:
   # References of the authentication methods in the `amr` claim (RFC 8176). A method stays in the
   # claim only for `maxAge` seconds after the sign-in – the maximum session lifetime, so refreshed
@@ -173,6 +324,31 @@ authenticatorConfig:
     config:
       condUserRole: team
       negate: 'false'
+  # Missing names are asked for on the first sign-in through a provider (Keycloak's default).
+  - alias: trybun review profile
+    config:
+      update.profile.on.first.login: missing
+  - alias: trybun create unique user
+    config:
+      require.password.update.after.registration: 'false'
+  - alias: trybun invitation requested
+    config:
+      client_scope: invitation
+      negate: 'false'
+  - alias: trybun invitation not requested
+    config:
+      client_scope: invitation
+      negate: 'true'
+
+# Requested by the acceptance page of an invitation for a sign-in through a provider (ADR 0009),
+# the condition of `trybun first broker login`. It adds nothing to the tokens.
+clientScopes:
+  - name: invitation
+    description: Sign-in started from an invitation link.
+    protocol: openid-connect
+    attributes:
+      include.in.token.scope: 'false'
+      display.on.consent.screen: 'false'
 
 clients:
   # Sign-in of the web application (Auth.js, §14.4): confidential, authorization code with PKCE.
@@ -202,7 +378,7 @@ clients:
       backchannel.logout.session.required: 'true'
       backchannel.logout.revoke.offline.tokens: 'true'
     defaultClientScopes: [basic, acr, profile, email]
-    optionalClientScopes: []
+    optionalClientScopes: [invitation]
     protocolMappers:
       # Access tokens are issued for the API (`aud` contains `trybun-api`, §14.4).
       - name: audience trybun-api
