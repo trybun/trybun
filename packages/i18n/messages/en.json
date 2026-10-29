@@ -373,6 +373,9 @@
       "back": "Back",
       "next": "Next",
       "done": "Done"
+    },
+    "combobox": {
+      "show": "Show options"
     }
   },
   "errors": {

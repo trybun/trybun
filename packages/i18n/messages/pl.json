@@ -373,6 +373,9 @@
       "back": "Wstecz",
       "next": "Dalej",
       "done": "Gotowe"
+    },
+    "combobox": {
+      "show": "Pokaż opcje"
     }
   },
   "errors": {
