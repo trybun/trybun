@@ -48,6 +48,6 @@ None beyond a docs-only change.
 
 ### Phase 2: Apply the maintainer's answers
 
-- [x] 2.1 Mark the specification approved and its open questions answered — 2a6d6e3
-- [x] 2.2 Add the invitation e-mails to S1-15 and a plan task for the kind and e-mail change — f7bf766
+- [x] 2.1 Mark the specification approved and its open questions answered — 0ecb0b8
+- [x] 2.2 Add the invitation e-mails to S1-15 and a plan task for the kind and e-mail change — dc56e25
 - [ ] 2.3 Promote the PR from draft to ready
