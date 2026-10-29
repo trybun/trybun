@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-10-25 |
 | Plan task | `S1-03` (found by `S0-23`) |
 | System specification sections | §5.7, §7.4, §13.2 |
@@ -52,13 +52,13 @@ New or changed glossary terms: none.
 
 ## Open questions
 
-Implementation must not start until every question has an answer.
+Every question has an answer: the maintainer accepted the proposals on 2026-10-29, in the session that implements S1-03.
 
-1. Is the password of end users set on the invitation page of the web application (proposed change 1)? If it must stay on a Keycloak screen, the remaining options are Keycloak e-mails for the password set-up or a Keycloak extension, both excluded by [§7.4](../../docs/spec/07-users-organizations-permissions.md) and [§14.4](../../docs/spec/14-architecture.md) today. — **Answer:**
-2. Keycloak users without an account (a crafted sign-in request, an acceptance abandoned after the provider sign-in): are they kept, or deleted by a recurring job of the Worker after a period (proposal: 24 hours, with a Keycloak Admin API search for users without a linked account)? — **Answer:**
-3. When an end user accepts with Microsoft or Google, must the provider's e-mail address equal the invitation address, or may it differ, as for team members with GitHub? In both cases the account and the Keycloak user keep the invited address. — **Answer:**
-4. Where does the user land after accepting an invitation to an organization or to the Administrator role, which have no single invited project (proposal: the portal root for end users, the team home for the team)? — **Answer:**
-5. Does a resent invitation (new token) expire 7 days after the resending or 7 days after the first sending? — **Answer:**
+1. Is the password of end users set on the invitation page of the web application (proposed change 1)? If it must stay on a Keycloak screen, the remaining options are Keycloak e-mails for the password set-up or a Keycloak extension, both excluded by [§7.4](../../docs/spec/07-users-organizations-permissions.md) and [§14.4](../../docs/spec/14-architecture.md) today. — **Answer:** yes – the password form of the invitation page, as proposed change 1; the API creates the Keycloak user with it once, as the first-run wizard does.
+2. Keycloak users without an account (a crafted sign-in request, an acceptance abandoned after the provider sign-in): are they kept, or deleted by a recurring job of the Worker after a period (proposal: 24 hours, with a Keycloak Admin API search for users without a linked account)? — **Answer:** deleted – a recurring job of the Worker deletes Keycloak users without a linked account 24 hours after their creation, found through the Keycloak Admin API.
+3. When an end user accepts with Microsoft or Google, must the provider's e-mail address equal the invitation address, or may it differ, as for team members with GitHub? In both cases the account and the Keycloak user keep the invited address. — **Answer:** it may differ, as for team members with GitHub; the account and the Keycloak user keep the invited address.
+4. Where does the user land after accepting an invitation to an organization or to the Administrator role, which have no single invited project (proposal: the portal root for end users, the team home for the team)? — **Answer:** the portal root for end users, the team home for team members (and the Administrator role).
+5. Does a resent invitation (new token) expire 7 days after the resending or 7 days after the first sending? — **Answer:** 7 days after the resending: the new token gets the full validity of a new invitation.
 
 ## Acceptance criteria
 
@@ -71,4 +71,5 @@ Implementation must not start until every question has an answer.
 
 ## Changelog
 
+- 2026-10-29 – Answers of questions 1–5 accepted by the maintainer; status `approved`.
 - 2026-10-25 – Created from the open questions of ADR 0009 (S0-23).

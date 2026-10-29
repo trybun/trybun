@@ -6,7 +6,7 @@
 | Created | 2026-10-26 |
 | Plan task | `S1-03` |
 | System specification sections | §7.1, §7.3, §7.4, §7.5, §13.1, §13.5, §14.4, §15.6 |
-| Related issues / PRs | [ADR 0009](../../docs/adr/0009-invitation-flow.md) · [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md) (draft, S1-03) · PR #113 · S1-01 projects spec (PR #111) · S1-02 organizations spec |
+| Related issues / PRs | [ADR 0009](../../docs/adr/0009-invitation-flow.md) · [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md) (approved, S1-03) · PR #113 · S1-01 projects spec (PR #111) · S1-02 organizations spec |
 
 ## Context
 
@@ -207,7 +207,7 @@ New or changed glossary terms (code identifier, EN/PL labels):
 
 ## Open questions
 
-Every question has an answer. The maintainer accepted the specification and the answers below – including questions 1, 2 and 14 – in the review of #113 on 2026-10-29; ⚠ marks the answers that change the plan or a requirement. Implementation still must not start until AQ1–AQ5 of [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md) have an answer too.
+Every question has an answer. The maintainer accepted the specification and the answers below – including questions 1, 2 and 14 – in the review of #113 on 2026-10-29; ⚠ marks the answers that change the plan or a requirement. AQ1–AQ5 of [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md) were answered by the maintainer on 2026-10-29 (the proposals), so implementation may start.
 
 1. ⚠ **Invitation e-mails before outgoing e-mail exists.** [§7.4](../../docs/spec/07-users-organizations-permissions.md) says the link "is sent by e-mail", but SMTP sending arrives with S1-15 (group 7), and only the token's hash is stored, so a later Worker job cannot put the link into an e-mail. — **Answer:** S1-03 sends no e-mail; the inviter copies the link, which §7.4 already allows ("inviting works even before e-mail is configured"). It publishes `invitation.issued` and `user.access_granted`. S1-15 adds the e-mails and decides how the token reaches the mail job (options for its specification: send synchronously in the issuing request, or an encrypted, short-lived job payload deleted after sending); the S1-15 row of the plan names it. The maintainer confirmed it in the review of #113.
 2. ⚠ **Kind change and e-mail change.** [§7.1](../../docs/spec/07-users-organizations-permissions.md), [§7.4](../../docs/spec/07-users-organizations-permissions.md) and [§7.5](../../docs/spec/07-users-organizations-permissions.md) make both Administrator actions, but no plan task names them, and the kind change to `team` needs the team invitation flow. — **Answer:** out of S1-03; the plan task S1-20 (group 4, after S1-03, added in #130) builds both. Until then a kind mismatch is refused with the explanation of §7.4. The maintainer confirmed it in the review of #113.
@@ -227,7 +227,7 @@ Every question has an answer. The maintainer accepted the specification and the 
 
 ## Phasing
 
-1. **Invitations** – issuing, preview, existing accounts, domain matching, resend, revoke, pending invitations in the Members tab and on the Accounts page, and the acceptance of ADR 0009. Needs S1-01 and S1-02 merged and AQ1–AQ5 answered.
+1. **Invitations** – issuing, preview, existing accounts, domain matching, resend, revoke, pending invitations in the Members tab and on the Accounts page, and the acceptance of ADR 0009. Needs S1-01 and S1-02 merged and AQ1–AQ5 answered (both done).
 2. **Deactivation and the Administrator role** – the Accounts page actions and the Worker job.
 3. **User settings** – `PATCH /users/me`, the settings page, the language at sign-in.
 
