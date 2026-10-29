@@ -1111,6 +1111,31 @@ describe('invitations', () => {
         expect([res.status, codeOf(res)]).toEqual([401, 'authentication.required']);
       });
 
+      it('claims a link once when it is accepted twice at the same time', async () => {
+        const project = await createProject(prisma);
+        const { invitation, token } = await issued(
+          newEmail(),
+          projectTarget({ projectId: project.id }, 'end_user'),
+        );
+        const sub = keycloak.addUser({ email: 'anna@example.net', firstName: 'A', lastName: 'N' });
+
+        const responses = await Promise.all([
+          acceptWithSession(token, sub),
+          acceptWithSession(token, sub),
+        ]);
+
+        expect(responses.map((res) => [res.status, codeOf(res)]).sort()).toEqual([
+          [200, undefined],
+          [404, 'invitation.token_invalid'],
+        ]);
+        expect(
+          (await auditActions(invitation.id)).filter(
+            ({ action }) => action === 'invitation.accepted',
+          ),
+        ).toHaveLength(1);
+        expect(await prisma.projectMember.count({ where: { userId: invitation.user.id } })).toBe(1);
+      });
+
       it('refuses an address that another Keycloak user holds with invitation.email_taken', async () => {
         const email = newEmail();
         const { invitation, token } = await issued(email, {
