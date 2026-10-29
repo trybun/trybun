@@ -80,7 +80,8 @@
     },
     "roles": {
       "developer": "Developer",
-      "project_manager": "Project manager"
+      "project_manager": "Project manager",
+      "end_user": "End user"
     },
     "create": {
       "open": "New project",
@@ -412,6 +413,19 @@
       "member_not_found": "No account has this e-mail address.",
       "member_not_end_user": "Only end users can belong to an organization.",
       "member_of_other_organization": "This person already belongs to another organization."
+    },
+    "invitation": {
+      "account_kind_mismatch": "This address belongs to an account of the other kind. Only the Administrator can change the kind of an account.",
+      "account_deactivated": "This address belongs to a deactivated account. The Administrator must reactivate it first.",
+      "access_exists": "This person already has this access.",
+      "organization_conflict": "This person belongs to another organization. The Administrator can move them on the organization's Members tab.",
+      "github_sign_in_missing": "Team members sign in with GitHub. Configure GitHub sign-in before inviting them.",
+      "not_pending": "This invitation was already accepted or revoked.",
+      "account_mismatch": "This invitation belongs to another account. Sign out and open the link again.",
+      "token_invalid": "This invitation link is not valid. It may have expired, been used or been replaced. Ask the person who invited you for a new link."
+    },
+    "user": {
+      "last_administrator": "The last active Administrator cannot be deactivated or lose the Administrator role."
     },
     "server": {
       "internal_error": "Something went wrong. Try again later.",

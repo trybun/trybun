@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pageQuerySchema, pageSchema } from '../pagination/index.js';
 
 /** `user.kind` (§7.1): mutually exclusive kind of an account. */
 export const userKindSchema = z.enum(['team', 'end_user']);
@@ -7,6 +8,14 @@ export type UserKind = z.infer<typeof userKindSchema>;
 /** `user.state` (§7.4): lifecycle of an account. */
 export const userStateSchema = z.enum(['invited', 'active', 'deactivated', 'anonymized']);
 export type UserState = z.infer<typeof userStateSchema>;
+
+/**
+ * An e-mail address of an account (§7.4), normalized: trimmed and lower-cased, so addresses that
+ * differ only in letter case are one account. `users.email` keeps only this form (a check
+ * constraint of the migrations).
+ */
+export const EMAIL_MAX_LENGTH = 254;
+export const emailSchema = z.string().trim().toLowerCase().max(EMAIL_MAX_LENGTH).pipe(z.email());
 
 /**
  * The length rule of the password policy of the sign-in (§7.4): NIST SP 800-63B and OWASP ASVS
@@ -61,6 +70,64 @@ export const currentUserSchema = z.object({
   displayName: z.string().nullable(),
   email: z.string().nullable(),
   kind: userKindSchema,
+  /** The language of the account (§13.1); `null` until it is set – the system default applies. */
+  language: languageSchema.nullable(),
+  /** The IANA time zone of the account (§13.1); `null` – the system default applies. */
+  timeZone: z.string().nullable(),
   allowedActions: z.array(currentUserActionSchema),
 });
 export type CurrentUser = z.infer<typeof currentUserSchema>;
+
+/**
+ * `PATCH /api/v1/users/me`: the settings of the own account (§13.1), at least one;
+ * `timeZone: null` returns to the system default.
+ */
+export const updateCurrentUserSchema = z
+  .object({
+    language: languageSchema.optional(),
+    timeZone: timeZoneSchema.nullable().optional(),
+  })
+  .refine((input) => Object.values(input).some((value) => value !== undefined));
+export type UpdateCurrentUserDto = z.infer<typeof updateCurrentUserSchema>;
+
+/**
+ * The action codes of an account (§18.3), sent in its `allowedActions` on the Accounts page of
+ * the Administrator (§7.4, §7.5).
+ */
+export const userActionSchema = z.enum(['deactivate', 'reactivate', 'grant_admin', 'revoke_admin']);
+export type UserAction = z.infer<typeof userActionSchema>;
+
+/** An account as the Accounts page of the Administrator lists it (§7.4). */
+export const userSchema = z.object({
+  id: z.uuid(),
+  displayName: z.string().nullable(),
+  email: z.string().nullable(),
+  kind: userKindSchema,
+  state: userStateSchema,
+  isAdmin: z.boolean(),
+  githubLogin: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+  allowedActions: z.array(userActionSchema),
+});
+export type User = z.infer<typeof userSchema>;
+
+/** The path parameters of an account. */
+export const userParamsSchema = z.object({ userId: z.uuid() });
+export type UserParams = z.infer<typeof userParamsSchema>;
+
+/** The longest search text of the accounts list. */
+export const USER_QUERY_MAX_LENGTH = 100;
+
+/**
+ * `GET /api/v1/users`: the accounts of the Accounts page, sorted by display name; filtered by
+ * kind and state, searched by display name and e-mail address.
+ */
+export const listUsersQuerySchema = pageQuerySchema.extend({
+  kind: userKindSchema.optional(),
+  state: userStateSchema.optional(),
+  query: z.string().trim().max(USER_QUERY_MAX_LENGTH).optional(),
+});
+export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
+
+export const userPageSchema = pageSchema(userSchema);
+export type UserPage = z.infer<typeof userPageSchema>;

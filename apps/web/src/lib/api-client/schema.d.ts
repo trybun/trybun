@@ -341,6 +341,9 @@ export interface operations {
                         email: string | null;
                         /** @enum {string} */
                         kind: "team" | "end_user";
+                        /** @enum {string|null} */
+                        language: "en" | "pl" | null;
+                        timeZone: string | null;
                         allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };
@@ -589,7 +592,7 @@ export interface operations {
                             /** Format: date-time */
                             updatedAt: string;
                             /** @enum {string|null} */
-                            role: "developer" | "project_manager" | null;
+                            role: "developer" | "project_manager" | "end_user" | null;
                             allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                         }[];
                         nextCursor: string | null;
@@ -633,7 +636,7 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                         /** @enum {string|null} */
-                        role: "developer" | "project_manager" | null;
+                        role: "developer" | "project_manager" | "end_user" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };
@@ -670,7 +673,7 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                         /** @enum {string|null} */
-                        role: "developer" | "project_manager" | null;
+                        role: "developer" | "project_manager" | "end_user" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };
@@ -734,7 +737,7 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                         /** @enum {string|null} */
-                        role: "developer" | "project_manager" | null;
+                        role: "developer" | "project_manager" | "end_user" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };
@@ -771,7 +774,7 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                         /** @enum {string|null} */
-                        role: "developer" | "project_manager" | null;
+                        role: "developer" | "project_manager" | "end_user" | null;
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
                     };
                 };
@@ -826,7 +829,7 @@ export interface operations {
                                 githubLogin: string | null;
                             };
                             /** @enum {string} */
-                            role: "developer" | "project_manager";
+                            role: "developer" | "project_manager" | "end_user";
                             /** Format: date-time */
                             createdAt: string;
                         }[];
@@ -869,7 +872,7 @@ export interface operations {
                             githubLogin: string | null;
                         };
                         /** @enum {string} */
-                        role: "developer" | "project_manager";
+                        role: "developer" | "project_manager" | "end_user";
                         /** Format: date-time */
                         createdAt: string;
                     };
@@ -929,7 +932,7 @@ export interface operations {
                             githubLogin: string | null;
                         };
                         /** @enum {string} */
-                        role: "developer" | "project_manager";
+                        role: "developer" | "project_manager" | "end_user";
                         /** Format: date-time */
                         createdAt: string;
                     };
@@ -1285,7 +1288,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** Format: email */
                     email: string;
                     /** @default false */
                     move?: boolean;

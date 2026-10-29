@@ -31,6 +31,15 @@ export const errorCodeSchema = z.enum([
   'organization.member_not_found',
   'organization.member_not_end_user',
   'organization.member_of_other_organization',
+  'invitation.account_kind_mismatch',
+  'invitation.account_deactivated',
+  'invitation.access_exists',
+  'invitation.organization_conflict',
+  'invitation.github_sign_in_missing',
+  'invitation.not_pending',
+  'invitation.account_mismatch',
+  'invitation.token_invalid',
+  'user.last_administrator',
   'server.internal_error',
   'server.unavailable',
 ]);
@@ -88,6 +97,24 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'organization.member_not_end_user': 422,
   // The account belongs to another organization and the move was not confirmed (§7.3).
   'organization.member_of_other_organization': 409,
+  // The address has an account of the other kind; a kind change is an Administrator action (§7.4).
+  'invitation.account_kind_mismatch': 422,
+  // The address has a deactivated account, which the Administrator reactivates first (§7.4).
+  'invitation.account_deactivated': 422,
+  // The account already has the access the invitation would grant (§7.4).
+  'invitation.access_exists': 409,
+  // An end user of another organization invited to an organization; moving is an Administrator action (§7.3).
+  'invitation.organization_conflict': 422,
+  // A team invitation while GitHub sign-in is not configured (§15.6).
+  'invitation.github_sign_in_missing': 422,
+  // Resending or revoking an invitation that was used or revoked (§7.4).
+  'invitation.not_pending': 409,
+  // A further link of an active account accepted by the session of another account (§7.4).
+  'invitation.account_mismatch': 403,
+  // An unknown, expired, used, revoked or replaced invitation token, all with the same response (ADR 0009).
+  'invitation.token_invalid': 404,
+  // Deactivating or demoting the last active Administrator (§7.4).
+  'user.last_administrator': 409,
   // An unexpected error; the response carries no details (§18.3).
   'server.internal_error': 500,
   // PostgreSQL is unavailable (§17.2).

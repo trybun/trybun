@@ -47,6 +47,7 @@ model User {
   id             String    @id @default(uuid(7)) @db.Uuid
   /// The `sub` of the Keycloak user; missing until an invited person signs in for the first time.
   keycloakUserId String?   @unique @map("keycloak_user_id")
+  /// Normalized – trimmed and lower-cased (§7.4); a check constraint of the migrations keeps it so.
   email          String?   @unique
   displayName    String?   @map("display_name")
   /// Set on the first sign-in (§13.1).
@@ -63,6 +64,8 @@ model User {
   productTourProgress ProductTourProgress[]
   projectMemberships  ProjectMember[]
   organizationMember  OrganizationMember?
+  invitations         Invitation[]          @relation("InvitationUser")
+  issuedInvitations   Invitation[]          @relation("InvitationInvitedBy")
 
   @@map("users")
 }
@@ -75,10 +78,12 @@ enum ProjectState {
   @@map("project_state")
 }
 
-/// `project_member.role` (§7.2): the team roles of a project; end users join with S1-03.
+/// `project_member.role` (§7.2): the team roles of a project and `end_user`, the personal access of
+/// an end user who reaches the project through no organization (§7.3).
 enum ProjectRole {
   developer
   project_manager
+  end_user
 
   @@map("project_role")
 }
@@ -101,6 +106,7 @@ model Project {
 
   members       ProjectMember[]
   organizations OrganizationProject[]
+  invitations   Invitation[]
 
   @@index([name, id])
   @@map("projects")
@@ -251,9 +257,10 @@ model Organization {
   createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  domains  OrganizationDomain[]
-  projects OrganizationProject[]
-  members  OrganizationMember[]
+  domains     OrganizationDomain[]
+  projects    OrganizationProject[]
+  members     OrganizationMember[]
+  invitations Invitation[]
 
   @@index([name, id])
   @@map("organizations")
@@ -296,4 +303,51 @@ model OrganizationMember {
 
   @@index([organizationId])
   @@map("organization_members")
+}
+
+/// `invitation.target` (§7.4)
+enum InvitationTarget {
+  project
+  organization
+  administrator
+
+  @@map("invitation_target")
+}
+
+/// An invitation (§7.4, ADR 0009): grants its one target to the account it activates. It holds no
+/// personal data of its own – the account carries the e-mail address. The state (pending,
+/// accepted, revoked, expired) is derived from the timestamps; a check constraint of the
+/// migrations keeps the columns consistent with the target.
+model Invitation {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  /// The invited account, in state `invited` until the first acceptance.
+  userId         String           @map("user_id") @db.Uuid
+  user           User             @relation("InvitationUser", fields: [userId], references: [id], onDelete: Restrict)
+  target         InvitationTarget
+  /// The project of a `project` invitation.
+  projectId      String?          @map("project_id") @db.Uuid
+  project        Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The role of a `project` invitation.
+  role           ProjectRole?
+  /// The organization of an `organization` invitation, or the organization matched by the e-mail
+  /// domain for a `project` invitation with role `end_user` (§7.3).
+  organizationId String?          @map("organization_id") @db.Uuid
+  organization   Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// The person who issued it; none for the system.
+  invitedById    String?          @map("invited_by_id") @db.Uuid
+  invitedBy      User?            @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  /// SHA-256 of the token, base64url; replaced by resending.
+  tokenHash      String           @unique @map("token_hash")
+  expiresAt      DateTime         @map("expires_at") @db.Timestamptz(3)
+  /// Set in the transaction of the acceptance.
+  usedAt         DateTime?        @map("used_at") @db.Timestamptz(3)
+  revokedAt      DateTime?        @map("revoked_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([organizationId])
+  @@index([createdAt, id])
+  @@map("invitations")
 }

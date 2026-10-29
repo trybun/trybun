@@ -6,7 +6,7 @@ import {
   productTourIdSchema,
   type RecordProductTourProgressDto,
 } from '@trybun/contracts/product-tours';
-import type { CurrentUser, CurrentUserAction } from '@trybun/contracts/users';
+import { type CurrentUser, type CurrentUserAction, languageSchema } from '@trybun/contracts/users';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
@@ -53,7 +53,14 @@ export class UsersService {
   async findCurrent(principal: UserPrincipal): Promise<CurrentUser> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: principal.userId },
-      select: { id: true, displayName: true, email: true, kind: true },
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+        kind: true,
+        language: true,
+        timeZone: true,
+      },
     });
     const ability = this.abilities.forPrincipal(principal);
     const allowedActions: CurrentUserAction[] = [];
@@ -66,7 +73,9 @@ export class UsersService {
     if (ability.can(CREATE_ORGANIZATION, ORGANIZATION)) {
       allowedActions.push('create_organization');
     }
-    return { ...user, allowedActions };
+    // The column holds a language of the catalogues; any other value means the system default.
+    const language = languageSchema.safeParse(user.language).data ?? null;
+    return { ...user, language, allowedActions };
   }
 
   /**

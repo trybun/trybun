@@ -33,6 +33,18 @@
                         "end_user"
                       ]
                     },
+                    "language": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "pl"
+                      ]
+                    },
+                    "timeZone": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "allowedActions": {
                       "type": "array",
                       "items": {
@@ -50,6 +62,8 @@
                     "displayName",
                     "email",
                     "kind",
+                    "language",
+                    "timeZone",
                     "allowedActions"
                   ],
                   "additionalProperties": false
@@ -623,7 +637,8 @@
                             "type": "string",
                             "enum": [
                               "developer",
-                              "project_manager"
+                              "project_manager",
+                              "end_user"
                             ]
                           },
                           "allowedActions": {
@@ -754,7 +769,8 @@
                       "type": "string",
                       "enum": [
                         "developer",
-                        "project_manager"
+                        "project_manager",
+                        "end_user"
                       ]
                     },
                     "allowedActions": {
@@ -861,7 +877,8 @@
                       "type": "string",
                       "enum": [
                         "developer",
-                        "project_manager"
+                        "project_manager",
+                        "end_user"
                       ]
                     },
                     "allowedActions": {
@@ -990,7 +1007,8 @@
                       "type": "string",
                       "enum": [
                         "developer",
-                        "project_manager"
+                        "project_manager",
+                        "end_user"
                       ]
                     },
                     "allowedActions": {
@@ -1120,7 +1138,8 @@
                       "type": "string",
                       "enum": [
                         "developer",
-                        "project_manager"
+                        "project_manager",
+                        "end_user"
                       ]
                     },
                     "allowedActions": {
@@ -1275,7 +1294,8 @@
                             "type": "string",
                             "enum": [
                               "developer",
-                              "project_manager"
+                              "project_manager",
+                              "end_user"
                             ]
                           },
                           "createdAt": {
@@ -1389,7 +1409,8 @@
                       "type": "string",
                       "enum": [
                         "developer",
-                        "project_manager"
+                        "project_manager",
+                        "end_user"
                       ]
                     },
                     "createdAt": {
@@ -1497,7 +1518,8 @@
                       "type": "string",
                       "enum": [
                         "developer",
-                        "project_manager"
+                        "project_manager",
+                        "end_user"
                       ]
                     },
                     "createdAt": {
@@ -2586,9 +2608,7 @@
                 "properties": {
                   "email": {
                     "type": "string",
-                    "maxLength": 254,
-                    "format": "email",
-                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "maxLength": 254
                   },
                   "move": {
                     "default": false,

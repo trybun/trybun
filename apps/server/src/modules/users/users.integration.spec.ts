@@ -81,6 +81,8 @@ describe('users endpoints', () => {
       displayName: user.displayName,
       email: user.email,
       kind: 'end_user',
+      language: user.language,
+      timeZone: 'Europe/Warsaw',
       allowedActions: [],
     });
   });

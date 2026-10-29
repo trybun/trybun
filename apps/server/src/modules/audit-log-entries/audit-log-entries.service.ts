@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ProjectRole } from '@trybun/contracts/projects';
+import type { ProjectMemberRole } from '@trybun/contracts/projects';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Clock } from '../../platform/clock/clock.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
@@ -18,9 +18,13 @@ interface AuditDetailsByAction {
   'project.archived': null;
   'project.unarchived': null;
   'project.deleted': null;
-  'project_member.added': { userId: string; role: ProjectRole };
-  'project_member.role_changed': { userId: string; role: ProjectRole; previousRole: ProjectRole };
-  'project_member.removed': { userId: string; role: ProjectRole };
+  'project_member.added': { userId: string; role: ProjectMemberRole };
+  'project_member.role_changed': {
+    userId: string;
+    role: ProjectMemberRole;
+    previousRole: ProjectMemberRole;
+  };
+  'project_member.removed': { userId: string; role: ProjectMemberRole };
   'organization.created': null;
   'organization.renamed': null;
   'organization.domain_added': { domain: string };

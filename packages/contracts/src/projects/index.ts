@@ -10,6 +10,13 @@ export const projectRoleSchema = z.enum(['developer', 'project_manager']);
 export type ProjectRole = z.infer<typeof projectRoleSchema>;
 
 /**
+ * Every value of `project_member.role`: the team roles and `end_user`, the personal access of an
+ * end user who belongs to no organization with the project (§7.3, §7.4).
+ */
+export const projectMemberRoleSchema = z.enum([...projectRoleSchema.options, 'end_user']);
+export type ProjectMemberRole = z.infer<typeof projectMemberRoleSchema>;
+
+/**
  * The action codes of a project (§18.3), sent in its `allowedActions`. `update` changes the name
  * and the key, `update_settings` the project settings (resolution confirmation).
  */
@@ -66,7 +73,8 @@ export const projectSchema = z.object({
   version: z.int(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
-  role: projectRoleSchema.nullable(),
+  /** The principal's own role in the project; `end_user` for personal access of an end user. */
+  role: projectMemberRoleSchema.nullable(),
   allowedActions: z.array(projectActionSchema),
 });
 export type Project = z.infer<typeof projectSchema>;
@@ -92,10 +100,13 @@ export const projectAccountSchema = z.object({
 });
 export type ProjectAccount = z.infer<typeof projectAccountSchema>;
 
-/** `project_member` (§7.4): a team account with its team role in the project. */
+/**
+ * `project_member` (§7.4): a team account with its team role in the project, or an end user with
+ * personal access (`end_user`, §7.3).
+ */
 export const projectMemberSchema = z.object({
   user: projectAccountSchema,
-  role: projectRoleSchema,
+  role: projectMemberRoleSchema,
   createdAt: z.iso.datetime(),
 });
 export type ProjectMember = z.infer<typeof projectMemberSchema>;

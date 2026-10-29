@@ -80,7 +80,8 @@
     },
     "roles": {
       "developer": "Developer",
-      "project_manager": "Kierownik projektu"
+      "project_manager": "Kierownik projektu",
+      "end_user": "Użytkownik"
     },
     "create": {
       "open": "Nowy projekt",
@@ -412,6 +413,19 @@
       "member_not_found": "Żadne konto nie ma tego adresu e-mail.",
       "member_not_end_user": "Do organizacji mogą należeć tylko użytkownicy końcowi.",
       "member_of_other_organization": "Ta osoba należy już do innej organizacji."
+    },
+    "invitation": {
+      "account_kind_mismatch": "Ten adres należy do konta innego rodzaju. Rodzaj konta może zmienić tylko Administrator.",
+      "account_deactivated": "Ten adres należy do dezaktywowanego konta. Administrator musi je najpierw ponownie aktywować.",
+      "access_exists": "Ta osoba ma już ten dostęp.",
+      "organization_conflict": "Ta osoba należy do innej organizacji. Administrator może ją przenieść na karcie Członkowie organizacji.",
+      "github_sign_in_missing": "Członkowie zespołu logują się przez GitHub. Skonfiguruj logowanie przez GitHub, zanim ich zaprosisz.",
+      "not_pending": "To zaproszenie zostało już przyjęte albo odwołane.",
+      "account_mismatch": "To zaproszenie należy do innego konta. Wyloguj się i otwórz link ponownie.",
+      "token_invalid": "Ten link z zaproszeniem jest nieważny. Mógł wygasnąć, zostać użyty albo zastąpiony. Poproś osobę, która Cię zaprosiła, o nowy link."
+    },
+    "user": {
+      "last_administrator": "Ostatniego aktywnego Administratora nie można dezaktywować ani odebrać mu roli Administratora."
     },
     "server": {
       "internal_error": "Coś poszło nie tak. Spróbuj ponownie później.",
