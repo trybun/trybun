@@ -1,10 +1,12 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { AuditLogEntriesWorkerModule } from './modules/audit-log-entries/audit-log-entries-worker.module.js';
+import { InvitationsWorkerModule } from './modules/invitations/invitations-worker.module.js';
 import type { TrybunConfig } from './platform/config/config.schema.js';
 import { ClockModule } from './platform/clock/clock.module.js';
 import { ConfigModule } from './platform/config/config.module.js';
 import { DatabaseModule } from './platform/database/database.module.js';
 import { I18nModule } from './platform/i18n/i18n.module.js';
+import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.module.js';
 import { HeartbeatModule } from './platform/health/heartbeat.module.js';
 import { LoggingModule } from './platform/logging/logging.module.js';
 import { OutboxWorkerModule } from './platform/outbox/outbox-worker.module.js';
@@ -26,8 +28,10 @@ export class WorkerModule {
         DatabaseModule,
         I18nModule,
         QueuesModule,
+        KeycloakAdminModule,
         OutboxWorkerModule.forRoot([]),
         AuditLogEntriesWorkerModule,
+        InvitationsWorkerModule,
         HeartbeatModule,
       ],
     };

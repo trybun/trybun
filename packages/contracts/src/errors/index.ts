@@ -39,6 +39,8 @@ export const errorCodeSchema = z.enum([
   'invitation.not_pending',
   'invitation.account_mismatch',
   'invitation.token_invalid',
+  'invitation.password_rejected',
+  'invitation.email_taken',
   'user.last_administrator',
   'server.internal_error',
   'server.unavailable',
@@ -113,6 +115,10 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'invitation.account_mismatch': 403,
   // An unknown, expired, used, revoked or replaced invitation token, all with the same response (ADR 0009).
   'invitation.token_invalid': 404,
+  // A password the password policy of Keycloak refuses on the acceptance page (§7.4).
+  'invitation.password_rejected': 422,
+  // The invited address belongs to another Keycloak user, which the Administrator resolves (ADR 0009).
+  'invitation.email_taken': 409,
   // Deactivating or demoting the last active Administrator (§7.4).
   'user.last_administrator': 409,
   // An unexpected error; the response carries no details (§18.3).

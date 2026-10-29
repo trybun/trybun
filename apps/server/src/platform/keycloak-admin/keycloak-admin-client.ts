@@ -1,15 +1,47 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { ErrorCode } from '@trybun/contracts/errors';
 import { z } from 'zod';
 import { TRYBUN_CONFIG } from '../config/config.module.js';
 import type { TrybunConfig } from '../config/config.schema.js';
 import { AppError } from '../errors/app-error.js';
-import type { KeycloakAdmin, NewAdministrator } from './keycloak-admin.js';
+import type {
+  KeycloakAdmin,
+  KeycloakUserProfile,
+  KeycloakUserSummary,
+  NewAdministrator,
+  NewEndUser,
+} from './keycloak-admin.js';
 
 /** The client of the service account (docker/keycloak/realm/trybun.yaml). */
 const SERVER_CLIENT_ID = 'trybun-server';
 
 /** The group whose members must use 2FA (§7.4). */
 const TEAM_GROUP = '/team';
+
+/** The alias of the GitHub identity provider (docker/keycloak/realm/github.yaml). */
+const GITHUB = 'github';
+
+const USERS_PAGE_SIZE = 100;
+
+const userProfileSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+/** `userName` of a GitHub identity is the GitHub login (ADR 0009). */
+const federatedIdentitiesSchema = z.array(
+  z.object({ identityProvider: z.string(), userName: z.string() }),
+);
+
+const groupsSchema = z.array(z.object({ id: z.string(), path: z.string() }));
+
+const userSummariesSchema = z.array(
+  z.object({
+    id: z.string(),
+    createdTimestamp: z.number(),
+    serviceAccountClientId: z.string().optional(),
+  }),
+);
 
 const tokenResponseSchema = z.object({ access_token: z.string() });
 
@@ -21,34 +53,132 @@ const errorResponseSchema = z
 
 /**
  * The Keycloak Admin API over the internal network (§14.4). Each call obtains a token of the
- * service account with the client credentials grant: the calls are rare (the first-run wizard), so
- * the token is not cached.
+ * service account with the client credentials grant: the calls are rare (the first-run wizard, the
+ * acceptance of invitations, an hourly cleanup), so the token is not cached.
  */
 @Injectable()
 export class KeycloakAdminClient implements KeycloakAdmin {
   constructor(@Inject(TRYBUN_CONFIG) private readonly config: TrybunConfig) {}
 
   async createAdministrator(administrator: NewAdministrator): Promise<string> {
-    const response = await this.request('POST', '/users', {
-      username: administrator.email,
-      email: administrator.email,
+    return this.createUser(
+      administrator,
+      { groups: [TEAM_GROUP], requiredActions: ['CONFIGURE_TOTP'] },
+      { emailTaken: 'setup.email_taken', passwordRejected: 'setup.password_rejected' },
+    );
+  }
+
+  async createEndUser(endUser: NewEndUser): Promise<string> {
+    return this.createUser(
+      endUser,
+      {},
+      { emailTaken: 'invitation.email_taken', passwordRejected: 'invitation.password_rejected' },
+    );
+  }
+
+  async findUserProfile(keycloakUserId: string): Promise<KeycloakUserProfile | null> {
+    const response = await this.request('GET', userPath(keycloakUserId));
+    if (response.status === 404) {
+      await response.body?.cancel();
+      return null;
+    }
+    await assertOk(response, 'read user');
+    const user = userProfileSchema.parse(await response.json());
+    return { firstName: user.firstName ?? null, lastName: user.lastName ?? null };
+  }
+
+  async setVerifiedEmail(keycloakUserId: string, email: string): Promise<void> {
+    const response = await this.request('PUT', userPath(keycloakUserId), {
+      email,
       emailVerified: true,
-      enabled: true,
-      firstName: administrator.firstName,
-      lastName: administrator.lastName,
-      attributes: { locale: [administrator.language] },
-      groups: [TEAM_GROUP],
-      requiredActions: ['CONFIGURE_TOTP'],
-      credentials: [{ type: 'password', value: administrator.password, temporary: false }],
     });
     if (response.status === 409) {
-      throw new AppError('setup.email_taken', [{ pointer: '/email', code: 'field.invalid' }]);
+      await response.body?.cancel();
+      throw new AppError('invitation.email_taken');
+    }
+    await assertOk(response, 'update user');
+  }
+
+  async findGithubLogin(keycloakUserId: string): Promise<string | null> {
+    const response = await this.request('GET', `${userPath(keycloakUserId)}/federated-identity`);
+    await assertOk(response, 'read federated identities');
+    const identities = federatedIdentitiesSchema.parse(await response.json());
+    return identities.find(({ identityProvider }) => identityProvider === GITHUB)?.userName ?? null;
+  }
+
+  async addToTeamGroup(keycloakUserId: string): Promise<void> {
+    const groups = await this.request(
+      'GET',
+      `/groups?exact=true&briefRepresentation=true&search=${encodeURIComponent(TEAM_GROUP.slice(1))}`,
+    );
+    await assertOk(groups, 'find group');
+    const group = groupsSchema.parse(await groups.json()).find(({ path }) => path === TEAM_GROUP);
+    if (group === undefined) {
+      throw new Error('Keycloak Admin API: the group team does not exist');
+    }
+    const response = await this.request(
+      'PUT',
+      `${userPath(keycloakUserId)}/groups/${encodeURIComponent(group.id)}`,
+    );
+    await assertOk(response, 'join group');
+  }
+
+  async listUsers(): Promise<KeycloakUserSummary[]> {
+    const users: KeycloakUserSummary[] = [];
+    for (let first = 0; ; first += USERS_PAGE_SIZE) {
+      const response = await this.request(
+        'GET',
+        `/users?briefRepresentation=true&first=${first}&max=${USERS_PAGE_SIZE}`,
+      );
+      await assertOk(response, 'list users');
+      const page = userSummariesSchema.parse(await response.json());
+      for (const user of page) {
+        if (user.serviceAccountClientId === undefined) {
+          users.push({ id: user.id, createdAt: new Date(user.createdTimestamp) });
+        }
+      }
+      if (page.length < USERS_PAGE_SIZE) {
+        return users;
+      }
+    }
+  }
+
+  async deleteUser(keycloakUserId: string): Promise<void> {
+    const response = await this.request('DELETE', userPath(keycloakUserId));
+    if (response.status !== 404) {
+      await assertOk(response, 'delete user');
+    }
+  }
+
+  /**
+   * Creates a user with the password as its only credential; the address is its user name, so
+   * the sign-in form pre-filled with it finds the user.
+   */
+  private async createUser(
+    user: NewAdministrator,
+    extra: { groups?: string[]; requiredActions?: string[] },
+    codes: { emailTaken: ErrorCode; passwordRejected: ErrorCode },
+  ): Promise<string> {
+    const response = await this.request('POST', '/users', {
+      username: user.email,
+      email: user.email,
+      emailVerified: true,
+      enabled: true,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      attributes: { locale: [user.language] },
+      ...extra,
+      credentials: [{ type: 'password', value: user.password, temporary: false }],
+    });
+    if (response.status === 409) {
+      await response.body?.cancel();
+      throw new AppError(codes.emailTaken, [{ pointer: '/email', code: 'field.invalid' }]);
     }
     if (response.status === 400) {
       const body = errorResponseSchema.parse(await response.json().catch(() => ({})));
       const message = [body.errorMessage, body.error, body.error_description].join(' ');
       if (/password/i.test(message)) {
-        throw new AppError('setup.password_rejected', [
+        throw new AppError(codes.passwordRejected, [
           { pointer: '/password', code: 'field.invalid' },
         ]);
       }
@@ -60,13 +190,6 @@ export class KeycloakAdminClient implements KeycloakAdmin {
       throw new Error('Keycloak Admin API: create user returned no location');
     }
     return id;
-  }
-
-  async deleteUser(keycloakUserId: string): Promise<void> {
-    const response = await this.request('DELETE', `/users/${encodeURIComponent(keycloakUserId)}`);
-    if (response.status !== 404) {
-      await assertOk(response, 'delete user');
-    }
   }
 
   private async request(method: string, path: string, body?: unknown): Promise<Response> {
@@ -100,4 +223,8 @@ async function assertOk(response: Response, operation: string): Promise<void> {
     await response.body?.cancel();
     throw new Error(`Keycloak Admin API: ${operation} failed with status ${response.status}`);
   }
+}
+
+function userPath(keycloakUserId: string): string {
+  return `/users/${encodeURIComponent(keycloakUserId)}`;
 }

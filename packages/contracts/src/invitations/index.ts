@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { pageQuerySchema, pageSchema } from '../pagination/index.js';
 import { projectMemberRoleSchema } from '../projects/index.js';
-import { emailSchema } from '../users/index.js';
+import { emailSchema, languageSchema, passwordSchema, userKindSchema } from '../users/index.js';
 
 /** `invitation.target` (§7.4): what an invitation grants when it is accepted. */
 export const invitationTargetTypeSchema = z.enum(['project', 'organization', 'administrator']);
@@ -134,3 +134,63 @@ export type InvitationPage = z.infer<typeof invitationPageSchema>;
 
 /** The token of an invitation link (ADR 0009): 32 random bytes in base64url. */
 export const invitationTokenSchema = z.string().min(1).max(128);
+
+/** `POST /api/v1/invitations/token-verification`: checks a link before the acceptance page. */
+export const verifyInvitationTokenSchema = z.object({ token: invitationTokenSchema });
+export type VerifyInvitationTokenDto = z.infer<typeof verifyInvitationTokenSchema>;
+
+/**
+ * What the acceptance page shows for a valid link (ADR 0009): the invited address (read-only), the
+ * kind of the account – a team member accepts with GitHub, an end user with a password or a
+ * configured provider – the target and the inviting person. `accountState` is `active` for a
+ * further link of an account that exists, which only a session of that account accepts (§7.4).
+ */
+export const invitationToAcceptSchema = z.object({
+  email: z.string(),
+  kind: userKindSchema,
+  accountState: z.enum(['invited', 'active']),
+  target: invitationTargetDetailSchema,
+  invitedBy: z.object({ displayName: z.string().nullable() }).nullable(),
+  expiresAt: z.iso.datetime(),
+});
+export type InvitationToAccept = z.infer<typeof invitationToAcceptSchema>;
+
+/** The names of the person, which the user profile of Keycloak requires (ADR 0009). */
+const personNameSchema = z.string().trim().min(1).max(100);
+
+/**
+ * `POST /api/v1/invitations/acceptance` (ADR 0009): `password` – an end user sets the password on
+ * the acceptance page and the API creates the Keycloak user; `identity_provider` – the request
+ * carries the access token of a sign-in through GitHub, Microsoft or Google started from the link.
+ * The language is that of the acceptance page (§13.1); the time zone is the browser's, kept only
+ * when it is a valid IANA name.
+ */
+export const acceptInvitationSchema = z.discriminatedUnion('method', [
+  z.object({
+    method: z.literal('password'),
+    token: invitationTokenSchema,
+    firstName: personNameSchema,
+    lastName: personNameSchema,
+    password: passwordSchema,
+    language: languageSchema,
+    timeZone: z.string().max(64).optional(),
+  }),
+  z.object({
+    method: z.literal('identity_provider'),
+    token: invitationTokenSchema,
+    language: languageSchema,
+    timeZone: z.string().max(64).optional(),
+  }),
+]);
+export type AcceptInvitationDto = z.infer<typeof acceptInvitationSchema>;
+
+/**
+ * The accepted invitation: the account's kind – a new team member signs in again for the 2FA
+ * set-up (ADR 0009) – and the path to land on: the invited project's home, else the root (the
+ * portal for end users, the team home for the team).
+ */
+export const acceptedInvitationSchema = z.object({
+  kind: userKindSchema,
+  landingPath: z.string().startsWith('/'),
+});
+export type AcceptedInvitation = z.infer<typeof acceptedInvitationSchema>;

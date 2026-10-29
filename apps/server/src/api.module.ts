@@ -23,6 +23,8 @@ import {
   organizationsAbilities,
 } from './modules/organizations/organizations.abilities.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { invitationsAbilities } from './modules/invitations/invitations.abilities.js';
+import { InvitationsModule } from './modules/invitations/invitations.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -45,7 +47,12 @@ export class ApiModule {
         // After the authentication guard: the rate limit is keyed by the principal (§14.4).
         RateLimitingModule,
         AuthorizationModule.forRoot({
-          rules: [administrationAbilities, projectsAbilities, organizationsAbilities],
+          rules: [
+            administrationAbilities,
+            projectsAbilities,
+            organizationsAbilities,
+            invitationsAbilities,
+          ],
           restrictions: [archivedProjectsRestriction, archivedOrganizationsRestriction],
         }),
         KeycloakAdminModule,
@@ -55,6 +62,7 @@ export class ApiModule {
         AdministrationModule,
         ProjectsModule,
         OrganizationsModule,
+        InvitationsModule,
       ],
     };
   }

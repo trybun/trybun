@@ -422,7 +422,9 @@
       "github_sign_in_missing": "Członkowie zespołu logują się przez GitHub. Skonfiguruj logowanie przez GitHub, zanim ich zaprosisz.",
       "not_pending": "To zaproszenie zostało już przyjęte albo odwołane.",
       "account_mismatch": "To zaproszenie należy do innego konta. Wyloguj się i otwórz link ponownie.",
-      "token_invalid": "Ten link z zaproszeniem jest nieważny. Mógł wygasnąć, zostać użyty albo zastąpiony. Poproś osobę, która Cię zaprosiła, o nowy link."
+      "token_invalid": "Ten link z zaproszeniem jest nieważny. Mógł wygasnąć, zostać użyty albo zastąpiony. Poproś osobę, która Cię zaprosiła, o nowy link.",
+      "password_rejected": "Wybierz inne hasło: musi mieć co najmniej 15 znaków i nie może być Twoim adresem e-mail ani popularnym hasłem.",
+      "email_taken": "Inne logowanie używa już tego adresu e-mail. Poproś Administratora o pomoc."
     },
     "user": {
       "last_administrator": "Ostatniego aktywnego Administratora nie można dezaktywować ani odebrać mu roli Administratora."
