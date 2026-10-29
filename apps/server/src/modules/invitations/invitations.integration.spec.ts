@@ -83,6 +83,11 @@ async function startApp(config: TrybunConfig): Promise<INestApplication<Server>>
   return app;
 }
 
+/** The error code of a Problem Details response. */
+function codeOf(res: { body: unknown }): string | undefined {
+  return (res.body as { code?: string }).code;
+}
+
 /** The token of an invitation link (ADR 0009). */
 function tokenOf(link: string): string {
   return new URL(link).hash.replace('#token=', '');
@@ -317,7 +322,8 @@ describe('invitations', () => {
         where: { email: email.toLowerCase() },
         select: { id: true, _count: { select: { invitations: true } } },
       });
-      expect(accounts).toEqual([{ id: expect.any(String), _count: { invitations: 2 } }]);
+      expect(accounts).toHaveLength(1);
+      expect(accounts[0]?._count.invitations).toBe(2);
     });
 
     describe('existing active accounts', () => {
@@ -510,8 +516,8 @@ describe('invitations', () => {
           organizationId: organization.id,
         });
 
-        expect([toProject.status, toProject.body.code]).toEqual([409, 'project.archived']);
-        expect([toOrganization.status, toOrganization.body.code]).toEqual([
+        expect([toProject.status, codeOf(toProject)]).toEqual([409, 'project.archived']);
+        expect([toOrganization.status, codeOf(toOrganization)]).toEqual([
           409,
           'organization.archived',
         ]);
@@ -588,7 +594,7 @@ describe('invitations', () => {
               }),
           ]);
 
-          expect([team.status, team.body.code]).toEqual([422, 'invitation.github_sign_in_missing']);
+          expect([team.status, codeOf(team)]).toEqual([422, 'invitation.github_sign_in_missing']);
           expect(endUser.status).toBe(201);
         } finally {
           await withoutGithub.close();
@@ -808,8 +814,8 @@ describe('invitations', () => {
         .set('Authorization', authorization);
 
       expect(first.status).toBe(204);
-      expect([second.status, second.body.code]).toEqual([409, 'invitation.not_pending']);
-      expect([resending.status, resending.body.code]).toEqual([409, 'invitation.not_pending']);
+      expect([second.status, codeOf(second)]).toEqual([409, 'invitation.not_pending']);
+      expect([resending.status, codeOf(resending)]).toEqual([409, 'invitation.not_pending']);
       expect((await verify(token)).status).toBe(404);
       expect((await auditActions(invitation.id)).at(-1)).toEqual({
         action: 'invitation.revoked',
@@ -831,7 +837,7 @@ describe('invitations', () => {
         .post(`/api/v1/invitations/${invitation.id}/resending`)
         .set('Authorization', authorization);
 
-      expect([res.status, res.body.code]).toEqual([409, 'invitation.not_pending']);
+      expect([res.status, codeOf(res)]).toEqual([409, 'invitation.not_pending']);
     });
 
     it('revokes the pending invitations of a project or an organization when it is archived', async () => {
@@ -894,7 +900,7 @@ describe('invitations', () => {
     });
 
     it.each([
-      ['unknown', async () => buildInvitationToken().token],
+      ['unknown', () => Promise.resolve(buildInvitationToken().token)],
       [
         'expired',
         async (userId: string) => {
@@ -1042,7 +1048,7 @@ describe('invitations', () => {
 
         expect(teamRes.status).toBe(422);
         expect(teamRes.body).toMatchObject({ errors: [{ pointer: '/method' }] });
-        expect([furtherRes.status, furtherRes.body.code]).toEqual([
+        expect([furtherRes.status, codeOf(furtherRes)]).toEqual([
           403,
           'invitation.account_mismatch',
         ]);
@@ -1102,7 +1108,7 @@ describe('invitations', () => {
           .post('/api/v1/invitations/acceptance')
           .send({ method: 'identity_provider', token, language: 'en' });
 
-        expect([res.status, res.body.code]).toEqual([401, 'authentication.required']);
+        expect([res.status, codeOf(res)]).toEqual([401, 'authentication.required']);
       });
 
       it('refuses an address that another Keycloak user holds with invitation.email_taken', async () => {
@@ -1116,7 +1122,7 @@ describe('invitations', () => {
 
         const res = await acceptWithSession(token, sub);
 
-        expect([res.status, res.body.code]).toEqual([409, 'invitation.email_taken']);
+        expect([res.status, codeOf(res)]).toEqual([409, 'invitation.email_taken']);
         expect(await prisma.user.findUnique({ where: { id: invitation.user.id } })).toMatchObject({
           state: 'invited',
         });
@@ -1151,12 +1157,12 @@ describe('invitations', () => {
         const withoutSecondFactor = await acceptWithSession(administrator.token, sub, ['pwd']);
         const ownSession = await acceptWithSession(administrator.token, sub, ['pwd', 'otp']);
 
-        expect([otherSession.status, otherSession.body.code]).toEqual([
+        expect([otherSession.status, codeOf(otherSession)]).toEqual([
           403,
           'invitation.account_mismatch',
         ]);
-        expect([newSub.status, newSub.body.code]).toEqual([403, 'invitation.account_mismatch']);
-        expect([withoutSecondFactor.status, withoutSecondFactor.body.code]).toEqual([
+        expect([newSub.status, codeOf(newSub)]).toEqual([403, 'invitation.account_mismatch']);
+        expect([withoutSecondFactor.status, codeOf(withoutSecondFactor)]).toEqual([
           401,
           'authentication.second_factor_required',
         ]);
