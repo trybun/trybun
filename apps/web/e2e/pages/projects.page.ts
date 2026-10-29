@@ -41,6 +41,23 @@ export class ProjectsPage {
     await dialog.getByRole('button', { name: 'Create project' }).click();
   }
 
+  /**
+   * Opens the Add member dialog with an e-mail address and a role, waiting for the preview of
+   * what sending will do (§7.4).
+   */
+  async addByEmail(
+    email: string,
+    role: 'Developer' | 'Project manager' | 'End user',
+  ): Promise<Locator> {
+    await this.page.getByRole('button', { name: 'Add member' }).click();
+    const dialog = this.page.getByRole('dialog', { name: 'Add member' });
+    await dialog.getByRole('radio', { name: 'By e-mail address' }).check();
+    await dialog.getByRole('textbox', { name: 'E-mail address' }).fill(email);
+    await dialog.getByRole('combobox', { name: 'Role' }).click();
+    await this.page.getByRole('option', { name: role, exact: true }).click();
+    return dialog;
+  }
+
   /** Adds a team member found by the search of the Add member dialog. */
   async addMember(search: string, name: string): Promise<void> {
     await this.page.getByRole('button', { name: 'Add member' }).click();

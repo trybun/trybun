@@ -24,14 +24,16 @@ import { useChangeProjectMemberRole, useRemoveProjectMember } from '../mutations
 import { projectMembersQueryOptions, projectRoleCountQueryOptions } from '../queries.js';
 import { LazyAddMemberDialog } from './lazy-add-member-dialog.js';
 import { LazyConfirmDialog } from './lazy-confirm-dialog.js';
+import { ProjectInvitations } from './project-invitations.js';
 
 /** A change of a member that needs a confirmation first. */
 type PendingChange = { kind: 'remove' | 'demote'; member: ProjectMember };
 
 /**
  * The Members tab (§7.4): every member with display name, GitHub login and role; with
- * `manage_members` also Add member, a role selector and Remove per row. Removing or demoting the
- * last Project manager is confirmed with the warning of §7.4.
+ * `manage_members` also Add member, the pending invitations, a role selector and Remove per row.
+ * End users with personal access (`end_user`) keep their role: a team role is never offered to
+ * them. Removing or demoting the last Project manager is confirmed with the warning of §7.4.
  */
 export function ProjectMembers({ project }: { project: Project }) {
   const t = useTranslations('projects');
@@ -120,32 +122,38 @@ export function ProjectMembers({ project }: { project: Project }) {
             </div>
             {canManage ? (
               <div className="flex gap-2">
-                <Select
-                  items={projectRoleSchema.options.map((value) => ({
-                    value,
-                    label: t(`roles.${value}`),
-                  }))}
-                  value={
-                    changeRole.isPending && changeRole.variables.userId === member.user.id
-                      ? changeRole.variables.role
-                      : member.role
-                  }
-                  onValueChange={(value) => requestRole(member, projectRoleSchema.parse(value))}
-                >
-                  <SelectTrigger
-                    className="flex-1 md:w-48"
-                    aria-label={t('members.roleOf', { name: nameOf(member) })}
+                {member.role === 'end_user' ? (
+                  <span className="flex flex-1 items-center text-sm text-muted-foreground md:w-48">
+                    {t('roles.end_user')}
+                  </span>
+                ) : (
+                  <Select
+                    items={projectRoleSchema.options.map((value) => ({
+                      value,
+                      label: t(`roles.${value}`),
+                    }))}
+                    value={
+                      changeRole.isPending && changeRole.variables.userId === member.user.id
+                        ? changeRole.variables.role
+                        : member.role
+                    }
+                    onValueChange={(value) => requestRole(member, projectRoleSchema.parse(value))}
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projectRoleSchema.options.map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {t(`roles.${value}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger
+                      className="flex-1 md:w-48"
+                      aria-label={t('members.roleOf', { name: nameOf(member) })}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projectRoleSchema.options.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {t(`roles.${value}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <Button
                   variant="outline"
                   aria-label={t('members.removeOf', { name: nameOf(member) })}
@@ -160,6 +168,7 @@ export function ProjectMembers({ project }: { project: Project }) {
           </li>
         ))}
       </ul>
+      {canManage && <ProjectInvitations projectId={project.id} />}
       {members.hasNextPage && (
         <Button
           variant="outline"

@@ -643,6 +643,25 @@ describe('projects endpoints', () => {
       ]);
     });
 
+    it('gives the personal access of an end user no team role', async () => {
+      const project = await createProject(prisma);
+      const endUser = await createUser(prisma);
+      await createProjectMember(prisma, {
+        projectId: project.id,
+        userId: endUser.id,
+        role: 'end_user',
+      });
+      const { authorization } = await signIn('admin');
+
+      const res = await http()
+        .patch(`/api/v1/projects/${project.id}/members/${endUser.id}`)
+        .set('Authorization', authorization)
+        .send({ role: 'developer' });
+
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({ code: 'project_member.user_not_eligible' });
+    });
+
     it('allows removing the last Project manager', async () => {
       const project = await createProject(prisma);
       const manager = await createUser(prisma, { kind: 'team' });

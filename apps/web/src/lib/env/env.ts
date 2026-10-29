@@ -6,6 +6,11 @@ import { z } from 'zod';
 /** The realm of Trybun in Keycloak (docker/keycloak/realm/trybun.yaml). */
 const KEYCLOAK_REALM = 'trybun';
 
+/** Whether an optional variable is set; Compose passes an unset one as an empty string. */
+function isSet(value: string | undefined): boolean {
+  return value !== undefined && value.trim() !== '';
+}
+
 /** Server-side environment of the web application (§15.3); `NEXT_PUBLIC_*` is never used. */
 const envSchema = z
   .object({
@@ -28,6 +33,10 @@ const envSchema = z
       .string()
       .refine(isTimeZone, 'Invalid IANA time zone')
       .default('UTC'),
+    // The optional sign-in providers of end users (§15.3): the acceptance page of an invitation
+    // offers a provider only when its client is configured (ADR 0009).
+    TRYBUN_MICROSOFT_CLIENT_ID: z.string().optional(),
+    TRYBUN_GOOGLE_CLIENT_ID: z.string().optional(),
     // Set by Next.js: `development` for `next dev`.
     NODE_ENV: z.string().optional(),
   })
@@ -44,6 +53,10 @@ const envSchema = z
     defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
     defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
     isDevelopment: env.NODE_ENV === 'development',
+    endUserIdentityProviders: [
+      ...(isSet(env.TRYBUN_MICROSOFT_CLIENT_ID) ? (['microsoft'] as const) : []),
+      ...(isSet(env.TRYBUN_GOOGLE_CLIENT_ID) ? (['google'] as const) : []),
+    ],
     keycloak: {
       issuer: `${env.TRYBUN_KEYCLOAK_PUBLIC_URL ?? `https://${env.TRYBUN_DOMAIN}/auth`}/realms/${KEYCLOAK_REALM}`,
       internalRealmUrl: `${env.TRYBUN_KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`,

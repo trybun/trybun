@@ -125,7 +125,7 @@
       "roleOf": "Role of {name}",
       "add": "Add member",
       "addTitle": "Add member",
-      "addDescription": "Add an active team member to the project.",
+      "addDescription": "Add a team member, or invite someone by their e-mail address.",
       "search": "Search by name or GitHub login",
       "candidates": "Team members",
       "noCandidates": "No active team members match.",
@@ -141,7 +141,16 @@
       "demoteConfirm": "Change role",
       "lastManagerWarning": "This project will have no Project manager. The Administrator covers the role.",
       "added": "{name} added to the project",
-      "removed": "{name} removed from the project"
+      "removed": "{name} removed from the project",
+      "addBy": "Add",
+      "addByAccount": "A team member",
+      "addByEmail": "By e-mail address",
+      "email": "E-mail address",
+      "invite": "Invite",
+      "inviting": "Inviting…",
+      "invitedTitle": "Invitation created",
+      "invitedDescription": "Copy the link and send it to {email}.",
+      "done": "Done"
     },
     "danger": {
       "archive": "Archive project",
@@ -167,6 +176,27 @@
       "empty": "No organization may access the project.",
       "archived": "Archived",
       "loadMore": "Show more"
+    },
+    "invitations": {
+      "title": "Pending invitations",
+      "invitedBy": "Invited by {name}",
+      "invitedByUnknown": "Inviting person unknown",
+      "expires": "Expires on {date}",
+      "copyNewLink": "Copy new link",
+      "copyNewLinkOf": "Copy a new link for {email}",
+      "revoke": "Revoke",
+      "revokeOf": "Revoke the invitation of {email}",
+      "resendTitle": "Create a new link for {email}?",
+      "resendDescription": "The old link stops working. The new link is valid for {days} days.",
+      "resendConfirm": "Create new link",
+      "revokeTitle": "Revoke the invitation of {email}?",
+      "revokeDescription": "The link stops working. You can invite the person again later.",
+      "revokeConfirm": "Revoke",
+      "revoked": "Invitation revoked",
+      "newLinkTitle": "New invitation link",
+      "newLinkDescription": "Copy the link and send it to {email}.",
+      "close": "Close",
+      "cancel": "Cancel"
     }
   },
   "organizations": {
@@ -342,6 +372,61 @@
       "save": "Save",
       "saving": "Saving…",
       "saved": "Settings saved."
+    }
+  },
+  "invitations": {
+    "link": {
+      "label": "Invitation link",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "copyFailed": "The link could not be copied. Select it and copy it yourself.",
+      "note": "Only this link works. It expires on {date}."
+    },
+    "preview": {
+      "checking": "Checking the address…",
+      "invite": "This person gets an invitation link.",
+      "join": "This person will join the organization {name}.",
+      "grant": "This person already has an account and gets the access at once."
+    },
+    "acceptance": {
+      "title": "Accept the invitation",
+      "checking": "Checking the invitation link…",
+      "invalidTitle": "This invitation link is not valid",
+      "noToken": "Open the whole link of your invitation, or ask the person who invited you for a new one.",
+      "email": "E-mail address",
+      "emailDescription": "Your account uses this address.",
+      "target": "Invitation to",
+      "targetProject": "the project {name}, role: {role}",
+      "targetOrganization": "the organization {name}",
+      "targetAdministrator": "the Administrator role",
+      "invitedBy": "Invited by",
+      "invitedByUnknown": "Unknown",
+      "expires": "Valid until",
+      "roles": {
+        "developer": "Developer",
+        "project_manager": "Project manager",
+        "end_user": "End user"
+      },
+      "passwordTitle": "Create your account",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "password": "Password",
+      "passwordDescription": "At least {min} characters. A phrase of several words is easy to remember.",
+      "submit": "Accept and sign in",
+      "submitting": "Accepting…",
+      "or": "or",
+      "continueWith": "Continue with {provider}",
+      "teamIntro": "Team members sign in with GitHub. After GitHub, you set up two-factor authentication with an authenticator app.",
+      "activeIntro": "You already have an account with this address. Sign in to accept the invitation.",
+      "signInToAccept": "Sign in to accept",
+      "accepting": "Accepting the invitation…",
+      "redirecting": "Redirecting to the sign-in…",
+      "secondFactor": "Sign in once more with a one-time code from your authenticator app to finish.",
+      "mismatchTitle": "This invitation is for another account",
+      "signOut": "Sign out",
+      "failedTitle": "The invitation could not be accepted",
+      "retry": "Try again",
+      "signIn": "Sign in"
     }
   },
   "setup": {

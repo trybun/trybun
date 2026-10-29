@@ -6,3 +6,6 @@ export const ADMIN_STORAGE_STATE = 'e2e/.auth/admin.json';
 
 /** The browser state of the newcomer, the team member without tour progress (§2.4). */
 export const NEWCOMER_STORAGE_STATE = 'e2e/.auth/newcomer.json';
+
+/** The browser state of the Project manager of the demo projects (§7.5). */
+export const MANAGER_STORAGE_STATE = 'e2e/.auth/manager.json';

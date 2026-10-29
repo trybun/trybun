@@ -411,6 +411,10 @@ export class ProjectsService {
     return this.prisma.$transaction(async (tx) => {
       await this.lockForMembership(tx, ability, principal, projectId);
       const member = await this.findMember(tx, projectId, userId);
+      // An end user's personal access has no team role (§7.3, §7.4).
+      if (member.role === 'end_user') {
+        throw new AppError('project_member.user_not_eligible');
+      }
       if (member.role === input.role) {
         return toMemberResponse(member);
       }

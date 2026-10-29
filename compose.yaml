@@ -64,6 +64,9 @@ services:
       TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: ${TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET:?TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET must be set}
       TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
       TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}
+      # The acceptance page of an invitation offers only the configured providers (ADR 0009).
+      TRYBUN_MICROSOFT_CLIENT_ID: ${TRYBUN_MICROSOFT_CLIENT_ID:-}
+      TRYBUN_GOOGLE_CLIENT_ID: ${TRYBUN_GOOGLE_CLIENT_ID:-}
     mem_limit: 512m
     healthcheck:
       test:

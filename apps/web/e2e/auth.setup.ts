@@ -3,6 +3,7 @@ import { expect, type Page, test as setup } from '@playwright/test';
 import { SignInPage } from './pages/sign-in.page.js';
 import {
   ADMIN_STORAGE_STATE,
+  MANAGER_STORAGE_STATE,
   NEWCOMER_STORAGE_STATE,
   TEAM_STORAGE_STATE,
 } from './storage-state.js';
@@ -47,4 +48,12 @@ setup('sign in as the Administrator', async ({ page }) => {
 
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
   await page.context().storageState({ path: ADMIN_STORAGE_STATE });
+});
+
+setup('sign in as the Project manager', async ({ page }) => {
+  await page.goto('/');
+  await new SignInPage(page).signIn('manager@example.com');
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
+  await page.context().storageState({ path: MANAGER_STORAGE_STATE });
 });
