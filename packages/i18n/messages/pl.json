@@ -120,7 +120,7 @@
       "roleOf": "Rola: {name}",
       "add": "Dodaj członka",
       "addTitle": "Dodaj członka",
-      "addDescription": "Dodaj do projektu aktywnego członka zespołu.",
+      "addDescription": "Dodaj członka zespołu albo zaproś kogoś po adresie e-mail.",
       "search": "Szukaj po nazwie lub loginie GitHub",
       "candidates": "Członkowie zespołu",
       "noCandidates": "Żaden aktywny członek zespołu nie pasuje.",
@@ -136,7 +136,16 @@
       "demoteConfirm": "Zmień rolę",
       "lastManagerWarning": "Projekt nie będzie miał kierownika projektu. Tę rolę przejmuje Administrator.",
       "added": "Dodano do projektu: {name}",
-      "removed": "Usunięto z projektu: {name}"
+      "removed": "Usunięto z projektu: {name}",
+      "addBy": "Dodaj",
+      "addByAccount": "Członka zespołu",
+      "addByEmail": "Po adresie e-mail",
+      "email": "Adres e-mail",
+      "invite": "Zaproś",
+      "inviting": "Zapraszanie…",
+      "invitedTitle": "Zaproszenie utworzone",
+      "invitedDescription": "Skopiuj link i wyślij go na adres {email}.",
+      "done": "Gotowe"
     },
     "danger": {
       "archive": "Zarchiwizuj projekt",
@@ -162,6 +171,27 @@
       "empty": "Żadna organizacja nie ma dostępu do projektu.",
       "archived": "Zarchiwizowana",
       "loadMore": "Pokaż więcej"
+    },
+    "invitations": {
+      "title": "Oczekujące zaproszenia",
+      "invitedBy": "Zaprasza: {name}",
+      "invitedByUnknown": "Nie wiadomo, kto zaprasza",
+      "expires": "Wygasa {date}",
+      "copyNewLink": "Skopiuj nowy link",
+      "copyNewLinkOf": "Skopiuj nowy link dla {email}",
+      "revoke": "Odwołaj",
+      "revokeOf": "Odwołaj zaproszenie dla {email}",
+      "resendTitle": "Utworzyć nowy link dla {email}?",
+      "resendDescription": "Stary link przestanie działać. Nowy link jest ważny {days} dni.",
+      "resendConfirm": "Utwórz nowy link",
+      "revokeTitle": "Odwołać zaproszenie dla {email}?",
+      "revokeDescription": "Link przestanie działać. Możesz później zaprosić tę osobę ponownie.",
+      "revokeConfirm": "Odwołaj",
+      "revoked": "Zaproszenie odwołane",
+      "newLinkTitle": "Nowy link z zaproszeniem",
+      "newLinkDescription": "Skopiuj link i wyślij go na adres {email}.",
+      "close": "Zamknij",
+      "cancel": "Anuluj"
     }
   },
   "organizations": {
@@ -274,6 +304,61 @@
       "deleting": "Usuwanie…",
       "cancel": "Anuluj",
       "deleted": "Organizacja usunięta"
+    }
+  },
+  "invitations": {
+    "link": {
+      "label": "Link z zaproszeniem",
+      "copy": "Skopiuj link",
+      "copied": "Link skopiowany",
+      "copyFailed": "Nie udało się skopiować linku. Zaznacz go i skopiuj samodzielnie.",
+      "note": "Działa tylko ten link. Wygasa {date}."
+    },
+    "preview": {
+      "checking": "Sprawdzanie adresu…",
+      "invite": "Ta osoba otrzyma link z zaproszeniem.",
+      "join": "Ta osoba dołączy do organizacji {name}.",
+      "grant": "Ta osoba ma już konto i od razu otrzyma dostęp."
+    },
+    "acceptance": {
+      "title": "Przyjmij zaproszenie",
+      "checking": "Sprawdzanie linku z zaproszeniem…",
+      "invalidTitle": "Ten link z zaproszeniem jest nieważny",
+      "noToken": "Otwórz cały link z zaproszenia albo poproś osobę, która Cię zaprosiła, o nowy link.",
+      "email": "Adres e-mail",
+      "emailDescription": "Twoje konto używa tego adresu.",
+      "target": "Zaproszenie do",
+      "targetProject": "projektu {name}, rola: {role}",
+      "targetOrganization": "organizacji {name}",
+      "targetAdministrator": "roli Administratora",
+      "invitedBy": "Zaprasza",
+      "invitedByUnknown": "Nieznana osoba",
+      "expires": "Ważne do",
+      "roles": {
+        "developer": "Developer",
+        "project_manager": "Kierownik projektu",
+        "end_user": "Użytkownik"
+      },
+      "passwordTitle": "Utwórz konto",
+      "firstName": "Imię",
+      "lastName": "Nazwisko",
+      "password": "Hasło",
+      "passwordDescription": "Co najmniej {min} znaków. Frazę z kilku słów łatwo zapamiętać.",
+      "submit": "Przyjmij i zaloguj się",
+      "submitting": "Przyjmowanie…",
+      "or": "lub",
+      "continueWith": "Kontynuuj z {provider}",
+      "teamIntro": "Członkowie zespołu logują się przez GitHub. Po GitHubie skonfigurujesz uwierzytelnianie dwuskładnikowe w aplikacji uwierzytelniającej.",
+      "activeIntro": "Masz już konto z tym adresem. Zaloguj się, aby przyjąć zaproszenie.",
+      "signInToAccept": "Zaloguj się, aby przyjąć",
+      "accepting": "Przyjmowanie zaproszenia…",
+      "redirecting": "Przekierowanie do logowania…",
+      "secondFactor": "Zaloguj się jeszcze raz jednorazowym kodem z aplikacji uwierzytelniającej, aby zakończyć.",
+      "mismatchTitle": "To zaproszenie jest dla innego konta",
+      "signOut": "Wyloguj się",
+      "failedTitle": "Nie udało się przyjąć zaproszenia",
+      "retry": "Spróbuj ponownie",
+      "signIn": "Zaloguj się"
     }
   },
   "setup": {
