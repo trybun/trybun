@@ -48,6 +48,24 @@ export class AccountsPage {
     await expect(this.account(name)).toHaveCount(1);
   }
 
+  /** Opens Invite of the page header; the dialog of an account's own Invite is the same. */
+  async openInvite(): Promise<Locator> {
+    const dialog = this.page.getByRole('dialog', { name: 'Invite' });
+    // The server renders the button; a click before the hydration opens nothing.
+    await expect(async () => {
+      await this.page.getByRole('button', { name: 'Invite', exact: true }).click();
+      await expect(dialog).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    return dialog;
+  }
+
+  /** The visible pending invitations of an account, named by its address. */
+  invitationsOf(email: string): Locator {
+    return this.page
+      .getByRole('list', { name: `Pending invitations of ${email}` })
+      .filter({ visible: true });
+  }
+
   toast(text: string): Locator {
     return this.page.locator('[data-slot="toast"]').filter({ hasText: text });
   }

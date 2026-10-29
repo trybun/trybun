@@ -11,6 +11,7 @@ import { useFormatter, useTranslations } from 'next-intl';
  */
 export function InvitationSummary({ invitation }: { invitation: InvitationToAccept }) {
   const t = useTranslations('invitations.acceptance');
+  const roles = useTranslations('invitations.roles');
   const format = useFormatter();
   const { target } = invitation;
   return (
@@ -24,7 +25,7 @@ export function InvitationSummary({ invitation }: { invitation: InvitationToAcce
         <dt className="text-muted-foreground">{t('target')}</dt>
         <dd className="font-medium break-words">
           {target.type === 'project'
-            ? t('targetProject', { name: target.project.name, role: t(`roles.${target.role}`) })
+            ? t('targetProject', { name: target.project.name, role: roles(target.role) })
             : target.type === 'organization'
               ? t('targetOrganization', { name: target.organization.name })
               : t('targetAdministrator')}

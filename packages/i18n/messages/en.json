@@ -148,13 +148,7 @@
       "removed": "{name} removed from the project",
       "addBy": "Add",
       "addByAccount": "A team member",
-      "addByEmail": "By e-mail address",
-      "email": "E-mail address",
-      "invite": "Invite",
-      "inviting": "Inviting…",
-      "invitedTitle": "Invitation created",
-      "invitedDescription": "Copy the link and send it to {email}.",
-      "done": "Done"
+      "addByEmail": "By e-mail address"
     },
     "danger": {
       "archive": "Archive project",
@@ -180,27 +174,6 @@
       "empty": "No organization may access the project.",
       "archived": "Archived",
       "loadMore": "Show more"
-    },
-    "invitations": {
-      "title": "Pending invitations",
-      "invitedBy": "Invited by {name}",
-      "invitedByUnknown": "Inviting person unknown",
-      "expires": "Expires on {date}",
-      "copyNewLink": "Copy new link",
-      "copyNewLinkOf": "Copy a new link for {email}",
-      "revoke": "Revoke",
-      "revokeOf": "Revoke the invitation of {email}",
-      "resendTitle": "Create a new link for {email}?",
-      "resendDescription": "The old link stops working. The new link is valid for {days} days.",
-      "resendConfirm": "Create new link",
-      "revokeTitle": "Revoke the invitation of {email}?",
-      "revokeDescription": "The link stops working. You can invite the person again later.",
-      "revokeConfirm": "Revoke",
-      "revoked": "Invitation revoked",
-      "newLinkTitle": "New invitation link",
-      "newLinkDescription": "Copy the link and send it to {email}.",
-      "close": "Close",
-      "cancel": "Cancel"
     }
   },
   "organizations": {
@@ -392,6 +365,74 @@
       "join": "This person will join the organization {name}.",
       "grant": "This person already has an account and gets the access at once."
     },
+    "roles": {
+      "developer": "Developer",
+      "project_manager": "Project manager",
+      "end_user": "End user"
+    },
+    "targets": {
+      "project": "Project {name}, {role}",
+      "organization": "Organization {name}",
+      "administrator": "Administrator role"
+    },
+    "form": {
+      "email": "E-mail address",
+      "target": "Invite to",
+      "targetTypes": {
+        "project": "A project",
+        "organization": "An organization",
+        "administrator": "The Administrator role"
+      },
+      "project": "Project",
+      "projects": "Projects",
+      "noProject": "No active project matches.",
+      "organization": "Organization",
+      "organizations": "Organizations",
+      "noOrganization": "No active organization matches.",
+      "role": "Role",
+      "invite": "Invite",
+      "inviting": "Inviting…",
+      "grant": "Add",
+      "granting": "Adding…",
+      "cancel": "Cancel"
+    },
+    "issued": {
+      "title": "Invitation created",
+      "description": "Copy the link and send it to {email}.",
+      "done": "Done"
+    },
+    "invite": {
+      "open": "Invite",
+      "openFor": "Invite {email}",
+      "title": "Invite",
+      "description": "Invite someone by their e-mail address to a project, an organization or the Administrator role.",
+      "granted": "Access granted to {name}",
+      "noLink": "No working invitation link."
+    },
+    "pending": {
+      "title": "Pending invitations",
+      "invitedBy": "Invited by {name}",
+      "invitedByUnknown": "Inviting person unknown",
+      "expires": "Expires on {date}",
+      "copyNewLink": "Copy new link",
+      "copyNewLinkOf": "Copy a new link for {email}",
+      "revoke": "Revoke",
+      "revokeOf": "Revoke the invitation of {email}",
+      "resendTitle": "Create a new link for {email}?",
+      "resendDescription": "The old link stops working. The new link is valid for {days} days.",
+      "resendConfirm": "Create new link",
+      "revokeTitle": "Revoke the invitation of {email}?",
+      "revokeDescription": "The link stops working. You can invite the person again later.",
+      "revokeConfirm": "Revoke",
+      "revoked": "Invitation revoked",
+      "newLinkTitle": "New invitation link",
+      "newLinkDescription": "Copy the link and send it to {email}.",
+      "close": "Close",
+      "cancel": "Cancel",
+      "loadMore": "Show more",
+      "loadingMore": "Loading…",
+      "listOf": "Pending invitations of {name}"
+    },
     "acceptance": {
       "title": "Accept the invitation",
       "checking": "Checking the invitation link…",
@@ -406,11 +447,6 @@
       "invitedBy": "Invited by",
       "invitedByUnknown": "Unknown",
       "expires": "Valid until",
-      "roles": {
-        "developer": "Developer",
-        "project_manager": "Project manager",
-        "end_user": "End user"
-      },
       "passwordTitle": "Create your account",
       "firstName": "First name",
       "lastName": "Last name",

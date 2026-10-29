@@ -108,6 +108,8 @@ export function buildDemoDataset(): DemoDataset {
     { email: 'manager@example.com', displayName: 'Marek Manager' },
     { email: 'developer@example.com', displayName: 'Dorota Developer' },
     { email: NEWCOMER_EMAIL, displayName: 'Nina Newcomer' },
+    // Deactivated and reactivated by the E2E test of deactivation, so no other test signs in as it.
+    { email: 'leaver@example.com', displayName: 'Leon Leaver' },
   ].map((account, index) => ({
     ...account,
     id: demoId(index + 1),

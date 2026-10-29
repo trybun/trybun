@@ -1,6 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
+import { LazyInviteDialog } from '../../../../features/invitations/components/lazy-invite-dialog.js';
 import { AccountList } from '../../../../features/users/components/account-list.js';
 import { currentUserQueryOptions, usersQueryOptions } from '../../../../features/users/queries.js';
 import { accountsSearchParamsSchema } from '../../../../features/users/search-params.js';
@@ -10,8 +11,8 @@ import { getServerQueryClient } from '../../../../lib/query-client/server-query-
 
 /**
  * The Accounts page of the Administrator panel (§7.4): every account with its kind, state and the
- * Administrator role, and the actions on it. Others see the not-found page, as the API answers
- * them with `404`.
+ * Administrator role, its pending invitations and the actions on it, and **Invite**. Others see the
+ * not-found page, as the API answers them with `404`.
  */
 export default async function AccountsPage({
   searchParams,
@@ -35,6 +36,7 @@ export default async function AccountsPage({
           <h2 className="text-xl font-bold">{t('title')}</h2>
           <p className="text-sm text-muted-foreground">{t('description')}</p>
         </div>
+        <LazyInviteDialog />
       </div>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <AccountList kind={kind} state={state} />

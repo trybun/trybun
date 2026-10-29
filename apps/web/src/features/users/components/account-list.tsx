@@ -15,9 +15,10 @@ import {
 } from '@trybun/ui/components/select';
 import { useRouter } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
-import { useDeferredValue, useState } from 'react';
+import { Fragment, useDeferredValue, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { AccountInvitations } from '../../invitations/components/account-invitations.js';
 import { usersQueryOptions } from '../queries.js';
 import { type AccountsSearchParams, accountsHref } from '../search-params.js';
 import { AccountActions } from './account-actions.js';
@@ -130,17 +131,20 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
             {items.map((user) => (
               <li
                 key={user.id}
-                className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground"
+                className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground"
               >
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate font-medium">{nameOf(user)}</span>
-                  {user.displayName !== null && user.email !== null && (
-                    <span className="truncate text-sm text-muted-foreground">{user.email}</span>
-                  )}
-                  <span className="text-sm text-muted-foreground">{t(`kinds.${user.kind}`)}</span>
-                  <AccountBadges user={user} />
+                <div className="flex items-start gap-3">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="truncate font-medium">{nameOf(user)}</span>
+                    {user.displayName !== null && user.email !== null && (
+                      <span className="truncate text-sm text-muted-foreground">{user.email}</span>
+                    )}
+                    <span className="text-sm text-muted-foreground">{t(`kinds.${user.kind}`)}</span>
+                    <AccountBadges user={user} />
+                  </div>
+                  <AccountActions user={user} name={nameOf(user)} />
                 </div>
-                <AccountActions user={user} name={nameOf(user)} />
+                <AccountInvitations user={user} wrap={(content) => content} />
               </li>
             ))}
           </ul>
@@ -167,22 +171,34 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
             </thead>
             <tbody>
               {items.map((user) => (
-                <tr key={user.id} className="border-b border-border">
-                  <th scope="row" className="max-w-48 truncate py-2 pr-3 text-left font-medium">
-                    {user.displayName ?? t('noName')}
-                  </th>
-                  <td className="max-w-64 truncate py-2 pr-3">{user.email ?? t('noEmail')}</td>
-                  <td className="py-2 pr-3">{t(`kinds.${user.kind}`)}</td>
-                  <td className="py-2 pr-3">
-                    <span className="flex flex-wrap items-center gap-1">
-                      {user.state === 'active' && t('states.active')}
-                      <AccountBadges user={user} />
-                    </span>
-                  </td>
-                  <td className="py-1 text-right">
-                    <AccountActions user={user} name={nameOf(user)} />
-                  </td>
-                </tr>
+                <Fragment key={user.id}>
+                  <tr className="border-b border-border">
+                    <th scope="row" className="max-w-48 truncate py-2 pr-3 text-left font-medium">
+                      {user.displayName ?? t('noName')}
+                    </th>
+                    <td className="max-w-64 truncate py-2 pr-3">{user.email ?? t('noEmail')}</td>
+                    <td className="py-2 pr-3">{t(`kinds.${user.kind}`)}</td>
+                    <td className="py-2 pr-3">
+                      <span className="flex flex-wrap items-center gap-1">
+                        {user.state === 'active' && t('states.active')}
+                        <AccountBadges user={user} />
+                      </span>
+                    </td>
+                    <td className="py-1 text-right">
+                      <AccountActions user={user} name={nameOf(user)} />
+                    </td>
+                  </tr>
+                  <AccountInvitations
+                    user={user}
+                    wrap={(content) => (
+                      <tr className="border-b border-border">
+                        <td colSpan={5} className="py-2">
+                          {content}
+                        </td>
+                      </tr>
+                    )}
+                  />
+                </Fragment>
               ))}
             </tbody>
           </table>

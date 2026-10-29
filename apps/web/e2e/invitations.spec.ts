@@ -56,8 +56,10 @@ test.describe('invitations', () => {
     }
     await created.getByRole('button', { name: 'Done' }).click();
     const pending = page.getByRole('region', { name: 'Pending invitations' });
-    await expect(pending.getByText(email)).toBeVisible();
-    await expect(pending.getByText('End user · Invited by Marek Manager')).toBeVisible();
+    // Its own row: an invitation of an earlier run may still be pending.
+    const row = pending.getByRole('listitem').filter({ hasText: email });
+    await expect(row).toBeVisible();
+    await expect(row.getByText('End user · Invited by Marek Manager')).toBeVisible();
 
     // The invited person, in a browser of their own.
     const visitor = await browser.newContext({
