@@ -1,5 +1,6 @@
 // Deterministic demo dataset of the local environment and the E2E tests (§15.12): fixed IDs,
 // fixed timestamps and a seeded Faker, so two runs load identical data.
+import { createHash } from 'node:crypto';
 import { base, en, Faker, pl } from '@faker-js/faker';
 import type { ProductTourId } from '@trybun/contracts/product-tours';
 import type { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
@@ -18,6 +19,12 @@ const PRODUCT_TOUR_VERSIONS: Record<ProductTourId, number> = {
   organization_detail: 1,
 };
 
+/**
+ * The pending demo invitation expires long after the fixed timestamps, so it stays pending on
+ * every run; issued invitations expire 7 days after issue (§7.4).
+ */
+const PENDING_INVITATION_EXPIRES_AT = new Date('2099-12-31T00:00:00.000Z');
+
 export interface DemoDataset {
   users: Prisma.UserCreateManyInput[];
   productTourProgress: Prisma.ProductTourProgressCreateManyInput[];
@@ -27,6 +34,7 @@ export interface DemoDataset {
   organizationDomains: Prisma.OrganizationDomainCreateManyInput[];
   organizationProjects: Prisma.OrganizationProjectCreateManyInput[];
   organizationMembers: Prisma.OrganizationMemberCreateManyInput[];
+  invitations: Prisma.InvitationCreateManyInput[];
 }
 
 /**
@@ -55,6 +63,36 @@ const DEMO_ORGANIZATION = {
   projectKeys: ['CP'],
   memberCount: 6,
 } as const;
+
+/**
+ * The accounts of the invitations and of the deactivation (§7.4): an end user of the customer
+ * company invited to the customer portal (pending, matched to the demo organization by the
+ * domain), a team member whose invitation to the ERP expired, and a deactivated end user. None
+ * has a Keycloak user, so none can sign in.
+ */
+const DEMO_INVITED_AND_DEACTIVATED = [
+  {
+    email: 'invited@customer.example.com',
+    displayName: null,
+    kind: 'end_user',
+    state: 'invited',
+  },
+  { email: 'candidate@example.com', displayName: null, kind: 'team', state: 'invited' },
+  {
+    email: 'former@customer.example.com',
+    displayName: 'Filip Former',
+    kind: 'end_user',
+    state: 'deactivated',
+  },
+] as const;
+
+/**
+ * The stored hash of a demo invitation's token (ADR 0009). The token is not published, so the
+ * demo links do not work; **Copy new link** issues a working one.
+ */
+function demoTokenHash(n: number): string {
+  return createHash('sha256').update(`demo-invitation-${n}`).digest('base64url');
+}
 
 /** UUIDv7 of the demo record number `n` (§17.2). */
 export function demoId(n: number): string {
@@ -101,6 +139,14 @@ export function buildDemoDataset(): DemoDataset {
       };
     },
   );
+  const invitedAndDeactivated = DEMO_INVITED_AND_DEACTIVATED.map(
+    (account, index): Prisma.UserCreateManyInput => ({
+      ...account,
+      id: demoId(150 + index),
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    }),
+  );
   const productTourProgress = team
     .filter((account) => account.email !== NEWCOMER_EMAIL)
     .flatMap((account) =>
@@ -138,8 +184,37 @@ export function buildDemoDataset(): DemoDataset {
     })),
   );
   const organizationId = demoId(400);
+  const invitedBy = { manager: team[1]?.id ?? '', admin: team[0]?.id ?? '' };
+  const invitations: Prisma.InvitationCreateManyInput[] = [
+    {
+      id: demoId(500),
+      userId: invitedAndDeactivated[0]?.id ?? '',
+      target: 'project',
+      projectId: projects[0]?.id ?? null,
+      role: 'end_user',
+      // The address's domain belongs to the demo organization, which has the project (§7.3).
+      organizationId,
+      invitedById: invitedBy.manager,
+      tokenHash: demoTokenHash(500),
+      expiresAt: PENDING_INVITATION_EXPIRES_AT,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    },
+    {
+      id: demoId(501),
+      userId: invitedAndDeactivated[1]?.id ?? '',
+      target: 'project',
+      projectId: projects[1]?.id ?? null,
+      role: 'developer',
+      invitedById: invitedBy.admin,
+      tokenHash: demoTokenHash(501),
+      expiresAt: new Date(CREATED_AT.getTime() + 7 * 24 * 60 * 60 * 1000),
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    },
+  ];
   return {
-    users: [...team, ...endUsers],
+    users: [...team, ...endUsers, ...invitedAndDeactivated],
     productTourProgress,
     projects,
     projectMembers,
@@ -165,13 +240,15 @@ export function buildDemoDataset(): DemoDataset {
     organizationMembers: endUsers
       .slice(0, DEMO_ORGANIZATION.memberCount)
       .map(({ id }) => ({ organizationId, userId: id ?? '', createdAt: CREATED_AT })),
+    invitations,
   };
 }
 
 /**
  * Loads the demo dataset; running it again restores the same records – also the tour progress,
- * so the newcomer sees the tours again, the demo projects with their members and the demo
- * organization with its domain, project access and members.
+ * so the newcomer sees the tours again, the demo projects with their members, the demo
+ * organization with its domain, project access and members, and the demo invitations – a link
+ * resent, revoked or accepted during a demo comes back as it was.
  */
 export async function seedDemoData(prisma: PrismaClient): Promise<void> {
   const dataset = buildDemoDataset();
@@ -208,5 +285,10 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     await tx.organizationDomain.createMany({ data: dataset.organizationDomains });
     await tx.organizationProject.createMany({ data: dataset.organizationProjects });
     await tx.organizationMember.createMany({ data: dataset.organizationMembers });
+    // Deleted after the organization, whose deletion cascades to the matched invitation.
+    await tx.invitation.deleteMany({
+      where: { id: { in: dataset.invitations.map((invitation) => invitation.id ?? '') } },
+    });
+    await tx.invitation.createMany({ data: dataset.invitations });
   });
 }

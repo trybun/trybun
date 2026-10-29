@@ -18,7 +18,10 @@ describe('demo dataset', () => {
         'utf8',
       ),
     ) as { users: { id: string; email: string }[] };
-    const team = buildDemoDataset().users.filter((user) => user.kind === 'team');
+    // The invited team account has no Keycloak user until it accepts (§7.4).
+    const team = buildDemoDataset().users.filter(
+      (user) => user.kind === 'team' && user.state === 'active',
+    );
 
     expect(team.map(({ keycloakUserId, email }) => ({ id: keycloakUserId, email }))).toEqual(
       realm.users.map(({ id, email }) => ({ id, email })),
@@ -108,9 +111,45 @@ describe('demo dataset', () => {
     }
   });
 
+  it('restores the pending and the expired invitation and the deactivated account on a second run', async () => {
+    const prisma = new PrismaService(integrationConfig());
+    const { users, invitations } = buildDemoDataset();
+    const ids = invitations.map(({ id }) => id ?? '');
+    const deactivated = users.find((user) => user.state === 'deactivated');
+    const states = () =>
+      prisma.invitation.findMany({
+        where: { id: { in: ids } },
+        select: { tokenHash: true, usedAt: true, revokedAt: true, expiresAt: true },
+        orderBy: { id: 'asc' },
+      });
+    try {
+      await seedDemoData(prisma);
+      const seeded = await states();
+      await prisma.invitation.update({ where: { id: ids[0] }, data: { revokedAt: new Date() } });
+      await prisma.invitation.delete({ where: { id: ids[1] } });
+      await prisma.user.update({ where: { id: deactivated?.id }, data: { state: 'active' } });
+      await seedDemoData(prisma);
+
+      expect(await states()).toEqual(seeded);
+      const [pending, expired] = seeded;
+      expect(pending).toMatchObject({ usedAt: null, revokedAt: null });
+      expect(pending?.expiresAt.getTime()).toBeGreaterThan(Date.now());
+      expect(expired).toMatchObject({ usedAt: null, revokedAt: null });
+      expect(expired?.expiresAt.getTime()).toBeLessThan(Date.now());
+      expect(
+        await prisma.user.findUnique({ where: { id: deactivated?.id }, select: { state: true } }),
+      ).toEqual({ state: 'deactivated' });
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
+
   it('restores the tour progress: none for the newcomer, completed for the other team accounts', async () => {
     const prisma = new PrismaService(integrationConfig());
-    const team = buildDemoDataset().users.filter((user) => user.kind === 'team');
+    // The invited team account has never signed in, so it has no tour progress.
+    const team = buildDemoDataset().users.filter(
+      (user) => user.kind === 'team' && user.state === 'active',
+    );
     const newcomer = team.find((user) => user.email === NEWCOMER_EMAIL);
     try {
       await seedDemoData(prisma);
