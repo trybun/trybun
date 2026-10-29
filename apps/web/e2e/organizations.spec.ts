@@ -77,11 +77,13 @@ test.describe('organizations of the Administrator', () => {
     await move.getByRole('button', { name: 'Cancel' }).click();
     await expect(organizations.members).toHaveCount(1);
 
+    await organizations.waitForToastsToClose();
     await page.getByRole('button', { name: 'Archive organization' }).click();
     await expect(organizations.archivedBanner).toBeVisible();
     await organizations.undo('Organization archived').click();
     await expect(organizations.archivedBanner).toBeHidden();
 
+    await organizations.waitForToastsToClose();
     await page.getByRole('button', { name: 'Archive organization' }).click();
     await expect(organizations.archivedBanner).toBeVisible();
     await expect(organizations.emailField).toHaveCount(0);
