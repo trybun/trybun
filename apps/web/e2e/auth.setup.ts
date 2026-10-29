@@ -53,6 +53,7 @@ setup('sign in as the Administrator', async ({ page }) => {
 setup('sign in as the Project manager', async ({ page }) => {
   await page.goto('/');
   await new SignInPage(page).signIn('manager@example.com');
+  await useLanguageOfBrowser(page);
 
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
   await page.context().storageState({ path: MANAGER_STORAGE_STATE });

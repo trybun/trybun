@@ -106,6 +106,93 @@ test.describe('accounts of the Administrator', () => {
     }
   });
 
+  test('invites an address, copies the link, sees the pending invitation and revokes it', async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    if (browserName === 'chromium') {
+      await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+    }
+    const accounts = new AccountsPage(page);
+    // Outside the domain of the demo organization, whose member count other tests check.
+    const email = `e2e-accounts-${testInfo.project.name}-${Date.now().toString(36)}@example.org`;
+    const target = 'Project Customer portal, End user';
+    await accounts.goto();
+
+    const dialog = await accounts.openInvite();
+    await dialog.getByRole('textbox', { name: 'E-mail address' }).fill(email);
+    // The Administrator role makes a team member, who signs in with GitHub – not configured in
+    // the test environment, so the preview gives the reason and nothing can be sent.
+    await dialog.getByRole('radio', { name: 'The Administrator role' }).check();
+    await expect(dialog.getByText('Configure GitHub sign-in before inviting them.')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Invite', exact: true })).toBeDisabled();
+
+    await dialog.getByRole('radio', { name: 'A project' }).check();
+    await dialog.getByRole('combobox', { name: 'Project' }).fill('Customer');
+    await page.getByRole('option', { name: /^Customer portal/ }).click();
+    await expect(dialog.getByRole('combobox', { name: 'Role' })).toContainText('End user');
+    await expect(dialog.getByText('This person gets an invitation link.')).toBeVisible();
+    await dialog.evaluate((popup) =>
+      Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+    );
+    expect(await seriousViolations(page)).toEqual([]);
+    // The whole label of a choice is its target.
+    await expectTouchTarget(
+      dialog.locator('label').filter({ hasText: 'A project' }),
+      minimumTargetSize(testInfo),
+    );
+    await expectTouchTarget(
+      dialog.getByRole('button', { name: 'Invite', exact: true }),
+      minimumTargetSize(testInfo),
+    );
+    await dialog.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    const created = page.getByRole('dialog', { name: 'Invitation created' });
+    await expect(created.getByText(/^Only this link works\. It expires on /)).toBeVisible();
+    const link = await created.getByLabel('Invitation link').inputValue();
+    expect(link).toMatch(/\/invitations#token=[\w-]+$/);
+    await created.getByRole('button', { name: 'Copy link' }).click();
+    if (browserName === 'chromium') {
+      await expect(page.getByText('Link copied')).toBeVisible();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
+    }
+    await created.getByRole('button', { name: 'Done' }).click();
+
+    // The new account is invited, with its pending invitation.
+    await accounts.find(email);
+    await expect(accounts.account(email)).toContainText('Invited');
+    const pending = accounts.invitationsOf(email);
+    await expect(pending).toContainText(target);
+    await expect(pending).toContainText('Invited by Ada Admin');
+    expect(await seriousViolations(page)).toEqual([]);
+    expect(await new AppShellPage(page).horizontalOverflow()).toBe(0);
+    const revoke = pending.getByRole('button', {
+      name: `Revoke the invitation of ${email}, ${target}`,
+    });
+    await expectTouchTarget(revoke, minimumTargetSize(testInfo));
+
+    await revoke.click();
+    await page
+      .getByRole('dialog', { name: `Revoke the invitation of ${email}?` })
+      .getByRole('button', { name: 'Revoke' })
+      .click();
+    await expect(accounts.toast('Invitation revoked')).toBeVisible();
+
+    // Without a working link, the account offers Invite for its address right away (§7.4).
+    await expect(pending).toHaveCount(0);
+    // A row of its own below the account's row on tablets and desktops, in the card on phones.
+    await expect(
+      page.getByText('No working invitation link.').filter({ visible: true }),
+    ).toHaveCount(1);
+    await page
+      .getByRole('button', { name: `Invite ${email}` })
+      .filter({ visible: true })
+      .click();
+    await expect(
+      page.getByRole('dialog', { name: 'Invite' }).getByRole('textbox', { name: 'E-mail address' }),
+    ).toHaveValue(email);
+  });
+
   test('is reached from the sections of the Administrator panel', async ({ page }) => {
     await page.goto('/admin');
 
