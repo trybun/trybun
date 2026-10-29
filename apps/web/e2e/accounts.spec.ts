@@ -64,14 +64,14 @@ test.describe('accounts of the Administrator', () => {
 
     await expect(accounts.account('Marek Manager')).toBeVisible();
     await expect(accounts.account('Teodor Młynarczyk')).toHaveCount(0);
-    // The list shows the earlier results until the search answers, so wait for its response.
-    const searched = page.waitForResponse(
-      (response) => response.url().includes('/api/v1/users?') && response.url().includes('query='),
-    );
-    await accounts.search.fill('developer@example');
-    await searched;
+    // A search typed before the page hydrated is lost (WebKit is slower), so type until the
+    // list shows its results.
+    await expect(async () => {
+      await accounts.search.fill('');
+      await accounts.search.fill('developer@example');
+      await expect(accounts.account('Marek Manager')).toHaveCount(0, { timeout: 2_000 });
+    }).toPass();
     await expect(accounts.account('Dorota Developer')).toHaveCount(1);
-    await expect(accounts.account('Marek Manager')).toHaveCount(0);
 
     await accounts.stateFilter.click();
     await page.getByRole('option', { name: 'Deactivated' }).click();
