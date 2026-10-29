@@ -117,6 +117,12 @@ authenticationFlows:
         requirement: CONDITIONAL
         priority: 10
         authenticatorFlow: true
+      # A flow whose only step is a skipped condition fails: without this step, the sign-in of an
+      # end user through Microsoft or Google would be refused (found in S1-03).
+      - authenticator: allow-access-authenticator
+        requirement: REQUIRED
+        priority: 20
+        authenticatorFlow: false
   - alias: trybun team 2fa
     description: One-time password for members of the role `team`.
     providerId: basic-flow

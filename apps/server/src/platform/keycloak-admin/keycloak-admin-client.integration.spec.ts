@@ -45,7 +45,11 @@ describe('KeycloakAdminClient', () => {
   beforeAll(async () => {
     network = await new Network().start();
     keycloak = await startKeycloak(network);
-    await applyRealmConfig(network);
+    // With GitHub sign-in, whose links the adapter reads.
+    await applyRealmConfig(network, {
+      TRYBUN_GITHUB_CLIENT_ID: 'github-client',
+      TRYBUN_GITHUB_CLIENT_SECRET: 'github-secret',
+    });
     admin = await adminApi(keycloak);
     client = new KeycloakAdminClient(
       loadConfig({ ...TEST_ENV, TRYBUN_KEYCLOAK_URL: keycloak.url }),
@@ -110,5 +114,97 @@ describe('KeycloakAdminClient', () => {
     await client.deleteUser(id);
 
     await expect(admin('GET', `/users/${id}`)).rejects.toThrow(/404/);
+  });
+
+  it('creates an end user without the group team or required actions', async () => {
+    const endUser = newAdministrator();
+    const id = await client.createEndUser(endUser);
+
+    expect(await admin<KeycloakUser>('GET', `/users/${id}`)).toMatchObject({
+      email: endUser.email,
+      emailVerified: true,
+      requiredActions: [],
+      attributes: { locale: ['pl'] },
+    });
+    expect(await admin('GET', `/users/${id}/groups`)).toEqual([]);
+    const result = await signIn(keycloak, { username: endUser.email, password: endUser.password });
+    expect(result.accessToken).toBeDefined();
+  });
+
+  it('answers an end user with a taken address or a refused password with the invitation codes', async () => {
+    const endUser = newAdministrator();
+    await client.createEndUser(endUser);
+
+    await expect(client.createEndUser(endUser)).rejects.toMatchObject({
+      code: 'invitation.email_taken',
+    });
+    await expect(
+      client.createEndUser(newAdministrator({ password: 'fourteen chars' })),
+    ).rejects.toEqual(
+      new AppError('invitation.password_rejected', [
+        { pointer: '/password', code: 'field.invalid' },
+      ]),
+    );
+  });
+
+  it('reads the names of a user, and none of a user that does not exist', async () => {
+    const id = await client.createEndUser(newAdministrator());
+
+    expect(await client.findUserProfile(id)).toEqual({ firstName: 'Ada', lastName: 'Admin' });
+    expect(await client.findUserProfile(randomUUID())).toBeNull();
+  });
+
+  it('sets a verified address, refusing one that another user has', async () => {
+    const id = await client.createEndUser(newAdministrator());
+    const other = newAdministrator();
+    await client.createEndUser(other);
+    const email = `${randomUUID()}@example.com`;
+
+    await client.setVerifiedEmail(id, email);
+
+    expect(await admin<KeycloakUser>('GET', `/users/${id}`)).toMatchObject({
+      email,
+      emailVerified: true,
+    });
+    await expect(client.setVerifiedEmail(id, other.email)).rejects.toEqual(
+      new AppError('invitation.email_taken'),
+    );
+  });
+
+  it('reads the GitHub login of a linked GitHub account', async () => {
+    const id = await client.createEndUser(newAdministrator());
+    expect(await client.findGithubLogin(id)).toBeNull();
+    await admin('POST', `/users/${id}/federated-identity/github`, {
+      identityProvider: 'github',
+      userId: '583231',
+      userName: 'octocat',
+    });
+
+    expect(await client.findGithubLogin(id)).toBe('octocat');
+  });
+
+  it('adds a user to the group team, repeatably', async () => {
+    const id = await client.createEndUser(newAdministrator());
+
+    await client.addToTeamGroup(id);
+    await client.addToTeamGroup(id);
+
+    expect(await admin<{ path: string }[]>('GET', `/users/${id}/groups`)).toEqual([
+      expect.objectContaining({ path: '/team' }),
+    ]);
+  });
+
+  it('lists every user with its creation time, without service accounts', async () => {
+    const before = Date.now() - 1_000;
+    const id = await client.createEndUser(newAdministrator());
+
+    const users = await client.listUsers();
+
+    expect(users.find((user) => user.id === id)?.createdAt.getTime()).toBeGreaterThan(before);
+    const serviceAccount = await admin<{ id: string }>(
+      'GET',
+      `/clients/${(await admin<{ id: string }[]>('GET', '/clients?clientId=trybun-server'))[0]?.id}/service-account-user`,
+    );
+    expect(users.map((user) => user.id)).not.toContain(serviceAccount.id);
   });
 });
