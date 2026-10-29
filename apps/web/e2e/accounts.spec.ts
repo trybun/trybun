@@ -62,11 +62,16 @@ test.describe('accounts of the Administrator', () => {
     const accounts = new AccountsPage(page);
     await accounts.goto('?kind=team');
 
-    await expect(accounts.account('Leon Leaver')).toBeVisible();
+    await expect(accounts.account('Marek Manager')).toBeVisible();
     await expect(accounts.account('Teodor Młynarczyk')).toHaveCount(0);
+    // The list shows the earlier results until the search answers, so wait for its response.
+    const searched = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/users?') && response.url().includes('query='),
+    );
     await accounts.search.fill('developer@example');
+    await searched;
     await expect(accounts.account('Dorota Developer')).toHaveCount(1);
-    await expect(accounts.account('Leon Leaver')).toHaveCount(0);
+    await expect(accounts.account('Marek Manager')).toHaveCount(0);
 
     await accounts.stateFilter.click();
     await page.getByRole('option', { name: 'Deactivated' }).click();
@@ -87,18 +92,18 @@ test.describe('accounts of the Administrator', () => {
     const accounts = new AccountsPage(page);
     const shell = new AppShellPage(page);
     await accounts.goto();
-    await expect(accounts.account('Leon Leaver')).toBeVisible();
+    await expect(accounts.account('Marek Manager')).toBeVisible();
 
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
     await expectTouchTarget(accounts.search, minimumTargetSize(testInfo));
     await expectTouchTarget(accounts.kindFilter, minimumTargetSize(testInfo));
-    await expectTouchTarget(accounts.actionsOf('Leon Leaver'), minimumTargetSize(testInfo), [
+    await expectTouchTarget(accounts.actionsOf('Marek Manager'), minimumTargetSize(testInfo), [
       'height',
       'width',
     ]);
 
-    await accounts.actionsOf('Leon Leaver').click();
+    await accounts.actionsOf('Marek Manager').click();
     await expect(page.getByRole('menuitem', { name: 'Deactivate' })).toBeVisible();
     // Menu items are compact only on a desktop with a precise pointer (§18.6).
     if (testInfo.project.name !== 'desktop') {
