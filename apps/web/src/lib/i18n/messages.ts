@@ -36,7 +36,7 @@ export const CLIENT_NAMESPACES = {
   /** `app/(team)/admin/layout.tsx` */
   administration: [...TEAM, 'administration'],
   /** `app/(team)/admin/accounts/layout.tsx` */
-  accounts: [...TEAM, 'administration', 'errors', 'users'],
+  accounts: [...TEAM, 'administration', 'errors', 'invitations', 'users'],
   /** `app/(team)/admin/organizations/layout.tsx` */
   organizations: [...TEAM, 'administration', 'errors', 'organizations'],
   /** `app/(team)/projects/layout.tsx` */

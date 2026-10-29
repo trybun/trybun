@@ -6,8 +6,8 @@ import { dataOf } from '../../lib/api-client/api-client.js';
 import { browserApiClient } from '../../lib/api-client/browser-api-client.js';
 
 /**
- * Invalidates the invitations and the projects: issuing can also grant access directly, which
- * adds a member (§7.4).
+ * Invalidates the invitations, the projects and the accounts: issuing can also grant access
+ * directly, which adds a member or the Administrator role, and creates an `invited` account (§7.4).
  */
 function useInvalidateInvitations() {
   const queryClient = useQueryClient();
@@ -15,6 +15,7 @@ function useInvalidateInvitations() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ['invitations'] }),
       queryClient.invalidateQueries({ queryKey: ['projects'] }),
+      queryClient.invalidateQueries({ queryKey: ['users', 'list'] }),
     ]);
 }
 

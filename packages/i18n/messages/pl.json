@@ -144,13 +144,7 @@
       "removed": "Usunięto z projektu: {name}",
       "addBy": "Dodaj",
       "addByAccount": "Członka zespołu",
-      "addByEmail": "Po adresie e-mail",
-      "email": "Adres e-mail",
-      "invite": "Zaproś",
-      "inviting": "Zapraszanie…",
-      "invitedTitle": "Zaproszenie utworzone",
-      "invitedDescription": "Skopiuj link i wyślij go na adres {email}.",
-      "done": "Gotowe"
+      "addByEmail": "Po adresie e-mail"
     },
     "danger": {
       "archive": "Zarchiwizuj projekt",
@@ -176,27 +170,6 @@
       "empty": "Żadna organizacja nie ma dostępu do projektu.",
       "archived": "Zarchiwizowana",
       "loadMore": "Pokaż więcej"
-    },
-    "invitations": {
-      "title": "Oczekujące zaproszenia",
-      "invitedBy": "Zaprasza: {name}",
-      "invitedByUnknown": "Nie wiadomo, kto zaprasza",
-      "expires": "Wygasa {date}",
-      "copyNewLink": "Skopiuj nowy link",
-      "copyNewLinkOf": "Skopiuj nowy link dla {email}",
-      "revoke": "Odwołaj",
-      "revokeOf": "Odwołaj zaproszenie dla {email}",
-      "resendTitle": "Utworzyć nowy link dla {email}?",
-      "resendDescription": "Stary link przestanie działać. Nowy link jest ważny {days} dni.",
-      "resendConfirm": "Utwórz nowy link",
-      "revokeTitle": "Odwołać zaproszenie dla {email}?",
-      "revokeDescription": "Link przestanie działać. Możesz później zaprosić tę osobę ponownie.",
-      "revokeConfirm": "Odwołaj",
-      "revoked": "Zaproszenie odwołane",
-      "newLinkTitle": "Nowy link z zaproszeniem",
-      "newLinkDescription": "Skopiuj link i wyślij go na adres {email}.",
-      "close": "Zamknij",
-      "cancel": "Anuluj"
     }
   },
   "organizations": {
@@ -388,6 +361,74 @@
       "join": "Ta osoba dołączy do organizacji {name}.",
       "grant": "Ta osoba ma już konto i od razu otrzyma dostęp."
     },
+    "roles": {
+      "developer": "Developer",
+      "project_manager": "Kierownik projektu",
+      "end_user": "Użytkownik"
+    },
+    "targets": {
+      "project": "Projekt {name}, {role}",
+      "organization": "Organizacja {name}",
+      "administrator": "Rola Administratora"
+    },
+    "form": {
+      "email": "Adres e-mail",
+      "target": "Zaproś do",
+      "targetTypes": {
+        "project": "Projektu",
+        "organization": "Organizacji",
+        "administrator": "Roli Administratora"
+      },
+      "project": "Projekt",
+      "projects": "Projekty",
+      "noProject": "Żaden aktywny projekt nie pasuje.",
+      "organization": "Organizacja",
+      "organizations": "Organizacje",
+      "noOrganization": "Żadna aktywna organizacja nie pasuje.",
+      "role": "Rola",
+      "invite": "Zaproś",
+      "inviting": "Zapraszanie…",
+      "grant": "Dodaj",
+      "granting": "Dodawanie…",
+      "cancel": "Anuluj"
+    },
+    "issued": {
+      "title": "Zaproszenie utworzone",
+      "description": "Skopiuj link i wyślij go na adres {email}.",
+      "done": "Gotowe"
+    },
+    "invite": {
+      "open": "Zaproś",
+      "openFor": "Zaproś: {email}",
+      "title": "Zaproś",
+      "description": "Zaproś kogoś po adresie e-mail do projektu, organizacji lub roli Administratora.",
+      "granted": "Nadano dostęp: {name}",
+      "noLink": "Brak działającego linku z zaproszeniem."
+    },
+    "pending": {
+      "title": "Oczekujące zaproszenia",
+      "invitedBy": "Zaprasza: {name}",
+      "invitedByUnknown": "Nie wiadomo, kto zaprasza",
+      "expires": "Wygasa {date}",
+      "copyNewLink": "Skopiuj nowy link",
+      "copyNewLinkOf": "Skopiuj nowy link dla {email}",
+      "revoke": "Odwołaj",
+      "revokeOf": "Odwołaj zaproszenie dla {email}",
+      "resendTitle": "Utworzyć nowy link dla {email}?",
+      "resendDescription": "Stary link przestanie działać. Nowy link jest ważny {days} dni.",
+      "resendConfirm": "Utwórz nowy link",
+      "revokeTitle": "Odwołać zaproszenie dla {email}?",
+      "revokeDescription": "Link przestanie działać. Możesz później zaprosić tę osobę ponownie.",
+      "revokeConfirm": "Odwołaj",
+      "revoked": "Zaproszenie odwołane",
+      "newLinkTitle": "Nowy link z zaproszeniem",
+      "newLinkDescription": "Skopiuj link i wyślij go na adres {email}.",
+      "close": "Zamknij",
+      "cancel": "Anuluj",
+      "loadMore": "Pokaż więcej",
+      "loadingMore": "Wczytywanie…",
+      "listOf": "Oczekujące zaproszenia: {name}"
+    },
     "acceptance": {
       "title": "Przyjmij zaproszenie",
       "checking": "Sprawdzanie linku z zaproszeniem…",
@@ -402,11 +443,6 @@
       "invitedBy": "Zaprasza",
       "invitedByUnknown": "Nieznana osoba",
       "expires": "Ważne do",
-      "roles": {
-        "developer": "Developer",
-        "project_manager": "Kierownik projektu",
-        "end_user": "Użytkownik"
-      },
       "passwordTitle": "Utwórz konto",
       "firstName": "Imię",
       "lastName": "Nazwisko",

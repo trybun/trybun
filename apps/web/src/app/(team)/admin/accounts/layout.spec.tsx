@@ -16,11 +16,12 @@ describe('AccountsLayout', () => {
     expect(element.props.children[1]).toMatchObject({ type: LazyToaster });
   });
 
-  it('passes the texts of the accounts and the panel to the browser', async () => {
+  it('passes the texts of the accounts, their invitations and the panel to the browser', async () => {
     const element = (await AccountsLayout({ children: <h2>Accounts</h2> })) as Layout;
 
     expect(element.props.messages).toMatchObject({
       users: CATALOGUES.pl.users,
+      invitations: CATALOGUES.pl.invitations,
       administration: CATALOGUES.pl.administration,
       errors: CATALOGUES.pl.errors,
     });

@@ -20,6 +20,24 @@ export function projectInvitationsQueryOptions(client: ApiClient, projectId: str
   });
 }
 
+/** The pending invitations of an account, newest first, page by page (§7.4): the Accounts page. */
+export function userInvitationsQueryOptions(client: ApiClient, userId: string) {
+  return infiniteQueryOptions({
+    queryKey: ['invitations', 'list', { userId }],
+    queryFn: ({ pageParam, signal }) =>
+      dataOf(
+        client.GET('/api/v1/invitations', {
+          params: {
+            query: { userId, ...(pageParam === null ? {} : { cursor: pageParam }) },
+          },
+          signal,
+        }),
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor,
+  });
+}
+
 /**
  * What issuing an invitation would do, shown before sending (§7.4): a new invitation, perhaps with
  * the organization of the address's domain, or the access granted directly. It writes nothing, so
