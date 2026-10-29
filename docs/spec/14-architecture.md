@@ -52,7 +52,7 @@
 | Repository structure | Monorepo (pnpm workspaces + Turborepo); Node.js LTS and pnpm versions pinned in the repository (`.node-version`, `packageManager` field) |
 | Validation and contracts | **Zod** (4.2 or later) – the only validation library. Schemas and types shared by frontend and backend live in `@trybun/contracts` ([§14.6](#146-monorepo-structure)). API: the native Standard Schema support of NestJS – `StandardSchemaValidationPipe` for requests and `StandardSchemaSerializerInterceptor` for responses – with the OpenAPI document generated from the same schemas by `@nestjs/swagger` ([§18.3](18-code-patterns.md)). Forms: React Hook Form with the Zod resolver (shadcn/ui `Form`) |
 | Infrastructure | Docker and Docker Compose; CI/CD in GitHub Actions; images in GitHub Container Registry (`ghcr.io/trybun/<service>`, [§1.4](01-overview.md)) |
-| Tests | Vitest (unit and integration), Testcontainers (real PostgreSQL and Valkey in integration tests), MSW (simulated external HTTP services), `@faker-js/faker` (test data factories), Playwright (E2E), axe (accessibility), Lighthouse (performance budget) |
+| Tests | Vitest (unit and integration), Testing Library in jsdom (component tests of the web application, [ADR 0012](../adr/0012-web-component-tests.md)), Testcontainers (real PostgreSQL and Valkey in integration tests), MSW (simulated external HTTP services), `@faker-js/faker` (test data factories), Playwright (E2E), axe (accessibility), Lighthouse (performance budget) |
 
 ## 14.3 Rationale
 

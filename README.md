@@ -50,7 +50,7 @@ Run from the repository root:
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
-| `pnpm test` | Unit tests and the component tests of `@trybun/ui` (Vitest; every story in Chromium, light and dark, with axe) |
+| `pnpm test` | Unit tests, the component tests of the web application (jsdom) and the component tests of `@trybun/ui` (Vitest; every story in Chromium, light and dark, with axe) |
 | `pnpm test:integration` | Integration tests against PostgreSQL and Valkey in Testcontainers (needs Docker) |
 | `pnpm test:coverage` | Unit, component and integration tests with the coverage thresholds of CI (needs Docker) |
 | `pnpm e2e` | E2E tests in Playwright on phone, tablet and desktop with axe, and the Lighthouse mobile budget of the key pages, against the local environment (needs `pnpm dev`; browsers: `pnpm --filter @trybun/web exec playwright install --with-deps chromium webkit`) |
