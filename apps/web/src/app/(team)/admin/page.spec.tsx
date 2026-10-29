@@ -81,6 +81,24 @@ describe('Administrator panel', () => {
     );
   });
 
+  it.each([
+    ['en', 'Invite the team'],
+    ['pl', 'Zaproś zespół'],
+  ] as const)(
+    'links "Invite the team" to the help page on inviting people (%s)',
+    async (language, title) => {
+      locale = language;
+      GET.mockReturnValue(
+        ok({ items: [{ id: 'invite_team', isDone: false, isOptional: false }], nextCursor: null }),
+      );
+
+      const html = await render(await GettingStartedPage());
+
+      expect(html).toContain(title);
+      expect(html).toContain('href="/help/team/how-to/invite-people-to-a-project"');
+    },
+  );
+
   it('shows the version of /health and the license', async () => {
     GET.mockReturnValue(ok({ version: '0.4.1', license: 'MIT' }));
 

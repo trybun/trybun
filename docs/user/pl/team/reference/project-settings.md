@@ -18,7 +18,7 @@ Wybierz **Zapisz zmiany**, aby je zastosować.
 
 ## Członkowie
 
-Lista pokazuje nazwę wyświetlaną, login GitHub i rolę każdego członka. Widzą ją członkowie zespołu projektu i Administrator; zarządzają nią kierownicy projektu i Administrator ([zarządzaj członkami projektu](../how-to/manage-project-members.md)).
+Lista pokazuje nazwę wyświetlaną, login GitHub i rolę każdego członka. Widzą ją członkowie zespołu projektu i Administrator; zarządzają nią kierownicy projektu i Administrator ([zarządzaj członkami projektu](../how-to/manage-project-members.md)). **Oczekujące zaproszenia** pod listą pokazują zaproszenia, których nikt jeszcze nie przyjął, z **Skopiuj nowy link** i **Odwołaj** ([zaproś osoby do projektu](../how-to/invite-people-to-a-project.md)).
 
 ## Strefa zagrożenia
 

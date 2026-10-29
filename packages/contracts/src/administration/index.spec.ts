@@ -9,6 +9,7 @@ describe('administration enums', () => {
       [
         'create_project',
         'configure_github_sign_in',
+        'invite_team',
         'create_organization',
         'configure_email',
         'configure_backup_storage',
