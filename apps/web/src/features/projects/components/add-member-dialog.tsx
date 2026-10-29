@@ -119,7 +119,11 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
                 className="grid-cols-2"
               >
                 {addModeSchema.options.map((value) => (
-                  <FieldLabel key={value}>
+                  // A 44 px touch target below the desktop with a precise pointer (§2.9).
+                  <FieldLabel
+                    key={value}
+                    className="min-h-11 justify-center xl:pointer-fine:min-h-0"
+                  >
                     <Field orientation="horizontal">
                       <RadioGroupItem value={value} />
                       <FieldTitle>
