@@ -30,6 +30,7 @@ export const invitationsAbilities: AbilityRules = ({ can }, principal) => {
   }
   can([...ALL_ACTIONS], INVITATION, {
     target: 'project',
-    project: { members: { some: { userId: principal.userId, role: 'project_manager' } } },
+    // `is`: the in-memory check of a record supports a to-one relation only in this form.
+    project: { is: { members: { some: { userId: principal.userId, role: 'project_manager' } } } },
   });
 };
