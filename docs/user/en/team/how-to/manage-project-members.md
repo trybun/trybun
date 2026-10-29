@@ -1,6 +1,6 @@
 ---
 title: Manage project members
-description: Add team members to a project, change their role or remove them.
+description: Add team members to a project, invite people by their e-mail address, change a role or remove a member.
 ---
 
 Project managers of the project and the Administrator manage its members. Members of an archived project cannot be changed.
@@ -9,13 +9,15 @@ Project managers of the project and the Administrator manage its members. Member
 
 1. Select **Projects** and open the project, then the **Members** tab.
 2. Select **Add member**.
-3. Search active team members by name or GitHub login and choose the person.
+3. Keep **A team member**, search active team members by name or GitHub login and choose the person.
 4. Choose the role: **Developer** or **Project manager**.
 5. Select **Add**.
 
+To add someone who has no account yet, or an end user, choose **By e-mail address** instead ([invite people to a project](invite-people-to-a-project.md)).
+
 ## Change a role
 
-Use the role selector in the member's row.
+Use the role selector in the member's row. End users keep the role **End user**.
 
 ## Remove a member
 

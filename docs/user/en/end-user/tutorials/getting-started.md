@@ -31,4 +31,4 @@ Trybun also signs you out by itself after 8 hours without activity, and 30 days 
 
 ## Next steps
 
-- [Change the language](../how-to/change-language.md)
+- [Change your language and time zone](../how-to/change-language.md)

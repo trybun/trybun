@@ -34,6 +34,7 @@ After the first sign-in, Trybun opens **Administration** › **Getting started**
 
 - [Create a project](../how-to/create-archive-and-delete-a-project.md) – tickets live in projects; it ticks once any project exists.
 - [Configure GitHub sign-in](../how-to/configure-github-sign-in.md) – team members sign in with GitHub; required before you can invite the team.
+- [Invite the team](../../team/how-to/invite-people-to-a-project.md) – invite your developers and Project managers to their projects; it ticks once a team account besides yours exists, invited or active.
 - [Create an organization](../how-to/manage-organizations.md) (optional) – groups the end users of a customer company; it ticks once any organization exists.
 - [Configure e-mail](../how-to/configure-email.md) – without an SMTP server Trybun sends no e-mail.
 - [Configure backup storage](../how-to/configure-backup-storage.md) – without S3 storage in another location, the daily backups stay on the server and are lost with it.
