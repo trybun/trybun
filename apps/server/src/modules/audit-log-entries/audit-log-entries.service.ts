@@ -36,7 +36,10 @@ interface AuditDetailsByAction {
   'organization.archived': null;
   'organization.unarchived': null;
   'organization.deleted': null;
-  'invitation.revoked': null;
+  'invitation.revoked': {
+    userId: string;
+    reason: 'revoked' | 'project_archived' | 'organization_archived' | 'user_deactivated';
+  };
   'user.deactivated': null;
   'user.reactivated': null;
   'user.admin_granted': null;

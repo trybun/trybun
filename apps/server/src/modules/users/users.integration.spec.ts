@@ -462,8 +462,18 @@ describe('users endpoints', () => {
       expect(await auditEntries(target.id)).toEqual([
         { action: 'user.deactivated', actorId: admin.id, targetType: 'User' },
       ]);
-      expect(await auditEntries(pending.id)).toEqual([
-        { action: 'invitation.revoked', actorId: null, targetType: 'Invitation' },
+      expect(
+        await prisma.auditLogEntry.findMany({
+          where: { targetId: pending.id },
+          select: { action: true, actorId: true, targetType: true, details: true },
+        }),
+      ).toEqual([
+        {
+          action: 'invitation.revoked',
+          actorId: null,
+          targetType: 'Invitation',
+          details: { userId: target.id, reason: 'user_deactivated' },
+        },
       ]);
       expect(await outboxEvents(target.id)).toEqual([
         { type: 'user.deactivated', payload: { userId: target.id } },

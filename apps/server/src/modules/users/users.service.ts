@@ -406,6 +406,7 @@ export class UsersService {
         action: 'invitation.revoked',
         actorId: null,
         target: { type: 'Invitation', id },
+        details: { userId, reason: 'user_deactivated' },
       });
     }
   }
