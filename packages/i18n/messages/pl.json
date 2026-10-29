@@ -5,7 +5,10 @@
   "signIn": {
     "redirecting": "Przekierowanie do logowania…",
     "notSetUpTitle": "Trybun nie jest jeszcze skonfigurowany",
-    "notSetUpText": "Otwórz link konfiguracyjny wypisany przez <command>./trybun install</command> albo uruchom na serwerze <command>./trybun setup-token</command>, aby otrzymać nowy link."
+    "notSetUpText": "Otwórz link konfiguracyjny wypisany przez <command>./trybun install</command> albo uruchom na serwerze <command>./trybun setup-token</command>, aby otrzymać nowy link.",
+    "accountDeactivatedTitle": "Twoje konto jest dezaktywowane",
+    "accountDeactivatedText": "Logowanie się udało, ale Twoje konto nie ma dostępu. Poproś Administratora o ponowne aktywowanie konta.",
+    "signOut": "Wyloguj się"
   },
   "appShell": {
     "skipToContent": "Przejdź do treści",

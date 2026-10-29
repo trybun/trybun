@@ -31,6 +31,7 @@ import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
 import { changeLanguage } from '../../../lib/i18n/change-language.js';
+import { changeTimeZone } from '../../../lib/i18n/change-time-zone.js';
 import { useUpdateCurrentUser } from '../mutations.js';
 import { currentUserQueryOptions } from '../queries.js';
 
@@ -88,11 +89,15 @@ export function AccountSettingsForm({ systemTimeZone }: { systemTimeZone: string
   });
 
   const submit = form.handleSubmit(async (values) => {
+    const previousTimeZone = user?.timeZone ?? null;
     try {
       await updateCurrentUser.mutateAsync(values);
       toast.add({ title: t('saved'), type: 'success' });
       if (values.language !== locale) {
         startTransition(() => changeLanguage(values.language));
+      }
+      if (values.timeZone !== previousTimeZone) {
+        startTransition(() => changeTimeZone(values.timeZone));
       }
     } catch (error) {
       // The messages of the form hold error codes, translated where they are shown.

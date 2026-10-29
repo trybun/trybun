@@ -12,7 +12,10 @@ vi.mock('server-only', () => ({}));
 const responseCookies = new Map<string, string>();
 vi.mock('next/headers.js', () => ({
   cookies: () =>
-    Promise.resolve({ set: (name: string, value: string) => responseCookies.set(name, value) }),
+    Promise.resolve({
+      set: (name: string, value: string) => responseCookies.set(name, value),
+      delete: (name: string) => responseCookies.delete(name),
+    }),
 }));
 
 const { createAuthOptions, toKeycloakTokens } = await import('./auth-options.js');
@@ -100,7 +103,8 @@ describe('createAuthOptions', () => {
     expect(await signInCallback(signIn, ACCOUNT)).toBe(true);
     expect(signIn.current?.refreshToken).toBe('refresh-token');
     expect(signIn.accountKind).toBe('end_user');
-    // Without a language of the account, the language of this device stays.
+    // Without a language of the account, the language of this device stays; without a time zone,
+    // the system default applies.
     expect(responseCookies.size).toBe(0);
   });
 
@@ -119,6 +123,7 @@ describe('createAuthOptions', () => {
 
     expect(await signInCallback({}, ACCOUNT)).toBe(true);
     expect(responseCookies.get('NEXT_LOCALE')).toBe('pl');
+    expect(responseCookies.get('TRYBUN_TIME_ZONE')).toBe('Europe/Warsaw');
   });
 
   it('leaves the account kind unknown when the API refuses the account', async () => {

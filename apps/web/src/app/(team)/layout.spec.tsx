@@ -99,4 +99,22 @@ describe('TeamLayout', () => {
       views: { '/': 'end-user/tutorials/getting-started' },
     });
   });
+
+  it('shows only the deactivation notice when the API refuses the account', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockResolvedValue({
+      data: undefined,
+      error: {
+        type: 'about:blank',
+        title: 'Unauthorized',
+        status: 401,
+        code: 'authentication.required',
+      },
+      response: new Response(null, { status: 401 }),
+    } as never);
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    expect((element.type as { name: string }).name).toBe('AccountDeactivatedNotice');
+  });
 });

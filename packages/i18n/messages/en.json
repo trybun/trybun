@@ -5,7 +5,10 @@
   "signIn": {
     "redirecting": "Redirecting to the sign-in…",
     "notSetUpTitle": "Trybun is not set up yet",
-    "notSetUpText": "Open the setup link printed by <command>./trybun install</command>, or run <command>./trybun setup-token</command> on the server for a new link."
+    "notSetUpText": "Open the setup link printed by <command>./trybun install</command>, or run <command>./trybun setup-token</command> on the server for a new link.",
+    "accountDeactivatedTitle": "Your account is deactivated",
+    "accountDeactivatedText": "You signed in, but your account has no access. Ask your Administrator to reactivate it.",
+    "signOut": "Sign out"
   },
   "appShell": {
     "skipToContent": "Skip to main content",
