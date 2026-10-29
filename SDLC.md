@@ -4,9 +4,11 @@
 
 This file documents how work flows from ticket to merged PR in this repository. The agent skills configured in `.ai/agentic.config.json` enforce the process; humans read it here. PRs target `main`; issues and PRs live in GitHub, with every tracker operation the skills run defined in `.ai/trackers/github.md` (edit that file to extend or override tracker behavior).
 
+**Agents in this repository** act with the maintainer's GitHub account ([ADR 0011](docs/adr/0011-maintainer-account-and-workflow-approval.md)). They review, approve and merge only in the workflows the maintainer runs. GitHub never lets the author approve their own PR, so for an agent's PR `om-approve-merge-pr` skips its approval step and merges after its gates. Agents never merge a change of requirements (a change specification, a specification change marked for approval or an ADR) – the maintainer does – and never change repository settings, rulesets, environments, secrets or `v*` tags.
+
 Work enters through two paths: a free-form task brief handed to an agent, or a filed ticket. Both converge on the same review loop, the same validation gate, and the same merge gates.
 
-This process sits on top of the repository's own rules and never relaxes them: [`AGENTS.md`](AGENTS.md) and the agent rules in [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and the Definition of Done (§2.13) in the [pull request template](.github/pull_request_template.md). In particular: one task is one focused PR referencing the specification sections it implements; PR titles and commits are Conventional Commits with a scope from the closed list of §2.14 and a DCO `Signed-off-by` line; every PR needs a code owner's approval and is squash-merged; changes of requirements go through a change specification in `.ai/specs/` approved by a human. Releases are cut by release-please from the merged commits.
+This process sits on top of the repository's own rules and never relaxes them: [`AGENTS.md`](AGENTS.md) and the agent rules in [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and the Definition of Done (§2.13) in the [pull request template](.github/pull_request_template.md). In particular: one task is one focused PR referencing the specification sections it implements; PR titles and commits are Conventional Commits with a scope from the closed list of §2.14 and a DCO `Signed-off-by` line; every PR needs green CI and is squash-merged by an account with write access, approved by a human or by the review and QA gates of this process ([ADR 0011](docs/adr/0011-maintainer-account-and-workflow-approval.md)); changes of requirements go through a change specification in `.ai/specs/` approved by a human. Releases are cut by release-please from the merged commits.
 
 Before intake, the work is shaped: `om-brainstorm` turns a single idea or question into a routing decision and a brief, and the spec skills (`om-spec-writing`, `om-auto-write-spec`) turn a feature into a design document before anything is built. Those steps feed the table below; they are not the ticket flow itself.
 
@@ -112,9 +114,9 @@ When signals conflict, pick the higher label and say why in the label comment. A
 
 | Area behind `risk-high` | What the PR must carry |
 |---|---|
-| Auth, sessions, permissions | an integration test for the denied path and the wrong-scope read; a second person's review |
+| Auth, sessions, permissions | an integration test for the denied path and the wrong-scope read; a second person's review (the review of `om-auto-review-pr` counts, ADR 0011) |
 | Data scoping | an isolation test proving one scope cannot read another |
-| Money | tests for the failure, retry, and idempotency paths; a second person's review |
+| Money | tests for the failure, retry, and idempotency paths; a second person's review (the review of `om-auto-review-pr` counts, ADR 0011) |
 | Schema migrations | an integration test against the migrated schema (migrations are forward-only, [§17.2](docs/spec/17-conventions.md)); data-losing changes split into compatible steps or marked breaking; the rollback path (restore from the pre-update backup, [§15.7](docs/spec/15-deployment.md)) in the PR body |
 | Shared contract surfaces | the consuming side exercised, per `BACKWARD_COMPATIBILITY.md` |
 | Any `risk-high` | `needs-qa` when user-facing; no self-QA; `om-code-review` blocks without the evidence above unless a maintainer waives it on the PR |

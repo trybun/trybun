@@ -1,2 +1,2 @@
-# Code owners (§16.2). Handles are supplied by the maintainer; approvals by code owners are required on `main` (§2.14, §16.3).
+# Code owners (§16.2). Handles are supplied by the maintainer; GitHub requests their review of pull requests; merging needs write access, not their approval (§2.14, §16.3, ADR 0011).
 * @dtk7c2

@@ -19,6 +19,7 @@ export default {
         'plan',
         'adr',
         'agents',
+        'runs',
         'memory',
         'brand',
         'repo',
