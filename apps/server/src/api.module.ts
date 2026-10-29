@@ -27,6 +27,7 @@ import { invitationsAbilities } from './modules/invitations/invitations.abilitie
 import { InvitationsModule } from './modules/invitations/invitations.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
+import { usersAbilities } from './modules/users/users.abilities.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 /** Root module of the API process (§14.6). */
@@ -52,6 +53,7 @@ export class ApiModule {
             projectsAbilities,
             organizationsAbilities,
             invitationsAbilities,
+            usersAbilities,
           ],
           restrictions: [archivedProjectsRestriction, archivedOrganizationsRestriction],
         }),

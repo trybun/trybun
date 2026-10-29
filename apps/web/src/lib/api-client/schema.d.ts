@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["UsersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me": {
         parameters: {
             query?: never;
@@ -17,7 +33,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["UsersController_updateCurrent"];
         trace?: never;
     };
     "/api/v1/users/me/product-tours": {
@@ -47,6 +63,54 @@ export interface paths {
         put: operations["UsersController_recordProductTourProgress"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{userId}/deactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UsersController_deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{userId}/reactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UsersController_reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{userId}/administrator-role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UsersController_grantAdministratorRole"];
+        post?: never;
+        delete: operations["UsersController_revokeAdministratorRole"];
         options?: never;
         head?: never;
         patch?: never;
@@ -416,6 +480,48 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    UsersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                kind?: "team" | "end_user";
+                state?: "invited" | "active" | "deactivated" | "anonymized";
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            email: string | null;
+                            /** @enum {string} */
+                            kind: "team" | "end_user";
+                            /** @enum {string} */
+                            state: "invited" | "active" | "deactivated" | "anonymized";
+                            isAdmin: boolean;
+                            githubLogin: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("deactivate" | "reactivate" | "grant_admin" | "revoke_admin")[];
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
     UsersController_findCurrent: {
         parameters: {
             query?: never;
@@ -424,6 +530,44 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        displayName: string | null;
+                        email: string | null;
+                        /** @enum {string} */
+                        kind: "team" | "end_user";
+                        /** @enum {string|null} */
+                        language: "en" | "pl" | null;
+                        timeZone: string | null;
+                        allowedActions: ("open_administration" | "create_project" | "create_organization")[];
+                    };
+                };
+            };
+        };
+    };
+    UsersController_updateCurrent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    language?: "en" | "pl";
+                    timeZone?: string | null;
+                };
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -510,6 +654,82 @@ export interface operations {
                         updatedAt: string;
                     };
                 };
+            };
+        };
+    };
+    UsersController_deactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_reactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_grantAdministratorRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_revokeAdministratorRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

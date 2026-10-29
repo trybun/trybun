@@ -17,7 +17,8 @@
     "language": "Language",
     "signOut": "Sign out",
     "administration": "Administration",
-    "projects": "Projects"
+    "projects": "Projects",
+    "accountSettings": "Account settings"
   },
   "languages": {
     "en": "English",
@@ -62,7 +63,8 @@
     },
     "version": "Version",
     "license": "License",
-    "licenseName": "MIT License"
+    "licenseName": "MIT License",
+    "accounts": "Accounts"
   },
   "projects": {
     "title": "Projects",
@@ -276,6 +278,69 @@
       "deleted": "Organization deleted"
     }
   },
+  "users": {
+    "accounts": {
+      "title": "Accounts",
+      "description": "Everyone who can sign in to Trybun or has been invited: team members and end users.",
+      "filters": "Filters",
+      "kind": "Kind",
+      "state": "State",
+      "search": "Search",
+      "searchPlaceholder": "Name or e-mail address",
+      "allKinds": "All kinds",
+      "allStates": "All states",
+      "kinds": {
+        "team": "Team",
+        "end_user": "End user"
+      },
+      "states": {
+        "invited": "Invited",
+        "active": "Active",
+        "deactivated": "Deactivated",
+        "anonymized": "Anonymized"
+      },
+      "name": "Name",
+      "email": "E-mail address",
+      "administrator": "Administrator",
+      "actions": "Actions",
+      "noName": "No name yet",
+      "noEmail": "No e-mail address",
+      "actionsOf": "Actions for {name}",
+      "empty": "No accounts match these filters.",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "grantAdmin": "Grant Administrator role",
+      "revokeAdmin": "Revoke Administrator role",
+      "deactivateTitle": "Deactivate {name}?",
+      "deactivateDescription": "The person is signed out on every device at once and cannot sign in again until the account is reactivated. Their pending invitations are revoked. Their access to projects and organizations is kept.",
+      "deactivateConfirm": "Deactivate",
+      "deactivating": "Deactivating…",
+      "revokeAdminTitle": "Revoke the Administrator role of {name}?",
+      "revokeAdminDescription": "The person can no longer open the Administrator panel or manage every project.",
+      "revokeAdminConfirm": "Revoke role",
+      "cancel": "Cancel",
+      "deactivated": "{name} is deactivated.",
+      "reactivated": "{name} is reactivated.",
+      "adminGranted": "{name} is an Administrator now.",
+      "adminRevoked": "{name} is no longer an Administrator."
+    },
+    "settings": {
+      "title": "Account settings",
+      "description": "Your language and time zone apply on every device you sign in with.",
+      "language": "Language",
+      "timeZone": "Time zone",
+      "timeZonePlaceholder": "System default ({timeZone})",
+      "timeZoneDescription": "Dates and times are shown in this time zone. Without one, the system default applies.",
+      "noTimeZone": "No time zone found.",
+      "timeZones": "Time zones",
+      "useDeviceTimeZone": "Use this device's time zone ({timeZone})",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved."
+    }
+  },
   "setup": {
     "title": "Set up Trybun",
     "intro": "Create the first Administrator account. You set up two-factor authentication when you sign in for the first time.",
@@ -373,6 +438,9 @@
       "back": "Back",
       "next": "Next",
       "done": "Done"
+    },
+    "combobox": {
+      "show": "Show options"
     }
   },
   "errors": {

@@ -59,6 +59,15 @@ export interface KeycloakAdmin {
   listUsers(): Promise<KeycloakUserSummary[]>;
   /** Deletes a Keycloak user; a user that no longer exists is ignored. */
   deleteUser(keycloakUserId: string): Promise<void>;
+
+  /**
+   * Enables or disables a Keycloak user (§7.4): a disabled user cannot sign in. A user that no
+   * longer exists is ignored.
+   */
+  setUserEnabled(keycloakUserId: string, enabled: boolean): Promise<void>;
+
+  /** Ends every Keycloak session of a user (§7.4); a user that no longer exists is ignored. */
+  logoutUser(keycloakUserId: string): Promise<void>;
 }
 
 export const KEYCLOAK_ADMIN = Symbol('KeycloakAdmin');

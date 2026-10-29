@@ -45,7 +45,10 @@ interface AuditDetailsByAction {
     reason: 'revoked' | 'project_archived' | 'organization_archived' | 'user_deactivated';
   };
   'invitation.accepted': { userId: string };
+  'user.deactivated': null;
+  'user.reactivated': null;
   'user.admin_granted': null;
+  'user.admin_revoked': null;
 }
 
 export type AuditAction = keyof AuditDetailsByAction;

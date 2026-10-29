@@ -33,10 +33,14 @@ export const CLIENT_NAMESPACES = {
   team: TEAM,
   /** `app/(team)/admin/layout.tsx` */
   administration: [...TEAM, 'administration'],
+  /** `app/(team)/admin/accounts/layout.tsx` */
+  accounts: [...TEAM, 'administration', 'errors', 'users'],
   /** `app/(team)/admin/organizations/layout.tsx` */
   organizations: [...TEAM, 'administration', 'errors', 'organizations'],
   /** `app/(team)/projects/layout.tsx` */
   projects: [...TEAM, 'errors', 'projects'],
+  /** `app/(team)/settings/layout.tsx` */
+  settings: [...TEAM, 'errors', 'users'],
 } as const satisfies Record<string, readonly (keyof WebMessages)[]>;
 
 /** The route layouts that provide messages to client components. */

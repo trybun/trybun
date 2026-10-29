@@ -54,7 +54,8 @@ const errorResponseSchema = z
 /**
  * The Keycloak Admin API over the internal network (§14.4). Each call obtains a token of the
  * service account with the client credentials grant: the calls are rare (the first-run wizard, the
- * acceptance of invitations, an hourly cleanup), so the token is not cached.
+ * acceptance of invitations, the deactivation and reactivation of accounts, an hourly cleanup), so
+ * the token is not cached.
  */
 @Injectable()
 export class KeycloakAdminClient implements KeycloakAdmin {
@@ -190,6 +191,25 @@ export class KeycloakAdminClient implements KeycloakAdmin {
       throw new Error('Keycloak Admin API: create user returned no location');
     }
     return id;
+  }
+
+  async setUserEnabled(keycloakUserId: string, enabled: boolean): Promise<void> {
+    const response = await this.request('PUT', userPath(keycloakUserId), {
+      enabled,
+    });
+    if (response.status !== 404) {
+      await assertOk(response, 'update user');
+    }
+  }
+
+  async logoutUser(keycloakUserId: string): Promise<void> {
+    const response = await this.request(
+      'POST',
+      `/users/${encodeURIComponent(keycloakUserId)}/logout`,
+    );
+    if (response.status !== 404) {
+      await assertOk(response, 'log out user');
+    }
   }
 
   private async request(method: string, path: string, body?: unknown): Promise<Response> {
