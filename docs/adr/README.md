@@ -14,8 +14,10 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 | [0002](0002-technology-stack.md) | Technology stack | proposed |
 | [0003](0003-module-system-and-server-bundling.md) | Module system and server bundling | proposed |
 | [0004](0004-authjs-version-and-session-strategy.md) | Auth.js version and session strategy | proposed |
-| [0005](0005-github-app-as-agent-identity.md) | GitHub App as the identity of AI agents | accepted |
+| [0005](0005-github-app-as-agent-identity.md) | GitHub App as the identity of AI agents | superseded by [0011](0011-maintainer-account-and-workflow-approval.md) |
 | [0006](0006-release-pipeline.md) | Release pipeline | proposed |
 | [0007](0007-throttler-storage-on-nestjs-12.md) | Rate-limit storage on NestJS 12 | proposed |
 | [0008](0008-attachment-serving.md) | Attachment serving | proposed |
 | [0009](0009-invitation-flow.md) | Invitation flow | proposed |
+| [0010](0010-client-message-namespaces.md) | Texts in the browser by route | accepted |
+| [0011](0011-maintainer-account-and-workflow-approval.md) | The maintainer's account for AI agents and approval by workflow | accepted |

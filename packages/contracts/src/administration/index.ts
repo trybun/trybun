@@ -10,7 +10,9 @@ export type AdministrationAction = z.infer<typeof administrationActionSchema>;
  * it is shown. Each task that builds a feature with an item adds it here.
  */
 export const gettingStartedItemIdSchema = z.enum([
+  'create_project',
   'configure_github_sign_in',
+  'create_organization',
   'configure_email',
   'configure_backup_storage',
 ]);

@@ -16,7 +16,8 @@
     "accountMenu": "Account menu",
     "language": "Language",
     "signOut": "Sign out",
-    "administration": "Administration"
+    "administration": "Administration",
+    "projects": "Projects"
   },
   "languages": {
     "en": "English",
@@ -29,6 +30,7 @@
     "title": "Administration",
     "sections": "Sections of the Administrator panel",
     "gettingStarted": "Getting started",
+    "organizations": "Organizations",
     "about": "About",
     "progress": "{done} of {total} done",
     "allDone": "Everything on this list is set up.",
@@ -37,9 +39,17 @@
     "optional": "Optional",
     "howTo": "How to do it",
     "items": {
+      "create_project": {
+        "title": "Create a project",
+        "description": "Create the first project and add the team to it."
+      },
       "configure_github_sign_in": {
         "title": "Configure GitHub sign-in",
         "description": "Team members sign in with GitHub. Required before you can invite the team."
+      },
+      "create_organization": {
+        "title": "Create an organization",
+        "description": "Group the end users of a customer company and let them see the company's tickets. Organizations are optional."
       },
       "configure_email": {
         "title": "Configure e-mail",
@@ -53,6 +63,217 @@
     "version": "Version",
     "license": "License",
     "licenseName": "MIT License"
+  },
+  "projects": {
+    "title": "Projects",
+    "tabs": {
+      "label": "Project state",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "list": {
+      "emptyActive": "No projects yet.",
+      "emptyArchived": "No archived projects.",
+      "noRole": "Administrator",
+      "loadMore": "Show more",
+      "loadingMore": "Loading…"
+    },
+    "roles": {
+      "developer": "Developer",
+      "project_manager": "Project manager"
+    },
+    "create": {
+      "open": "New project",
+      "title": "New project",
+      "description": "Name the project; its key prefixes the identifiers of its tickets.",
+      "name": "Name",
+      "key": "Key",
+      "keyDescription": "2–10 capital letters or digits, starting with a letter, e.g. ERP.",
+      "submit": "Create project",
+      "submitting": "Creating…",
+      "cancel": "Cancel"
+    },
+    "settings": {
+      "title": "Project settings",
+      "back": "Projects",
+      "tabs": {
+        "label": "Project settings",
+        "general": "General",
+        "members": "Members",
+        "danger": "Danger zone"
+      }
+    },
+    "archivedBanner": "This project is archived and read-only.",
+    "general": {
+      "readOnly": "Only the Administrator changes the name and the key.",
+      "confirmResolution": "Resolution confirmation",
+      "confirmResolutionDescription": "Ask the requester to confirm that the problem is solved.",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Changes saved"
+    },
+    "members": {
+      "title": "Members",
+      "empty": "The project has no members yet.",
+      "noName": "No name",
+      "roleOf": "Role of {name}",
+      "add": "Add member",
+      "addTitle": "Add member",
+      "addDescription": "Add an active team member to the project.",
+      "search": "Search by name or GitHub login",
+      "candidates": "Team members",
+      "noCandidates": "No active team members match.",
+      "role": "Role",
+      "submit": "Add",
+      "adding": "Adding…",
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "removeOf": "Remove {name}",
+      "removeTitle": "Remove {name} from the project?",
+      "removeConfirm": "Remove",
+      "demoteTitle": "Make {name} a Developer?",
+      "demoteConfirm": "Change role",
+      "lastManagerWarning": "This project will have no Project manager. The Administrator covers the role.",
+      "added": "{name} added to the project",
+      "removed": "{name} removed from the project"
+    },
+    "danger": {
+      "archive": "Archive project",
+      "archiveDescription": "The project becomes read-only for everyone, the Administrator included, until it is unarchived.",
+      "archived": "Project archived",
+      "undo": "Undo",
+      "unarchive": "Unarchive project",
+      "unarchiveDescription": "The project can be changed again.",
+      "unarchived": "Project unarchived",
+      "delete": "Delete project",
+      "deleteDescription": "Deletes the project and its memberships. This cannot be undone.",
+      "deleteArchived": "Unarchive the project before you delete it.",
+      "deleteTitle": "Delete {name}?",
+      "deleteConfirmLabel": "Type {key} to confirm",
+      "deleteConfirm": "Delete project",
+      "deleting": "Deleting…",
+      "cancel": "Cancel",
+      "deleted": "Project deleted"
+    },
+    "organizations": {
+      "title": "Organizations with access",
+      "description": "The members of these organizations may access the project. Change the access in the organization.",
+      "empty": "No organization may access the project.",
+      "archived": "Archived",
+      "loadMore": "Show more"
+    }
+  },
+  "organizations": {
+    "title": "Organizations",
+    "description": "Customer companies: their end users, e-mail domains and the projects they may access.",
+    "tabs": {
+      "label": "Organization state",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "list": {
+      "emptyActive": "No organizations yet. An organization groups the end users of a customer company, so they can see the company’s tickets. Organizations are optional.",
+      "emptyArchived": "No archived organizations.",
+      "noDomains": "No e-mail domains",
+      "memberCount": "{count, plural, one {# member} other {# members}}",
+      "loadMore": "Show more",
+      "loadingMore": "Loading…"
+    },
+    "create": {
+      "open": "New organization",
+      "title": "New organization",
+      "description": "Name the customer company. End users invited with an address of its e-mail domains join it.",
+      "name": "Name",
+      "domains": "E-mail domains (optional)",
+      "domainsDescription": "Separate several domains with commas, e.g. company.com, company.pl.",
+      "submit": "Create organization",
+      "submitting": "Creating…",
+      "cancel": "Cancel"
+    },
+    "detail": {
+      "back": "Organizations",
+      "archivedBanner": "This organization is archived",
+      "archivedDescription": "It is read-only until it is unarchived."
+    },
+    "general": {
+      "title": "General",
+      "name": "Name",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Changes saved"
+    },
+    "domains": {
+      "title": "E-mail domains",
+      "description": "End users invited with an address of these domains join the organization. Public mail domains such as gmail.com cannot be added.",
+      "empty": "No e-mail domains.",
+      "add": "Add domain",
+      "domain": "Domain",
+      "adding": "Adding…",
+      "remove": "Remove",
+      "removeOf": "Remove {domain}",
+      "added": "{domain} added",
+      "removed": "{domain} removed"
+    },
+    "projects": {
+      "title": "Projects",
+      "description": "The members of the organization may access these projects.",
+      "empty": "The organization may access no projects yet.",
+      "project": "Project",
+      "archived": "Archived",
+      "choose": "Choose a project",
+      "noCandidates": "Every active project is already added.",
+      "add": "Add project",
+      "adding": "Adding…",
+      "remove": "Remove",
+      "removeOf": "Remove {name}",
+      "added": "{name} added",
+      "removed": "{name} removed",
+      "loadMore": "Show more projects"
+    },
+    "members": {
+      "title": "Members",
+      "description": "End users of the customer company. A person belongs to one organization at most.",
+      "empty": "The organization has no members yet.",
+      "noName": "No name",
+      "noEmail": "No e-mail address",
+      "email": "E-mail address",
+      "add": "Add member",
+      "adding": "Adding…",
+      "added": "{name} added to the organization",
+      "alreadyMember": "{name} is already a member",
+      "remove": "Remove",
+      "removeOf": "Remove {name}",
+      "removed": "{name} removed from the organization",
+      "undo": "Undo",
+      "joined": "Joined {date}",
+      "states": {
+        "invited": "Invited",
+        "active": "Active",
+        "deactivated": "Deactivated",
+        "anonymized": "Anonymized"
+      },
+      "moveTitle": "Move {email} to this organization?",
+      "moveDescription": "This person already belongs to another organization. Moving them changes which tickets they can see.",
+      "moveConfirm": "Move",
+      "cancel": "Cancel"
+    },
+    "danger": {
+      "title": "Danger zone",
+      "archive": "Archive organization",
+      "archiveDescription": "The organization becomes read-only until it is unarchived. Its e-mail domains stay reserved.",
+      "archived": "Organization archived",
+      "undo": "Undo",
+      "unarchive": "Unarchive organization",
+      "unarchiveDescription": "The organization can be changed again.",
+      "unarchived": "Organization unarchived",
+      "delete": "Delete organization",
+      "deleteDescription": "Deletes the organization with its e-mail domains, project access and memberships. The accounts of the members stay. This cannot be undone.",
+      "deleteTitle": "Delete {name}?",
+      "deleteConfirm": "Delete organization",
+      "deleting": "Deleting…",
+      "cancel": "Cancel",
+      "deleted": "Organization deleted"
+    }
   },
   "setup": {
     "title": "Set up Trybun",
@@ -117,6 +338,23 @@
             "description": "Switch the language or sign out in your account menu."
           }
         }
+      },
+      "organization_detail": {
+        "name": "Organization",
+        "steps": {
+          "domains": {
+            "title": "E-mail domains",
+            "description": "End users invited with an address of these domains join the organization."
+          },
+          "projects": {
+            "title": "Projects",
+            "description": "Choose the projects the members of the organization may access."
+          },
+          "members": {
+            "title": "Members",
+            "description": "Add end users by their e-mail address, or remove them with Undo."
+          }
+        }
       }
     }
   },
@@ -156,6 +394,24 @@
       "completed": "Trybun is already set up. Sign in instead.",
       "password_rejected": "Choose another password: it must have at least 15 characters and must not be your e-mail address or a common password.",
       "email_taken": "An account with this e-mail address already exists."
+    },
+    "project": {
+      "archived": "This project is archived and read-only. Unarchive it to make changes.",
+      "key_taken": "Another project already uses this key."
+    },
+    "project_member": {
+      "exists": "This person is already a member of the project.",
+      "user_not_eligible": "Only active team members can be added to a project."
+    },
+    "organization": {
+      "name_taken": "Another organization already has this name.",
+      "domain_public": "Public mail domains such as gmail.com cannot be added.",
+      "domain_taken": "This domain belongs to another organization.",
+      "archived": "This organization is archived and read-only. Unarchive it to make changes.",
+      "not_empty": "This organization has tickets and cannot be deleted. Archive it instead.",
+      "member_not_found": "No account has this e-mail address.",
+      "member_not_end_user": "Only end users can belong to an organization.",
+      "member_of_other_organization": "This person already belongs to another organization."
     },
     "server": {
       "internal_error": "Something went wrong. Try again later.",

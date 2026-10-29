@@ -10,7 +10,7 @@ Apply the maintainer's answers ("Q1: accepted", "Q2: accepted", "Q14: accepted",
 
 ## Scope
 
-`.ai/specs/2026-10-26-invitations-and-accounts.md`, the plan rows the accepted answers change in `docs/plan/implementation-plan.md` (S1-15 for Q1, a new task for Q2), and the PR's metadata (body, draft state, labels).
+`.ai/specs/2026-10-26-invitations-and-accounts.md`, the plan rows the accepted answers change in `docs/plan/implementation-plan.md` (S1-15 for Q1, the reference to the existing task S1-20 for Q2), and the PR's metadata (body, draft state, labels).
 
 ## Non-goals
 
@@ -32,7 +32,7 @@ Apply the maintainer's answers ("Q1: accepted", "Q2: accepted", "Q14: accepted",
 ## Assumptions
 
 - "Spec: accepted" approves all fifteen proposed answers unchanged, including Q13 (no split of S1-03).
-- The new task for Q2 is S1-20 in group 8, the last group of Stage 1, so it follows S1-03 and the team invitation flow it needs, as Q2 proposes ("after S1-03, before the end of Stage 1").
+- Q2 is covered by the existing task S1-20 (group 4, #130), which `main` gained while this PR was open; the merge of `main` dropped the duplicate row this PR had added.
 
 ## Risks
 

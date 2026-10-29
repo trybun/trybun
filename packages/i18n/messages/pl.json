@@ -16,7 +16,8 @@
     "accountMenu": "Menu konta",
     "language": "Język",
     "signOut": "Wyloguj się",
-    "administration": "Administracja"
+    "administration": "Administracja",
+    "projects": "Projekty"
   },
   "languages": {
     "en": "English",
@@ -29,6 +30,7 @@
     "title": "Administracja",
     "sections": "Sekcje panelu Administratora",
     "gettingStarted": "Pierwsze kroki",
+    "organizations": "Organizacje",
     "about": "O systemie",
     "progress": "Ukończono {done} z {total}",
     "allDone": "Wszystko z tej listy jest skonfigurowane.",
@@ -37,9 +39,17 @@
     "optional": "Opcjonalne",
     "howTo": "Jak to zrobić",
     "items": {
+      "create_project": {
+        "title": "Utwórz projekt",
+        "description": "Utwórz pierwszy projekt i dodaj do niego zespół."
+      },
       "configure_github_sign_in": {
         "title": "Skonfiguruj logowanie przez GitHub",
         "description": "Członkowie zespołu logują się przez GitHub. Wymagane, zanim zaprosisz zespół."
+      },
+      "create_organization": {
+        "title": "Utwórz organizację",
+        "description": "Zgrupuj użytkowników końcowych firmy klienta, aby widzieli zgłoszenia swojej firmy. Organizacje są opcjonalne."
       },
       "configure_email": {
         "title": "Skonfiguruj e-mail",
@@ -53,6 +63,217 @@
     "version": "Wersja",
     "license": "Licencja",
     "licenseName": "Licencja MIT"
+  },
+  "projects": {
+    "title": "Projekty",
+    "tabs": {
+      "label": "Stan projektów",
+      "active": "Aktywne",
+      "archived": "Zarchiwizowane"
+    },
+    "list": {
+      "emptyActive": "Nie ma jeszcze projektów.",
+      "emptyArchived": "Nie ma zarchiwizowanych projektów.",
+      "noRole": "Administrator",
+      "loadMore": "Pokaż więcej",
+      "loadingMore": "Wczytywanie…"
+    },
+    "roles": {
+      "developer": "Developer",
+      "project_manager": "Kierownik projektu"
+    },
+    "create": {
+      "open": "Nowy projekt",
+      "title": "Nowy projekt",
+      "description": "Nazwij projekt; jego klucz poprzedza identyfikatory zgłoszeń.",
+      "name": "Nazwa",
+      "key": "Klucz",
+      "keyDescription": "Od 2 do 10 wielkich liter lub cyfr, zaczynając od litery, np. ERP.",
+      "submit": "Utwórz projekt",
+      "submitting": "Tworzenie…",
+      "cancel": "Anuluj"
+    },
+    "settings": {
+      "title": "Ustawienia projektu",
+      "back": "Projekty",
+      "tabs": {
+        "label": "Ustawienia projektu",
+        "general": "Ogólne",
+        "members": "Członkowie",
+        "danger": "Strefa zagrożenia"
+      }
+    },
+    "archivedBanner": "Ten projekt jest zarchiwizowany i tylko do odczytu.",
+    "general": {
+      "readOnly": "Nazwę i klucz zmienia tylko Administrator.",
+      "confirmResolution": "Potwierdzanie rozwiązania",
+      "confirmResolutionDescription": "Proś zgłaszającego o potwierdzenie, że problem został rozwiązany.",
+      "save": "Zapisz zmiany",
+      "saving": "Zapisywanie…",
+      "saved": "Zmiany zapisane"
+    },
+    "members": {
+      "title": "Członkowie",
+      "empty": "Projekt nie ma jeszcze członków.",
+      "noName": "Bez nazwy",
+      "roleOf": "Rola: {name}",
+      "add": "Dodaj członka",
+      "addTitle": "Dodaj członka",
+      "addDescription": "Dodaj do projektu aktywnego członka zespołu.",
+      "search": "Szukaj po nazwie lub loginie GitHub",
+      "candidates": "Członkowie zespołu",
+      "noCandidates": "Żaden aktywny członek zespołu nie pasuje.",
+      "role": "Rola",
+      "submit": "Dodaj",
+      "adding": "Dodawanie…",
+      "cancel": "Anuluj",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {name}",
+      "removeTitle": "Usunąć z projektu: {name}?",
+      "removeConfirm": "Usuń",
+      "demoteTitle": "Zmienić rolę na Developer: {name}?",
+      "demoteConfirm": "Zmień rolę",
+      "lastManagerWarning": "Projekt nie będzie miał kierownika projektu. Tę rolę przejmuje Administrator.",
+      "added": "Dodano do projektu: {name}",
+      "removed": "Usunięto z projektu: {name}"
+    },
+    "danger": {
+      "archive": "Zarchiwizuj projekt",
+      "archiveDescription": "Projekt stanie się tylko do odczytu dla wszystkich, także dla Administratora, dopóki nie zostanie przywrócony z archiwum.",
+      "archived": "Projekt zarchiwizowany",
+      "undo": "Cofnij",
+      "unarchive": "Przywróć projekt z archiwum",
+      "unarchiveDescription": "Projekt będzie można znów zmieniać.",
+      "unarchived": "Projekt przywrócony z archiwum",
+      "delete": "Usuń projekt",
+      "deleteDescription": "Usuwa projekt i jego członkostwa. Tego nie można cofnąć.",
+      "deleteArchived": "Przed usunięciem przywróć projekt z archiwum.",
+      "deleteTitle": "Usunąć {name}?",
+      "deleteConfirmLabel": "Wpisz {key}, aby potwierdzić",
+      "deleteConfirm": "Usuń projekt",
+      "deleting": "Usuwanie…",
+      "cancel": "Anuluj",
+      "deleted": "Projekt usunięty"
+    },
+    "organizations": {
+      "title": "Organizacje z dostępem",
+      "description": "Członkowie tych organizacji mają dostęp do projektu. Dostęp zmienisz w organizacji.",
+      "empty": "Żadna organizacja nie ma dostępu do projektu.",
+      "archived": "Zarchiwizowana",
+      "loadMore": "Pokaż więcej"
+    }
+  },
+  "organizations": {
+    "title": "Organizacje",
+    "description": "Firmy klientów: ich użytkownicy końcowi, domeny e-mail i projekty, do których mają dostęp.",
+    "tabs": {
+      "label": "Stan organizacji",
+      "active": "Aktywne",
+      "archived": "Zarchiwizowane"
+    },
+    "list": {
+      "emptyActive": "Nie ma jeszcze organizacji. Organizacja grupuje użytkowników końcowych firmy klienta, aby widzieli zgłoszenia swojej firmy. Organizacje są opcjonalne.",
+      "emptyArchived": "Brak zarchiwizowanych organizacji.",
+      "noDomains": "Brak domen e-mail",
+      "memberCount": "Członkowie: {count}",
+      "loadMore": "Pokaż więcej",
+      "loadingMore": "Ładowanie…"
+    },
+    "create": {
+      "open": "Nowa organizacja",
+      "title": "Nowa organizacja",
+      "description": "Podaj nazwę firmy klienta. Użytkownicy końcowi zaproszeni z adresem w jej domenach e-mail dołączą do niej.",
+      "name": "Nazwa",
+      "domains": "Domeny e-mail (opcjonalnie)",
+      "domainsDescription": "Kilka domen oddziel przecinkami, np. firma.com, firma.pl.",
+      "submit": "Utwórz organizację",
+      "submitting": "Tworzenie…",
+      "cancel": "Anuluj"
+    },
+    "detail": {
+      "back": "Organizacje",
+      "archivedBanner": "Ta organizacja jest zarchiwizowana",
+      "archivedDescription": "Jest tylko do odczytu, dopóki nie zostanie przywrócona z archiwum."
+    },
+    "general": {
+      "title": "Ogólne",
+      "name": "Nazwa",
+      "save": "Zapisz",
+      "saving": "Zapisywanie…",
+      "saved": "Zmiany zapisane"
+    },
+    "domains": {
+      "title": "Domeny e-mail",
+      "description": "Użytkownicy końcowi zaproszeni z adresem w tych domenach dołączają do organizacji. Nie można dodać publicznych domen poczty, takich jak gmail.com.",
+      "empty": "Brak domen e-mail.",
+      "add": "Dodaj domenę",
+      "domain": "Domena",
+      "adding": "Dodawanie…",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {domain}",
+      "added": "Dodano: {domain}",
+      "removed": "Usunięto: {domain}"
+    },
+    "projects": {
+      "title": "Projekty",
+      "description": "Członkowie organizacji mają dostęp do tych projektów.",
+      "empty": "Organizacja nie ma jeszcze dostępu do żadnego projektu.",
+      "project": "Projekt",
+      "archived": "Zarchiwizowany",
+      "choose": "Wybierz projekt",
+      "noCandidates": "Wszystkie aktywne projekty są już dodane.",
+      "add": "Dodaj projekt",
+      "adding": "Dodawanie…",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {name}",
+      "added": "Dodano: {name}",
+      "removed": "Usunięto: {name}",
+      "loadMore": "Pokaż więcej projektów"
+    },
+    "members": {
+      "title": "Członkowie",
+      "description": "Użytkownicy końcowi firmy klienta. Osoba należy najwyżej do jednej organizacji.",
+      "empty": "Organizacja nie ma jeszcze członków.",
+      "noName": "Bez nazwy",
+      "noEmail": "Brak adresu e-mail",
+      "email": "Adres e-mail",
+      "add": "Dodaj członka",
+      "adding": "Dodawanie…",
+      "added": "Dodano do organizacji: {name}",
+      "alreadyMember": "Już jest członkiem: {name}",
+      "remove": "Usuń",
+      "removeOf": "Usuń: {name}",
+      "removed": "Usunięto z organizacji: {name}",
+      "undo": "Cofnij",
+      "joined": "Data dołączenia: {date}",
+      "states": {
+        "invited": "Zaproszony",
+        "active": "Aktywny",
+        "deactivated": "Dezaktywowany",
+        "anonymized": "Zanonimizowany"
+      },
+      "moveTitle": "Przenieść {email} do tej organizacji?",
+      "moveDescription": "Ta osoba należy już do innej organizacji. Przeniesienie zmienia zgłoszenia, które widzi.",
+      "moveConfirm": "Przenieś",
+      "cancel": "Anuluj"
+    },
+    "danger": {
+      "title": "Strefa niebezpieczna",
+      "archive": "Zarchiwizuj organizację",
+      "archiveDescription": "Organizacja stanie się tylko do odczytu, dopóki nie zostanie przywrócona z archiwum. Jej domeny e-mail pozostają zarezerwowane.",
+      "archived": "Organizacja zarchiwizowana",
+      "undo": "Cofnij",
+      "unarchive": "Przywróć organizację z archiwum",
+      "unarchiveDescription": "Organizację będzie można znów zmieniać.",
+      "unarchived": "Organizacja przywrócona z archiwum",
+      "delete": "Usuń organizację",
+      "deleteDescription": "Usuwa organizację z jej domenami e-mail, dostępem do projektów i członkostwami. Konta członków pozostają. Tego nie można cofnąć.",
+      "deleteTitle": "Usunąć {name}?",
+      "deleteConfirm": "Usuń organizację",
+      "deleting": "Usuwanie…",
+      "cancel": "Anuluj",
+      "deleted": "Organizacja usunięta"
+    }
   },
   "setup": {
     "title": "Skonfiguruj Trybun",
@@ -117,6 +338,23 @@
             "description": "W menu konta zmienisz język albo się wylogujesz."
           }
         }
+      },
+      "organization_detail": {
+        "name": "Organizacja",
+        "steps": {
+          "domains": {
+            "title": "Domeny e-mail",
+            "description": "Użytkownicy końcowi zaproszeni z adresem w tych domenach dołączają do organizacji."
+          },
+          "projects": {
+            "title": "Projekty",
+            "description": "Wybierz projekty, do których mają dostęp członkowie organizacji."
+          },
+          "members": {
+            "title": "Członkowie",
+            "description": "Dodawaj użytkowników końcowych po adresie e-mail lub usuwaj ich z możliwością cofnięcia."
+          }
+        }
       }
     }
   },
@@ -156,6 +394,24 @@
       "completed": "Trybun jest już skonfigurowany. Zaloguj się.",
       "password_rejected": "Wybierz inne hasło: musi mieć co najmniej 15 znaków i nie może być Twoim adresem e-mail ani popularnym hasłem.",
       "email_taken": "Konto z tym adresem e-mail już istnieje."
+    },
+    "project": {
+      "archived": "Ten projekt jest zarchiwizowany i tylko do odczytu. Przywróć go z archiwum, aby wprowadzić zmiany.",
+      "key_taken": "Ten klucz ma już inny projekt."
+    },
+    "project_member": {
+      "exists": "Ta osoba jest już członkiem projektu.",
+      "user_not_eligible": "Do projektu można dodać tylko aktywnych członków zespołu."
+    },
+    "organization": {
+      "name_taken": "Inna organizacja ma już tę nazwę.",
+      "domain_public": "Nie można dodać publicznych domen poczty, takich jak gmail.com.",
+      "domain_taken": "Ta domena należy do innej organizacji.",
+      "archived": "Ta organizacja jest zarchiwizowana i tylko do odczytu. Przywróć ją z archiwum, aby wprowadzić zmiany.",
+      "not_empty": "Tej organizacji nie można usunąć, bo ma zgłoszenia. Zarchiwizuj ją.",
+      "member_not_found": "Żadne konto nie ma tego adresu e-mail.",
+      "member_not_end_user": "Do organizacji mogą należeć tylko użytkownicy końcowi.",
+      "member_of_other_organization": "Ta osoba należy już do innej organizacji."
     },
     "server": {
       "internal_error": "Coś poszło nie tak. Spróbuj ponownie później.",

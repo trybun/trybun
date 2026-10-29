@@ -19,6 +19,18 @@ export const errorCodeSchema = z.enum([
   'setup.completed',
   'setup.password_rejected',
   'setup.email_taken',
+  'project.archived',
+  'project.key_taken',
+  'project_member.exists',
+  'project_member.user_not_eligible',
+  'organization.name_taken',
+  'organization.domain_public',
+  'organization.domain_taken',
+  'organization.archived',
+  'organization.not_empty',
+  'organization.member_not_found',
+  'organization.member_not_end_user',
+  'organization.member_of_other_organization',
   'server.internal_error',
   'server.unavailable',
 ]);
@@ -52,6 +64,30 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'setup.password_rejected': 422,
   // An e-mail address that already has a Keycloak account.
   'setup.email_taken': 422,
+  // A change of an archived project, which is read-only until it is unarchived (§7.3).
+  'project.archived': 409,
+  // A key that another active or archived project has (§3.1).
+  'project.key_taken': 422,
+  // The account is already a member of the project (§7.4).
+  'project_member.exists': 409,
+  // A member must be an active team account (§7.4).
+  'project_member.user_not_eligible': 422,
+  // The name is used by another active or archived organization (§7.3).
+  'organization.name_taken': 409,
+  // A domain on the blocklist of public mail domains, e.g. `gmail.com` (§7.3).
+  'organization.domain_public': 422,
+  // A domain of another active or archived organization (§7.3).
+  'organization.domain_taken': 409,
+  // A change of an archived organization, which is read-only until it is unarchived (§7.3).
+  'organization.archived': 409,
+  // Deleting an organization that has tickets (§7.3).
+  'organization.not_empty': 409,
+  // No account with the e-mail address (§7.3).
+  'organization.member_not_found': 422,
+  // Only end users belong to organizations (§7.3).
+  'organization.member_not_end_user': 422,
+  // The account belongs to another organization and the move was not confirmed (§7.3).
+  'organization.member_of_other_organization': 409,
   // An unexpected error; the response carries no details (§18.3).
   'server.internal_error': 500,
   // PostgreSQL is unavailable (§17.2).

@@ -15,9 +15,9 @@ describe('isCurrent', () => {
 
 describe('navigationItemsFor', () => {
   it.each([
-    [['open_administration'] as const, 'wide', ['/', '/admin']],
-    [['open_administration'] as const, 'phone', ['/']],
-    [[] as const, 'wide', ['/']],
+    [['open_administration'] as const, 'wide', ['/', '/projects', '/admin']],
+    [['open_administration'] as const, 'phone', ['/', '/projects']],
+    [[] as const, 'wide', ['/', '/projects']],
   ] as const)('with %j on %s shows %j', (allowedActions, device, hrefs) => {
     expect(navigationItemsFor(allowedActions, device).map((item) => item.href)).toEqual(hrefs);
   });

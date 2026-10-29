@@ -1,6 +1,6 @@
 import 'server-only';
 import { getServerSession, type Session } from 'next-auth';
-import { cookies } from 'next/headers.js';
+import { cookies, headers } from 'next/headers.js';
 import { redirect } from 'next/navigation.js';
 import { connection } from 'next/server.js';
 import { cache } from 'react';
@@ -10,6 +10,7 @@ import {
   SIGN_IN_PATH,
   sessionCookieName,
 } from './auth-options.js';
+import { callbackPathOf, REQUEST_PATH_HEADER } from './callback-path.js';
 
 /**
  * The session of the request, read once per request (§18.5). Its row is looked up on every
@@ -21,13 +22,15 @@ export const getSession = cache(async (): Promise<Session | null> => {
   return getServerSession(createAuthOptions());
 });
 
-/** The session of the request; without one, the user is sent to the sign-in. */
-export async function requireSession(callbackPath = '/'): Promise<Session> {
+/**
+ * The session of the request; without one, the user is sent to the sign-in, which returns to
+ * the page the user opened, passed on by `proxy.ts`.
+ */
+export async function requireSession(): Promise<Session> {
   const session = await getSession();
   if (session === null) {
-    return redirect(
-      `${SIGN_IN_PATH}?${new URLSearchParams({ callbackUrl: callbackPath }).toString()}`,
-    );
+    const callbackUrl = callbackPathOf((await headers()).get(REQUEST_PATH_HEADER));
+    return redirect(`${SIGN_IN_PATH}?${new URLSearchParams({ callbackUrl }).toString()}`);
   }
   return session;
 }

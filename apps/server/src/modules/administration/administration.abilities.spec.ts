@@ -3,7 +3,7 @@ import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import { ADMINISTRATION, administrationAbilities } from './administration.abilities.js';
 
-const abilities = new AbilityFactory([administrationAbilities]);
+const abilities = new AbilityFactory([administrationAbilities], []);
 
 function principal(overrides: Partial<UserPrincipal>): UserPrincipal {
   return { kind: 'user', userId: 'user', userKind: 'team', isAdmin: false, ...overrides };

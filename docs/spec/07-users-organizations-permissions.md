@@ -30,7 +30,7 @@ An organization represents a **customer company** (pattern: Zendesk, Jira Servic
 
 | Field | Description |
 |---|---|
-| Name | Company name |
+| Name | Company name, 1–100 characters, unique case-insensitively across active and archived organizations |
 | E-mail domains | E.g. `company.com`; users invited with an e-mail address in this domain are assigned to the organization automatically (rules below) |
 | Projects | Projects the organization has access to (set by the Administrator) |
 | Members | End users belonging to the organization |
@@ -40,17 +40,18 @@ Rules:
 
 - An end user belongs to **at most one** organization. They may belong to none (e.g. an individual customer). Only the Administrator adds users to an organization, removes them or moves them to another one; every change is recorded in the audit log ([§13.5](13-non-functional.md)).
 - **E-mail domains**:
-  - each domain belongs to at most one organization,
-  - public mail domains (e.g. `gmail.com`, `outlook.com`; a maintained blocklist) cannot be added,
+  - each domain belongs to at most one organization, also while that organization is archived (`organization.domain_taken`); to reuse a domain, the Administrator removes it from the organization after unarchiving it, or deletes the organization,
+  - a domain is stored lower-case in ASCII (an internationalized name in its punycode form) with at least two labels, without a wildcard, an `@` or a trailing dot; it matches an e-mail address **exactly** – `company.com` does not match `pl.company.com`, which is added as a domain of its own,
+  - public mail domains (e.g. `gmail.com`, `outlook.com`) cannot be added (`organization.domain_public`): the blocklist is a vendored copy of a maintained MIT-licensed list of free mail domains, updated with the dependencies like the password blocklist ([§13.5](13-non-functional.md)); there is no online lookup,
   - domain matching is applied only when an account is created from an invitation, and only if the inviting project is among the organization's projects; otherwise the user is created without an organization and gets personal access to the inviting project. The inviting person is shown "This person will join the organization X" (PL: „Ta osoba dołączy do organizacji X”) before sending the invitation,
   - adding or removing a domain later never moves existing users.
 - **Changing a user's organization**: tickets stay with the organization in which they were created, because they are the company's data (the ticket's organization is a snapshot taken at creation, [§3.2](03-ticket-model.md)). After the change:
   - the user keeps read and comment access to the tickets they created with visibility `only_me`, even if they no longer have access to the project; creating new tickets requires current access to the project,
   - the user keeps access to shared tickets of projects they still have access to,
   - tickets of the old organization with visibility `my_organization` – including those the user created – are no longer visible to them, and the user is removed from their watchers ([§6.7](06-comments-notifications.md)).
-- **Archiving instead of deleting**: organizations and projects are not deleted but **archived**. Only organizations and projects without tickets can be deleted. Archiving and unarchiving are done by the Administrator and recorded in the audit log.
+- **Archiving instead of deleting**: organizations and projects are not deleted but **archived**. Only organizations and projects without tickets can be deleted (`organization.not_empty`); an archived project is deleted only after it is unarchived, because deleting is a change (`project.archived`), while an archived organization can be deleted as it is. Deleting an organization removes its domains, project access and memberships, with an audit entry for each removed member; the members keep their accounts and their personal project access. Archiving and unarchiving are done by the Administrator and recorded in the audit log.
   - **Archived project**: read-only for every role, including the Administrator – all user-facing changes are rejected with the error code `project.archived`. It is hidden from navigation; members keep read access to the tickets they could see. SLA clocks stop and keep their state; integration tokens of the project are rejected; incoming GitHub events for it are ignored and logged; outgoing webhooks for it stop; pending invitations to it are revoked. Jobs required by law (GDPR anonymization and retention, [§13.2](13-non-functional.md)) still run.
-  - **Archived organization**: its members keep their accounts and read access to the tickets they created, lose access granted through the organization and cannot create tickets through it; domain matching is off.
+  - **Archived organization**: read-only until it is unarchived – changes of its name, domains, projects and members are rejected with the error code `organization.archived`, except the removal of a membership caused by a change of the account (the kind change to `team`, anonymization). Its members keep their accounts and read access to the tickets they created, lose access granted through the organization and cannot create tickets through it; its domains stay reserved and domain matching is off; pending invitations to it are revoked and new ones are rejected. The access of an organization to an archived project can be neither granted nor removed (`project.archived`).
   - The Administrator can **unarchive** a project or organization; it then works as before.
 - Team members do not belong to customer organizations and see tickets of all organizations in their projects.
 - A project can serve **many organizations**, and an organization can access **many projects**.
@@ -65,7 +66,7 @@ Rules:
 
 ### System without organizations
 
-If no organization exists in the system (e.g. an internal deployment in one company), the UI hides all organization-related elements: the organization field and filter, the visibility option `my_organization` and the organization count on shared tickets. These elements appear automatically once the first organization is created, with no separate setting (Rule 2).
+An organization exists when one exists in any state, because archived organizations still appear in ticket snapshots and filters. If no organization exists in the system (e.g. an internal deployment in one company), the UI hides all organization-related elements: the organization field and filter, the visibility option `my_organization` and the organization count on shared tickets. These elements appear automatically once the first organization is created, with no separate setting (Rule 2).
 
 ## 7.4 Accounts and authentication
 
@@ -81,7 +82,7 @@ If no organization exists in the system (e.g. an internal deployment in one comp
   - Users cannot change their e-mail address themselves (the Keycloak account console does not allow it), because the address decides organization membership, notifications and e-mail replies. The Administrator changes it on request.
 - Password reset uses a one-time link with limited validity ([§13.5](13-non-functional.md)).
 - **Deactivating an account** (e.g. a customer's employee leaves) is done by the Administrator. It blocks login, **immediately ends all sessions** (in Keycloak and in the web application, [§14.4](14-architecture.md)) and **revokes all API tokens** of the account; it keeps their tickets and comments in the history. Open tickets assigned to a deactivated team member are unassigned with an automatic event and appear in the predefined list view "Unassigned" ([§8.1](08-team-views.md)). The Administrator can reactivate the account.
-- **Removing a team member from a project** (or their last role in it) unassigns them from the project's open tickets in the same way; watchers without access are removed at the next notification ([§6.7](06-comments-notifications.md)). Removing a project's last Project manager is allowed (the Administrator covers the role), but a warning is shown.
+- **Removing a team member from a project** (or their last role in it) unassigns them from the project's open tickets in the same way; watchers without access are removed at the next notification ([§6.7](06-comments-notifications.md)). Removing a project's last Project manager – or changing their role to Developer – is allowed (the Administrator covers the role), but a warning is shown.
 - Each user sets their language and time zone in account settings ([§13.1](13-non-functional.md)).
 - **Local environment**: in the local development environment only ([§15.1](15-deployment.md)), seeded team accounts can sign in with a password, so contributors do not need their own GitHub OAuth application. This is disabled in the test and production environments.
 
@@ -101,10 +102,10 @@ Keycloak stores only credentials and sign-in factors. Everything else about a pe
 | State (`user.state`) | `invited` (account created by an invitation or import, not yet signed in), `active`, `deactivated`, `anonymized` ([§13.2](13-non-functional.md)) |
 | GitHub login | For team accounts, from the GitHub sign-in ([§11.4](11-github-integration.md)) |
 
-- Per-project team roles are stored as **project memberships** (`project_member`: user, project, role `developer` or `project_manager`). Personal access of end users to a project is stored as a project membership with role `end_user`; access through an organization is derived from the organization's projects.
+- Per-project team roles are stored as **project memberships** (`project_member`: user, project, role `developer` or `project_manager`). The Administrator and the project's Project managers add existing active team accounts to a project directly, choose their role, change it and remove them; the member picker lists the active team accounts that are not members of the project – display name and GitHub login, never the e-mail address – to whoever may manage the members of that project. Invitations by e-mail add existing accounts through the same membership change. Personal access of end users to a project is stored as a project membership with role `end_user`; access through an organization is derived from the organization's projects.
 - The API keeps the Keycloak group `team` in sync through the Keycloak Admin API whenever an account becomes or stops being a `team` account.
 - Imported people without an account ([§12.5](12-api-webhooks-import.md)) get accounts in state `invited` without a Keycloak user; the Keycloak user is created when they accept an invitation.
-- The signed-in account reads its own identifier, display name, e-mail and kind with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel, [§18.3](18-code-patterns.md)).
+- The signed-in account reads its own identifier, display name, e-mail and kind with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel and `create_project` for creating projects, [§18.3](18-code-patterns.md)).
 
 ### Invitations
 
@@ -132,7 +133,7 @@ Invitations are managed by the application (not by Keycloak e-mails), so the lin
 
 All permission decisions are made by the API; the UI only adapts to them ([§14.4](14-architecture.md)). Two rules apply on top of the matrix:
 
-- In an **archived project** every change is forbidden for every role, including the Administrator, until it is unarchived ([§7.3](#73-organizations)).
+- In an **archived project** and an **archived organization** every change is forbidden for every role, including the Administrator, until it is unarchived (`project.archived`, `organization.archived`, [§7.3](#73-organizations)).
 - Actions on records the user cannot see return `404`, never `403` ([§17.2](17-conventions.md)).
 
 | Action | End user | Developer | Project manager | Admin |
@@ -172,6 +173,7 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Create GitHub issues from tickets | – | ✅ | ✅ | ✅ |
 | View SLA deadlines | – | ✅ | ✅ | ✅ |
 | SLA reports ([§9.6](09-sla.md)) | – | – | ✅ | ✅ |
+| View project members (display name, GitHub login, role) of own project | – | ✅ | ✅ | ✅ |
 | Manage project members: invite team members and grant or remove the roles Developer and Project manager in own project | – | – | ✅ | ✅ |
 | Invite individual end users to the project | – | – | ✅ | ✅ |
 | Project settings: resolution confirmation, WIP limits ([§8.2](08-team-views.md)) | – | – | ✅ | ✅ |

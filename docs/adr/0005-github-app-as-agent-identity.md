@@ -1,6 +1,6 @@
 # 0005 – GitHub App as the identity of AI agents
 
-- Status: accepted
+- Status: superseded by [0011](0011-maintainer-account-and-workflow-approval.md)
 - Date: 2026-10-23
 - Deciders: the maintainer (`@dtk7c2`)
 - Supersedes: [ADR 0001](0001-github-identity-of-ai-agents.md)

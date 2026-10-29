@@ -61,8 +61,65 @@ model User {
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   productTourProgress ProductTourProgress[]
+  projectMemberships  ProjectMember[]
+  organizationMember  OrganizationMember?
 
   @@map("users")
+}
+
+/// `project.state` (§7.3)
+enum ProjectState {
+  active
+  archived
+
+  @@map("project_state")
+}
+
+/// `project_member.role` (§7.2): the team roles of a project; end users join with S1-03.
+enum ProjectRole {
+  developer
+  project_manager
+
+  @@map("project_role")
+}
+
+/// A project (§3.1): the container of tickets. A versioned record (§17.2). An archived project is
+/// read-only until it is unarchived (§7.3).
+model Project {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  /// Trimmed, 1–100 characters, not unique.
+  name              String
+  /// A capital letter, then 1–9 capitals or digits (§3.1), unique across active and archived
+  /// projects; a check constraint of the migrations enforces the pattern too.
+  key               String       @unique
+  state             ProjectState @default(active)
+  /// Resolution confirmation (§4.3).
+  confirmResolution Boolean      @default(false) @map("confirm_resolution")
+  version           Int          @default(1)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  members       ProjectMember[]
+  organizations OrganizationProject[]
+
+  @@index([name, id])
+  @@map("projects")
+}
+
+/// A team account with a team role in one project (§7.4): one role per person and project.
+/// Deleting the project deletes its memberships; a user is never deleted (§13.2).
+model ProjectMember {
+  projectId String      @map("project_id") @db.Uuid
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String      @map("user_id") @db.Uuid
+  user      User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role      ProjectRole
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([projectId, userId])
+  @@index([userId])
+  @@map("project_members")
 }
 
 /// `product_tour_progress.status` (§2.4)
@@ -117,6 +174,9 @@ model AuditLogEntry {
   /// The Prisma model name of the target record, e.g. `User`.
   targetType String   @map("target_type")
   targetId   String   @map("target_id") @db.Uuid
+  /// Further identifiers and non-personal values of the entry, typed per action (§13.5), e.g. the
+  /// user and the role of a membership change; never content or personal data.
+  details    Json?    @db.JsonB
   /// The client IP of a security event; removed after 14 days by the Worker (§13.2).
   ipAddress  String?  @map("ip_address") @db.Inet
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -170,4 +230,70 @@ model Session {
   @@index([keycloakUserId])
   @@index([keycloakSessionId])
   @@map("sessions")
+}
+
+/// `organization.state` (§7.3): an archived organization is read-only until it is unarchived.
+enum OrganizationState {
+  active
+  archived
+
+  @@map("organization_state")
+}
+
+/// A customer company that groups end users (§7.3); only the Administrator manages it (§7.5).
+model Organization {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  /// Trimmed, 1–100 characters, unique case-insensitively across active and archived
+  /// organizations; the unique index on the lower-case name is created by the migrations.
+  name      String
+  state     OrganizationState @default(active)
+  version   Int               @default(1)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  domains  OrganizationDomain[]
+  projects OrganizationProject[]
+  members  OrganizationMember[]
+
+  @@index([name, id])
+  @@map("organizations")
+}
+
+/// An e-mail domain of an organization (§7.3), unique across all organizations, archived ones
+/// included; stored lower-case in ASCII (punycode).
+model OrganizationDomain {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  domain         String       @unique
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organizationId])
+  @@map("organization_domains")
+}
+
+/// The access of an organization to a project (§7.3).
+model OrganizationProject {
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String       @map("project_id") @db.Uuid
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([organizationId, projectId])
+  @@index([projectId])
+  @@map("organization_projects")
+}
+
+/// `organization_member` (§7.3): an end-user account belongs to at most one organization, by the
+/// primary key on the account; `createdAt` is the date the person joined.
+model OrganizationMember {
+  userId         String       @id @map("user_id") @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organizationId])
+  @@map("organization_members")
 }
