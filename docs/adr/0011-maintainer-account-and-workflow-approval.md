@@ -62,3 +62,5 @@ Bad, and the rules that follow from them:
 1. The maintainer changes the ruleset "Protect main" as above (Settings → Rules → Rulesets).
 2. On the agents' machine the maintainer runs `gh auth login` and `gh auth setup-git`, removes the `gh` wrapper and the token helper of the app from `PATH`, and removes the app's credential helper from the repository's git config.
 3. The GitHub App `dtk7c2-claude` is uninstalled from `trybun/trybun` and its private key deleted once nothing depends on it.
+
+Done on 2026-10-29, at the maintainer's explicit request by an agent acting with the maintainer's account, after the maintainer's `gh auth login` – a one-time exception to the rule that agents do not change repository settings: the ruleset "Protect main" requires no approval any more (its earlier version is kept outside the repository), `trybun` was removed from the owners of the app's `gh` wrapper and the app's credential helper from the repository's git config, and the app's installation on the organization `trybun` was deleted. The app, its wrapper and its private key stay on the agents' machine for the maintainer's other projects (the installation on `dtk7c2`).
