@@ -19,7 +19,13 @@ A new project skill gets its folder here and one link: `ln -s ../../.ai/skills/<
 
 ## Agent pipeline skills
 
-The `om-*` skills of the agent pipeline ([`SDLC.md`](../../SDLC.md), configuration in [`.ai/agentic.config.json`](../agentic.config.json)) come from `open-mercato/skills` and are pinned in `skills-lock.json`. Restore them with `npx skills experimental_install` and update them with `npx skills update`, which also updates the lock file. Cezar provisions them into every task.
+The `om-*` skills of the agent pipeline ([`SDLC.md`](../../SDLC.md), configuration in [`.ai/agentic.config.json`](../agentic.config.json)) come from `open-mercato/skills` and are recorded in `skills-lock.json`. Install them with
+
+```bash
+npx skills add open-mercato/skills --skill '*' -a claude-code codex -y
+```
+
+which puts the files into `.agents/skills/` (read by Codex) and links them into `.claude/skills/` for Claude Code; update them with `npx skills update`, which also updates the lock file. `npx skills experimental_install` restores only `.agents/skills/` and creates no links for Claude Code. Cezar provisions them into every task.
 
 ## Extending an `om-*` skill
 
@@ -41,9 +47,10 @@ Rules of this repository, on top of it:
 
 ## Migrating an existing checkout
 
-Until 2026-10-29 `.claude/skills` was a link to `.ai/skills`, so `npx skills` put its `om-*` links into `.ai/skills/`. After pulling this layout, remove those links once and install again:
+Until 2026-10-29 `.claude/skills` was a link to `.ai/skills`, so `npx skills` put its `om-*` links into `.ai/skills/`. After pulling this layout, remove those links and the old installation once and install again:
 
 ```bash
 find .ai/skills -maxdepth 1 -type l -name 'om-*' -delete
-npx skills experimental_install
+rm -rf .agents/skills
+npx skills add open-mercato/skills --skill '*' -a claude-code codex -y
 ```
