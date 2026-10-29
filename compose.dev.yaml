@@ -1,6 +1,11 @@
 # Local infrastructure for `pnpm dev` (§15.12), on top of compose.yaml. The applications run on
 # the host with hot reload; the infrastructure publishes its ports on 127.0.0.1 only.
 
+# Its own Compose project: `trybun` (compose.yaml) is the project of an installation, so `pnpm dev`
+# on a server with one never mounts its volumes or stops its containers. The test environment of
+# the QA skills runs as `trybun-test` (`-p` wins over this name).
+name: trybun-dev
+
 services:
   web: { profiles: [apps] }
   api: { profiles: [apps] }
