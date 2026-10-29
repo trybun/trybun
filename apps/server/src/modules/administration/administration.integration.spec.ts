@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { GettingStartedPage } from '@trybun/contracts/administration';
 import request from 'supertest';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import packageJson from '../../../package.json' with { type: 'json' };
@@ -97,6 +98,7 @@ describe('administration endpoints', () => {
         items: [
           { id: 'create_project', isDone: false, isOptional: false },
           { id: 'configure_github_sign_in', isDone: false, isOptional: false },
+          { id: 'invite_team', isDone: false, isOptional: false },
           { id: 'create_organization', isDone: false, isOptional: true },
           { id: 'configure_email', isDone: false, isOptional: false },
           { id: 'configure_backup_storage', isDone: false, isOptional: false },
@@ -137,6 +139,7 @@ describe('administration endpoints', () => {
     });
     await createProject(prisma, { state: 'archived' });
     await createOrganization(prisma, { state: 'archived' });
+    await createUser(prisma, { kind: 'team', state: 'invited' });
 
     const res = await get('getting-started', await signIn(true));
 
@@ -144,10 +147,30 @@ describe('administration endpoints', () => {
       items: [
         { id: 'create_project', isDone: true },
         { id: 'configure_github_sign_in', isDone: true },
+        { id: 'invite_team', isDone: true },
         { id: 'create_organization', isDone: true },
         { id: 'configure_email', isDone: true },
         { id: 'configure_backup_storage', isDone: true },
       ],
     });
+  });
+
+  it('ticks "Invite the team" once a team account other than the first Administrator is invited or active', async () => {
+    // A fresh database: the first Administrator is the oldest team account (§15.6).
+    await start({ databaseUrl: await createOwnDatabase() });
+    const authorization = await signIn(true);
+    const inviteTeam = async () => {
+      const res = await get('getting-started', authorization);
+      return (res.body as GettingStartedPage).items.find((item) => item.id === 'invite_team');
+    };
+    await createUser(prisma, { kind: 'team', state: 'deactivated' });
+    await createUser(prisma, { kind: 'end_user', state: 'active' });
+    await createUser(prisma, { kind: 'end_user', state: 'invited' });
+
+    expect(await inviteTeam()).toMatchObject({ isDone: false });
+
+    await createUser(prisma, { kind: 'team', state: 'invited' });
+
+    expect(await inviteTeam()).toMatchObject({ isDone: true });
   });
 });

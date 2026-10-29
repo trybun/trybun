@@ -51,6 +51,10 @@
         "title": "Skonfiguruj logowanie przez GitHub",
         "description": "Członkowie zespołu logują się przez GitHub. Wymagane, zanim zaprosisz zespół."
       },
+      "invite_team": {
+        "title": "Zaproś zespół",
+        "description": "Zaproś developerów i kierowników projektów do ich projektów. Skopiuj każdy link z zaproszeniem i wyślij go tej osobie."
+      },
       "create_organization": {
         "title": "Utwórz organizację",
         "description": "Zgrupuj użytkowników końcowych firmy klienta, aby widzieli zgłoszenia swojej firmy. Organizacje są opcjonalne."

@@ -51,6 +51,10 @@
         "title": "Configure GitHub sign-in",
         "description": "Team members sign in with GitHub. Required before you can invite the team."
       },
+      "invite_team": {
+        "title": "Invite the team",
+        "description": "Invite your developers and Project managers to their projects. Copy each invitation link and send it to the person."
+      },
       "create_organization": {
         "title": "Create an organization",
         "description": "Group the end users of a customer company and let them see the company's tickets. Organizations are optional."

@@ -6,6 +6,8 @@ export interface GettingStartedState {
   hasProject: boolean;
   /** Any organization exists, active or archived (§7.3). */
   hasOrganization: boolean;
+  /** A team account other than the first Administrator exists, `invited` or `active` (§7.4). */
+  hasInvitedTeam: boolean;
   isGithubSignInConfigured: boolean;
   isSmtpConfigured: boolean;
   isBackupStorageConfigured: boolean;
@@ -20,6 +22,7 @@ export function gettingStartedItems(state: GettingStartedState): GettingStartedI
     { id: 'create_project', isDone: state.hasProject, isOptional: false },
     // Required before team members can be invited (§15.5).
     { id: 'configure_github_sign_in', isDone: state.isGithubSignInConfigured, isOptional: false },
+    { id: 'invite_team', isDone: state.hasInvitedTeam, isOptional: false },
     // Organizations are optional; the system works without them (§7.3).
     { id: 'create_organization', isDone: state.hasOrganization, isOptional: true },
     { id: 'configure_email', isDone: state.isSmtpConfigured, isOptional: false },

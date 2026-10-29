@@ -21,18 +21,39 @@ export class AdministrationService {
   /** The getting-started checklist (§15.6), a list bounded by its closed set of items (§18.4). */
   async findGettingStarted(principal: Principal): Promise<GettingStartedPage> {
     this.assertCanRead(principal);
-    const [projects, organizations] = await Promise.all([
+    const [projects, organizations, invitedTeam] = await Promise.all([
       this.prisma.project.count({ take: 1 }),
       this.prisma.organization.count({ take: 1 }),
+      this.countInvitedTeam(),
     ]);
     return {
       items: gettingStartedItems({
         ...this.config,
         hasProject: projects > 0,
         hasOrganization: organizations > 0,
+        hasInvitedTeam: invitedTeam > 0,
       }),
       nextCursor: null,
     };
+  }
+
+  /**
+   * Team accounts other than the first Administrator – the oldest team account, created by the
+   * first-run wizard (§15.6) – that are `invited` or `active`, at most one.
+   */
+  private async countInvitedTeam(): Promise<number> {
+    const first = await this.prisma.user.findFirst({
+      where: { kind: 'team' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { id: true },
+    });
+    if (first === null) {
+      return 0;
+    }
+    return this.prisma.user.count({
+      where: { kind: 'team', state: { in: ['invited', 'active'] }, id: { not: first.id } },
+      take: 1,
+    });
   }
 
   /** The "About" page (§15.4): the same version as `/health`. */
