@@ -308,6 +308,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invitation-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InvitationsController_list"];
+        put?: never;
+        post: operations["InvitationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/{invitationId}/resending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_resend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/{invitationId}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/token-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_verifyToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1353,6 +1449,511 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    InvitationsController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    target: {
+                        /** @enum {string} */
+                        type: "project";
+                        /** Format: uuid */
+                        projectId: string;
+                        /** @enum {string} */
+                        role: "developer" | "project_manager" | "end_user";
+                    } | {
+                        /** @enum {string} */
+                        type: "organization";
+                        /** Format: uuid */
+                        organizationId: string;
+                    } | {
+                        /** @enum {string} */
+                        type: "administrator";
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        outcome: "invite" | "grant";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                projectId?: string;
+                organizationId?: string;
+                userId?: string;
+                state?: "pending" | "accepted" | "revoked" | "expired";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    target: {
+                        /** @enum {string} */
+                        type: "project";
+                        /** Format: uuid */
+                        projectId: string;
+                        /** @enum {string} */
+                        role: "developer" | "project_manager" | "end_user";
+                    } | {
+                        /** @enum {string} */
+                        type: "organization";
+                        /** Format: uuid */
+                        organizationId: string;
+                    } | {
+                        /** @enum {string} */
+                        type: "administrator";
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The address has an active account: the access was granted directly. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        outcome: "invited";
+                        invitation: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        };
+                        /** Format: uri */
+                        link: string;
+                    } | {
+                        /** @enum {string} */
+                        outcome: "access_granted";
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                    };
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        outcome: "invited";
+                        invitation: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        };
+                        /** Format: uri */
+                        link: string;
+                    } | {
+                        /** @enum {string} */
+                        outcome: "access_granted";
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_resend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        invitation: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        };
+                        /** Format: uri */
+                        link: string;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InvitationsController_verifyToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        /** @enum {string} */
+                        kind: "team" | "end_user";
+                        /** @enum {string} */
+                        accountState: "invited" | "active";
+                        target: {
+                            /** @enum {string} */
+                            type: "project";
+                            project: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                name: string;
+                            };
+                            /** @enum {string} */
+                            role: "developer" | "project_manager" | "end_user";
+                            organization: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                        } | {
+                            /** @enum {string} */
+                            type: "organization";
+                            organization: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            /** @enum {string} */
+                            type: "administrator";
+                        };
+                        invitedBy: {
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    method: "password";
+                    token: string;
+                    firstName: string;
+                    lastName: string;
+                    password: string;
+                    /** @enum {string} */
+                    language: "en" | "pl";
+                    timeZone?: string;
+                } | {
+                    /** @enum {string} */
+                    method: "identity_provider";
+                    token: string;
+                    /** @enum {string} */
+                    language: "en" | "pl";
+                    timeZone?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "team" | "end_user";
+                        /** Format: starts_with */
+                        landingPath: string;
+                    };
+                };
             };
         };
     };
