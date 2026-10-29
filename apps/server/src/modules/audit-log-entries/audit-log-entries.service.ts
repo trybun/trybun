@@ -36,6 +36,11 @@ interface AuditDetailsByAction {
   'organization.archived': null;
   'organization.unarchived': null;
   'organization.deleted': null;
+  'invitation.revoked': null;
+  'user.deactivated': null;
+  'user.reactivated': null;
+  'user.admin_granted': null;
+  'user.admin_revoked': null;
 }
 
 export type AuditAction = keyof AuditDetailsByAction;

@@ -25,6 +25,7 @@ import {
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
+import { usersAbilities } from './modules/users/users.abilities.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 /** Root module of the API process (§14.6). */
@@ -45,7 +46,12 @@ export class ApiModule {
         // After the authentication guard: the rate limit is keyed by the principal (§14.4).
         RateLimitingModule,
         AuthorizationModule.forRoot({
-          rules: [administrationAbilities, projectsAbilities, organizationsAbilities],
+          rules: [
+            administrationAbilities,
+            projectsAbilities,
+            organizationsAbilities,
+            usersAbilities,
+          ],
           restrictions: [archivedProjectsRestriction, archivedOrganizationsRestriction],
         }),
         KeycloakAdminModule,
