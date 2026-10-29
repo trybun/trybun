@@ -118,10 +118,12 @@ export class InvitationAcceptanceService {
     clientIp: string | undefined,
   ): Promise<AcceptedInvitation> {
     const tokenHash = hashInvitationToken(input.token);
+    // Every acceptance goes through the verification, as in the authentication guard; without a
+    // JWT it fails as an invalid token. Only the acceptance with a session uses the claims.
+    const claims = await this.verifier.verify(accessToken ?? '');
     if (input.method === 'password') {
       return this.acceptWithPassword(input, tokenHash, clientIp);
     }
-    const claims = accessToken === undefined ? undefined : await this.verifier.verify(accessToken);
     if (claims === undefined) {
       throw new AppError('authentication.required');
     }
