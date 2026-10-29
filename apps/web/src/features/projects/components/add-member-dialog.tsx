@@ -160,7 +160,7 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
  * A search of the active team accounts that are not members – by name or GitHub login, never
  * e-mail – a choice of one of them and of the team role.
  */
-function AccountForm({
+export function AccountForm({
   projectId,
   isOpen,
   onDone,

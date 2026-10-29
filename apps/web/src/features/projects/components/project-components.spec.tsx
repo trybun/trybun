@@ -24,6 +24,8 @@ const { ProjectStateTabs } = await import('./project-state-tabs.js');
 const { NewProjectDialog } = await import('./new-project-dialog.js');
 const { ProjectOrganizations } = await import('./project-organizations.js');
 const { ProjectInvitations } = await import('./project-invitations.js');
+const { AccountForm } = await import('./add-member-dialog.js');
+const { Dialog } = await import('@trybun/ui/components/dialog');
 
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
 
@@ -387,5 +389,49 @@ describe('ProjectOrganizations', () => {
     });
 
     expect(html).toContain('No organization may access the project.');
+  });
+});
+
+describe('AccountForm of Add member', () => {
+  const candidates =
+    (items: { id: string; displayName: string | null; githubLogin: string | null }[]) =>
+    (client: QueryClient) =>
+      client.setQueryData(['projects', 'member-candidates', PROJECT_ID, ''], {
+        items,
+        nextCursor: null,
+      });
+
+  it('lists the active team accounts by name and GitHub login, never by address, with the role', () => {
+    const html = render(
+      <Dialog>
+        <AccountForm projectId={PROJECT_ID} isOpen onDone={() => {}} />
+      </Dialog>,
+      candidates([
+        {
+          id: '0199a3f0-0000-7000-8000-000000000012',
+          displayName: 'Jan Kowalski',
+          githubLogin: 'jkowalski',
+        },
+        { id: '0199a3f0-0000-7000-8000-000000000013', displayName: null, githubLogin: null },
+      ]),
+    );
+
+    expect(html).toContain('Jan Kowalski');
+    expect(html).toContain('@jkowalski');
+    expect(html).toContain(CATALOGUES.en.projects.members.noName);
+    expect(html).toContain(CATALOGUES.en.projects.members.search);
+    expect(html).toContain(CATALOGUES.en.projects.members.role);
+    expect(html).not.toContain('@example');
+  });
+
+  it('says when no team account can be added', () => {
+    expect(
+      render(
+        <Dialog>
+          <AccountForm projectId={PROJECT_ID} isOpen onDone={() => {}} />
+        </Dialog>,
+        candidates([]),
+      ),
+    ).toContain(CATALOGUES.en.projects.members.noCandidates);
   });
 });

@@ -3,7 +3,12 @@ import {
   acceptancePathOf,
   clearPendingAcceptance,
   invitationTokenOf,
+  keepsPendingAcceptance,
+  MAX_SECOND_FACTOR_SIGN_INS,
+  nextSecondFactorSignIn,
+  type PendingAcceptance,
   readPendingAcceptance,
+  verifyStepAfter,
   writePendingAcceptance,
 } from './acceptance-state.js';
 
@@ -63,4 +68,49 @@ describe('pending acceptance', () => {
       expect(readPendingAcceptance(storage)).toBeUndefined();
     },
   );
+});
+
+describe('the steps after a sign-in started from the link', () => {
+  const accepting: PendingAcceptance = {
+    step: 'accept',
+    token: 'token-of-the-link',
+    provider: 'github',
+    signIns: 0,
+  };
+
+  it('lands an end user at once and checks the second factor of a team member first', () => {
+    expect(verifyStepAfter(accepting, { kind: 'end_user', landingPath: '/' })).toBeUndefined();
+    expect(verifyStepAfter(accepting, { kind: 'team', landingPath: '/projects/p' })).toEqual({
+      step: 'verify',
+      landingPath: '/projects/p',
+      provider: 'github',
+      signIns: 0,
+    });
+  });
+
+  it.each([
+    [0, 1],
+    [MAX_SECOND_FACTOR_SIGN_INS - 1, MAX_SECOND_FACTOR_SIGN_INS],
+  ])('counts the sign-in for the second factor after %i of them', (signIns, next) => {
+    expect(nextSecondFactorSignIn({ ...accepting, signIns })).toEqual({
+      ...accepting,
+      signIns: next,
+    });
+  });
+
+  it('gives up after the last sign-in for the second factor', () => {
+    expect(
+      nextSecondFactorSignIn({ ...accepting, signIns: MAX_SECOND_FACTOR_SIGN_INS }),
+    ).toBeUndefined();
+  });
+
+  it.each([
+    ['authentication.second_factor_required', true],
+    ['invitation.account_mismatch', true],
+    ['invitation.token_invalid', false],
+    ['invitation.email_taken', false],
+    [undefined, false],
+  ])('keeps the pending step after %s: %s', (code, keeps) => {
+    expect(keepsPendingAcceptance(code)).toBe(keeps);
+  });
 });

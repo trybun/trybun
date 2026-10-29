@@ -25,7 +25,6 @@ import { useUpdateCurrentUser } from '../../users/mutations.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
 import { SETTINGS_HREF } from '../../users/search-params.js';
 
-/** Initials of a name for the avatar: the first letters of its first two words. */
 /**
  * Signs out through Auth.js, which is loaded only then: every byte the shell requests before its
  * first paint counts towards the simulated LCP of §2.9 (#72).
@@ -35,6 +34,7 @@ async function signOutOfSession(): Promise<void> {
   await signOut({ callbackUrl: '/' });
 }
 
+/** Initials of a name for the avatar: the first letters of its first two words. */
 export function initialsOf(name: string): string {
   return name
     .split(/\s+/)

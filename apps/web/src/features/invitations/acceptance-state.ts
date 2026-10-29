@@ -1,3 +1,4 @@
+import type { AcceptedInvitation } from '@trybun/contracts/invitations';
 import { z } from 'zod';
 import type { IdentityProvider } from '../sessions/keycloak-sign-in.js';
 
@@ -43,6 +44,42 @@ const pendingAcceptanceSchema = z.discriminatedUnion('step', [
   }),
 ]);
 export type PendingAcceptance = z.infer<typeof pendingAcceptanceSchema>;
+
+/**
+ * The step after an accepted invitation (ADR 0009): none for an end user, who lands at once; for a
+ * team member the check that the session has the second factor before the landing path opens.
+ */
+export function verifyStepAfter(
+  pending: PendingAcceptance,
+  accepted: AcceptedInvitation,
+): Extract<PendingAcceptance, { step: 'verify' }> | undefined {
+  return accepted.kind === 'end_user'
+    ? undefined
+    : {
+        step: 'verify',
+        landingPath: accepted.landingPath,
+        provider: pending.provider,
+        signIns: 0,
+      };
+}
+
+/** The step of the next sign-in for the second factor; `undefined` once the page gives up. */
+export function nextSecondFactorSignIn<Pending extends PendingAcceptance>(
+  pending: Pending,
+): Pending | undefined {
+  return pending.signIns >= MAX_SECOND_FACTOR_SIGN_INS
+    ? undefined
+    : { ...pending, signIns: pending.signIns + 1 };
+}
+
+/**
+ * Whether a failed acceptance keeps the pending step – and with it the token: the session lacks
+ * the second factor, so the page signs in again, or it is another account's, so the person signs
+ * out and the page shows the link again (§7.4). Any other failure ends the acceptance.
+ */
+export function keepsPendingAcceptance(code: string | undefined): boolean {
+  return code === 'authentication.second_factor_required' || code === 'invitation.account_mismatch';
+}
 
 const STORAGE_KEY = 'trybun.invitation';
 

@@ -15,8 +15,10 @@ import {
   acceptancePathOf,
   browserTimeZone,
   clearPendingAcceptance,
-  MAX_SECOND_FACTOR_SIGN_INS,
+  keepsPendingAcceptance,
+  nextSecondFactorSignIn,
   type PendingAcceptance,
+  verifyStepAfter,
   writePendingAcceptance,
 } from '../acceptance-state.js';
 import { useAcceptInvitation } from '../mutations.js';
@@ -47,13 +49,12 @@ export function ContinueAcceptance({
   );
 }
 
-/** Starts the next sign-in for the second factor, or `false` when the page gives up. */
-function signInForSecondFactor(pending: PendingAcceptance, language: Language): boolean {
-  if (pending.signIns >= MAX_SECOND_FACTOR_SIGN_INS) {
-    return false;
+/** Starts the next sign-in for the second factor, unless the page has given up. */
+function signInForSecondFactor(pending: PendingAcceptance, language: Language): void {
+  const next = nextSecondFactorSignIn(pending);
+  if (next !== undefined) {
+    void signInToContinue(next, { locale: language });
   }
-  void signInToContinue({ ...pending, signIns: pending.signIns + 1 }, { locale: language });
-  return true;
 }
 
 function AcceptWithSession({
@@ -83,27 +84,21 @@ function AcceptWithSession({
         timeZone: browserTimeZone(),
       },
       {
-        onSuccess: ({ kind, landingPath }) => {
-          if (kind === 'end_user') {
-            land(landingPath);
+        onSuccess: (accepted) => {
+          // A team member: the team actions need a session with the second factor.
+          const verify = verifyStepAfter(pending, accepted);
+          if (verify === undefined) {
+            land(accepted.landingPath);
             return;
           }
-          // A team member: the team actions need a session with the second factor.
-          const verify: PendingAcceptance = {
-            step: 'verify',
-            landingPath,
-            provider: pending.provider,
-            signIns: 0,
-          };
           writePendingAcceptance(window.sessionStorage, verify);
           window.location.reload();
         },
         onError: (error) => {
-          if (error instanceof ApiError && error.code === 'authentication.second_factor_required') {
+          const code = error instanceof ApiError ? error.code : undefined;
+          if (code === 'authentication.second_factor_required') {
             signInForSecondFactor(pending, language);
-            return;
-          }
-          if (!(error instanceof ApiError) || error.code !== 'invitation.account_mismatch') {
+          } else if (!keepsPendingAcceptance(code)) {
             clearPendingAcceptance(window.sessionStorage);
           }
         },
@@ -141,7 +136,7 @@ function AcceptWithSession({
     }
     if (
       code === 'authentication.second_factor_required' &&
-      pending.signIns < MAX_SECOND_FACTOR_SIGN_INS
+      nextSecondFactorSignIn(pending) !== undefined
     ) {
       return <Status text={t('secondFactor')} />;
     }
@@ -175,7 +170,7 @@ function VerifySecondFactor({
   const user = useQuery({ ...currentUserQueryOptions(browserApiClient), retry: false });
   const isSecondFactorMissing =
     user.error instanceof ApiError && user.error.code === 'authentication.second_factor_required';
-  const shouldSignIn = isSecondFactorMissing && pending.signIns < MAX_SECOND_FACTOR_SIGN_INS;
+  const shouldSignIn = isSecondFactorMissing && nextSecondFactorSignIn(pending) !== undefined;
 
   useEffect(() => {
     if (user.isSuccess) {

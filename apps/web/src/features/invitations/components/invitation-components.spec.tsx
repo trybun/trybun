@@ -242,4 +242,46 @@ describe('ContinueAcceptance', () => {
       ),
     ).toContain('Accepting the invitation…');
   });
+
+  it.each([
+    [0, 'Sign in once more with a one-time code'],
+    [3, 'The invitation could not be accepted'],
+  ])(
+    'signs in again for a missing second factor after %i sign-ins, then offers a sign-in',
+    (signIns, text) => {
+      const html = render(
+        <ContinueAcceptance
+          pending={{ step: 'verify', landingPath: '/', provider: 'github', signIns }}
+          language="en"
+        />,
+        {
+          seed: (client) => {
+            // The check failed already; the page acts on that answer instead of asking again.
+            client.setDefaultOptions({ queries: { retryOnMount: false } });
+            client
+              .getQueryCache()
+              .build(client, { queryKey: ['users', 'me'] })
+              .setState({
+                status: 'error',
+                error: new ApiError(401, 'authentication.second_factor_required'),
+                fetchStatus: 'idle',
+              });
+          },
+        },
+      );
+
+      expect(html).toContain(text);
+    },
+  );
+
+  it('checks the second factor of a bound team member before landing', () => {
+    expect(
+      render(
+        <ContinueAcceptance
+          pending={{ step: 'verify', landingPath: '/', provider: 'github', signIns: 1 }}
+          language="en"
+        />,
+      ),
+    ).toContain('Accepting the invitation…');
+  });
 });
