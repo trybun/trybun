@@ -29,6 +29,8 @@ export const CLIENT_NAMESPACES = {
   signIn: [...ROOT, 'signIn'],
   /** `app/setup/layout.tsx` */
   setup: [...ROOT, 'errors', 'languages', 'setup'],
+  /** `app/invitations/layout.tsx` */
+  invitations: [...ROOT, 'errors', 'invitations'],
   /** `app/(team)/layout.tsx`: the application shell, its menus and the product tours. */
   team: TEAM,
   /** `app/(team)/admin/layout.tsx` */
@@ -36,7 +38,7 @@ export const CLIENT_NAMESPACES = {
   /** `app/(team)/admin/organizations/layout.tsx` */
   organizations: [...TEAM, 'administration', 'errors', 'organizations'],
   /** `app/(team)/projects/layout.tsx` */
-  projects: [...TEAM, 'errors', 'projects'],
+  projects: [...TEAM, 'errors', 'invitations', 'projects'],
 } as const satisfies Record<string, readonly (keyof WebMessages)[]>;
 
 /** The route layouts that provide messages to client components. */

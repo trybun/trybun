@@ -47,6 +47,7 @@ const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   administration: ['administration'],
   'app-shell': ['team'],
   help: ['team'],
+  invitations: ['invitations', 'projects'],
   organizations: ['organizations'],
   'product-tours': ['team'],
   projects: ['projects'],
