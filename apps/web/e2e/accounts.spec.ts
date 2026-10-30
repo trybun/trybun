@@ -162,6 +162,9 @@ test.describe('accounts of the Administrator', () => {
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
     }
     await created.getByRole('button', { name: 'Done' }).click();
+    // axe only after the closing animation: mid-fade the form's texts fail color-contrast.
+    await expect(created).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Invite' })).toHaveCount(0);
 
     // The new account is invited, with its pending invitation.
     await accounts.find(email);
