@@ -76,7 +76,7 @@ export const CurrentItemInView: Story = {
   },
 };
 
-// A current item with more items after it stays clear of the fade that covers them.
+// A current item with more items after it stays clear of the edge that covers them.
 export const CurrentItemBesideTheFade: Story = {
   globals: viewport('phone'),
   render: () => <Bar current="Projects" />,
@@ -86,8 +86,37 @@ export const CurrentItemBesideTheFade: Story = {
     await waitFor(() =>
       expect(
         canvas.getByRole('link', { name: 'Projects' }).getBoundingClientRect().right,
-      ).toBeLessThanOrEqual(nav.getBoundingClientRect().right - 40 + 1),
+      ).toBeLessThanOrEqual(nav.getBoundingClientRect().right - 48 + 1),
     );
+  },
+};
+
+// The arrow of an edge scrolls by a page; it is a 44 px target that the keyboard and assistive
+// technology skip (Rule 9).
+export const ArrowScrolls: Story = {
+  globals: viewport('phone'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const nav = canvas.getByRole('navigation');
+    await waitFor(() => expect(fade(canvasElement, 'end')).not.toBeNull());
+    const arrow = fade(canvasElement, 'end')?.querySelector('button');
+    if (!arrow) {
+      throw new Error('The end edge has no arrow.');
+    }
+    await expect(arrow.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    await expect(arrow.getBoundingClientRect().width).toBeGreaterThanOrEqual(44);
+    await expect(arrow.tabIndex).toBe(-1);
+    await expect(canvas.queryByRole('button')).toBeNull();
+
+    await userEvent.click(arrow);
+    await waitFor(() => expect(nav.scrollLeft).toBeGreaterThan(0));
+    await waitFor(() => expect(fade(canvasElement, 'start')).not.toBeNull());
+
+    const back = fade(canvasElement, 'start')?.querySelector('button');
+    if (!back) {
+      throw new Error('The start edge has no arrow.');
+    }
+    await userEvent.click(back);
+    await waitFor(() => expect(nav.scrollLeft).toBe(0));
   },
 };
 

@@ -1,7 +1,9 @@
 'use client';
 
 import { cn } from 'cn';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { type ComponentProps, useEffect, useSyncExternalStore } from 'react';
+import { Button } from './button.js';
 
 /** Which sides of a horizontally scrolling element hide more of its content. */
 type Overflow = 'none' | 'start' | 'end' | 'both';
@@ -65,8 +67,8 @@ function useOverflow(element: HTMLElement | null): Overflow {
   );
 }
 
-/** The width of a fade (`w-10`): a current item scrolled into view keeps clear of it. */
-const FADE_WIDTH = 40;
+/** The width of an edge (`w-12`, a fade with its 44 px arrow): a current item keeps clear of it. */
+const FADE_WIDTH = 48;
 
 /** Scrolls only `element`, never the page, so that its current item is in view beside the fades. */
 function scrollToCurrent(element: HTMLElement) {
@@ -105,11 +107,53 @@ function useCurrentInView(element: HTMLElement | null) {
   }, [element]);
 }
 
+/** Scrolls `element` by about its width towards `side`, smoothly unless the user reduces motion. */
+function scrollPage(element: HTMLElement, side: 'start' | 'end') {
+  const distance = Math.max(element.clientWidth - 2 * FADE_WIDTH, FADE_WIDTH);
+  const isMotionReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  element.scrollBy({
+    left: side === 'start' ? -distance : distance,
+    behavior: isMotionReduced ? 'auto' : 'smooth',
+  });
+}
+
 /**
- * Wraps a bar that scrolls sideways on a narrow screen (a navigation, a tab list): a fade on a side
- * says that more items are there (Rule 9), and the current item (`aria-current` or the selected
- * tab) is scrolled into view. The fades replace the scroll bar of the bar, which is hidden: a
- * browser that shows it until the first scroll would cover the mark of the current item.
+ * The edge of a side that hides more items: a fade with an arrow that scrolls by a page. Assistive
+ * technology and the keyboard skip it – they move between the items, and the current one scrolls
+ * into view.
+ */
+function OverflowEdge({ side, scroller }: { side: 'start' | 'end'; scroller: HTMLElement }) {
+  const Icon = side === 'start' ? ChevronLeftIcon : ChevronRightIcon;
+  return (
+    <div
+      aria-hidden
+      data-slot={`overflow-${side}`}
+      className={cn(
+        'pointer-events-none absolute inset-y-0 flex w-12 items-center from-background from-50% to-transparent',
+        side === 'start'
+          ? 'left-0 justify-start bg-linear-to-r'
+          : 'right-0 justify-end bg-linear-to-l',
+      )}
+    >
+      <Button
+        variant="ghost"
+        size="icon"
+        tabIndex={-1}
+        className="pointer-events-auto text-muted-foreground"
+        onClick={() => scrollPage(scroller, side)}
+      >
+        <Icon />
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Wraps a bar that scrolls sideways on a narrow screen (a navigation, a tab list): a fade with an
+ * arrow on a side says that more items are there and scrolls to them (Rule 9) – the arrow shows it
+ * also when the edge falls between two items – and the current item (`aria-current` or the
+ * selected tab) is scrolled into view. The edges replace the scroll bar of the bar, which is
+ * hidden: a browser that shows it until the first scroll would cover the mark of the current item.
  * `scroller` is the scrolling element among the children, passed from its callback ref; it is
  * positioned by this wrapper, so its items measure from the same parent.
  */
@@ -129,19 +173,11 @@ function ScrollFade({
       {...props}
     >
       {children}
-      {(overflow === 'start' || overflow === 'both') && (
-        <span
-          aria-hidden
-          data-slot="overflow-start"
-          className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-linear-to-r from-background to-transparent"
-        />
+      {scroller !== null && (overflow === 'start' || overflow === 'both') && (
+        <OverflowEdge side="start" scroller={scroller} />
       )}
-      {(overflow === 'end' || overflow === 'both') && (
-        <span
-          aria-hidden
-          data-slot="overflow-end"
-          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-background to-transparent"
-        />
+      {scroller !== null && (overflow === 'end' || overflow === 'both') && (
+        <OverflowEdge side="end" scroller={scroller} />
       )}
     </div>
   );
