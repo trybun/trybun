@@ -27,7 +27,8 @@ export function AdministrationNavigation() {
   return (
     <ScrollFade scroller={nav} className="-mx-4">
       <nav ref={setNav} aria-label={t('sections')} className="overflow-x-auto px-4">
-        <ul className="flex gap-1 border-b border-border">
+        {/* As wide as its sections, so the border runs under all of them while the bar scrolls. */}
+        <ul className="flex w-max min-w-full gap-1 border-b border-border">
           {SECTIONS.map(({ href, labelKey }) => {
             // A section stays marked on its nested pages, e.g. an organization.
             const isCurrentPage = pathname === href;
