@@ -6,15 +6,19 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { getWebMessages } from '../i18n/messages.js';
 import { ApiError } from './api-error.js';
-import { useErrorMessage } from './error-message.js';
+import { type FieldMessages, useErrorMessage } from './error-message.js';
 
-function ErrorMessage({ error }: { error: unknown }) {
+function ErrorMessage({ error, fieldMessages }: { error: unknown; fieldMessages?: FieldMessages }) {
   const errorMessage = useErrorMessage();
-  return <p role="alert">{errorMessage(error)}</p>;
+  return <p role="alert">{errorMessage(error, fieldMessages)}</p>;
 }
 
 /** The message shown for an error in a language; a missing message fails the render. */
-function messageOf(error: unknown, locale: keyof typeof CATALOGUES = 'en'): string {
+function messageOf(
+  error: unknown,
+  locale: keyof typeof CATALOGUES = 'en',
+  fieldMessages?: FieldMessages,
+): string {
   const html = renderToStaticMarkup(
     <NextIntlClientProvider
       locale={locale}
@@ -24,7 +28,7 @@ function messageOf(error: unknown, locale: keyof typeof CATALOGUES = 'en'): stri
         throw intlError;
       }}
     >
-      <ErrorMessage error={error} />
+      <ErrorMessage error={error} fieldMessages={fieldMessages} />
     </NextIntlClientProvider>,
   );
   return html.replace(/^<p role="alert">|<\/p>$/g, '');
@@ -44,6 +48,18 @@ describe('useErrorMessage', () => {
 
   it('translates a field error code', () => {
     expect(messageOf('string.too_long')).toBe('Too long');
+  });
+
+  // A required field names itself (§18.5); other codes keep their common message.
+  it('shows the message of a field for its codes', () => {
+    const fieldMessages = { 'string.empty': 'Enter your first name' };
+
+    expect(messageOf('string.empty', 'en', fieldMessages)).toBe('Enter your first name');
+    expect(messageOf('string.too_long', 'en', fieldMessages)).toBe('Too long');
+    expect(messageOf('string.empty')).toBe('Required');
+    expect(messageOf('teapot.brewing', 'en', fieldMessages)).toBe(
+      'Something went wrong. Try again later.',
+    );
   });
 
   it.each([

@@ -127,6 +127,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 | Code | Schema rule |
 |---|---|
 | `string.too_long` / `string.too_short` | Maximum / minimum length of a string |
+| `string.empty` | An empty required string – a minimum length of 1 (`min(1)`, after trimming) |
 | `string.invalid_format` | Format of a string (e-mail, URL, UUID, pattern, …) |
 | `array.too_long` / `array.too_short` | Maximum / minimum number of items |
 | `number.too_large` / `number.too_small` | Maximum / minimum of a number |

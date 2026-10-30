@@ -97,6 +97,7 @@
       "title": "Nowy projekt",
       "description": "Nazwij projekt; jego klucz poprzedza identyfikatory zgłoszeń.",
       "name": "Nazwa",
+      "nameRequired": "Podaj nazwę projektu",
       "key": "Klucz",
       "keyDescription": "Od 2 do 10 wielkich liter lub cyfr, zaczynając od litery, np. ERP.",
       "submit": "Utwórz projekt",
@@ -197,6 +198,7 @@
       "title": "Nowa organizacja",
       "description": "Podaj nazwę firmy klienta. Użytkownicy końcowi zaproszeni z adresem w jej domenach e-mail dołączą do niej.",
       "name": "Nazwa",
+      "nameRequired": "Podaj nazwę organizacji",
       "domains": "Domeny e-mail (opcjonalnie)",
       "domainsDescription": "Kilka domen oddziel przecinkami, np. firma.com, firma.pl.",
       "submit": "Utwórz organizację",
@@ -211,6 +213,7 @@
     "general": {
       "title": "Ogólne",
       "name": "Nazwa",
+      "nameRequired": "Podaj nazwę organizacji",
       "save": "Zapisz",
       "saving": "Zapisywanie…",
       "saved": "Zmiany zapisane"
@@ -221,6 +224,7 @@
       "empty": "Brak domen e-mail.",
       "add": "Dodaj domenę",
       "domain": "Domena",
+      "domainRequired": "Podaj domenę",
       "adding": "Dodawanie…",
       "remove": "Usuń",
       "removeOf": "Usuń: {domain}",
@@ -481,6 +485,8 @@
     "signIn": "Zaloguj się",
     "firstName": "Imię",
     "lastName": "Nazwisko",
+    "firstNameRequired": "Podaj imię",
+    "lastNameRequired": "Podaj nazwisko",
     "email": "Adres e-mail",
     "password": "Hasło",
     "passwordDescription": "Co najmniej {min} znaków. Frazę z kilku słów łatwo zapamiętać. Logujesz się tym hasłem i jednorazowym kodem z aplikacji uwierzytelniającej.",
@@ -634,6 +640,7 @@
     "string": {
       "too_long": "Za długie",
       "too_short": "Za krótkie",
+      "empty": "Pole wymagane",
       "invalid_format": "Nieprawidłowy format"
     },
     "array": {

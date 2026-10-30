@@ -108,7 +108,11 @@ export function NewProjectDialog() {
                   />
                   <FieldError
                     errors={[
-                      fieldState.error && { message: errorMessage(fieldState.error.message) },
+                      fieldState.error && {
+                        message: errorMessage(fieldState.error.message, {
+                          'string.empty': t('nameRequired'),
+                        }),
+                      },
                     ]}
                   />
                 </Field>

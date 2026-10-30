@@ -88,7 +88,13 @@ export function ProjectGeneralForm({ project }: { project: Project }) {
               <FieldLabel>{t('create.name')}</FieldLabel>
               <Input {...field} readOnly={!canUpdate} autoComplete="off" />
               <FieldError
-                errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
+                errors={[
+                  fieldState.error && {
+                    message: errorMessage(fieldState.error.message, {
+                      'string.empty': t('create.nameRequired'),
+                    }),
+                  },
+                ]}
               />
             </Field>
           )}

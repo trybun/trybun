@@ -62,7 +62,13 @@ export function OrganizationGeneralForm({ organization }: { organization: Organi
             <FieldLabel>{t('name')}</FieldLabel>
             <Input {...field} readOnly={!canUpdate} autoComplete="organization" />
             <FieldError
-              errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
+              errors={[
+                fieldState.error && {
+                  message: errorMessage(fieldState.error.message, {
+                    'string.empty': t('nameRequired'),
+                  }),
+                },
+              ]}
             />
           </Field>
         )}

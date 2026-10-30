@@ -122,7 +122,13 @@ export function OrganizationDomains({ organization }: { organization: Organizati
                   inputMode="url"
                 />
                 <FieldError
-                  errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
+                  errors={[
+                    fieldState.error && {
+                      message: errorMessage(fieldState.error.message, {
+                        'string.empty': t('domainRequired'),
+                      }),
+                    },
+                  ]}
                 />
               </Field>
             )}

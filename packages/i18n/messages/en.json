@@ -97,6 +97,7 @@
       "title": "New project",
       "description": "Name the project; its key prefixes the identifiers of its tickets.",
       "name": "Name",
+      "nameRequired": "Enter the name of the project",
       "key": "Key",
       "keyDescription": "2–10 capital letters or digits, starting with a letter, e.g. ERP.",
       "submit": "Create project",
@@ -197,6 +198,7 @@
       "title": "New organization",
       "description": "Name the customer company. End users invited with an address of its e-mail domains join it.",
       "name": "Name",
+      "nameRequired": "Enter the name of the organization",
       "domains": "E-mail domains (optional)",
       "domainsDescription": "Separate several domains with commas, e.g. company.com, company.pl.",
       "submit": "Create organization",
@@ -211,6 +213,7 @@
     "general": {
       "title": "General",
       "name": "Name",
+      "nameRequired": "Enter the name of the organization",
       "save": "Save",
       "saving": "Saving…",
       "saved": "Changes saved"
@@ -221,6 +224,7 @@
       "empty": "No e-mail domains.",
       "add": "Add domain",
       "domain": "Domain",
+      "domainRequired": "Enter a domain",
       "adding": "Adding…",
       "remove": "Remove",
       "removeOf": "Remove {domain}",
@@ -481,6 +485,8 @@
     "signIn": "Sign in",
     "firstName": "First name",
     "lastName": "Last name",
+    "firstNameRequired": "Enter your first name",
+    "lastNameRequired": "Enter your last name",
     "email": "E-mail address",
     "password": "Password",
     "passwordDescription": "At least {min} characters. A phrase of several words is easy to remember. You sign in with this password and a one-time code from an authenticator app.",
@@ -634,6 +640,7 @@
     "string": {
       "too_long": "Too long",
       "too_short": "Too short",
+      "empty": "Required",
       "invalid_format": "Invalid format"
     },
     "array": {
