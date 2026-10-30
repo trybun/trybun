@@ -12,10 +12,12 @@ import { PendingInvitationList } from './pending-invitation-list.js';
 
 /**
  * The pending invitations of an account on the Accounts page (§7.4): target, inviting person and
- * expiry, with **Copy new link** and **Revoke** where allowed. An `invited` account without one –
- * reactivated, or all its invitations expired or revoked – has no working link, so **Invite** is
- * offered for its address right away. Deactivated accounts have none: deactivating revokes them.
- * Nothing is rendered – not even `wrap` – while there is nothing to show.
+ * expiry, with **Copy new link** and **Revoke** where allowed. They are fetched only for an account
+ * whose `pendingInvitationCount` says it has some, so the page does not ask for every row. An
+ * `invited` account without one – reactivated, or all its invitations expired or revoked – has no
+ * working link, so **Invite** is offered for its address right away. Deactivated accounts have
+ * none: deactivating revokes them. Nothing is rendered – not even `wrap` – while there is nothing
+ * to show.
  */
 export function AccountInvitations({
   user,
@@ -27,9 +29,10 @@ export function AccountInvitations({
 }) {
   const t = useTranslations('invitations');
   const isInvitable = user.state === 'invited' || user.state === 'active';
+  const hasInvitations = isInvitable && user.pendingInvitationCount > 0;
   const invitations = useInfiniteQuery({
     ...userInvitationsQueryOptions(browserApiClient, user.id),
-    enabled: isInvitable,
+    enabled: hasInvitations,
   });
   const items = invitations.data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -40,7 +43,7 @@ export function AccountInvitations({
         ? t('targets.organization', { name: target.organization.name })
         : t('targets.administrator');
 
-  if (!isInvitable || !invitations.isSuccess) {
+  if (!isInvitable || (hasInvitations && !invitations.isSuccess)) {
     return null;
   }
   if (items.length > 0) {

@@ -514,6 +514,7 @@ export interface operations {
                             githubLogin: string | null;
                             /** Format: date-time */
                             createdAt: string;
+                            pendingInvitationCount: number;
                             allowedActions: ("deactivate" | "reactivate" | "grant_admin" | "revoke_admin")[];
                         }[];
                         nextCursor: string | null;

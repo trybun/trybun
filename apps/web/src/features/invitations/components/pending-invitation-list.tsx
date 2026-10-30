@@ -80,13 +80,12 @@ export function PendingInvitationList({
       });
       return;
     }
-    revoke.mutate(invitation.id, {
-      onSuccess: () => {
-        setPending(null);
-        toast.add({ title: t('revoked'), type: 'success' });
-      },
-      onError: showError,
-    });
+    // Not the callbacks of `mutate`: revoking the last invitation of an account removes this list
+    // (`pendingInvitationCount` becomes 0), and they never run for an unmounted component.
+    revoke.mutateAsync(invitation.id).then(() => {
+      setPending(null);
+      toast.add({ title: t('revoked'), type: 'success' });
+    }, showError);
   };
 
   return (

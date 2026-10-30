@@ -44,6 +44,7 @@ function account(overrides: Partial<User> = {}): User {
     isAdmin: false,
     githubLogin: 'anowak',
     createdAt: '2026-10-29T09:00:00.000Z',
+    pendingInvitationCount: 0,
     allowedActions: ['deactivate', 'grant_admin'],
     ...overrides,
   };

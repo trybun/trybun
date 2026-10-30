@@ -25,6 +25,7 @@ import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
 import { administrationAbilities } from '../administration/administration.abilities.js';
+import { invitationsAbilities } from '../invitations/invitations.abilities.js';
 import { organizationsAbilities } from '../organizations/organizations.abilities.js';
 import { projectsAbilities } from '../projects/projects.abilities.js';
 import { usersAbilities } from './users.abilities.js';
@@ -50,6 +51,7 @@ describe('users endpoints', () => {
             administrationAbilities,
             projectsAbilities,
             organizationsAbilities,
+            invitationsAbilities,
             usersAbilities,
           ],
           restrictions: [],
@@ -365,6 +367,7 @@ describe('users endpoints', () => {
         isAdmin: false,
         githubLogin: null,
         createdAt: anna.createdAt.toISOString(),
+        pendingInvitationCount: 0,
         allowedActions: ['deactivate', 'grant_admin'],
       });
       expect(pageOf(all).items[1]?.allowedActions).toEqual(['reactivate']);
@@ -374,6 +377,34 @@ describe('users endpoints', () => {
       expect(idsOf(deactivated)).toEqual([gone.id]);
       expect(idsOf(byAddress)).toEqual([invited.id]);
       expect(admin.isAdmin).toBe(true);
+    });
+
+    it('counts the pending invitations of each account, not the used, revoked or expired ones', async () => {
+      const { user: admin, authorization } = await signInAsAdministrator();
+      const tag = randomUUID().slice(0, 8);
+      const invited = await createUser(prisma, {
+        displayName: `Invited ${tag}`,
+        kind: 'team',
+        state: 'invited',
+      });
+      const active = await createUser(prisma, { displayName: `Active ${tag}` });
+      const invitedBy = { invitedById: admin.id };
+      await createInvitation(prisma, { userId: invited.id, ...invitedBy });
+      await createInvitation(prisma, { userId: invited.id, ...invitedBy });
+      await createInvitation(prisma, { userId: invited.id, ...invitedBy, usedAt: new Date() });
+      await createInvitation(prisma, { userId: active.id, ...invitedBy, revokedAt: new Date() });
+      await createInvitation(prisma, {
+        userId: active.id,
+        ...invitedBy,
+        expiresAt: new Date(Date.now() - 1000),
+      });
+
+      const res = await list(authorization, { query: tag });
+
+      expect(pageOf(res).items.map((user) => [user.id, user.pendingInvitationCount])).toEqual([
+        [active.id, 0],
+        [invited.id, 2],
+      ]);
     });
 
     it('pages with a cursor', async () => {

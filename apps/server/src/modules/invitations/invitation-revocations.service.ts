@@ -8,6 +8,11 @@ import { INVITATION } from './invitations.abilities.js';
 /** Why the system revokes pending invitations as an effect of another change (§7.3, §7.4). */
 export type RevocationCause = 'project_archived' | 'organization_archived' | 'user_deactivated';
 
+/** The invitations that are pending at `now` (§7.4): neither accepted nor revoked, not expired. */
+export function pendingInvitationWhere(now: Date): Prisma.InvitationWhereInput {
+  return { usedAt: null, revokedAt: null, expiresAt: { gt: now } };
+}
+
 /**
  * Revokes pending invitations as an effect of a change of another module, in that module's
  * transaction (§7.3, §7.4): archiving a project or an organization, deactivating an account. A
@@ -50,7 +55,7 @@ export class InvitationRevocationsService {
     reason: RevocationCause,
   ): Promise<void> {
     const now = this.clock.now();
-    const pending = { ...where, usedAt: null, revokedAt: null, expiresAt: { gt: now } };
+    const pending = { ...where, ...pendingInvitationWhere(now) };
     const invitations = await tx.invitation.findMany({
       where: pending,
       select: { id: true, userId: true },

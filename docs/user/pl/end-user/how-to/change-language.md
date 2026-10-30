@@ -17,4 +17,4 @@ Strona, na której jesteś, pojawi się ponownie w wybranym języku. Trybun zapi
 2. W polu **Strefa czasowa** wyszukaj swoją strefę czasową i wybierz ją albo wybierz **Użyj strefy czasowej tego urządzenia**.
 3. Wybierz **Zapisz**.
 
-Daty i godziny są pokazywane w tej strefie czasowej na każdym urządzeniu. Dopóki jej nie wybierzesz, Trybun używa domyślnej strefy czasowej systemu. Na tej stronie możesz też zmienić język.
+Daty i godziny są pokazywane w tej strefie czasowej na każdym urządzeniu. Dopóki jej nie wybierzesz, Trybun używa domyślnej strefy czasowej systemu; aby do niej wrócić, wyczyść pole **Strefa czasowa** i wybierz **Zapisz**. Na tej stronie możesz też zmienić język.
