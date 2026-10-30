@@ -246,6 +246,7 @@ No global client state library is used.
 - **Texts**: content comes through props and children; texts owned by a component (e.g. the screen-reader label of a close button) come from the `ui` namespace of `@trybun/i18n` through `next-intl`.
 - **Touch targets**: interactive elements are 44 px on phones and tablets; the compact sizes of shadcn/ui apply only on desktop with a precise pointer (`xl:pointer-fine:h-8`). Form fields use 16 px text below that (Rule 9).
 - **Overlays on phones**: `Dialog` is a bottom sheet below the tablet breakpoint (`md`) and a centered dialog from it on; `Drawer` is a bottom sheet with a swipe handle that closes with a swipe down. Elements at the bottom edge keep the safe area with `pb-safe-offset-*` (Rule 9).
+- **Bars that scroll sideways**: a navigation bar or tab list that scrolls horizontally on a narrow screen is wrapped in `ScrollFade` (`TabsList` already is): a fade marks the side that hides more items, and the current item (`aria-current`, the selected tab) is scrolled into view without scrolling the page (Rule 9).
 - **Stories**: every component has stories for all states and the three viewports `Phone`, `Tablet` and `Desktop` (`viewport()` of `.storybook/viewports.ts`), with `play` functions for its interactions and Rule 9 checks (target sizes, bottom sheet). Stories use content in English; the texts owned by a component come from the catalogues, also in Polish (Rules 6 and 9).
 
 ## 18.7 Tests

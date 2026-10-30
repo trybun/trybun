@@ -2,6 +2,8 @@
 
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cn } from 'cn';
+import { useState } from 'react';
+import { ScrollFade } from './scroll-fade.js';
 
 function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   return (
@@ -13,17 +15,29 @@ function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   );
 }
 
-// The list scrolls horizontally on narrow screens instead of wrapping.
-function TabsList({ className, ...props }: TabsPrimitive.List.Props) {
+// The list scrolls horizontally on narrow screens instead of wrapping; a fade shows the side that
+// hides more tabs, and the selected tab is scrolled into view (Rule 9).
+function TabsList({ className, ref, ...props }: TabsPrimitive.List.Props) {
+  const [list, setList] = useState<HTMLDivElement | null>(null);
   return (
-    <TabsPrimitive.List
-      data-slot="tabs-list"
-      className={cn(
-        'flex w-full items-center justify-start overflow-x-auto border-b border-border',
-        className,
-      )}
-      {...props}
-    />
+    <ScrollFade scroller={list}>
+      <TabsPrimitive.List
+        ref={(element: HTMLDivElement | null) => {
+          setList(element);
+          if (typeof ref === 'function') {
+            ref(element);
+          } else if (ref) {
+            ref.current = element;
+          }
+        }}
+        data-slot="tabs-list"
+        className={cn(
+          'flex w-full items-center justify-start overflow-x-auto border-b border-border',
+          className,
+        )}
+        {...props}
+      />
+    </ScrollFade>
   );
 }
 
