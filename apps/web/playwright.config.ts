@@ -56,7 +56,6 @@ export default defineConfig({
       name: 'lighthouse',
       testMatch: /lighthouse\.spec\.ts$/,
       dependencies: ['setup', 'phone', 'tablet', 'desktop'],
-      fullyParallel: false,
       workers: 1,
     },
   ],
