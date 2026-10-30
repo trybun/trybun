@@ -31,8 +31,8 @@ const KEY_PAGES = [
 
 /**
  * Lighthouse runs per key page. Each value of the budget applies to its median over the runs: the
- * simulated LCP of the same build lands on steps ~200 ms apart, depending on which scripts the
- * runner evaluates before the first paint (#163).
+ * simulated LCP of the same build lands on steps up to ~650 ms apart, depending on which scripts
+ * the runner evaluates before the first paint (#163).
  */
 const RUNS = 3;
 
