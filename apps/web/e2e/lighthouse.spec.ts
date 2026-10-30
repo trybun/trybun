@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type BrowserContextOptions, chromium, expect, test } from '@playwright/test';
-import lighthouse from 'lighthouse';
+import lighthouse, { type Result } from 'lighthouse';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 
 /** The performance budget of the key pages, mobile profile of Lighthouse (§2.9). */
@@ -29,12 +29,24 @@ const KEY_PAGES = [
   },
 ];
 
+/**
+ * Lighthouse runs per key page. Each value of the budget applies to its median over the runs: the
+ * simulated LCP of the same build lands on steps up to ~650 ms apart, depending on which scripts
+ * the runner evaluates before the first paint (#163).
+ */
+const RUNS = 3;
+
+/** The middle value of an odd number of runs. */
+function median(values: readonly number[]): number {
+  return [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? Number.NaN;
+}
+
 type StorageState = Exclude<BrowserContextOptions['storageState'], string | undefined>;
 
 for (const keyPage of KEY_PAGES) {
   test(`${keyPage.name} meets the mobile budget`, async ({ baseURL }, testInfo) => {
-    // Lighthouse runs and throttles the page several times.
-    test.setTimeout(120_000);
+    // Lighthouse loads and throttles the page several times in each of its runs.
+    test.setTimeout(RUNS * 120_000);
     // Lighthouse drives a Chromium of Playwright over the DevTools protocol, in its default
     // context, which therefore carries the session cookie.
     const port = 9_222 + testInfo.workerIndex;
@@ -48,24 +60,30 @@ for (const keyPage of KEY_PAGES) {
         await browser.addCookies(state.cookies);
       }
 
-      const result = await lighthouse(`${baseURL ?? ''}${keyPage.path}`, {
-        port,
-        output: 'json',
-        logLevel: 'error',
-        onlyCategories: ['performance', 'accessibility'],
-        blockedUrlPatterns: keyPage.blockedUrlPatterns,
-      });
+      const runs: Result[] = [];
+      for (let run = 1; run <= RUNS; run++) {
+        const result = await lighthouse(`${baseURL ?? ''}${keyPage.path}`, {
+          port,
+          output: 'json',
+          logLevel: 'error',
+          onlyCategories: ['performance', 'accessibility'],
+          blockedUrlPatterns: keyPage.blockedUrlPatterns,
+        });
+        expect(result).toBeDefined();
+        if (result === undefined) continue;
+        runs.push(result.lhr);
+        await testInfo.attach(`lighthouse-report-${String(run)}.json`, {
+          body: typeof result.report === 'string' ? result.report : '',
+          contentType: 'application/json',
+        });
+        // Measured on the key page itself, not on a page it redirects to.
+        expect(result.lhr.finalDisplayedUrl).toBe(`${baseURL ?? ''}${keyPage.path}`);
+      }
 
-      expect(result).toBeDefined();
-      const { categories, audits, finalDisplayedUrl } = result?.lhr ?? {};
-      await testInfo.attach('lighthouse-report.json', {
-        body: typeof result?.report === 'string' ? result.report : '',
-        contentType: 'application/json',
-      });
-      // Measured on the key page itself, not on a page it redirects to.
-      expect(finalDisplayedUrl).toBe(`${baseURL ?? ''}${keyPage.path}`);
-      const score = (category: string) => categories?.[category]?.score ?? 0;
-      const metric = (audit: string) => audits?.[audit]?.numericValue ?? Number.POSITIVE_INFINITY;
+      const score = (category: string) =>
+        median(runs.map(({ categories }) => categories[category]?.score ?? 0));
+      const metric = (audit: string) =>
+        median(runs.map(({ audits }) => audits[audit]?.numericValue ?? Number.POSITIVE_INFINITY));
       expect.soft(score('performance'), 'Performance').toBeGreaterThanOrEqual(BUDGET.performance);
       expect
         .soft(score('accessibility'), 'Accessibility')
