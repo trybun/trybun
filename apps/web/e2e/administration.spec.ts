@@ -12,14 +12,17 @@ test.describe('Administrator panel', () => {
     await panel.goto();
 
     await expect(panel.heading).toHaveText('Administration');
-    await expect(panel.checklistItems).toHaveCount(5);
+    await expect(panel.checklistItems).toHaveCount(6);
     await expect(panel.checklistItems.first()).toContainText('Create a project');
     await expect(panel.checklistItems.nth(1)).toContainText('Configure GitHub sign-in');
-    // The demo dataset has an organization, so the optional item is done.
-    await expect(panel.checklistItems.nth(2)).toContainText('Create an organization');
+    // The demo dataset has team accounts besides the Administrator, so the team is invited.
+    await expect(panel.checklistItems.nth(2)).toContainText('Invite the team');
     await expect(panel.checklistItems.nth(2)).toContainText('Done');
-    await expect(panel.checklistItems.nth(4)).toContainText('Configure backup storage');
-    await panel.checklistItems.nth(4).getByRole('link', { name: 'How to do it' }).click();
+    // The demo dataset has an organization, so the optional item is done.
+    await expect(panel.checklistItems.nth(3)).toContainText('Create an organization');
+    await expect(panel.checklistItems.nth(3)).toContainText('Done');
+    await expect(panel.checklistItems.nth(5)).toContainText('Configure backup storage');
+    await panel.checklistItems.nth(5).getByRole('link', { name: 'How to do it' }).click();
     await expect(page).toHaveURL('/help/administrator/how-to/configure-backup-storage');
   });
 

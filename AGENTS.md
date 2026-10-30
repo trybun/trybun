@@ -90,7 +90,7 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 |---|---|
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload |
-| `pnpm test` | Unit tests and the story tests of `@trybun/ui` (Vitest; Chromium: `pnpm --filter @trybun/ui exec playwright install chromium`) |
+| `pnpm test` | Unit tests, the component tests of `web` (jsdom) and the story tests of `@trybun/ui` (Vitest; Chromium: `pnpm --filter @trybun/ui exec playwright install chromium`) |
 | `pnpm test:integration` | Integration tests (Vitest + Testcontainers; needs Docker) |
 | `pnpm test:coverage` | Unit, component and integration tests with the coverage thresholds of CI (needs Docker) |
 | `pnpm storybook` | Component catalogue of `@trybun/ui` on port 6006 |

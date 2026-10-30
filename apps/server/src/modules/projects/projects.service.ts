@@ -13,6 +13,7 @@ import {
   type ProjectAccount,
   type ProjectAction,
   projectActionSchema,
+  type ProjectMemberRole,
   type ProjectMember,
   type ProjectMemberPage,
   type ProjectPage,
@@ -34,6 +35,7 @@ import { PrismaService, type Transaction } from '../../platform/database/prisma.
 import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
+import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
 import { CREATE, PROJECT } from './projects.abilities.js';
 import { lockProjectForShare } from './projects.sql.js';
 
@@ -135,6 +137,7 @@ export class ProjectsService {
     private readonly prisma: PrismaService,
     private readonly abilities: AbilityFactory,
     private readonly auditLog: AuditLogEntriesService,
+    private readonly invitationRevocations: InvitationRevocationsService,
   ) {}
 
   /** The projects in one state the principal can see, sorted by name. */
@@ -221,7 +224,10 @@ export class ProjectsService {
     );
   }
 
-  /** Archives a project: read-only for everyone until it is unarchived (§7.3). */
+  /**
+   * Archives a project: read-only for everyone until it is unarchived (§7.3); its pending
+   * invitations are revoked.
+   */
   async archive(principal: UserPrincipal, target: VersionedTarget): Promise<Project> {
     const ability = this.abilities.forPrincipal(principal);
     return this.prisma.$transaction(async (tx) => {
@@ -234,6 +240,7 @@ export class ProjectsService {
         actorId: principal.userId,
         target: { type: PROJECT, id: target.id },
       });
+      await this.invitationRevocations.revokeForProject(tx, target.id);
       return toProjectResponse(await this.findVisible(tx, ability, principal, target.id), ability);
     });
   }
@@ -404,6 +411,10 @@ export class ProjectsService {
     return this.prisma.$transaction(async (tx) => {
       await this.lockForMembership(tx, ability, principal, projectId);
       const member = await this.findMember(tx, projectId, userId);
+      // An end user's personal access has no team role (§7.3, §7.4).
+      if (member.role === 'end_user') {
+        throw new AppError('project_member.user_not_eligible');
+      }
       if (member.role === input.role) {
         return toMemberResponse(member);
       }
@@ -439,6 +450,41 @@ export class ProjectsService {
         details: { userId, role: member.role },
       });
     });
+  }
+
+  /**
+   * Locks a project in share mode for the rest of a transaction of another module whose change
+   * depends on the project's state (invitations, S1-03): a concurrent archive waits for it, or it
+   * waits for the archive and reads the archived state (§7.3). Returns whether it exists.
+   */
+  lockForShare(tx: Transaction, projectId: string): Promise<boolean> {
+    return lockProjectForShare(tx, projectId);
+  }
+
+  /**
+   * Gives an account a role in a project as an effect of an invitation (§7.4): a direct grant to
+   * an active account or the acceptance of an invitation, already authorized by the caller, which
+   * holds the share lock of the project. Returns `false` – without a change or an audit entry –
+   * when the account is a member already.
+   */
+  async addMembership(
+    tx: Transaction,
+    actorId: string | null,
+    projectId: string,
+    userId: string,
+    role: ProjectMemberRole,
+  ): Promise<boolean> {
+    if ((await tx.projectMember.count({ where: { projectId, userId } })) > 0) {
+      return false;
+    }
+    await tx.projectMember.create({ data: { projectId, userId, role }, select: { userId: true } });
+    await this.auditLog.record(tx, {
+      action: 'project_member.added',
+      actorId,
+      target: { type: PROJECT, id: projectId },
+      details: { userId, role },
+    });
+    return true;
   }
 
   /**

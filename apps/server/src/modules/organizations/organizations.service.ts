@@ -34,6 +34,7 @@ import {
   AuditLogEntriesService,
   type AuditLogEntryInput,
 } from '../audit-log-entries/audit-log-entries.service.js';
+import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
 import { domainFieldErrors, emailDomain, parseDomains } from './domain/email-domains.js';
 import { CREATE, ORGANIZATION } from './organizations.abilities.js';
 import {
@@ -168,6 +169,7 @@ export class OrganizationsService {
     private readonly prisma: PrismaService,
     private readonly abilities: AbilityFactory,
     private readonly auditLog: AuditLogEntriesService,
+    private readonly invitationRevocations: InvitationRevocationsService,
   ) {}
 
   /** The organizations in one state, sorted by name; `projectId` keeps those with its access. */
@@ -280,7 +282,7 @@ export class OrganizationsService {
 
   /**
    * Archives an organization: read-only until it is unarchived; its domains stay reserved and do
-   * not match (§7.3). Revoking its pending invitations arrives with S1-03.
+   * not match, and its pending invitations are revoked (§7.3).
    */
   async archive(principal: UserPrincipal, target: VersionedTarget): Promise<Organization> {
     const ability = this.abilities.forPrincipal(principal);
@@ -290,6 +292,7 @@ export class OrganizationsService {
         await tx.organization.updateMany(versionedUpdate(target, { state: 'archived' })),
       );
       await this.record(tx, principal, target.id, { action: 'organization.archived' });
+      await this.invitationRevocations.revokeForOrganization(tx, target.id);
       return toOrganizationResponse(await this.findVisible(tx, ability, target.id), ability);
     });
   }
@@ -484,6 +487,43 @@ export class OrganizationsService {
       select: { organization: { select: { id: true, name: true } } },
     });
     return row?.organization ?? null;
+  }
+
+  /**
+   * Locks an organization in share mode for the rest of a transaction of another module whose
+   * change depends on its state (invitations, S1-03): a concurrent archive waits for it, or it
+   * waits for the archive and reads the archived state (§7.3). Returns whether it exists.
+   */
+  lockForShare(tx: Transaction, organizationId: string): Promise<boolean> {
+    return lockOrganizationForShare(tx, organizationId);
+  }
+
+  /**
+   * Adds an end user to an organization as an effect of an invitation (§7.3, §7.4): a direct grant
+   * or the acceptance, already authorized by the caller, which holds the share lock of the
+   * organization. Returns `false` – without a change – when the account belongs to an organization
+   * already, this one or another; moving is the Administrator's decision (§7.3).
+   */
+  async addMembership(
+    tx: Transaction,
+    actorId: string | null,
+    organizationId: string,
+    userId: string,
+  ): Promise<boolean> {
+    if ((await tx.organizationMember.count({ where: { userId } })) > 0) {
+      return false;
+    }
+    await tx.organizationMember.create({
+      data: { userId, organizationId },
+      select: { userId: true },
+    });
+    await this.auditLog.record(tx, {
+      action: 'organization.member_added',
+      actorId,
+      target: { type: ORGANIZATION, id: organizationId },
+      details: { userId },
+    });
+    return true;
   }
 
   /**

@@ -5,7 +5,10 @@
   "signIn": {
     "redirecting": "Redirecting to the sign-in…",
     "notSetUpTitle": "Trybun is not set up yet",
-    "notSetUpText": "Open the setup link printed by <command>./trybun install</command>, or run <command>./trybun setup-token</command> on the server for a new link."
+    "notSetUpText": "Open the setup link printed by <command>./trybun install</command>, or run <command>./trybun setup-token</command> on the server for a new link.",
+    "accountDeactivatedTitle": "Your account is deactivated",
+    "accountDeactivatedText": "You signed in, but your account has no access. Ask your Administrator to reactivate it.",
+    "signOut": "Sign out"
   },
   "appShell": {
     "skipToContent": "Skip to main content",
@@ -17,7 +20,8 @@
     "language": "Language",
     "signOut": "Sign out",
     "administration": "Administration",
-    "projects": "Projects"
+    "projects": "Projects",
+    "accountSettings": "Account settings"
   },
   "languages": {
     "en": "English",
@@ -47,6 +51,10 @@
         "title": "Configure GitHub sign-in",
         "description": "Team members sign in with GitHub. Required before you can invite the team."
       },
+      "invite_team": {
+        "title": "Invite the team",
+        "description": "Invite your developers and Project managers to their projects. Copy each invitation link and send it to the person."
+      },
       "create_organization": {
         "title": "Create an organization",
         "description": "Group the end users of a customer company and let them see the company's tickets. Organizations are optional."
@@ -62,7 +70,8 @@
     },
     "version": "Version",
     "license": "License",
-    "licenseName": "MIT License"
+    "licenseName": "MIT License",
+    "accounts": "Accounts"
   },
   "projects": {
     "title": "Projects",
@@ -80,7 +89,8 @@
     },
     "roles": {
       "developer": "Developer",
-      "project_manager": "Project manager"
+      "project_manager": "Project manager",
+      "end_user": "End user"
     },
     "create": {
       "open": "New project",
@@ -119,7 +129,7 @@
       "roleOf": "Role of {name}",
       "add": "Add member",
       "addTitle": "Add member",
-      "addDescription": "Add an active team member to the project.",
+      "addDescription": "Add a team member, or invite someone by their e-mail address.",
       "search": "Search by name or GitHub login",
       "candidates": "Team members",
       "noCandidates": "No active team members match.",
@@ -135,7 +145,10 @@
       "demoteConfirm": "Change role",
       "lastManagerWarning": "This project will have no Project manager. The Administrator covers the role.",
       "added": "{name} added to the project",
-      "removed": "{name} removed from the project"
+      "removed": "{name} removed from the project",
+      "addBy": "Add",
+      "addByAccount": "A team member",
+      "addByEmail": "By e-mail address"
     },
     "danger": {
       "archive": "Archive project",
@@ -275,6 +288,187 @@
       "deleted": "Organization deleted"
     }
   },
+  "users": {
+    "accounts": {
+      "title": "Accounts",
+      "description": "Everyone who can sign in to Trybun or has been invited: team members and end users.",
+      "filters": "Filters",
+      "kind": "Kind",
+      "state": "State",
+      "search": "Search",
+      "searchPlaceholder": "Name or e-mail address",
+      "allKinds": "All kinds",
+      "allStates": "All states",
+      "kinds": {
+        "team": "Team",
+        "end_user": "End user"
+      },
+      "states": {
+        "invited": "Invited",
+        "active": "Active",
+        "deactivated": "Deactivated",
+        "anonymized": "Anonymized"
+      },
+      "name": "Name",
+      "email": "E-mail address",
+      "administrator": "Administrator",
+      "actions": "Actions",
+      "noName": "No name yet",
+      "noEmail": "No e-mail address",
+      "actionsOf": "Actions for {name}",
+      "empty": "No accounts match these filters.",
+      "loadMore": "Load more",
+      "loadingMore": "Loading…",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "grantAdmin": "Grant Administrator role",
+      "revokeAdmin": "Revoke Administrator role",
+      "deactivateTitle": "Deactivate {name}?",
+      "deactivateDescription": "The person is signed out on every device at once and cannot sign in again until the account is reactivated. Their pending invitations are revoked. Their access to projects and organizations is kept.",
+      "deactivateConfirm": "Deactivate",
+      "deactivating": "Deactivating…",
+      "revokeAdminTitle": "Revoke the Administrator role of {name}?",
+      "revokeAdminDescription": "The person can no longer open the Administrator panel or manage every project.",
+      "revokeAdminConfirm": "Revoke role",
+      "cancel": "Cancel",
+      "deactivated": "{name} is deactivated.",
+      "reactivated": "{name} is reactivated.",
+      "adminGranted": "{name} is an Administrator now.",
+      "adminRevoked": "{name} is no longer an Administrator."
+    },
+    "settings": {
+      "title": "Account settings",
+      "description": "Your language and time zone apply on every device you sign in with.",
+      "language": "Language",
+      "timeZone": "Time zone",
+      "timeZonePlaceholder": "System default ({timeZone})",
+      "timeZoneDescription": "Dates and times are shown in this time zone. Without one, the system default applies.",
+      "noTimeZone": "No time zone found.",
+      "timeZones": "Time zones",
+      "useDeviceTimeZone": "Use this device's time zone ({timeZone})",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Settings saved."
+    }
+  },
+  "invitations": {
+    "link": {
+      "label": "Invitation link",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "copyFailed": "The link could not be copied. Select it and copy it yourself.",
+      "note": "Only this link works. It expires on {date}."
+    },
+    "preview": {
+      "checking": "Checking the address…",
+      "invite": "This person gets an invitation link.",
+      "join": "This person will join the organization {name}.",
+      "grant": "This person already has an account and gets the access at once."
+    },
+    "roles": {
+      "developer": "Developer",
+      "project_manager": "Project manager",
+      "end_user": "End user"
+    },
+    "targets": {
+      "project": "Project {name}, {role}",
+      "organization": "Organization {name}",
+      "administrator": "Administrator role"
+    },
+    "form": {
+      "email": "E-mail address",
+      "target": "Invite to",
+      "targetTypes": {
+        "project": "A project",
+        "organization": "An organization",
+        "administrator": "The Administrator role"
+      },
+      "project": "Project",
+      "projects": "Projects",
+      "noProject": "No active project matches.",
+      "organization": "Organization",
+      "organizations": "Organizations",
+      "noOrganization": "No active organization matches.",
+      "role": "Role",
+      "invite": "Invite",
+      "inviting": "Inviting…",
+      "grant": "Add",
+      "granting": "Adding…",
+      "cancel": "Cancel"
+    },
+    "issued": {
+      "title": "Invitation created",
+      "description": "Copy the link and send it to {email}.",
+      "done": "Done"
+    },
+    "invite": {
+      "open": "Invite",
+      "openFor": "Invite {email}",
+      "title": "Invite",
+      "description": "Invite someone by their e-mail address to a project, an organization or the Administrator role.",
+      "granted": "Access granted to {name}",
+      "noLink": "No working invitation link."
+    },
+    "pending": {
+      "title": "Pending invitations",
+      "invitedBy": "Invited by {name}",
+      "invitedByUnknown": "Inviting person unknown",
+      "expires": "Expires on {date}",
+      "copyNewLink": "Copy new link",
+      "copyNewLinkOf": "Copy a new link for {email}",
+      "revoke": "Revoke",
+      "revokeOf": "Revoke the invitation of {email}",
+      "resendTitle": "Create a new link for {email}?",
+      "resendDescription": "The old link stops working. The new link is valid for {days} days.",
+      "resendConfirm": "Create new link",
+      "revokeTitle": "Revoke the invitation of {email}?",
+      "revokeDescription": "The link stops working. You can invite the person again later.",
+      "revokeConfirm": "Revoke",
+      "revoked": "Invitation revoked",
+      "newLinkTitle": "New invitation link",
+      "newLinkDescription": "Copy the link and send it to {email}.",
+      "close": "Close",
+      "cancel": "Cancel",
+      "loadMore": "Show more",
+      "loadingMore": "Loading…",
+      "listOf": "Pending invitations of {name}"
+    },
+    "acceptance": {
+      "title": "Accept the invitation",
+      "checking": "Checking the invitation link…",
+      "invalidTitle": "This invitation link is not valid",
+      "noToken": "Open the whole link of your invitation, or ask the person who invited you for a new one.",
+      "email": "E-mail address",
+      "emailDescription": "Your account uses this address.",
+      "target": "Invitation to",
+      "targetProject": "the project {name}, role: {role}",
+      "targetOrganization": "the organization {name}",
+      "targetAdministrator": "the Administrator role",
+      "invitedBy": "Invited by",
+      "invitedByUnknown": "Unknown",
+      "expires": "Valid until",
+      "passwordTitle": "Create your account",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "password": "Password",
+      "passwordDescription": "At least {min} characters. A phrase of several words is easy to remember.",
+      "submit": "Accept and sign in",
+      "submitting": "Accepting…",
+      "or": "or",
+      "continueWith": "Continue with {provider}",
+      "teamIntro": "Team members sign in with GitHub. After GitHub, you set up two-factor authentication with an authenticator app.",
+      "activeIntro": "You already have an account with this address. Sign in to accept the invitation.",
+      "signInToAccept": "Sign in to accept",
+      "accepting": "Accepting the invitation…",
+      "redirecting": "Redirecting to the sign-in…",
+      "secondFactor": "Sign in once more with a one-time code from your authenticator app to finish.",
+      "mismatchTitle": "This invitation is for another account",
+      "signOut": "Sign out",
+      "failedTitle": "The invitation could not be accepted",
+      "retry": "Try again",
+      "signIn": "Sign in"
+    }
+  },
   "setup": {
     "title": "Set up Trybun",
     "intro": "Create the first Administrator account. You set up two-factor authentication when you sign in for the first time.",
@@ -372,6 +566,9 @@
       "back": "Back",
       "next": "Next",
       "done": "Done"
+    },
+    "combobox": {
+      "show": "Show options"
     }
   },
   "errors": {
@@ -412,6 +609,21 @@
       "member_not_found": "No account has this e-mail address.",
       "member_not_end_user": "Only end users can belong to an organization.",
       "member_of_other_organization": "This person already belongs to another organization."
+    },
+    "invitation": {
+      "account_kind_mismatch": "This address belongs to an account of the other kind. Only the Administrator can change the kind of an account.",
+      "account_deactivated": "This address belongs to a deactivated account. The Administrator must reactivate it first.",
+      "access_exists": "This person already has this access.",
+      "organization_conflict": "This person belongs to another organization. The Administrator can move them on the organization's Members tab.",
+      "github_sign_in_missing": "Team members sign in with GitHub. Configure GitHub sign-in before inviting them.",
+      "not_pending": "This invitation was already accepted or revoked.",
+      "account_mismatch": "This invitation belongs to another account. Sign out and open the link again.",
+      "token_invalid": "This invitation link is not valid. It may have expired, been used or been replaced. Ask the person who invited you for a new link.",
+      "password_rejected": "Choose another password: it must have at least 15 characters and must not be your e-mail address or a common password.",
+      "email_taken": "Another sign-in already uses this e-mail address. Ask the Administrator for help."
+    },
+    "user": {
+      "last_administrator": "The last active Administrator cannot be deactivated or lose the Administrator role."
     },
     "server": {
       "internal_error": "Something went wrong. Try again later.",

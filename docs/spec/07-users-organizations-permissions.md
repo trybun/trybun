@@ -43,7 +43,7 @@ Rules:
   - each domain belongs to at most one organization, also while that organization is archived (`organization.domain_taken`); to reuse a domain, the Administrator removes it from the organization after unarchiving it, or deletes the organization,
   - a domain is stored lower-case in ASCII (an internationalized name in its punycode form) with at least two labels, without a wildcard, an `@` or a trailing dot; it matches an e-mail address **exactly** – `company.com` does not match `pl.company.com`, which is added as a domain of its own,
   - public mail domains (e.g. `gmail.com`, `outlook.com`) cannot be added (`organization.domain_public`): the blocklist is a vendored copy of a maintained MIT-licensed list of free mail domains, updated with the dependencies like the password blocklist ([§13.5](13-non-functional.md)); there is no online lookup,
-  - domain matching is applied only when an account is created from an invitation, and only if the inviting project is among the organization's projects; otherwise the user is created without an organization and gets personal access to the inviting project. The inviting person is shown "This person will join the organization X" (PL: „Ta osoba dołączy do organizacji X”) before sending the invitation,
+  - domain matching is applied only when an account is created from an invitation – when the first invitation of a new address to a project with role `end_user` is issued – and only if the inviting project is among the organization's projects. The matched organization is stored on the invitation and applied on acceptance only if the organization is still active and still has the project; otherwise (no match, or the organization archived or the project removed meanwhile) the user is created without an organization and gets personal access to the inviting project. With an organization, the user gets no personal project membership – the project is reached through the organization. The inviting person is shown "This person will join the organization X" (PL: „Ta osoba dołączy do organizacji X”) before sending the invitation. An existing account never gets an organization by its domain,
   - adding or removing a domain later never moves existing users.
 - **Changing a user's organization**: tickets stay with the organization in which they were created, because they are the company's data (the ticket's organization is a snapshot taken at creation, [§3.2](03-ticket-model.md)). After the change:
   - the user keeps read and comment access to the tickets they created with visibility `only_me`, even if they no longer have access to the project; creating new tickets requires current access to the project,
@@ -71,7 +71,7 @@ An organization exists when one exists in any state, because archived organizati
 ## 7.4 Accounts and authentication
 
 - Authentication is handled by the identity provider **Keycloak** ([§14.2](14-architecture.md)). The system implements no password handling, 2FA or external login of its own. Password hashing is configured in Keycloak according to OWASP recommendations (Argon2, `hashAlgorithm(argon2)`).
-- **Password policy** (Keycloak `passwordPolicy`, managed configuration, [§15.5](15-deployment.md)): at least 15 and at most 64 characters (spaces and any characters allowed), not the e-mail address or the user name, not in the blocklist of common passwords of the deployment package; no composition rules and no expiry (OWASP ASVS 5.0, NIST SP 800-63B). Keycloak checks it whenever a password is set – the first-run wizard, registration from an invitation, password reset and change – so existing passwords stay valid until they are changed. The length rule is defined once more as `PASSWORD_MIN_LENGTH` and `PASSWORD_MAX_LENGTH` of `@trybun/contracts/users` for the forms of the web application; a test keeps both equal to the realm.
+- **Password policy** (Keycloak `passwordPolicy`, managed configuration, [§15.5](15-deployment.md)): at least 15 and at most 64 characters (spaces and any characters allowed), not the e-mail address or the user name, not in the blocklist of common passwords of the deployment package; no composition rules and no expiry (OWASP ASVS 5.0, NIST SP 800-63B). Keycloak checks it whenever a password is set – the first-run wizard, the acceptance of an invitation, password reset and change – so existing passwords stay valid until they are changed. The length rule is defined once more as `PASSWORD_MIN_LENGTH` and `PASSWORD_MAX_LENGTH` of `@trybun/contracts/users` for the forms of the web application; a test keeps both equal to the realm.
 - **No open registration.** Accounts are created only by an invitation ([Invitations](#invitations)). The only exception is the first Administrator account, created in the first-run wizard ([§15.6](15-deployment.md)).
 - **Team members** log in with GitHub (OAuth via Keycloak). This links the account to the GitHub login needed for issue assignment ([§11.4](11-github-integration.md)).
   - **Two-factor authentication (2FA) is mandatory for team members** and is enforced by Keycloak, not by GitHub: team accounts are members of the Keycloak group `team`, and the sign-in flow requires a one-time password (TOTP; WebAuthn allowed as an alternative) for that group. The API rejects team actions for sessions without completed 2FA (the authentication methods `amr` of the access token, [§14.4](14-architecture.md)).
@@ -81,9 +81,12 @@ An organization exists when one exists in any state, because archived organizati
   - A Microsoft or Google account is linked to an existing account only through the invitation flow, or when the provider confirms the e-mail address as verified and the user additionally signs in to the existing account. Accounts are never linked automatically just because the e-mail address matches.
   - Users cannot change their e-mail address themselves (the Keycloak account console does not allow it), because the address decides organization membership, notifications and e-mail replies. The Administrator changes it on request.
 - Password reset uses a one-time link with limited validity ([§13.5](13-non-functional.md)).
-- **Deactivating an account** (e.g. a customer's employee leaves) is done by the Administrator. It blocks login, **immediately ends all sessions** (in Keycloak and in the web application, [§14.4](14-architecture.md)) and **revokes all API tokens** of the account; it keeps their tickets and comments in the history. Open tickets assigned to a deactivated team member are unassigned with an automatic event and appear in the predefined list view "Unassigned" ([§8.1](08-team-views.md)). The Administrator can reactivate the account.
+- **Deactivating an account** (e.g. a customer's employee leaves) is done by the Administrator on the **Accounts** page of the Administrator panel, after a confirmation naming its effects. It blocks login, **immediately ends all sessions** (in Keycloak and in the web application, [§14.4](14-architecture.md)), **revokes its pending invitations** and **revokes all API tokens** of the account; it keeps their tickets and comments in the history and their project and organization access for a reactivation. In one transaction the account becomes `deactivated`, its pending invitations are revoked, its web sessions are deleted and the audit entry and the outbox event `user.deactivated` are written; a Worker job then disables the Keycloak user and ends its Keycloak sessions, idempotently and with retries. The API refuses every request of an account that is not `active`, so the next request is rejected even before the job has run. Open tickets assigned to a deactivated team member are unassigned with an automatic event and appear in the predefined list view "Unassigned" ([§8.1](08-team-views.md)).
+  - **Reactivating** returns the account to `active` – or to `invited` when it has no Keycloak user yet – and the Worker job enables the Keycloak user again. Revoked invitations stay revoked; an `invited` account then needs a new invitation.
+  - **Guards**: nobody deactivates their own account or revokes their own Administrator role, and the last active Administrator can be neither deactivated nor demoted (`409` `user.last_administrator`), so the system can always be administered. The Administrator role is granted to and revoked from team accounts on the same page; granting it to a new address goes through an invitation.
+  - A person who completes a Keycloak sign-in before the job has run gets no access: the web application shows "Your account is deactivated" with a sign-out.
 - **Removing a team member from a project** (or their last role in it) unassigns them from the project's open tickets in the same way; watchers without access are removed at the next notification ([§6.7](06-comments-notifications.md)). Removing a project's last Project manager – or changing their role to Developer – is allowed (the Administrator covers the role), but a warning is shown.
-- Each user sets their language and time zone in account settings ([§13.1](13-non-functional.md)).
+- Each user sets their language and time zone in **Account settings** (`/settings`, in the account menu); both apply on every device ([§13.1](13-non-functional.md)).
 - **Local environment**: in the local development environment only ([§15.1](15-deployment.md)), seeded team accounts can sign in with a password, so contributors do not need their own GitHub OAuth application. This is disabled in the test and production environments.
 
 ### User accounts
@@ -94,18 +97,19 @@ Keycloak stores only credentials and sign-in factors. Everything else about a pe
 |---|---|
 | Identifier | UUIDv7 ([§17.2](17-conventions.md)) |
 | Keycloak user ID | The `sub` of the Keycloak user; unique; links the account to Keycloak |
-| E-mail | Unique; used for invitations, notifications and organization domains |
+| E-mail | Unique; stored normalized – trimmed and lower-cased, kept so by a check constraint – so addresses differing only in letter case are one account; used for invitations, notifications and organization domains |
 | Display name | Shown in the UI |
 | Language, time zone | Account settings ([§13.1](13-non-functional.md)) |
 | Kind (`user.kind`) | `team` or `end_user` ([§7.1](#71-role-principles)) |
 | Administrator (`user.is_admin`) | Global Administrator role; only for `team` accounts |
-| State (`user.state`) | `invited` (account created by an invitation or import, not yet signed in), `active`, `deactivated`, `anonymized` ([§13.2](13-non-functional.md)) |
+| State (`user.state`) | `invited` (account created by an invitation or import, not yet signed in), `active`, `deactivated`, `anonymized` ([§13.2](13-non-functional.md)); an `invited` account whose invitations all expired or were revoked stays `invited`, and a new invitation of its address reuses it |
 | GitHub login | For team accounts, from the GitHub sign-in ([§11.4](11-github-integration.md)) |
 
 - Per-project team roles are stored as **project memberships** (`project_member`: user, project, role `developer` or `project_manager`). The Administrator and the project's Project managers add existing active team accounts to a project directly, choose their role, change it and remove them; the member picker lists the active team accounts that are not members of the project – display name and GitHub login, never the e-mail address – to whoever may manage the members of that project. Invitations by e-mail add existing accounts through the same membership change. Personal access of end users to a project is stored as a project membership with role `end_user`; access through an organization is derived from the organization's projects.
 - The API keeps the Keycloak group `team` in sync through the Keycloak Admin API whenever an account becomes or stops being a `team` account.
 - Imported people without an account ([§12.5](12-api-webhooks-import.md)) get accounts in state `invited` without a Keycloak user; the Keycloak user is created when they accept an invitation.
-- The signed-in account reads its own identifier, display name, e-mail and kind with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel and `create_project` for creating projects, [§18.3](18-code-patterns.md)).
+- The Administrator lists every account – filtered by kind and state, searchable by name and address – with `GET /api/v1/users` on the **Accounts** page (`/admin/accounts`), and acts on it with `POST /users/{id}/deactivation`, `POST /users/{id}/reactivation` and `PUT` / `DELETE /users/{id}/administrator-role`. Each person changes their own language and time zone with `PATCH /api/v1/users/me`.
+- The signed-in account reads its own identifier, display name, e-mail, kind, language and time zone with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel and `create_project` for creating projects, [§18.3](18-code-patterns.md)).
 
 ### Invitations
 
@@ -113,21 +117,31 @@ Invitations are managed by the application (not by Keycloak e-mails), so the lin
 
 | Field | Description |
 |---|---|
-| E-mail | Address of the invited person |
-| Target | One of: a project with a role (`end_user`, `developer`, `project_manager`); an organization (end user, Administrator only); the Administrator role (team, Administrator only) |
-| Invited by | The inviting person |
+| Invited account | The account the invitation activates; it carries the e-mail address – the invitation stores no personal data of its own |
+| Target (`invitation.target`) | One of: `project` with a role (`end_user`, `developer`, `project_manager`); `organization` (end user, Administrator only); `administrator`, the Administrator role (team, Administrator only) |
+| Matched organization | For a project invitation with role `end_user`: the organization matched by the e-mail domain when it was issued ([§7.3](#73-organizations)), or none |
+| Invited by | The inviting person; none when the system issued it |
 | Token | Random, single-use; only its hash is stored |
-| Expires at | **7 days** after creation |
+| Expires at | **7 days** after creation; a resent invitation 7 days after the resending |
 | Used at / revoked at | Set on acceptance or revocation |
 
-- The invitation link is sent by e-mail in the system default language ([§13.1](13-non-functional.md)) and can always be **copied and passed on manually**, so inviting works even before e-mail is configured. It can be resent (a new token) or revoked.
-- **Accepting**: the link opens the web application, which checks the token and starts the Keycloak sign-in:
-  - team invitations: sign-in with GitHub; on return, the GitHub account is bound to the invited account. The GitHub e-mail address does not need to match the invitation address. Keycloak then requires the 2FA setup,
-  - end-user invitations: Keycloak registration with the invited e-mail address pre-filled and locked; the user sets a password (or uses Microsoft/Google, see above).
-  - The application then links the returned Keycloak user ID to the account, marks the invitation as used and opens the invited project ([§5.7](05-visibility-and-search.md)).
-- **Existing accounts**: inviting an e-mail address that already has an account of the right kind does not send an invitation; the access is granted directly and the person is notified. An address with an account of the other kind is rejected with an explanation (a kind change is an Administrator action, [§7.1](#71-role-principles)).
+The state of an invitation is derived from these fields, never stored: `pending` (neither used nor revoked, not expired), `accepted`, `revoked`, `expired`.
+
+- **Who invites whom**: the Administrator issues every invitation; a Project manager issues invitations to their own projects with any project role. Developers and end users issue none. An invitation to an archived project or organization is refused (`project.archived`, `organization.archived`), and a team invitation is refused while GitHub sign-in is not configured (`invitation.github_sign_in_missing`). E-mail addresses are compared after normalization (trimmed and lower-cased).
+- **Before sending**, the dialog (**Add member** of a project's Members tab, **Invite** on the Accounts page) asks the API what will happen and shows it: a new invitation, "This person will join the organization X" ([§7.3](#73-organizations)), access granted directly, or the refusal with its reason.
+- **Issuing** a new invitation creates the account in state `invited` – kind from the target, the e-mail address, no Keycloak user – and the invitation that references it. Two simultaneous invitations of one address create one account with two invitations.
+- **The link** `https://<domain>/invitations#token=<token>` is shown only in the response that created its token – after issuing and after resending – with **Copy link**. A pending invitation offers **Copy new link**, which resends it after a confirmation: a new token, and the old link stops working. **Revoking** makes the link stop working. Archiving a project or an organization and deactivating an account revoke their pending invitations.
+- The invitation link is not sent by e-mail yet: the inviting person copies and passes it on, so inviting works before e-mail is configured. Outgoing e-mail (plan task S1-15) adds the invitation and "access granted" e-mails in the system default language ([§13.1](13-non-functional.md)).
+- **Several open invitations of one account** (e.g. to two projects before accepting) are separate, each with its own link, and each grants only its own target. The first acceptance activates the account; a further link of an account that is already `active` is accepted only in a session of that same account (`invitation.account_mismatch` otherwise), so whoever holds one link can never claim the target of another invitation.
+- **Accepting**: the link opens the acceptance page `/invitations` of the web application, which checks the token and shows the invited e-mail address read-only, the target and the inviting person:
+  - team invitations: sign-in with GitHub; on return, the GitHub account is bound to the invited account. The GitHub e-mail address does not need to match the invitation address. Keycloak then requires the 2FA setup; the person signs in once more with the one-time password before team actions succeed,
+  - end-user invitations: the user enters first name, last name and a password on the acceptance page; the API creates the Keycloak user with that password once, as the first-run wizard does ([§15.6](15-deployment.md)), with the invited e-mail address, and Keycloak's sign-in follows with the address pre-filled. Alternatively the user signs in with a configured Microsoft or Google account, whose address may differ from the invitation address,
+  - the account and the Keycloak user always keep the invited address. The account's language is set from the language of the acceptance page, its time zone from the browser's time zone when it is a valid IANA name, its display name from the first and last name,
+  - the application then links the returned Keycloak user ID to the account, marks the invitation as used and opens the invited project ([§5.7](05-visibility-and-search.md)); after an invitation to an organization or to the Administrator role, the portal root for end users and the team home for team members.
+- An unknown, expired, used, revoked or replaced link is rejected with one error (`invitation.token_invalid`); the page tells the person to ask the inviter for a new link. A password that Keycloak's policy refuses is reported at the password field (`invitation.password_rejected`); an invited address that another Keycloak user already holds is refused with an explanation for the Administrator (`invitation.email_taken`). Resending or revoking an invitation that is no longer pending is refused (`invitation.not_pending`).
+- **Existing accounts**: inviting an e-mail address that already has an `active` account of the right kind creates no invitation; the access is granted directly and the person is notified (from S1-15). An `invited` account gets a further invitation for the new target instead. Refused with an explanation: an account of the other kind (`invitation.account_kind_mismatch`; a kind change is an Administrator action, [§7.1](#71-role-principles)), a deactivated account (`invitation.account_deactivated`; the Administrator reactivates it first), an account that already has this access (`invitation.access_exists`), and an end user of another organization invited to an organization (`invitation.organization_conflict`; the Administrator moves them, [§7.3](#73-organizations)).
 - Organization assignment by e-mail domain follows [§7.3](#73-organizations).
-- Keycloak self-registration is reachable only through an invitation link; without an accepted invitation, a Keycloak account gives no access to the system.
+- **Keycloak registration is switched off.** Keycloak users are created only by the API (the first-run wizard, the password acceptance of an invitation) and by identity-provider sign-ins started from an invitation page; a provider sign-in from the sign-in page can only link an existing Keycloak user. Without an accepted invitation, a Keycloak user gives no access to the system, and a recurring Worker job deletes Keycloak users without a linked account 24 hours after their creation ([§13.2](13-non-functional.md)).
 
 ## 7.5 Permission matrix
 
@@ -176,6 +190,7 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | View project members (display name, GitHub login, role) of own project | – | ✅ | ✅ | ✅ |
 | Manage project members: invite team members and grant or remove the roles Developer and Project manager in own project | – | – | ✅ | ✅ |
 | Invite individual end users to the project | – | – | ✅ | ✅ |
+| View, resend and revoke invitations of own project | – | – | ✅ | ✅ |
 | Project settings: resolution confirmation, WIP limits ([§8.2](08-team-views.md)) | – | – | ✅ | ✅ |
 | Project settings: name, key, default SLA policy, sync direction, linked repositories | – | – | – | ✅ |
 | Create own personal API tokens | – | ✅ | ✅ | ✅ |
@@ -184,7 +199,9 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Grant organizations access to projects | – | – | – | ✅ |
 | Manage organization members and e-mail domains, invite end users to an organization | – | – | – | ✅ |
 | Create, archive, unarchive and delete (if empty) projects and organizations | – | – | – | ✅ |
+| View the list of accounts | – | – | – | ✅ |
 | Deactivate and reactivate accounts, change account kind or e-mail address | – | – | – | ✅ |
+| Set own language and time zone | ✅ | ✅ | ✅ | ✅ |
 | Grant or revoke the Administrator role | – | – | – | ✅ |
 | SLA policies and business calendars | – | – | – | ✅ |
 | Ticket templates | – | – | – | ✅ |

@@ -31,4 +31,4 @@ Trybun wylogowuje Cię także sam po 8 godzinach bez aktywności oraz 30 dni po 
 
 ## Co dalej
 
-- [Zmień język](../how-to/change-language.md)
+- [Zmień język i strefę czasową](../how-to/change-language.md)

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { pageQuerySchema, pageSchema } from '../pagination/index.js';
 import { projectStateSchema } from '../projects/index.js';
-import { userStateSchema } from '../users/index.js';
+import { emailSchema, userStateSchema } from '../users/index.js';
 
 /** `organization.state` (§7.3): an archived organization is read-only until it is unarchived. */
 export const organizationStateSchema = z.enum(['active', 'archived']);
@@ -148,7 +148,7 @@ export type OrganizationMemberPage = z.infer<typeof organizationMemberPageSchema
  * address; `move` confirms moving it from another organization (§7.3).
  */
 export const addOrganizationMemberSchema = z.object({
-  email: z.email().max(254),
+  email: emailSchema,
   move: z.boolean().default(false),
 });
 export type AddOrganizationMemberDto = z.input<typeof addOrganizationMemberSchema>;

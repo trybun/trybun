@@ -1,6 +1,6 @@
 ---
 title: Zarządzaj członkami projektu
-description: Dodawaj członków zespołu do projektu, zmieniaj ich rolę lub usuwaj ich.
+description: Dodawaj członków zespołu do projektu, zapraszaj osoby po adresie e-mail, zmieniaj rolę lub usuwaj członków.
 ---
 
 Członkami projektu zarządzają jego kierownicy projektu i Administrator. Członków zarchiwizowanego projektu nie można zmieniać.
@@ -9,13 +9,15 @@ Członkami projektu zarządzają jego kierownicy projektu i Administrator. Czło
 
 1. Wybierz **Projekty**, otwórz projekt, a potem zakładkę **Członkowie**.
 2. Wybierz **Dodaj członka**.
-3. Wyszukaj aktywnych członków zespołu po imieniu i nazwisku lub loginie GitHub i wybierz osobę.
+3. Zostaw **Członka zespołu**, wyszukaj aktywnych członków zespołu po imieniu i nazwisku lub loginie GitHub i wybierz osobę.
 4. Wybierz rolę: **Developer** lub **Kierownik projektu**.
 5. Wybierz **Dodaj**.
 
+Aby dodać kogoś, kto nie ma jeszcze konta, albo użytkownika, wybierz zamiast tego **Po adresie e-mail** ([zaproś osoby do projektu](invite-people-to-a-project.md)).
+
 ## Zmień rolę
 
-Użyj selektora roli w wierszu członka.
+Użyj selektora roli w wierszu członka. Użytkownicy zachowują rolę **Użytkownik**.
 
 ## Usuń członka
 

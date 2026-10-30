@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { Invitation } from '@trybun/contracts/invitations';
 import type { OrganizationSummary } from '@trybun/contracts/organizations';
 import type { Project, ProjectAction, ProjectMemberPage } from '@trybun/contracts/projects';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
@@ -22,6 +23,9 @@ const { ProjectMembers } = await import('./project-members.js');
 const { ProjectStateTabs } = await import('./project-state-tabs.js');
 const { NewProjectDialog } = await import('./new-project-dialog.js');
 const { ProjectOrganizations } = await import('./project-organizations.js');
+const { ProjectInvitations } = await import('./project-invitations.js');
+const { AccountForm } = await import('./add-member-dialog.js');
+const { Dialog } = await import('@trybun/ui/components/dialog');
 
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
 
@@ -226,6 +230,34 @@ describe('ProjectMembers', () => {
     expect(html).toContain('Add member');
   });
 
+  it('keeps the role of an end user with personal access, never offering a team role', () => {
+    const html = render(<ProjectMembers project={project()} />, (client) =>
+      client.setQueryData(['projects', 'members', PROJECT_ID], {
+        pages: [
+          {
+            items: [
+              {
+                user: {
+                  id: '0199a3f0-0000-7000-8000-000000000012',
+                  displayName: 'Ewa Klient',
+                  githubLogin: null,
+                },
+                role: 'end_user',
+                createdAt: '2026-10-27T09:00:00.000Z',
+              },
+            ],
+            nextCursor: null,
+          },
+        ],
+        pageParams: [null],
+      }),
+    );
+
+    expect(html).toContain('End user');
+    expect(html).not.toContain('aria-label="Role of Ewa Klient"');
+    expect(html).toContain('aria-label="Remove Ewa Klient"');
+  });
+
   it('shows a Developer the roles only', () => {
     const html = renderMembers(
       project({ role: 'developer', allowedActions: ['read', 'read_members'] }),
@@ -234,6 +266,63 @@ describe('ProjectMembers', () => {
     expect(html).toContain('Project manager');
     expect(html).not.toContain('Remove');
     expect(html).not.toContain('Add member');
+  });
+});
+
+describe('ProjectInvitations', () => {
+  function invitation(overrides: Partial<Invitation> = {}): Invitation {
+    return {
+      id: '0199a3f0-0000-7000-8000-000000000020',
+      user: {
+        id: '0199a3f0-0000-7000-8000-000000000021',
+        email: 'ewa@customer.example.com',
+        displayName: null,
+      },
+      target: {
+        type: 'project',
+        project: { id: PROJECT_ID, key: 'CP', name: 'Customer portal' },
+        role: 'end_user',
+        organization: null,
+      },
+      invitedBy: { id: '0199a3f0-0000-7000-8000-000000000011', displayName: 'Anna Nowak' },
+      state: 'pending',
+      expiresAt: '2026-11-05T09:00:00.000Z',
+      createdAt: '2026-10-29T09:00:00.000Z',
+      allowedActions: ['resend', 'revoke'],
+      ...overrides,
+    };
+  }
+
+  function renderInvitations(items: Invitation[]) {
+    return render(<ProjectInvitations projectId={PROJECT_ID} />, (client) =>
+      client.setQueryData(['invitations', 'list', { projectId: PROJECT_ID }], {
+        pages: [{ items, nextCursor: null }],
+        pageParams: [null],
+      }),
+    );
+  }
+
+  it('lists the address, role, inviting person and expiry with Copy new link and Revoke', () => {
+    const html = renderInvitations([invitation()]);
+
+    expect(html).toContain('Pending invitations');
+    expect(html).toContain('ewa@customer.example.com');
+    expect(html).toContain('End user · Invited by Anna Nowak');
+    expect(html).toContain('Expires on Nov 5, 2026');
+    expect(html).toContain('aria-label="Copy a new link for ewa@customer.example.com"');
+    expect(html).toContain('aria-label="Revoke the invitation of ewa@customer.example.com"');
+  });
+
+  it('offers only the actions the invitation allows', () => {
+    const html = renderInvitations([invitation({ allowedActions: ['revoke'], invitedBy: null })]);
+
+    expect(html).not.toContain('Copy new link');
+    expect(html).toContain('Revoke');
+    expect(html).toContain('Inviting person unknown');
+  });
+
+  it('is not shown without pending invitations', () => {
+    expect(renderInvitations([])).toBe('');
   });
 });
 
@@ -300,5 +389,49 @@ describe('ProjectOrganizations', () => {
     });
 
     expect(html).toContain('No organization may access the project.');
+  });
+});
+
+describe('AccountForm of Add member', () => {
+  const candidates =
+    (items: { id: string; displayName: string | null; githubLogin: string | null }[]) =>
+    (client: QueryClient) =>
+      client.setQueryData(['projects', 'member-candidates', PROJECT_ID, ''], {
+        items,
+        nextCursor: null,
+      });
+
+  it('lists the active team accounts by name and GitHub login, never by address, with the role', () => {
+    const html = render(
+      <Dialog>
+        <AccountForm projectId={PROJECT_ID} isOpen onDone={() => {}} />
+      </Dialog>,
+      candidates([
+        {
+          id: '0199a3f0-0000-7000-8000-000000000012',
+          displayName: 'Jan Kowalski',
+          githubLogin: 'jkowalski',
+        },
+        { id: '0199a3f0-0000-7000-8000-000000000013', displayName: null, githubLogin: null },
+      ]),
+    );
+
+    expect(html).toContain('Jan Kowalski');
+    expect(html).toContain('@jkowalski');
+    expect(html).toContain(CATALOGUES.en.projects.members.noName);
+    expect(html).toContain(CATALOGUES.en.projects.members.search);
+    expect(html).toContain(CATALOGUES.en.projects.members.role);
+    expect(html).not.toContain('@example');
+  });
+
+  it('says when no team account can be added', () => {
+    expect(
+      render(
+        <Dialog>
+          <AccountForm projectId={PROJECT_ID} isOpen onDone={() => {}} />
+        </Dialog>,
+        candidates([]),
+      ),
+    ).toContain(CATALOGUES.en.projects.members.noCandidates);
   });
 });

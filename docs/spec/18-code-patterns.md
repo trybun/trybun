@@ -48,7 +48,7 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | A UI element | `@trybun/ui` component from shadcn/ui: presentational, composable, variants with cva | [§18.6](#186-ui-components) |
 | Help for a view | A page in `docs/user/` naming the view's route in `views`; **Help for this view** in the help menu of the application shell opens it | [§2.3](02-agent-rules.md), [§18.5](#185-web-application) |
 | A product tour of a view | A definition in `features/product-tours/tours/` listed in the registry, its ID in `productTourIdSchema`, `data-tour` targets and catalogue texts | [§2.4](02-agent-rules.md), [§18.5](#185-web-application) |
-| Tests | Unit tests for rules, integration tests on real databases, test doubles only at external boundaries | [§18.7](#187-tests) |
+| Tests | Unit tests for rules, integration tests on real databases, component tests of the web application in jsdom, test doubles only at external boundaries | [§18.7](#187-tests) |
 
 ## 18.3 Server application
 
@@ -255,6 +255,7 @@ No global client state library is used.
 - **Test doubles only at external boundaries**: MSW for external HTTP services, the fixed clock, adapters of services without a container. The project's own services, Prisma and the database are never mocked.
 - **Job schemas**: a change of the job data or event payload schema of a processor has a unit test that parses job data of the previous shape ("Payload compatibility" in [§17.2](17-conventions.md)).
 - **Factories**: one per model (`test/factories/<model>.factory.ts`) with `@faker-js/faker` defaults and overrides.
+- **Component tests of the web application** ([ADR 0012](../adr/0012-web-component-tests.md)): a client component's handlers are tested in jsdom – a `*.spec.tsx` next to the component with `// @vitest-environment jsdom`, rendered with `renderInApp()` of `apps/web/test/dom/render.tsx`, acted on with `@testing-library/user-event` by role, label or text, the browser API client replaced by `createFakeApiClient()` of `apps/web/test/dom/fake-api-client.ts`. Server Components and render states keep server-HTML tests; layout, touch targets and accessibility stay in E2E.
 - **E2E tests** (Playwright) use one page object per view and locate elements by role, label or text (`getByRole`); `data-tour` attributes only for tours; never CSS classes.
 - **Lazily loaded components** ([§18.5](#185-web-application)): a unit test of their server HTML renders with `prerender` of `react-dom/static`, which waits for `Suspense` (`renderToStaticMarkup` does not); an E2E test measures an element with `expect.poll()` until the value is stable (`expectTouchTarget()` of `apps/web/e2e/touch-targets.ts`), because a lazy component may be streamed after the page or replaced while it hydrates.
 

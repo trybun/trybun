@@ -12,13 +12,14 @@ export type AdministrationAction = z.infer<typeof administrationActionSchema>;
 export const gettingStartedItemIdSchema = z.enum([
   'create_project',
   'configure_github_sign_in',
+  'invite_team',
   'create_organization',
   'configure_email',
   'configure_backup_storage',
 ]);
 export type GettingStartedItemId = z.infer<typeof gettingStartedItemIdSchema>;
 
-/** An item of the checklist; its state comes from the configuration, never from a record. */
+/** An item of the checklist; its state comes from the configuration and the data, never stored. */
 export const gettingStartedItemSchema = z.object({
   id: gettingStartedItemIdSchema,
   isDone: z.boolean(),

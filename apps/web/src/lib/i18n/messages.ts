@@ -29,14 +29,20 @@ export const CLIENT_NAMESPACES = {
   signIn: [...ROOT, 'signIn'],
   /** `app/setup/layout.tsx` */
   setup: [...ROOT, 'errors', 'languages', 'setup'],
+  /** `app/invitations/layout.tsx` */
+  invitations: [...ROOT, 'errors', 'invitations'],
   /** `app/(team)/layout.tsx`: the application shell, its menus and the product tours. */
   team: TEAM,
   /** `app/(team)/admin/layout.tsx` */
   administration: [...TEAM, 'administration'],
+  /** `app/(team)/admin/accounts/layout.tsx` */
+  accounts: [...TEAM, 'administration', 'errors', 'invitations', 'users'],
   /** `app/(team)/admin/organizations/layout.tsx` */
   organizations: [...TEAM, 'administration', 'errors', 'organizations'],
   /** `app/(team)/projects/layout.tsx` */
-  projects: [...TEAM, 'errors', 'projects'],
+  projects: [...TEAM, 'errors', 'invitations', 'projects'],
+  /** `app/(team)/settings/layout.tsx` */
+  settings: [...TEAM, 'errors', 'users'],
 } as const satisfies Record<string, readonly (keyof WebMessages)[]>;
 
 /** The route layouts that provide messages to client components. */

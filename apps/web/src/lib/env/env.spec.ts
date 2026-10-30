@@ -17,6 +17,7 @@ describe('parseEnv', () => {
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
       isDevelopment: false,
+      endUserIdentityProviders: [],
       keycloak: {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
         internalRealmUrl: 'http://keycloak:8080/auth/realms/trybun',
@@ -24,6 +25,17 @@ describe('parseEnv', () => {
         clientSecret: 'web-client-secret',
       },
     });
+  });
+
+  it('lists the configured sign-in providers of end users', () => {
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_MICROSOFT_CLIENT_ID: 'id', TRYBUN_GOOGLE_CLIENT_ID: 'id' })
+        .endUserIdentityProviders,
+    ).toEqual(['microsoft', 'google']);
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_MICROSOFT_CLIENT_ID: '', TRYBUN_GOOGLE_CLIENT_ID: 'id' })
+        .endUserIdentityProviders,
+    ).toEqual(['google']);
   });
 
   it('recognizes `next dev`', () => {

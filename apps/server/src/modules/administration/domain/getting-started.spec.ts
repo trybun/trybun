@@ -7,41 +7,45 @@ describe('gettingStartedItems', () => {
       {
         hasProject: false,
         hasOrganization: false,
+        hasInvitedTeam: false,
         isGithubSignInConfigured: false,
         isSmtpConfigured: false,
         isBackupStorageConfigured: false,
       },
-      [false, false, false, false, false],
+      [false, false, false, false, false, false],
     ],
     [
       {
         hasProject: true,
         hasOrganization: true,
+        hasInvitedTeam: true,
         isGithubSignInConfigured: true,
         isSmtpConfigured: false,
         isBackupStorageConfigured: false,
       },
-      [true, true, true, false, false],
+      [true, true, true, true, false, false],
     ],
     [
       {
         hasProject: false,
         hasOrganization: false,
+        hasInvitedTeam: false,
         isGithubSignInConfigured: false,
         isSmtpConfigured: true,
         isBackupStorageConfigured: false,
       },
-      [false, false, false, true, false],
+      [false, false, false, false, true, false],
     ],
     [
       {
         hasProject: false,
         hasOrganization: false,
+        hasInvitedTeam: false,
         isGithubSignInConfigured: false,
         isSmtpConfigured: false,
         isBackupStorageConfigured: true,
       },
-      [false, false, false, false, true],
+      [false, false, false, false, false, true],
     ],
   ])('ticks the items of %j', (state, done) => {
     const items = gettingStartedItems(state);
@@ -49,6 +53,7 @@ describe('gettingStartedItems', () => {
     expect(items.map((item) => item.id)).toEqual([
       'create_project',
       'configure_github_sign_in',
+      'invite_team',
       'create_organization',
       'configure_email',
       'configure_backup_storage',

@@ -45,9 +45,9 @@ export async function isOrganizationNameTaken(
 }
 
 /**
- * The account with an e-mail address, compared case-insensitively (§7.3); of two addresses that
- * differ only in letter case, the exact one wins. An anonymized account has no address and is
- * never found. (A table scan: `users.email` has no index on its lower-case form.)
+ * The account with a normalized e-mail address (§7.4): `users.email` is stored trimmed and
+ * lower-cased, so an exact match on its unique index compares case-insensitively. An anonymized
+ * account has no address and is never found.
  */
 export async function findAccountByEmail(
   tx: Transaction,
@@ -55,8 +55,6 @@ export async function findAccountByEmail(
 ): Promise<{ id: string; kind: 'team' | 'end_user' } | null> {
   const rows = await tx.$queryRaw<{ id: string; kind: 'team' | 'end_user' }[]>`
     SELECT "id", "kind"::text AS "kind" FROM "users"
-    WHERE lower("email") = lower(${email})
-    ORDER BY ("email" = ${email}) DESC, "id"
-    LIMIT 1`;
+    WHERE "email" = ${email}`;
   return rows[0] ?? null;
 }

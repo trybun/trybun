@@ -21,3 +21,4 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 | [0009](0009-invitation-flow.md) | Invitation flow | proposed |
 | [0010](0010-client-message-namespaces.md) | Texts in the browser by route | accepted |
 | [0011](0011-maintainer-account-and-workflow-approval.md) | The maintainer's account for AI agents and approval by workflow | accepted |
+| [0012](0012-web-component-tests.md) | Component tests of the web application in jsdom | accepted |

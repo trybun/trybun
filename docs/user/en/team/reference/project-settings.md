@@ -18,7 +18,7 @@ Select **Save changes** to apply them.
 
 ## Members
 
-The list shows each member's display name, GitHub login and role. The project's team members and the Administrator see it; Project managers and the Administrator manage it ([manage project members](../how-to/manage-project-members.md)).
+The list shows each member's display name, GitHub login and role. The project's team members and the Administrator see it; Project managers and the Administrator manage it ([manage project members](../how-to/manage-project-members.md)). **Pending invitations**, below the list, shows the invitations that have not been accepted yet, with **Copy new link** and **Revoke** ([invite people to a project](../how-to/invite-people-to-a-project.md)).
 
 ## Danger zone
 

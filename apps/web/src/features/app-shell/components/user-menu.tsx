@@ -15,15 +15,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@trybun/ui/components/dropdown-menu';
-import { LogOutIcon, SettingsIcon, UserIcon } from 'lucide-react';
+import { LogOutIcon, SettingsIcon, UserCogIcon, UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { changeLanguage } from '../../../lib/i18n/change-language.js';
-import { currentUserQueryOptions } from '../queries.js';
+import { useUpdateCurrentUser } from '../../users/mutations.js';
+import { currentUserQueryOptions } from '../../users/queries.js';
+import { SETTINGS_HREF } from '../../users/search-params.js';
 
-/** Initials of a name for the avatar: the first letters of its first two words. */
 /**
  * Signs out through Auth.js, which is loaded only then: every byte the shell requests before its
  * first paint counts towards the simulated LCP of §2.9 (#72).
@@ -33,6 +34,7 @@ async function signOutOfSession(): Promise<void> {
   await signOut({ callbackUrl: '/' });
 }
 
+/** Initials of a name for the avatar: the first letters of its first two words. */
 export function initialsOf(name: string): string {
   return name
     .split(/\s+/)
@@ -43,9 +45,10 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * The user menu of the header: the signed-in account, the Administrator panel for Administrators,
- * the language switch (§13.1) and the sign-out. The account comes from the query prefetched by
- * the application shell (§18.5).
+ * The user menu of the header: the signed-in account, its Account settings, the Administrator
+ * panel for Administrators, the language switch (§13.1) and the sign-out. The account comes from
+ * the query prefetched by the application shell (§18.5). The language switch also saves the
+ * language of the account, so the next sign-in on another device uses it.
  */
 export function UserMenu() {
   const t = useTranslations('appShell');
@@ -53,6 +56,7 @@ export function UserMenu() {
   const locale = useLocale();
   const [, startTransition] = useTransition();
   const { data: user } = useQuery(currentUserQueryOptions(browserApiClient));
+  const updateCurrentUser = useUpdateCurrentUser();
   const name = user?.displayName ?? user?.email ?? undefined;
   return (
     <DropdownMenu>
@@ -82,6 +86,10 @@ export function UserMenu() {
               )}
             </DropdownMenuLabel>
           )}
+          <DropdownMenuLinkItem render={<Link href={SETTINGS_HREF} />}>
+            <UserCogIcon aria-hidden />
+            {t('accountSettings')}
+          </DropdownMenuLinkItem>
           {user?.allowedActions.includes('open_administration') === true && (
             // The way to the Administrator panel on phones, whose bottom navigation leaves it out.
             <DropdownMenuLinkItem render={<Link href="/admin" />}>
@@ -100,7 +108,11 @@ export function UserMenu() {
           <DropdownMenuRadioGroup
             value={locale}
             onValueChange={(value: Locale) => {
-              startTransition(() => changeLanguage(value));
+              // This device switches also when the account cannot be saved, e.g. offline.
+              updateCurrentUser.mutate(
+                { language: value },
+                { onSettled: () => startTransition(() => changeLanguage(value)) },
+              );
             }}
           >
             {LOCALES.map((language) => (

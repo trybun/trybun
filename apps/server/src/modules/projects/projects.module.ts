@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuditLogEntriesModule } from '../audit-log-entries/audit-log-entries.module.js';
+import { InvitationRevocationsModule } from '../invitations/invitation-revocations.module.js';
 import { ProjectsController } from './projects.controller.js';
 import { ProjectsService } from './projects.service.js';
 
@@ -8,7 +9,7 @@ import { ProjectsService } from './projects.service.js';
  * module with endpoints, a list, a form and mutations (§18.9).
  */
 @Module({
-  imports: [AuditLogEntriesModule],
+  imports: [AuditLogEntriesModule, InvitationRevocationsModule],
   controllers: [ProjectsController],
   providers: [ProjectsService],
   exports: [ProjectsService],
