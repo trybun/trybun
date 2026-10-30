@@ -33,6 +33,9 @@ type PasswordAcceptanceDto = z.input<typeof passwordAcceptanceSchema>;
 
 type TextField = 'firstName' | 'lastName';
 
+/** A name is at least one character long, so a name that is too short was not entered at all. */
+const REQUIRED_MESSAGES = { firstName: 'firstNameRequired', lastName: 'lastNameRequired' } as const;
+
 /**
  * An end user accepts with a password (ADR 0009, AQ1): the API creates the Keycloak user with the
  * invited address, the language of the page and the browser's time zone; then the sign-in starts
@@ -94,7 +97,14 @@ export function PasswordAcceptanceForm({
           <FieldLabel>{t(name)}</FieldLabel>
           <Input {...field} autoComplete={autoComplete} />
           <FieldError
-            errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
+            errors={[
+              fieldState.error && {
+                message:
+                  fieldState.error.message === 'string.too_short'
+                    ? t(REQUIRED_MESSAGES[name])
+                    : errorMessage(fieldState.error.message),
+              },
+            ]}
           />
         </Field>
       )}

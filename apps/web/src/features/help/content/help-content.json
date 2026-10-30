@@ -140,7 +140,7 @@
         "views": [
           "/settings"
         ],
-        "body": "## Change the language\n\n1. Select your account menu (your initials) in the header.\n2. Under **Language**, select the language you want.\n\nThe page you are on appears again in the chosen language. Trybun saves the choice in your account, so it applies on every device you sign in with.\n\n## Change the time zone\n\n1. Select your account menu (your initials) in the header, then **Account settings**.\n2. Under **Time zone**, search for your time zone and select it, or select **Use this device's time zone**.\n3. Select **Save**.\n\nDates and times appear in this time zone on every device. Until you choose one, Trybun uses the default time zone of the system. You can change the language on this page too."
+        "body": "## Change the language\n\n1. Select your account menu (your initials) in the header.\n2. Under **Language**, select the language you want.\n\nThe page you are on appears again in the chosen language. Trybun saves the choice in your account, so it applies on every device you sign in with.\n\n## Change the time zone\n\n1. Select your account menu (your initials) in the header, then **Account settings**.\n2. Under **Time zone**, search for your time zone and select it, or select **Use this device's time zone**.\n3. Select **Save**.\n\nDates and times appear in this time zone on every device. Until you choose one, Trybun uses the default time zone of the system; to return to it, clear the **Time zone** field and select **Save**. You can change the language on this page too."
       },
       {
         "slug": "end-user/how-to/choose-a-password",
@@ -372,7 +372,7 @@
         "views": [
           "/settings"
         ],
-        "body": "## Zmień język\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku.\n2. W sekcji **Język** wybierz język, którego chcesz używać.\n\nStrona, na której jesteś, pojawi się ponownie w wybranym języku. Trybun zapisuje wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu, na którym się logujesz.\n\n## Zmień strefę czasową\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku, a potem **Ustawienia konta**.\n2. W polu **Strefa czasowa** wyszukaj swoją strefę czasową i wybierz ją albo wybierz **Użyj strefy czasowej tego urządzenia**.\n3. Wybierz **Zapisz**.\n\nDaty i godziny są pokazywane w tej strefie czasowej na każdym urządzeniu. Dopóki jej nie wybierzesz, Trybun używa domyślnej strefy czasowej systemu. Na tej stronie możesz też zmienić język."
+        "body": "## Zmień język\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku.\n2. W sekcji **Język** wybierz język, którego chcesz używać.\n\nStrona, na której jesteś, pojawi się ponownie w wybranym języku. Trybun zapisuje wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu, na którym się logujesz.\n\n## Zmień strefę czasową\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku, a potem **Ustawienia konta**.\n2. W polu **Strefa czasowa** wyszukaj swoją strefę czasową i wybierz ją albo wybierz **Użyj strefy czasowej tego urządzenia**.\n3. Wybierz **Zapisz**.\n\nDaty i godziny są pokazywane w tej strefie czasowej na każdym urządzeniu. Dopóki jej nie wybierzesz, Trybun używa domyślnej strefy czasowej systemu; aby do niej wrócić, wyczyść pole **Strefa czasowa** i wybierz **Zapisz**. Na tej stronie możesz też zmienić język."
       },
       {
         "slug": "end-user/how-to/choose-a-password",

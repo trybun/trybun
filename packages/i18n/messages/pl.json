@@ -450,6 +450,8 @@
       "passwordTitle": "Utwórz konto",
       "firstName": "Imię",
       "lastName": "Nazwisko",
+      "firstNameRequired": "Podaj imię",
+      "lastNameRequired": "Podaj nazwisko",
       "password": "Hasło",
       "passwordDescription": "Co najmniej {min} znaków. Frazę z kilku słów łatwo zapamiętać.",
       "submit": "Przyjmij i zaloguj się",

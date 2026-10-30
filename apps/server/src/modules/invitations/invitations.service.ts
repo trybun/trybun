@@ -43,6 +43,7 @@ import {
   invitationExpiry,
   invitationLink,
 } from './domain/invitation-token.js';
+import { pendingInvitationWhere } from './invitation-revocations.service.js';
 import { CREATE, INVITATION } from './invitations.abilities.js';
 
 /** The fields of an invitation response and of its rules: the principal's own membership. */
@@ -166,7 +167,7 @@ function toInvitationResponse(row: InvitationRow, ability: AppAbility, now: Date
 function stateWhere(state: InvitationState, now: Date): Prisma.InvitationWhereInput {
   switch (state) {
     case 'pending':
-      return { usedAt: null, revokedAt: null, expiresAt: { gt: now } };
+      return pendingInvitationWhere(now);
     case 'accepted':
       return { usedAt: { not: null } };
     case 'revoked':

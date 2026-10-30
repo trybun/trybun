@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
+import { AccountsPage } from './pages/accounts.page.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { InvitationPage } from './pages/invitation.page.js';
 import { ProjectsPage } from './pages/projects.page.js';
-import { MANAGER_STORAGE_STATE } from './storage-state.js';
+import { ADMIN_STORAGE_STATE, MANAGER_STORAGE_STATE } from './storage-state.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 /** A password the policy of the realm accepts: 15+ characters, not a common one (§7.4). */
@@ -113,5 +114,98 @@ test.describe('invitations', () => {
       page.getByRole('heading', { name: 'This invitation link is not valid' }),
     ).toBeVisible();
     await expect(page.getByText('Ask the person who invited you for a new link.')).toBeVisible();
+  });
+});
+
+/**
+ * The invitation to the Administrator role makes a team member, who signs in with GitHub. The
+ * test environment has no GitHub sign-in, so the API refuses it (`invitation.github_sign_in_missing`,
+ * `accounts.spec.ts`); these answers of the API stand in for an installation that has one.
+ */
+test.describe('invitation to the Administrator role', () => {
+  test.use({ storageState: ADMIN_STORAGE_STATE });
+
+  const INVITATION_ID = '0199a3f0-0000-7000-8000-0000000000b1';
+  const TOKEN = 'administrator-invitation-token';
+
+  test('the Administrator sends it and the invited person is offered GitHub only', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    const email = `admin-${testInfo.project.name}@example.org`;
+    const link = `https://trybun.example.com/invitations#token=${TOKEN}`;
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    await page.route('**/api/v1/invitation-previews', (route) =>
+      route.fulfill({ json: { outcome: 'invite', organization: null } }),
+    );
+    await page.route('**/api/v1/invitations', async (route) => {
+      if (route.request().method() !== 'POST') {
+        return route.fallback();
+      }
+      expect(route.request().postDataJSON()).toEqual({ email, target: { type: 'administrator' } });
+      return route.fulfill({
+        status: 201,
+        json: {
+          outcome: 'invited',
+          invitation: {
+            id: INVITATION_ID,
+            user: { id: '0199a3f0-0000-7000-8000-0000000000b2', email, displayName: null },
+            target: { type: 'administrator' },
+            invitedBy: { id: '0199a3f0-0000-7000-8000-0000000000b3', displayName: 'Ada Admin' },
+            state: 'pending',
+            expiresAt,
+            createdAt: new Date().toISOString(),
+            allowedActions: ['resend', 'revoke'],
+          },
+          link,
+        },
+      });
+    });
+    const accounts = new AccountsPage(page);
+    await accounts.goto();
+
+    const dialog = await accounts.openInvite();
+    await dialog.getByRole('textbox', { name: 'E-mail address' }).fill(email);
+    await dialog.getByRole('radio', { name: 'The Administrator role' }).check();
+    await expect(dialog.getByText('This person gets an invitation link.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Invite', exact: true }).click();
+
+    const created = page.getByRole('dialog', { name: 'Invitation created' });
+    await expect(created.getByLabel('Invitation link')).toHaveValue(link);
+    await created.getByRole('button', { name: 'Done' }).click();
+
+    // The invited person, in a browser of their own.
+    const visitor = await browser.newContext({
+      ...testInfo.project.use,
+      storageState: { cookies: [], origins: [] },
+    });
+    const visitorPage = await visitor.newPage();
+    await visitorPage.route('**/api/v1/invitations/token-verification', (route) =>
+      route.fulfill({
+        json: {
+          email,
+          kind: 'team',
+          accountState: 'invited',
+          target: { type: 'administrator' },
+          invitedBy: { displayName: 'Ada Admin' },
+          expiresAt,
+        },
+      }),
+    );
+    const invitation = new InvitationPage(visitorPage);
+    await invitation.goto(link);
+
+    await expect(invitation.heading).toHaveText('Accept the invitation');
+    // The brand, like the login screen of Keycloak that follows.
+    await expect(visitorPage.getByRole('banner')).toContainText('trybun', { ignoreCase: true });
+    await expect(invitation.email).toHaveValue(email);
+    await expect(visitorPage.getByText('the Administrator role')).toBeVisible();
+    const github = visitorPage.getByRole('button', { name: 'Continue with GitHub' });
+    await expect(github).toBeVisible();
+    await expectTouchTarget(github, minimumTargetSize(testInfo));
+    // A team member signs in with GitHub only: no password form.
+    await expect(invitation.password).toHaveCount(0);
+    expect(await seriousViolations(visitorPage)).toEqual([]);
+    await visitor.close();
   });
 });

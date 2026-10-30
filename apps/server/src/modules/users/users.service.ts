@@ -39,7 +39,11 @@ import {
   CREATE as CREATE_ORGANIZATION,
   ORGANIZATION,
 } from '../organizations/organizations.abilities.js';
-import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
+import {
+  InvitationRevocationsService,
+  pendingInvitationWhere,
+} from '../invitations/invitation-revocations.service.js';
+import { INVITATION } from '../invitations/invitations.abilities.js';
 import { CREATE, PROJECT } from '../projects/projects.abilities.js';
 import { USER } from './users.abilities.js';
 import { USER_DEACTIVATED, USER_REACTIVATED, type UserEventPayload } from './users.events.js';
@@ -80,12 +84,33 @@ const USER_SELECT = {
 
 type UserRow = Prisma.UserGetPayload<{ select: typeof USER_SELECT }>;
 
+/**
+ * An account of the list with the number of its pending invitations the principal sees, so the
+ * Accounts page asks for the invitations only of the accounts that have some (§7.4).
+ */
+function userListSelect(ability: AppAbility, now: Date) {
+  return {
+    ...USER_SELECT,
+    _count: {
+      select: {
+        invitations: {
+          where: {
+            AND: [accessibleBy(ability, 'read').ofType(INVITATION), pendingInvitationWhere(now)],
+          },
+        },
+      },
+    },
+  } satisfies Prisma.UserSelect;
+}
+
+type UserListRow = Prisma.UserGetPayload<{ select: ReturnType<typeof userListSelect> }>;
+
 function toUserSubject(row: UserRow) {
   return subject(USER, { id: row.id, kind: row.kind, state: row.state, isAdmin: row.isAdmin });
 }
 
 /** The response shape of an account on the Accounts page (§18.3) with the principal's actions. */
-function toUserResponse(row: UserRow, ability: AppAbility): User {
+function toUserResponse(row: UserListRow, ability: AppAbility): User {
   const record = toUserSubject(row);
   return {
     id: row.id,
@@ -96,6 +121,7 @@ function toUserResponse(row: UserRow, ability: AppAbility): User {
     isAdmin: row.isAdmin,
     githubLogin: row.githubLogin,
     createdAt: row.createdAt.toISOString(),
+    pendingInvitationCount: row._count.invitations,
     allowedActions: userActionSchema.options.filter((action) => ability.can(action, record)),
   };
 }
@@ -240,7 +266,7 @@ export class UsersService {
           usersAfter(after),
         ],
       },
-      select: USER_SELECT,
+      select: userListSelect(ability, this.clock.now()),
       orderBy: [{ displayName: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
       take: query.limit + 1,
     });

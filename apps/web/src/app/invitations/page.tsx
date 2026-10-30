@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { PublicHeader } from '../../features/app-shell/components/public-header.js';
 import { InvitationAcceptance } from '../../features/invitations/components/invitation-acceptance.js';
 import { getEnv } from '../../lib/env/env.js';
 
@@ -9,9 +10,12 @@ import { getEnv } from '../../lib/env/env.js';
 export default async function InvitationsPage() {
   const t = await getTranslations('invitations.acceptance');
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 p-4 pt-8 md:pt-12">
-      <h1 className="text-2xl font-bold">{t('title')}</h1>
-      <InvitationAcceptance endUserProviders={getEnv().endUserIdentityProviders} />
-    </main>
+    <>
+      <PublicHeader />
+      <main className="mx-auto flex w-full max-w-xl flex-col gap-6 p-4 pt-8 md:pt-12">
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <InvitationAcceptance endUserProviders={getEnv().endUserIdentityProviders} />
+      </main>
+    </>
   );
 }

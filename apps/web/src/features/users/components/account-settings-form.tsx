@@ -65,6 +65,15 @@ function useDeviceTimeZone(): string | null {
 }
 
 /**
+ * The title of the toast after saving, translated when it renders: a new language replaces the
+ * messages of the page while the toast is shown, so the toast says it in the new language too.
+ */
+function SettingsSavedTitle() {
+  const t = useTranslations('users.settings');
+  return t('saved');
+}
+
+/**
  * The Account settings form (§13.1): the language and a searchable list of IANA time zones with
  * "Use this device's time zone". Saving writes the account and, for a new language, switches the
  * language of the web application, so the page renders in it at once (§18.5).
@@ -92,7 +101,7 @@ export function AccountSettingsForm({ systemTimeZone }: { systemTimeZone: string
     const previousTimeZone = user?.timeZone ?? null;
     try {
       await updateCurrentUser.mutateAsync(values);
-      toast.add({ title: t('saved'), type: 'success' });
+      toast.add({ title: <SettingsSavedTitle />, type: 'success' });
       if (values.language !== locale) {
         startTransition(() => changeLanguage(values.language));
       }

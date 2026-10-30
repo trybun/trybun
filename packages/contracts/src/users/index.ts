@@ -107,6 +107,8 @@ export const userSchema = z.object({
   isAdmin: z.boolean(),
   githubLogin: z.string().nullable(),
   createdAt: z.iso.datetime(),
+  /** The pending invitations of the account the principal sees; listed by `GET /api/v1/invitations?userId=…`. */
+  pendingInvitationCount: z.number().int().nonnegative(),
   allowedActions: z.array(userActionSchema),
 });
 export type User = z.infer<typeof userSchema>;

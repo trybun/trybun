@@ -68,6 +68,8 @@ test.describe('the language of the account', () => {
     await first.settings.chooseTimeZone('America/New_York');
     await first.settings.save.click();
     await expect(first.settings.heading('Account settings')).toBeVisible();
+    // The toast of the save follows the new language too (#161).
+    await expect(first.page.locator('[data-slot="toast"]')).toContainText('Settings saved.');
 
     try {
       const second = await newDevice(browser);

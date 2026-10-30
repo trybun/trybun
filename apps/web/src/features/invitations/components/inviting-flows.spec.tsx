@@ -22,6 +22,7 @@ const { InviteDialog } = await import('./invite-dialog.js');
 const { AddMemberDialog } = await import('../../projects/components/add-member-dialog.js');
 const { ContinueAcceptance } = await import('./continue-acceptance.js');
 const { PendingInvitationList } = await import('./pending-invitation-list.js');
+const { PasswordAcceptanceForm } = await import('./password-acceptance-form.js');
 const { writePendingAcceptance, readPendingAcceptance } = await import('../acceptance-state.js');
 
 const fake = createFakeApiClient();
@@ -445,4 +446,38 @@ describe('ContinueAcceptance', () => {
       expect(signInToContinue).toHaveBeenCalledWith({ ...verify(0), signIns: 1 }, { locale: 'en' });
     });
   });
+});
+
+describe('PasswordAcceptanceForm', () => {
+  it.each([
+    ['en', 'Accept and sign in', ['Enter your first name', 'Enter your last name']],
+    ['pl', 'Przyjmij i zaloguj się', ['Podaj imię', 'Podaj nazwisko']],
+  ] as const)(
+    'asks for a missing first and last name instead of calling them too short (%s)',
+    async (locale, submit, messages) => {
+      const events = userEvent.setup();
+      renderInApp(
+        <PasswordAcceptanceForm
+          token="abc"
+          email="anna@customer.example.com"
+          language={locale}
+          onTokenRejected={() => {}}
+        />,
+        { locale },
+      );
+
+      await events.type(
+        screen.getByRole('textbox', { name: locale === 'en' ? 'Last name' : 'Nazwisko' }),
+        ' ',
+      );
+      await events.click(screen.getByRole('button', { name: submit }));
+
+      for (const message of messages) {
+        expect(await screen.findByText(message)).toBeDefined();
+      }
+      // Only the empty password is too short.
+      expect(screen.getAllByText(locale === 'en' ? 'Too short' : 'Za krótkie')).toHaveLength(1);
+      expect(fake.callsTo('POST /api/v1/invitations/acceptance')).toHaveLength(0);
+    },
+  );
 });

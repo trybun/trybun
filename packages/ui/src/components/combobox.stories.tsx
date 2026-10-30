@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { expect, screen, waitFor } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
+import { Field, FieldError, FieldLabel } from './field.js';
 import {
   Combobox,
   ComboboxContent,
@@ -60,6 +61,36 @@ export const Default: Story = {
 export const WithValue: Story = { args: { defaultValue: 'Europe/Warsaw' } };
 
 export const Disabled: Story = { args: { defaultValue: 'UTC', disabled: true } };
+
+// In a form the field is marked invalid by `Field`, e.g. from `fieldState` of React Hook Form.
+export const Invalid: Story = {
+  args: { defaultInputValue: 'Atlantis' },
+  render: (args: ComponentProps<typeof Combobox>) => (
+    <Field invalid className="w-72">
+      <FieldLabel>Time zone</FieldLabel>
+      <Combobox {...args}>
+        <ComboboxInput placeholder="Search time zones" />
+        <ComboboxContent>
+          <ComboboxEmpty>No time zone found.</ComboboxEmpty>
+          <ComboboxList aria-label="Time zones">
+            {(item: string) => (
+              <ComboboxItem key={item} value={item}>
+                {item}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+      <FieldError errors={[{ message: 'Choose a time zone from the list.' }]} />
+    </Field>
+  ),
+  play: async ({ canvas }) => {
+    const input = canvas.getByRole('combobox', { name: 'Time zone' });
+    await expect(input).toHaveAttribute('aria-invalid', 'true');
+    await expect(input).toHaveAccessibleDescription('Choose a time zone from the list.');
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Choose a time zone from the list.');
+  },
+};
 
 export const Open: Story = { args: { defaultOpen: true } };
 

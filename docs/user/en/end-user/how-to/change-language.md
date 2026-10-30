@@ -17,4 +17,4 @@ The page you are on appears again in the chosen language. Trybun saves the choic
 2. Under **Time zone**, search for your time zone and select it, or select **Use this device's time zone**.
 3. Select **Save**.
 
-Dates and times appear in this time zone on every device. Until you choose one, Trybun uses the default time zone of the system. You can change the language on this page too.
+Dates and times appear in this time zone on every device. Until you choose one, Trybun uses the default time zone of the system; to return to it, clear the **Time zone** field and select **Save**. You can change the language on this page too.

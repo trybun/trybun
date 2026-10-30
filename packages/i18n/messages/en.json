@@ -450,6 +450,8 @@
       "passwordTitle": "Create your account",
       "firstName": "First name",
       "lastName": "Last name",
+      "firstNameRequired": "Enter your first name",
+      "lastNameRequired": "Enter your last name",
       "password": "Password",
       "passwordDescription": "At least {min} characters. A phrase of several words is easy to remember.",
       "submit": "Accept and sign in",

@@ -26,12 +26,7 @@ export function InvitationLink({ link, expiresAt }: { link: string; expiresAt: s
     <Field>
       <FieldLabel>{t('label')}</FieldLabel>
       <div className="flex flex-col gap-2 md:flex-row">
-        <Input
-          readOnly
-          value={link}
-          className="font-mono"
-          onFocus={(event) => event.currentTarget.select()}
-        />
+        <Input readOnly value={link} onFocus={(event) => event.currentTarget.select()} />
         <Button type="button" className="md:w-fit" onClick={() => void copy()}>
           <CopyIcon aria-hidden />
           {t('copy')}

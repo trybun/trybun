@@ -81,6 +81,15 @@ describe('InvitationLink', () => {
     expect(html).toContain('Only this link works. It expires on Nov 5, 2026, 9:30');
   });
 
+  // The theme's typeface, not the browser's monospace font: the link is not code (docs/brand).
+  it('shows the link in the typeface of the theme', () => {
+    const html = render(
+      <InvitationLink link="https://x.example/i" expiresAt="2026-11-05T09:30:00.000Z" />,
+    );
+
+    expect(html).not.toContain('font-mono');
+  });
+
   it('is translated', () => {
     const html = render(
       <InvitationLink link="https://x.example/i" expiresAt="2026-11-05T09:30:00.000Z" />,

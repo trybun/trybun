@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { QueryClient } from '@tanstack/react-query';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { User, UserAction } from '@trybun/contracts/users';
@@ -43,6 +44,7 @@ function user(overrides: Partial<User> = {}): User {
     isAdmin: false,
     githubLogin: null,
     createdAt: '2026-10-27T09:00:00.000Z',
+    pendingInvitationCount: 0,
     allowedActions: [],
     ...overrides,
   };
@@ -188,6 +190,27 @@ describe('AccountList', () => {
     expect(screen.getAllByText('Deactivated').length).toBeGreaterThan(0);
   });
 
+  it('asks for the pending invitations only of the accounts that have some', async () => {
+    const withInvitations = '0199a3f0-0000-7000-8000-000000000003';
+    fake.on(
+      'GET /api/v1/users',
+      page([
+        user(),
+        user({ id: '0199a3f0-0000-7000-8000-000000000002', state: 'invited', email: 'b@acme.com' }),
+        user({ id: withInvitations, displayName: 'Cezary', pendingInvitationCount: 1 }),
+      ]),
+    );
+    fake.on('GET /api/v1/invitations', { data: { items: [], nextCursor: null } });
+    renderInApp(<AccountList />);
+
+    // The invited account without a pending invitation is offered Invite at once.
+    expect((await screen.findAllByText('No working invitation link.')).length).toBeGreaterThan(0);
+    await waitFor(() => expect(fake.callsTo('GET /api/v1/invitations')).toHaveLength(1));
+    expect(fake.callsTo('GET /api/v1/invitations')[0]!.init).toMatchObject({
+      params: { query: { userId: withInvitations } },
+    });
+  });
+
   it('says so when no account matches', async () => {
     fake.on('GET /api/v1/users', page([]));
     renderInApp(<AccountList />);
@@ -269,6 +292,10 @@ describe('AccountSettingsForm', () => {
     await waitFor(() => expect(changeLanguage).toHaveBeenCalledWith('pl'));
     expect(changeTimeZone).toHaveBeenCalled();
     expect(toasts).toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
+    // The toast is still shown when the page switches to the new language, and follows it.
+    cleanup();
+    renderInApp(<>{toasts.mock.calls[0]![0].title}</>, { locale: 'pl' });
+    expect(screen.getByText('Ustawienia zapisane.')).toBeDefined();
   });
 
   it('picks a time zone from the searchable list', async () => {
@@ -283,6 +310,25 @@ describe('AccountSettingsForm', () => {
 
     await waitFor(() => expect(changeTimeZone).toHaveBeenCalledWith('Europe/Paris'));
     expect(changeLanguage).not.toHaveBeenCalled();
+  });
+
+  it('returns to the system default time zone when the time zone is cleared', async () => {
+    fake.on('PATCH /api/v1/users/me', { data: me() });
+    // The page prefetches the account, so the form starts with its time zone.
+    const client = new QueryClient();
+    client.setQueryData(['users', 'me'], me({ timeZone: 'Europe/Paris' }));
+    const events = userEvent.setup();
+    renderInApp(<AccountSettingsForm systemTimeZone="Europe/Warsaw" />, { client });
+
+    const input = screen.getByRole('combobox', { name: 'Time zone' });
+    expect(input).toHaveProperty('value', 'Europe/Paris');
+    await events.clear(input);
+    await events.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(fake.callsTo('PATCH /api/v1/users/me')).toHaveLength(1));
+    const body = (fake.callsTo('PATCH /api/v1/users/me')[0]!.init as { body: object }).body;
+    expect(body).toEqual({ language: 'en', timeZone: null });
+    await waitFor(() => expect(changeTimeZone).toHaveBeenCalledWith(null));
   });
 
   it('shows a refusal of the API at the field it names', async () => {

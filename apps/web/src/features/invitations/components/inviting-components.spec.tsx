@@ -43,6 +43,7 @@ function user(overrides: Partial<User> = {}): User {
     isAdmin: false,
     githubLogin: null,
     createdAt: '2026-10-29T09:00:00.000Z',
+    pendingInvitationCount: 1,
     allowedActions: ['deactivate'],
     ...overrides,
   };
@@ -130,7 +131,8 @@ describe('AccountInvitations', () => {
   });
 
   it('offers Invite for the address of an invited account without a working link', async () => {
-    const html = await renderAccount(user(), []);
+    // No pending invitation, so none is fetched.
+    const html = await renderAccount(user({ pendingInvitationCount: 0 }), null);
 
     expect(html).toContain('data-testid="wrap"');
     expect(html).toContain('No working invitation link.');
@@ -138,8 +140,16 @@ describe('AccountInvitations', () => {
   });
 
   it.each([
-    ['an active account without pending invitations', user({ state: 'active' }), []],
-    ['a deactivated account, whose invitations were revoked', user({ state: 'deactivated' }), null],
+    [
+      'an active account without pending invitations',
+      user({ state: 'active', pendingInvitationCount: 0 }),
+      null,
+    ],
+    [
+      'a deactivated account, whose invitations were revoked',
+      user({ state: 'deactivated', pendingInvitationCount: 0 }),
+      null,
+    ],
     ['an account whose invitations are still loading', user(), null],
   ] as const)('shows nothing for %s', async (_, account, items) => {
     expect(await renderAccount(account, items === null ? null : [...items])).toBe('');
