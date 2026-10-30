@@ -166,6 +166,22 @@ describe('organizations endpoints', () => {
       },
     );
 
+    // An empty required text has a code of its own, so a form asks for the field (§17.2).
+    it('rejects an empty name with string.empty', async () => {
+      const { authorization } = await signIn();
+
+      const res = await http()
+        .post('/api/v1/organizations')
+        .set('Authorization', authorization)
+        .send({ name: '  ', domains: [] });
+
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        code: 'request.validation_failed',
+        errors: [{ pointer: '/name', code: 'string.empty' }],
+      });
+    });
+
     it('rejects a domain that is not one with string.invalid_format', async () => {
       const { authorization } = await signIn();
 

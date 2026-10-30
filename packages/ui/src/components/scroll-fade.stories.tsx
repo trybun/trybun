@@ -73,6 +73,21 @@ export const CurrentItemInView: Story = {
   },
 };
 
+// A current item with more items after it stays clear of the fade that covers them.
+export const CurrentItemBesideTheFade: Story = {
+  globals: viewport('phone'),
+  render: () => <Bar current="Projects" />,
+  play: async ({ canvas, canvasElement }) => {
+    const nav = canvas.getByRole('navigation');
+    await waitFor(() => expect(fade(canvasElement, 'end')).not.toBeNull());
+    await waitFor(() =>
+      expect(
+        canvas.getByRole('link', { name: 'Projects' }).getBoundingClientRect().right,
+      ).toBeLessThanOrEqual(nav.getBoundingClientRect().right - 40 + 1),
+    );
+  },
+};
+
 function GrowingBar() {
   const [isLong, setIsLong] = useState(false);
   return (

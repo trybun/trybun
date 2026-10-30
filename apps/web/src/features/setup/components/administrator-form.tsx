@@ -113,7 +113,7 @@ export function AdministratorForm({
               fieldState.error && {
                 message: errorMessage(
                   fieldState.error.message,
-                  name === 'email' ? {} : { 'string.empty': t(REQUIRED_MESSAGES[name]) },
+                  name === 'email' ? undefined : { 'string.empty': t(REQUIRED_MESSAGES[name]) },
                 ),
               },
             ]}

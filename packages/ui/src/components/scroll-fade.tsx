@@ -30,15 +30,27 @@ function useOverflow(element: HTMLElement | null): Overflow {
     }
     element.addEventListener('scroll', onChange, { passive: true });
     const resizes = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onChange);
-    const observeAll = () => {
-      resizes?.observe(element);
-      for (const item of element.querySelectorAll('*')) {
-        resizes?.observe(item);
+    const observeTree = (node: Node, observe: boolean) => {
+      if (!(node instanceof Element)) {
+        return;
+      }
+      for (const item of [node, ...node.querySelectorAll('*')]) {
+        if (observe) {
+          resizes?.observe(item);
+        } else {
+          resizes?.unobserve(item);
+        }
       }
     };
-    observeAll();
-    // Items added later are measured too: an observed element reports its first size.
-    const mutations = new MutationObserver(observeAll);
+    observeTree(element, true);
+    // Items added later are measured too (an observed element reports its first size); removed
+    // ones are let go.
+    const mutations = new MutationObserver((records) => {
+      for (const record of records) {
+        record.addedNodes.forEach((node) => observeTree(node, true));
+        record.removedNodes.forEach((node) => observeTree(node, false));
+      }
+    });
     mutations.observe(element, { childList: true, subtree: true });
     return () => {
       element.removeEventListener('scroll', onChange);
@@ -53,7 +65,10 @@ function useOverflow(element: HTMLElement | null): Overflow {
   );
 }
 
-/** Scrolls only `element`, never the page, so that its current item is in view. */
+/** The width of a fade (`w-10`): a current item scrolled into view keeps clear of it. */
+const FADE_WIDTH = 40;
+
+/** Scrolls only `element`, never the page, so that its current item is in view beside the fades. */
 function scrollToCurrent(element: HTMLElement) {
   const current = element.querySelector<HTMLElement>(CURRENT_ITEM);
   if (current === null) {
@@ -61,10 +76,15 @@ function scrollToCurrent(element: HTMLElement) {
   }
   const start = current.offsetLeft - element.offsetLeft;
   const end = start + current.offsetWidth;
-  if (start < element.scrollLeft) {
-    element.scrollTo({ left: start });
-  } else if (end > element.scrollLeft + element.clientWidth) {
-    element.scrollTo({ left: end - element.clientWidth });
+  const { scrollLeft, clientWidth, scrollWidth } = element;
+  const left =
+    start - FADE_WIDTH < scrollLeft
+      ? Math.max(0, start - FADE_WIDTH)
+      : end + FADE_WIDTH > scrollLeft + clientWidth
+        ? Math.min(scrollWidth, end + FADE_WIDTH) - clientWidth
+        : scrollLeft;
+  if (left !== scrollLeft) {
+    element.scrollTo({ left });
   }
 }
 
