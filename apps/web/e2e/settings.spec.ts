@@ -51,6 +51,25 @@ test.describe('account settings', () => {
   });
 });
 
+test.describe('account settings on a device in another time zone', () => {
+  // A long IANA name in the label of "Use this device's time zone".
+  test.use({ timezoneId: 'America/North_Dakota/New_Salem' });
+
+  test('wrap the label of the device time zone inside its button', async ({ page }, testInfo) => {
+    const settings = new SettingsPage(page);
+    await settings.goto();
+    const device = page.getByRole('button', {
+      name: "Use this device's time zone (America/North_Dakota/New_Salem)",
+    });
+    await expect(device).toBeVisible();
+
+    // The text stays inside the button (#166 QA: it overflowed both sides at 360 px).
+    expect(await device.evaluate((button) => button.scrollWidth <= button.clientWidth)).toBe(true);
+    expect(await new AppShellPage(page).horizontalOverflow()).toBe(0);
+    await expectTouchTarget(device, minimumTargetSize(testInfo));
+  });
+});
+
 test.describe('the language of the account', () => {
   // One account on several devices: on one device project only.
 

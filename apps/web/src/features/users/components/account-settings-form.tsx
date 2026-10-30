@@ -187,10 +187,11 @@ export function AccountSettingsForm({ systemTimeZone }: { systemTimeZone: string
               errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
             />
             {deviceTimeZone !== null && field.value !== deviceTimeZone && (
+              // The label names the time zone, so it wraps on a narrow screen (§2.9, #166 QA).
               <Button
                 type="button"
                 variant="outline"
-                className="w-full md:w-fit"
+                className="h-auto min-h-11 w-full py-2 whitespace-normal md:w-fit xl:pointer-fine:h-auto xl:pointer-fine:min-h-8 xl:pointer-fine:py-1"
                 onClick={() => field.onChange(deviceTimeZone)}
               >
                 {t('useDeviceTimeZone', { timeZone: deviceTimeZone })}
