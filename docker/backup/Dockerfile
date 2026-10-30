@@ -8,6 +8,9 @@ FROM postgres:18.4-alpine3.24@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293
 # Only the client tools are used; gosu of the server's entry point is not (and had a critical
 # vulnerability of its Go standard library, 2026-10).
 RUN rm /usr/local/bin/gosu
+# brotli-libs 1.2.0-r1 of the base image has the critical CVE-2026-111497, fixed in 1.2.1-r0 of
+# Alpine 3.24; remove once a rebuilt base image ships the fix (Dependabot updates the digest).
+RUN apk upgrade --no-cache brotli-libs
 COPY --from=restic /usr/bin/restic /usr/local/bin/restic
 COPY --from=rclone /usr/local/bin/rclone /usr/local/bin/rclone
 COPY --chmod=755 backup.sh /usr/local/bin/trybun-backup
