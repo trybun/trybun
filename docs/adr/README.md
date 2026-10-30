@@ -18,7 +18,7 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 | [0006](0006-release-pipeline.md) | Release pipeline | proposed |
 | [0007](0007-throttler-storage-on-nestjs-12.md) | Rate-limit storage on NestJS 12 | proposed |
 | [0008](0008-attachment-serving.md) | Attachment serving | proposed |
-| [0009](0009-invitation-flow.md) | Invitation flow | proposed |
+| [0009](0009-invitation-flow.md) | Invitation flow | accepted |
 | [0010](0010-client-message-namespaces.md) | Texts in the browser by route | accepted |
 | [0011](0011-maintainer-account-and-workflow-approval.md) | The maintainer's account for AI agents and approval by workflow | accepted |
 | [0012](0012-web-component-tests.md) | Component tests of the web application in jsdom | accepted |

@@ -1,7 +1,7 @@
 # 0009 – Invitation flow
 
-- Status: proposed
-- Date: 2026-10-25, updated with the answers of its open questions and the results of S1-03 on 2026-10-29
+- Status: accepted
+- Date: 2026-10-25, updated with the answers of its open questions and the results of S1-03 on 2026-10-29, accepted by the maintainer on 2026-10-30 after S1-03 (#160) was merged
 - Deciders: the maintainer (`@dtk7c2`)
 - Specification: [§7.4](../spec/07-users-organizations-permissions.md), [§13.5](../spec/13-non-functional.md), [§14.4](../spec/14-architecture.md), [§15.6](../spec/15-deployment.md), [§17.2](../spec/17-conventions.md)
 - Change specification: [`2026-10-25-invitation-acceptance.md`](../../.ai/specs/implemented/2026-10-25-invitation-acceptance.md) (implemented) – the gaps this ADR found, answered on 2026-10-29; issuing, resending and revoking: [`2026-10-26-invitations-and-accounts.md`](../../.ai/specs/implemented/2026-10-26-invitations-and-accounts.md)
