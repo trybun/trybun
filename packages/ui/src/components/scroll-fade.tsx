@@ -108,8 +108,10 @@ function useCurrentInView(element: HTMLElement | null) {
 /**
  * Wraps a bar that scrolls sideways on a narrow screen (a navigation, a tab list): a fade on a side
  * says that more items are there (Rule 9), and the current item (`aria-current` or the selected
- * tab) is scrolled into view. `scroller` is the scrolling element among the children, passed from
- * its callback ref; it is positioned by this wrapper, so its items measure from the same parent.
+ * tab) is scrolled into view. The fades replace the scroll bar of the bar, which is hidden: a
+ * browser that shows it until the first scroll would cover the mark of the current item.
+ * `scroller` is the scrolling element among the children, passed from its callback ref; it is
+ * positioned by this wrapper, so its items measure from the same parent.
  */
 function ScrollFade({
   scroller,
@@ -121,7 +123,11 @@ function ScrollFade({
   useCurrentInView(scroller);
 
   return (
-    <div data-slot="scroll-fade" className={cn('relative', className)} {...props}>
+    <div
+      data-slot="scroll-fade"
+      className={cn('relative *:[scrollbar-width:none] *:[&::-webkit-scrollbar]:hidden', className)}
+      {...props}
+    >
       {children}
       {(overflow === 'start' || overflow === 'both') && (
         <span

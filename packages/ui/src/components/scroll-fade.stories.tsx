@@ -51,6 +51,9 @@ export const Phone: Story = {
     const nav = canvas.getByRole('navigation');
     await waitFor(() => expect(fade(canvasElement, 'end')).not.toBeNull());
     await expect(fade(canvasElement, 'start')).toBeNull();
+    // The fades replace the scroll bar, which would cover the mark of the current item.
+    await expect(getComputedStyle(nav).scrollbarWidth).toBe('none');
+    await expect(nav.offsetHeight).toBe(nav.clientHeight);
 
     nav.scrollTo({ left: nav.scrollWidth });
     await waitFor(() => expect(fade(canvasElement, 'start')).not.toBeNull());
