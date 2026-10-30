@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderInApp } from '../../../../test/dom/render.js';
 
 const pathname = vi.hoisted(() => ({ current: '/admin' }));
@@ -17,16 +17,10 @@ function layOut(nav: HTMLElement, scrollLeft: number) {
   });
 }
 
-// jsdom has no scrollIntoView.
-const scrollIntoView = vi.fn();
-beforeEach(() => {
-  scrollIntoView.mockClear();
-  Element.prototype.scrollIntoView = scrollIntoView;
-});
 afterEach(() => {
   cleanup();
   pathname.current = '/admin';
-  Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+  vi.restoreAllMocks();
 });
 
 describe('AdministrationNavigation', () => {
@@ -65,11 +59,26 @@ describe('AdministrationNavigation', () => {
     expect(fade('end')).toBeNull();
   });
 
-  it('scrolls the current section into view', () => {
+  it('scrolls the bar, not the page, to the current section', () => {
     pathname.current = '/admin/about';
+    // jsdom lays nothing out: the last section ends past the right edge of a 360 px bar.
+    vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.textContent === 'About' && this.tagName === 'A' ? 400 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(80);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(360);
+    // jsdom has no scrolling: the elements that would scroll.
+    const scrolled: Element[] = [];
+    const scrollTo = vi.fn(function (this: Element) {
+      scrolled.push(this);
+    });
+    Element.prototype.scrollTo = scrollTo;
     renderInApp(<AdministrationNavigation />);
 
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
-    expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByRole('link', { name: 'About' }));
+    expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 120 });
+    expect(scrolled).toEqual([screen.getByRole('navigation')]);
+    Reflect.deleteProperty(Element.prototype, 'scrollTo');
   });
 });

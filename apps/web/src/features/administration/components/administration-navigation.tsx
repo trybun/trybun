@@ -4,7 +4,7 @@ import { cn } from '@trybun/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 const SECTIONS = [
   { href: '/admin', labelKey: 'gettingStarted' },
@@ -28,21 +28,18 @@ function overflowOf(element: HTMLElement | null): Overflow {
 
 /** The sides of `element` that hide more content, following its scrolling and size. */
 function useOverflow(element: HTMLElement | null): Overflow {
-  const subscribe = useCallback(
-    (onChange: () => void) => {
-      if (element === null) {
-        return () => undefined;
-      }
-      element.addEventListener('scroll', onChange, { passive: true });
-      const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onChange);
-      observer?.observe(element);
-      return () => {
-        element.removeEventListener('scroll', onChange);
-        observer?.disconnect();
-      };
-    },
-    [element],
-  );
+  const subscribe = (onChange: () => void) => {
+    if (element === null) {
+      return () => undefined;
+    }
+    element.addEventListener('scroll', onChange, { passive: true });
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onChange);
+    observer?.observe(element);
+    return () => {
+      element.removeEventListener('scroll', onChange);
+      observer?.disconnect();
+    };
+  };
   return useSyncExternalStore(
     subscribe,
     () => overflowOf(element),
@@ -61,8 +58,19 @@ export function AdministrationNavigation() {
   const [nav, setNav] = useState<HTMLElement | null>(null);
   const overflow = useOverflow(nav);
 
+  // Scrolls only the bar, never the page: a restored scroll position of the page stays.
   useEffect(() => {
-    nav?.querySelector('[aria-current]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const current = nav?.querySelector<HTMLElement>('[aria-current]');
+    if (nav === null || current === null || current === undefined) {
+      return;
+    }
+    const start = current.offsetLeft - nav.offsetLeft;
+    const end = start + current.offsetWidth;
+    if (start < nav.scrollLeft) {
+      nav.scrollTo({ left: start });
+    } else if (end > nav.scrollLeft + nav.clientWidth) {
+      nav.scrollTo({ left: end - nav.clientWidth });
+    }
   }, [nav, pathname]);
 
   return (
