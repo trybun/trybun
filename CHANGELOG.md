@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.3.0](https://github.com/trybun/trybun/compare/v0.2.1...v0.3.0) (2026-10-31)
+
+
+### Added
+
+* add invitations, account deactivation and user settings (S1-03) ([#160](https://github.com/trybun/trybun/issues/160)) ([4f77067](https://github.com/trybun/trybun/commit/4f770672aeb627836e8fdfa36f0dd76bf2045dc9))
+* add organizations, e-mail domains and membership (S1-02) ([#149](https://github.com/trybun/trybun/issues/149)) ([9aac4cb](https://github.com/trybun/trybun/commit/9aac4cbc6758cb9ddde6c58d9fc7a855e2ae4999))
+* add projects, project membership and archiving (S1-01) ([#134](https://github.com/trybun/trybun/issues/134)) ([2b99739](https://github.com/trybun/trybun/commit/2b99739e2254165111cceb84d9eefe6d6eeacf8e))
+* share the overflow fade and name empty required fields ([#167](https://github.com/trybun/trybun/issues/167)) ([#171](https://github.com/trybun/trybun/issues/171)) ([669ea6f](https://github.com/trybun/trybun/commit/669ea6f06617df87e3421fd71e0ad49841b9a7a6))
+
+
+### Fixed
+
+* **agents:** ignore the links of the installed om-* skills ([#144](https://github.com/trybun/trybun/issues/144)) ([ee658d1](https://github.com/trybun/trybun/commit/ee658d182de76237cbc963796d3373adb5299861))
+* **agents:** keep .ai/skills for project skills and extensions of om-* skills ([#155](https://github.com/trybun/trybun/issues/155)) ([e15f54c](https://github.com/trybun/trybun/commit/e15f54c17ac1cbf7a54c26bdc49081d53d8072d1))
+* **agents:** run the test environment as its own Compose project ([#150](https://github.com/trybun/trybun/issues/150)) ([d2969ee](https://github.com/trybun/trybun/commit/d2969ee0df0397f1de38d00f07ec438aa37d6ac9))
+* **deploy:** run the local environment as its own Compose project ([#154](https://github.com/trybun/trybun/issues/154)) ([ac943f5](https://github.com/trybun/trybun/commit/ac943f5d064a56175ccab455e504d79546414a33))
+* **deploy:** upgrade brotli-libs in the backup image (CVE-2026-111497) ([#170](https://github.com/trybun/trybun/issues/170)) ([15c6674](https://github.com/trybun/trybun/commit/15c6674c0266b36b9d3e6ad8bc323dcc0ac5b9d3)), closes [#164](https://github.com/trybun/trybun/issues/164)
+* **deps:** bump @hookform/resolvers from 5.9.2 to 6.0.0 ([#106](https://github.com/trybun/trybun/issues/106)) ([8d94b47](https://github.com/trybun/trybun/commit/8d94b477812fa37a84c21970a6b74107363a238d))
+* **deps:** bump the npm group with 10 updates ([#105](https://github.com/trybun/trybun/issues/105)) ([065e839](https://github.com/trybun/trybun/commit/065e839acedd45251ec1a29a363f679a1c7b7581))
+* **deps:** update systeminformation to 5.33.16 (GHSA-3f7j-7jwc-fxfj) ([#159](https://github.com/trybun/trybun/issues/159)) ([71cd43f](https://github.com/trybun/trybun/commit/71cd43f78d10cad0e61dd53fd8f9cfab72dcc26a))
+* polish the invitations, accounts and settings UI ([#161](https://github.com/trybun/trybun/issues/161)) ([#166](https://github.com/trybun/trybun/issues/166)) ([9132fba](https://github.com/trybun/trybun/commit/9132fba59e42d51d8c4ec31f0103120c0eeebb29))
+* **ui:** keep dialog titles within a phone and outline buttons readable on coloured surfaces ([#151](https://github.com/trybun/trybun/issues/151)) ([aa5fd44](https://github.com/trybun/trybun/commit/aa5fd44e3d24c1834947824f128219c567e450b9))
+* **ui:** show toasts above dialogs and bottom sheets ([#172](https://github.com/trybun/trybun/issues/172)) ([#174](https://github.com/trybun/trybun/issues/174)) ([3e2dda9](https://github.com/trybun/trybun/commit/3e2dda95381f9da5cc0cba56e8b4dda37497bab8))
+* **web:** mount the toast region only in the project views ([#136](https://github.com/trybun/trybun/issues/136)) ([a8468d1](https://github.com/trybun/trybun/commit/a8468d16e3029897d08664320609cb6b1d6ec5d8))
+* **web:** return to the opened page after the sign-in ([#138](https://github.com/trybun/trybun/issues/138)) ([#141](https://github.com/trybun/trybun/issues/141)) ([b81215d](https://github.com/trybun/trybun/commit/b81215d7f6109ca2d451a72f8d78c9e3372af008))
+
 ## [0.2.1](https://github.com/trybun/trybun/compare/v0.2.0...v0.2.1) (2026-10-26)
 
 
