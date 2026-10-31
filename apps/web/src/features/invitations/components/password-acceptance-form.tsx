@@ -33,7 +33,7 @@ type PasswordAcceptanceDto = z.input<typeof passwordAcceptanceSchema>;
 
 type TextField = 'firstName' | 'lastName';
 
-/** A name is at least one character long, so a name that is too short was not entered at all. */
+/** An empty name asks for itself (§18.5). */
 const REQUIRED_MESSAGES = { firstName: 'firstNameRequired', lastName: 'lastNameRequired' } as const;
 
 /**
@@ -99,10 +99,9 @@ export function PasswordAcceptanceForm({
           <FieldError
             errors={[
               fieldState.error && {
-                message:
-                  fieldState.error.message === 'string.too_short'
-                    ? t(REQUIRED_MESSAGES[name])
-                    : errorMessage(fieldState.error.message),
+                message: errorMessage(fieldState.error.message, {
+                  'string.empty': t(REQUIRED_MESSAGES[name]),
+                }),
               },
             ]}
           />

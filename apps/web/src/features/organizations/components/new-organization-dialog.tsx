@@ -103,7 +103,11 @@ export function NewOrganizationDialog() {
                   <Input {...field} autoComplete="organization" />
                   <FieldError
                     errors={[
-                      fieldState.error && { message: errorMessage(fieldState.error.message) },
+                      fieldState.error && {
+                        message: errorMessage(fieldState.error.message, {
+                          'string.empty': t('nameRequired'),
+                        }),
+                      },
                     ]}
                   />
                 </Field>

@@ -84,11 +84,12 @@ export const Disabled: Story = {
   },
 };
 
-// Touch targets are 44 px on phones and tablets (§2.9); the list scrolls instead of wrapping.
+// Touch targets are 44 px on phones and tablets (§2.9); the list scrolls instead of wrapping, and a
+// fade shows the side that hides more tabs (Rule 9).
 export const Phone: Story = {
   render: tabs,
   globals: viewport('phone'),
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     for (const tab of canvas.getAllByRole('tab')) {
       await expect(tab.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
     }
@@ -97,6 +98,27 @@ export const Phone: Story = {
     await expect(
       new Set(canvas.getAllByRole('tab').map((tab) => tab.getBoundingClientRect().top)).size,
     ).toBe(1);
+    await waitFor(() =>
+      expect(canvasElement.querySelector('[data-slot="overflow-end"]')).not.toBeNull(),
+    );
+  },
+};
+
+// The selected tab is scrolled into view; the list scrolls, the page does not.
+export const SelectedTabInView: Story = {
+  args: { defaultValue: 'settings' },
+  render: tabs,
+  globals: viewport('phone'),
+  play: async ({ canvas, canvasElement }) => {
+    const list = canvas.getByRole('tablist');
+    await waitFor(() => expect(list.scrollLeft).toBeGreaterThan(0));
+    await expect(
+      canvas.getByRole('tab', { name: 'Settings' }).getBoundingClientRect().right,
+    ).toBeLessThanOrEqual(list.getBoundingClientRect().right + 1);
+    await waitFor(() =>
+      expect(canvasElement.querySelector('[data-slot="overflow-start"]')).not.toBeNull(),
+    );
+    await expect(window.scrollX).toBe(0);
   },
 };
 

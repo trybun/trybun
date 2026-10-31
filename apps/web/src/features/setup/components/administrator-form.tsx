@@ -37,6 +37,9 @@ const LANGUAGES: readonly Language[] = ['en', 'pl'];
 
 type TextField = 'firstName' | 'lastName' | 'email';
 
+/** The names are required: an empty one asks for itself (§18.5). */
+const REQUIRED_MESSAGES = { firstName: 'firstNameRequired', lastName: 'lastNameRequired' } as const;
+
 /**
  * The one step of the first-run wizard (§15.6): the first Administrator with their own language
  * and time zone, prefilled with the system defaults of `.env`, which the form shows read-only.
@@ -106,7 +109,14 @@ export function AdministratorForm({
           <FieldLabel>{t(name)}</FieldLabel>
           <Input {...field} type={type} autoComplete={autoComplete} />
           <FieldError
-            errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
+            errors={[
+              fieldState.error && {
+                message: errorMessage(
+                  fieldState.error.message,
+                  name === 'email' ? undefined : { 'string.empty': t(REQUIRED_MESSAGES[name]) },
+                ),
+              },
+            ]}
           />
         </Field>
       )}

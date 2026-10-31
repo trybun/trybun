@@ -61,7 +61,8 @@ describe('AdministrationNavigation', () => {
 
   it('scrolls the bar, not the page, to the current section', () => {
     pathname.current = '/admin/about';
-    // jsdom lays nothing out: the last section ends past the right edge of a 360 px bar.
+    // jsdom lays nothing out: the last section ends past the right edge of a 360 px bar that is
+    // 500 px wide in all; scrolled to the end, it keeps clear of the 40 px fade.
     vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockImplementation(function (
       this: HTMLElement,
     ) {
@@ -69,6 +70,7 @@ describe('AdministrationNavigation', () => {
     });
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(80);
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(360);
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(500);
     // jsdom has no scrolling: the elements that would scroll.
     const scrolled: Element[] = [];
     const scrollTo = vi.fn(function (this: Element) {
@@ -77,7 +79,7 @@ describe('AdministrationNavigation', () => {
     Element.prototype.scrollTo = scrollTo;
     renderInApp(<AdministrationNavigation />);
 
-    expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 120 });
+    expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ left: 140 });
     expect(scrolled).toEqual([screen.getByRole('navigation')]);
     Reflect.deleteProperty(Element.prototype, 'scrollTo');
   });
