@@ -44,7 +44,7 @@ export function ProjectList({ state }: { state: ProjectState }) {
           <li key={project.id}>
             <Link
               href={projectSettingsHref(project.id)}
-              className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
+              className="flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground hover:bg-muted focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
             >
               <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-center md:gap-3">
                 <span className="truncate font-medium">{project.name}</span>

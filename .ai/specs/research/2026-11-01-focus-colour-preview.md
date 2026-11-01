@@ -1,6 +1,6 @@
 # Focus colour preview – console snippet
 
-Supports the change specification [`2026-11-01-brand-interactive-colour.md`](../2026-11-01-brand-interactive-colour.md).
+Supports the change specification [`2026-11-01-brand-interactive-colour.md`](../implemented/2026-11-01-brand-interactive-colour.md).
 
 1. Start the local environment (`sh .ai/scripts/test-env-up.sh` or `pnpm dev`) and sign in on <http://localhost:3000>.
 2. Open DevTools (F12) → **Console**. Chrome asks you to type `allow pasting` the first time.

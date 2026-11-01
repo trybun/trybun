@@ -123,6 +123,24 @@ export const ChoiceCards: Story = {
   },
 };
 
+// The card shows the focus; the radio inside draws no ring of its own (#177).
+export const ChoiceCardsKeyboard: Story = {
+  ...ChoiceCards,
+  args: { defaultValue: 'anna' },
+  play: async ({ canvas, userEvent }) => {
+    const radio = canvas.getByRole('radio', { name: /Anna Nowak/ });
+    await userEvent.tab();
+    await expect(radio).toHaveFocus();
+    const card = radio.closest('label');
+    await expect(card).not.toBeNull();
+    await expect(getComputedStyle(card!).boxShadow).toMatch(/rgb\(\d+, \d+, \d+\) 0px 0px 0px 1px/);
+    // Every layer of the radio's shadow (offset and ring) is transparent or zero-width.
+    await expect(getComputedStyle(radio).boxShadow).not.toMatch(
+      /rgb\(\d+, \d+, \d+\) 0px 0px 0px [1-9]/,
+    );
+  },
+};
+
 // The hit area is at least 44 px on phones and tablets (§2.9).
 async function expectHitArea(radio: HTMLElement) {
   const hit = getComputedStyle(radio, '::after');

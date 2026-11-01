@@ -16,13 +16,14 @@ function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
 
 // The circle is 16 px; the `after` element extends the hit area to 44 px on phones and tablets
 // (§2.9). On desktop with a precise pointer the circle is the hit area. Inside a choice card – a
-// `FieldLabel` around a `Field` – the whole card is the hit area.
+// `FieldLabel` around a `Field` – the whole card is the hit area and shows the focus; the card
+// rules are important, because the group selector is weaker than `focus-visible:*`.
 function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
   return (
     <RadioPrimitive.Root
       data-slot="radio-group-item"
       className={cn(
-        'group/radio-group-item peer relative flex aspect-square size-4 shrink-0 rounded-full border border-input outline-none group-has-[:focus-visible]/field-label:ring-0 group-has-[:focus-visible]/field-label:not-data-checked:border-input after:absolute after:-inset-4 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 aria-invalid:aria-checked:border-primary dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 xl:pointer-fine:after:content-none data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground group-has-[:focus-visible]/field-label:data-checked:border-primary dark:data-checked:bg-primary data-disabled:cursor-not-allowed data-disabled:opacity-50',
+        'group/radio-group-item peer relative flex aspect-square size-4 shrink-0 rounded-full border border-input outline-none group-has-[:focus-visible]/field-label:ring-0! group-has-[:focus-visible]/field-label:ring-offset-0! group-has-[:focus-visible]/field-label:not-data-checked:border-input! after:absolute after:-inset-4 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive aria-invalid:aria-checked:border-primary dark:bg-input/30 xl:pointer-fine:after:content-none data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground group-has-[:focus-visible]/field-label:data-checked:border-primary dark:data-checked:bg-primary data-disabled:cursor-not-allowed data-disabled:opacity-50',
         className,
       )}
       {...props}

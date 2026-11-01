@@ -40,7 +40,7 @@ export function AdministrationNavigation() {
                   href={href}
                   aria-current={isCurrentPage ? 'page' : isCurrentSection ? 'true' : undefined}
                   className={cn(
-                    '-mb-px flex min-h-11 items-center border-b-2 border-transparent px-3 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
+                    '-mb-px flex min-h-11 items-center border-b-2 border-transparent px-3 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
                     isCurrentSection && 'border-primary text-foreground',
                   )}
                 >

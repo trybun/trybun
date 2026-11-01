@@ -220,12 +220,14 @@ export function AccountForm({
               {candidates.isSuccess && items.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('members.noCandidates')}</p>
               ) : (
+                // The padding keeps the focus ring of the cards inside the scrolling list, which
+                // clips everything outside it; the negative margin (with `w-auto`) keeps the cards aligned.
                 <RadioGroup
                   inputRef={field.ref}
                   name={field.name}
                   value={field.value}
                   onValueChange={field.onChange}
-                  className="max-h-64 overflow-y-auto"
+                  className="-m-1 max-h-64 w-auto overflow-y-auto p-1"
                 >
                   {items.map((candidate) => (
                     <FieldLabel key={candidate.id}>

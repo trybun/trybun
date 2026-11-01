@@ -60,6 +60,19 @@ test.describe('application shell', () => {
     expect(page.url()).toBe(url);
   });
 
+  // The skip link appears on the first Tab with its padding: `not-sr-only` resets the padding, so
+  // the link sets it with the `focus:` variant (#177).
+  test('shows the skip link with padding on the first Tab', async ({ page }) => {
+    const skip = page.getByRole('link', { name: 'Skip to main content' });
+
+    await page.locator('body').press('Tab');
+
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeVisible();
+    await expect(skip).toHaveCSS('padding-left', '12px');
+    await expect(skip).toHaveCSS('padding-top', '8px');
+  });
+
   test('has no serious accessibility violations', async ({ page }) => {
     expect(await seriousViolations(page)).toEqual([]);
 

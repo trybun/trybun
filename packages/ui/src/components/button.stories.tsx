@@ -78,6 +78,19 @@ export const Default: Story = {
   },
 };
 
+// The focus ring has the colour of the primary fill; a gap in the page background separates them.
+// Without the transition, so the computed shadow is the final one.
+export const Focused: Story = {
+  args: { className: 'transition-none' },
+  play: async ({ canvas, userEvent }) => {
+    const button = canvas.getByRole('button', { name: 'Save' });
+    await userEvent.tab();
+    await expect(button).toHaveFocus();
+    const background = getComputedStyle(document.body).backgroundColor;
+    await expect(getComputedStyle(button).boxShadow).toContain(`${background} 0px 0px 0px 2px`);
+  },
+};
+
 export const Variants: Story = { render: variants };
 
 export const Sizes: Story = { render: sizes };

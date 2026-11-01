@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-01 |
 | Plan task | – |
-| System specification sections | §2.6, §13.4; [`docs/brand/README.md`](../../docs/brand/README.md) (UI design tokens) |
-| Related issues / PRs | #177, #182 (blocked until this specification is approved) |
+| System specification sections | §2.6, §13.4; [`docs/brand/README.md`](../../../docs/brand/README.md) (UI design tokens) |
+| Related issues / PRs | #177, #183 (specification), #182 (implementation) |
 
 ## Context
 
@@ -32,7 +32,7 @@ The focus ring (`--ring`) is vermilion, almost the red of the error state (`--de
 
 ### 1. A new brand colour for interactive states
 
-A brand colour added to [`docs/brand/README.md`](../../docs/brand/README.md) ("Colours"), with a light and a dark shade like the other UI tokens. `--ring` uses it. The maintainer chooses one variant.
+A brand colour added to [`docs/brand/README.md`](../../../docs/brand/README.md) ("Colours"), with a light and a dark shade like the other UI tokens. `--ring` uses it. The maintainer chooses one variant.
 
 | Variant | Light theme (on White) | Dark theme (on Ink `#141A2E`) | Character | Risk |
 |---|---|---|---|---|
@@ -54,14 +54,14 @@ The recommended option is the lightest one that still meets WCAG 2.4.13. Materia
 
 ### 3. Live preview
 
-[`research/2026-11-01-focus-colour-preview.md`](research/2026-11-01-focus-colour-preview.md) contains a snippet for the DevTools console of the local environment (`sh .ai/scripts/test-env-up.sh` or `pnpm dev`). It adds a panel in which the variants (plus today's Ink and the old Vermilion), the three thicknesses and the dark theme can be switched on any page. The snippet only overrides CSS in the browser and changes no code.
+[`research/2026-11-01-focus-colour-preview.md`](../research/2026-11-01-focus-colour-preview.md) contains a snippet for the DevTools console of the local environment (`sh .ai/scripts/test-env-up.sh` or `pnpm dev`). It adds a panel in which the variants (plus today's Ink and the old Vermilion), the three thicknesses and the dark theme can be switched on any page. The snippet only overrides CSS in the browser and changes no code.
 
 ## Changes to the system specification
 
 | Section | Change |
 |---|---|
-| [`docs/brand/README.md`](../../docs/brand/README.md) – Colours | new brand colour of the chosen variant (name, hex, use: "interactive states – focus, …") |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens | `--ring` row; the bullets on Vermilion and the new colour; `--info` per question 3 |
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – Colours | new brand colour of the chosen variant (name, hex, use: "interactive states – focus, …") |
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – UI design tokens | `--ring` row; the bullets on Vermilion and the new colour; `--info` per question 3 |
 | §13.4 | the focus indicator: colour token and thickness (2 px, WCAG 2.4.13) |
 
 New or changed glossary terms: none.
@@ -80,10 +80,11 @@ Implementation (#182) must not start until every question has an answer.
 - [ ] `--ring` is the chosen colour in both themes. The ring has at least 3:1 contrast on `--background`, `--card` and `--popover`, and at least 3:1 against the danger colour's hue (story test).
 - [ ] The chosen thickness applies to every component of `@trybun/ui` and to the focus rings of `apps/web`. Filled controls keep a gap in the background colour.
 - [ ] A focused invalid field keeps its danger border and is not shown with the interactive colour (story test `Input/FocusedInvalid`).
-- [ ] [`docs/brand/README.md`](../../docs/brand/README.md) and §13.4 updated; the change is noted in the user documentation only if the user-visible behaviour is described there.
+- [ ] [`docs/brand/README.md`](../../../docs/brand/README.md) and §13.4 updated; the change is noted in the user documentation only if the user-visible behaviour is described there.
 - [ ] Works on phone, tablet and desktop (Rule 9); keyboard and touch focus checked in manual QA.
 
 ## Changelog
 
 - 2026-11-01 – Created after the maintainer's manual QA of #182.
 - 2026-11-01 – Open questions answered by the maintainer: A – Blue, 2 px, blue links, `--info` reuses the blue, selections stay Ink. Implemented in #182.
+- 2026-11-01 – Approved by the maintainer (merged in #183) and implemented in #182: `--blue`, `--ring`, `--link` and `--info`, the 2 px focus indicator, blue links; `docs/brand/README.md` and §13.4 updated.

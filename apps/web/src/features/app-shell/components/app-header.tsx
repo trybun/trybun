@@ -18,7 +18,7 @@ export function AppHeader({ search, help, notifications }: AppHeaderSlots) {
     <header className="sticky top-0 z-40 flex h-14 items-center gap-1 border-b border-border bg-background px-2 md:px-4">
       <Link
         href="/"
-        className="flex min-h-11 items-center gap-2 rounded-lg px-1 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
+        className="flex min-h-11 items-center gap-2 rounded-lg px-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <Brand wordmarkClassName="sr-only md:not-sr-only" />
       </Link>
