@@ -70,10 +70,10 @@ New or changed glossary terms: none.
 
 Implementation (#182) must not start until every question has an answer.
 
-1. Which variant – **A Blue**, **B Sea** or **C Indigo** (or other values)? And which thickness – **2 px (border + 1 px ring)**, **2 px with a gap**, or **3 px**? — **Answer:** …
-2. Should the new colour also be used for **links** in running text (help, Markdown), which today use `--primary` (Ink) with an underline? — **Answer:** …
-3. With variant A, should `--info` **reuse** the new blue, or **keep** its own shade? (B and C: `--info` stays.) — **Answer:** …
-4. Should **selected states** (checked Switch and Radio, the active tab underline) also use the new colour instead of Ink? This affects more than focus and changes the look of every form. — **Answer:** …
+1. Which variant – **A Blue**, **B Sea** or **C Indigo** (or other values)? And which thickness – **2 px (border + 1 px ring)**, **2 px with a gap**, or **3 px**? — **Answer:** **A – Blue** (`#2563EB` / `#60A5FA`) with **2 px – border + 1 px ring** (maintainer, 2026-11-01, after the live preview).
+2. Should the new colour also be used for **links** in running text (help, Markdown), which today use `--primary` (Ink) with an underline? — **Answer:** **Yes** – links in running text use the blue (`--link`), still underlined.
+3. With variant A, should `--info` **reuse** the new blue, or **keep** its own shade? (B and C: `--info` stays.) — **Answer:** **`--info` reuses the blue** – one blue in the UI.
+4. Should **selected states** (checked Switch and Radio, the active tab underline) also use the new colour instead of Ink? This affects more than focus and changes the look of every form. — **Answer:** **No** – selected states stay Ink; the blue marks focus, links and information.
 
 ## Acceptance criteria
 
@@ -86,3 +86,4 @@ Implementation (#182) must not start until every question has an answer.
 ## Changelog
 
 - 2026-11-01 – Created after the maintainer's manual QA of #182.
+- 2026-11-01 – Open questions answered by the maintainer: A – Blue, 2 px, blue links, `--info` reuses the blue, selections stay Ink. Implemented in #182.
