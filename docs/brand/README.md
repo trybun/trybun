@@ -42,7 +42,7 @@ The brand colours above are not a complete UI palette. The UI uses the token set
 
 - **Ink** is the primary colour (`--primary`), and the base of the neutral scale: backgrounds, borders and muted text are mixes of Ink and White (in sRGB).
 - **Vermilion** is an **accent only** (highlights, the customer side of the mark). It is not the focus ring: it is too close to the danger red, so a focused field would look invalid.
-- **Blue** is the colour of **interactive states**: the focus ring, links in running text and the information colour. It is the third brand colour because Ink reads as black and Vermilion as an error (change specification, #183); selected states (checked switch and radio, active tab) stay Ink. It is not used for body text: white on `#E0482C` is about 4.1:1, below WCAG AA. For text and small elements on White the darker `#B8341C` (5.9:1) is used.
+- **Blue** is the colour of **interactive states**: the focus ring, links in running text and the information colour. It is the third brand colour because Ink reads as black and Vermilion as an error ([change specification](../../.ai/specs/implemented/2026-11-01-brand-interactive-colour.md)); selected states (checked switch and radio, active tab) stay Ink. It is not used for body text: white on `#E0482C` is about 4.1:1, below WCAG AA. For text and small elements on White the darker `#B8341C` (5.9:1) is used.
 - **Semantic colours** (success, warning, danger) use the 700 shades of the Tailwind palette in the light theme and the 400 shades in the dark theme, info uses Blue, as solid backgrounds with White or Ink text. They are always combined with an icon or text ([§13.4](../spec/13-non-functional.md)).
 
 | Token | Light | Dark | Contrast |
