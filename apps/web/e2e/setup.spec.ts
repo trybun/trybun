@@ -66,6 +66,8 @@ test.describe('first-run wizard', () => {
     await setup.goto('valid-token');
 
     await expect(setup.heading).toHaveText('Set up Trybun');
+    // The brand, like the acceptance of an invitation and the login screen of Keycloak.
+    await expect(page.getByRole('banner')).toContainText('trybun', { ignoreCase: true });
     await expect(page.getByText('default time zone: Europe/Warsaw')).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
     expect(await new AppShellPage(page).horizontalOverflow()).toBe(0);
