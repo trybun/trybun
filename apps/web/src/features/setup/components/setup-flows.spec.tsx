@@ -58,7 +58,7 @@ describe('SetupWizard', () => {
     expect(screen.queryByText('Trybun is already set up')).toBeNull();
   });
 
-  it('says that Trybun is set up when a used token is rejected', async () => {
+  it('says that Trybun is set up once an Administrator exists', async () => {
     fake.on('GET /api/v1/setup', { data: { ...SETUP, status: 'completed' } });
     renderInApp(<SetupWizard />);
 
