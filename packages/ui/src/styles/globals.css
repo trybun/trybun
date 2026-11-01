@@ -162,9 +162,21 @@
 /*
  * The element a product tour step explains (§2.4), marked by the tour with an attribute, never a
  * class: a focus-coloured ring around it that leaves the page undimmed and usable.
+ *
+ * The shape is a component default, so a target's own radius (`rounded-full`) still wins. The ring
+ * sits in the utilities layer, after Tailwind's utilities: at equal specificity the later rule wins,
+ * so `outline-none` of a target such as `Button` cannot remove it (#186) – a component layer loses
+ * to every utility. `outline-solid` is explicit because `outline-none` also sets the style variable
+ * `outline-3` reads.
  */
 @layer components {
   [data-tour-highlighted] {
-    @apply rounded-lg outline-3 outline-offset-2 outline-ring;
+    @apply rounded-lg;
+  }
+}
+
+@layer utilities {
+  [data-tour-highlighted] {
+    @apply outline-3 outline-offset-2 outline-ring outline-solid;
   }
 }

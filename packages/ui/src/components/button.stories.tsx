@@ -91,6 +91,49 @@ export const Focused: Story = {
   },
 };
 
+// The target of a product tour step (§2.4) has the ring of the tour, whatever its variant; the
+// `outline-none` of the button does not remove it (#186). A button outside a tour has no outline.
+export const TourTarget: Story = {
+  render: (args) => (
+    <div className="flex flex-wrap items-center gap-4 p-2">
+      {VARIANTS.map((variant) => (
+        <Button {...args} key={variant} variant={variant} data-tour-highlighted="">
+          {variant}
+        </Button>
+      ))}
+      <Button
+        {...args}
+        variant="ghost"
+        size="icon"
+        className="rounded-full"
+        aria-label="New ticket"
+        data-tour-highlighted=""
+      >
+        <PlusIcon />
+      </Button>
+      <Button {...args}>Not a target</Button>
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    const round = canvas.getByRole('button', { name: 'New ticket' });
+    const square = canvas.getByRole('button', { name: 'default' });
+    for (const target of [
+      ...VARIANTS.map((variant) => canvas.getByRole('button', { name: variant })),
+      round,
+    ]) {
+      const style = getComputedStyle(target);
+      await expect(style.outlineStyle).toBe('solid');
+      await expect(style.outlineWidth).toBe('3px');
+    }
+    // The target keeps its own shape: the ring follows a round button.
+    await expect(getComputedStyle(round).borderRadius).not.toBe(
+      getComputedStyle(square).borderRadius,
+    );
+    const other = canvas.getByRole('button', { name: 'Not a target' });
+    await expect(getComputedStyle(other).outlineStyle).toBe('none');
+  },
+};
+
 export const Variants: Story = { render: variants };
 
 export const Sizes: Story = { render: sizes };
