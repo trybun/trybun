@@ -106,7 +106,9 @@ test.describe('product tours', () => {
       await expect(tour.highlighted()).toHaveCSS('outline-width', '3px');
     }
 
-    await tour.done.click();
+    // Closed with Esc, as above: Done would record the tour again for the account all projects share.
+    await page.keyboard.press('Escape');
+    await expect(tour.tip).toBeHidden();
     await expect(tour.highlighted()).toHaveCount(0);
   });
 
