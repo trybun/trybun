@@ -52,7 +52,7 @@ export function SideNavigation({
                   href={href}
                   aria-current={isCurrentPage ? 'page' : undefined}
                   className={cn(
-                    'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-9',
+                    'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-9',
                     isCurrentPage && 'bg-muted text-foreground',
                   )}
                 >

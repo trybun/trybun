@@ -42,7 +42,7 @@ export function OrganizationDetail({ organizationId }: { organizationId: string 
       <div className="flex flex-col gap-2">
         <Link
           href={ORGANIZATIONS_HREF}
-          className="flex min-h-11 w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-0"
+          className="flex min-h-11 w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-0"
         >
           <ChevronLeftIcon aria-hidden className="size-4" />
           {t('detail.back')}

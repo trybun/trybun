@@ -61,8 +61,8 @@ export const Invalid: Story = {
   ),
 };
 
-// A focused valid field never looks invalid: the ring is the neutral --primary (Ink in the light
-// theme), not a red close to the danger colour (#177).
+// A focused valid field never looks invalid: the ring is the interactive blue, neither a red close to
+// the danger colour nor the near-black Ink; the border plus a 1 px ring make the 2 px indicator (#177).
 // Without the colour transition, so the computed border is the final one.
 export const Focused: Story = {
   args: { className: 'transition-none' },
@@ -71,8 +71,12 @@ export const Focused: Story = {
     await userEvent.tab();
     await expect(input).toHaveFocus();
     await expect(getComputedStyle(input).borderColor).toBe(tokenColor('--ring'));
-    await expect(getComputedStyle(input).boxShadow).toContain(tokenColor('--ring'));
-    await expect(tokenColor('--ring')).toBe(tokenColor('--primary'));
+    await expect(getComputedStyle(input).boxShadow).toContain(
+      `${tokenColor('--ring')} 0px 0px 0px 1px`,
+    );
+    await expect(tokenColor('--ring')).toBe(tokenColor('--link'));
+    await expect(tokenColor('--ring')).not.toBe(tokenColor('--destructive'));
+    await expect(tokenColor('--ring')).not.toBe(tokenColor('--primary'));
   },
 };
 

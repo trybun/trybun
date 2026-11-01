@@ -22,12 +22,12 @@ function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
     <div data-slot="combobox-input-group" className={cn('relative w-full', className)}>
       <ComboboxPrimitive.Input
         data-slot="combobox-input"
-        className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent py-1 pr-11 pl-3 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pr-8 xl:pointer-fine:pl-2.5 xl:pointer-fine:text-sm"
+        className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent py-1 pr-11 pl-3 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pr-8 xl:pointer-fine:pl-2.5 xl:pointer-fine:text-sm"
         {...props}
       />
       <ComboboxPrimitive.Trigger
         data-slot="combobox-trigger"
-        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 xl:pointer-fine:w-8"
+        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 xl:pointer-fine:w-8"
       >
         <ChevronDownIcon aria-hidden className="pointer-events-none size-4" />
         <span className="sr-only">{t('combobox.show')}</span>

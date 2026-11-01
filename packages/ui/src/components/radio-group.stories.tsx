@@ -133,7 +133,7 @@ export const ChoiceCardsKeyboard: Story = {
     await expect(radio).toHaveFocus();
     const card = radio.closest('label');
     await expect(card).not.toBeNull();
-    await expect(getComputedStyle(card!).boxShadow).toMatch(/rgb\(\d+, \d+, \d+\) 0px 0px 0px 3px/);
+    await expect(getComputedStyle(card!).boxShadow).toMatch(/rgb\(\d+, \d+, \d+\) 0px 0px 0px 1px/);
     // Every layer of the radio's shadow (offset and ring) is transparent or zero-width.
     await expect(getComputedStyle(radio).boxShadow).not.toMatch(
       /rgb\(\d+, \d+, \d+\) 0px 0px 0px [1-9]/,

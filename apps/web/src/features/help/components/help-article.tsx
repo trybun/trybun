@@ -12,7 +12,7 @@ export function HelpArticle({ page }: { page: HelpPage }) {
     <article className="flex max-w-prose flex-col gap-4">
       <Link
         href={HELP_PATH}
-        className="-ml-2 flex min-h-11 w-fit items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
+        className="-ml-2 flex min-h-11 w-fit items-center gap-2 rounded-lg px-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <ArrowLeftIcon aria-hidden className="size-4" />
         {t('allTopics')}
