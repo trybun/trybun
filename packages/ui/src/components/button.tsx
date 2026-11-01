@@ -8,7 +8,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/80',
+        // The ring has the colour of the fill; the offset keeps a gap between them.
+        default:
+          'bg-primary text-primary-foreground hover:bg-primary/80 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         outline:
           'border-border bg-background text-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
         secondary:

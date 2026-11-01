@@ -15,8 +15,6 @@
   /* Brand colours (docs/brand/README.md); not utilities, only the source of the tokens below. */
   --ink: #141a2e;
   --vermilion: #e0482c;
-  /* Vermilion for text and small elements: 5.9:1 on White. */
-  --vermilion-text: #b8341c;
 
   color-scheme: light;
   --background: #ffffff;
@@ -48,7 +46,8 @@
   --border: #e3e4e6;
   /* Ink 50 % on White: 3.3:1, the boundary of form fields (WCAG 1.4.11). */
   --input: #8a8c96;
-  --ring: var(--vermilion-text);
+  /* Ink, not Vermilion, so focus never reads as the error colour: 17.3:1 on --background. */
+  --ring: var(--ink);
   --overlay: rgb(20 26 46 / 40%);
   --brand-accent: var(--vermilion);
   --radius: 0.625rem;
@@ -86,8 +85,8 @@
   --border: #373c4d;
   /* White 40 % on Ink: 3.8:1 on --background, 3.2:1 on --popover. */
   --input: #727682;
-  /* 4.2:1 on Ink. */
-  --ring: var(--vermilion);
+  /* White: 17.3:1 on --background. */
+  --ring: #ffffff;
   --overlay: rgb(0 0 0 / 60%);
 }
 

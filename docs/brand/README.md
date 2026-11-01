@@ -40,7 +40,7 @@ The wordmark in `trybun-logo-*.svg` uses the **Manrope ExtraBold** font. Before 
 The brand colours above are not a complete UI palette. The UI uses the token set of shadcn/ui, derived from the brand as follows; Tailwind's default colour palette is not available:
 
 - **Ink** is the primary colour (`--primary`), and the base of the neutral scale: backgrounds, borders and muted text are mixes of Ink and White (in sRGB).
-- **Vermilion** is an **accent only** (highlights, the customer side of the mark, the focus ring). It is not used for body text: white on `#E0482C` is about 4.1:1, below WCAG AA. For text and small elements on White the darker `#B8341C` (5.9:1) is used.
+- **Vermilion** is an **accent only** (highlights, the customer side of the mark). It is not the focus ring: it is too close to the danger red, so a focused field would look invalid; the ring is Ink (White in the dark theme). It is not used for body text: white on `#E0482C` is about 4.1:1, below WCAG AA. For text and small elements on White the darker `#B8341C` (5.9:1) is used.
 - **Semantic colours** (success, warning, danger, info) use the 700 shades of the Tailwind palette in the light theme and the 400 shades in the dark theme, as solid backgrounds with White or Ink text. They are always combined with an icon or text ([§13.4](../spec/13-non-functional.md)).
 
 | Token | Light | Dark | Contrast |
@@ -57,7 +57,7 @@ The brand colours above are not a complete UI palette. The UI uses the token set
 | `--info` / `-foreground` | blue-700 `#1447E6` / White | blue-400 `#51A2FF` / Ink | 6.8:1 / 6.6:1 |
 | `--border` | `#E3E4E6` (Ink 12 %) | `#373C4D` (White 15 %) | decorative |
 | `--input` | `#8A8C96` (Ink 50 %) | `#727682` (White 40 %) | boundary of form fields, 3.3:1 / 3.8:1 (WCAG 1.4.11) |
-| `--ring` | Vermilion text `#B8341C` | Vermilion `#E0482C` | focus ring on `--background` 5.9:1 / 4.2:1 |
+| `--ring` | Ink | White | focus ring on `--background` 17.3:1; an offset in `--background` separates it from Ink-filled controls |
 | `--overlay` | Ink 40 % | Black 60 % | backdrop of dialogs and sheets |
 | `--brand-accent` | Vermilion `#E0482C` | Vermilion `#E0482C` | not for text |
 | `--radius` | `0.625rem` | | |
