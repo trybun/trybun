@@ -31,7 +31,6 @@ import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
 import { useCreateAdministrator } from '../mutations.js';
 import { timeZones } from '../setup-link.js';
-import { SetupMessage } from './setup-message.js';
 
 const LANGUAGES: readonly Language[] = ['en', 'pl'];
 
@@ -47,10 +46,13 @@ const REQUIRED_MESSAGES = { firstName: 'firstNameRequired', lastName: 'lastNameR
 export function AdministratorForm({
   token,
   setup,
+  onCreated,
   onTokenRejected,
 }: {
   token: string;
   setup: Setup;
+  /** The Administrator exists: the wizard shows its success message. */
+  onCreated: () => void;
   /** The token was used or expired meanwhile: the wizard shows its message instead. */
   onTokenRejected: () => void;
 }) {
@@ -72,16 +74,8 @@ export function AdministratorForm({
   });
   const zones = timeZones();
 
-  if (createAdministrator.isSuccess) {
-    return (
-      <SetupMessage title={t('doneTitle')} signIn>
-        {t('doneText')}
-      </SetupMessage>
-    );
-  }
-
   const submit = form.handleSubmit((input) =>
-    createAdministrator.mutateAsync(input).catch((error: unknown) => {
+    createAdministrator.mutateAsync(input).then(onCreated, (error: unknown) => {
       if (
         error instanceof ApiError &&
         ['setup.token_invalid', 'setup.completed'].includes(error.code)

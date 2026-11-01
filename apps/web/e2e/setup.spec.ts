@@ -11,31 +11,36 @@ const SETUP = { status: 'available', defaultLanguage: 'en', defaultTimeZone: 'Eu
 /**
  * A fresh installation, simulated in the browser: the local environment has the Administrator of
  * the demo dataset, and creating one needs a fresh Keycloak (covered by the integration tests).
+ * Like the real API, a created Administrator completes the setup and uses up the token.
  */
 async function freshInstallation(page: Page, administrator: { status: number; body?: object }) {
-  await page.route('**/api/v1/setup', (route) => route.fulfill({ json: SETUP }));
+  let isCompleted = false;
+  await page.route('**/api/v1/setup', (route) =>
+    route.fulfill({ json: { ...SETUP, status: isCompleted ? 'completed' : 'available' } }),
+  );
   await page.route('**/api/v1/setup/token-verification', async (route) => {
     const { token } = route.request().postDataJSON() as { token: string };
-    await (token === 'valid-token'
-      ? route.fulfill({ json: SETUP })
-      : route.fulfill({
-          status: 404,
-          contentType: 'application/problem+json',
-          json: {
-            type: 'about:blank',
-            title: 'Not Found',
-            status: 404,
-            code: 'setup.token_invalid',
-          },
-        }));
+    if (token === 'valid-token' && !isCompleted) {
+      await route.fulfill({ json: SETUP });
+      return;
+    }
+    const [status, title, code] = isCompleted
+      ? [409, 'Conflict', 'setup.completed']
+      : [404, 'Not Found', 'setup.token_invalid'];
+    await route.fulfill({
+      status,
+      contentType: 'application/problem+json',
+      json: { type: 'about:blank', title, status, code },
+    });
   });
-  await page.route('**/api/v1/setup/administrator', (route) =>
-    route.fulfill({
+  await page.route('**/api/v1/setup/administrator', (route) => {
+    isCompleted = administrator.status === 201;
+    return route.fulfill({
       status: administrator.status,
       contentType: administrator.status >= 400 ? 'application/problem+json' : 'application/json',
       json: administrator.body ?? { id: '0199a3f0-0000-7000-8000-0000000000aa' },
-    }),
-  );
+    });
+  });
 }
 
 test.describe('first-run wizard', () => {
@@ -94,6 +99,9 @@ test.describe('first-run wizard', () => {
       timeZone: 'Europe/Warsaw',
     });
     await expect(setup.message).toHaveText('Your account is ready');
+
+    await page.reload();
+    await expect(setup.message).toHaveText('Trybun is already set up');
   });
 
   test('states the password rule and refuses a short password before sending', async ({ page }) => {
