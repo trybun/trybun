@@ -21,7 +21,7 @@ export function AppShell({
     <div className="flex min-h-dvh flex-col">
       <a
         href="#main"
-        className="sr-only z-50 rounded-lg bg-background px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"
+        className="sr-only z-50 rounded-lg bg-background focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:px-3 focus:py-2 focus:ring-2 focus:ring-ring"
       >
         {t('skipToContent')}
       </a>
