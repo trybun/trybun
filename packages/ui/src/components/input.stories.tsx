@@ -80,17 +80,21 @@ export const Focused: Story = {
   },
 };
 
-// A focused invalid field keeps its danger border and ring: focus does not change them.
+// An invalid field shows only its thin danger border at rest; on focus the border plus a 1 px ring
+// in the danger colour make the 2 px indicator, so the focused one stands out among invalid fields.
 export const FocusedInvalid: Story = {
   ...Invalid,
   args: { ...Invalid.args, className: 'transition-none' },
   play: async ({ canvas, userEvent }) => {
     const input = canvas.getByRole('textbox', { name: 'Title' });
-    const { borderColor, boxShadow } = getComputedStyle(input);
+    const danger = tokenColor('--destructive');
+    await expect(getComputedStyle(input).borderColor).toBe(danger);
+    // No ring of any colour or opacity at rest – every shadow layer is zero-width.
+    await expect(getComputedStyle(input).boxShadow).not.toMatch(/0px 0px 0px [1-9]/);
     await userEvent.tab();
     await expect(input).toHaveFocus();
-    await expect(getComputedStyle(input).borderColor).toBe(borderColor);
-    await expect(getComputedStyle(input).boxShadow).toBe(boxShadow);
+    await expect(getComputedStyle(input).borderColor).toBe(danger);
+    await expect(getComputedStyle(input).boxShadow).toContain(`${danger} 0px 0px 0px 1px`);
   },
 };
 

@@ -91,7 +91,7 @@ How these requirements are built – upload, quarantine and scan, type detection
 - Compliance with **WCAG 2.2 level AA**.
 - Touch targets of at least 44 × 44 px on phones and tablets (Rule 9, [§2.9](02-agent-rules.md)).
 - Full keyboard operation, visible focus, sufficient contrast, labels for screen readers.
-- The focus indicator uses the interactive brand colour (`--ring`, [`docs/brand/`](../brand/README.md)), never a colour close to the danger red, and is 2 px thick: a bordered control's border takes the colour plus a 1 px ring, a borderless element gets a 2 px ring, and a control filled with a solid colour gets a 2 px ring after a 2 px gap in the background colour (WCAG 2.2 criterion 2.4.13). A focused invalid field keeps its danger border.
+- The focus indicator uses the interactive brand colour (`--ring`, [`docs/brand/`](../brand/README.md)), never a colour close to the danger red, and is 2 px thick: a bordered control's border takes the colour plus a 1 px ring, a borderless element gets a 2 px ring, and a control filled with a solid colour gets a 2 px ring after a 2 px gap in the background colour (WCAG 2.2 criterion 2.4.13). An invalid field shows a thin danger border at rest and, when focused, the same 2 px indicator in the danger colour instead of the interactive one.
 - Every drag-and-drop operation (Kanban, roadmap, Gantt chart) has an alternative without dragging, e.g. a context menu or keyboard shortcut (WCAG 2.2 criterion 2.5.7).
 - Information is never conveyed by color alone (e.g. SLA states and internal notes also have an icon or text).
 
