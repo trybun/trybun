@@ -61,7 +61,14 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon" className="rounded-full" />}
+        // The initials fill the button on desktop; the offset keeps the focus ring apart from them.
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          />
+        }
         aria-label={t('accountMenu')}
         data-tour="app-header-account-menu"
       >
