@@ -103,7 +103,12 @@ test.describe('product tours', () => {
       await expect(tour.step(step, 4)).toBeVisible();
       await expect(tour.highlighted()).toHaveAttribute('data-tour', target);
       await expect(tour.highlighted()).toHaveCSS('outline-style', 'solid');
-      await expect(tour.highlighted()).toHaveCSS('outline-width', '3px');
+      // Chrome snaps the 3 px width to device pixels: 2.8px on the tablet's fractional pixel ratio.
+      await expect
+        .poll(() =>
+          tour.highlighted().evaluate((el) => parseFloat(getComputedStyle(el).outlineWidth)),
+        )
+        .toBeGreaterThanOrEqual(2.5);
     }
 
     // Closed with Esc, as above: Done would record the tour again for the account all projects share.
