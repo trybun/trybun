@@ -43,4 +43,4 @@ PR: #194
 - [x] 1.2 Projects page full width — bfe43d3
 - [x] 1.3 Administration widths per page — 303ed82
 - [x] 1.4 E2E desktop width check — dfc0b0b
-- [ ] 1.5 Mark the spec implemented
+- [x] 1.5 Mark the spec implemented — b3e8fc1
