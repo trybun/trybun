@@ -92,7 +92,8 @@ export const Focused: Story = {
 };
 
 // The target of a product tour step (§2.4) has the ring of the tour, whatever its variant; the
-// `outline-none` of the button does not remove it (#186). A button outside a tour has no outline.
+// `outline-none` of the button does not remove it (#186). A button outside a tour has no outline;
+// a target at an edge of the screen, marked `inset`, has the ring inside its border (#196).
 export const TourTarget: Story = {
   render: (args) => (
     <div className="flex flex-wrap items-center gap-4 p-2">
@@ -110,6 +111,9 @@ export const TourTarget: Story = {
         data-tour-highlighted=""
       >
         <PlusIcon />
+      </Button>
+      <Button {...args} data-tour-highlighted="inset">
+        At the screen edge
       </Button>
       <Button {...args}>Not a target</Button>
     </div>
@@ -129,6 +133,10 @@ export const TourTarget: Story = {
     await expect(getComputedStyle(round).borderRadius).not.toBe(
       getComputedStyle(square).borderRadius,
     );
+    await expect(getComputedStyle(square).outlineOffset).toBe('2px');
+    const edge = getComputedStyle(canvas.getByRole('button', { name: 'At the screen edge' }));
+    await expect(edge.outlineStyle).toBe('solid');
+    await expect(edge.outlineOffset).toBe('-3px');
     const other = canvas.getByRole('button', { name: 'Not a target' });
     await expect(getComputedStyle(other).outlineStyle).toBe('none');
   },

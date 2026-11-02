@@ -168,6 +168,9 @@
  * so `outline-none` of a target such as `Button` cannot remove it (#186) – a component layer loses
  * to every utility. `outline-solid` is explicit because `outline-none` also sets the style variable
  * `outline-3` reads.
+ *
+ * A target at an edge of the screen (the bottom navigation of phones) is marked `inset` by the
+ * tour: its ring sits inside the border, where the edge cannot cut it off (#196).
  */
 @layer components {
   [data-tour-highlighted] {
@@ -178,5 +181,8 @@
 @layer utilities {
   [data-tour-highlighted] {
     @apply outline-3 outline-offset-2 outline-ring outline-solid;
+  }
+  [data-tour-highlighted='inset'] {
+    @apply -outline-offset-3;
   }
 }
