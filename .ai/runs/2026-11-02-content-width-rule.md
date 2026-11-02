@@ -37,8 +37,8 @@ Pages outside the shell, Help, a new `@trybun/ui` layout component, the inner la
 
 ### Phase 1: Rule and application
 
-- [ ] 1.1 Record the rule in the specification
-- [ ] 1.2 Projects page full width
-- [ ] 1.3 Administration widths per page
-- [ ] 1.4 E2E desktop width check
+- [x] 1.1 Record the rule in the specification — d1f21c6
+- [x] 1.2 Projects page full width — bfe43d3
+- [x] 1.3 Administration widths per page — 303ed82
+- [x] 1.4 E2E desktop width check — dfc0b0b
 - [ ] 1.5 Mark the spec implemented
