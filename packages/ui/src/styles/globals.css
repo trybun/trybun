@@ -150,6 +150,11 @@
   padding-bottom: calc(var(--spacing) * --value(integer) + env(safe-area-inset-bottom, 0px));
 }
 
+/* The same for the scroll margin, which keeps an element clear of the bottom navigation of phones. */
+@utility scroll-mb-safe-offset-* {
+  scroll-margin-bottom: calc(var(--spacing) * --value(integer) + env(safe-area-inset-bottom, 0px));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring;
@@ -171,10 +176,14 @@
  *
  * A target at an edge of the screen (the bottom navigation of phones) is marked `inset` by the
  * tour: its ring sits inside the border, where the edge cannot cut it off (#196).
+ *
+ * The scroll margin keeps a target the tour scrolls into view 16 px clear of the sticky header
+ * (56 px) and of the bottom navigation of phones (57 px with its border), so its outside ring
+ * fits in the viewport instead of ending flush with its edge (#191).
  */
 @layer components {
   [data-tour-highlighted] {
-    @apply rounded-lg;
+    @apply scroll-mt-18 scroll-mb-safe-offset-19 rounded-lg md:scroll-mb-4;
   }
 }
 

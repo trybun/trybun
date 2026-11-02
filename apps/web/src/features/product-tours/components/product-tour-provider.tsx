@@ -19,7 +19,7 @@ import { currentUserQueryOptions } from '../../users/queries.js';
 import { useRecordProductTourProgress } from '../mutations.js';
 import {
   findTourTarget,
-  isNearViewportEdge,
+  isRingInset,
   isTourDue,
   type ProductTour,
   type ProductTourStep,
@@ -125,10 +125,18 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
     if (element === null) {
       return undefined;
     }
-    // At an edge of the screen the ring goes inside the target, or the edge cuts it off (#196).
+    // At an edge of the screen the ring goes inside the target, or the edge cuts it off (#196);
+    // the scroll margin of the marked target keeps the scroll from ending at an edge (#191).
+    element.setAttribute('data-tour-highlighted', '');
+    const style = getComputedStyle(element);
+    const scrollMargin = {
+      top: parseFloat(style.scrollMarginTop) || 0,
+      bottom: parseFloat(style.scrollMarginBottom) || 0,
+    };
     const viewport = { width: window.innerWidth, height: window.innerHeight };
-    const isAtEdge = isNearViewportEdge(element.getBoundingClientRect(), viewport);
-    element.setAttribute('data-tour-highlighted', isAtEdge ? 'inset' : '');
+    if (isRingInset(element.getBoundingClientRect(), viewport, scrollMargin)) {
+      element.setAttribute('data-tour-highlighted', 'inset');
+    }
     const isMotionReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     element.scrollIntoView({ block: 'nearest', behavior: isMotionReduced ? 'instant' : 'smooth' });
     return () => element.removeAttribute('data-tour-highlighted');
