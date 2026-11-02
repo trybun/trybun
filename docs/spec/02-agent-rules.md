@@ -223,6 +223,7 @@ Rule 9 is **directly subordinate to Rule 2** (and through it to Rule 1): on smal
 - **No hover-only interactions**: everything available on hover is also available by tap.
 - Forms use the correct input types (`email`, `tel`, `number`, `date`) so phones show the right keyboard, and form fields use at least 16 px text so iOS does not zoom in on focus.
 - The layout respects device safe areas (notches, home indicators).
+- **Content width** in the application shell follows what the page is for. Forms, settings and the detail of one record use a readable width of at most 768 px, so lines stay short and labels stay near their fields. Lists, tables and boards use the full width of the content area, so columns and long titles have room, as in GitHub, Linear and Jira. Help text keeps the width of prose. Below the tablet breakpoint every page fills the screen.
 - A **web app manifest** with the brand icons ([`docs/brand/`](../brand/README.md)) lets users add Trybun to the home screen. Offline operation is not required.
 
 ### Patterns per element

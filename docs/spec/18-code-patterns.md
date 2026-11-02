@@ -35,6 +35,7 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | A schema, type, enum or error code used by two applications | `@trybun/contracts/<feature>`; types from `z.infer` | [§18.4](#184-contracts-and-packages) |
 | A list endpoint | Cursor pagination with the shared envelope | [§18.4](#184-contracts-and-packages) |
 | A page | Thin route file: parse parameters, prefetch, compose feature components | [§18.5](#185-web-application) |
+| The width of a page's content | `max-w-3xl` on the root element of a form, settings or detail page; no `max-w-*` on a list, table or board page; never on a layout shared by both | [§2.9](02-agent-rules.md), [§18.5](#185-web-application) |
 | Reading data in the browser | `queryOptions` factory in `queries.ts`; prefetch on the server and hydrate | [§18.5](#185-web-application) |
 | Changing data from the browser | Mutation hook in `mutations.ts` | [§18.5](#185-web-application) |
 | View state | URL search parameters parsed with Zod (never free text); otherwise local state | [§18.5](#185-web-application) |
@@ -179,6 +180,7 @@ apps/web/src/
 ```
 
 - Route files (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx`) stay thin: they parse parameters with a Zod schema, prefetch data and compose feature components.
+- **Content width** (§2.9): the page sets the width of its content on its root element, either in the route file or in the feature component that renders the page. A form, settings or detail page uses `max-w-3xl`. A list, table or board page uses no `max-w-*` and takes the full width of the content area. A layout shared by pages of both kinds never limits the width.
 - Dependencies point one way: `app` → `features` → `lib` → packages. Features may use each other's components, queries and mutations; imports between features form no cycles.
 - Modules for the server only start with `import 'server-only'` (session, server API client, environment); modules for the browser only start with `import 'client-only'`.
 
