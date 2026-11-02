@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** The application shell around the team views (§2.9). */
 export class AppShellPage {
@@ -30,7 +30,14 @@ export class AppShellPage {
 
   /** Opens the help menu (§2.3, §2.4). */
   async openHelpMenu(): Promise<Locator> {
-    await this.help.click();
+    // The server renders the button; a click before the hydration opens nothing (WebKit, #191).
+    const menu = this.page.getByRole('menu');
+    await expect(async () => {
+      if (!(await menu.isVisible())) {
+        await this.help.click();
+      }
+      await expect(menu).toBeVisible({ timeout: 1000 });
+    }).toPass();
     return this.openedMenu();
   }
 
