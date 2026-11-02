@@ -1,6 +1,6 @@
 # Execution plan: content width of pages in the application shell
 
-Source doc: .ai/specs/2026-11-02-content-width-rule.md
+Source doc: .ai/specs/implemented/2026-11-02-content-width-rule.md
 Issue: #179 · Spec PR: #193
 
 ## Goal
