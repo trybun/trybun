@@ -5,6 +5,7 @@ import { AccountsPage } from './pages/accounts.page.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { SignInPage } from './pages/sign-in.page.js';
 import { ADMIN_STORAGE_STATE } from './storage-state.js';
+import { waitForToastsToClose } from './toasts.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 /**
@@ -162,10 +163,9 @@ test.describe('accounts of the Administrator', () => {
     if (browserName === 'chromium') {
       await expect(page.getByText('Link copied')).toBeVisible();
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
-      // Toasts lie above the dialogs (#172): on phones it covers Done of the bottom sheet and takes
-      // the click until it times out – and a pointer resting on it pauses that timeout.
-      await expect(accounts.toast('Link copied')).toHaveCount(0, { timeout: 10_000 });
     }
+    // On phones the toast covers Done of the bottom sheet.
+    await waitForToastsToClose(page);
     await created.getByRole('button', { name: 'Done' }).click();
     // axe only after the closing animation: mid-fade the form's texts fail color-contrast.
     await expect(created).toHaveCount(0);
