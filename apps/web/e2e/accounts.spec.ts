@@ -162,6 +162,9 @@ test.describe('accounts of the Administrator', () => {
     if (browserName === 'chromium') {
       await expect(page.getByText('Link copied')).toBeVisible();
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
+      // Toasts lie above the dialogs (#172): on phones it covers Done of the bottom sheet and takes
+      // the click until it times out – and a pointer resting on it pauses that timeout.
+      await expect(accounts.toast('Link copied')).toHaveCount(0, { timeout: 10_000 });
     }
     await created.getByRole('button', { name: 'Done' }).click();
     // axe only after the closing animation: mid-fade the form's texts fail color-contrast.
