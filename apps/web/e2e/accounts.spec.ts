@@ -97,7 +97,7 @@ test.describe('accounts of the Administrator', () => {
 
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
-    await expectFullContentWidth(accounts.account('Marek Manager'), testInfo);
+    await expectFullContentWidth(page.getByRole('table', { name: 'Accounts' }), testInfo);
     await expectTouchTarget(accounts.search, minimumTargetSize(testInfo));
     await expectTouchTarget(accounts.kindFilter, minimumTargetSize(testInfo));
     await expectTouchTarget(accounts.actionsOf('Marek Manager'), minimumTargetSize(testInfo), [
