@@ -178,7 +178,7 @@ services:
   seaweedfs:
     <<: *service
     profiles: [seaweedfs]
-    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    image: chrislusf/seaweedfs:4.50@sha256:c2658820e763294a9e9de7b36c81e59b879e3459148351aee4e31a126ca64860
     command: [server, -dir=/data, -s3, -master.telemetry=false]
     environment:
       AWS_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:?TRYBUN_S3_ACCESS_KEY_ID must be set}
@@ -195,7 +195,7 @@ services:
   # Identity provider under /auth on the system domain (§15.5).
   keycloak:
     <<: *service
-    image: quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b
+    image: quay.io/keycloak/keycloak:26.8.1@sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332
     command: [start]
     environment:
       KC_DB: postgres

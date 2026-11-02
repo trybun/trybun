@@ -19,15 +19,25 @@ export class AccountsPage {
   }
 
   /**
-   * The visible entry of an account: a card on phones, a row of the table from the tablet on
-   * (Rule 9); the other layout is hidden.
+   * The visible entries of the listed accounts: the cards on phones, the rows of the table from the
+   * tablet on (Rule 9); the other layout is hidden. Only the entries themselves – not the items of
+   * a card's pending invitations nor the invitation rows below an account's row, which name the
+   * inviting person ("Invited by Ada Admin").
    */
+  get entries(): Locator {
+    const cards = this.page
+      .getByRole('list', { name: 'Accounts', exact: true })
+      .locator(':scope > li');
+    const rows = this.page
+      .getByRole('table', { name: 'Accounts', exact: true })
+      .getByRole('row')
+      .filter({ has: this.page.getByRole('rowheader') });
+    return cards.or(rows).filter({ visible: true });
+  }
+
+  /** The visible entry of an account. */
   account(name: string): Locator {
-    return this.page
-      .getByRole('listitem')
-      .or(this.page.getByRole('row'))
-      .filter({ hasText: name })
-      .filter({ visible: true });
+    return this.entries.filter({ hasText: name });
   }
 
   actionsOf(name: string): Locator {
@@ -44,7 +54,14 @@ export class AccountsPage {
 
   /** Searches until only the account with the name is listed. */
   async find(name: string): Promise<void> {
-    await this.search.fill(name);
+    // A search typed before the page hydrated is lost (WebKit is slower), so type until the list
+    // shows its results. The search matches a part of the name or the address, so a single entry
+    // is the account itself.
+    await expect(async () => {
+      await this.search.fill('');
+      await this.search.fill(name);
+      await expect(this.entries).toHaveCount(1, { timeout: 2_000 });
+    }).toPass();
     await expect(this.account(name)).toHaveCount(1);
   }
 
