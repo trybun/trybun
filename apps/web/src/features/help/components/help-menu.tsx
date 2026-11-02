@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { APP_HEADER_ICON_CLASS_NAME } from '../../app-shell/components/app-header-icon.js';
 import { helpHref, helpPageOfPath } from '../help-routes.js';
 
 /**
@@ -38,7 +39,7 @@ export function HelpMenu({
         aria-label={t('open')}
         data-tour="app-header-help"
       >
-        <CircleHelpIcon aria-hidden className="size-5" />
+        <CircleHelpIcon aria-hidden className={APP_HEADER_ICON_CLASS_NAME} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
