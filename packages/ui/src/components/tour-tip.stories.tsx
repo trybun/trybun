@@ -109,6 +109,25 @@ export const Closable: Story = {
   },
 };
 
+/**
+ * The actions sit at least 4 px – the width of the focus ring – inside the clipping content box
+ * of the phone sheet, and the step counter as far from the screen edge as the sides (#190).
+ */
+async function expectActionsInsideTheSheet(tip: HTMLElement) {
+  const content = tip.querySelector('[data-slot="drawer-content"]');
+  await expect(content).not.toBeNull();
+  const box = content!.getBoundingClientRect();
+  for (const name of ['Next', 'Back', 'Skip tour', 'Close']) {
+    const action = screen.getByRole('button', { name }).getBoundingClientRect();
+    await expect(action.left - box.left).toBeGreaterThanOrEqual(4);
+    await expect(box.right - action.right).toBeGreaterThanOrEqual(4);
+    await expect(action.top - box.top).toBeGreaterThanOrEqual(4);
+    await expect(box.bottom - action.bottom).toBeGreaterThanOrEqual(4);
+  }
+  const counter = screen.getByText('Step 2 of 4').getBoundingClientRect();
+  await expect(counter.left - box.left).toBeGreaterThanOrEqual(16);
+}
+
 // A sheet at the top edge on phones, for a target at the bottom edge (the bottom navigation).
 export const PhoneAtTheTop: Story = {
   args: { sheetSide: 'top' },
@@ -118,6 +137,10 @@ export const PhoneAtTheTop: Story = {
     await waitFor(async () => {
       await expect(Math.round(tip.getBoundingClientRect().top)).toBe(0);
     });
+    await expectActionsInsideTheSheet(tip);
+    // The step counter is as far from the top edge of the screen as from its side.
+    const counter = screen.getByText('Step 2 of 4').getBoundingClientRect();
+    await expect(counter.top).toBeGreaterThanOrEqual(16);
   },
 };
 
@@ -135,6 +158,7 @@ export const Phone: Story = {
       const { height } = screen.getByRole('button', { name }).getBoundingClientRect();
       await expect(height).toBeGreaterThanOrEqual(44);
     }
+    await expectActionsInsideTheSheet(tip);
   },
 };
 
