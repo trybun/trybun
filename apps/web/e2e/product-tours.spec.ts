@@ -119,7 +119,12 @@ test.describe('product tours', () => {
 
   // The tip stayed next to the previous step's target while it stayed open (#188).
   test('shows the tip next to the target of every step', async ({ page }) => {
-    test.skip(test.info().project.name === 'phone', 'On phones the tip is a sheet at the edge.');
+    // The tip is a popover from the tablet breakpoint (48rem); below it, a sheet at the edge. The
+    // iPad (gen 11) of the tablet project is 656 px wide in portrait, so it shows the sheet too.
+    test.skip(
+      (page.viewportSize()?.width ?? 0) < 768,
+      'Below the tablet breakpoint the tip is a sheet at the edge.',
+    );
 
     const shell = new AppShellPage(page);
     const tour = new ProductTourPage(page);
