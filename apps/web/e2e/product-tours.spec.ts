@@ -61,6 +61,55 @@ test.describe('product tours', () => {
         PRODUCT_TOURS.filter((tour) => isAdministration(tour.view)),
       );
     });
+
+    // A target the tour scrolls to ended flush with the viewport edge, cutting its ring off (#191).
+    test('scrolls a target into view with its whole ring', async ({ page }) => {
+      const shell = new AppShellPage(page);
+      const tour = new ProductTourPage(page);
+      // Low enough that the targets below the domains are below the fold on every device.
+      const width = page.viewportSize()?.width ?? 0;
+      await page.setViewportSize({ width, height: 600 });
+      await page.goto(PATHS_OF_VIEWS['/admin/organizations/[organizationId]'] ?? '');
+
+      const menu = await shell.openHelpMenu();
+      await menu.getByRole('menuitem', { name: 'Take the tour: Organization' }).click();
+      await expect(tour.step(1, 3)).toBeVisible();
+
+      for (const [step, target] of [
+        [2, 'organization-detail-projects'],
+        [3, 'organization-detail-add-member'],
+      ] as const) {
+        await tour.next.click();
+        await expect(tour.step(step, 3)).toBeVisible();
+        await expect(tour.highlighted()).toHaveAttribute('data-tour', target);
+        // The ring outside the target, not inside it: the scroll leaves room for it.
+        await expect.poll(() => tour.highlightedOutlineOffset()).toBeGreaterThan(0);
+        // The box plus the 5 px ring between the sticky header and the bottom of the viewport –
+        // above the bottom navigation of phones – once the scroll (smooth or instant) settles.
+        await expect
+          .poll(async () => {
+            const box = await tour.highlighted().boundingBox();
+            const header = await page.getByRole('banner').boundingBox();
+            const navigation = await tour.target('app-shell-navigation').boundingBox();
+            if (box === null || header === null) {
+              return false;
+            }
+            const bottomEdge = width < 768 && navigation !== null ? navigation.y : 600;
+            return (
+              box.y - 5 >= header.y + header.height &&
+              box.y + box.height + 5 <= bottomEdge &&
+              box.x - 5 >= 0 &&
+              box.x + box.width + 5 <= width
+            );
+          })
+          .toBe(true);
+      }
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+      // Closed with Esc: Done would record the tour for the Administrator of every project.
+      await page.keyboard.press('Escape');
+      await expect(tour.tip).toBeHidden();
+    });
   });
 
   test('closes with Esc and starts again from the help menu', async ({ page }) => {
@@ -94,15 +143,25 @@ test.describe('product tours', () => {
     await menu.getByRole('menuitem', { name: 'Take the tour: Getting started' }).click();
     await expect(tour.step(1, 4)).toBeVisible();
 
-    for (const [step, target] of [
-      [2, 'app-shell-navigation'],
-      [3, 'app-header-help'],
-      [4, 'app-header-account-menu'],
+    // The navigation touches an edge of the screen on every device – the bottom of phones, the
+    // left of larger screens – so its ring sits inside it, where the edge cannot cut it off (#196).
+    for (const [step, target, isInset] of [
+      [2, 'app-shell-navigation', true],
+      [3, 'app-header-help', false],
+      [4, 'app-header-account-menu', false],
     ] as const) {
       await tour.next.click();
       await expect(tour.step(step, 4)).toBeVisible();
       await expect(tour.highlighted()).toHaveAttribute('data-tour', target);
       await expect(tour.highlighted()).toHaveCSS('outline-style', 'solid');
+      // The sign, not the exact length: Chrome may snap it to device pixels, as the width below.
+      const outlineOffset = () =>
+        tour.highlighted().evaluate((el) => parseFloat(getComputedStyle(el).outlineOffset));
+      if (isInset) {
+        await expect.poll(outlineOffset).toBeLessThan(0);
+      } else {
+        await expect.poll(outlineOffset).toBeGreaterThan(0);
+      }
       // Chrome snaps the 3 px width to device pixels: 2.8px on the tablet's fractional pixel ratio.
       await expect
         .poll(() =>

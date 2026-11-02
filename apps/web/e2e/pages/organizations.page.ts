@@ -1,4 +1,5 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { waitForToastsToClose } from '../toasts.js';
 
 /** The Organizations page of the Administrator panel and the detail of an organization (§7.3). */
 export class OrganizationsPage {
@@ -32,14 +33,9 @@ export class OrganizationsPage {
     return this.page.getByRole('link', { name: new RegExp(name) });
   }
 
-  /**
-   * Waits until the toasts are gone. On a desktop they stack in the bottom right corner, over the
-   * Danger zone, and would take the click meant for its buttons; a pointer over them pauses their
-   * timers, so it moves away first.
-   */
-  async waitForToastsToClose(): Promise<void> {
-    await this.page.mouse.move(0, 0);
-    await expect(this.page.locator('[data-slot="toast"]')).toHaveCount(0, { timeout: 15_000 });
+  /** Waits until the toasts over the Danger zone are gone (`waitForToastsToClose`). */
+  waitForToastsToClose(): Promise<void> {
+    return waitForToastsToClose(this.page);
   }
 
   /** The Undo button of the toast with a text. */
