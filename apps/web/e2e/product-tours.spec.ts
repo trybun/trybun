@@ -84,6 +84,39 @@ test.describe('product tours', () => {
     await expect(tour.highlighted()).toHaveCount(0);
   });
 
+  // A visible ring, not only the attribute: `outline-none` of a Button target removed it (#186).
+  test('marks the target of every step with a ring', async ({ page }) => {
+    const shell = new AppShellPage(page);
+    const tour = new ProductTourPage(page);
+    await shell.goto();
+
+    const menu = await shell.openHelpMenu();
+    await menu.getByRole('menuitem', { name: 'Take the tour: Getting started' }).click();
+    await expect(tour.step(1, 4)).toBeVisible();
+
+    for (const [step, target] of [
+      [2, 'app-shell-navigation'],
+      [3, 'app-header-help'],
+      [4, 'app-header-account-menu'],
+    ] as const) {
+      await tour.next.click();
+      await expect(tour.step(step, 4)).toBeVisible();
+      await expect(tour.highlighted()).toHaveAttribute('data-tour', target);
+      await expect(tour.highlighted()).toHaveCSS('outline-style', 'solid');
+      // Chrome snaps the 3 px width to device pixels: 2.8px on the tablet's fractional pixel ratio.
+      await expect
+        .poll(() =>
+          tour.highlighted().evaluate((el) => parseFloat(getComputedStyle(el).outlineWidth)),
+        )
+        .toBeGreaterThanOrEqual(2.5);
+    }
+
+    // Closed with Esc, as above: Done would record the tour again for the account all projects share.
+    await page.keyboard.press('Escape');
+    await expect(tour.tip).toBeHidden();
+    await expect(tour.highlighted()).toHaveCount(0);
+  });
+
   // One person on two devices: the test opens both itself, so it runs in one project only.
   test('a tour completed on desktop does not start again on a phone', async ({ browser }) => {
     test.skip(test.info().project.name !== 'desktop', 'The test switches devices itself.');
