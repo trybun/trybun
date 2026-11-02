@@ -117,6 +117,52 @@ test.describe('product tours', () => {
     await expect(tour.highlighted()).toHaveCount(0);
   });
 
+  // The tip stayed next to the previous step's target while it stayed open (#188).
+  test('shows the tip next to the target of every step', async ({ page }) => {
+    // The tip is a popover from the tablet breakpoint (48rem); below it, a sheet at the edge. The
+    // iPad (gen 11) of the tablet project is 656 px wide in portrait, so it shows the sheet too.
+    test.skip(
+      (page.viewportSize()?.width ?? 0) < 768,
+      'Below the tablet breakpoint the tip is a sheet at the edge.',
+    );
+
+    const shell = new AppShellPage(page);
+    const tour = new ProductTourPage(page);
+    await shell.goto();
+
+    const menu = await shell.openHelpMenu();
+    await menu.getByRole('menuitem', { name: 'Take the tour: Getting started' }).click();
+    await expect(tour.step(1, 4)).toBeVisible();
+    await tour.next.click();
+    await expect(tour.step(2, 4)).toBeVisible();
+
+    for (const [step, target] of [
+      [3, 'app-header-help'],
+      [4, 'app-header-account-menu'],
+    ] as const) {
+      await tour.next.click();
+      await expect(tour.step(step, 4)).toBeVisible();
+      // Below the header button, at most 16 px away, and overlapping it horizontally.
+      await expect
+        .poll(async () => {
+          const tip = await tour.tip.boundingBox();
+          const button = await tour.target(target).boundingBox();
+          if (tip === null || button === null) {
+            return false;
+          }
+          const gap = tip.y - (button.y + button.height);
+          return (
+            gap >= 0 && gap <= 16 && tip.x < button.x + button.width && tip.x + tip.width > button.x
+          );
+        })
+        .toBe(true);
+    }
+
+    // Closed with Esc: Done would record the tour again for the account all projects share.
+    await page.keyboard.press('Escape');
+    await expect(tour.tip).toBeHidden();
+  });
+
   // One person on two devices: the test opens both itself, so it runs in one project only.
   test('a tour completed on desktop does not start again on a phone', async ({ browser }) => {
     test.skip(test.info().project.name !== 'desktop', 'The test switches devices itself.');

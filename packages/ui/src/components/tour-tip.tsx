@@ -3,7 +3,7 @@
 import { cn } from 'cn';
 import { XIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { createContext, use, useRef, type ReactNode, type RefObject } from 'react';
+import { createContext, use, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 
 import { Button } from '@trybun/ui/components/button';
 import {
@@ -58,10 +58,21 @@ const VIEWPORT_ANCHOR = {
 
 type TourTipAnchor = Element | (() => Element | null) | null;
 
-/** The anchor of the popover: the element, or the viewport when there is none (yet). */
+/**
+ * The anchor of the popover: the element, or the viewport when there is none (yet). A function is
+ * turned into a virtual element that finds its target whenever the tip is positioned: the
+ * positioner resolves a function anchor only once while it stays open, so the next step's function
+ * would leave the tip at the previous target (#188), whereas a new object makes it re-register.
+ */
 function positionerAnchor(anchor: TourTipAnchor | undefined) {
   if (typeof anchor === 'function') {
-    return () => anchor() ?? VIEWPORT_ANCHOR;
+    return {
+      getBoundingClientRect: () => (anchor() ?? VIEWPORT_ANCHOR).getBoundingClientRect(),
+      // Lets the positioner follow the scrolling ancestors of the target.
+      get contextElement() {
+        return anchor() ?? undefined;
+      },
+    };
   }
   return anchor ?? VIEWPORT_ANCHOR;
 }
@@ -110,6 +121,9 @@ function TourTip({
     }
   };
   const context = { isSheet, step, stepCount, primaryActionRef };
+  // Escape hatch of §18.5: the positioner re-registers its anchor whenever the object changes, so
+  // its identity must change with `anchor` and stay stable otherwise.
+  const popoverAnchor = useMemo(() => positionerAnchor(anchor), [anchor]);
 
   if (isSheet) {
     return (
@@ -144,7 +158,7 @@ function TourTip({
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverContent
           data-slot="tour-tip"
-          anchor={positionerAnchor(anchor)}
+          anchor={popoverAnchor}
           sideOffset={8}
           initialFocus={primaryActionRef}
           finalFocus={finalFocus}
