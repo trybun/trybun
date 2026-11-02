@@ -33,6 +33,8 @@ Pages outside the shell, Help, a new `@trybun/ui` layout component, the inner la
 
 ## Progress
 
+PR: #194
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Rule and application
