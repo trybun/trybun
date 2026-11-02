@@ -94,15 +94,18 @@ test.describe('product tours', () => {
     await menu.getByRole('menuitem', { name: 'Take the tour: Getting started' }).click();
     await expect(tour.step(1, 4)).toBeVisible();
 
-    for (const [step, target] of [
-      [2, 'app-shell-navigation'],
-      [3, 'app-header-help'],
-      [4, 'app-header-account-menu'],
+    // The navigation touches an edge of the screen on every device – the bottom of phones, the
+    // left of larger screens – so its ring sits inside it, where the edge cannot cut it off (#196).
+    for (const [step, target, outlineOffset] of [
+      [2, 'app-shell-navigation', '-3px'],
+      [3, 'app-header-help', '2px'],
+      [4, 'app-header-account-menu', '2px'],
     ] as const) {
       await tour.next.click();
       await expect(tour.step(step, 4)).toBeVisible();
       await expect(tour.highlighted()).toHaveAttribute('data-tour', target);
       await expect(tour.highlighted()).toHaveCSS('outline-style', 'solid');
+      await expect(tour.highlighted()).toHaveCSS('outline-offset', outlineOffset);
       // Chrome snaps the 3 px width to device pixels: 2.8px on the tablet's fractional pixel ratio.
       await expect
         .poll(() =>

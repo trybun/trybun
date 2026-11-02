@@ -19,6 +19,7 @@ import { currentUserQueryOptions } from '../../users/queries.js';
 import { useRecordProductTourProgress } from '../mutations.js';
 import {
   findTourTarget,
+  isNearViewportEdge,
   isTourDue,
   type ProductTour,
   type ProductTourStep,
@@ -124,7 +125,10 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
     if (element === null) {
       return undefined;
     }
-    element.setAttribute('data-tour-highlighted', '');
+    // At an edge of the screen the ring goes inside the target, or the edge cuts it off (#196).
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const isAtEdge = isNearViewportEdge(element.getBoundingClientRect(), viewport);
+    element.setAttribute('data-tour-highlighted', isAtEdge ? 'inset' : '');
     const isMotionReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     element.scrollIntoView({ block: 'nearest', behavior: isMotionReduced ? 'instant' : 'smooth' });
     return () => element.removeAttribute('data-tour-highlighted');

@@ -69,6 +69,26 @@ export function findTourTarget(target: string): Element | null {
   );
 }
 
+/** How far the ring of a tour target reaches outside it: a 2 px offset and a 3 px outline. */
+const RING_EXTENT_PX = 5;
+
+/**
+ * Whether the ring of a tour target would reach past the edge of the viewport, where the screen
+ * cuts it off – the bottom navigation of phones, the side navigation, a target scrolled flush to
+ * an edge (#196). Such a target gets the ring inside its border instead.
+ */
+export function isNearViewportEdge(
+  rect: Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left'>,
+  viewport: { width: number; height: number },
+): boolean {
+  return (
+    rect.top < RING_EXTENT_PX ||
+    rect.left < RING_EXTENT_PX ||
+    rect.bottom > viewport.height - RING_EXTENT_PX ||
+    rect.right > viewport.width - RING_EXTENT_PX
+  );
+}
+
 /**
  * The steps a tour shows now: its optional steps only when their target is rendered (§2.4).
  * @param isRendered whether a `data-tour` target is on the page
