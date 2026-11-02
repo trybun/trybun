@@ -1,5 +1,6 @@
 import { type Browser, devices, expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
+import { expectFullContentWidth } from './content-width.js';
 import { AccountsPage } from './pages/accounts.page.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { SignInPage } from './pages/sign-in.page.js';
@@ -96,6 +97,7 @@ test.describe('accounts of the Administrator', () => {
 
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
+    await expectFullContentWidth(accounts.account('Marek Manager'), testInfo);
     await expectTouchTarget(accounts.search, minimumTargetSize(testInfo));
     await expectTouchTarget(accounts.kindFilter, minimumTargetSize(testInfo));
     await expectTouchTarget(accounts.actionsOf('Marek Manager'), minimumTargetSize(testInfo), [

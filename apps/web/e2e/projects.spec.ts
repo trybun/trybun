@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
+import { expectFullContentWidth } from './content-width.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { ProjectsPage } from './pages/projects.page.js';
 import { ADMIN_STORAGE_STATE } from './storage-state.js';
@@ -62,6 +63,7 @@ test.describe('projects of the Administrator', () => {
 
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
+    await expectFullContentWidth(projects.project('Customer portal'), testInfo);
     await expectTouchTarget(projects.project('Customer portal'), 44);
     await expectTouchTarget(
       projects.stateTabs.getByRole('tab', { name: 'Archived' }),

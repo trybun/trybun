@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
+import { expectFullContentWidth } from './content-width.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { OrganizationsPage } from './pages/organizations.page.js';
 import { ADMIN_STORAGE_STATE } from './storage-state.js';
@@ -121,6 +122,7 @@ test.describe('organizations of the Administrator', () => {
 
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
+    await expectFullContentWidth(organizations.organization('Customer company'), testInfo);
     await expectTouchTarget(organizations.organization('Customer company'), 44);
     await expectTouchTarget(
       organizations.stateTabs.getByRole('tab', { name: 'Archived' }),
