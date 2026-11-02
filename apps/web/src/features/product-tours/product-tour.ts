@@ -69,6 +69,48 @@ export function findTourTarget(target: string): Element | null {
   );
 }
 
+/** How far the ring of a tour target reaches outside it: a 2 px offset and a 3 px outline. */
+const RING_EXTENT_PX = 5;
+
+/**
+ * Whether the ring of a tour target would reach past the edge of the viewport, where the screen
+ * cuts it off – the bottom navigation of phones, the side navigation, a target scrolled flush to
+ * an edge (#196). Such a target gets the ring inside its border instead.
+ */
+export function isNearViewportEdge(
+  rect: Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left'>,
+  viewport: { width: number; height: number },
+): boolean {
+  return (
+    rect.top < RING_EXTENT_PX ||
+    rect.left < RING_EXTENT_PX ||
+    rect.bottom > viewport.height - RING_EXTENT_PX ||
+    rect.right > viewport.width - RING_EXTENT_PX
+  );
+}
+
+/**
+ * Whether the ring of a tour target sits inside it (#196), judged by where the target ends up
+ * after the tour scrolls it into view. A target above or below the viewport that fits between its
+ * scroll margins is scrolled clear of the top and bottom edges (#191), so only the left and right
+ * edges can cut its ring off; any other target stays where it is.
+ * @param rect the target's box before the scroll
+ * @param scrollMargin the target's scroll margins, in pixels
+ */
+export function isRingInset(
+  rect: Pick<DOMRect, 'top' | 'right' | 'bottom' | 'left'>,
+  viewport: { width: number; height: number },
+  scrollMargin: { top: number; bottom: number },
+): boolean {
+  const isOutsideVertically = rect.top < 0 || rect.bottom > viewport.height;
+  const canFitBetweenMargins =
+    rect.bottom - rect.top <= viewport.height - scrollMargin.top - scrollMargin.bottom;
+  if (isOutsideVertically && canFitBetweenMargins) {
+    return rect.left < RING_EXTENT_PX || rect.right > viewport.width - RING_EXTENT_PX;
+  }
+  return isNearViewportEdge(rect, viewport);
+}
+
 /**
  * The steps a tour shows now: its optional steps only when their target is rendered (§2.4).
  * @param isRendered whether a `data-tour` target is on the page
