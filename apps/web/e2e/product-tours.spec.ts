@@ -89,11 +89,8 @@ test.describe('product tours', () => {
         await expect
           .poll(async () => {
             const box = await tour.highlighted().boundingBox();
-            const header = await page.locator('header').first().boundingBox();
-            const navigation = await page
-              .locator('[data-tour="app-shell-navigation"]')
-              .filter({ visible: true })
-              .boundingBox();
+            const header = await page.getByRole('banner').boundingBox();
+            const navigation = await tour.target('app-shell-navigation').boundingBox();
             if (box === null || header === null) {
               return false;
             }
