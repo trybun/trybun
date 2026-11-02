@@ -138,15 +138,29 @@ function TourTip({
             data-slot="tour-tip"
             initialFocus={primaryActionRef}
             finalFocus={finalFocus}
-            className={cn('gap-3 p-4 pt-0', className)}
+            className={className}
           >
-            {children}
-            <DrawerClose
-              render={<Button variant="ghost" size="icon-sm" className="absolute top-2 right-2" />}
-              aria-label={t('close')}
+            {/*
+              The padding sits inside the clipping content box of the sheet, so the focus ring of
+              the actions stays visible (#190); the swipe handle already spaces the edge next to it.
+            */}
+            <div
+              data-slot="tour-tip-body"
+              className={cn(
+                'relative flex flex-col gap-3 p-4',
+                sheetSide === 'top' ? 'pb-2' : 'pt-2',
+              )}
             >
-              <XIcon aria-hidden />
-            </DrawerClose>
+              {children}
+              <DrawerClose
+                render={
+                  <Button variant="ghost" size="icon-sm" className="absolute top-2 right-2" />
+                }
+                aria-label={t('close')}
+              >
+                <XIcon aria-hidden />
+              </DrawerClose>
+            </div>
           </DrawerContent>
         </Drawer>
       </TourTipContext>
