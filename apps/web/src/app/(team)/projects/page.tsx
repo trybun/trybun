@@ -11,7 +11,8 @@ import { getServerQueryClient } from '../../../lib/query-client/server-query-cli
 
 /**
  * The Projects page (§7.3): the projects the person can see, active or archived, and – for the
- * Administrator – New project. One list serves every role through `allowedActions` (Rule 2).
+ * Administrator – New project. One list serves every role through `allowedActions` (Rule 2). As a
+ * list it uses the full width of the content area (§2.9).
  */
 export default async function ProjectsPage({
   searchParams,
@@ -28,7 +29,7 @@ export default async function ProjectsPage({
   ]);
   const user = queryClient.getQueryData(currentUserQueryOptions(client).queryKey);
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold">{t('title')}</h1>
         {user?.allowedActions.includes('create_project') === true && <LazyNewProjectDialog />}

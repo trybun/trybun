@@ -86,6 +86,14 @@ describe('ProjectsPage', () => {
     expect(contains(element, LazyNewProjectDialog)).toBe(true);
   });
 
+  it('uses the full width of the content area for the list (§2.9)', async () => {
+    const element = (await ProjectsPage({ searchParams: Promise.resolve({}) })) as ReactElement<{
+      className: string;
+    }>;
+
+    expect(element.props.className).not.toMatch(/\bmax-w-/);
+  });
+
   it('offers New project only with the global action create_project', async () => {
     GET.mockImplementation((path: string) =>
       path === '/api/v1/users/me'
