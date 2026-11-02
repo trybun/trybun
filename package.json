@@ -30,7 +30,7 @@
     "@vitest/coverage-v8": "^5.0.5",
     "prettier": "3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "turbo": "2.11.9",
+    "turbo": "2.11.10",
     "vitest": "^5.0.5"
   },
   "version": "0.3.0"
