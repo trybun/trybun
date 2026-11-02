@@ -38,7 +38,7 @@ export function OrganizationDetail({ organizationId }: { organizationId: string 
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex max-w-3xl flex-col gap-8">
       <div className="flex flex-col gap-2">
         <Link
           href={ORGANIZATIONS_HREF}

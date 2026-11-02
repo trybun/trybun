@@ -187,6 +187,8 @@ describe('OrganizationDetail', () => {
     expect(html).toContain('Archive organization');
     expect(html).toContain('Delete organization');
     expect(html).not.toContain('This organization is archived');
+    // The detail of one record keeps the readable width (§2.9).
+    expect(html).toMatch(/^<div class="[^"]*\bmax-w-3xl\b/);
   });
 
   it('shows an archived organization read-only with the banner and Unarchive', () => {

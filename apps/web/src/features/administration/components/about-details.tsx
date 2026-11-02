@@ -10,7 +10,7 @@ function licenseHref(version: string): string {
 export async function AboutDetails({ about }: { about: About }) {
   const t = await getTranslations('administration');
   return (
-    <section aria-labelledby="about-title" className="flex flex-col gap-4">
+    <section aria-labelledby="about-title" className="flex max-w-3xl flex-col gap-4">
       <h2 id="about-title" className="text-lg font-semibold">
         {t('about')}
       </h2>

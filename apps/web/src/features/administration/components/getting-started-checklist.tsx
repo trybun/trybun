@@ -14,7 +14,7 @@ export async function GettingStartedChecklist({ items }: { items: GettingStarted
   const t = await getTranslations('administration');
   const done = items.filter((item) => item.isDone).length;
   return (
-    <section aria-labelledby="getting-started-title" className="flex flex-col gap-4">
+    <section aria-labelledby="getting-started-title" className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 id="getting-started-title" className="text-lg font-semibold">
           {t('gettingStarted')}
