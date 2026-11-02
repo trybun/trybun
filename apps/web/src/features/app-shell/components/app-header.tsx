@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Brand } from './brand.js';
 import { LazyUserMenu } from './lazy-user-menu.js';
 
+/** The slots of the header actions; each draws its icon with `APP_HEADER_ICON_CLASS_NAME` (`app-header-icon.ts`). */
 export interface AppHeaderSlots {
   /** The search button that opens the command palette (§8.4, S2-05). */
   search?: ReactNode;
