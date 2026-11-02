@@ -1,6 +1,12 @@
 import type { ProductTourProgress } from '@trybun/contracts/product-tours';
 import { describe, expect, it } from 'vitest';
-import { isNearViewportEdge, isTourDue, type ProductTour, visibleSteps } from './product-tour.js';
+import {
+  isNearViewportEdge,
+  isRingInset,
+  isTourDue,
+  type ProductTour,
+  visibleSteps,
+} from './product-tour.js';
 
 const TOUR: ProductTour = {
   id: 'first_login',
@@ -56,6 +62,35 @@ describe('isNearViewportEdge', () => {
     ['a header button', { top: 6, right: 350, bottom: 50, left: 306 }, false],
   ])('%s: %s', (_case, rect, isNear) => {
     expect(isNearViewportEdge(rect, VIEWPORT)).toBe(isNear);
+  });
+});
+
+describe('isRingInset', () => {
+  const VIEWPORT = { width: 360, height: 611 };
+  const SCROLL_MARGIN = { top: 72, bottom: 76 };
+
+  it.each([
+    // Scrolled clear of the edge by the scroll margin, not flush with it (#191).
+    ['a target below the viewport', { top: 700, right: 300, bottom: 760, left: 60 }, false],
+    ['a target partly below the viewport', { top: 580, right: 300, bottom: 700, left: 60 }, false],
+    ['a target above the viewport', { top: -200, right: 300, bottom: -100, left: 60 }, false],
+    [
+      'a target below the viewport at its left edge',
+      { top: 700, right: 300, bottom: 760, left: 0 },
+      true,
+    ],
+    // Taller than the room between the margins: the scroll still ends at an edge.
+    ['a target taller than the viewport', { top: 56, right: 360, bottom: 1400, left: 0 }, true],
+    [
+      'a target below the viewport too tall for the margins',
+      { top: 700, right: 300, bottom: 1200, left: 60 },
+      true,
+    ],
+    // Fixed or already visible: it stays where it is (#196).
+    ['the bottom navigation of phones', { top: 555, right: 360, bottom: 611, left: 0 }, true],
+    ['a header button', { top: 6, right: 350, bottom: 50, left: 306 }, false],
+  ])('%s: %s', (_case, rect, isInset) => {
+    expect(isRingInset(rect, VIEWPORT, SCROLL_MARGIN)).toBe(isInset);
   });
 });
 
