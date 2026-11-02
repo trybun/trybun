@@ -81,6 +81,16 @@ describe('Administrator panel', () => {
     );
   });
 
+  it('keeps the checklist and About at the readable width of a detail page (§2.9)', async () => {
+    GET.mockReturnValue(ok({ items: [], nextCursor: null }));
+    expect(await render(await GettingStartedPage())).toMatch(
+      /^<section [^>]*class="[^"]*\bmax-w-3xl\b/,
+    );
+
+    GET.mockReturnValue(ok({ version: '0.4.1', license: 'MIT' }));
+    expect(await render(await AboutPage())).toMatch(/^<section [^>]*class="[^"]*\bmax-w-3xl\b/);
+  });
+
   it.each([
     ['en', 'Invite the team'],
     ['pl', 'Zaproś zespół'],

@@ -21,4 +21,12 @@ describe('AdministrationLayout', () => {
     });
     expect(Object.keys(element.props.messages)).not.toContain('projects');
   });
+
+  it('leaves the width to each page, so lists can use the full width (§2.9)', async () => {
+    const element = (await AdministrationLayout({ children: <main /> })) as ReactElement<{
+      children: ReactElement<{ className: string }>;
+    }>;
+
+    expect(element.props.children.props.className).not.toMatch(/\bmax-w-/);
+  });
 });

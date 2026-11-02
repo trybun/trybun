@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-02 |
 | Plan task | – |
 | System specification sections | §2.9, §18.2, §18.5 |
-| Related issues / PRs | #179 (request), #175 (manual QA where the question came up) |
+| Related issues / PRs | #179 (request), #175 (manual QA where the question came up), #193 (specification), #194 (implementation) |
 
 ## 📝 TLDR
 
@@ -126,3 +126,4 @@ Low risk, CSS only: no data, API, contract or permission impact, and no `BACKWAR
 ## Changelog
 
 - 2026-11-02 – Created. The maintainer approved the rule (#179).
+- 2026-11-02 – Implemented in #194.
