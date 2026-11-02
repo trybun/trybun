@@ -5,6 +5,7 @@ import { AppShellPage } from './pages/app-shell.page.js';
 import { InvitationPage } from './pages/invitation.page.js';
 import { ProjectsPage } from './pages/projects.page.js';
 import { ADMIN_STORAGE_STATE, MANAGER_STORAGE_STATE } from './storage-state.js';
+import { waitForToastsToClose } from './toasts.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 /** A password the policy of the realm accepts: 15+ characters, not a common one (§7.4). */
@@ -55,6 +56,8 @@ test.describe('invitations', () => {
       await expect(page.getByText('Link copied')).toBeVisible();
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
     }
+    // On phones the toast covers Done of the bottom sheet.
+    await waitForToastsToClose(page);
     await created.getByRole('button', { name: 'Done' }).click();
     const pending = page.getByRole('region', { name: 'Pending invitations' });
     // Its own row: an invitation of an earlier run may still be pending.
