@@ -12,7 +12,7 @@ import {
 const KEYCLOAK_CONFIG_DIR = join(import.meta.dirname, '../../../../docker/keycloak');
 // Pinned to the digests of compose.yaml (§2.10).
 const KEYCLOAK_IMAGE =
-  'quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b';
+  'quay.io/keycloak/keycloak:26.8.1@sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332';
 const KEYCLOAK_CONFIG_CLI_IMAGE =
   'adorsys/keycloak-config-cli:6.5.1-26.5.5@sha256:0955d98c8a341898b7aa177477edf8a1e90569ae50bbe7598141c1270b773274';
 
