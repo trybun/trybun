@@ -1,6 +1,6 @@
 # Execution plan: item names as tooltips on the collapsed side navigation
 
-Source doc: .ai/specs/2026-11-03-collapsed-navigation-tooltips.md
+Source doc: .ai/specs/implemented/2026-11-03-collapsed-navigation-tooltips.md
 Issue: #217 · Spec PR: #220
 
 ## Goal
