@@ -16,7 +16,7 @@ After signing in you see the **Home** page.
 ## Find your way around
 
 - The **header** at the top shows the Trybun logo, which always takes you back to **Home**. On its right are the help icon and your account menu.
-- The **main navigation** lists the places you can go. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left. The button at its top collapses it to icons and expands it again; on a computer Trybun remembers your choice in this browser.
+- The **main navigation** lists the places you can go. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left. The button at its top collapses it to icons and expands it again; on a computer Trybun remembers your choice in this browser. When it shows only icons, point at an icon or move to it with the keyboard to see its name.
 
 ## Get help
 
