@@ -16,7 +16,7 @@ Po zalogowaniu widzisz **Stronę główną**.
 ## Poznaj układ ekranu
 
 - **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem na **Stronę główną**. Po jego prawej stronie są ikona pomocy i menu konta.
-- **Nawigacja główna** zawiera miejsca, do których możesz przejść. Na telefonie jest na dole ekranu, na tablecie i komputerze – po lewej stronie.
+- **Nawigacja główna** zawiera miejsca, do których możesz przejść. Na telefonie jest na dole ekranu, na tablecie i komputerze – po lewej stronie. Przycisk na jej górze zwija ją do ikon i rozwija z powrotem; na komputerze Trybun zapamiętuje Twój wybór w tej przeglądarce.
 
 ## Skorzystaj z pomocy
 

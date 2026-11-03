@@ -39,6 +39,7 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | Reading data in the browser | `queryOptions` factory in `queries.ts`; prefetch on the server and hydrate | [§18.5](#185-web-application) |
 | Changing data from the browser | Mutation hook in `mutations.ts` | [§18.5](#185-web-application) |
 | View state | URL search parameters parsed with Zod (never free text); otherwise local state | [§18.5](#185-web-application) |
+| A UI preference that survives a reload | A cookie read by the layout, stored by a Server Action | [§18.5](#185-web-application) |
 | A form | React Hook Form with the Zod resolver and the contract schema | [§18.5](#185-web-application) |
 | Memoization | React Compiler; no manual `useMemo`, `useCallback` or `memo` in new code | [§18.5](#185-web-application) |
 | Code the first paint does not need | `React.lazy` behind `Suspense` in a `lazy-*.tsx` wrapper; `await import()` for the module of an action | [§18.5](#185-web-application) |
@@ -211,6 +212,7 @@ apps/web/src/
 | Shareable view state (filters, sorting, view mode, tab) | URL search parameters, parsed with the feature's Zod schema. Free-text search never goes into the URL ([§8.5](08-team-views.md), [§17.2](17-conventions.md)) |
 | Local UI state | `useState` / `useReducer` in the component |
 | UI state shared by a subtree (e.g. the selection in the list) | React context inside the feature |
+| Persisted UI preference of the browser (e.g. the collapsed desktop navigation, [§2.9](02-agent-rules.md)) | A cookie of the feature: a server-only helper reads and writes it, a Server Action stores the choice, and the layout passes it to the component as the initial state, so the server renders it without a flash. Never personal data or server data |
 
 No global client state library is used.
 

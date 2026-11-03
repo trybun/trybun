@@ -241,6 +241,8 @@ Rule 9 is **directly subordinate to Rule 2** (and through it to Rule 1): on smal
 | Product tours (Rule 4) | Bottom-sheet tips instead of tips next to elements; the target is scrolled into view and highlighted, and a tip about an element at the bottom edge opens at the top edge | As on desktop |
 | E-mails ([§6.5](06-comments-notifications.md)) | Responsive templates readable on phones | – |
 
+On desktop the side navigation is expanded by default and can be collapsed to icons like on a tablet; the browser remembers the desktop choice. Tablets start with it collapsed and do not remember it.
+
 Keyboard shortcuts remain a desktop accelerator; every action they trigger is also reachable by touch.
 
 ### Performance
