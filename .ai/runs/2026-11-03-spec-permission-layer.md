@@ -38,4 +38,4 @@ Bring the S1-04 change specification up to date with `main`, where S1-01, S1-02 
 ### Phase 2: Refresh against main
 
 - [x] 2.1 Merge main into the branch — 3e5df38
-- [ ] 2.2 Rewrite Context, design, open questions and plan to the delta against main
+- [x] 2.2 Rewrite Context, design, open questions and plan to the delta against main — 762c50b
