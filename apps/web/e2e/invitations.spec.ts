@@ -56,7 +56,7 @@ test.describe('invitations', () => {
       await expect(page.getByText('Link copied')).toBeVisible();
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(link);
     }
-    // On phones the toast covers Done of the bottom sheet.
+    // A toast may cover a nearby button on tablets and desktops (bottom right; at the top on phones, #207).
     await waitForToastsToClose(page);
     await created.getByRole('button', { name: 'Done' }).click();
     const pending = page.getByRole('region', { name: 'Pending invitations' });
