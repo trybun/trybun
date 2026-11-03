@@ -23,8 +23,8 @@ test.describe('account settings', () => {
     const shell = new AppShellPage(page);
     await page.goto('/');
 
-    await shell.accountMenu.click();
-    await page.getByRole('menuitem', { name: 'Account settings' }).click();
+    const menu = await shell.openAccountMenu();
+    await menu.getByRole('menuitem', { name: 'Account settings' }).click();
 
     await expect(page).toHaveURL('/settings');
     await expect(new SettingsPage(page).heading('Account settings')).toBeVisible();
