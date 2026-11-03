@@ -14,7 +14,20 @@ import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.mo
 import { RateLimitingModule } from './platform/rate-limiting/rate-limiting.module.js';
 import { administrationAbilities } from './modules/administration/administration.abilities.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
+import {
+  archivedProjectsRestriction,
+  projectsAbilities,
+} from './modules/projects/projects.abilities.js';
+import {
+  archivedOrganizationsRestriction,
+  organizationsAbilities,
+} from './modules/organizations/organizations.abilities.js';
+import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { invitationsAbilities } from './modules/invitations/invitations.abilities.js';
+import { InvitationsModule } from './modules/invitations/invitations.module.js';
+import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
+import { usersAbilities } from './modules/users/users.abilities.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 /** Root module of the API process (§14.6). */
@@ -34,12 +47,24 @@ export class ApiModule {
         AuthenticationModule,
         // After the authentication guard: the rate limit is keyed by the principal (§14.4).
         RateLimitingModule,
-        AuthorizationModule.forRoot([administrationAbilities]),
+        AuthorizationModule.forRoot({
+          rules: [
+            administrationAbilities,
+            projectsAbilities,
+            organizationsAbilities,
+            invitationsAbilities,
+            usersAbilities,
+          ],
+          restrictions: [archivedProjectsRestriction, archivedOrganizationsRestriction],
+        }),
         KeycloakAdminModule,
         HealthModule,
         UsersModule,
         SetupModule,
         AdministrationModule,
+        ProjectsModule,
+        OrganizationsModule,
+        InvitationsModule,
       ],
     };
   }

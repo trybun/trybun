@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { TEST_ENV } from '../../../test/env.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { OPTIONAL_ENV_KEYS, TEST_ENV } from '../../../test/env.js';
+import { stubIntegrationEnv } from '../../../test/setup/environment.js';
 
 vi.mock('server-only', () => ({}));
 
@@ -17,6 +18,7 @@ describe('parseEnv', () => {
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
       isDevelopment: false,
+      endUserIdentityProviders: [],
       keycloak: {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
         internalRealmUrl: 'http://keycloak:8080/auth/realms/trybun',
@@ -24,6 +26,17 @@ describe('parseEnv', () => {
         clientSecret: 'web-client-secret',
       },
     });
+  });
+
+  it('lists the configured sign-in providers of end users', () => {
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_MICROSOFT_CLIENT_ID: 'id', TRYBUN_GOOGLE_CLIENT_ID: 'id' })
+        .endUserIdentityProviders,
+    ).toEqual(['microsoft', 'google']);
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_MICROSOFT_CLIENT_ID: '', TRYBUN_GOOGLE_CLIENT_ID: 'id' })
+        .endUserIdentityProviders,
+    ).toEqual(['google']);
   });
 
   it('recognizes `next dev`', () => {
@@ -66,5 +79,26 @@ describe('parseEnv', () => {
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => parseEnv(env)).toThrow(InvalidEnvError);
     expect(() => parseEnv(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));
+  });
+});
+
+describe('stubIntegrationEnv', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('unsets the optional variables of the process, e.g. from a root .env', () => {
+    for (const name of OPTIONAL_ENV_KEYS) {
+      vi.stubEnv(name, name === 'TRYBUN_KEYCLOAK_PUBLIC_URL' ? 'http://localhost:8080/auth' : 'x');
+    }
+
+    stubIntegrationEnv();
+
+    for (const name of OPTIONAL_ENV_KEYS) {
+      expect(process.env[name]).toBeUndefined();
+    }
+    expect(parseEnv({ ...process.env, DATABASE_URL: TEST_ENV.DATABASE_URL }).keycloak.issuer).toBe(
+      'https://trybun.example.com/auth/realms/trybun',
+    );
   });
 });

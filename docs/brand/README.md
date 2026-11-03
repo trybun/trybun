@@ -26,6 +26,7 @@ The wordmark in `trybun-logo-*.svg` uses the **Manrope ExtraBold** font. Before 
 |---|---|---|
 | Ink | `#141A2E` | Wordmark, stem, dark backgrounds |
 | Vermilion | `#E0482C` | Customer branch, accents |
+| Blue | `#2563EB` | Interactive states in the UI: focus, links, information (not in the mark) |
 | White | `#FFFFFF` | Backgrounds, mark on dark backgrounds |
 
 ## Typography
@@ -40,8 +41,9 @@ The wordmark in `trybun-logo-*.svg` uses the **Manrope ExtraBold** font. Before 
 The brand colours above are not a complete UI palette. The UI uses the token set of shadcn/ui, derived from the brand as follows; Tailwind's default colour palette is not available:
 
 - **Ink** is the primary colour (`--primary`), and the base of the neutral scale: backgrounds, borders and muted text are mixes of Ink and White (in sRGB).
-- **Vermilion** is an **accent only** (highlights, the customer side of the mark, the focus ring). It is not used for body text: white on `#E0482C` is about 4.1:1, below WCAG AA. For text and small elements on White the darker `#B8341C` (5.9:1) is used.
-- **Semantic colours** (success, warning, danger, info) use the 700 shades of the Tailwind palette in the light theme and the 400 shades in the dark theme, as solid backgrounds with White or Ink text. They are always combined with an icon or text ([§13.4](../spec/13-non-functional.md)).
+- **Vermilion** is an **accent only** (highlights, the customer side of the mark). It is not the focus ring: it is too close to the danger red, so a focused field would look invalid.
+- **Blue** is the colour of **interactive states**: the focus ring, links in running text and the information colour. It is the third brand colour because Ink reads as black and Vermilion as an error ([change specification](../../.ai/specs/implemented/2026-11-01-brand-interactive-colour.md)); selected states (checked switch and radio, active tab) stay Ink. It is not used for body text: white on `#E0482C` is about 4.1:1, below WCAG AA. For text and small elements on White the darker `#B8341C` (5.9:1) is used.
+- **Semantic colours** (success, warning, danger) use the 700 shades of the Tailwind palette in the light theme and the 400 shades in the dark theme, info uses Blue, as solid backgrounds with White or Ink text. They are always combined with an icon or text ([§13.4](../spec/13-non-functional.md)).
 
 | Token | Light | Dark | Contrast |
 |---|---|---|---|
@@ -54,10 +56,11 @@ The brand colours above are not a complete UI palette. The UI uses the token set
 | `--destructive` / `-foreground` | red-700 `#C10007` / White | red-400 `#FF6467` / Ink | 6.6:1 / 6.0:1 |
 | `--success` / `-foreground` | green-700 `#008236` / White | green-400 `#05DF72` / Ink | 5.0:1 / 9.7:1 |
 | `--warning` / `-foreground` | amber-700 `#BB4D00` / White | amber-400 `#FFB900` / Ink | 5.1:1 / 10.0:1 |
-| `--info` / `-foreground` | blue-700 `#1447E6` / White | blue-400 `#51A2FF` / Ink | 6.8:1 / 6.6:1 |
+| `--info` / `-foreground` | Blue `#2563EB` / White | `#60A5FA` / Ink | 5.2:1 / 6.8:1 |
 | `--border` | `#E3E4E6` (Ink 12 %) | `#373C4D` (White 15 %) | decorative |
 | `--input` | `#8A8C96` (Ink 50 %) | `#727682` (White 40 %) | boundary of form fields, 3.3:1 / 3.8:1 (WCAG 1.4.11) |
-| `--ring` | Vermilion text `#B8341C` | Vermilion `#E0482C` | focus ring on `--background` 5.9:1 / 4.2:1 |
+| `--ring` | Blue `#2563EB` | `#60A5FA` | focus indicator, 2 px ([§13.4](../spec/13-non-functional.md)); on `--background` 5.2:1 / 6.8:1 |
+| `--link` | Blue `#2563EB` | `#60A5FA` | links in running text, underlined; on `--background` 5.2:1 / 6.8:1 |
 | `--overlay` | Ink 40 % | Black 60 % | backdrop of dialogs and sheets |
 | `--brand-accent` | Vermilion `#E0482C` | Vermilion `#E0482C` | not for text |
 | `--radius` | `0.625rem` | | |

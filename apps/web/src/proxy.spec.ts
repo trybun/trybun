@@ -75,4 +75,16 @@ describe('proxy', () => {
     expect(nonces[0]).toMatch(/^[A-Za-z0-9+/]+=*$/);
     expect(nonces[0]).not.toBe(nonces[1]);
   });
+
+  it('passes the path of the opened page to the rendering, never one sent by the browser', () => {
+    const response = proxy(
+      new NextRequest('http://localhost:3000/projects?state=archived', {
+        headers: { 'x-trybun-request-path': '//evil.example.com/' },
+      }),
+    );
+
+    expect(response.headers.get('x-middleware-request-x-trybun-request-path')).toBe(
+      '/projects?state=archived',
+    );
+  });
 });

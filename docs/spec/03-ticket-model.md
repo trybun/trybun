@@ -8,8 +8,8 @@ Every ticket belongs to exactly one **project**.
 
 | Field | Description |
 |---|---|
-| Name | Full project name |
-| Key | Short prefix used in ticket identifiers, e.g. `ERP` → `ERP-123` (convention from Jira/Linear). Pattern `^[A-Z][A-Z0-9]{1,9}$` (2–10 characters, starts with a letter). Unique across active and archived projects; the key of a deleted project (only possible without tickets, [§7.3](07-users-organizations-permissions.md)) may be reused. The key can be changed only while the project has no tickets; afterwards it is immutable, because it is part of identifiers, branch names ([§11.3](11-github-integration.md)) and e-mails |
+| Name | Full project name: trimmed, 1–100 characters, not unique (the key identifies the project) |
+| Key | Short prefix used in ticket identifiers, e.g. `ERP` → `ERP-123` (convention from Jira/Linear). Pattern `^[A-Z][A-Z0-9]{1,9}$` (2–10 characters, starts with a letter). Unique across active and archived projects; the key of a deleted project (only possible without tickets, [§7.3](07-users-organizations-permissions.md)) may be reused. The key can be changed only while the project has no tickets; afterwards it is immutable, because it is part of identifiers, branch names ([§11.3](11-github-integration.md)) and e-mails. The creation form suggests a key from the name until the person edits it – the initials of the words for a name of several words, otherwise its first letters, upper case, at most 4 characters – and shows typed letters in upper case; the API accepts only the exact pattern |
 | GitHub repositories | One or more linked repositories; one marked as default for new issues ([§11.2](11-github-integration.md)) |
 | Default SLA policy | SLA policy for users without an organization and organizations without their own policy ([§9.3](09-sla.md)) |
 | Sync direction | GitHub issue synchronization direction ([§11.5](11-github-integration.md)) |
