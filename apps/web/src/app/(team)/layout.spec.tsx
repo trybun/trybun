@@ -54,7 +54,7 @@ function messagesProviderOf(element: ReactElement) {
 function shellOf(element: ReactElement) {
   return (
     messagesProviderOf(element).props.children as Parent<
-      ReactElement<{ help: ReactElement; isNavigationCollapsed: boolean }>
+      ReactElement<{ help: ReactElement; isDesktopNavigationCollapsed: boolean }>
     >
   ).props.children;
 }
@@ -100,11 +100,11 @@ describe('TeamLayout', () => {
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
 
     expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
-      isNavigationCollapsed: false,
+      isDesktopNavigationCollapsed: false,
     });
     browserCookies.set('TRYBUN_NAVIGATION_COLLAPSED', { value: '1' });
     expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
-      isNavigationCollapsed: true,
+      isDesktopNavigationCollapsed: true,
     });
     browserCookies.clear();
   });

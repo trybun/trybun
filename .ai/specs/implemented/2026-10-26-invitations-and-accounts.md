@@ -1,12 +1,12 @@
 # Invitations, account deactivation and user settings
 
-| | |
-|---|---|
-| Status | `implemented` |
-| Created | 2026-10-26 |
-| Plan task | `S1-03` |
-| System specification sections | §7.1, §7.3, §7.4, §7.5, §13.1, §13.5, §14.4, §15.6 |
-| Related issues / PRs | [ADR 0009](../../../docs/adr/0009-invitation-flow.md) · [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md) (approved, S1-03) · PR #113 · S1-01 projects spec (PR #111) · S1-02 organizations spec |
+|                               |                                                                                                                                                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status                        | `implemented`                                                                                                                                                                                                               |
+| Created                       | 2026-10-26                                                                                                                                                                                                                  |
+| Plan task                     | `S1-03`                                                                                                                                                                                                                     |
+| System specification sections | §7.1, §7.3, §7.4, §7.5, §13.1, §13.5, §14.4, §15.6                                                                                                                                                                          |
+| Related issues / PRs          | [ADR 0009](../../../docs/adr/0009-invitation-flow.md) · [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md) (approved, S1-03) · PR #113 · S1-01 projects spec (PR #111) · S1-02 organizations spec |
 
 ## Context
 
@@ -48,12 +48,12 @@ Implementation of S1-03 starts only after the open questions of both specificati
 
 The targets of [§7.4](../../../docs/spec/07-users-organizations-permissions.md) and the rows of [§7.5](../../../docs/spec/07-users-organizations-permissions.md):
 
-| Target | Account kind | Who may issue |
-|---|---|---|
-| Project with role `developer` or `project_manager` | `team` | Administrator; Project manager of that project |
-| Project with role `end_user` | `end_user` | Administrator; Project manager of that project |
-| Organization | `end_user` | Administrator |
-| Administrator role | `team` | Administrator |
+| Target                                             | Account kind | Who may issue                                  |
+| -------------------------------------------------- | ------------ | ---------------------------------------------- |
+| Project with role `developer` or `project_manager` | `team`       | Administrator; Project manager of that project |
+| Project with role `end_user`                       | `end_user`   | Administrator; Project manager of that project |
+| Organization                                       | `end_user`   | Administrator                                  |
+| Administrator role                                 | `team`       | Administrator                                  |
 
 Developers and end users issue no invitations. An invitation to an archived project or an archived organization is refused (`409` `project.archived` / `organization.archived`). A team invitation is refused while GitHub sign-in is not configured (`422` `invitation.github_sign_in_missing`; the same setting that ticks the getting-started item "Configure GitHub sign-in", [§15.6](../../../docs/spec/15-deployment.md)).
 
@@ -134,17 +134,17 @@ erDiagram
 
 New contracts feature `@trybun/contracts/invitations`; additions to `@trybun/contracts/users`. All paths under `/api/v1`, plural nouns, actions as sub-resources ([§17.2](../../../docs/spec/17-conventions.md)).
 
-| Endpoint | Ability | Notes |
-|---|---|---|
-| `POST /invitation-previews` | `create` on `Invitation` for the target | `{ email, target }` → `{ outcome: 'invite' \| 'grant', organization: { id, name } \| null }`; a refusal is the same `422`/`409` the creation would return. Writes nothing |
-| `POST /invitations` | `create` on `Invitation` for the target | `{ email, target }` → `201` `{ outcome: 'invited', invitation, link }` or `200` `{ outcome: 'access_granted', user: { id, displayName } }`. The `link` appears only here and in the resending response |
-| `GET /invitations?projectId&organizationId&userId&state&cursor&limit` | `read` | Pending by default; cursor pagination ([§18.4](../../../docs/spec/18-code-patterns.md)). A Project manager sees the invitations of their projects |
-| `POST /invitations/{id}/resending` | `resend` | `{ invitation, link }`; only for a pending or expired invitation |
-| `POST /invitations/{id}/revocation` | `revoke` | `204`; only for a pending one |
-| `GET /users?kind&state&query&cursor&limit` | `read` on `User` (Administrator) | The Accounts page, the full account ([Q12](#open-questions)) |
-| `POST /users/{id}/deactivation` · `POST /users/{id}/reactivation` | `deactivate` · `reactivate` | `204`; `409` `user.last_administrator`; the guards of 6 |
-| `PUT /users/{id}/administrator-role` · `DELETE /users/{id}/administrator-role` | `grant_admin` · `revoke_admin` | `204`; idempotent, so no `If-Match`; `409` `user.last_administrator` |
-| `PATCH /users/me` | own account | `{ language?, timeZone? }` with `languageSchema` and `timeZoneSchema`; `timeZone: null` returns to the system default |
+| Endpoint                                                                       | Ability                                 | Notes                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /invitation-previews`                                                    | `create` on `Invitation` for the target | `{ email, target }` → `{ outcome: 'invite' \| 'grant', organization: { id, name } \| null }`; a refusal is the same `422`/`409` the creation would return. Writes nothing                              |
+| `POST /invitations`                                                            | `create` on `Invitation` for the target | `{ email, target }` → `201` `{ outcome: 'invited', invitation, link }` or `200` `{ outcome: 'access_granted', user: { id, displayName } }`. The `link` appears only here and in the resending response |
+| `GET /invitations?projectId&organizationId&userId&state&cursor&limit`          | `read`                                  | Pending by default; cursor pagination ([§18.4](../../../docs/spec/18-code-patterns.md)). A Project manager sees the invitations of their projects                                                      |
+| `POST /invitations/{id}/resending`                                             | `resend`                                | `{ invitation, link }`; only for a pending or expired invitation                                                                                                                                       |
+| `POST /invitations/{id}/revocation`                                            | `revoke`                                | `204`; only for a pending one                                                                                                                                                                          |
+| `GET /users?kind&state&query&cursor&limit`                                     | `read` on `User` (Administrator)        | The Accounts page, the full account ([Q12](#open-questions))                                                                                                                                           |
+| `POST /users/{id}/deactivation` · `POST /users/{id}/reactivation`              | `deactivate` · `reactivate`             | `204`; `409` `user.last_administrator`; the guards of 6                                                                                                                                                |
+| `PUT /users/{id}/administrator-role` · `DELETE /users/{id}/administrator-role` | `grant_admin` · `revoke_admin`          | `204`; idempotent, so no `If-Match`; `409` `user.last_administrator`                                                                                                                                   |
+| `PATCH /users/me`                                                              | own account                             | `{ language?, timeZone? }` with `languageSchema` and `timeZoneSchema`; `timeZone: null` returns to the system default                                                                                  |
 
 - `target` is a discriminated union: `{ type: 'project', projectId, role }`, `{ type: 'organization', organizationId }`, `{ type: 'administrator' }`.
 - The invitation response: `id`, `user { id, email, displayName }`, `target` (with the project or organization name), `invitedBy { id, displayName }`, `state`, `expiresAt`, `createdAt`, `allowedActions` (`resend`, `revoke`). It never contains the token or its hash.
@@ -157,12 +157,12 @@ New contracts feature `@trybun/contracts/invitations`; additions to `@trybun/con
 
 `invitations.abilities.ts` and the account rules of `users.abilities.ts` ([§18.3](../../../docs/spec/18-code-patterns.md)); S1-04 adds them to the matrix tests.
 
-| Principal | Actions |
-|---|---|
-| Administrator | every action on every invitation and account |
-| Project manager | `create`, `read`, `resend`, `revoke` on invitations with target `project` of their projects |
-| Developer, end user | none |
-| Everyone | `PATCH /users/me` on their own account |
+| Principal           | Actions                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Administrator       | every action on every invitation and account                                                |
+| Project manager     | `create`, `read`, `resend`, `revoke` on invitations with target `project` of their projects |
+| Developer, end user | none                                                                                        |
+| Everyone            | `PATCH /users/me` on their own account                                                      |
 
 ### Audit log and events
 
@@ -187,18 +187,18 @@ Written in the transaction of the change ([§13.5](../../../docs/spec/13-non-fun
 
 ## Changes to the system specification
 
-| Section | Change |
-|---|---|
-| §7.3 E-mail domains | The organization is matched when the account is created by the first invitation and applied on acceptance if the organization is still active and still has the project; otherwise personal access (Q14) |
-| §7.3 Archiving | An archived organization's pending invitations are revoked, as for projects (Q14) |
-| §7.4 Invitations | Issuing creates the account in state `invited`; the link is shown only when the token is created (issue, resend), "copy" later means a new link; each invitation grants only its own target, a further link of an active account needs a session of that account (Q8); addresses are normalized (Q4); team invitations need GitHub sign-in configured; e-mail sending per Q1 |
-| §7.4 Existing accounts | Means `active` accounts; an `invited` account gets a further invitation; deactivated accounts and end users of another organization are refused with an explanation (Q6, Q7) |
-| §7.4 Deactivation | Also revokes pending invitations; Keycloak user disabled and its sessions ended by a Worker job; reactivation returns to `active` or `invited`; the last active Administrator cannot be deactivated or demoted, nobody deactivates or demotes themselves (Q10) |
-| §7.5 | New rows: "View, resend and revoke invitations of own project" – Project manager, Admin; "View the list of accounts" – Admin |
-| §13.1 | The language is stored in the account, set on acceptance from the request language, applied at sign-in; the shell's language switch saves it (Q11) |
-| §13.5 | Recorded actions named: `invitation.issued`, `invitation.resent`, `invitation.revoked`, `invitation.accepted`, `user.deactivated`, `user.reactivated`, `user.admin_granted`, `user.admin_revoked` |
-| §15.6 | "Invite the team" is ticked when a team account other than the first Administrator exists |
-| Plan (changed with this specification) | S1-15 gains invitation and "access granted" e-mails and the delivery of the token to the mail job (Q1); S1-03 names S1-20 (#130) for the account kind change and the e-mail change (Q2); S1-03 stays one task (Q13) |
+| Section                                | Change                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §7.3 E-mail domains                    | The organization is matched when the account is created by the first invitation and applied on acceptance if the organization is still active and still has the project; otherwise personal access (Q14)                                                                                                                                                                     |
+| §7.3 Archiving                         | An archived organization's pending invitations are revoked, as for projects (Q14)                                                                                                                                                                                                                                                                                            |
+| §7.4 Invitations                       | Issuing creates the account in state `invited`; the link is shown only when the token is created (issue, resend), "copy" later means a new link; each invitation grants only its own target, a further link of an active account needs a session of that account (Q8); addresses are normalized (Q4); team invitations need GitHub sign-in configured; e-mail sending per Q1 |
+| §7.4 Existing accounts                 | Means `active` accounts; an `invited` account gets a further invitation; deactivated accounts and end users of another organization are refused with an explanation (Q6, Q7)                                                                                                                                                                                                 |
+| §7.4 Deactivation                      | Also revokes pending invitations; Keycloak user disabled and its sessions ended by a Worker job; reactivation returns to `active` or `invited`; the last active Administrator cannot be deactivated or demoted, nobody deactivates or demotes themselves (Q10)                                                                                                               |
+| §7.5                                   | New rows: "View, resend and revoke invitations of own project" – Project manager, Admin; "View the list of accounts" – Admin                                                                                                                                                                                                                                                 |
+| §13.1                                  | The language is stored in the account, set on acceptance from the request language, applied at sign-in; the shell's language switch saves it (Q11)                                                                                                                                                                                                                           |
+| §13.5                                  | Recorded actions named: `invitation.issued`, `invitation.resent`, `invitation.revoked`, `invitation.accepted`, `user.deactivated`, `user.reactivated`, `user.admin_granted`, `user.admin_revoked`                                                                                                                                                                            |
+| §15.6                                  | "Invite the team" is ticked when a team account other than the first Administrator exists                                                                                                                                                                                                                                                                                    |
+| Plan (changed with this specification) | S1-15 gains invitation and "access granted" e-mails and the delivery of the token to the mail job (Q1); S1-03 names S1-20 (#130) for the account kind change and the e-mail change (Q2); S1-03 stays one task (Q13)                                                                                                                                                          |
 
 New or changed glossary terms (code identifier, EN/PL labels):
 

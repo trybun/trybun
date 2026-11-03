@@ -1,12 +1,12 @@
 # Password policy of the sign-in
 
-| | |
-|---|---|
-| Status | `implemented` |
-| Created | 2026-10-25 |
-| Plan task | `S0-20` |
-| System specification sections | §7.4, §13.5, §15.5, §15.6, §15.12, §18.5 |
-| Related issues / PRs | [#80](https://github.com/trybun/trybun/pull/80) (S0-12, which found the gap), [#81](https://github.com/trybun/trybun/pull/81) (specification) |
+|                               |                                                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status                        | `implemented`                                                                                                                                 |
+| Created                       | 2026-10-25                                                                                                                                    |
+| Plan task                     | `S0-20`                                                                                                                                       |
+| System specification sections | §7.4, §13.5, §15.5, §15.6, §15.12, §18.5                                                                                                      |
+| Related issues / PRs          | [#80](https://github.com/trybun/trybun/pull/80) (S0-12, which found the gap), [#81](https://github.com/trybun/trybun/pull/81) (specification) |
 
 ## Context
 
@@ -77,14 +77,14 @@ The minimum and maximum length are constants of `@trybun/contracts/users` (`PASS
 
 ## Changes to the system specification
 
-| Section | Change |
-|---|---|
-| §7.4 | The password policy: at least 15 and at most 64 characters, not the e-mail address or user name, not on the blocklist, no composition rules and no expiry; hashing with Argon2; the policy is checked when a password is set, so existing passwords stay valid |
-| §13.5 | The policy follows OWASP ASVS 5.0 V6 and NIST SP 800-63B; an offline blocklist of common and breached passwords is part of the deployment package |
-| §15.5 | The managed Keycloak settings include the password policy and the hashing algorithm |
-| §15.6 | The wizard states the rule under the password field and checks the length before submitting |
-| §15.12 | The demo accounts keep their short password, imported before the policy applies |
-| Implementation plan | New task S0-20 (group 6): the policy, its texts, the blocklist file, the constants and the tests |
+| Section             | Change                                                                                                                                                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §7.4                | The password policy: at least 15 and at most 64 characters, not the e-mail address or user name, not on the blocklist, no composition rules and no expiry; hashing with Argon2; the policy is checked when a password is set, so existing passwords stay valid |
+| §13.5               | The policy follows OWASP ASVS 5.0 V6 and NIST SP 800-63B; an offline blocklist of common and breached passwords is part of the deployment package                                                                                                              |
+| §15.5               | The managed Keycloak settings include the password policy and the hashing algorithm                                                                                                                                                                            |
+| §15.6               | The wizard states the rule under the password field and checks the length before submitting                                                                                                                                                                    |
+| §15.12              | The demo accounts keep their short password, imported before the policy applies                                                                                                                                                                                |
+| Implementation plan | New task S0-20 (group 6): the policy, its texts, the blocklist file, the constants and the tests                                                                                                                                                               |
 
 New or changed glossary terms: none.
 

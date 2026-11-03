@@ -18,7 +18,7 @@ const { AppShell } = await import('./app-shell.js');
  * The HTML of the shell as the team layout renders it on the server, with the account prefetched
  * into the query cache – after the lazily loaded menus of the header have resolved.
  */
-async function renderShell(locale: 'en' | 'pl' = 'en', isNavigationCollapsed = false) {
+async function renderShell(locale: 'en' | 'pl' = 'en', isDesktopNavigationCollapsed = false) {
   const queryClient = new QueryClient();
   queryClient.setQueryData(['users', 'me'], {
     id: '0199a3f0-0000-7000-8000-000000000003',
@@ -32,7 +32,7 @@ async function renderShell(locale: 'en' | 'pl' = 'en', isNavigationCollapsed = f
       <QueryClientProvider client={queryClient}>
         <AppShell
           allowedActions={[]}
-          isNavigationCollapsed={isNavigationCollapsed}
+          isDesktopNavigationCollapsed={isDesktopNavigationCollapsed}
           help={<button type="button">help-slot</button>}
         >
           <h1>Page</h1>

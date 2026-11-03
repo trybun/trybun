@@ -1,12 +1,12 @@
 # Content width of pages in the application shell
 
-| | |
-|---|---|
-| Status | `implemented` |
-| Created | 2026-11-02 |
-| Plan task | – |
-| System specification sections | §2.9, §18.2, §18.5 |
-| Related issues / PRs | #179 (request), #175 (manual QA where the question came up), #193 (specification), #194 (implementation) |
+|                               |                                                                                                          |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Status                        | `implemented`                                                                                            |
+| Created                       | 2026-11-02                                                                                               |
+| Plan task                     | –                                                                                                        |
+| System specification sections | §2.9, §18.2, §18.5                                                                                       |
+| Related issues / PRs          | #179 (request), #175 (manual QA where the question came up), #193 (specification), #194 (implementation) |
 
 ## 📝 TLDR
 
@@ -16,13 +16,13 @@ Every page in the application shell limits its content to `max-w-3xl` (768 px), 
 
 The width is set only in the code. `docs/spec` and `docs/brand` do not define a content width:
 
-| Page | Container | Kind |
-|---|---|---|
-| Projects (`app/(team)/projects/page.tsx`) | `max-w-3xl` on the page root | list |
-| Administration (`app/(team)/admin/layout.tsx`) | `max-w-3xl` on the **layout**, so every section inherits it: Getting started, Accounts, Organizations, an organization, About | mixed |
-| Account settings (`app/(team)/settings/page.tsx`) | `max-w-3xl` | form |
-| Project settings (`features/projects/components/project-settings.tsx`) | `max-w-3xl` | form |
-| Help (`app/(team)/help/page.tsx`, `help-article.tsx`) | `max-w-prose` | reading text |
+| Page                                                                   | Container                                                                                                                     | Kind         |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Projects (`app/(team)/projects/page.tsx`)                              | `max-w-3xl` on the page root                                                                                                  | list         |
+| Administration (`app/(team)/admin/layout.tsx`)                         | `max-w-3xl` on the **layout**, so every section inherits it: Getting started, Accounts, Organizations, an organization, About | mixed        |
+| Account settings (`app/(team)/settings/page.tsx`)                      | `max-w-3xl`                                                                                                                   | form         |
+| Project settings (`features/projects/components/project-settings.tsx`) | `max-w-3xl`                                                                                                                   | form         |
+| Help (`app/(team)/help/page.tsx`, `help-article.tsx`)                  | `max-w-prose`                                                                                                                 | reading text |
 
 The `<main>` of the application shell (`features/app-shell/components/app-shell.tsx`) already fills the space beside the navigation, with `px-4` / `md:px-6` padding. Long lists and tables will arrive next (tickets, the List view of §8.5), and there the narrow width costs columns and long titles.
 
@@ -46,11 +46,11 @@ The `<main>` of the application shell (`features/app-shell/components/app-shell.
 
 The content of a page in the application shell has one of two widths, chosen by what the page is for:
 
-| Page kind | Width | Why |
-|---|---|---|
-| **Form, settings or detail of one record**: account settings, project settings, an organization, Getting started, About | Readable: `max-w-3xl` (768 px) on the page's root container | Line length and eye travel; the labels of a form stay near their fields |
-| **List, table or board**: Projects, Accounts, Organizations, and later the ticket views of §8 | Full width of the content area: no `max-w-*` on the page's root container | Columns and long titles have room; the convention of GitHub, Linear and Jira |
-| Reading text (help) | `max-w-prose`, unchanged | Typography of long text |
+| Page kind                                                                                                               | Width                                                                     | Why                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **Form, settings or detail of one record**: account settings, project settings, an organization, Getting started, About | Readable: `max-w-3xl` (768 px) on the page's root container               | Line length and eye travel; the labels of a form stay near their fields      |
+| **List, table or board**: Projects, Accounts, Organizations, and later the ticket views of §8                           | Full width of the content area: no `max-w-*` on the page's root container | Columns and long titles have room; the convention of GitHub, Linear and Jira |
+| Reading text (help)                                                                                                     | `max-w-prose`, unchanged                                                  | Typography of long text                                                      |
 
 The page's header (title and primary action) takes the width of its page. On a list page the primary action (e.g. **New project**) therefore sits at the right edge of the content area. On phones (< 768 px) nothing changes, because both widths already fill the screen.
 
@@ -70,11 +70,11 @@ Mockups: none. The change only removes a width limit on three existing screens. 
 
 ## Changes to the system specification
 
-| Section | Change |
-|---|---|
-| §2.9 Approach | A new bullet **Content width**: forms, settings and the detail of one record use a readable width (768 px); lists, tables and boards use the full width of the content area; help text keeps the prose width. |
-| §18.2 Quick reference | A new row: *The width of a page's content* → `max-w-3xl` on the root container of a form, settings or detail page; no `max-w-*` on a list, table or board page; never on a shared layout → §18.5. |
-| §18.5 Layout | A bullet stating that the page (its route file or its root feature component) sets the width of its content according to §2.9. A layout shared by both kinds of page never limits the width. |
+| Section               | Change                                                                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §2.9 Approach         | A new bullet **Content width**: forms, settings and the detail of one record use a readable width (768 px); lists, tables and boards use the full width of the content area; help text keeps the prose width. |
+| §18.2 Quick reference | A new row: _The width of a page's content_ → `max-w-3xl` on the root container of a form, settings or detail page; no `max-w-*` on a list, table or board page; never on a shared layout → §18.5.             |
+| §18.5 Layout          | A bullet stating that the page (its route file or its root feature component) sets the width of its content according to §2.9. A layout shared by both kinds of page never limits the width.                  |
 
 No new glossary terms.
 
@@ -82,13 +82,13 @@ No new glossary terms.
 
 The blocking question of #179 (which rule) was answered by the maintainer on 2026-11-02. The remaining design questions were resolved with the most reversible option:
 
-| # | Question | Assumed answer | Rationale |
-|---|---|---|---|
-| Q1 | A shared layout component (e.g. `PageContainer` with a `width` variant) or Tailwind classes on the page root? | Tailwind classes on the page root, written down as a pattern in §18 | No new public surface in `@trybun/ui`. After the change, 5 page roots use one class. A component can be proposed later under Rule 12 when the ticket views add more kinds of page. |
-| Q2 | Is an organization's detail page (with its member list) a list page? | No, it stays `max-w-3xl` | It is the detail of one record. Its member list is short and secondary. This is the smallest visible change and easy to flip. |
-| Q3 | Cap the full width on very wide screens (e.g. `max-w-screen-2xl`)? | No cap | It is the approved rule as written, the convention of Linear and Jira, and a cap can be added later without other changes. |
-| Q4 | Widen the Accounts table's truncated cells (`max-w-48`, `max-w-64`)? | No, out of scope | It is the inner layout of a list, not the page's width. |
-| Q5 | User documentation or product tour changes (Rules 3, 4)? | None | No feature, step or target changes. Only the available width changes. |
+| #   | Question                                                                                                      | Assumed answer                                                      | Rationale                                                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | A shared layout component (e.g. `PageContainer` with a `width` variant) or Tailwind classes on the page root? | Tailwind classes on the page root, written down as a pattern in §18 | No new public surface in `@trybun/ui`. After the change, 5 page roots use one class. A component can be proposed later under Rule 12 when the ticket views add more kinds of page. |
+| Q2  | Is an organization's detail page (with its member list) a list page?                                          | No, it stays `max-w-3xl`                                            | It is the detail of one record. Its member list is short and secondary. This is the smallest visible change and easy to flip.                                                      |
+| Q3  | Cap the full width on very wide screens (e.g. `max-w-screen-2xl`)?                                            | No cap                                                              | It is the approved rule as written, the convention of Linear and Jira, and a cap can be added later without other changes.                                                         |
+| Q4  | Widen the Accounts table's truncated cells (`max-w-48`, `max-w-64`)?                                          | No, out of scope                                                    | It is the inner layout of a list, not the page's width.                                                                                                                            |
+| Q5  | User documentation or product tour changes (Rules 3, 4)?                                                      | None                                                                | No feature, step or target changes. Only the available width changes.                                                                                                              |
 
 No assumption needs human confirmation.
 

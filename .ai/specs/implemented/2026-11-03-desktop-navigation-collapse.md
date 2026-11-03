@@ -1,12 +1,12 @@
 # Collapsible side navigation on desktop
 
-| | |
-|---|---|
-| Status | `implemented` |
-| Created | 2026-11-03 |
-| Plan task | – |
-| System specification sections | §2.9, §18.2, §18.5 |
-| Related issues / PRs | #215 (request), #218 (specification), #219 (implementation), #217 (tooltips on collapsed icons, separate) |
+|                               |                                                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Status                        | `implemented`                                                                                             |
+| Created                       | 2026-11-03                                                                                                |
+| Plan task                     | –                                                                                                         |
+| System specification sections | §2.9, §18.2, §18.5                                                                                        |
+| Related issues / PRs          | #215 (request), #218 (specification), #219 (implementation), #217 (tooltips on collapsed icons, separate) |
 
 ## 📝 TLDR
 
@@ -35,11 +35,11 @@ On desktop (≥ 1280 px) the side navigation of the application shell is always 
 
 ### Behavior
 
-| Width | Default | Toggle | Remembered |
-|---|---|---|---|
-| Phone < 768 px | Bottom navigation (unchanged) | – | – |
-| Tablet 768–1279 px | Collapsed to icons (unchanged) | Expand / collapse (unchanged) | No (unchanged) |
-| Desktop ≥ 1280 px | **Expanded** with labels | **Collapse / expand** (new) | **Yes – cookie, per browser** (new) |
+| Width              | Default                        | Toggle                        | Remembered                          |
+| ------------------ | ------------------------------ | ----------------------------- | ----------------------------------- |
+| Phone < 768 px     | Bottom navigation (unchanged)  | –                             | –                                   |
+| Tablet 768–1279 px | Collapsed to icons (unchanged) | Expand / collapse (unchanged) | No (unchanged)                      |
+| Desktop ≥ 1280 px  | **Expanded** with labels       | **Collapse / expand** (new)   | **Yes – cookie, per browser** (new) |
 
 The desktop toggle looks like the tablet toggle at the top of the side navigation (`PanelLeftClose` / `PanelLeftOpen` icon, names "Collapse navigation" / "Expand navigation", already in the catalogues). Resizing the window across 1280 px switches between the two independent states without a reload, because each breakpoint has its own state and its own CSS.
 
@@ -55,7 +55,7 @@ Width and label visibility are classes for both breakpoints at once, e.g. `isTab
 ### Persisting the desktop choice
 
 - `features/app-shell/navigation-cookie.ts` (`import 'server-only'`), modelled on `lib/i18n/time-zone-cookie.ts`: the cookie `TRYBUN_NAVIGATION_COLLAPSED` with the value `1` when collapsed; absent (deleted) when expanded, the default. `path=/`, `sameSite=lax`, `httpOnly`, `secure` from `getEnv().shouldUseSecureCookies`, max age one year. `isNavigationCollapsed()` reads it; anything other than `1` is "expanded".
-- `features/app-shell/change-navigation-collapsed.ts` (`'use server'`): the Server Action `changeNavigationCollapsed(isCollapsed: boolean)` validates the argument with Zod and stores the cookie. It does **not** call `refresh()`: the client state already shows the change; the cookie only matters for the next server render.
+- `features/app-shell/change-navigation-collapsed.ts` (`'use server'`): the Server Action `changeNavigationCollapsed(isCollapsed: boolean)` validates the argument with Zod and stores the cookie. It does not call `refresh()`. Setting a cookie in a Server Action already renders the current page again on the server (Next.js); `SideNavigation` keeps its own state, so that render changes nothing visible, and the cookie matters for the next page load.
 - The desktop toggle flips its state at once, then calls the action without awaiting it in the UI. A failed call only means the choice is not remembered; the toggle still works (no toast – a preference is not data).
 - `app/(team)/layout.tsx` reads `isNavigationCollapsed()` and passes it through `AppShell` to `SideNavigation`.
 - The cookie is not tied to the session: signing out does not delete it, so a new sign-in in the same browser keeps the choice. It holds no personal data (one flag), so it needs no consent banner (strictly functional preference).
@@ -66,11 +66,11 @@ The first-login tour targets `data-tour="app-shell-navigation"` on the `<nav>`, 
 
 ## Changes to the system specification
 
-| Section | Change |
-|---|---|
-| §2.9 "Patterns per element" | The Tablet column already says "Collapsible side navigation". Add a sentence below the table: on desktop the side navigation is expanded by default and can be collapsed to icons; the browser remembers the desktop choice; tablets start collapsed and do not remember it. |
-| §18.5 State table | New row: **Persisted UI preference of the browser** (e.g. the collapsed desktop navigation) → a server-only cookie helper of the feature, written by a Server Action and read by the layout, which passes it as the initial state, so the server renders it without a flash. Never personal data or server data. |
-| §18.2 Quick reference | New row: "A UI preference that survives a reload" → cookie read by the layout, Server Action writes it → §18.5. |
+| Section                     | Change                                                                                                                                                                                                                                                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §2.9 "Patterns per element" | The Tablet column already says "Collapsible side navigation". Add a sentence below the table: on desktop the side navigation is expanded by default and can be collapsed to icons; the browser remembers the desktop choice; tablets start collapsed and do not remember it.                                     |
+| §18.5 State table           | New row: **Persisted UI preference of the browser** (e.g. the collapsed desktop navigation) → a server-only cookie helper of the feature, written by a Server Action and read by the layout, which passes it as the initial state, so the server renders it without a flash. Never personal data or server data. |
+| §18.2 Quick reference       | New row: "A UI preference that survives a reload" → cookie read by the layout, Server Action writes it → §18.5.                                                                                                                                                                                                  |
 
 No glossary changes.
 
@@ -78,13 +78,13 @@ No glossary changes.
 
 The ticket left no open questions; the following implementation choices were made autonomously and can be overridden on the specification pull request.
 
-| # | Question | Default | Rationale |
-|---|---|---|---|
-| A1 | Where do the cookie helper and the Server Action live? | `features/app-shell/` (`navigation-cookie.ts`, `change-navigation-collapsed.ts`) | The preference belongs to the shell feature; `lib/i18n` holds only language and time-zone concerns. Same shape as the time-zone helper. |
-| A2 | Cookie value when expanded? | Deleted (absent = expanded, the default) | Smallest state; an invalid or old value falls back to the default. |
-| A3 | Does the Server Action refresh the page? | No | The client already shows the change; a refresh would re-render every page for a width change. |
-| A4 | How is the toggle's `aria-expanded` correct at both breakpoints without JS media queries? | Two buttons, one per breakpoint, shown/hidden by CSS | Correct server HTML at every width, no flash, no hydration mismatch. |
-| A5 | Feedback when storing the cookie fails? | None; the toggle still works for the page | A lost preference is harmless; a toast would be noise. |
+| #   | Question                                                                                  | Default                                                                          | Rationale                                                                                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | Where do the cookie helper and the Server Action live?                                    | `features/app-shell/` (`navigation-cookie.ts`, `change-navigation-collapsed.ts`) | The preference belongs to the shell feature; `lib/i18n` holds only language and time-zone concerns. Same shape as the time-zone helper.                                                                                          |
+| A2  | Cookie value when expanded?                                                               | Deleted (absent = expanded, the default)                                         | Smallest state; an invalid or old value falls back to the default.                                                                                                                                                               |
+| A3  | Does the Server Action refresh the page?                                                  | No explicit `refresh()`                                                          | Next.js renders the page again after a cookie change anyway; the toggle's local state already shows the result. A client-written cookie would avoid that render but needs a non-`httpOnly` cookie and a different §18.5 pattern. |
+| A4  | How is the toggle's `aria-expanded` correct at both breakpoints without JS media queries? | Two buttons, one per breakpoint, shown/hidden by CSS                             | Correct server HTML at every width, no flash, no hydration mismatch.                                                                                                                                                             |
+| A5  | Feedback when storing the cookie fails?                                                   | None; the toggle still works for the page                                        | A lost preference is harmless; a toast would be noise.                                                                                                                                                                           |
 
 ## Acceptance criteria
 

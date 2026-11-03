@@ -51,7 +51,7 @@ export default async function TeamLayout({ children }: { children: ReactNode }) 
         <ProductTourProvider>
           <AppShell
             allowedActions={user?.allowedActions ?? []}
-            isNavigationCollapsed={isNavigationCollapsedOnDesktop}
+            isDesktopNavigationCollapsed={isNavigationCollapsedOnDesktop}
             help={
               <LazyHelpMenu views={helpViews}>
                 <LazyProductTourMenuItems />

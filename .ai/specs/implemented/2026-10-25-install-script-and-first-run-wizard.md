@@ -1,12 +1,12 @@
 # Install script, first-run wizard and the Administrator panel
 
-| | |
-|---|---|
-| Status | `implemented` |
-| Created | 2026-10-25 |
-| Plan task | `S0-12` |
-| System specification sections | §2.11, §7.4, §13.5, §14.4, §15.2, §15.4, §15.5, §15.6, §18.3, §18.5, §18.9, glossary |
-| Related issues / PRs | [#37](https://github.com/trybun/trybun/issues/37), [#79](https://github.com/trybun/trybun/pull/79) (specification) |
+|                               |                                                                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Status                        | `implemented`                                                                                                      |
+| Created                       | 2026-10-25                                                                                                         |
+| Plan task                     | `S0-12`                                                                                                            |
+| System specification sections | §2.11, §7.4, §13.5, §14.4, §15.2, §15.4, §15.5, §15.6, §18.3, §18.5, §18.9, glossary                               |
+| Related issues / PRs          | [#37](https://github.com/trybun/trybun/issues/37), [#79](https://github.com/trybun/trybun/pull/79) (specification) |
 
 ## Context
 
@@ -67,6 +67,7 @@ The deployment package gets one POSIX shell script, `trybun`, at its root (`depl
    - the default time zone (default: the server's time zone, else `UTC`).
 
    Each answer is validated like the server validates it at start-up (domain name, `en`/`pl`, IANA time zone). The Administrator's e-mail address is asked in the wizard, where it is needed, instead of here (open question 3).
+
 3. **Domain check.** The script resolves the domain and compares its addresses with the addresses of the server. When they differ, it warns and asks for confirmation instead of refusing: servers behind NAT or with a floating IP do not see their public address. Caddy cannot obtain a certificate until the domain points to the server.
 4. **Secrets.** All passwords and secrets of `.env.example` are generated as 32 random bytes from `/dev/urandom`, written in hex: the PostgreSQL, Keycloak database, Keycloak administrator, Valkey and SeaweedFS credentials, `AUTH_SECRET`, the secrets of the Keycloak clients `trybun-web` and `trybun-server`, and the new **backup passphrase** `TRYBUN_BACKUP_PASSPHRASE`. S0-13 reads this variable.
 5. **Backup passphrase.** The script prints the passphrase once and requires the Administrator to type `stored` to confirm that it is kept outside the server. Without the passphrase, off-site backups cannot be restored after the server is lost ([§15.10](../../../docs/spec/15-deployment.md)).
@@ -105,6 +106,7 @@ The wizard is a page of the web application outside the team views. It needs no 
   3. If the transaction fails, for example because the token was used meanwhile, the API deletes the Keycloak user it created, so a retry with a new token starts clean.
 
   The password goes straight from the request to Keycloak. It is never stored, logged or returned (open question 5).
+
 - **After success**, the page says the account is ready and shows **Sign in**. The sign-in returns to the getting-started checklist (`/admin`). Keycloak asks for the password and requires the Administrator to set up the one-time password (TOTP) before the sign-in completes ([§15.5](../../../docs/spec/15-deployment.md) "Team 2FA").
 - **The sign-in page** shows a short note while the system has no Administrator: "Trybun is not set up yet. Open the setup link printed by `./trybun install`, or run `./trybun setup-token` on the server." Without the note, a person who opens a new installation sees only a Keycloak login that no account can pass.
 - **Phones, tablets and desktop:** one column from 360 px, touch targets ≥ 44 px, form fields with 16 px text below the desktop breakpoint (Rule 9). The form uses the `Form`, `Input`, `Select` and `Button` components of `@trybun/ui`. A password input with a show/hide toggle is added to `@trybun/ui` with its stories, if no existing component covers it (Rule 6).
@@ -114,12 +116,13 @@ The wizard is a page of the web application outside the team views. It needs no 
 The Administrator panel starts here with two pages. Later tasks add their pages (users, projects, settings) to it.
 
 - **Navigation.** Administrators get an **Administration** item in the side navigation of the application shell (tablet, desktop) and in the account menu (phones, where the bottom navigation keeps its slots for daily work). Other people do not see it, and the routes of the panel answer them with "not found".
-- **Getting started** (`/admin`, the landing page of the panel): one card per checklist item with its title, a sentence on why it matters, its state (**Done** with a check mark, or **To do**) and a link to the help page that explains it. Settings that live in `.env` are explained there, because the browser cannot change them. The page shows "*n* of *m* done". When every item is done, it says so and keeps the list.
+- **Getting started** (`/admin`, the landing page of the panel): one card per checklist item with its title, a sentence on why it matters, its state (**Done** with a check mark, or **To do**) and a link to the help page that explains it. Settings that live in `.env` are explained there, because the browser cannot change them. The page shows "_n_ of _m_ done". When every item is done, it says so and keeps the list.
 - **Stage 0 items**, each ticked automatically from the configuration of the API:
   - **Configure GitHub sign-in** – done when `TRYBUN_GITHUB_CLIENT_ID` and `TRYBUN_GITHUB_CLIENT_SECRET` are set. Required before team members can be invited ([§15.5](../../../docs/spec/15-deployment.md)).
   - **Configure e-mail** – done when `TRYBUN_SMTP_HOST` is set (with `TRYBUN_MAIL_FROM`, which start-up already requires together with it).
 
   S0-13 adds "Configure backup storage". Each later task adds its own item: create a project (S1-01), invite the team (S1-03), create an organization (S1-02, marked optional), connect the GitHub App (optional) – in the order of [§15.6](../../../docs/spec/15-deployment.md).
+
 - **About** (`/admin/about`): the installed version, the same value that `/health` reports, and the license (MIT, with a link to its text in the repository of the release). The "Support the project" link joins it in the final stage.
 - **What the system does.**
   - A new server module `administration` serves `GET /api/v1/administration/getting-started` and `GET /api/v1/administration/about`. The checklist returns `{ items: [{ id, isDone, isOptional }] }`, a list bounded by a closed set ([§18.4](../../../docs/spec/18-code-patterns.md)). The about endpoint returns `{ version, license }`.
@@ -156,6 +159,7 @@ The Administrator panel needs its first permission check before S1-04 builds the
   - `.env` has mode `600` and no development value of `.env.example`.
 
   `shellcheck` runs on the script in `pnpm lint`.
+
 - The setup endpoints are covered by integration tests (Testcontainers, Keycloak through MSW):
   - an unknown, an expired and a used token are rejected with the same error;
   - two simultaneous submissions create one Administrator;
@@ -181,19 +185,19 @@ The Administrator panel needs its first permission check before S1-04 builds the
 
 ## Changes to the system specification
 
-| Section | Change |
-|---|---|
-| §15.4 | The deployment package contains the `trybun` script with its subcommands instead of separate install, update, restore and backup scripts |
-| §15.5 | The install script runs as `./trybun install`; exact checks (RAM ≥ 8 × 10⁹ bytes, warning below 16 GB; ports 80/443 free unless held by the installation's Caddy; minimum Docker and Compose versions; domain mismatch is a warning with confirmation); the questions are domain, default language and time zone (no Administrator e-mail); confirmation of the backup passphrase by typing `stored`; re-running resumes an interrupted installation and prints a new setup link while no Administrator exists |
-| §15.6 | The new token comes from `./trybun setup-token` and replaces earlier ones; the link carries the token in the URL fragment; the wizard is one step: the Administrator's name, e-mail, password, language and time zone, with the system defaults shown read-only; the API sets the password as a Keycloak credential and requires OTP setup; sending a test e-mail moves to the "Configure e-mail" item of the checklist (with S1-15); the checklist lives on the Administrator panel's landing page `/admin`, and the first sign-in returns there; the sign-in page points to the setup link while no Administrator exists |
-| §7.4 | The break-glass Administrator chooses their password in the wizard; it is passed to Keycloak and never stored by the system |
-| §13.5 | The audit log entry for the use of the setup token comes with the audit log (S0-14) |
-| §14.4 | Rate limiting of the setup endpoints comes with S0-14; the first CASL rule (Administrator panel) arrives with S0-12, the rest of the permission layer with S1-04 |
-| §14.6 | The `server` image has a third entry point, the command line (`cli.ts`) |
-| §18.3 | `platform/keycloak-admin` as the adapter of the Keycloak Admin API; global actions in `allowedActions` of `GET /users/me` |
-| §18.9 | Reference implementations of S0-12: the Keycloak Admin API adapter, the CLI entry point, the ability factory with its first rule (until S1-04 extends it) |
-| Implementation plan | S0-13 adds its commands to `trybun` and the "Configure backup storage" item; S0-14 rate-limits the setup endpoints and audits the setup token; S1-15 adds "Send a test e-mail" to the "Configure e-mail" item; each task adding a checklist item names it |
-| Glossary | New terms below |
+| Section             | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §15.4               | The deployment package contains the `trybun` script with its subcommands instead of separate install, update, restore and backup scripts                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| §15.5               | The install script runs as `./trybun install`; exact checks (RAM ≥ 8 × 10⁹ bytes, warning below 16 GB; ports 80/443 free unless held by the installation's Caddy; minimum Docker and Compose versions; domain mismatch is a warning with confirmation); the questions are domain, default language and time zone (no Administrator e-mail); confirmation of the backup passphrase by typing `stored`; re-running resumes an interrupted installation and prints a new setup link while no Administrator exists                                                                                                             |
+| §15.6               | The new token comes from `./trybun setup-token` and replaces earlier ones; the link carries the token in the URL fragment; the wizard is one step: the Administrator's name, e-mail, password, language and time zone, with the system defaults shown read-only; the API sets the password as a Keycloak credential and requires OTP setup; sending a test e-mail moves to the "Configure e-mail" item of the checklist (with S1-15); the checklist lives on the Administrator panel's landing page `/admin`, and the first sign-in returns there; the sign-in page points to the setup link while no Administrator exists |
+| §7.4                | The break-glass Administrator chooses their password in the wizard; it is passed to Keycloak and never stored by the system                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| §13.5               | The audit log entry for the use of the setup token comes with the audit log (S0-14)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| §14.4               | Rate limiting of the setup endpoints comes with S0-14; the first CASL rule (Administrator panel) arrives with S0-12, the rest of the permission layer with S1-04                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| §14.6               | The `server` image has a third entry point, the command line (`cli.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| §18.3               | `platform/keycloak-admin` as the adapter of the Keycloak Admin API; global actions in `allowedActions` of `GET /users/me`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| §18.9               | Reference implementations of S0-12: the Keycloak Admin API adapter, the CLI entry point, the ability factory with its first rule (until S1-04 extends it)                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Implementation plan | S0-13 adds its commands to `trybun` and the "Configure backup storage" item; S0-14 rate-limits the setup endpoints and audits the setup token; S1-15 adds "Send a test e-mail" to the "Configure e-mail" item; each task adding a checklist item names it                                                                                                                                                                                                                                                                                                                                                                  |
+| Glossary            | New terms below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 New or changed glossary terms (code identifier, EN/PL labels):
 
@@ -214,6 +218,7 @@ Implementation must not start until every question has an answer.
    - A temporary password generated and shown by the wizard has to be typed and then changed at the first sign-in: two more steps, and a secret on screen.
 
    Approved by merging this specification.
+
 6. §15.6 lists "sending a test e-mail" in the wizard, but the system sends no e-mail before S1-15. Move it to the "Configure e-mail" checklist item, added by S1-15? — **Proposed answer:** yes. Without a sender, a test e-mail cannot be built in S0-12. On the checklist it is also available whenever SMTP changes, not only once. Approved by merging this specification.
 7. §15.6 requires rate limiting of the setup endpoints, and §13.5 an audit log entry for the use of the setup token. Both mechanisms come with S0-14. Leave them to S0-14? — **Proposed answer:** yes. The token has 256 bits of entropy, so guessing it within its 24 hours is infeasible even without a limit. S0-14 adds both and its plan row names them. Approved by merging this specification.
 8. The Administrator panel needs a permission check before S1-04. Introduce CASL now (ability factory, one rule, `allowedActions` on `GET /users/me`), or check `isAdmin` directly until S1-04? — **Proposed answer:** introduce CASL now. A direct check would be permission logic outside the abilities, which `AGENTS.md` forbids, and S1-04 would have to migrate it. S1-04 extends the factory with `@casl/prisma` and the record rules. Approved by merging this specification.

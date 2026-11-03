@@ -1,12 +1,12 @@
 # Accepting invitations on Keycloak without registration
 
-| | |
-|---|---|
-| Status | `implemented` |
-| Created | 2026-10-25 |
-| Plan task | `S1-03` (found by `S0-23`) |
-| System specification sections | §5.7, §7.4, §13.2 |
-| Related issues / PRs | [ADR 0009](../../../docs/adr/0009-invitation-flow.md) |
+|                               |                                                       |
+| ----------------------------- | ----------------------------------------------------- |
+| Status                        | `implemented`                                         |
+| Created                       | 2026-10-25                                            |
+| Plan task                     | `S1-03` (found by `S0-23`)                            |
+| System specification sections | §5.7, §7.4, §13.2                                     |
+| Related issues / PRs          | [ADR 0009](../../../docs/adr/0009-invitation-flow.md) |
 
 ## Context
 
@@ -39,14 +39,14 @@ The ADR also met four smaller gaps, listed as questions 2–5.
 
 ## Changes to the system specification
 
-| Section | Change |
-|---|---|
-| §7.4 Accounts and authentication | "Keycloak checks it whenever a password is set – the first-run wizard, registration from an invitation, …" → "… the first-run wizard, the acceptance of an invitation, …" |
-| §7.4 Invitations | End-user acceptance: "Keycloak registration with the invited e-mail address pre-filled and locked; the user sets a password" → the user sets a password on the invitation page, next to the invited address shown read-only; the API creates the Keycloak user with it once (as in [§15.6](../../../docs/spec/15-deployment.md)); Keycloak's sign-in follows with the address pre-filled |
-| §7.4 Invitations | "Keycloak self-registration is reachable only through an invitation link" → Keycloak registration is switched off; Keycloak users are created only by the API (first-run wizard, invitations) and by identity-provider sign-ins started from an invitation; a Keycloak user without an accepted invitation gives no access |
-| §7.4 Invitations | Answers of questions 3 and 5 |
-| §5.7 | Answer of question 4 |
-| §13.2 | Answer of question 2, if Keycloak users without an account are deleted |
+| Section                          | Change                                                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| §7.4 Accounts and authentication | "Keycloak checks it whenever a password is set – the first-run wizard, registration from an invitation, …" → "… the first-run wizard, the acceptance of an invitation, …"                                                                                                                                                                                                                |
+| §7.4 Invitations                 | End-user acceptance: "Keycloak registration with the invited e-mail address pre-filled and locked; the user sets a password" → the user sets a password on the invitation page, next to the invited address shown read-only; the API creates the Keycloak user with it once (as in [§15.6](../../../docs/spec/15-deployment.md)); Keycloak's sign-in follows with the address pre-filled |
+| §7.4 Invitations                 | "Keycloak self-registration is reachable only through an invitation link" → Keycloak registration is switched off; Keycloak users are created only by the API (first-run wizard, invitations) and by identity-provider sign-ins started from an invitation; a Keycloak user without an accepted invitation gives no access                                                               |
+| §7.4 Invitations                 | Answers of questions 3 and 5                                                                                                                                                                                                                                                                                                                                                             |
+| §5.7                             | Answer of question 4                                                                                                                                                                                                                                                                                                                                                                     |
+| §13.2                            | Answer of question 2, if Keycloak users without an account are deleted                                                                                                                                                                                                                                                                                                                   |
 
 New or changed glossary terms: none.
 
