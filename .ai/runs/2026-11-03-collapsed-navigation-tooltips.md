@@ -34,12 +34,14 @@ Phones, touch tooltips, a tooltip on the collapse toggle, keyboard shortcuts. Th
 
 ## Progress
 
+PR: #221
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Tooltips on the collapsed side navigation
 
-- [ ] 1.1 `Tooltip` component with stories
-- [ ] 1.2 `DESKTOP_MEDIA_QUERY`
-- [ ] 1.3 `SideNavigation` wiring with a component test
-- [ ] 1.4 E2E on tablet and desktop
-- [ ] 1.5 Spec, user docs and help content
+- [x] 1.1 `Tooltip` component with stories — b0fe14f
+- [x] 1.2 `DESKTOP_MEDIA_QUERY` — b0fe14f
+- [x] 1.3 `SideNavigation` wiring with a component test — 0db6a7f
+- [x] 1.4 E2E on tablet and desktop — 638cb3f
+- [x] 1.5 Spec, user docs and help content — a0d8219
