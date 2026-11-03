@@ -1,6 +1,6 @@
 # Execution plan: collapsible side navigation on desktop
 
-Source doc: .ai/specs/2026-11-03-desktop-navigation-collapse.md
+Source doc: .ai/specs/implemented/2026-11-03-desktop-navigation-collapse.md
 Issue: #215 · Spec PR: #218
 
 ## Goal
@@ -34,12 +34,14 @@ Phone and tablet behavior, tooltips (#217), a keyboard shortcut, and storing the
 
 ## Progress
 
+PR: #219
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Collapsible, remembered desktop navigation
 
-- [ ] 1.1 Cookie helper and Server Action
-- [ ] 1.2 SideNavigation per-breakpoint state
-- [ ] 1.3 Layout wiring
-- [ ] 1.4 E2E desktop toggle
-- [ ] 1.5 Specification and user docs
+- [x] 1.1 Cookie helper and Server Action — 41b277a
+- [x] 1.2 SideNavigation per-breakpoint state — ebeda93
+- [x] 1.3 Layout wiring — ebeda93
+- [x] 1.4 E2E desktop toggle — 304d19c
+- [x] 1.5 Specification and user docs — 786250c
