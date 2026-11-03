@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `proposed` |
+| Status | `implemented` |
 | Created | 2026-11-03 |
 | Plan task | – |
 | System specification sections | §2.9, §18.6 |
-| Related issues / PRs | #217 (request), #215 / #219 (desktop collapse) |
+| Related issues / PRs | #217 (request), #220 (specification), #221 (implementation), #215 / #219 (desktop collapse) |
 
 ## 📝 TLDR
 
@@ -79,14 +79,14 @@ The ticket left no open questions; the following implementation choices were mad
 
 ## Acceptance criteria
 
-- [ ] Hovering an icon of the collapsed navigation (tablet and desktop) shows its translated name to the right; focusing it with the keyboard does too.
-- [ ] Escape, leaving with the pointer and moving focus away hide the tooltip; the tooltip can be hovered.
-- [ ] No tooltip opens while the navigation is expanded at the current width.
-- [ ] Each link's accessible name is exactly its item name; no `aria-describedby` to the tooltip.
-- [ ] `Tooltip` in `@trybun/ui` with stories (all states, Phone/Tablet/Desktop viewports, `play` functions for hover, focus and Escape).
-- [ ] Component test of `SideNavigation` and an E2E check in `apps/web/e2e/app-shell.spec.ts` (tablet and desktop projects, axe green).
-- [ ] §2.9 and §18.6 updated; user docs EN + PL; `pnpm help:generate` run.
-- [ ] Works on phone, tablet and desktop (Rule 9).
+- [x] Hovering an icon of the collapsed navigation (tablet and desktop) shows its translated name to the right; focusing it with the keyboard does too.
+- [x] Escape, leaving with the pointer and moving focus away hide the tooltip; the tooltip can be hovered.
+- [x] No tooltip opens while the navigation is expanded at the current width.
+- [x] Each link's accessible name is exactly its item name; no `aria-describedby` to the tooltip.
+- [x] `Tooltip` in `@trybun/ui` with stories (all states, Phone/Tablet/Desktop viewports, `play` functions for hover, focus and Escape).
+- [x] Component test of `SideNavigation` and an E2E check in `apps/web/e2e/app-shell.spec.ts` (tablet width and desktop, axe green).
+- [x] §2.9 and §18.6 updated; user docs EN + PL; `pnpm help:generate` run.
+- [x] Works on phone, tablet and desktop (Rule 9).
 
 ## 📋 Implementation Plan
 
@@ -95,9 +95,10 @@ The ticket left no open questions; the following implementation choices were mad
 1. **`Tooltip` component** – `packages/ui/src/components/tooltip.tsx` and `tooltip.stories.tsx` with the `ui-component` skill: default, `side` variants, disabled; Phone/Tablet/Desktop viewports; `play` functions: hover shows it, focus shows it, Escape hides it, disabled never shows it, the trigger keeps its name without `aria-describedby`.
 2. **`DESKTOP_MEDIA_QUERY`** in `packages/ui/src/hooks/use-media-query.ts`.
 3. **`SideNavigation`** – provider, tooltip per link, `disabled` from the applying breakpoint; update its doc comment. Component test (jsdom, `renderInApp()`): with the tablet state collapsed, focusing a link shows a tooltip with its name and the link's accessible name is unchanged; after expanding, focusing shows none. `matchMedia` is stubbed for the desktop case. Focus is moved with `userEvent.tab()` (focus-visible), and the hover case passes `delay={0}` through `Tooltip` or uses fake timers – never a real 600 ms wait.
-4. **E2E** – `apps/web/e2e/app-shell.spec.ts`: on the tablet project, hover and focus a collapsed icon → a tooltip with the name is visible, Escape hides it, expanded → none; on the desktop project, collapse → hover shows the name; axe green in both states.
+4. **E2E** – `apps/web/e2e/app-shell.spec.ts`: at the tablet width (1024 px in the Chromium desktop project – the Playwright `tablet` project is 656 px wide, below the tablet breakpoint), hover and focus a collapsed icon → a tooltip with the name is visible, Escape hides it, expanded → none; on the desktop project, collapse → hover shows the name; axe green in both states.
 5. **Specification and docs** – §2.9, §18.6; user docs EN + PL (`docs/user/*/team/tutorials/getting-started.md`, `docs/user/*/end-user/tutorials/getting-started.md`); `pnpm help:generate`; a `.ai/memory/shadcn.md` note if Base UI Tooltip shows a pitfall; move this file to `implemented/` with status `implemented`.
 
 ## Changelog
 
 - 2026-11-03 – Created from #217 (`om-auto-write-spec`, autonomous).
+- 2026-11-03 – Implemented in #221.

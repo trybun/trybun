@@ -2,6 +2,13 @@
 
 import type { CurrentUserAction } from '@trybun/contracts/users';
 import { Button } from '@trybun/ui/components/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@trybun/ui/components/tooltip';
+import { DESKTOP_MEDIA_QUERY, useMediaQuery } from '@trybun/ui/hooks/use-media-query';
 import { cn } from '@trybun/ui/lib/utils';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -16,6 +23,8 @@ import { isCurrent, navigationItemsFor } from '../navigation.js';
  * on tablets, expanded by default on desktop. Each breakpoint has its own state and CSS picks the
  * one that applies, so the server renders the right width at every width. The desktop choice is
  * remembered in this browser (`isDesktopCollapsed`, from the layout); the tablet state is not.
+ * Collapsed, every icon shows its name in a tooltip on hover and keyboard focus; the `sr-only` label
+ * stays its accessible name.
  */
 export function SideNavigation({
   allowedActions,
@@ -28,6 +37,9 @@ export function SideNavigation({
   const pathname = usePathname();
   const [isTabletExpanded, setIsTabletExpanded] = useState(false);
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(isInitiallyDesktopCollapsed);
+  // The state of the breakpoint that applies. `false` on the server: a tooltip renders nothing
+  // until it opens, so the value only has to be right by the first hover or focus.
+  const isCollapsed = useMediaQuery(DESKTOP_MEDIA_QUERY) ? isDesktopCollapsed : !isTabletExpanded;
   function toggleDesktop() {
     const isCollapsed = !isDesktopCollapsed;
     setIsDesktopCollapsed(isCollapsed);
@@ -56,34 +68,43 @@ export function SideNavigation({
           isExpanded={!isDesktopCollapsed}
           onToggle={toggleDesktop}
         />
-        <ul className="flex flex-col gap-1">
-          {navigationItemsFor(allowedActions, 'wide').map(({ href, labelKey, icon }) => {
-            const Icon = icon;
-            const isCurrentPage = isCurrent(href, pathname);
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  aria-current={isCurrentPage ? 'page' : undefined}
-                  className={cn(
-                    'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-9',
-                    isCurrentPage && 'bg-muted text-foreground',
-                  )}
-                >
-                  <Icon aria-hidden className="size-5 shrink-0" />
-                  <span
-                    className={cn(
-                      !isTabletExpanded && 'sr-only',
-                      isDesktopCollapsed ? 'xl:sr-only' : 'xl:not-sr-only',
-                    )}
-                  >
-                    {t(labelKey)}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <TooltipProvider>
+          <ul className="flex flex-col gap-1">
+            {navigationItemsFor(allowedActions, 'wide').map(({ href, labelKey, icon }) => {
+              const Icon = icon;
+              const isCurrentPage = isCurrent(href, pathname);
+              return (
+                <li key={href}>
+                  <Tooltip disabled={!isCollapsed}>
+                    <TooltipTrigger
+                      render={
+                        <Link
+                          href={href}
+                          aria-current={isCurrentPage ? 'page' : undefined}
+                          className={cn(
+                            'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-9',
+                            isCurrentPage && 'bg-muted text-foreground',
+                          )}
+                        />
+                      }
+                    >
+                      <Icon aria-hidden className="size-5 shrink-0" />
+                      <span
+                        className={cn(
+                          !isTabletExpanded && 'sr-only',
+                          isDesktopCollapsed ? 'xl:sr-only' : 'xl:not-sr-only',
+                        )}
+                      >
+                        {t(labelKey)}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{t(labelKey)}</TooltipContent>
+                  </Tooltip>
+                </li>
+              );
+            })}
+          </ul>
+        </TooltipProvider>
       </div>
     </nav>
   );

@@ -28,6 +28,14 @@ export class AppShellPage {
     );
   }
 
+  /**
+   * The tooltip with an item name of the collapsed side navigation. Tooltips have no role (they
+   * are visual only, `Tooltip` of `@trybun/ui`), so the slot of the component finds them.
+   */
+  navigationTooltip(name: string): Locator {
+    return this.page.locator('[data-slot="tooltip-content"]').filter({ hasText: name });
+  }
+
   /** The visible button that collapses or expands the side navigation (§2.9). */
   navigationToggle(name: 'Collapse navigation' | 'Expand navigation'): Locator {
     return this.navigation.getByRole('button', { name, exact: true });
