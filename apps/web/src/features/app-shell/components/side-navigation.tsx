@@ -51,7 +51,8 @@ export function SideNavigation({
           onToggle={() => setIsTabletExpanded(!isTabletExpanded)}
         />
         <NavigationToggle
-          className="hidden xl:inline-flex"
+          // With a mouse the button is 32 px: the margin centres its icon on the icons of the links.
+          className="hidden xl:inline-flex xl:pointer-fine:ml-1.5"
           isExpanded={!isDesktopCollapsed}
           onToggle={toggleDesktop}
         />

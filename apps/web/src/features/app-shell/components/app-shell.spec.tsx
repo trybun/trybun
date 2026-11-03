@@ -68,7 +68,7 @@ describe('AppShell', () => {
       /aria-expanded="false" aria-label="Expand navigation" class="[^"]* xl:hidden"/,
     );
     expect(html).toMatch(
-      /aria-expanded="true" aria-label="Collapse navigation" class="[^"]* hidden xl:inline-flex"/,
+      /aria-expanded="true" aria-label="Collapse navigation" class="[^"]* hidden xl:inline-flex xl:pointer-fine:ml-1.5"/,
     );
   });
 
@@ -78,7 +78,7 @@ describe('AppShell', () => {
     expect(html).toMatch(/<nav [^>]*class="[^"]*\bw-16\b[^"]*\bxl:w-16\b/);
     expect(html).toContain('<span class="sr-only xl:sr-only">Home</span>');
     expect(html).toMatch(
-      /aria-expanded="false" aria-label="Expand navigation" class="[^"]* hidden xl:inline-flex"/,
+      /aria-expanded="false" aria-label="Expand navigation" class="[^"]* hidden xl:inline-flex xl:pointer-fine:ml-1.5"/,
     );
     expect(html.match(/aria-current="page"/g)).toHaveLength(2);
   });

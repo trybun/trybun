@@ -1,8 +1,14 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Locator, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { ProductTourPage } from './pages/product-tour.page.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
+
+/** The horizontal centre of the icon inside an element. */
+async function iconCentre(element: Locator): Promise<number> {
+  const box = await element.locator('svg').boundingBox();
+  return (box?.x ?? 0) + (box?.width ?? 0) / 2;
+}
 
 test.describe('application shell', () => {
   let shell: AppShellPage;
@@ -117,6 +123,10 @@ test.describe('application shell', () => {
         'page',
       );
       expect(await main.evaluate((element) => element.clientWidth)).toBe(expandedMainWidth + 176);
+      // The icon of the toggle stands in the column of the icons of the links.
+      expect(await iconCentre(shell.navigationToggle('Expand navigation'))).toBe(
+        await iconCentre(shell.navigation.getByRole('link', { name: 'Home' })),
+      );
       expect(await seriousViolations(page)).toEqual([]);
       await expectTouchTarget(
         shell.navigationToggle('Expand navigation'),
