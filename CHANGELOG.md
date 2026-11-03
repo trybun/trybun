@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.4.0](https://github.com/trybun/trybun/compare/v0.3.0...v0.4.0) (2026-11-03)
+
+
+### Added
+
+* **web:** collapse the side navigation to icons on desktop ([#215](https://github.com/trybun/trybun/issues/215)) ([#219](https://github.com/trybun/trybun/issues/219)) ([52a1264](https://github.com/trybun/trybun/commit/52a1264efb8856ecbcd88150b4dfc812c13cd766))
+* **web:** full-width lists, readable-width forms in the app shell ([#179](https://github.com/trybun/trybun/issues/179)) ([#194](https://github.com/trybun/trybun/issues/194)) ([36e6d8f](https://github.com/trybun/trybun/commit/36e6d8f7c54feac4e85040c303a5dba1dde969c1))
+* **web:** show item names as tooltips on the collapsed side navigation ([#217](https://github.com/trybun/trybun/issues/217)) ([#221](https://github.com/trybun/trybun/issues/221)) ([3826eb1](https://github.com/trybun/trybun/commit/3826eb1ad401025af0d1ab288ae2b06d86f9981f))
+
+
+### Fixed
+
+* **deps:** bump postgres to 18.6-alpine3.24 in /docker/backup ([#197](https://github.com/trybun/trybun/issues/197)) ([1e00165](https://github.com/trybun/trybun/commit/1e0016568eaf00af70e8eaec48e942be8846820d))
+* **deps:** bump the docker-compose group with 2 updates ([#198](https://github.com/trybun/trybun/issues/198)) ([9e1af41](https://github.com/trybun/trybun/commit/9e1af41bd3c5eeb625ffacdd6c760da8a56c3cd8))
+* **deps:** bump the npm group with 24 updates ([#201](https://github.com/trybun/trybun/issues/201)) ([451204c](https://github.com/trybun/trybun/commit/451204c38cea66536325676523a1a5a31c607332))
+* **deps:** update keycloak/keycloak 26.8.1 to the rebuilt image digest ([#199](https://github.com/trybun/trybun/issues/199)) ([c4f101f](https://github.com/trybun/trybun/commit/c4f101fa024d052b26a68c159dc11e5c82d0722a))
+* **ui:** blue 2 px focus ring that never looks like an error ([#177](https://github.com/trybun/trybun/issues/177)) ([#182](https://github.com/trybun/trybun/issues/182)) ([e54f64b](https://github.com/trybun/trybun/commit/e54f64bea142583545f12ddb4592e664091932a9))
+* **ui:** keep the focus ring of the tour sheet actions visible on phones ([#190](https://github.com/trybun/trybun/issues/190)) ([#195](https://github.com/trybun/trybun/issues/195)) ([38040e2](https://github.com/trybun/trybun/commit/38040e2892191a4a931fb01ec0d0b2d6a80fd4b5))
+* **ui:** move the product tour tip to the target of each step ([#188](https://github.com/trybun/trybun/issues/188)) ([#189](https://github.com/trybun/trybun/issues/189)) ([7fabab2](https://github.com/trybun/trybun/commit/7fabab2971dc4258ab7683f72f5ca23468598eb5))
+* **ui:** show the product tour ring on button targets ([#186](https://github.com/trybun/trybun/issues/186)) ([#187](https://github.com/trybun/trybun/issues/187)) ([86dfe4a](https://github.com/trybun/trybun/commit/86dfe4a454032b525844033af48e0082b2de765f))
+* **ui:** show toasts at the top on phones so they never cover a bottom sheet ([#207](https://github.com/trybun/trybun/issues/207)) ([#212](https://github.com/trybun/trybun/issues/212)) ([fed6036](https://github.com/trybun/trybun/commit/fed603695f2e106b024f198c3aca403b321c6a83))
+* **web:** balance the header help icon with the account avatar ([#178](https://github.com/trybun/trybun/issues/178)) ([#192](https://github.com/trybun/trybun/issues/192)) ([f94e4ef](https://github.com/trybun/trybun/commit/f94e4ef1692982de8fe701601b3481cfe4173ca3))
+* **web:** keep the help button on the first opening of the help menu ([#184](https://github.com/trybun/trybun/issues/184)) ([#185](https://github.com/trybun/trybun/issues/185)) ([817f015](https://github.com/trybun/trybun/commit/817f01587ed913fad43f3612b93f3c0610210457))
+* **web:** keep the success message of the first-run wizard ([#176](https://github.com/trybun/trybun/issues/176)) ([#180](https://github.com/trybun/trybun/issues/180)) ([7494f48](https://github.com/trybun/trybun/commit/7494f482f3057e640e9088f0faf64683a0a72a5c))
+* **web:** keep the tour ring inside the viewport after scrolling to the target ([#191](https://github.com/trybun/trybun/issues/191)) ([#208](https://github.com/trybun/trybun/issues/208)) ([939b5e6](https://github.com/trybun/trybun/commit/939b5e685470cf16a072edc2903b0928323f2337))
+* **web:** keep the tour ring visible at the screen edge on phones ([#196](https://github.com/trybun/trybun/issues/196)) ([#202](https://github.com/trybun/trybun/issues/202)) ([4d46534](https://github.com/trybun/trybun/commit/4d46534589e979e84692260389497662db5ccd21))
+* **web:** open the phone tour sheet away from the target it scrolls to ([#209](https://github.com/trybun/trybun/issues/209)) ([#213](https://github.com/trybun/trybun/issues/213)) ([c1e5b7a](https://github.com/trybun/trybun/commit/c1e5b7ae83f08d31e14e5840ab8dc49ee719c8e6))
+
 ## [0.3.0](https://github.com/trybun/trybun/compare/v0.2.1...v0.3.0) (2026-11-01)
 
 
