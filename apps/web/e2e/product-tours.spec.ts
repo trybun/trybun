@@ -40,6 +40,25 @@ async function expectTourTargets(
   }
 }
 
+/**
+ * Whether the tip leaves the whole ring of the highlighted target visible: the target's box plus
+ * the 5 px ring does not overlap the tip's box – the popover next to it, or the phone sheet at the
+ * edge away from it (§2.9).
+ */
+async function isRingClearOfTip(tour: ProductTourPage): Promise<boolean> {
+  const box = await tour.highlighted().boundingBox();
+  const tip = await tour.tip.boundingBox();
+  if (box === null || tip === null) {
+    return false;
+  }
+  return (
+    tip.y + tip.height <= box.y - 5 ||
+    tip.y >= box.y + box.height + 5 ||
+    tip.x + tip.width <= box.x - 5 ||
+    tip.x >= box.x + box.width + 5
+  );
+}
+
 test.describe('product tours', () => {
   // The signed-in team member has completed every tour (demo dataset), so none starts by itself.
   test('every step targets an element of its view', async ({ page }) => {
@@ -103,6 +122,8 @@ test.describe('product tours', () => {
             );
           })
           .toBe(true);
+        // On phones the sheet opens at the top for the target scrolled to the bottom edge (#209).
+        await expect.poll(() => isRingClearOfTip(tour)).toBe(true);
       }
       expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
 
@@ -168,6 +189,8 @@ test.describe('product tours', () => {
           tour.highlighted().evaluate((el) => parseFloat(getComputedStyle(el).outlineWidth)),
         )
         .toBeGreaterThanOrEqual(2.5);
+      // The bottom navigation of phones gets the sheet at the top edge, the header the bottom one.
+      await expect.poll(() => isRingClearOfTip(tour)).toBe(true);
     }
 
     // Closed with Esc, as above: Done would record the tour again for the account all projects share.
