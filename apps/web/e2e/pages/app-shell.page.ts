@@ -33,7 +33,7 @@ export class AppShellPage {
     return this.openMenu(this.help);
   }
 
-  /** Opens the account menu (§2.9). */
+  /** Opens the account menu (§7.4). */
   openAccountMenu(): Promise<Locator> {
     return this.openMenu(this.accountMenu);
   }
