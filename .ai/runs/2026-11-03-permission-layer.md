@@ -31,28 +31,28 @@ Follows the spec's "Phasing and implementation plan" (steps 1–7), split into t
 
 ### Phase 1: Roles, hierarchy and account kinds
 
-- [ ] 1.1 Hierarchy helper teamRolesFrom
-- [ ] 1.2 Team conditions on team roles only
-- [ ] 1.3 Principal factory, matrix tables, hierarchy and kind tests
+- [x] 1.1 Hierarchy helper teamRolesFrom — 2230288
+- [x] 1.2 Team conditions on team roles only — 42c3361
+- [x] 1.3 Principal factory, matrix tables, hierarchy and kind tests — 30d42f1
 
 ### Phase 2: End users' access to projects
 
-- [ ] 2.1 End-user project rules and organization access in the project select
+- [x] 2.1 End-user project rules and organization access in the project select — 30d42f1
 - [ ] 2.2 Integration tests of end users' project access
 
 ### Phase 3: Record descriptors
 
-- [ ] 3.1 Record descriptors and subject-independent PrismaRecordAccess
+- [x] 3.1 Record descriptors and subject-independent PrismaRecordAccess — 30d42f1
 - [ ] 3.2 Selected-fields test
 
 ### Phase 4: Restrictions fail closed
 
-- [ ] 4.1 Restrictions from the contract action lists
-- [ ] 4.2 Invitation restrictions replacing the service checks
+- [x] 4.1 Restrictions from the contract action lists — 30d42f1
+- [x] 4.2 Invitation restrictions replacing the service checks — 30d42f1
 
 ### Phase 5: Account rules
 
-- [ ] 5.1 change_kind and change_email rules
+- [x] 5.1 change_kind and change_email rules — 30d42f1
 
 ### Phase 6: Permission tests across subjects
 
