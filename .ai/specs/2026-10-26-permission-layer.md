@@ -27,7 +27,7 @@ The specification leaves a few gaps for this task. Agents may not decide them (R
 
 ## Goals
 
-- End users see the projects they have personal access to and the projects of their active organization ([§7.1](../../docs/spec/07-users-organizations-permissions.md), [§7.3](../../docs/spec/07-users-organizations-permissions.md)).
+- End users see the projects they have personal access to and the projects of their active organization ([§7.1](../../docs/spec/07-users-organizations-permissions.md), [§7.3](../../docs/spec/07-users-organizations-permissions.md)). The plan row names "account kinds" and "the rules for projects", and S1-02 handed the derived access to S1-04 ([`organizations`](implemented/2026-10-26-organizations.md), "Out of scope"); the portal that shows these projects is S1-09.
 - The role hierarchy of [§7.2](../../docs/spec/07-users-organizations-permissions.md) and the exclusive account kinds of [§7.1](../../docs/spec/07-users-organizations-permissions.md) defined once and used by every rule.
 - One generic record lookup: each subject registers a record descriptor next to its rules instead of a `switch` branch in the platform.
 - Global restrictions that fail closed: derived from the contract's closed action lists, and used for every subject that depends on the state of a project or an organization.
@@ -68,15 +68,17 @@ The kinds are exclusive ([§7.1](../../docs/spec/07-users-organizations-permissi
 
 CASL joins the two rules with OR, both as an `accessibleBy` filter and in memory. The project record of the rules gains the principal's organization access, limited like its membership: `organizations: { where: { organization: { members: { some: { userId } } } }, select: { organization: { select: { state: true, members: { where: { userId }, select: { userId: true } } } } } }` – at most one row, because an end user belongs to at most one organization. The archived restriction keeps `read`, so end users keep seeing an archived project like its members ([§7.3](../../docs/spec/07-users-organizations-permissions.md)). Organizations stay invisible to everyone but the Administrator ([`organizations`](implemented/2026-10-26-organizations.md)): an end user sees the projects of their organization, not the organization record.
 
+The `role` of the project response ("the principal's own role in the project") is `end_user` for both paths, because an end user has the End user role in all of their projects ([§7.1](../../docs/spec/07-users-organizations-permissions.md)); today it is set only from a membership, so the response derives it from the loaded organization access as well.
+
 ### Record descriptors
 
-The `switch` of `PrismaRecordAccess` is replaced by one **record descriptor** per subject with records, exported by `<feature>.abilities.ts` next to its rules and passed by the root module: `AuthorizationModule.forRoot({ rules, restrictions, records })` (`platform` never imports `modules`). A descriptor names the subject and loads a record for a `where` – the typed Prisma delegate of the model with the `select` of the fields its rules read, limited to the principal:
+The `switch` of `PrismaRecordAccess` is replaced by one **record descriptor** per subject with records, exported by `<feature>.abilities.ts` next to its rules and passed by the root module: `AuthorizationModule.forRoot({ rules, restrictions, records })` (`platform` never imports `modules`). A descriptor names the subject and loads a record for a `where` – the typed Prisma delegate of the model with the `select` of the fields its rules read, limited to the principal. It takes a transaction client, so the services can use it inside their transactions (after `lockForShare`) as well:
 
 ```ts
 export const projectRecords: RecordDescriptor<'Project'> = {
   subject: PROJECT,
-  find: (prisma, where, principal) =>
-    prisma.project.findFirst({ where, select: projectRuleSelect(principal) }),
+  find: (db: Prisma.TransactionClient, where, principal) =>
+    db.project.findFirst({ where, select: projectRuleSelect(principal) }),
 };
 ```
 
@@ -87,18 +89,23 @@ A unit test checks, for every principal fixture, that each field a rule or restr
 ### Restrictions fail closed
 
 - The archived restrictions of projects and organizations list the contract's closed list (`projectActionSchema.options`, `organizationActionSchema.options`) minus their exceptions, instead of a module-local copy, so an action added to a contract is forbidden on an archived record by default. A test checks, for the Administrator, that every action of the closed list is either refused on an archived record with its code or an explicit exception.
-- **Subjects that depend on a project or an organization** are restricted by a relation condition on that record ([Q10](#open-questions)): `{ project: { is: { state: 'archived' } } }` because `project.archived`, `{ organization: { is: { state: 'archived' } } }` because `organization.archived`. Their descriptors select `project: { select: { state: true } }` and `organization: { select: { state: true } }`. `Invitation` is the first such subject: the service checks of an archived target in `invitations.service.ts` are replaced by `invitationRestrictions`, with the same responses (`409 project.archived`, `409 organization.archived`). Tickets and later project-owned subjects follow this pattern.
+- **Subjects that depend on a project or an organization** are restricted by a relation condition on that record ([Q10](#open-questions)), with the relation's `state` selected by their descriptor. `Invitation` is the first such subject. `invitationRestrictions` forbid `create`, `resend` and `revoke` (`read` stays allowed):
+  - `{ project: { is: { state: 'archived' } } }` because `project.archived`,
+  - `{ target: 'organization', organization: { is: { state: 'archived' } } }` because `organization.archived` – limited to the target `organization`, because a project invitation of an end user also stores the organization matched by domain ([§7.4](../../docs/spec/07-users-organizations-permissions.md)), and its archiving must not block it.
+
+  The record of a new invitation, checked before it exists, carries `project: { state, members }` or `organization: { state }` of its target. The service checks of an archived target and `isTargetArchived` in `toInvitationResponse` are removed; `allowedActions` of an invitation then come from the ability alone. The responses stay `409 project.archived` and `409 organization.archived`, now – as for projects ([§17.2](../../docs/spec/17-conventions.md)) – also before a `403`: a Developer who tries to invite to an archived project gets `409`, not `403`. Tickets and later project-owned subjects follow this pattern.
+- **Exception**: granting or removing an organization's access to an archived project stays a service check (`409 project.archived`), because the projects come from the request body, not from a record the restriction could test.
 - The token scope joins the restriction list with S6-02 ([Q6](#open-questions)).
 
 ### Policy checks for every endpoint
 
-Every endpoint is covered by exactly one of three mechanisms – no new decorator ([Q7](#open-questions)):
+Every endpoint is covered by exactly one of these mechanisms – no new decorator ([Q7](#open-questions)):
 
 | Endpoint | Check |
 |---|---|
-| Addresses a record in its path | `@TargetRecord({ subject, param, action })` |
+| Addresses a record in its path | `@TargetRecord({ subject, param, action })`; when the service loads the record anyway (the state changes of accounts, resending and revoking invitations), `@TargetRecord` with `read` and `ability.can(action, record)` on the record loaded in the transaction – the same decision, without a second lookup |
 | Lists records | `accessibleBy(ability, 'read')` in the service's `where` |
-| Creates a record or performs a global action (`create_project`, `create_organization`, `open_administration`, issuing an invitation) | `ability.can(action, subject)` in the service, `403` otherwise |
+| Creates a record or performs a global action (`create_project`, `create_organization`, `open_administration`, issuing an invitation) | `ability.can(action, subject)` in the service, `403` otherwise; a parent record named in the body (the project or organization of an invitation) is looked up through `accessibleBy` first, `404` when invisible |
 | Acts on the principal's own account (`GET` and `PATCH /api/v1/users/me`) or is `@Public()` (setup, health, invitation redemption) | none – the principal is the record |
 
 Every endpoint existing when S1-04 is merged has an integration test of its denied case (`404` for an invisible record, `403` or the state code for a forbidden action). S1-04 adds the ones S1-01, S1-02 and S1-03 do not have yet; later endpoints bring their own.
@@ -165,17 +172,17 @@ Implementation must not start until every question has an answer. Every answer b
 7. **How "policy checks for every endpoint" is verified.** — **Answer (proposed, awaiting approval):** by the four rows of [Policy checks](#policy-checks-for-every-endpoint) and an integration test of the denied case per endpoint, checked in review; no new decorator and no test that enumerates the routes. Alternative: a test that fails for a handler without `@Public()`, `@TargetRecord()` or an explicit marker – a new decorator and pattern (Rule 12).
 8. **Machine check of matrix coverage.** — **Answer (proposed, awaiting approval):** no parser of §7.5; each `abilities.spec.ts` names its rows by their §7.5 title and the review checks them. Reversible: a check can be added when the matrix grows.
 9. **One specification or several.** — **Answer (proposed, awaiting approval):** one specification and one implementation PR, as the plan defines one task.
-10. **Archived state of dependent subjects.** The archived state lives on `Project` and `Organization`; `Invitation` checks it in its service today, and tickets will need it. — **Answer (proposed, awaiting approval):** a relation condition in the restriction of each dependent subject, with the relation's state selected by its descriptor; `Invitation` moves to it, with unchanged responses. Alternative: keep the service checks of `Invitation` and use the restriction from tickets on – two patterns for one problem.
-11. **Rules of the account kind and e-mail change before their endpoints.** The plan gives S1-04 "the rules for … accounts" and S1-20 uses "the `User` rules and tests of S1-04", but the endpoints arrive with S1-20. — **Answer (proposed, awaiting approval):** S1-04 writes the `change_kind` and `change_email` rules and their matrix tests; S1-20 adds the two codes to `userActionSchema` with its endpoints, so `allowedActions` never offers an action that has no endpoint. Alternative: S1-20 writes the rules as well.
+10. **Archived state of dependent subjects.** The archived state lives on `Project` and `Organization`; `Invitation` checks it in its service today, and tickets will need it. — **Answer (proposed, awaiting approval):** a relation condition in the restriction of each dependent subject, with the relation's state selected by its descriptor; `Invitation` moves to it with the same codes, which then also come before a `403` (as for projects). A check that depends on records named in the request body (an organization's project access) stays in the service. Alternative: keep the service checks of `Invitation` and use the restriction from tickets on – two patterns for one problem.
+11. **Rules of the account kind and e-mail change before their endpoints.** The plan gives S1-04 "the rules for … accounts" and S1-20 uses "the `User` rules and tests of S1-04", but the endpoints arrive with S1-20. — **Answer (proposed, awaiting approval):** S1-04 writes the `change_kind` and `change_email` rules and their matrix tests; S1-20 adds the two codes to `userActionSchema` with its endpoints, so `allowedActions` never offers an action that has no endpoint. Conditions: both on accounts in state `invited`, `active` or `deactivated`, never `anonymized` (an anonymized account has no person behind it, [§13.2](../../docs/spec/13-non-functional.md)); `change_kind` never on the own account (Q5). The effects of a kind change – removing the Administrator role and memberships, the last-Administrator check – are S1-20's service. Alternative: S1-20 writes the rules as well.
 
 ## Phasing and implementation plan
 
 One phase, one PR (Q9). Each step leaves the application working.
 
 1. The hierarchy helper and the kind rule; the team conditions of `projects.abilities.ts` and `invitations.abilities.ts` on `teamRolesFrom()`; the principal factory; the existing abilities tests moved into matrix tables. Test: the matrix tables, the hierarchy test, the kind test.
-2. The end users' project rules and the organization access in the project select. Test: matrix rows of end users (personal, active organization, archived organization, none); integration test of `GET /api/v1/projects` and `GET /api/v1/projects/{id}` for end users.
+2. The end users' project rules and the organization access in the project select. Test: matrix rows of end users (personal, active organization, archived organization, none); integration test of `GET /api/v1/projects` and `GET /api/v1/projects/{id}` for end users, with `role` `end_user` for both access paths.
 3. Record descriptors, `forRoot({ rules, restrictions, records })` and the subject-independent `PrismaRecordAccess`; services load records with the shared selects. Test: `request-pipeline.spec.ts` cases for `404`, the state code and `403`; the selected-fields test; the Done-when `404` for project B.
-4. Restrictions from the contract lists; `invitationRestrictions` replacing the service checks (Q10). Test: the archived cases of every action of `Project`, `Organization` and `Invitation`; the existing invitation tests of archived targets pass unchanged.
+4. Restrictions from the contract lists; `invitationRestrictions` replacing the service checks (Q10). Test: the archived cases of every action of `Project`, `Organization` and `Invitation`; the existing invitation tests of archived targets pass, except a Developer's invitation to an archived project, now `409` instead of `403`; a project invitation whose matched organization is archived can still be resent and revoked.
 5. The `change_kind` and `change_email` rules (Q5, Q11). Test: their matrix rows, including the own account.
 6. The filter equals check; the `allowedActions` table of the project response; the denied-case integration test of every existing endpoint that has none.
 7. Specification changes of the table above, §18.9, the plan row of S1-04 marked done, this file moved to `implemented/`. Test: `pnpm lint:spec`.
@@ -196,4 +203,4 @@ One phase, one PR (Q9). Each step leaves the application working.
 ## Changelog
 
 - 2026-10-26 – Created.
-- 2026-11-03 – Refreshed after S1-01, S1-02 and S1-03 were implemented: Context describes the code on `main`; Q1 and Q2 settled by the merge order and the established pattern; Q5 narrowed to the kind change (§7.4 now guards the rest); Q11 added; the scope reduced to the end users' access, the hierarchy and kinds, record descriptors, fail-closed restrictions (now also of `Invitation`) and the matrix tests; the `allowedActionsOf()` helper dropped in favour of the existing pattern.
+- 2026-11-03 – Refreshed after S1-01, S1-02 and S1-03 were implemented: Context describes the code on `main`; Q1 and Q2 settled by the merge order and the established pattern; Q5 narrowed to the kind change (§7.4 now guards the rest); Q11 added with the conditions of the kind and e-mail change; the `Invitation` restriction limited to its target and its actions listed, the organization's project access named as a service-check exception, the check of records loaded by the service and of parent records added to the policy checks, the project `role` of organization access, record descriptors on a transaction client; the scope reduced to the end users' access, the hierarchy and kinds, record descriptors, fail-closed restrictions (now also of `Invitation`) and the matrix tests; the `allowedActionsOf()` helper dropped in favour of the existing pattern.
