@@ -175,6 +175,33 @@ describe('permission layer', () => {
       },
     );
 
+    it('gives a team account no role from data that contradicts its kind (§7.1)', async () => {
+      const user = await createUser(prisma, {
+        keycloakUserId: randomUUID(),
+        kind: 'team',
+        isAdmin: true,
+      });
+      await prisma.organizationMember.create({
+        data: { userId: user.id, organizationId: records.organization.id },
+      });
+      await createProjectMember(prisma, {
+        projectId: records.projectA.id,
+        userId: user.id,
+        role: 'end_user',
+      });
+      const token = await signAccessToken(config, {
+        sub: user.keycloakUserId ?? '',
+        amr: ['pwd', 'otp'],
+      });
+
+      const res = await http()
+        .get(`/api/v1/projects/${records.projectA.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ role: null, allowedActions: projectActionSchema.options });
+    });
+
     it('hides the projects of an archived organization (404)', async () => {
       const res = await http()
         .get(`/api/v1/projects/${records.projectB.id}`)
@@ -405,6 +432,21 @@ describe('permission layer', () => {
       const res = await http()
         .post(path)
         .set('Authorization', await authorizationOf('developer'))
+        .send(invitationTo(records[project].id));
+
+      expect(res.status).toBe(status);
+    });
+
+    // End users see their projects, so an invitation to one is forbidden, no longer invisible.
+    it.each([
+      ['/api/v1/invitation-previews', 'projectA', 403],
+      ['/api/v1/invitations', 'projectA', 403],
+      ['/api/v1/invitations', 'archivedProject', 409],
+      ['/api/v1/invitations', 'projectB', 404],
+    ] as const)('answers an end user POST %s to %s with %i', async (path, project, status) => {
+      const res = await http()
+        .post(path)
+        .set('Authorization', await authorizationOf('end_user_personal'))
         .send(invitationTo(records[project].id));
 
       expect(res.status).toBe(status);

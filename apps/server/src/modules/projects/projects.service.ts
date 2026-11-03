@@ -53,24 +53,30 @@ function projectSelect(principal: UserPrincipal) {
 }
 
 /**
- * The principal's own role in a project: the role of their membership, or `end_user` for the
- * access through their active organization – an end user has the End user role in all of their
- * projects (§7.1).
+ * The principal's own role in a project, consistent with the rules (§7.1): a team role of a team
+ * account's membership; for an end user `end_user`, through a personal membership or their active
+ * organization – they have the End user role in all of their projects. Data that contradicts the
+ * account kind gives no role.
  */
-function roleOf(row: ProjectRow): ProjectMemberRole | null {
-  const membership = row.members[0];
-  if (membership !== undefined) {
-    return membership.role;
+function roleOf(row: ProjectRow, principal: UserPrincipal): ProjectMemberRole | null {
+  const role = row.members[0]?.role;
+  if (principal.userKind === 'team') {
+    return role === 'developer' || role === 'project_manager' ? role : null;
   }
-  return row.organizations.some(({ organization }) => organization.state === 'active')
-    ? 'end_user'
-    : null;
+  const hasOrganizationAccess = row.organizations.some(
+    ({ organization }) => organization.state === 'active',
+  );
+  return role === 'end_user' || hasOrganizationAccess ? 'end_user' : null;
 }
 
 type ProjectRow = Prisma.ProjectGetPayload<{ select: ReturnType<typeof projectSelect> }>;
 
 /** The response shape of a project (§18.3) with the actions the principal may perform on it. */
-function toProjectResponse(row: ProjectRow, ability: AppAbility): Project {
+function toProjectResponse(
+  row: ProjectRow,
+  ability: AppAbility,
+  principal: UserPrincipal,
+): Project {
   const record = subject(PROJECT, row);
   return {
     id: row.id,
@@ -81,7 +87,7 @@ function toProjectResponse(row: ProjectRow, ability: AppAbility): Project {
     version: row.version,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    role: roleOf(row),
+    role: roleOf(row, principal),
     allowedActions: projectActionSchema.options.filter((action) => ability.can(action, record)),
   };
 }
@@ -174,7 +180,7 @@ export class ProjectsService {
     return toPage(
       rows,
       query.limit,
-      (row) => toProjectResponse(row, ability),
+      (row) => toProjectResponse(row, ability, principal),
       (row) => [row.name, row.id],
     );
   }
@@ -182,7 +188,7 @@ export class ProjectsService {
   async findOne(principal: UserPrincipal, projectId: string): Promise<Project> {
     const ability = this.abilities.forPrincipal(principal);
     const row = await this.findVisible(this.prisma, ability, principal, projectId);
-    return toProjectResponse(row, ability);
+    return toProjectResponse(row, ability, principal);
   }
 
   /** Creates a project (§3.1); the key is unique across active and archived projects. */
@@ -200,7 +206,7 @@ export class ProjectsService {
           actorId: principal.userId,
           target: { type: PROJECT, id: row.id },
         });
-        return toProjectResponse(row, ability);
+        return toProjectResponse(row, ability, principal);
       }),
     );
   }
@@ -232,6 +238,7 @@ export class ProjectsService {
         return toProjectResponse(
           await this.findVisible(tx, ability, principal, target.id),
           ability,
+          principal,
         );
       }),
     );
@@ -254,7 +261,11 @@ export class ProjectsService {
         target: { type: PROJECT, id: target.id },
       });
       await this.invitationRevocations.revokeForProject(tx, target.id);
-      return toProjectResponse(await this.findVisible(tx, ability, principal, target.id), ability);
+      return toProjectResponse(
+        await this.findVisible(tx, ability, principal, target.id),
+        ability,
+        principal,
+      );
     });
   }
 

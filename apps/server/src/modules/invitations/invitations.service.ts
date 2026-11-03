@@ -522,9 +522,9 @@ export class InvitationsService {
    * The target of a new invitation, checked as the invitation it would create (§7.4): a project or
    * an organization the principal cannot see is `404`; a visible one they may not invite to – and
    * the Administrator role, which is no record – `403`, or `409` for an archived one, as its
-   * restriction comes first (§17.2); a team invitation
-   * without GitHub sign-in `422`. With `lock`, the project or organization stays share-locked for
-   * the transaction, so an archive cannot pass unseen (§7.3).
+   * restriction comes first (§17.2); a team invitation without GitHub sign-in `422`. With `lock`,
+   * the project or organization stays share-locked for the transaction, so an archive cannot pass
+   * unseen (§7.3).
    */
   private async resolveTarget(
     tx: Transaction,

@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { type ErrorCode, errorCodeSchema } from '@trybun/contracts/errors';
 import type { Principal } from '../authentication/principal.js';
 import { PrismaService } from '../database/prisma.service.js';
-import { AbilityFactory } from './ability-factory.js';
+import { AbilityFactory, type AppAbility } from './ability-factory.js';
 import {
   RECORD_DESCRIPTORS,
   type RecordDescriptor,
@@ -28,7 +28,14 @@ export class PrismaRecordAccess extends RecordAccess {
     @Inject(RECORD_DESCRIPTORS) descriptors: readonly RecordDescriptor[],
   ) {
     super();
-    this.descriptors = new Map(descriptors.map((descriptor) => [descriptor.subject, descriptor]));
+    const bySubject = new Map<string, RecordDescriptor>();
+    for (const descriptor of descriptors) {
+      if (bySubject.has(descriptor.subject)) {
+        throw new Error(`Two record descriptors for the subject ${descriptor.subject}`);
+      }
+      bySubject.set(descriptor.subject, descriptor);
+    }
+    this.descriptors = bySubject;
   }
 
   async decide(principal: Principal, target: TargetRecord): Promise<RecordAccessDecision> {
@@ -56,7 +63,7 @@ export class PrismaRecordAccess extends RecordAccess {
 function find<S extends RecordSubject>(
   prisma: PrismaService,
   descriptor: RecordDescriptor<S>,
-  ability: ReturnType<AbilityFactory['forPrincipal']>,
+  ability: AppAbility,
   principal: Principal,
   id: string,
 ) {

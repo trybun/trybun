@@ -10,6 +10,11 @@ describe('administration abilities', () => {
     ['an Administrator', buildPrincipal('admin'), true],
     ['a Project manager', buildPrincipal('project_manager'), false],
     ['an end user', buildPrincipal('end_user_organization'), false],
+    [
+      'an end user with the Administrator flag',
+      { ...buildPrincipal('end_user'), isAdmin: true },
+      false,
+    ],
   ])('%s may open the Administrator panel: %s', (_case, user, isAllowed) => {
     expect(abilities.forPrincipal(user).can('read', ADMINISTRATION)).toBe(isAllowed);
   });
