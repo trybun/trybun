@@ -25,8 +25,6 @@ export interface ProductTourStep {
    * out when its target is not rendered. The first step is never optional.
    */
   isOptional?: boolean;
-  /** The phone sheet opens at the top edge: for a target at the bottom edge of phones. */
-  phoneSheetSide?: 'top';
 }
 
 /** A product tour (Rule 4, §2.4): a few steps on one view, for one account kind. */
@@ -109,6 +107,41 @@ export function isRingInset(
     return rect.left < RING_EXTENT_PX || rect.right > viewport.width - RING_EXTENT_PX;
   }
   return isNearViewportEdge(rect, viewport);
+}
+
+/** The scroll margins of a tour target, in pixels: they keep the scroll off the edges (#191). */
+export function scrollMarginOf(element: Element): { top: number; bottom: number } {
+  const style = getComputedStyle(element);
+  return {
+    top: parseFloat(style.scrollMarginTop) || 0,
+    bottom: parseFloat(style.scrollMarginBottom) || 0,
+  };
+}
+
+/**
+ * The edge of the phone screen the sheet of a step opens at (§2.9): the top edge for a target in
+ * the lower half of the screen, so the sheet never covers it (#209), the bottom edge otherwise.
+ * Judged by where the target ends up after the tour scrolls it into view: one below the viewport
+ * lands at the bottom margin, one above it at the top margin, any other stays where it is – the
+ * bottom navigation of phones too. The landing box gives the same answer, so measuring during or
+ * after the scroll does not change the side.
+ * @param rect the target's box
+ * @param scrollMargin the target's scroll margins, in pixels
+ */
+export function tourSheetSide(
+  rect: Pick<DOMRect, 'top' | 'bottom'>,
+  viewport: { height: number },
+  scrollMargin: { top: number; bottom: number },
+): 'top' | 'bottom' {
+  const height = rect.bottom - rect.top;
+  const canFitBetweenMargins = height <= viewport.height - scrollMargin.top - scrollMargin.bottom;
+  let top = rect.top;
+  if (canFitBetweenMargins && rect.bottom > viewport.height - scrollMargin.bottom) {
+    top = viewport.height - scrollMargin.bottom - height;
+  } else if (canFitBetweenMargins && rect.top < scrollMargin.top) {
+    top = scrollMargin.top;
+  }
+  return top + height / 2 > viewport.height / 2 ? 'top' : 'bottom';
 }
 
 /**

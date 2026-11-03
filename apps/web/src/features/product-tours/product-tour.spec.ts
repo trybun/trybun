@@ -5,6 +5,7 @@ import {
   isRingInset,
   isTourDue,
   type ProductTour,
+  tourSheetSide,
   visibleSteps,
 } from './product-tour.js';
 
@@ -100,5 +101,27 @@ describe('visibleSteps', () => {
     ['leaves out an optional step whose target is missing', () => false, 2],
   ])('%s', (_case, isRendered, count) => {
     expect(visibleSteps(TOUR, isRendered)).toHaveLength(count);
+  });
+});
+
+describe('tourSheetSide', () => {
+  const VIEWPORT = { height: 780 };
+  const SCROLL_MARGIN = { top: 72, bottom: 76 };
+
+  it.each([
+    // Scrolled to the bottom margin, above the bottom navigation: the sheet opens at the top (#209).
+    ['a target below the viewport', { top: 900, bottom: 1060 }, 'top'],
+    ['a target partly below the viewport', { top: 700, bottom: 860 }, 'top'],
+    ['a target where the scroll left it', { top: 544, bottom: 704 }, 'top'],
+    ['a target above the viewport', { top: -300, bottom: -140 }, 'bottom'],
+    ['the bottom navigation of phones', { top: 724, bottom: 780 }, 'top'],
+    ['a header button', { top: 6, bottom: 50 }, 'bottom'],
+    ['a target in the upper half', { top: 120, bottom: 300 }, 'bottom'],
+    // Taller than the room between the margins: judged where it is.
+    ['a target below the viewport too tall for the margins', { top: 900, bottom: 1600 }, 'top'],
+    ['a target taller than the viewport', { top: 56, bottom: 1400 }, 'top'],
+    ['a target filling the screen', { top: 56, bottom: 700 }, 'bottom'],
+  ] as const)('%s: %s', (_case, rect, side) => {
+    expect(tourSheetSide(rect, VIEWPORT, SCROLL_MARGIN)).toBe(side);
   });
 });

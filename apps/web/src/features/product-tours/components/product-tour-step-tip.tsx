@@ -7,7 +7,29 @@ import {
   TourTipTitle,
 } from '@trybun/ui/components/tour-tip';
 import { useTranslations } from 'next-intl';
-import { findTourTarget, type ProductTourStep } from '../product-tour.js';
+import {
+  findTourTarget,
+  type ProductTourStep,
+  scrollMarginOf,
+  tourSheetSide,
+} from '../product-tour.js';
+
+/**
+ * The phone sheet's edge for a step: away from where the tour scrolls its target (#209). Read
+ * when the tip renders, as the anchor is; the prediction gives the same side before and after
+ * the scroll.
+ */
+function sheetSideOf(target: string | undefined): 'top' | 'bottom' {
+  const element = target === undefined ? null : findTourTarget(target);
+  if (element === null) {
+    return 'bottom';
+  }
+  return tourSheetSide(
+    element.getBoundingClientRect(),
+    { height: window.innerHeight },
+    scrollMarginOf(element),
+  );
+}
 
 /**
  * The tip of the running step (§2.4). Loaded only when a tour starts, so the popover and the
@@ -40,7 +62,7 @@ export function ProductTourStepTip({
         }
       }}
       anchor={target === undefined ? null : () => findTourTarget(target)}
-      sheetSide={step.phoneSheetSide ?? 'bottom'}
+      sheetSide={sheetSideOf(target)}
       step={stepNumber}
       stepCount={stepCount}
     >
