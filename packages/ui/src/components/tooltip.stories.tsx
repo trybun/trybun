@@ -38,7 +38,8 @@ export const Default: Story = {
     const tooltip = await screen.findByText('Settings', {
       selector: '[data-slot=tooltip-content]',
     });
-    await expect(tooltip).toBeVisible();
+    // Visible once the fade-in has started (`opacity: 0` at its first frame).
+    await waitFor(() => expect(tooltip).toBeVisible());
     await expect(trigger).not.toHaveAttribute('aria-describedby');
     await userEvent.unhover(trigger);
     await waitFor(() => expect(tooltip).not.toBeInTheDocument());
