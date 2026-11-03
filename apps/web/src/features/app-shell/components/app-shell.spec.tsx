@@ -9,6 +9,7 @@ vi.mock('../../../lib/i18n/change-language.js', () => ({ changeLanguage: vi.fn()
 vi.mock('next/navigation.js', () => ({ usePathname: () => '/' }));
 // Outside the App Router of Next.js: a plain link, and no image optimization.
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
+vi.mock('../change-navigation-collapsed.js', () => ({ changeNavigationCollapsed: vi.fn() }));
 vi.mock('next/image', () => ({ default: () => null }));
 
 const { AppShell } = await import('./app-shell.js');
@@ -17,7 +18,7 @@ const { AppShell } = await import('./app-shell.js');
  * The HTML of the shell as the team layout renders it on the server, with the account prefetched
  * into the query cache – after the lazily loaded menus of the header have resolved.
  */
-async function renderShell(locale: 'en' | 'pl' = 'en') {
+async function renderShell(locale: 'en' | 'pl' = 'en', isNavigationCollapsed = false) {
   const queryClient = new QueryClient();
   queryClient.setQueryData(['users', 'me'], {
     id: '0199a3f0-0000-7000-8000-000000000003',
@@ -29,7 +30,11 @@ async function renderShell(locale: 'en' | 'pl' = 'en') {
   const { prelude } = await prerender(
     <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
       <QueryClientProvider client={queryClient}>
-        <AppShell allowedActions={[]} help={<button type="button">help-slot</button>}>
+        <AppShell
+          allowedActions={[]}
+          isNavigationCollapsed={isNavigationCollapsed}
+          help={<button type="button">help-slot</button>}
+        >
           <h1>Page</h1>
         </AppShell>
       </QueryClientProvider>
@@ -51,6 +56,30 @@ describe('AppShell', () => {
     const html = await renderShell();
 
     expect(html.match(/aria-label="Main navigation"/g)).toHaveLength(2);
+    expect(html.match(/aria-current="page"/g)).toHaveLength(2);
+  });
+
+  it('expands the side navigation on desktop and collapses it on tablets by default', async () => {
+    const html = await renderShell();
+
+    expect(html).toMatch(/<nav [^>]*class="[^"]*\bw-16\b[^"]*\bxl:w-60\b/);
+    expect(html).toContain('<span class="sr-only xl:not-sr-only">Home</span>');
+    expect(html).toMatch(
+      /aria-expanded="false" aria-label="Expand navigation" class="[^"]* xl:hidden"/,
+    );
+    expect(html).toMatch(
+      /aria-expanded="true" aria-label="Collapse navigation" class="[^"]* hidden xl:inline-flex"/,
+    );
+  });
+
+  it('renders the desktop navigation collapsed when this browser collapsed it', async () => {
+    const html = await renderShell('en', true);
+
+    expect(html).toMatch(/<nav [^>]*class="[^"]*\bw-16\b[^"]*\bxl:w-16\b/);
+    expect(html).toContain('<span class="sr-only xl:sr-only">Home</span>');
+    expect(html).toMatch(
+      /aria-expanded="false" aria-label="Expand navigation" class="[^"]* hidden xl:inline-flex"/,
+    );
     expect(html.match(/aria-current="page"/g)).toHaveLength(2);
   });
 

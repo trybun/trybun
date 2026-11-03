@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AppShell } from '../../features/app-shell/components/app-shell.js';
+import { isNavigationCollapsed } from '../../features/app-shell/navigation-cookie.js';
 import { LazyHelpMenu } from '../../features/help/components/lazy-help-menu.js';
 import { getHelpViews } from '../../features/help/help-content.js';
 import { getHelpReaderKind } from '../../features/help/reader.js';
@@ -20,7 +21,8 @@ import { getServerQueryClient } from '../../lib/query-client/server-query-client
 /**
  * The views of the team inside the application shell. The signed-in account and its product tour
  * progress are prefetched on the server and hydrated into the query cache of the browser (§18.5);
- * the account kind decides the contextual help of the help menu (§2.3) and the tours (§2.4).
+ * the account kind decides the contextual help of the help menu (§2.3) and the tours (§2.4), and
+ * the desktop side navigation starts as this browser left it (§2.9).
  * The browser gets the texts of the shell; a feature's layout adds its own namespace. An account
  * the API refuses sees only a notice with the sign-out.
  */
@@ -42,12 +44,14 @@ export default async function TeamLayout({ children }: { children: ReactNode }) 
   const user = queryClient.getQueryData(userQueryKey);
   const helpViews = getHelpViews(await getHelpReaderKind());
   const messages = pickClientMessages(await getMessages(), 'team');
+  const isNavigationCollapsedOnDesktop = await isNavigationCollapsed();
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <NextIntlClientProvider messages={messages}>
         <ProductTourProvider>
           <AppShell
             allowedActions={user?.allowedActions ?? []}
+            isNavigationCollapsed={isNavigationCollapsedOnDesktop}
             help={
               <LazyHelpMenu views={helpViews}>
                 <LazyProductTourMenuItems />
