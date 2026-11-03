@@ -1,5 +1,6 @@
 import type { InvitationAction } from '@trybun/contracts/invitations';
 import type { AbilityRules } from '../../platform/authorization/ability-factory.js';
+import { teamRolesFrom } from '../../platform/authorization/project-roles.js';
 
 /** The subject of the invitations (§18.3). */
 export const INVITATION = 'Invitation';
@@ -31,6 +32,12 @@ export const invitationsAbilities: AbilityRules = ({ can }, principal) => {
   can([...ALL_ACTIONS], INVITATION, {
     target: 'project',
     // `is`: the in-memory check of a record supports a to-one relation only in this form.
-    project: { is: { members: { some: { userId: principal.userId, role: 'project_manager' } } } },
+    project: {
+      is: {
+        members: {
+          some: { userId: principal.userId, role: { in: teamRolesFrom('project_manager') } },
+        },
+      },
+    },
   });
 };

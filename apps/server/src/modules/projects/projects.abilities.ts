@@ -1,5 +1,6 @@
 import type { ProjectAction } from '@trybun/contracts/projects';
 import type { AbilityRules } from '../../platform/authorization/ability-factory.js';
+import { teamRolesFrom } from '../../platform/authorization/project-roles.js';
 
 /** The subject of the projects (§18.3). */
 export const PROJECT = 'Project';
@@ -39,9 +40,14 @@ export const projectsAbilities: AbilityRules = ({ can }, principal) => {
     can([...ALL_ACTIONS], PROJECT);
     return;
   }
-  can(['read', 'read_members'], PROJECT, { members: { some: { userId: principal.userId } } });
+  // Only team roles count: a membership that contradicts the account kind grants nothing (§7.1).
+  can(['read', 'read_members'], PROJECT, {
+    members: { some: { userId: principal.userId, role: { in: teamRolesFrom('developer') } } },
+  });
   can(['update_settings', 'manage_members'], PROJECT, {
-    members: { some: { userId: principal.userId, role: 'project_manager' } },
+    members: {
+      some: { userId: principal.userId, role: { in: teamRolesFrom('project_manager') } },
+    },
   });
 };
 

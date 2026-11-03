@@ -59,4 +59,13 @@ describe('invitation abilities', () => {
       );
     },
   );
+
+  it('grants nothing for a membership that contradicts the account kind (§7.1)', () => {
+    const record = subject(INVITATION, {
+      target: 'project',
+      project: { members: [{ userId: USER_ID, role: 'end_user' }] },
+    });
+
+    expect(abilities.forPrincipal(principal('developer')).can(CREATE, record)).toBe(false);
+  });
 });

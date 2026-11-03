@@ -1,6 +1,6 @@
 // The rows of §7.5 about projects (§18.3): each with an allowed and a denied case.
 import { subject } from '@casl/ability';
-import type { ProjectAction } from '@trybun/contracts/projects';
+import { type ProjectAction, projectActionSchema } from '@trybun/contracts/projects';
 import { describe, expect, it } from 'vitest';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
@@ -68,6 +68,19 @@ describe('project abilities', () => {
     ['Delete projects', 'delete', 'project_manager', false],
   ] as const)('%s (%s) – %s: %s', (_row, action, who, isAllowed) => {
     expect(can(who, action)).toBe(isAllowed);
+  });
+
+  it('grants nothing for a membership that contradicts the account kind (§7.1)', () => {
+    const ability = abilities.forPrincipal(principal('developer'));
+    const record = subject(PROJECT, {
+      id: 'project',
+      state: 'active',
+      members: [{ userId: USER_ID, role: 'end_user' }],
+    });
+
+    expect(projectActionSchema.options.filter((action) => ability.can(action, record))).toEqual(
+      [],
+    );
   });
 
   describe('an archived project', () => {
