@@ -7,15 +7,21 @@ import { SideNavigation } from './side-navigation.js';
 
 /**
  * The application shell (§2.9), mobile-first: header and bottom navigation on phones, side
- * navigation from the tablet width on (collapsible on tablets). The global actions of the account
+ * navigation from the tablet width on (collapsible to icons; on desktop the layout passes the
+ * choice this browser remembers as `isDesktopNavigationCollapsed`). The global actions of the account
  * (`allowedActions`, §18.3) decide which destinations the navigation offers; the layout passes
  * them from its prefetched account, so the navigation loads no API client before the first paint.
  */
 export function AppShell({
   children,
   allowedActions,
+  isDesktopNavigationCollapsed,
   ...slots
-}: AppHeaderSlots & { children: ReactNode; allowedActions: readonly CurrentUserAction[] }) {
+}: AppHeaderSlots & {
+  children: ReactNode;
+  allowedActions: readonly CurrentUserAction[];
+  isDesktopNavigationCollapsed: boolean;
+}) {
   const t = useTranslations('appShell');
   return (
     <div className="flex min-h-dvh flex-col">
@@ -27,7 +33,10 @@ export function AppShell({
       </a>
       <AppHeader {...slots} />
       <div className="flex flex-1">
-        <SideNavigation allowedActions={allowedActions} />
+        <SideNavigation
+          allowedActions={allowedActions}
+          isDesktopCollapsed={isDesktopNavigationCollapsed}
+        />
         <main
           id="main"
           tabIndex={-1}

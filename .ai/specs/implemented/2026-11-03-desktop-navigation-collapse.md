@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-03 |
 | Plan task | – |
 | System specification sections | §2.9, §18.2, §18.5 |
-| Related issues / PRs | #215 (request), #217 (tooltips on collapsed icons, separate) |
+| Related issues / PRs | #215 (request), #218 (specification), #219 (implementation), #217 (tooltips on collapsed icons, separate) |
 
 ## 📝 TLDR
 
@@ -55,7 +55,7 @@ Width and label visibility are classes for both breakpoints at once, e.g. `isTab
 ### Persisting the desktop choice
 
 - `features/app-shell/navigation-cookie.ts` (`import 'server-only'`), modelled on `lib/i18n/time-zone-cookie.ts`: the cookie `TRYBUN_NAVIGATION_COLLAPSED` with the value `1` when collapsed; absent (deleted) when expanded, the default. `path=/`, `sameSite=lax`, `httpOnly`, `secure` from `getEnv().shouldUseSecureCookies`, max age one year. `isNavigationCollapsed()` reads it; anything other than `1` is "expanded".
-- `features/app-shell/change-navigation-collapsed.ts` (`'use server'`): the Server Action `changeNavigationCollapsed(isCollapsed: boolean)` validates the argument with Zod and stores the cookie. It does **not** call `refresh()`: the client state already shows the change; the cookie only matters for the next server render.
+- `features/app-shell/change-navigation-collapsed.ts` (`'use server'`): the Server Action `changeNavigationCollapsed(isCollapsed: boolean)` validates the argument with Zod and stores the cookie. It does not call `refresh()`. Setting a cookie in a Server Action already renders the current page again on the server (Next.js); `SideNavigation` keeps its own state, so that render changes nothing visible, and the cookie matters for the next page load.
 - The desktop toggle flips its state at once, then calls the action without awaiting it in the UI. A failed call only means the choice is not remembered; the toggle still works (no toast – a preference is not data).
 - `app/(team)/layout.tsx` reads `isNavigationCollapsed()` and passes it through `AppShell` to `SideNavigation`.
 - The cookie is not tied to the session: signing out does not delete it, so a new sign-in in the same browser keeps the choice. It holds no personal data (one flag), so it needs no consent banner (strictly functional preference).
@@ -82,19 +82,19 @@ The ticket left no open questions; the following implementation choices were mad
 |---|---|---|---|
 | A1 | Where do the cookie helper and the Server Action live? | `features/app-shell/` (`navigation-cookie.ts`, `change-navigation-collapsed.ts`) | The preference belongs to the shell feature; `lib/i18n` holds only language and time-zone concerns. Same shape as the time-zone helper. |
 | A2 | Cookie value when expanded? | Deleted (absent = expanded, the default) | Smallest state; an invalid or old value falls back to the default. |
-| A3 | Does the Server Action refresh the page? | No | The client already shows the change; a refresh would re-render every page for a width change. |
+| A3 | Does the Server Action refresh the page? | No explicit `refresh()` | Next.js renders the page again after a cookie change anyway; the toggle's local state already shows the result. A client-written cookie would avoid that render but needs a non-`httpOnly` cookie and a different §18.5 pattern. |
 | A4 | How is the toggle's `aria-expanded` correct at both breakpoints without JS media queries? | Two buttons, one per breakpoint, shown/hidden by CSS | Correct server HTML at every width, no flash, no hydration mismatch. |
 | A5 | Feedback when storing the cookie fails? | None; the toggle still works for the page | A lost preference is harmless; a toast would be noise. |
 
 ## Acceptance criteria
 
-- [ ] On desktop the toggle collapses the navigation to the 64 px icon strip and expands it back; the content area takes the freed width.
-- [ ] The desktop choice survives a reload and signing out and in again in the same browser; the first server response already has the remembered width (no flash).
-- [ ] Collapsed, every link keeps its accessible name (`sr-only` label) and `aria-current`; the visible toggle has `aria-expanded` and the right name; targets ≥ 44 px; keyboard and touch work; axe reports no serious violation.
-- [ ] Phone and tablet behavior is unchanged; the existing `apps/web/e2e/app-shell.spec.ts` stays green.
-- [ ] The first-login product tour highlights `data-tour="app-shell-navigation"` in both states.
-- [ ] §2.9, §18.2 and §18.5 updated; user documentation (EN, PL) mentions the toggle; `pnpm help:generate` run.
-- [ ] Works on phone, tablet and desktop (Rule 9).
+- [x] On desktop the toggle collapses the navigation to the 64 px icon strip and expands it back; the content area takes the freed width.
+- [x] The desktop choice survives a reload and signing out and in again in the same browser; the first server response already has the remembered width (no flash).
+- [x] Collapsed, every link keeps its accessible name (`sr-only` label) and `aria-current`; the visible toggle has `aria-expanded` and the right name; targets ≥ 44 px; keyboard and touch work; axe reports no serious violation.
+- [x] Phone and tablet behavior is unchanged; the existing `apps/web/e2e/app-shell.spec.ts` stays green.
+- [x] The first-login product tour highlights `data-tour="app-shell-navigation"` in both states.
+- [x] §2.9, §18.2 and §18.5 updated; user documentation (EN, PL) mentions the toggle; `pnpm help:generate` run.
+- [x] Works on phone, tablet and desktop (Rule 9).
 
 ## 📋 Implementation Plan
 
@@ -109,3 +109,4 @@ The ticket left no open questions; the following implementation choices were mad
 ## Changelog
 
 - 2026-11-03 – Created from #215 (`om-auto-write-spec`, autonomous).
+- 2026-11-03 – Implemented in #219.

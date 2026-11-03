@@ -32,6 +32,12 @@ vi.mock('../../lib/api-client/server-api-client.js', () => ({
   getServerApiClient: () => Promise.resolve({ GET: get }),
 }));
 
+// The cookies of the browser: the desktop choice of the side navigation (§2.9).
+const browserCookies = new Map<string, { value: string }>();
+vi.mock('next/headers.js', () => ({
+  cookies: () => Promise.resolve({ get: (name: string) => browserCookies.get(name) }),
+}));
+
 vi.mock('next-intl/server', () => ({ getMessages: () => Promise.resolve(CATALOGUES.en) }));
 
 const { default: TeamLayout } = await import('./layout.js');
@@ -47,7 +53,9 @@ function messagesProviderOf(element: ReactElement) {
 /** The application shell inside the texts provider and the product tour provider. */
 function shellOf(element: ReactElement) {
   return (
-    messagesProviderOf(element).props.children as Parent<ReactElement<{ help: ReactElement }>>
+    messagesProviderOf(element).props.children as Parent<
+      ReactElement<{ help: ReactElement; isDesktopNavigationCollapsed: boolean }>
+    >
   ).props.children;
 }
 
@@ -86,6 +94,19 @@ describe('TeamLayout', () => {
     expect(shell.props.help.props).toMatchObject({
       views: { '/': 'team/tutorials/getting-started' },
     });
+  });
+
+  it('renders the side navigation as this browser left it on desktop', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
+      isDesktopNavigationCollapsed: false,
+    });
+    browserCookies.set('TRYBUN_NAVIGATION_COLLAPSED', { value: '1' });
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
+      isDesktopNavigationCollapsed: true,
+    });
+    browserCookies.clear();
   });
 
   it('gives only the end-user help pages when the account cannot be read', async () => {

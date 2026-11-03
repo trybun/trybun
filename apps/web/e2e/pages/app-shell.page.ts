@@ -28,6 +28,25 @@ export class AppShellPage {
     );
   }
 
+  /** The visible button that collapses or expands the side navigation (§2.9). */
+  navigationToggle(name: 'Collapse navigation' | 'Expand navigation'): Locator {
+    return this.navigation.getByRole('button', { name, exact: true });
+  }
+
+  /**
+   * Collapses or expands the side navigation. A click before the hydration does nothing (#191),
+   * so the click repeats until the toggle shows the other state.
+   */
+  async toggleNavigation(name: 'Collapse navigation' | 'Expand navigation'): Promise<void> {
+    const other = name === 'Collapse navigation' ? 'Expand navigation' : 'Collapse navigation';
+    await expect(async () => {
+      if (await this.navigationToggle(name).isVisible()) {
+        await this.navigationToggle(name).click();
+      }
+      await expect(this.navigationToggle(other)).toBeVisible({ timeout: 1000 });
+    }).toPass();
+  }
+
   /** Opens the help menu (§2.3, §2.4). */
   openHelpMenu(): Promise<Locator> {
     return this.openMenu(this.help);
