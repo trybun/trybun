@@ -93,7 +93,9 @@ test.describe('organizations of the Administrator', () => {
       .click();
     await expect(organizations.archivedBanner).toBeHidden();
 
-    // Deleting keeps the account of the member, who can join another organization again.
+    // Deleting keeps the account of the member, who can join another organization again. The
+    // toasts of archiving and unarchiving lie over the Danger zone.
+    await organizations.waitForToastsToClose();
     await page.getByRole('button', { name: 'Delete organization' }).click();
     await page
       .getByRole('dialog', { name: `Delete ${name}?` })
