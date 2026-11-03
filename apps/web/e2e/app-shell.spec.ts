@@ -154,9 +154,8 @@ test.describe('application shell', () => {
       const tooltip = shell.navigationTooltip('Projects');
 
       // Expanded, the labels are visible and no tooltip repeats them.
-      await projects.hover();
-      await page.waitForTimeout(1000); // longer than the delay of the tooltip
-      await expect(tooltip).toBeHidden();
+      // Base UI marks the trigger of a disabled tooltip.
+      await expect(projects).toHaveAttribute('data-trigger-disabled');
 
       await shell.toggleNavigation('Collapse navigation');
       await expect(shell.navigation).toHaveJSProperty('offsetWidth', 64);
@@ -189,6 +188,39 @@ test.describe('application shell', () => {
       await expect(tooltip).toBeVisible();
 
       await shell.toggleNavigation('Expand navigation');
+    });
+
+    // The Playwright tablet (656 px) is below the tablet breakpoint, so the tablet width of the side
+    // navigation is checked here, with the precise pointer of this project.
+    test('shows the item names as tooltips at the tablet width until expanded', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1024, height: 768 });
+      const projects = shell.navigation.getByRole('link', { name: 'Projects' });
+      const tooltip = shell.navigationTooltip('Projects');
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 64);
+
+      await projects.hover();
+      await expect(tooltip).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(tooltip).toBeHidden();
+
+      await page.mouse.move(800, 600);
+      await projects.focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
+      await expect(projects).toBeFocused();
+      await expect(tooltip).toBeVisible();
+      await tooltip.evaluate((element) =>
+        Promise.all(
+          element.getAnimations({ subtree: true }).map((animation) => animation.finished),
+        ),
+      );
+      expect(await seriousViolations(page)).toEqual([]);
+
+      await shell.toggleNavigation('Expand navigation');
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 240);
+      await expect(projects).toHaveAttribute('data-trigger-disabled');
     });
 
     test('highlights the collapsed navigation in the getting-started tour', async ({ page }) => {

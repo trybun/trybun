@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
+import { DESKTOP_MEDIA_QUERY } from '@trybun/ui/hooks/use-media-query';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderInApp } from '../../../../test/dom/render.js';
@@ -15,7 +16,7 @@ const { SideNavigation } = await import('./side-navigation.js');
 /** A window as wide as a tablet, or as a desktop when `isDesktop` (jsdom has no `matchMedia`). */
 function stubWidth(isDesktop: boolean) {
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: isDesktop && query === '(min-width: 80rem)',
+    matches: isDesktop && query === DESKTOP_MEDIA_QUERY,
     media: query,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
@@ -58,6 +59,22 @@ describe('SideNavigation', () => {
 
     await user.keyboard('{Escape}');
     await waitFor(() => expect(queryTooltip()).toBeNull());
+  });
+
+  it('shows the name of a collapsed icon on hover after the delay', async () => {
+    stubWidth(false);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderInApp(<SideNavigation allowedActions={[]} isDesktopCollapsed={false} />);
+
+      await user.hover(screen.getByRole('link', { name: 'Projects' }));
+      await vi.advanceTimersByTimeAsync(700);
+
+      expect(await findTooltip('Projects')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows the translated name in Polish', async () => {
