@@ -24,6 +24,7 @@ import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
+import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ClockModule } from '../../platform/clock/clock.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
@@ -33,11 +34,6 @@ import { ErrorsModule } from '../../platform/errors/errors.module.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
-import { archivedProjectsRestriction, projectsAbilities } from '../projects/projects.abilities.js';
-import {
-  archivedOrganizationsRestriction,
-  organizationsAbilities,
-} from './organizations.abilities.js';
 import { OrganizationsModule } from './organizations.module.js';
 import { OrganizationsService } from './organizations.service.js';
 
@@ -58,10 +54,7 @@ describe('organizations endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule.forRoot({
-          rules: [projectsAbilities, organizationsAbilities],
-          restrictions: [archivedProjectsRestriction, archivedOrganizationsRestriction],
-        }),
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         OrganizationsModule,
       ],
     }).compile();

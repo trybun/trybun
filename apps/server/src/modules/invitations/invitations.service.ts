@@ -114,26 +114,24 @@ export function toTargetDetail(row: TargetRow): InvitationTargetDetail {
   }
 }
 
-/** The fields of an invitation its rules read: the principal's membership of its project. */
+/**
+ * The fields of an invitation its rules read: the state of its project and organization and the
+ * principal's membership of its project.
+ */
 interface RuleRow {
   target: InvitationRow['target'];
-  project: { members: { userId: string; role: string }[] } | null;
+  project: { state: string; members: { userId: string; role: string }[] } | null;
+  organization: { state: string } | null;
 }
 
 /** The invitation as its rules read it (§18.3). */
 function ruleRecord(row: RuleRow) {
   return subject(INVITATION, {
     target: row.target,
-    project: row.project === null ? null : { members: row.project.members },
+    project:
+      row.project === null ? null : { state: row.project.state, members: row.project.members },
+    organization: row.organization === null ? null : { state: row.organization.state },
   } satisfies InvitationRuleRecord);
-}
-
-/** Whether the target of an invitation is archived, so it is read-only (§7.3). */
-function isTargetArchived(row: InvitationRow): boolean {
-  return (
-    row.project?.state === 'archived' ||
-    (row.target === 'organization' && row.organization?.state === 'archived')
-  );
 }
 
 /** The states in which an action of an invitation applies (§7.4). */
@@ -155,10 +153,7 @@ function toInvitationResponse(row: InvitationRow, ability: AppAbility, now: Date
     expiresAt: row.expiresAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
     allowedActions: (['resend', 'revoke'] as const).filter(
-      (action) =>
-        STATES_OF_ACTIONS[action].includes(state) &&
-        !isTargetArchived(row) &&
-        ability.can(action, record),
+      (action) => STATES_OF_ACTIONS[action].includes(state) && ability.can(action, record),
     ),
   };
 }
@@ -526,7 +521,8 @@ export class InvitationsService {
   /**
    * The target of a new invitation, checked as the invitation it would create (§7.4): a project or
    * an organization the principal cannot see is `404`; a visible one they may not invite to – and
-   * the Administrator role, which is no record – `403`; an archived one `409`; a team invitation
+   * the Administrator role, which is no record – `403`, or `409` for an archived one, as its
+   * restriction comes first (§17.2); a team invitation
    * without GitHub sign-in `422`. With `lock`, the project or organization stays share-locked for
    * the transaction, so an archive cannot pass unseen (§7.3).
    */
@@ -571,10 +567,7 @@ export class InvitationsService {
         if (project === null) {
           throw new AppError('request.not_found');
         }
-        this.assertCan(ability, CREATE, { target: 'project', project });
-        if (project.state === 'archived') {
-          throw new AppError('project.archived');
-        }
+        this.assertCan(ability, CREATE, { target: 'project', project, organization: null });
         return {
           type: 'project',
           project: { id: project.id, key: project.key, name: project.name },
@@ -598,10 +591,7 @@ export class InvitationsService {
         if (organization === null) {
           throw new AppError('request.not_found');
         }
-        this.assertCan(ability, CREATE, { target: 'organization', project: null });
-        if (organization.state === 'archived') {
-          throw new AppError('organization.archived');
-        }
+        this.assertCan(ability, CREATE, { target: 'organization', project: null, organization });
         return {
           type: 'organization',
           organization: { id: organization.id, name: organization.name },
@@ -609,7 +599,11 @@ export class InvitationsService {
         };
       }
       case 'administrator':
-        this.assertCan(ability, CREATE, { target: 'administrator', project: null });
+        this.assertCan(ability, CREATE, {
+          target: 'administrator',
+          project: null,
+          organization: null,
+        });
         return { type: 'administrator', kind: 'team' };
     }
   }
@@ -740,8 +734,8 @@ export class InvitationsService {
 
   /**
    * An invitation the principal can see, through the `read` filter of the ability: `404`
-   * otherwise (§17.2). With an action: `403`, `409 project.archived` or `409
-   * organization.archived` for an archived target, `409 invitation.not_pending` in a state the
+   * otherwise (§17.2). With an action: `409 project.archived` or `409 organization.archived` for an
+   * archived target, `403`, `409 invitation.not_pending` in a state the
    * action does not apply to.
    */
   private async findVisible(
@@ -760,12 +754,6 @@ export class InvitationsService {
     }
     if (action !== undefined) {
       this.assertCan(ability, action, row);
-      if (row.project?.state === 'archived') {
-        throw new AppError('project.archived');
-      }
-      if (row.target === 'organization' && row.organization?.state === 'archived') {
-        throw new AppError('organization.archived');
-      }
       if (!STATES_OF_ACTIONS[action].includes(invitationState(row, this.clock.now()))) {
         throw new AppError('invitation.not_pending');
       }

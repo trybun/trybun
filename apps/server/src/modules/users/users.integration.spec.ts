@@ -15,6 +15,7 @@ import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
+import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ClockModule } from '../../platform/clock/clock.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
@@ -24,11 +25,6 @@ import { ErrorsModule } from '../../platform/errors/errors.module.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
-import { administrationAbilities } from '../administration/administration.abilities.js';
-import { invitationsAbilities } from '../invitations/invitations.abilities.js';
-import { organizationsAbilities } from '../organizations/organizations.abilities.js';
-import { projectsAbilities } from '../projects/projects.abilities.js';
-import { usersAbilities } from './users.abilities.js';
 import { UsersModule } from './users.module.js';
 
 describe('users endpoints', () => {
@@ -46,16 +42,7 @@ describe('users endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule.forRoot({
-          rules: [
-            administrationAbilities,
-            projectsAbilities,
-            organizationsAbilities,
-            invitationsAbilities,
-            usersAbilities,
-          ],
-          restrictions: [],
-        }),
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         UsersModule,
       ],
     }).compile();

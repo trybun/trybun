@@ -17,6 +17,7 @@ import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
 import { createOwnDatabase } from '../../../test/setup/own-database.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
+import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
 import type { TrybunConfig } from '../../platform/config/config.schema.js';
@@ -26,7 +27,6 @@ import { ErrorsModule } from '../../platform/errors/errors.module.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
-import { administrationAbilities } from './administration.abilities.js';
 import { AdministrationModule } from './administration.module.js';
 
 describe('administration endpoints', () => {
@@ -51,7 +51,7 @@ describe('administration endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule.forRoot({ rules: [administrationAbilities], restrictions: [] }),
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         AdministrationModule,
       ],
     }).compile();

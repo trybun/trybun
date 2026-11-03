@@ -36,22 +36,35 @@ import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
-import { CREATE, PROJECT } from './projects.abilities.js';
+import { CREATE, PROJECT, projectRuleSelect } from './projects.abilities.js';
 import { lockProjectForShare } from './projects.sql.js';
 
-/** The fields of a project response and of its rules: the principal's own membership. */
+/** The fields of a project response and of its rules (§18.3). */
 function projectSelect(principal: UserPrincipal) {
   return {
-    id: true,
+    ...projectRuleSelect(principal),
     name: true,
     key: true,
-    state: true,
     confirmResolution: true,
     version: true,
     createdAt: true,
     updatedAt: true,
-    members: { where: { userId: principal.userId }, select: { userId: true, role: true } },
   } satisfies Prisma.ProjectSelect;
+}
+
+/**
+ * The principal's own role in a project: the role of their membership, or `end_user` for the
+ * access through their active organization – an end user has the End user role in all of their
+ * projects (§7.1).
+ */
+function roleOf(row: ProjectRow): ProjectMemberRole | null {
+  const membership = row.members[0];
+  if (membership !== undefined) {
+    return membership.role;
+  }
+  return row.organizations.some(({ organization }) => organization.state === 'active')
+    ? 'end_user'
+    : null;
 }
 
 type ProjectRow = Prisma.ProjectGetPayload<{ select: ReturnType<typeof projectSelect> }>;
@@ -68,7 +81,7 @@ function toProjectResponse(row: ProjectRow, ability: AppAbility): Project {
     version: row.version,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    role: row.members[0]?.role ?? null,
+    role: roleOf(row),
     allowedActions: projectActionSchema.options.filter((action) => ability.can(action, record)),
   };
 }

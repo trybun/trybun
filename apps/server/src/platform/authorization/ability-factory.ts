@@ -20,13 +20,15 @@ export type AppSubject =
   | 'Administration';
 
 /**
- * A project as its rules read it: its state and the memberships of the principal, loaded with
- * `members: { where: { userId: principal.userId } }`.
+ * A project as its rules read it: its state, the membership of the principal, loaded with
+ * `members: { where: { userId: principal.userId } }`, and the access of the principal's
+ * organization with its state, loaded the same way (§7.3).
  */
 export type ProjectRuleRecord = {
   id: string;
   state: string;
   members: { userId: string; role: string }[];
+  organizations: { organization: { state: string; members: { userId: string }[] } }[];
 };
 
 /** An organization as its rules read it: its state (§7.3). */
@@ -36,12 +38,14 @@ export type OrganizationRuleRecord = {
 };
 
 /**
- * An invitation as its rules read it (§7.4): its target and, for a project, the memberships of the
- * principal in it. A new invitation is checked as such a record before it exists.
+ * An invitation as its rules read it (§7.4): its target, the state of its project and
+ * organization and the memberships of the principal in the project. A new invitation is checked as
+ * such a record before it exists.
  */
 export type InvitationRuleRecord = {
   target: string;
-  project: { members: { userId: string; role: string }[] } | null;
+  project: { state: string; members: { userId: string; role: string }[] } | null;
+  organization: { state: string } | null;
 };
 
 /** An account as its rules read it: its kind, state and the Administrator flag (§7.4). */

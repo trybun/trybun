@@ -20,6 +20,7 @@ import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
+import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ClockModule } from '../../platform/clock/clock.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
@@ -29,7 +30,6 @@ import { ErrorsModule } from '../../platform/errors/errors.module.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { HttpModule } from '../../platform/http/http.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
-import { archivedProjectsRestriction, projectsAbilities } from './projects.abilities.js';
 import { ProjectsModule } from './projects.module.js';
 
 type Who = 'admin' | 'project_manager' | 'developer' | 'outsider' | 'end_user';
@@ -49,10 +49,7 @@ describe('projects endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
-        AuthorizationModule.forRoot({
-          rules: [projectsAbilities],
-          restrictions: [archivedProjectsRestriction],
-        }),
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         ProjectsModule,
       ],
     }).compile();
