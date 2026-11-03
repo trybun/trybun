@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
+import { ProductTourPage } from './pages/product-tour.page.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 test.describe('application shell', () => {
@@ -89,5 +90,67 @@ test.describe('application shell', () => {
     ]) {
       await expectTouchTarget(target, minimum, ['height', 'width']);
     }
+  });
+
+  test.describe('on desktop', () => {
+    test.beforeEach(() => {
+      test.skip(test.info().project.name !== 'desktop', 'the desktop choice of the navigation');
+    });
+
+    test('collapses the side navigation to icons and remembers it in this browser', async ({
+      page,
+    }) => {
+      const main = page.getByRole('main');
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 240);
+      const expandedMainWidth = await main.evaluate((element) => element.clientWidth);
+
+      await shell.toggleNavigation('Collapse navigation');
+
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 64);
+      await expect(shell.navigationToggle('Expand navigation')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+      // The labels stay the accessible names of the icons.
+      await expect(shell.navigation.getByRole('link', { name: 'Home' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(await main.evaluate((element) => element.clientWidth)).toBe(expandedMainWidth + 176);
+      expect(await seriousViolations(page)).toEqual([]);
+      await expectTouchTarget(
+        shell.navigationToggle('Expand navigation'),
+        minimumTargetSize(test.info()),
+        ['height', 'width'],
+      );
+
+      // The server renders the remembered width, so the first paint shows no expanded navigation.
+      await expect(async () => {
+        expect(await (await page.request.get('/')).text()).toContain('xl:w-16');
+      }).toPass();
+      await page.reload();
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 64);
+
+      await shell.toggleNavigation('Expand navigation');
+
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 240);
+      await expect(async () => {
+        expect(await (await page.request.get('/')).text()).toContain('xl:w-60');
+      }).toPass();
+    });
+
+    test('highlights the collapsed navigation in the getting-started tour', async ({ page }) => {
+      const tour = new ProductTourPage(page);
+      await shell.toggleNavigation('Collapse navigation');
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 64);
+
+      const menu = await shell.openHelpMenu();
+      await menu.getByRole('menuitem', { name: 'Take the tour: Getting started' }).click();
+      await tour.next.click();
+
+      await expect(tour.step(2, 4)).toBeVisible();
+      await expect(tour.highlighted()).toHaveAttribute('data-tour', 'app-shell-navigation');
+      await page.keyboard.press('Escape');
+    });
   });
 });
