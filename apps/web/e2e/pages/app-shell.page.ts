@@ -29,29 +29,31 @@ export class AppShellPage {
   }
 
   /** Opens the help menu (§2.3, §2.4). */
-  async openHelpMenu(): Promise<Locator> {
-    // The server renders the button; a click before the hydration opens nothing (WebKit, #191).
-    const menu = this.page.getByRole('menu');
-    await expect(async () => {
-      if (!(await menu.isVisible())) {
-        await this.help.click();
-      }
-      await expect(menu).toBeVisible({ timeout: 1000 });
-    }).toPass();
-    return this.openedMenu();
+  openHelpMenu(): Promise<Locator> {
+    return this.openMenu(this.help);
   }
 
-  async openAccountMenu(): Promise<Locator> {
-    await this.accountMenu.click();
-    return this.openedMenu();
+  /** Opens the account menu (§2.9). */
+  openAccountMenu(): Promise<Locator> {
+    return this.openMenu(this.accountMenu);
   }
 
   /**
-   * The open menu once its opening animation has finished: during the fade-in its text is
-   * semi-transparent, and axe would measure a colour contrast nobody sees (#72).
+   * Opens a header menu and returns it once its opening animation has finished.
+   *
+   * The server renders the button and the menu loads after the first paint (#72); a click before
+   * the hydration opens nothing (WebKit, #191, #206), so the click repeats until the menu shows.
+   * During the fade-in the text is semi-transparent, and axe would measure a colour contrast
+   * nobody sees (#72).
    */
-  private async openedMenu(): Promise<Locator> {
+  private async openMenu(trigger: Locator): Promise<Locator> {
     const menu = this.page.getByRole('menu');
+    await expect(async () => {
+      if (!(await menu.isVisible())) {
+        await trigger.click();
+      }
+      await expect(menu).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await menu.evaluate((popup) =>
       Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
     );
