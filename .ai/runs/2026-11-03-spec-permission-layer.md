@@ -39,3 +39,4 @@ Bring the S1-04 change specification up to date with `main`, where S1-01, S1-02 
 
 - [x] 2.1 Merge main into the branch — 3e5df38
 - [x] 2.2 Rewrite Context, design, open questions and plan to the delta against main — 762c50b
+- [x] 2.3 Apply the fresh-context specification review — 597f529
