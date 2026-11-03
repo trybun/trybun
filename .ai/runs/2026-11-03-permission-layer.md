@@ -38,12 +38,12 @@ Follows the spec's "Phasing and implementation plan" (steps 1–7), split into t
 ### Phase 2: End users' access to projects
 
 - [x] 2.1 End-user project rules and organization access in the project select — 30d42f1
-- [ ] 2.2 Integration tests of end users' project access
+- [x] 2.2 Integration tests of end users' project access — 10ad77e
 
 ### Phase 3: Record descriptors
 
 - [x] 3.1 Record descriptors and subject-independent PrismaRecordAccess — 30d42f1
-- [ ] 3.2 Selected-fields test
+- [x] 3.2 Selected-fields test — e1a993c
 
 ### Phase 4: Restrictions fail closed
 
@@ -56,9 +56,9 @@ Follows the spec's "Phasing and implementation plan" (steps 1–7), split into t
 
 ### Phase 6: Permission tests across subjects
 
-- [ ] 6.1 Filter equals check
-- [ ] 6.2 Done-when tests of the project response
-- [ ] 6.3 Denied-case tests of every existing endpoint
+- [x] 6.1 Filter equals check — 10ad77e
+- [x] 6.2 Done-when tests of the project response — 10ad77e
+- [x] 6.3 Denied-case tests of every existing endpoint — 10ad77e
 
 ### Phase 7: Specification and documentation
 
