@@ -27,39 +27,41 @@ Follows the spec's "Phasing and implementation plan" (steps 1–7), split into t
 
 ## Progress
 
+PR: #225
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Roles, hierarchy and account kinds
 
-- [x] 1.1 Hierarchy helper teamRolesFrom — 2230288
-- [x] 1.2 Team conditions on team roles only — 42c3361
-- [x] 1.3 Principal factory, matrix tables, hierarchy and kind tests — 30d42f1
+- [x] 1.1 Hierarchy helper teamRolesFrom — 1448ead
+- [x] 1.2 Team conditions on team roles only — d35a89f
+- [x] 1.3 Principal factory, matrix tables, hierarchy and kind tests — 55290b3
 
 ### Phase 2: End users' access to projects
 
-- [x] 2.1 End-user project rules and organization access in the project select — 30d42f1
-- [x] 2.2 Integration tests of end users' project access — 10ad77e
+- [x] 2.1 End-user project rules and organization access in the project select — 55290b3
+- [x] 2.2 Integration tests of end users' project access — 69f75aa
 
 ### Phase 3: Record descriptors
 
-- [x] 3.1 Record descriptors and subject-independent PrismaRecordAccess — 30d42f1
-- [x] 3.2 Selected-fields test — e1a993c
+- [x] 3.1 Record descriptors and subject-independent PrismaRecordAccess — 55290b3
+- [x] 3.2 Selected-fields test — 660f9f7
 
 ### Phase 4: Restrictions fail closed
 
-- [x] 4.1 Restrictions from the contract action lists — 30d42f1
-- [x] 4.2 Invitation restrictions replacing the service checks — 30d42f1
+- [x] 4.1 Restrictions from the contract action lists — 55290b3
+- [x] 4.2 Invitation restrictions replacing the service checks — 55290b3
 
 ### Phase 5: Account rules
 
-- [x] 5.1 change_kind and change_email rules — 30d42f1
+- [x] 5.1 change_kind and change_email rules — 55290b3
 
 ### Phase 6: Permission tests across subjects
 
-- [x] 6.1 Filter equals check — 10ad77e
-- [x] 6.2 Done-when tests of the project response — 10ad77e
-- [x] 6.3 Denied-case tests of every existing endpoint — 10ad77e
+- [x] 6.1 Filter equals check — 69f75aa
+- [x] 6.2 Done-when tests of the project response — 69f75aa
+- [x] 6.3 Denied-case tests of every existing endpoint — 69f75aa
 
 ### Phase 7: Specification and documentation
 
-- [ ] 7.1 System specification, plan and project memory
+- [x] 7.1 System specification, plan and project memory — 15dee92
