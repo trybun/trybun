@@ -149,6 +149,48 @@ test.describe('application shell', () => {
       }).toPass();
     });
 
+    test('shows the item names as tooltips on the collapsed icons only', async ({ page }) => {
+      const projects = shell.navigation.getByRole('link', { name: 'Projects' });
+      const tooltip = shell.navigationTooltip('Projects');
+
+      // Expanded, the labels are visible and no tooltip repeats them.
+      await projects.hover();
+      await page.waitForTimeout(1000); // longer than the delay of the tooltip
+      await expect(tooltip).toBeHidden();
+
+      await shell.toggleNavigation('Collapse navigation');
+      await expect(shell.navigation).toHaveJSProperty('offsetWidth', 64);
+
+      await projects.hover();
+      await expect(tooltip).toBeVisible();
+      // Next to the icon, and the link keeps its name without a description (no double reading).
+      const [linkBox, tooltipBox] = await Promise.all([
+        projects.boundingBox(),
+        tooltip.boundingBox(),
+      ]);
+      expect(tooltipBox?.x).toBeGreaterThan((linkBox?.x ?? 0) + (linkBox?.width ?? 0));
+      await expect(projects).not.toHaveAttribute('aria-describedby');
+      await tooltip.evaluate((element) =>
+        Promise.all(
+          element.getAnimations({ subtree: true }).map((animation) => animation.finished),
+        ),
+      );
+      expect(await seriousViolations(page)).toEqual([]);
+
+      await page.keyboard.press('Escape');
+      await expect(tooltip).toBeHidden();
+
+      // Keyboard focus shows it too.
+      await page.mouse.move(800, 600);
+      await projects.focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
+      await expect(projects).toBeFocused();
+      await expect(tooltip).toBeVisible();
+
+      await shell.toggleNavigation('Expand navigation');
+    });
+
     test('highlights the collapsed navigation in the getting-started tour', async ({ page }) => {
       const tour = new ProductTourPage(page);
       await shell.toggleNavigation('Collapse navigation');
