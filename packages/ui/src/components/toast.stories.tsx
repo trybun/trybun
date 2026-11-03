@@ -112,7 +112,8 @@ function ToastInDialogDemo() {
   );
 }
 
-// On phones the dialog is a bottom sheet at the same place as the toasts: the toast stays on top.
+// On phones the dialog is a bottom sheet: the toast stays above it (#172) and sits at the top of the
+// screen, so it never covers the actions of the sheet (#207).
 export const AboveDialogOnPhone: Story = {
   render: () => <ToastInDialogDemo />,
   globals: viewport('phone'),
@@ -127,6 +128,15 @@ export const AboveDialogOnPhone: Story = {
       const topmost = document.elementFromPoint(left + width / 2, top + height / 2);
       await expect(title.contains(topmost)).toBe(true);
     });
+    const action = within(dialog).getByRole('button', { name: 'Copy link' });
+    const toastBox = title.closest('[data-slot="toast"]')!.getBoundingClientRect();
+    const actionBox = action.getBoundingClientRect();
+    await expect(toastBox.bottom).toBeLessThan(actionBox.top);
+    const center = document.elementFromPoint(
+      actionBox.left + actionBox.width / 2,
+      actionBox.top + actionBox.height / 2,
+    );
+    await expect(action.contains(center)).toBe(true);
     await userEvent.click(screen.getByLabelText('Close notification'));
     await waitFor(() => expect(screen.queryByText('Link copied')).not.toBeInTheDocument());
     await expect(dialog).toBeInTheDocument();
