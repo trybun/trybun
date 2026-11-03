@@ -1,12 +1,12 @@
 # Interactive brand colour and a lighter focus ring
 
-|                               |                                                                                         |
-| ----------------------------- | --------------------------------------------------------------------------------------- |
-| Status                        | `implemented`                                                                           |
-| Created                       | 2026-11-01                                                                              |
-| Plan task                     | –                                                                                       |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-11-01 |
+| Plan task | – |
 | System specification sections | §2.6, §13.4; [`docs/brand/README.md`](../../../docs/brand/README.md) (UI design tokens) |
-| Related issues / PRs          | #177, #183 (specification), #182 (implementation)                                       |
+| Related issues / PRs | #177, #183 (specification), #182 (implementation) |
 
 ## Context
 
@@ -34,21 +34,21 @@ The focus ring (`--ring`) is vermilion, almost the red of the error state (`--de
 
 A brand colour added to [`docs/brand/README.md`](../../../docs/brand/README.md) ("Colours"), with a light and a dark shade like the other UI tokens. `--ring` uses it. The maintainer chooses one variant.
 
-| Variant            | Light theme (on White) | Dark theme (on Ink `#141A2E`) | Character                                                                                                                     | Risk                                                                                                                                |
-| ------------------ | ---------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **A – Blue**       | `#2563EB` – 5.2:1      | `#60A5FA` – 6.8:1             | the platform and browser convention for focus and links, instantly read as "interactive"                                      | close to `--info` (`#1447E6` / `#51A2FF`): info would reuse it or be dropped as a separate hue (question 3)                         |
-| **B – Sea (teal)** | `#0F766E` – 5.5:1      | `#2DD4BF` – 9.3:1             | the complement of Vermilion on the colour wheel, so the brand pair becomes "warm customer side – cool team side"; distinctive | close to `--success` green (`#008236` / `#05DF72`) for some colour-vision deficiencies; success always has an icon and text (§13.4) |
-| **C – Indigo**     | `#4F46E5` – 6.3:1      | `#A5B4FC` – 8.7:1             | close to Ink's navy, so it reads as "the brand, but active"; no semantic colour uses violet                                   | further from the convention than A; on Ink-filled controls it needs the offset (item 2)                                             |
+| Variant | Light theme (on White) | Dark theme (on Ink `#141A2E`) | Character | Risk |
+|---|---|---|---|---|
+| **A – Blue** | `#2563EB` – 5.2:1 | `#60A5FA` – 6.8:1 | the platform and browser convention for focus and links, instantly read as "interactive" | close to `--info` (`#1447E6` / `#51A2FF`): info would reuse it or be dropped as a separate hue (question 3) |
+| **B – Sea (teal)** | `#0F766E` – 5.5:1 | `#2DD4BF` – 9.3:1 | the complement of Vermilion on the colour wheel, so the brand pair becomes "warm customer side – cool team side"; distinctive | close to `--success` green (`#008236` / `#05DF72`) for some colour-vision deficiencies; success always has an icon and text (§13.4) |
+| **C – Indigo** | `#4F46E5` – 6.3:1 | `#A5B4FC` – 8.7:1 | close to Ink's navy, so it reads as "the brand, but active"; no semantic colour uses violet | further from the convention than A; on Ink-filled controls it needs the offset (item 2) |
 
 All variants keep at least 4.5:1 for text on `--background` in both themes. They can therefore also colour links (question 2), and they stay clearly apart from the danger red in hue.
 
 ### 2. A lighter focus indicator
 
-| Option                                      | Field (Input, Select, Combobox)        | Filled control (primary Button, Switch, checked Radio, avatar) | Total thickness |
-| ------------------------------------------- | -------------------------------------- | -------------------------------------------------------------- | --------------- |
-| **3 px (today)**                            | border takes the colour + 3 px ring    | 2 px gap + 3 px ring                                           | ~4 px           |
-| **2 px – border + 1 px ring** (recommended) | border takes the colour + 1 px ring    | 2 px gap + 2 px ring                                           | 2 px            |
-| **2 px with a gap**                         | border unchanged, 2 px gap + 2 px ring | 2 px gap + 2 px ring                                           | 2 px + 2 px gap |
+| Option | Field (Input, Select, Combobox) | Filled control (primary Button, Switch, checked Radio, avatar) | Total thickness |
+|---|---|---|---|
+| **3 px (today)** | border takes the colour + 3 px ring | 2 px gap + 3 px ring | ~4 px |
+| **2 px – border + 1 px ring** (recommended) | border takes the colour + 1 px ring | 2 px gap + 2 px ring | 2 px |
+| **2 px with a gap** | border unchanged, 2 px gap + 2 px ring | 2 px gap + 2 px ring | 2 px + 2 px gap |
 
 The recommended option is the lightest one that still meets WCAG 2.4.13. Material and Primer use a similar thin outline.
 
@@ -58,11 +58,11 @@ The recommended option is the lightest one that still meets WCAG 2.4.13. Materia
 
 ## Changes to the system specification
 
-| Section                                                                    | Change                                                                                   |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [`docs/brand/README.md`](../../../docs/brand/README.md) – Colours          | new brand colour of the chosen variant (name, hex, use: "interactive states – focus, …") |
-| [`docs/brand/README.md`](../../../docs/brand/README.md) – UI design tokens | `--ring` row; the bullets on Vermilion and the new colour; `--info` per question 3       |
-| §13.4                                                                      | the focus indicator: colour token and thickness (2 px, WCAG 2.4.13)                      |
+| Section | Change |
+|---|---|
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – Colours | new brand colour of the chosen variant (name, hex, use: "interactive states – focus, …") |
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – UI design tokens | `--ring` row; the bullets on Vermilion and the new colour; `--info` per question 3 |
+| §13.4 | the focus indicator: colour token and thickness (2 px, WCAG 2.4.13) |
 
 New or changed glossary terms: none.
 

@@ -1,12 +1,12 @@
 # Scope of the coverage measurement
 
-|                               |                           |
-| ----------------------------- | ------------------------- |
-| Status                        | `implemented`             |
-| Created                       | 2026-10-21                |
-| Plan task                     | `S0-02`                   |
-| System specification sections | §2.14, §18.7              |
-| Related issues / PRs          | #5 (approval), #8 (S0-02) |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-10-21 |
+| Plan task | `S0-02` |
+| System specification sections | §2.14, §18.7 |
+| Related issues / PRs | #5 (approval), #8 (S0-02) |
 
 ## Context
 
@@ -41,27 +41,27 @@ Two things the CI pipeline of task S0-02 needs are not specified:
 
 Coverage is measured for the source files of every application and package, except the following closed list:
 
-| Excluded                                 | Examples                                                                                               | Reason                                                                              |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Test code                                | `*.spec.ts(x)`, `*.integration.spec.ts`, the `test/` folders (factories, MSW handlers, set-up), `e2e/` | Not product code                                                                    |
-| Storybook stories                        | `*.stories.tsx`                                                                                        | Documentation of components; components are tested by their own tests               |
-| Process entry points that only bootstrap | `apps/server/src/main.ts`, `apps/server/src/worker.ts`                                                 | Start-up wiring; covered by starting the built application (S0-01) and by E2E tests |
-| Generated code                           | Prisma client, `openapi-typescript` types, Keycloak theme messages generated from `@trybun/i18n`       | Not written by hand; its source is tested                                           |
-| Configuration files                      | `*.config.ts`, `*.config.mjs` (Vitest, Next.js, Playwright, ESLint, Prisma)                            | Tooling, not product code                                                           |
-| Type declarations                        | `*.d.ts`                                                                                               | No runtime code                                                                     |
-| Database seed scripts                    | `apps/server/prisma/seed.ts` and the demo dataset                                                      | Tooling; the demo data is exercised by E2E tests                                    |
+| Excluded | Examples | Reason |
+|---|---|---|
+| Test code | `*.spec.ts(x)`, `*.integration.spec.ts`, the `test/` folders (factories, MSW handlers, set-up), `e2e/` | Not product code |
+| Storybook stories | `*.stories.tsx` | Documentation of components; components are tested by their own tests |
+| Process entry points that only bootstrap | `apps/server/src/main.ts`, `apps/server/src/worker.ts` | Start-up wiring; covered by starting the built application (S0-01) and by E2E tests |
+| Generated code | Prisma client, `openapi-typescript` types, Keycloak theme messages generated from `@trybun/i18n` | Not written by hand; its source is tested |
+| Configuration files | `*.config.ts`, `*.config.mjs` (Vitest, Next.js, Playwright, ESLint, Prisma) | Tooling, not product code |
+| Type declarations | `*.d.ts` | No runtime code |
+| Database seed scripts | `apps/server/prisma/seed.ts` and the demo dataset | Tooling; the demo data is exercised by E2E tests |
 
 - The list lives in [§2.14](../../../docs/spec/02-agent-rules.md) and in one shared Vitest coverage configuration. Adding a pattern to it is a specification change for approval.
 - Coverage-ignore comments in the code (`/* v8 ignore … */`, `/* istanbul ignore … */`, `/* c8 ignore … */`) are suppressions and are not allowed, like `@ts-ignore` and lint-disable comments.
 
 ## Changes to the system specification
 
-| Section                                                     | Change                                                                                                                                                                                                    |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| §2.14 "Automated quality gates"                             | After the coverage thresholds table: unit and integration tests count, checked on the combined result in CI; the closed list of excluded files; coverage-ignore comments are suppressions and not allowed |
-| §2.14 "Working practices" ("Fix the cause, never the gate") | Name coverage-ignore comments among the forbidden suppressions and adding exclusions to the coverage configuration among the forbidden ways of weakening a gate                                           |
-| §18.7                                                       | One sentence: integration tests count toward coverage ([§2.14](../../../docs/spec/02-agent-rules.md))                                                                                                     |
-| Implementation plan, S0-02                                  | "unit tests with coverage thresholds" → "unit and integration tests with coverage thresholds on the combined result ([change specification](2026-10-21-coverage-measurement-scope.md))"                   |
+| Section | Change |
+|---|---|
+| §2.14 "Automated quality gates" | After the coverage thresholds table: unit and integration tests count, checked on the combined result in CI; the closed list of excluded files; coverage-ignore comments are suppressions and not allowed |
+| §2.14 "Working practices" ("Fix the cause, never the gate") | Name coverage-ignore comments among the forbidden suppressions and adding exclusions to the coverage configuration among the forbidden ways of weakening a gate |
+| §18.7 | One sentence: integration tests count toward coverage ([§2.14](../../../docs/spec/02-agent-rules.md)) |
+| Implementation plan, S0-02 | "unit tests with coverage thresholds" → "unit and integration tests with coverage thresholds on the combined result ([change specification](2026-10-21-coverage-measurement-scope.md))" |
 
 New or changed glossary terms: none.
 

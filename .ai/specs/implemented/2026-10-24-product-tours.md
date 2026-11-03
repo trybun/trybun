@@ -1,12 +1,12 @@
 # Product tour infrastructure and the "First login" tour
 
-|                               |                                                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Status                        | `implemented`                                                                                                      |
-| Created                       | 2026-10-24                                                                                                         |
-| Plan task                     | `S0-10`                                                                                                            |
-| System specification sections | §2.4, §2.9, §14.2, §18.2, §18.5, §18.9, glossary                                                                   |
-| Related issues / PRs          | [#35](https://github.com/trybun/trybun/issues/35), [#68](https://github.com/trybun/trybun/pull/68) (specification) |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-10-24 |
+| Plan task | `S0-10` |
+| System specification sections | §2.4, §2.9, §14.2, §18.2, §18.5, §18.9, glossary |
+| Related issues / PRs | [#35](https://github.com/trybun/trybun/issues/35), [#68](https://github.com/trybun/trybun/pull/68) (specification) |
 
 ## Context
 
@@ -52,7 +52,6 @@ S0-10 builds the infrastructure that later tasks use for their tours ([§2.4](..
   - **Take the tour** – one item per tour of the current view that the person may see (the tour's name, e.g. "Take the tour: Getting started"); shown only when the view has a tour.
 
   Restarting is always possible, whatever the recorded status; finishing or skipping a restarted tour updates the record.
-
 - **Version.** Every tour has a version (an integer starting at 1). Increasing it – only when its steps change materially – makes the tour start automatically once more for everyone; small text corrections keep the version.
 - **Role-aware.** A tour belongs to a view of the team application or of the end-user portal, so end users never get a team tour. Within a tour, a step about an action is shown only when its target is rendered – the view renders it only when the API's `allowedActions` allow the action – so the tour itself contains no permission logic (the web application only follows `allowedActions`). Such steps are marked optional in the tour definition.
 - **Accessibility** ([§13.4](../../../docs/spec/13-non-functional.md)): the tip is a labelled non-modal dialog (`role="dialog"`, `aria-labelledby` the step title, `aria-describedby` its text); focus moves to the tip when a step opens and returns to the element that had it when the tour ends; all buttons are reachable with Tab and have touch targets ≥ 44 px; scrolling and transitions are instant with `prefers-reduced-motion`; the step counter is announced with the step.
@@ -92,17 +91,17 @@ A new section "Product tours" in [§18.5](../../../docs/spec/18-code-patterns.md
 
 ## Changes to the system specification
 
-| Section               | Change                                                                                                                                                                                                                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| §2.4                  | States the closing behaviour (Esc, close and Skip record `skipped`, leaving the view too; Done records `completed`), that the page is not dimmed or blocked, that restarting is always possible, and that steps about actions appear only when their target is rendered |
-| §2.3 or §2.4          | The help icon of the header opens the help menu: "Help for this view" and "Take the tour" per tour of the view                                                                                                                                                          |
-| §2.9                  | Product tours row: "Bottom-sheet tips instead of tips next to elements; the target is scrolled above the sheet and highlighted"                                                                                                                                         |
-| §14.2, §14.5          | Product tours row: own components (`@trybun/ui` Popover and TourTip, bottom sheet on phones); §14.5 lists `driver.js` as considered and not used, with the reason above                                                                                                 |
-| §18.2, §18.5          | New "Product tours" pattern (above)                                                                                                                                                                                                                                     |
-| §18.4                 | A list bounded by a small closed set (the tours) returns the envelope without pagination                                                                                                                                                                                |
-| §18.9                 | Reference implementation of S0-10                                                                                                                                                                                                                                       |
-| §15.12 / demo dataset | The account Nina Newcomer and the seeded tour progress of the demo accounts                                                                                                                                                                                             |
-| Glossary              | `product_tour_progress` gets its fields; new status enum                                                                                                                                                                                                                |
+| Section | Change |
+|---|---|
+| §2.4 | States the closing behaviour (Esc, close and Skip record `skipped`, leaving the view too; Done records `completed`), that the page is not dimmed or blocked, that restarting is always possible, and that steps about actions appear only when their target is rendered |
+| §2.3 or §2.4 | The help icon of the header opens the help menu: "Help for this view" and "Take the tour" per tour of the view |
+| §2.9 | Product tours row: "Bottom-sheet tips instead of tips next to elements; the target is scrolled above the sheet and highlighted" |
+| §14.2, §14.5 | Product tours row: own components (`@trybun/ui` Popover and TourTip, bottom sheet on phones); §14.5 lists `driver.js` as considered and not used, with the reason above |
+| §18.2, §18.5 | New "Product tours" pattern (above) |
+| §18.4 | A list bounded by a small closed set (the tours) returns the envelope without pagination |
+| §18.9 | Reference implementation of S0-10 |
+| §15.12 / demo dataset | The account Nina Newcomer and the seeded tour progress of the demo accounts |
+| Glossary | `product_tour_progress` gets its fields; new status enum |
 
 New or changed glossary terms (code identifier, EN/PL labels):
 

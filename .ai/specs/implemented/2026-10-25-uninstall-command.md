@@ -1,12 +1,12 @@
 # Uninstall command of the deployment package
 
-|                               |                                                                                                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Status                        | `implemented`                                                                                                                                                      |
-| Created                       | 2026-10-25                                                                                                                                                         |
-| Plan task                     | –                                                                                                                                                                  |
-| System specification sections | §15.4, §15.5, §15.10                                                                                                                                               |
-| Related issues / PRs          | [#99](https://github.com/trybun/trybun/pull/99) (the check for data of an earlier installation), [#100](https://github.com/trybun/trybun/pull/100) (specification) |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-10-25 |
+| Plan task | – |
+| System specification sections | §15.4, §15.5, §15.10 |
+| Related issues / PRs | [#99](https://github.com/trybun/trybun/pull/99) (the check for data of an earlier installation), [#100](https://github.com/trybun/trybun/pull/100) (specification) |
 
 ## Context
 
@@ -42,11 +42,11 @@ The help of the script (`./trybun --help`), `INSTALL.md` (new section "Uninstall
 
 ## Changes to the system specification
 
-| Section | Change                                                                                                                                                   |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| §15.4   | The `trybun` script also has the subcommand `uninstall` (§15.5).                                                                                         |
-| §15.5   | New paragraph **Uninstall** (`./trybun uninstall`): what it deletes and keeps, the confirmation by the domain, the last backup with external S3 storage. |
-| §15.10  | The backups on this server are deleted by `uninstall`; those on the external S3 storage stay.                                                            |
+| Section | Change |
+|---|---|
+| §15.4 | The `trybun` script also has the subcommand `uninstall` (§15.5). |
+| §15.5 | New paragraph **Uninstall** (`./trybun uninstall`): what it deletes and keeps, the confirmation by the domain, the last backup with external S3 storage. |
+| §15.10 | The backups on this server are deleted by `uninstall`; those on the external S3 storage stay. |
 
 New or changed glossary terms: none.
 

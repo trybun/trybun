@@ -1,12 +1,12 @@
 # Job and event payload compatibility across updates
 
-|                               |                                                                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Status                        | `implemented`                                                                                                        |
-| Created                       | 2026-10-26                                                                                                           |
-| Plan task                     | – (found while writing `BACKWARD_COMPATIBILITY.md` of the agent pipeline)                                            |
-| System specification sections | §17.2, §18.3, §15.7, §2.11                                                                                           |
-| Related issues / PRs          | [#107](https://github.com/trybun/trybun/pull/107), [#108](https://github.com/trybun/trybun/pull/108) (specification) |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-10-26 |
+| Plan task | – (found while writing `BACKWARD_COMPATIBILITY.md` of the agent pipeline) |
+| System specification sections | §17.2, §18.3, §15.7, §2.11 |
+| Related issues / PRs | [#107](https://github.com/trybun/trybun/pull/107), [#108](https://github.com/trybun/trybun/pull/108) (specification) |
 
 ## Context
 
@@ -44,11 +44,11 @@ Job data and internal event payloads change **additively within a MAJOR series**
 
 ## Changes to the system specification
 
-| Section                              | Change                                                                                                                                                         |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| §17.2 Background jobs and scheduling | New rule "Payload compatibility": items 1–4 and 6 above                                                                                                        |
-| §18.3 Events and background jobs     | Handlers accept job data of every earlier release of the MAJOR series and, after a MAJOR boundary, of the latest release of the previous series; link to §17.2 |
-| §18.7 Tests                          | A changed job schema has a test with job data of the previous shape (item 5)                                                                                   |
+| Section | Change |
+|---|---|
+| §17.2 Background jobs and scheduling | New rule "Payload compatibility": items 1–4 and 6 above |
+| §18.3 Events and background jobs | Handlers accept job data of every earlier release of the MAJOR series and, after a MAJOR boundary, of the latest release of the previous series; link to §17.2 |
+| §18.7 Tests | A changed job schema has a test with job data of the previous shape (item 5) |
 
 No new glossary terms.
 

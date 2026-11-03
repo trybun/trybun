@@ -1,12 +1,12 @@
 # Retention of the IP addresses of the audit log
 
-|                               |                                                                                                                                                                                                                        |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status                        | `implemented`                                                                                                                                                                                                          |
-| Created                       | 2026-10-25                                                                                                                                                                                                             |
-| Plan task                     | `S0-21`                                                                                                                                                                                                                |
-| System specification sections | §13.2, §13.5, §17.2, §18.3                                                                                                                                                                                             |
-| Related issues / PRs          | [#87](https://github.com/trybun/trybun/issues/87) (this task), [#86](https://github.com/trybun/trybun/pull/86) (S0-14, which found the contradiction), [#88](https://github.com/trybun/trybun/pull/88) (specification) |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-10-25 |
+| Plan task | `S0-21` |
+| System specification sections | §13.2, §13.5, §17.2, §18.3 |
+| Related issues / PRs | [#87](https://github.com/trybun/trybun/issues/87) (this task), [#86](https://github.com/trybun/trybun/pull/86) (S0-14, which found the contradiction), [#88](https://github.com/trybun/trybun/pull/88) (specification) |
 
 ## Context
 
@@ -36,12 +36,12 @@ An IP address is personal data. The 14 days of §13.2 are the period in which it
 
 ## Considered options
 
-| Option                                         | Description                                                                                                                                                             | Assessment                                                                                                                                                                       |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A. The IP expires after 14 days** (proposed) | A recurring job of the Worker sets `ip_address = NULL` on entries older than 14 days. The trigger allows exactly this change and nothing else. The entry itself is kept | One table, one statement. The only change the database allows removes data, so it cannot alter what an entry says                                                                |
-| B. The IP in its own table                     | `audit_log_entry_ip_addresses` (entry ID, IP), rows deleted after 14 days. The entries stay strictly immutable                                                          | A second table and a join for one nullable column; the new table needs its own trigger that allows only the expiring `DELETE`, so it moves the exception rather than removing it |
-| C. An exception in §13.2 and §17.2             | IP addresses kept for the lifetime of the installation in the audit log only, with a written legal basis                                                                | No code, but personal data kept without time limit, against data minimisation (GDPR Art. 5(1)(c), (e)); a legal basis the maintainer has to write and defend                     |
-| D. No IP in the audit log                      | §13.5 changed: IPs only in the Keycloak events and the access logs (14 days)                                                                                            | The audit entry cannot be correlated with the access log by IP alone; the setup token is used before any account exists, so its IP is the only clue to who used it               |
+| Option | Description | Assessment |
+|---|---|---|
+| **A. The IP expires after 14 days** (proposed) | A recurring job of the Worker sets `ip_address = NULL` on entries older than 14 days. The trigger allows exactly this change and nothing else. The entry itself is kept | One table, one statement. The only change the database allows removes data, so it cannot alter what an entry says |
+| B. The IP in its own table | `audit_log_entry_ip_addresses` (entry ID, IP), rows deleted after 14 days. The entries stay strictly immutable | A second table and a join for one nullable column; the new table needs its own trigger that allows only the expiring `DELETE`, so it moves the exception rather than removing it |
+| C. An exception in §13.2 and §17.2 | IP addresses kept for the lifetime of the installation in the audit log only, with a written legal basis | No code, but personal data kept without time limit, against data minimisation (GDPR Art. 5(1)(c), (e)); a legal basis the maintainer has to write and defend |
+| D. No IP in the audit log | §13.5 changed: IPs only in the Keycloak events and the access logs (14 days) | The audit entry cannot be correlated with the access log by IP alone; the setup token is used before any account exists, so its IP is the only clue to who used it |
 
 ## Proposed change
 
@@ -69,13 +69,13 @@ A new migration replaces the row trigger of `audit_log_entries`:
 
 ## Changes to the system specification
 
-| Section                                | Change                                                                                                                                                                                                                                     |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Section | Change |
+|---|---|
 | §13.2 "Retention of technical records" | Row "Security and access logs with IP addresses" – 14 days, including the IP addresses of the administrative audit log; row "Administrative audit log" – kept for the lifetime of the installation, its IP addresses removed after 14 days |
-| §13.5 "Logs"                           | IP addresses appear only in security and access logs and in the security events of the administrative audit log, all with the retention of §13.2                                                                                           |
-| §13.5 "Administrative audit log"       | The log is immutable except that the IP of an entry is removed after 14 days; the trigger allows only this `UPDATE`; the hourly retention job of the Worker removes it                                                                     |
-| §17.2 "Logging and monitoring"         | IP addresses only in access and security logs (Caddy, Keycloak events, rate limiting) and in the security events of the audit log, kept for at most 14 days                                                                                |
-| §17.2 "Background jobs and scheduling" | The removal of the IPs of the audit log named among the recurring jobs                                                                                                                                                                     |
+| §13.5 "Logs" | IP addresses appear only in security and access logs and in the security events of the administrative audit log, all with the retention of §13.2 |
+| §13.5 "Administrative audit log" | The log is immutable except that the IP of an entry is removed after 14 days; the trigger allows only this `UPDATE`; the hourly retention job of the Worker removes it |
+| §17.2 "Logging and monitoring" | IP addresses only in access and security logs (Caddy, Keycloak events, rate limiting) and in the security events of the audit log, kept for at most 14 days |
+| §17.2 "Background jobs and scheduling" | The removal of the IPs of the audit log named among the recurring jobs |
 
 New or changed glossary terms: none.
 

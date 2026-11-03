@@ -1,12 +1,12 @@
 # Organizations
 
-|                               |                                                                                                                                                                                                                                  |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status                        | `implemented`                                                                                                                                                                                                                    |
-| Created                       | 2026-10-26                                                                                                                                                                                                                       |
-| Plan task                     | `S1-02`                                                                                                                                                                                                                          |
-| System specification sections | §7.3, §7.5 (also §3.2, §13.5, §15.6, §17.2, §18.3)                                                                                                                                                                               |
-| Related issues / PRs          | S1-01 (projects, change specification in parallel), S1-03 (invitations, [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md)), S1-04 (permission layer), S1-11 (visibility after an organization change) |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-10-26 |
+| Plan task | `S1-02` |
+| System specification sections | §7.3, §7.5 (also §3.2, §13.5, §15.6, §17.2, §18.3) |
+| Related issues / PRs | S1-01 (projects, change specification in parallel), S1-03 (invitations, [`2026-10-25-invitation-acceptance.md`](2026-10-25-invitation-acceptance.md)), S1-04 (permission layer), S1-11 (visibility after an organization change) |
 
 ## Context
 
@@ -43,12 +43,12 @@ Writing this specification found gaps in §7.3 and §13.5 that the specification
 
 A new feature module `organizations` (server `modules/organizations/`, contracts `@trybun/contracts/organizations`, web `features/organizations/`, [§18.1](../../../docs/spec/18-code-patterns.md)) owns four models:
 
-| Model (table)                                   | Fields                                                                                                          | Rules                                                                                                                                                                                                                                                                           |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Organization` (`organizations`)                | `id` (UUIDv7), `name`, `state` (`OrganizationState`: `active`, `archived`), `version`, `createdAt`, `updatedAt` | `name` trimmed, 1–100 characters, unique case-insensitively across active and archived organizations (index on `lower(name)` created in SQL, [§17.2](../../../docs/spec/17-conventions.md)) – open question 3. Versioned record ([§17.2](../../../docs/spec/17-conventions.md)) |
-| `OrganizationDomain` (`organization_domains`)   | `id`, `organizationId`, `domain`, `createdAt`                                                                   | `domain` unique across all organizations, archived ones included (open question 3); stored normalized (open question 2); deleted with its organization                                                                                                                          |
-| `OrganizationProject` (`organization_projects`) | `organizationId`, `projectId`, `createdAt`                                                                      | Primary key on both; deleted with the organization or the project                                                                                                                                                                                                               |
-| `OrganizationMember` (`organization_members`)   | `userId`, `organizationId`, `createdAt`                                                                         | Primary key on `userId`, so an account belongs to at most one organization by construction; only `end_user` accounts (checked by the service); deleted with the organization                                                                                                    |
+| Model (table) | Fields | Rules |
+|---|---|---|
+| `Organization` (`organizations`) | `id` (UUIDv7), `name`, `state` (`OrganizationState`: `active`, `archived`), `version`, `createdAt`, `updatedAt` | `name` trimmed, 1–100 characters, unique case-insensitively across active and archived organizations (index on `lower(name)` created in SQL, [§17.2](../../../docs/spec/17-conventions.md)) – open question 3. Versioned record ([§17.2](../../../docs/spec/17-conventions.md)) |
+| `OrganizationDomain` (`organization_domains`) | `id`, `organizationId`, `domain`, `createdAt` | `domain` unique across all organizations, archived ones included (open question 3); stored normalized (open question 2); deleted with its organization |
+| `OrganizationProject` (`organization_projects`) | `organizationId`, `projectId`, `createdAt` | Primary key on both; deleted with the organization or the project |
+| `OrganizationMember` (`organization_members`) | `userId`, `organizationId`, `createdAt` | Primary key on `userId`, so an account belongs to at most one organization by construction; only `end_user` accounts (checked by the service); deleted with the organization |
 
 - Membership is a table of the module rather than a column of `users`, so the `users` module does not change and the organizations module writes only its own models ([§18.3](../../../docs/spec/18-code-patterns.md) "Ownership"). `createdAt` is the date the person joined, shown in the member list.
 - Personal access of end users to a project stays a `project_member` row with role `end_user` ([§7.4](../../../docs/spec/07-users-organizations-permissions.md)) and is independent of the membership: joining or leaving an organization never changes it.
@@ -115,33 +115,33 @@ The plan places the permission layer (S1-04) after S1-02. S1-02 therefore builds
 
 All endpoints under `/api/v1`, schemas in `@trybun/contracts/organizations`, the request pipeline of [§18.3](../../../docs/spec/18-code-patterns.md).
 
-| Endpoint                                                                 | Purpose            | Notes                                                                                                                                                                                         |
-| ------------------------------------------------------------------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /organizations`                                                     | List               | Cursor pagination ([§18.4](../../../docs/spec/18-code-patterns.md)); `state` filter (`active` default, `archived`); sorted by name; each item with domains, member count and `allowedActions` |
-| `POST /organizations`                                                    | Create             | `{ name, domains? }`; `Idempotency-Key`; `201` with the organization                                                                                                                          |
-| `GET /organizations/{id}`                                                | Detail             | Name, state, domains, projects (ID, key, name), member count, `version`, `allowedActions`                                                                                                     |
-| `PATCH /organizations/{id}`                                              | Change             | `If-Match`; any of `{ name, domains, projectIds }`; a list replaces the whole set, and the service records one audit entry per added and removed element; increments `version`                |
-| `POST /organizations/{id}/archive`, `POST /organizations/{id}/unarchive` | Archive, unarchive | `If-Match`                                                                                                                                                                                    |
-| `DELETE /organizations/{id}`                                             | Delete             | `If-Match`; `409 organization.not_empty` with tickets                                                                                                                                         |
-| `GET /organizations/{id}/members`                                        | Members            | Cursor pagination; display name, e-mail, account state, joined at                                                                                                                             |
-| `POST /organizations/{id}/members`                                       | Add or move        | `{ email, move? }`; `Idempotency-Key`; `201` with the member, `200` when already a member                                                                                                     |
-| `DELETE /organizations/{id}/members/{userId}`                            | Remove             | `204`; `404` when the person is not a member                                                                                                                                                  |
+| Endpoint | Purpose | Notes |
+|---|---|---|
+| `GET /organizations` | List | Cursor pagination ([§18.4](../../../docs/spec/18-code-patterns.md)); `state` filter (`active` default, `archived`); sorted by name; each item with domains, member count and `allowedActions` |
+| `POST /organizations` | Create | `{ name, domains? }`; `Idempotency-Key`; `201` with the organization |
+| `GET /organizations/{id}` | Detail | Name, state, domains, projects (ID, key, name), member count, `version`, `allowedActions` |
+| `PATCH /organizations/{id}` | Change | `If-Match`; any of `{ name, domains, projectIds }`; a list replaces the whole set, and the service records one audit entry per added and removed element; increments `version` |
+| `POST /organizations/{id}/archive`, `POST /organizations/{id}/unarchive` | Archive, unarchive | `If-Match` |
+| `DELETE /organizations/{id}` | Delete | `If-Match`; `409 organization.not_empty` with tickets |
+| `GET /organizations/{id}/members` | Members | Cursor pagination; display name, e-mail, account state, joined at |
+| `POST /organizations/{id}/members` | Add or move | `{ email, move? }`; `Idempotency-Key`; `201` with the member, `200` when already a member |
+| `DELETE /organizations/{id}/members/{userId}` | Remove | `204`; `404` when the person is not a member |
 
 - A `projectIds` entry that does not exist returns `404`, as every referenced record ([§17.2](../../../docs/spec/17-conventions.md)); an archived project returns `409 project.archived` (open question 5).
 - `version` changes with the name, the domains, the projects and the state; membership changes do not change it, because they are the person's attribute and need no `If-Match`.
 - The archived state is checked by the target record guard through the `cannot` rule, so its `409` comes after the `404` of an invisible organization and before validation ([§18.3](../../../docs/spec/18-code-patterns.md) "Request pipeline").
 - New error codes in `@trybun/contracts/errors`:
 
-| Code                                        | HTTP | When                                                                             |
-| ------------------------------------------- | ---- | -------------------------------------------------------------------------------- |
-| `organization.name_taken`                   | 409  | The name is used by another organization (field `/name`)                         |
-| `organization.domain_public`                | 422  | The domain is on the blocklist of public mail domains (field `/domains/<index>`) |
-| `organization.domain_taken`                 | 409  | The domain belongs to another organization (field `/domains/<index>`)            |
-| `organization.archived`                     | 409  | A change of an archived organization                                             |
-| `organization.not_empty`                    | 409  | Deleting an organization with tickets                                            |
-| `organization.member_not_found`             | 422  | No account with this e-mail address (field `/email`)                             |
-| `organization.member_not_end_user`          | 422  | The account is a team account (field `/email`)                                   |
-| `organization.member_of_other_organization` | 409  | The account belongs to another organization and `move` was not set               |
+| Code | HTTP | When |
+|---|---|---|
+| `organization.name_taken` | 409 | The name is used by another organization (field `/name`) |
+| `organization.domain_public` | 422 | The domain is on the blocklist of public mail domains (field `/domains/<index>`) |
+| `organization.domain_taken` | 409 | The domain belongs to another organization (field `/domains/<index>`) |
+| `organization.archived` | 409 | A change of an archived organization |
+| `organization.not_empty` | 409 | Deleting an organization with tickets |
+| `organization.member_not_found` | 422 | No account with this e-mail address (field `/email`) |
+| `organization.member_not_end_user` | 422 | The account is a team account (field `/email`) |
+| `organization.member_of_other_organization` | 409 | The account belongs to another organization and `move` was not set |
 
 - No outbox event is written yet: nothing consumes organization changes before S1-11, which adds the event of a membership change it needs ([§18.1](../../../docs/spec/18-code-patterns.md) "Simple first").
 
@@ -173,27 +173,27 @@ All views are in the Administrator panel (`(team)/admin/organizations`), from 36
 
 ### Edge cases
 
-| Case                                                                                           | Behaviour                                                                                                                                                                                                                            |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Two Administrators add the same domain to two organizations at once                            | One succeeds, the other gets `409 organization.domain_taken` (unique index)                                                                                                                                                          |
-| Two Administrators rename the same organization                                                | The second gets `412` ([§17.2](../../../docs/spec/17-conventions.md))                                                                                                                                                                |
-| One person added to two organizations at once                                                  | One succeeds, the other gets `409 organization.member_of_other_organization` (primary key)                                                                                                                                           |
-| A project with organization access is deleted (S1-01 allows deleting empty projects)           | Its access rows are deleted with it by the foreign key; the audit entry of the project deletion covers it, so the projects module does not call the organizations module (no cycle, [§18.3](../../../docs/spec/18-code-patterns.md)) |
-| **Undo** of a removal after another Administrator added the person to a different organization | `409 organization.member_of_other_organization`; the toast is replaced by the error message, nothing is moved without confirmation                                                                                                   |
-| A member is deactivated                                                                        | Stays a member; deactivation itself ends sessions ([§7.4](../../../docs/spec/07-users-organizations-permissions.md))                                                                                                                 |
-| A domain is removed                                                                            | Members stay; only future invitations stop matching ([§7.3](../../../docs/spec/07-users-organizations-permissions.md))                                                                                                               |
-| The organization of an existing ticket is archived (from S1-05)                                | The ticket keeps its snapshot; visibility follows S1-11                                                                                                                                                                              |
+| Case | Behaviour |
+|---|---|
+| Two Administrators add the same domain to two organizations at once | One succeeds, the other gets `409 organization.domain_taken` (unique index) |
+| Two Administrators rename the same organization | The second gets `412` ([§17.2](../../../docs/spec/17-conventions.md)) |
+| One person added to two organizations at once | One succeeds, the other gets `409 organization.member_of_other_organization` (primary key) |
+| A project with organization access is deleted (S1-01 allows deleting empty projects) | Its access rows are deleted with it by the foreign key; the audit entry of the project deletion covers it, so the projects module does not call the organizations module (no cycle, [§18.3](../../../docs/spec/18-code-patterns.md)) |
+| **Undo** of a removal after another Administrator added the person to a different organization | `409 organization.member_of_other_organization`; the toast is replaced by the error message, nothing is moved without confirmation |
+| A member is deactivated | Stays a member; deactivation itself ends sessions ([§7.4](../../../docs/spec/07-users-organizations-permissions.md)) |
+| A domain is removed | Members stay; only future invitations stop matching ([§7.3](../../../docs/spec/07-users-organizations-permissions.md)) |
+| The organization of an existing ticket is archived (from S1-05) | The ticket keeps its snapshot; visibility follows S1-11 |
 
 ## Changes to the system specification
 
-| Section                        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| §7.3 Organizations             | Name unique case-insensitively (Q3); domain format and exact matching without subdomains (Q2); the source and update of the blocklist of public mail domains (Q1); domains of an archived organization stay reserved (Q3); an archived organization is read-only, including its members, except removals caused by a change of the account (Q4); pending invitations to an organization are revoked on archiving (Q6); deleting an organization removes its domains, project access and memberships (Q7); "an organization exists" includes archived ones (Q8) |
-| §7.5                           | No new row. The rule "an archived project forbids every change" gains "and an archived organization" with `organization.archived`                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| §13.5 Administrative audit log | The entry gains optional `details` of identifiers and non-personal values (Q9); "Recorded so far" lists the `organization.*` actions                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| §17.2                          | The new error codes of the table above                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| §18.3 Authorization            | Global restrictions added last as `cannot` rules: the archived state of projects **and organizations**                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| §15.6                          | The checklist item "Create an organization (optional)" is built                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Section | Change |
+|---|---|
+| §7.3 Organizations | Name unique case-insensitively (Q3); domain format and exact matching without subdomains (Q2); the source and update of the blocklist of public mail domains (Q1); domains of an archived organization stay reserved (Q3); an archived organization is read-only, including its members, except removals caused by a change of the account (Q4); pending invitations to an organization are revoked on archiving (Q6); deleting an organization removes its domains, project access and memberships (Q7); "an organization exists" includes archived ones (Q8) |
+| §7.5 | No new row. The rule "an archived project forbids every change" gains "and an archived organization" with `organization.archived` |
+| §13.5 Administrative audit log | The entry gains optional `details` of identifiers and non-personal values (Q9); "Recorded so far" lists the `organization.*` actions |
+| §17.2 | The new error codes of the table above |
+| §18.3 Authorization | Global restrictions added last as `cannot` rules: the archived state of projects **and organizations** |
+| §15.6 | The checklist item "Create an organization (optional)" is built |
 
 New or changed glossary terms (code identifier, EN/PL labels):
 

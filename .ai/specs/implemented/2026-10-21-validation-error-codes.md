@@ -1,12 +1,12 @@
 # Error codes of validation responses
 
-|                               |                                                                      |
-| ----------------------------- | -------------------------------------------------------------------- |
-| Status                        | `implemented`                                                        |
-| Created                       | 2026-10-21                                                           |
-| Plan task                     | `S0-01` (validation pipe), `S0-17` (Problem Details and error codes) |
-| System specification sections | §17.1, §17.2                                                         |
-| Related issues / PRs          | –                                                                    |
+| | |
+|---|---|
+| Status | `implemented` |
+| Created | 2026-10-21 |
+| Plan task | `S0-01` (validation pipe), `S0-17` (Problem Details and error codes) |
+| System specification sections | §17.1, §17.2 |
+| Related issues / PRs | – |
 
 ## Context
 
@@ -35,24 +35,24 @@ Task S0-01 needs both: the global validation pipe returns `422` with `errors[]` 
 - A validation response is `422` with the code `request.validation_failed`.
 - Field error codes are `<kind>.<reason>` from this closed list, chosen by the failing schema rule:
 
-| Code                                    | Schema rule                                                   |
-| --------------------------------------- | ------------------------------------------------------------- |
-| `string.too_long` / `string.too_short`  | maximum / minimum length of a string                          |
-| `string.invalid_format`                 | format of a string (e-mail, URL, UUID, pattern, …)            |
-| `array.too_long` / `array.too_short`    | maximum / minimum number of items                             |
-| `number.too_large` / `number.too_small` | maximum / minimum of a number                                 |
-| `date.too_late` / `date.too_early`      | latest / earliest date                                        |
-| `field.invalid_type`                    | a value of the wrong type, including a missing required field |
-| `field.invalid_value`                   | a value outside the allowed values (e.g. an enum)             |
-| `field.unrecognized`                    | a field the schema does not know                              |
-| `field.invalid`                         | any other rule (e.g. a custom refinement)                     |
+| Code | Schema rule |
+|---|---|
+| `string.too_long` / `string.too_short` | maximum / minimum length of a string |
+| `string.invalid_format` | format of a string (e-mail, URL, UUID, pattern, …) |
+| `array.too_long` / `array.too_short` | maximum / minimum number of items |
+| `number.too_large` / `number.too_small` | maximum / minimum of a number |
+| `date.too_late` / `date.too_early` | latest / earliest date |
+| `field.invalid_type` | a value of the wrong type, including a missing required field |
+| `field.invalid_value` | a value outside the allowed values (e.g. an enum) |
+| `field.unrecognized` | a field the schema does not know |
+| `field.invalid` | any other rule (e.g. a custom refinement) |
 
 - A new code is added by changing this list in §17.2 and in `@trybun/contracts`.
 
 ## Changes to the system specification
 
-| Section        | Change                                                                                                          |
-| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| Section | Change |
+|---|---|
 | §17.2 "Errors" | The validation bullet names the code `request.validation_failed` and the closed list of field error codes above |
 
 New or changed glossary terms: none.
