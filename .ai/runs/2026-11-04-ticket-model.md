@@ -44,7 +44,7 @@ Build the ticket model of S1-05 exactly as the approved change specification dec
 
 ### Phase 3: Unassignment, permissions, web and documentation
 
-- [ ] 3.1 Unassignment jobs on deactivation and removal
+- [x] 3.1 Unassignment jobs on deactivation and removal — cac81c0
 - [ ] 3.2 Permission tests of tickets
 - [ ] 3.3 Web hints for the frozen key and the deletion guards
 - [ ] 3.4 Demo dataset tickets and events
