@@ -66,6 +66,9 @@ model User {
   organizationMember  OrganizationMember?
   invitations         Invitation[]          @relation("InvitationUser")
   issuedInvitations   Invitation[]          @relation("InvitationInvitedBy")
+  requestedTickets    Ticket[]              @relation("TicketRequester")
+  assignedTickets     Ticket[]              @relation("TicketAssignee")
+  activityEvents      ActivityEvent[]
 
   @@map("users")
 }
@@ -107,6 +110,8 @@ model Project {
   members       ProjectMember[]
   organizations OrganizationProject[]
   invitations   Invitation[]
+  tickets       Ticket[]
+  ticketCounter TicketNumberCounter?
 
   @@index([name, id])
   @@map("projects")
@@ -261,6 +266,7 @@ model Organization {
   projects    OrganizationProject[]
   members     OrganizationMember[]
   invitations Invitation[]
+  tickets     Ticket[]
 
   @@index([name, id])
   @@map("organizations")
@@ -350,4 +356,132 @@ model Invitation {
   @@index([organizationId])
   @@index([createdAt, id])
   @@map("invitations")
+}
+
+/// `ticket.type` (§3.2)
+enum TicketType {
+  bug
+  feature
+  task
+  question
+
+  @@map("ticket_type")
+}
+
+/// `ticket.source` (§3.2)
+enum TicketSource {
+  user
+  developer
+  integration
+
+  @@map("ticket_source")
+}
+
+/// `ticket.priority` (§3.2)
+enum TicketPriority {
+  low
+  normal
+  high
+  critical
+
+  @@map("ticket_priority")
+}
+
+/// `ticket.status` (§4.1): the internal statuses; changed only by the status use cases (S1-06).
+enum TicketStatus {
+  new
+  triage
+  todo
+  in_progress
+  in_verification
+  waiting_for_requester
+  done
+  rejected
+  duplicate
+
+  @@map("ticket_status")
+}
+
+/// A ticket (§3.2): the single unit of work. A versioned record (§17.2). Its project never changes,
+/// and its identifier `KEY-number` is composed from the project key and the number, never stored.
+/// Tickets are deleted only by undoing an import (§12.5); the restricting foreign keys keep a
+/// project, an organization or an account with tickets from being deleted.
+model Ticket {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  projectId      String         @map("project_id") @db.Uuid
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  /// The per-project number from `ticket_number_counters`, unique in the project and never reused;
+  /// a check constraint of the migrations keeps it at least 1.
+  number         Int
+  /// Trimmed, 1–255 characters.
+  title          String
+  /// GFM Markdown, at most 65,536 characters; empty when none.
+  description    String         @default("")
+  /// Empty until triage for tickets of end users.
+  type           TicketType?
+  source         TicketSource
+  priority       TicketPriority @default(normal)
+  status         TicketStatus
+  /// The requester's organization at creation, never changed (§3.2).
+  organizationId String?        @map("organization_id") @db.Uuid
+  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  requesterId    String         @map("requester_id") @db.Uuid
+  requester      User           @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assigneeId     String?        @map("assignee_id") @db.Uuid
+  assignee       User?          @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
+  version        Int            @default(1)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  activityEvents ActivityEvent[]
+
+  @@unique([projectId, number])
+  @@index([assigneeId])
+  @@index([requesterId])
+  @@index([organizationId])
+  @@index([createdAt, id])
+  @@map("tickets")
+}
+
+/// The ticket number counter of a project (§17.2): the creation of a ticket increments it under the
+/// row lock of one upsert, so numbers are consecutive and never reused. It exists from the first
+/// ticket on and is never lowered or deleted while its project exists, so "the project has tickets"
+/// (§3.1) means that it exists.
+model TicketNumberCounter {
+  projectId  String  @id @map("project_id") @db.Uuid
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lastNumber Int     @map("last_number")
+
+  @@map("ticket_number_counters")
+}
+
+/// `activity_event.automatic_source` (§4.5): the source of an automatic change.
+enum ActivityEventSource {
+  system
+
+  @@map("activity_event_source")
+}
+
+/// An activity event of a ticket (§4.5): one field change with its previous and new value. The
+/// history is immutable – triggers of the migrations refuse every update, every truncation and
+/// every delete except the one cascaded from the deletion of its ticket by an import undo.
+model ActivityEvent {
+  id              String               @id @default(uuid(7)) @db.Uuid
+  ticketId        String               @map("ticket_id") @db.Uuid
+  ticket          Ticket               @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  /// `activityEventTypeSchema` of `@trybun/contracts`; a string, so a new type needs no migration.
+  type            String
+  /// `{ from, to }`; a reference is stored as a snapshot `{ id, displayName }`. None for
+  /// `description_edited`.
+  data            Json?                @db.JsonB
+  /// The person who made the change; none for an automatic event.
+  actorId         String?              @map("actor_id") @db.Uuid
+  actor           User?                @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  automaticSource ActivityEventSource? @map("automatic_source")
+  /// Decided by the producing rule when the event is written; end users see only public events.
+  isPublic        Boolean              @default(false) @map("is_public")
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([ticketId, id])
+  @@map("activity_events")
 }
