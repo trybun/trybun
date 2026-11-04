@@ -276,14 +276,16 @@ export class TicketsService {
       if (input.type !== undefined || input.priority !== undefined) {
         this.assertCan(ability, 'update_fields', before);
       }
+      // `null` and no assignee are the same: unassigning an unassigned ticket changes nothing.
+      const currentAssigneeId = before.assignee?.id ?? null;
       const isReassigned =
-        input.assigneeId !== undefined && input.assigneeId !== before.assignee?.id;
+        input.assigneeId !== undefined && input.assigneeId !== currentAssigneeId;
       if (isReassigned) {
         this.assertMayAssign(
           ability,
           record,
           principal,
-          before.assignee?.id ?? null,
+          currentAssigneeId,
           input.assigneeId ?? null,
         );
       }

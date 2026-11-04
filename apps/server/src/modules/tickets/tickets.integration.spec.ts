@@ -565,6 +565,24 @@ describe('tickets endpoints', () => {
       expect(await events(ticket.id)).toEqual([]);
     });
 
+    it.each(['developer', 'project_manager'] as const)(
+      'changes nothing when a %s sends no assignee for an unassigned ticket',
+      async (who) => {
+        const project = await createProject(prisma);
+        const { user, authorization } = await signIn(who, { project });
+        const ticket = await teamTicket(project, user);
+
+        const res = await update(authorization, ticket, { assigneeId: null });
+
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ assignee: null, version: 1 });
+        expect(await prisma.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject(
+          { version: 1 },
+        );
+        expect(await events(ticket.id)).toEqual([]);
+      },
+    );
+
     it('answers a stale version with 412 and a missing one with 428', async () => {
       const project = await createProject(prisma);
       const { user, authorization } = await signIn('developer', { project });
