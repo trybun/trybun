@@ -16,6 +16,7 @@ import {
 } from '../../../test/factories/access-token.factory.js';
 import { createProjectMember } from '../../../test/factories/project-member.factory.js';
 import { buildProjectKey, createProject } from '../../../test/factories/project.factory.js';
+import { createTicket } from '../../../test/factories/ticket.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
@@ -254,7 +255,8 @@ describe('projects endpoints', () => {
       expect(res.body).toMatchObject({
         id: project.id,
         role: 'developer',
-        allowedActions: ['read', 'read_members'],
+        hasTickets: false,
+        allowedActions: ['read', 'read_members', 'create_ticket'],
       });
     });
 
@@ -308,12 +310,17 @@ describe('projects endpoints', () => {
           'delete',
           'read_members',
           'manage_members',
+          'create_ticket',
         ],
       ],
       ['admin', 'archived', ['read', 'unarchive', 'read_members']],
-      ['project_manager', 'active', ['read', 'update_settings', 'read_members', 'manage_members']],
+      [
+        'project_manager',
+        'active',
+        ['read', 'update_settings', 'read_members', 'manage_members', 'create_ticket'],
+      ],
       ['project_manager', 'archived', ['read', 'read_members']],
-      ['developer', 'active', ['read', 'read_members']],
+      ['developer', 'active', ['read', 'read_members', 'create_ticket']],
       ['developer', 'archived', ['read', 'read_members']],
     ] as const)('lists for a %s on an %s project exactly %j', async (who, state, actions) => {
       const project = await createProject(prisma, { state });
@@ -373,6 +380,58 @@ describe('projects endpoints', () => {
         .send({ name: 'Renamed', key });
 
       expect(res.body).toMatchObject({ name: 'Renamed', key, version: 2 });
+    });
+
+    it.each([
+      ['a ticket', true],
+      ['had a ticket that undoing an import removed', false],
+    ])(
+      'freezes the key of a project with %s (409 project.key_immutable), and accepts the same key',
+      async (_case, keepsTicket) => {
+        const project = await createProject(prisma);
+        const requester = await createUser(prisma, { kind: 'team' });
+        const ticket = await createTicket(prisma, {
+          projectId: project.id,
+          requesterId: requester.id,
+        });
+        if (!keepsTicket) {
+          await prisma.ticket.delete({ where: { id: ticket.id } });
+        }
+        const { authorization } = await signIn('admin');
+
+        const changed = await http()
+          .patch(`/api/v1/projects/${project.id}`)
+          .set('Authorization', authorization)
+          .set('If-Match', ifMatch(project))
+          .send({ key: buildProjectKey() });
+        const same = await http()
+          .patch(`/api/v1/projects/${project.id}`)
+          .set('Authorization', authorization)
+          .set('If-Match', ifMatch(project))
+          .send({ name: 'Renamed', key: project.key });
+
+        expect(changed.status).toBe(409);
+        expect(changed.body).toMatchObject({ code: 'project.key_immutable' });
+        expect(same.status).toBe(200);
+        expect(same.body).toMatchObject({ name: 'Renamed', key: project.key, hasTickets: true });
+      },
+    );
+
+    it('reports hasTickets only from the first ticket on', async () => {
+      const project = await createProject(prisma);
+      const { authorization } = await signIn('admin');
+      const before = await http()
+        .get(`/api/v1/projects/${project.id}`)
+        .set('Authorization', authorization);
+      const requester = await createUser(prisma, { kind: 'team' });
+      await createTicket(prisma, { projectId: project.id, requesterId: requester.id });
+
+      const after = await http()
+        .get(`/api/v1/projects/${project.id}`)
+        .set('Authorization', authorization);
+
+      expect((before.body as ProjectResponse).hasTickets).toBe(false);
+      expect((after.body as ProjectResponse).hasTickets).toBe(true);
     });
 
     it('rejects the key of another project with project.key_taken', async () => {
@@ -549,6 +608,32 @@ describe('projects endpoints', () => {
         { action: 'project.deleted', actorId: user.id, details: null },
       ]);
       expect(reused.status).toBe(201);
+    });
+
+    it.each([
+      ['a ticket', true],
+      ['had a ticket that undoing an import removed', false],
+    ])('keeps a project with %s (409 project.has_tickets)', async (_case, keepsTicket) => {
+      const project = await createProject(prisma);
+      const requester = await createUser(prisma, { kind: 'team' });
+      const ticket = await createTicket(prisma, {
+        projectId: project.id,
+        requesterId: requester.id,
+      });
+      if (!keepsTicket) {
+        await prisma.ticket.delete({ where: { id: ticket.id } });
+      }
+      const { authorization } = await signIn('admin');
+
+      const res = await http()
+        .delete(`/api/v1/projects/${project.id}`)
+        .set('Authorization', authorization)
+        .set('If-Match', ifMatch(project));
+
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: 'project.has_tickets' });
+      expect(await prisma.project.count({ where: { id: project.id } })).toBe(1);
+      expect(await auditEntries(project.id)).toEqual([]);
     });
   });
 

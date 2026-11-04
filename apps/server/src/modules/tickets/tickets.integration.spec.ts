@@ -15,7 +15,7 @@ import {
 import { createActivityEvent } from '../../../test/factories/activity-event.factory.js';
 import { createOrganization } from '../../../test/factories/organization.factory.js';
 import { createProjectMember } from '../../../test/factories/project-member.factory.js';
-import { createProject } from '../../../test/factories/project.factory.js';
+import { buildProjectKey, createProject } from '../../../test/factories/project.factory.js';
 import { createTicket } from '../../../test/factories/ticket.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
@@ -657,6 +657,35 @@ describe('tickets endpoints', () => {
       expect(res.status).toBe(409);
       expect(res.body).toMatchObject({ code: 'project.archived' });
       expect((read.body as Ticket).allowedActions).toEqual(['read']);
+    });
+  });
+
+  describe('the frozen key', () => {
+    it('never leaves a ticket under a key changed after it (§3.1)', async () => {
+      const { authorization: admin } = await signIn('admin');
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        const project = await createProject(prisma);
+        const { authorization } = await signIn('developer', { project });
+        const key = buildProjectKey();
+
+        const [created, changed] = await Promise.all([
+          create(authorization, { projectId: project.id, title: 'First' }),
+          http()
+            .patch(`/api/v1/projects/${project.id}`)
+            .set('Authorization', admin)
+            .set('If-Match', ifMatch(project))
+            .send({ key }),
+        ]);
+
+        expect(created.status).toBe(201);
+        if (changed.status === 200) {
+          // The key changed first: the ticket was created under the new key.
+          expect((created.body as Ticket).identifier).toBe(`${key}-1`);
+        } else {
+          expect(changed.body).toMatchObject({ code: 'project.key_immutable' });
+          expect((created.body as Ticket).identifier).toBe(`${project.key}-1`);
+        }
+      }
     });
   });
 
