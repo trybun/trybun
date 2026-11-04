@@ -278,8 +278,7 @@ export class TicketsService {
       }
       // `null` and no assignee are the same: unassigning an unassigned ticket changes nothing.
       const currentAssigneeId = before.assignee?.id ?? null;
-      const isReassigned =
-        input.assigneeId !== undefined && input.assigneeId !== currentAssigneeId;
+      const isReassigned = input.assigneeId !== undefined && input.assigneeId !== currentAssigneeId;
       if (isReassigned) {
         this.assertMayAssign(
           ability,

@@ -576,9 +576,9 @@ describe('tickets endpoints', () => {
 
         expect(res.status).toBe(200);
         expect(res.body).toMatchObject({ assignee: null, version: 1 });
-        expect(await prisma.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject(
-          { version: 1 },
-        );
+        expect(await prisma.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject({
+          version: 1,
+        });
         expect(await events(ticket.id)).toEqual([]);
       },
     );
