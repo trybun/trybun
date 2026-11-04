@@ -35,6 +35,9 @@ export interface DemoDataset {
   organizationProjects: Prisma.OrganizationProjectCreateManyInput[];
   organizationMembers: Prisma.OrganizationMemberCreateManyInput[];
   invitations: Prisma.InvitationCreateManyInput[];
+  tickets: Prisma.TicketCreateManyInput[];
+  ticketNumberCounters: Prisma.TicketNumberCounterCreateManyInput[];
+  activityEvents: Prisma.ActivityEventCreateManyInput[];
 }
 
 /**
@@ -85,6 +88,123 @@ const DEMO_INVITED_AND_DEACTIVATED = [
     state: 'deactivated',
   },
 ] as const;
+
+/**
+ * The demo tickets (§3.2) in the active projects and the archived one: every source, type and
+ * priority, the end users' tickets with the organization of their requester, some assigned. Their
+ * statuses are the initial ones; status changes come with S1-06. `events` are the field changes
+ * recorded after the creation (§4.5), by the account named in `by`.
+ */
+const DEMO_TICKETS = [
+  {
+    project: 'CP',
+    title: 'Cannot download the invoice PDF',
+    description: 'The **Download** button on the invoice page does nothing since Monday.',
+    requester: 'endUser0',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'How do I change the e-mail address of my account?',
+    description: '',
+    requester: 'endUser1',
+    source: 'user',
+    type: 'question',
+    priority: 'low',
+    assignee: null,
+    events: [{ by: 'developer', field: 'type', from: null, to: 'question' }],
+  },
+  {
+    project: 'CP',
+    title: 'Sign-in page crashes on Safari',
+    description: 'Safari 26 shows a blank page after the sign-in button is pressed.',
+    requester: 'manager',
+    source: 'developer',
+    type: 'bug',
+    priority: 'critical',
+    assignee: 'developer',
+    events: [
+      { by: 'manager', field: 'priority', from: 'normal', to: 'critical' },
+      { by: 'manager', field: 'assignee', from: null, to: 'developer' },
+    ],
+  },
+  {
+    project: 'CP',
+    title: 'Export the invoice list to CSV',
+    description: 'Customers ask for a CSV export of all invoices of a year.',
+    requester: 'developer',
+    source: 'developer',
+    type: 'feature',
+    priority: 'low',
+    assignee: 'developer',
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'TypeError in checkout.js',
+    description: "Cannot read properties of undefined (reading 'total') at checkout.js:118",
+    requester: 'admin',
+    source: 'integration',
+    type: 'bug',
+    priority: 'high',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'ERP',
+    title: 'Speed up the monthly closing report',
+    description: 'The report takes more than ten minutes for the largest company.',
+    requester: 'manager',
+    source: 'developer',
+    type: 'task',
+    priority: 'high',
+    assignee: 'newcomer',
+    events: [
+      {
+        by: 'manager',
+        field: 'title',
+        from: 'Report slow',
+        to: 'Speed up the monthly closing report',
+      },
+      { by: 'manager', field: 'assignee', from: null, to: 'newcomer' },
+    ],
+  },
+  {
+    project: 'ERP',
+    title: 'Add the cost centre to purchase orders',
+    description: '',
+    requester: 'developer',
+    source: 'developer',
+    type: 'feature',
+    priority: 'normal',
+    assignee: null,
+    events: [{ by: 'developer', field: 'description', from: null, to: null }],
+  },
+  {
+    project: 'LEGACY',
+    title: 'Migrate the phone book to the customer portal',
+    description: '',
+    requester: 'manager',
+    source: 'developer',
+    type: 'task',
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+] as const;
+
+/** The event type of a change of a field of a demo ticket (§4.5). */
+const EVENT_TYPE_OF_FIELD = {
+  title: 'title_changed',
+  description: 'description_edited',
+  type: 'type_changed',
+  priority: 'priority_changed',
+  assignee: 'assignee_changed',
+} as const;
 
 /**
  * The stored hash of a demo invitation's token (ADR 0009). The token is not published, so the
@@ -215,6 +335,12 @@ export function buildDemoDataset(): DemoDataset {
       updatedAt: CREATED_AT,
     },
   ];
+  const { tickets, ticketNumberCounters, activityEvents } = buildDemoTickets(
+    [...team, ...endUsers],
+    projects,
+    organizationId,
+    endUsers.slice(0, DEMO_ORGANIZATION.memberCount).map(({ id }) => id ?? ''),
+  );
   return {
     users: [...team, ...endUsers, ...invitedAndDeactivated],
     productTourProgress,
@@ -243,14 +369,98 @@ export function buildDemoDataset(): DemoDataset {
       .slice(0, DEMO_ORGANIZATION.memberCount)
       .map(({ id }) => ({ organizationId, userId: id ?? '', createdAt: CREATED_AT })),
     invitations,
+    tickets,
+    ticketNumberCounters,
+    activityEvents,
+  };
+}
+
+/**
+ * The demo tickets with their numbers – consecutive per project from 1 – the counters at the last
+ * number, and their activity events, each a day after the previous one.
+ */
+function buildDemoTickets(
+  accounts: Prisma.UserCreateManyInput[],
+  projects: Prisma.ProjectCreateManyInput[],
+  organizationId: string,
+  organizationMembers: string[],
+): Pick<DemoDataset, 'tickets' | 'ticketNumberCounters' | 'activityEvents'> {
+  const accountIds: Record<string, string> = {
+    admin: accounts[0]?.id ?? '',
+    manager: accounts[1]?.id ?? '',
+    developer: accounts[2]?.id ?? '',
+    newcomer: accounts[3]?.id ?? '',
+    endUser0: accounts[5]?.id ?? '',
+    endUser1: accounts[6]?.id ?? '',
+  };
+  const snapshotOf = (name: string | null) => {
+    if (name === null) {
+      return null;
+    }
+    const account = accounts.find(({ id }) => id === accountIds[name]);
+    return { id: account?.id ?? '', displayName: account?.displayName ?? null };
+  };
+  const numbers = new Map<string, number>();
+  const tickets: Prisma.TicketCreateManyInput[] = [];
+  const activityEvents: Prisma.ActivityEventCreateManyInput[] = [];
+  DEMO_TICKETS.forEach((ticket, index) => {
+    const projectId = projects.find(({ key }) => key === ticket.project)?.id ?? '';
+    const number = (numbers.get(projectId) ?? 0) + 1;
+    numbers.set(projectId, number);
+    const id = demoId(600 + index);
+    const requesterId = accountIds[ticket.requester] ?? '';
+    const createdAt = new Date(CREATED_AT.getTime() + (index + 1) * 24 * 60 * 60 * 1000);
+    tickets.push({
+      id,
+      projectId,
+      number,
+      title: ticket.title,
+      description: ticket.description,
+      type: ticket.type,
+      source: ticket.source,
+      priority: ticket.priority,
+      status: ticket.source === 'developer' ? 'todo' : 'new',
+      organizationId: organizationMembers.includes(requesterId) ? organizationId : null,
+      requesterId,
+      assigneeId: ticket.assignee === null ? null : (accountIds[ticket.assignee] ?? null),
+      version: 1 + ticket.events.length,
+      createdAt,
+      updatedAt: createdAt,
+    });
+    ticket.events.forEach((event, eventIndex) => {
+      const isReference = event.field === 'assignee';
+      activityEvents.push({
+        id: demoId(700 + index * 10 + eventIndex),
+        ticketId: id,
+        type: EVENT_TYPE_OF_FIELD[event.field],
+        data:
+          event.field === 'description'
+            ? undefined
+            : isReference
+              ? { from: snapshotOf(event.from), to: snapshotOf(event.to) }
+              : { from: event.from, to: event.to },
+        actorId: accountIds[event.by] ?? null,
+        createdAt: new Date(createdAt.getTime() + (eventIndex + 1) * 60 * 60 * 1000),
+      });
+    });
+  });
+  return {
+    tickets,
+    ticketNumberCounters: [...numbers].map(([projectId, lastNumber]) => ({
+      projectId,
+      lastNumber,
+    })),
+    activityEvents,
   };
 }
 
 /**
  * Loads the demo dataset; running it again restores the same records – also the tour progress,
  * so the newcomer sees the tours again, the demo projects with their members, the demo
- * organization with its domain, project access and members, and the demo invitations – a link
- * resent, revoked or accepted during a demo comes back as it was.
+ * organization with its domain, project access and members, the demo invitations – a link
+ * resent, revoked or accepted during a demo comes back as it was – and the demo tickets with their
+ * activity: tickets created during a demo in the demo projects are removed with their events, as
+ * undoing an import removes tickets (§12.5).
  */
 export async function seedDemoData(prisma: PrismaClient): Promise<void> {
   const dataset = buildDemoDataset();
@@ -272,6 +482,17 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
       where: { projectId: { in: projects.map((project) => project.id ?? '') } },
     });
     await tx.projectMember.createMany({ data: projectMembers });
+    // Before the organization, which the tickets keep. Deleting a ticket removes its events.
+    const projectIds = projects.map((project) => project.id ?? '');
+    await tx.ticket.deleteMany({
+      where: {
+        OR: [
+          { projectId: { in: projectIds } },
+          { organizationId: { in: organizations.map((organization) => organization.id ?? '') } },
+        ],
+      },
+    });
+    await tx.ticketNumberCounter.deleteMany({ where: { projectId: { in: projectIds } } });
     // Deleting the organization removes its domains, project access and members (§7.3).
     await tx.organization.deleteMany({
       where: { id: { in: organizations.map((organization) => organization.id ?? '') } },
@@ -292,5 +513,8 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
       where: { id: { in: dataset.invitations.map((invitation) => invitation.id ?? '') } },
     });
     await tx.invitation.createMany({ data: dataset.invitations });
+    await tx.ticket.createMany({ data: dataset.tickets });
+    await tx.ticketNumberCounter.createMany({ data: dataset.ticketNumberCounters });
+    await tx.activityEvent.createMany({ data: dataset.activityEvents });
   });
 }

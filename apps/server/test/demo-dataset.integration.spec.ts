@@ -111,6 +111,53 @@ describe('demo dataset', () => {
     }
   });
 
+  it('restores the demo tickets, their numbers and their events on a second run', async () => {
+    const prisma = new PrismaService(integrationConfig());
+    const { projects, tickets, ticketNumberCounters, activityEvents } = buildDemoDataset();
+    const projectIds = projects.map(({ id }) => id ?? '');
+    const state = async () => ({
+      tickets: await prisma.ticket.findMany({
+        where: { projectId: { in: projectIds } },
+        select: { id: true, number: true, title: true, assigneeId: true, version: true },
+        orderBy: { id: 'asc' },
+      }),
+      counters: await prisma.ticketNumberCounter.findMany({
+        where: { projectId: { in: projectIds } },
+        orderBy: { projectId: 'asc' },
+      }),
+      events: await prisma.activityEvent.count({
+        where: { ticket: { projectId: { in: projectIds } } },
+      }),
+    });
+    try {
+      await seedDemoData(prisma);
+      const seeded = await state();
+      const [first] = tickets;
+      await prisma.ticket.update({
+        where: { id: first?.id },
+        data: { title: 'Changed in a demo', version: { increment: 1 } },
+      });
+      await prisma.ticket.create({
+        data: {
+          projectId: first?.projectId ?? '',
+          number: 99,
+          title: 'Created in a demo',
+          source: 'developer',
+          status: 'todo',
+          requesterId: first?.requesterId ?? '',
+        },
+      });
+      await seedDemoData(prisma);
+
+      expect(await state()).toEqual(seeded);
+      expect(seeded.tickets).toHaveLength(tickets.length);
+      expect(seeded.counters).toHaveLength(ticketNumberCounters.length);
+      expect(seeded.events).toBe(activityEvents.length);
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
+
   it('restores the pending and the expired invitation and the deactivated account on a second run', async () => {
     const prisma = new PrismaService(integrationConfig());
     const { users, invitations } = buildDemoDataset();
