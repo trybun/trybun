@@ -31,6 +31,7 @@ import { AppError } from '../../platform/errors/app-error.js';
 import { ActivityEventsService } from '../activity-events/activity-events.service.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
+import { OrganizationsService } from '../organizations/organizations.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { UsersService } from '../users/users.service.js';
 import { creationDefaults } from './domain/creation.js';
@@ -135,6 +136,7 @@ export class TicketsService {
     private readonly abilities: AbilityFactory,
     private readonly projects: ProjectsService,
     private readonly users: UsersService,
+    private readonly organizations: OrganizationsService,
     private readonly activityEvents: ActivityEventsService,
   ) {}
 
@@ -175,10 +177,7 @@ export class TicketsService {
         this.assertMayAssign(ability, newTicket, principal, null, assigneeId);
         await this.assertEligibleAssignee(tx, project.id, assigneeId);
       }
-      const membership = await tx.organizationMember.findUnique({
-        where: { userId: principal.userId },
-        select: { organizationId: true },
-      });
+      const organizationId = await this.lockOrganizationSnapshot(tx, principal.userId);
       const number = await allocateTicketNumber(tx, project.id);
       const row = await tx.ticket.create({
         data: {
@@ -188,7 +187,7 @@ export class TicketsService {
           description: input.description ?? '',
           ...creationDefaults(principal.userKind, input),
           // The requester's organization at creation, whatever its state (§3.2).
-          organizationId: membership?.organizationId ?? null,
+          organizationId,
           requesterId: principal.userId,
           assigneeId,
         },
@@ -361,6 +360,30 @@ export class TicketsService {
     }
     const action: TicketAction = isSelf ? 'assign_self' : 'assign';
     throw new AppError(reasonCode(ability.relevantRuleFor(action, record)?.reason));
+  }
+
+  /**
+   * The organization of the requester for the snapshot of a new ticket (§3.2), locked in share
+   * mode so that a concurrent deletion of the organization waits for the creation and then meets
+   * the restricting foreign key of the snapshot (`409 organization.not_empty`), instead of failing
+   * the creation. A deletion that committed first removed the membership: no snapshot.
+   */
+  private async lockOrganizationSnapshot(tx: Transaction, userId: string): Promise<string | null> {
+    const membership = await tx.organizationMember.findUnique({
+      where: { userId },
+      select: { organizationId: true },
+    });
+    if (
+      membership === null ||
+      !(await this.organizations.lockForShare(tx, membership.organizationId))
+    ) {
+      return null;
+    }
+    const locked = await tx.organizationMember.findUnique({
+      where: { userId },
+      select: { organizationId: true },
+    });
+    return locked?.organizationId ?? null;
   }
 
   /**

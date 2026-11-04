@@ -693,6 +693,42 @@ describe('tickets endpoints', () => {
     });
   });
 
+  describe('the organization snapshot', () => {
+    it('never fails a creation racing the deletion of the organization', async () => {
+      const { authorization: admin } = await signIn('admin');
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        const project = await createProject(prisma);
+        const organization = await createOrganization(prisma);
+        // Personal access keeps the project visible whatever happens to the organization.
+        const { user, authorization } = await signIn('end_user', { project });
+        await prisma.organizationMember.create({
+          data: { userId: user.id, organizationId: organization.id },
+        });
+
+        const [created, deleted] = await Promise.all([
+          create(authorization, { projectId: project.id, title: 'Invoice missing' }),
+          http()
+            .delete(`/api/v1/organizations/${organization.id}`)
+            .set('Authorization', admin)
+            .set('If-Match', ifMatch(organization)),
+        ]);
+
+        expect(created.status).toBe(201);
+        const { organizationId } = await prisma.ticket.findUniqueOrThrow({
+          where: { id: (created.body as EndUserTicket).id },
+          select: { organizationId: true },
+        });
+        if (deleted.status === 204) {
+          // The deletion committed first: the requester had no organization any more.
+          expect(organizationId).toBeNull();
+        } else {
+          expect(deleted.body).toMatchObject({ code: 'organization.not_empty' });
+          expect(organizationId).toBe(organization.id);
+        }
+      }
+    });
+  });
+
   describe('the frozen key', () => {
     it('never leaves a ticket under a key changed after it (§3.1)', async () => {
       const { authorization: admin } = await signIn('admin');
