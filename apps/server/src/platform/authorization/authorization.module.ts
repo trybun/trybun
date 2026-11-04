@@ -6,6 +6,7 @@ import {
   type AbilityDefinitions,
 } from './ability-factory.js';
 import { PrismaRecordAccess } from './prisma-record-access.js';
+import { RECORD_DESCRIPTORS, type RecordDescriptor } from './record-descriptor.js';
 import { RecordAccess } from './record-access.js';
 import { TargetRecordGuard } from './target-record.guard.js';
 
@@ -17,15 +18,20 @@ import { TargetRecordGuard } from './target-record.guard.js';
 @Module({})
 export class AuthorizationModule {
   /**
-   * @param definitions the ability rules of the feature modules (`<feature>.abilities.ts`) and the
-   * global restrictions added after them
+   * @param definitions the ability rules of the feature modules (`<feature>.abilities.ts`), the
+   * global restrictions added after them and the record descriptors of the subjects with records
    */
-  static forRoot({ rules, restrictions }: AbilityDefinitions): DynamicModule {
+  static forRoot({
+    rules,
+    restrictions,
+    records,
+  }: AbilityDefinitions & { records: readonly RecordDescriptor[] }): DynamicModule {
     return {
       module: AuthorizationModule,
       providers: [
         { provide: ABILITY_RULES, useValue: rules },
         { provide: ABILITY_RESTRICTIONS, useValue: restrictions },
+        { provide: RECORD_DESCRIPTORS, useValue: records },
         AbilityFactory,
         { provide: RecordAccess, useClass: PrismaRecordAccess },
         TargetRecordGuard,

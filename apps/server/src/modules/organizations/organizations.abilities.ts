@@ -1,5 +1,8 @@
-import type { OrganizationAction } from '@trybun/contracts/organizations';
+import { subject } from '@casl/ability';
+import { type OrganizationAction, organizationActionSchema } from '@trybun/contracts/organizations';
+import type { Prisma } from '../../generated/prisma/client.js';
 import type { AbilityRules } from '../../platform/authorization/ability-factory.js';
+import type { RecordDescriptor } from '../../platform/authorization/record-descriptor.js';
 
 /** The subject of the organizations (§18.3). */
 export const ORGANIZATION = 'Organization';
@@ -7,15 +10,8 @@ export const ORGANIZATION = 'Organization';
 /** Creating an organization, a global action of the account (`create_organization`, §18.3). */
 export const CREATE = 'create';
 
-const ALL_ACTIONS: readonly OrganizationAction[] = [
-  'read',
-  'update',
-  'archive',
-  'unarchive',
-  'delete',
-  'manage_projects',
-  'manage_members',
-];
+/** The contract's closed list (§18.3): an action added to it is restricted by default. */
+const ALL_ACTIONS = organizationActionSchema.options;
 
 /**
  * The actions an archived organization still allows (§7.3): reading, unarchiving and deleting it
@@ -51,4 +47,19 @@ export const archivedOrganizationsRestriction: AbilityRules = ({ cannot }) => {
     ORGANIZATION,
     { state: 'archived' },
   ).because('organization.archived');
+};
+
+/** The fields of an organization its rules read (§18.3). */
+export const ORGANIZATION_RULE_SELECT = {
+  id: true,
+  state: true,
+} satisfies Prisma.OrganizationSelect;
+
+/** How the record access loads an organization (§18.3). */
+export const organizationRecords: RecordDescriptor<'Organization'> = {
+  subject: ORGANIZATION,
+  async find(db, where) {
+    const row = await db.organization.findFirst({ where, select: ORGANIZATION_RULE_SELECT });
+    return row === null ? null : subject(ORGANIZATION, row);
+  },
 };

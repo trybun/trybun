@@ -1,37 +1,51 @@
-import { type ForcedSubject, subject } from '@casl/ability';
 import { accessibleBy } from '@casl/prisma/runtime';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { type ErrorCode, errorCodeSchema } from '@trybun/contracts/errors';
 import type { Principal } from '../authentication/principal.js';
 import { PrismaService } from '../database/prisma.service.js';
+import { AbilityFactory, type AppAbility } from './ability-factory.js';
 import {
-  type AppAbility,
-  AbilityFactory,
-  type InvitationRuleRecord,
-  type OrganizationRuleRecord,
-  type ProjectRuleRecord,
-  type UserRuleRecord,
-} from './ability-factory.js';
+  RECORD_DESCRIPTORS,
+  type RecordDescriptor,
+  type RecordFilters,
+  type RecordSubject,
+} from './record-descriptor.js';
 import { RecordAccess, type RecordAccessDecision, type TargetRecord } from './record-access.js';
 
 /**
  * The record access of the request pipeline (§18.3): the record is loaded only through the
- * `read` filter of the ability, so an invisible record is never loaded; the action is then
- * checked on it, and a denying rule with a reason (e.g. `project.archived`) answers with its code.
- * Subjects join as their rules arrive; the permission layer (S1-04) generalizes the lookup.
+ * `read` filter of the ability, by the record descriptor of its subject, so an invisible record is
+ * never loaded; the action is then checked on it, and a denying rule with a reason (e.g.
+ * `project.archived`) answers with its code.
  */
 @Injectable()
 export class PrismaRecordAccess extends RecordAccess {
+  private readonly descriptors: ReadonlyMap<string, RecordDescriptor>;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly abilities: AbilityFactory,
+    @Inject(RECORD_DESCRIPTORS) descriptors: readonly RecordDescriptor[],
   ) {
     super();
+    const bySubject = new Map<string, RecordDescriptor>();
+    for (const descriptor of descriptors) {
+      if (bySubject.has(descriptor.subject)) {
+        throw new Error(`Two record descriptors for the subject ${descriptor.subject}`);
+      }
+      bySubject.set(descriptor.subject, descriptor);
+    }
+    this.descriptors = bySubject;
   }
 
   async decide(principal: Principal, target: TargetRecord): Promise<RecordAccessDecision> {
+    const descriptor = this.descriptors.get(target.subject);
+    if (descriptor === undefined) {
+      // A programming error, never a silent `404`: `@TargetRecord()` names a subject without one.
+      throw new Error(`No record descriptor for the subject ${target.subject}`);
+    }
     const ability = this.abilities.forPrincipal(principal);
-    const subjectRecord = await this.find(ability, principal, target);
+    const subjectRecord = await find(this.prisma, descriptor, ability, principal, target.id);
     if (subjectRecord === null) {
       return { outcome: 'not_found' };
     }
@@ -43,72 +57,23 @@ export class PrismaRecordAccess extends RecordAccess {
       code: reasonCode(ability.relevantRuleFor(target.action, subjectRecord)?.reason),
     };
   }
-
-  /** The record as its rules read it, as a subject of the ability; `null` when invisible. */
-  private async find(
-    ability: AppAbility,
-    principal: Principal,
-    target: TargetRecord,
-  ): Promise<SubjectRecord | null> {
-    switch (target.subject) {
-      case 'Project': {
-        const record = await this.prisma.project.findFirst({
-          where: { AND: [accessibleBy(ability, 'read').ofType('Project'), { id: target.id }] },
-          select: {
-            id: true,
-            state: true,
-            members: {
-              where: { userId: principal.userId },
-              select: { userId: true, role: true },
-            },
-          },
-        });
-        return record === null ? null : subject('Project', record);
-      }
-      case 'Organization': {
-        const record = await this.prisma.organization.findFirst({
-          where: {
-            AND: [accessibleBy(ability, 'read').ofType('Organization'), { id: target.id }],
-          },
-          select: { id: true, state: true },
-        });
-        return record === null ? null : subject('Organization', record);
-      }
-      case 'Invitation': {
-        const record = await this.prisma.invitation.findFirst({
-          where: { AND: [accessibleBy(ability, 'read').ofType('Invitation'), { id: target.id }] },
-          select: {
-            target: true,
-            project: {
-              select: {
-                members: {
-                  where: { userId: principal.userId },
-                  select: { userId: true, role: true },
-                },
-              },
-            },
-          },
-        });
-        return record === null ? null : subject('Invitation', record);
-      }
-      case 'User': {
-        const record = await this.prisma.user.findFirst({
-          where: { AND: [accessibleBy(ability, 'read').ofType('User'), { id: target.id }] },
-          select: { id: true, kind: true, state: true, isAdmin: true },
-        });
-        return record === null ? null : subject('User', record);
-      }
-      default:
-        return null;
-    }
-  }
 }
 
-type SubjectRecord =
-  | (ProjectRuleRecord & ForcedSubject<'Project'>)
-  | (OrganizationRuleRecord & ForcedSubject<'Organization'>)
-  | (InvitationRuleRecord & ForcedSubject<'Invitation'>)
-  | (UserRuleRecord & ForcedSubject<'User'>);
+/** A record of a subject the principal can see, by its descriptor; `null` when invisible. */
+function find<S extends RecordSubject>(
+  prisma: PrismaService,
+  descriptor: RecordDescriptor<S>,
+  ability: AppAbility,
+  principal: Principal,
+  id: string,
+) {
+  // The Prisma filter of the subject `S`: TypeScript cannot resolve the filter type of
+  // `accessibleBy` indexed by a type parameter, so it is named once here.
+  const where = {
+    AND: [accessibleBy(ability, 'read').ofType(descriptor.subject), { id }],
+  } as RecordFilters[S];
+  return descriptor.find(prisma, where, principal);
+}
 
 /** The error code a denying rule carries as its reason (§18.3); `403` without one. */
 export function reasonCode(reason: string | undefined): ErrorCode {

@@ -1,62 +1,114 @@
-// The rows of §7.5 about invitations (§18.3): each with an allowed and a denied case.
+// The rows of §7.5 about invitations (§18.3, §18.7): each with an allowed and a denied case.
 import { subject } from '@casl/ability';
 import { describe, expect, it } from 'vitest';
-import type { UserPrincipal } from '../../platform/authentication/principal.js';
+import {
+  buildInvitationRecord,
+  buildPrincipal,
+  PRINCIPAL_ID,
+  type PrincipalFixture,
+} from '../../../test/factories/principal.factory.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
-import { CREATE, INVITATION, invitationsAbilities } from './invitations.abilities.js';
+import { reasonCode } from '../../platform/authorization/prisma-record-access.js';
+import {
+  archivedTargetsOfInvitationsRestriction,
+  CREATE,
+  INVITATION,
+  invitationsAbilities,
+} from './invitations.abilities.js';
 
-const abilities = new AbilityFactory([invitationsAbilities], []);
+const abilities = new AbilityFactory(
+  [invitationsAbilities],
+  [archivedTargetsOfInvitationsRestriction],
+);
 
-const USER_ID = '0190f2f4-7c1e-7000-8000-000000000001';
+type Target = 'project' | 'organization' | 'administrator';
+type Action = typeof CREATE | 'read' | 'resend' | 'revoke';
 
-type Who = 'admin' | 'project_manager' | 'developer' | 'end_user';
-
-function principal(who: Who): UserPrincipal {
-  return {
-    kind: 'user',
-    userId: USER_ID,
-    userKind: who === 'end_user' ? 'end_user' : 'team',
-    isAdmin: who === 'admin',
-  };
+function can(who: PrincipalFixture, action: Action, target: Target) {
+  return abilities
+    .forPrincipal(buildPrincipal(who))
+    .can(action, buildInvitationRecord(who, target));
 }
 
-/** An invitation as the record access loads it: with the principal's membership of its project. */
-function invitation(who: Who, target: 'project' | 'organization' | 'administrator') {
-  const members =
-    who === 'project_manager' || who === 'developer' ? [{ userId: USER_ID, role: who }] : [];
-  return subject(INVITATION, { target, project: target === 'project' ? { members } : null });
-}
+const ACTIONS: readonly Action[] = [CREATE, 'read', 'resend', 'revoke'];
 
 describe('invitation abilities', () => {
   it.each([
-    ['Invite to own project', 'admin', 'project', true],
-    ['Invite to own project', 'project_manager', 'project', true],
-    ['Invite to own project', 'developer', 'project', false],
-    ['Invite to own project', 'end_user', 'project', false],
-    ['Invite to an organization', 'admin', 'organization', true],
-    ['Invite to an organization', 'project_manager', 'organization', false],
-    ['Invite to the Administrator role', 'admin', 'administrator', true],
-    ['Invite to the Administrator role', 'project_manager', 'administrator', false],
+    ['Invite individual end users to the project', 'admin', 'project', true],
+    ['Invite individual end users to the project', 'project_manager', 'project', true],
+    ['Invite individual end users to the project', 'developer', 'project', false],
+    ['Invite individual end users to the project', 'end_user_personal', 'project', false],
+    ['Invite end users to an organization', 'admin', 'organization', true],
+    ['Invite end users to an organization', 'project_manager', 'organization', false],
+    ['Grant or revoke the Administrator role', 'admin', 'administrator', true],
+    ['Grant or revoke the Administrator role', 'project_manager', 'administrator', false],
   ] as const)('%s – %s, target %s: %s', (_row, who, target, isAllowed) => {
-    expect(abilities.forPrincipal(principal(who)).can(CREATE, invitation(who, target))).toBe(
-      isAllowed,
-    );
+    expect(can(who, CREATE, target)).toBe(isAllowed);
   });
 
   it.each([
     ['read', 'project_manager', true],
     ['resend', 'project_manager', true],
     ['revoke', 'project_manager', true],
+    ['revoke', 'admin', true],
     ['read', 'developer', false],
     ['revoke', 'developer', false],
-    ['read', 'end_user', false],
-    ['revoke', 'admin', true],
+    ['read', 'team_member', false],
+    ['read', 'end_user_personal', false],
   ] as const)(
     'View, resend and revoke invitations of own project – %s by %s: %s',
     (action, who, isAllowed) => {
-      expect(abilities.forPrincipal(principal(who)).can(action, invitation(who, 'project'))).toBe(
-        isAllowed,
-      );
+      expect(can(who, action, 'project')).toBe(isAllowed);
     },
   );
+
+  it('holds the hierarchy: Developer ⊆ Project manager ⊆ Administrator (§7.2)', () => {
+    for (const action of ACTIONS) {
+      if (can('developer', action, 'project')) {
+        expect(can('project_manager', action, 'project'), action).toBe(true);
+      }
+      if (can('project_manager', action, 'project')) {
+        expect(can('admin', action, 'project'), action).toBe(true);
+      }
+    }
+  });
+
+  it('grants nothing for a membership that contradicts the account kind (§7.1)', () => {
+    const record = subject(INVITATION, {
+      target: 'project',
+      project: { state: 'active', members: [{ userId: PRINCIPAL_ID, role: 'end_user' }] },
+      organization: null,
+    });
+
+    expect(abilities.forPrincipal(buildPrincipal('developer')).can(CREATE, record)).toBe(false);
+  });
+
+  describe('an archived target', () => {
+    it.each([
+      ['project', { project: 'archived' }, 'admin', 'project.archived'],
+      ['project', { project: 'archived' }, 'project_manager', 'project.archived'],
+      // The restriction comes before the missing rule (§17.2).
+      ['project', { project: 'archived' }, 'developer', 'project.archived'],
+      ['organization', { organization: 'archived' }, 'admin', 'organization.archived'],
+    ] as const)(
+      'refuses every change of a %s invitation %o for %s with %s',
+      (target, states, who, code) => {
+        const ability = abilities.forPrincipal(buildPrincipal(who));
+        const record = buildInvitationRecord(who, target, states);
+
+        for (const action of [CREATE, 'resend', 'revoke'] as const) {
+          expect(ability.can(action, record), action).toBe(false);
+          expect(reasonCode(ability.relevantRuleFor(action, record)?.reason), action).toBe(code);
+        }
+        expect(ability.can('read', record)).toBe(who !== 'developer');
+      },
+    );
+
+    it('keeps a project invitation whose organization matched by domain is archived', () => {
+      const ability = abilities.forPrincipal(buildPrincipal('admin'));
+      const record = buildInvitationRecord('admin', 'project', { organization: 'archived' });
+
+      expect(ACTIONS.filter((action) => ability.can(action, record))).toEqual(ACTIONS);
+    });
+  });
 });

@@ -31,6 +31,7 @@ import { keycloakAdminFake, type KeycloakAdminFake } from '../../../test/msw/key
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
+import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
 import { ClockModule } from '../../platform/clock/clock.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
@@ -43,13 +44,7 @@ import { HttpModule } from '../../platform/http/http.module.js';
 import { TRUSTED_PROXIES } from '../../platform/http/trusted-proxies.js';
 import { KeycloakAdminModule } from '../../platform/keycloak-admin/keycloak-admin.module.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
-import {
-  archivedOrganizationsRestriction,
-  organizationsAbilities,
-} from '../organizations/organizations.abilities.js';
-import { archivedProjectsRestriction, projectsAbilities } from '../projects/projects.abilities.js';
 import { hashInvitationToken } from './domain/invitation-token.js';
-import { invitationsAbilities } from './invitations.abilities.js';
 import { InvitationsModule } from './invitations.module.js';
 
 type Who = 'admin' | 'project_manager' | 'developer' | 'end_user';
@@ -68,10 +63,7 @@ async function startApp(config: TrybunConfig): Promise<INestApplication<Server>>
       ErrorsModule,
       HttpModule,
       AuthenticationModule,
-      AuthorizationModule.forRoot({
-        rules: [projectsAbilities, organizationsAbilities, invitationsAbilities],
-        restrictions: [archivedProjectsRestriction, archivedOrganizationsRestriction],
-      }),
+      AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
       KeycloakAdminModule,
       InvitationsModule,
     ],
