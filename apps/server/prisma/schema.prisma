@@ -471,8 +471,8 @@ model ActivityEvent {
   ticket          Ticket               @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   /// `activityEventTypeSchema` of `@trybun/contracts`; a string, so a new type needs no migration.
   type            String
-  /// `{ from, to }`; a reference is stored as a snapshot `{ id, displayName }`. None for
-  /// `description_edited`.
+  /// The previous and the new value (`from`, `to`); a reference is stored as a snapshot of its ID
+  /// and display name. None for `description_edited`.
   data            Json?                @db.JsonB
   /// The person who made the change; none for an automatic event.
   actorId         String?              @map("actor_id") @db.Uuid
