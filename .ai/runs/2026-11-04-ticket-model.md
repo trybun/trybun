@@ -27,6 +27,8 @@ Build the ticket model of S1-05 exactly as the approved change specification dec
 
 ## Progress
 
+PR: #226
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Model and creation
@@ -50,3 +52,5 @@ Build the ticket model of S1-05 exactly as the approved change specification dec
 - [x] 3.4 Demo dataset tickets and events — e1f9c82
 - [x] 3.5 User documentation — ac3cd0c
 - [x] 3.6 System specification, glossary, plan and project memory — a87690d, 75322d6
+- [x] Post-review fix: reject ticket identifiers whose number cannot exist — d71e57c
+- [x] Post-review fix: clearing the assignee of an unassigned ticket changes nothing — 2496650
