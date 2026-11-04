@@ -43,6 +43,28 @@ test.describe('projects of the Administrator', () => {
     await expect(page.getByRole('button', { name: 'Archive project' })).toBeVisible();
   });
 
+  test('freezes the key and keeps a project with tickets (§3.1)', async ({ page }) => {
+    const projects = new ProjectsPage(page);
+    await projects.goto();
+    await projects.project('Customer portal').click();
+    await expect(projects.settingsTabs).toBeVisible();
+
+    await expect(page.getByLabel('Key')).toHaveAttribute('readonly', '');
+    await expect(
+      page.getByText(
+        'The key cannot be changed after the first ticket, because it is part of ticket identifiers.',
+      ),
+    ).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+
+    await projects.settingsTab('Danger zone').click();
+    await expect(page.getByRole('button', { name: 'Delete project' })).toBeDisabled();
+    await expect(
+      page.getByText('Projects with tickets cannot be deleted. Archive the project instead.'),
+    ).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+  });
+
   test('suggests the key from the name', async ({ page }) => {
     const projects = new ProjectsPage(page);
     await projects.goto();

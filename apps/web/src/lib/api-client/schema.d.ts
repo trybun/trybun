@@ -468,6 +468,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TicketsController_list"];
+        put?: never;
+        post: operations["TicketsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TicketsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["TicketsController_update"];
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}/activity-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TicketsController_listActivityEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -910,7 +958,8 @@ export interface operations {
                             updatedAt: string;
                             /** @enum {string|null} */
                             role: "developer" | "project_manager" | "end_user" | null;
-                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
+                            hasTickets: boolean;
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
                         }[];
                         nextCursor: string | null;
                     };
@@ -954,7 +1003,8 @@ export interface operations {
                         updatedAt: string;
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
                     };
                 };
             };
@@ -991,7 +1041,8 @@ export interface operations {
                         updatedAt: string;
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
                     };
                 };
             };
@@ -1055,7 +1106,8 @@ export interface operations {
                         updatedAt: string;
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
                     };
                 };
             };
@@ -1092,7 +1144,8 @@ export interface operations {
                         updatedAt: string;
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members")[];
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
                     };
                 };
             };
@@ -1375,6 +1428,7 @@ export interface operations {
                             /** @enum {string} */
                             state: "active" | "archived";
                         }[];
+                        hasTickets: boolean;
                     };
                 };
             };
@@ -1418,6 +1472,7 @@ export interface operations {
                             /** @enum {string} */
                             state: "active" | "archived";
                         }[];
+                        hasTickets: boolean;
                     };
                 };
             };
@@ -1488,6 +1543,7 @@ export interface operations {
                             /** @enum {string} */
                             state: "active" | "archived";
                         }[];
+                        hasTickets: boolean;
                     };
                 };
             };
@@ -1531,6 +1587,7 @@ export interface operations {
                             /** @enum {string} */
                             state: "active" | "archived";
                         }[];
+                        hasTickets: boolean;
                     };
                 };
             };
@@ -2173,6 +2230,409 @@ export interface operations {
                         kind: "team" | "end_user";
                         /** Format: starts_with */
                         landingPath: string;
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                projectId?: string;
+                identifier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: ({
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            projectId: string;
+                            number: number;
+                            identifier: string;
+                            title: string;
+                            description: string;
+                            requester: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                            /** @enum {string|null} */
+                            type: "bug" | "feature" | "task" | "question" | null;
+                            /** @enum {string} */
+                            source: "user" | "developer" | "integration";
+                            /** @enum {string} */
+                            priority: "low" | "normal" | "high" | "critical";
+                            /** @enum {string} */
+                            status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                            organization: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                            assignee: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                        } | {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            projectId: string;
+                            number: number;
+                            identifier: string;
+                            title: string;
+                            description: string;
+                            requester: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        })[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    projectId: string;
+                    title: string;
+                    description?: string;
+                    /** @enum {string} */
+                    type?: "bug" | "feature" | "task" | "question";
+                    /** @enum {string} */
+                    priority?: "low" | "normal" | "high" | "critical";
+                    /** Format: uuid */
+                    assigneeId?: string | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    projectId?: string;
+                    title?: string;
+                    description?: string;
+                    /** @enum {string} */
+                    type?: "bug" | "feature" | "task" | "question";
+                    /** @enum {string} */
+                    priority?: "low" | "normal" | "high" | "critical";
+                    /** Format: uuid */
+                    assigneeId?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_listActivityEvents: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed";
+                            data: {
+                                from: string | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    displayName: string | null;
+                                } | (null);
+                                to: string | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    displayName: string | null;
+                                } | (null);
+                            } | null;
+                            actor: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string|null} */
+                            automaticSource: "system" | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        nextCursor: string | null;
                     };
                 };
             };

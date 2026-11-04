@@ -117,6 +117,7 @@
     "archivedBanner": "Ten projekt jest zarchiwizowany i tylko do odczytu.",
     "general": {
       "readOnly": "Nazwę i klucz zmienia tylko Administrator.",
+      "keyFrozen": "Klucza nie można zmienić po utworzeniu pierwszego zgłoszenia, ponieważ jest częścią identyfikatorów zgłoszeń.",
       "confirmResolution": "Potwierdzanie rozwiązania",
       "confirmResolutionDescription": "Proś zgłaszającego o potwierdzenie, że problem został rozwiązany.",
       "save": "Zapisz zmiany",
@@ -162,6 +163,7 @@
       "delete": "Usuń projekt",
       "deleteDescription": "Usuwa projekt i jego członkostwa. Tego nie można cofnąć.",
       "deleteArchived": "Przed usunięciem przywróć projekt z archiwum.",
+      "deleteHasTickets": "Projektu ze zgłoszeniami nie można usunąć. Zamiast tego zarchiwizuj projekt.",
       "deleteTitle": "Usunąć {name}?",
       "deleteConfirmLabel": "Wpisz {key}, aby potwierdzić",
       "deleteConfirm": "Usuń projekt",
@@ -285,6 +287,7 @@
       "unarchived": "Organizacja przywrócona z archiwum",
       "delete": "Usuń organizację",
       "deleteDescription": "Usuwa organizację z jej domenami e-mail, dostępem do projektów i członkostwami. Konta członków pozostają. Tego nie można cofnąć.",
+      "deleteHasTickets": "Organizacji ze zgłoszeniami nie można usunąć. Zamiast tego zarchiwizuj organizację.",
       "deleteTitle": "Usunąć {name}?",
       "deleteConfirm": "Usuń organizację",
       "deleting": "Usuwanie…",
@@ -602,7 +605,9 @@
     },
     "project": {
       "archived": "Ten projekt jest zarchiwizowany i tylko do odczytu. Przywróć go z archiwum, aby wprowadzić zmiany.",
-      "key_taken": "Ten klucz ma już inny projekt."
+      "key_taken": "Ten klucz ma już inny projekt.",
+      "key_immutable": "Klucza nie można zmienić po utworzeniu pierwszego zgłoszenia, ponieważ jest częścią identyfikatorów zgłoszeń.",
+      "has_tickets": "Projektu ze zgłoszeniami nie można usunąć. Zamiast tego zarchiwizuj projekt."
     },
     "project_member": {
       "exists": "Ta osoba jest już członkiem projektu.",
@@ -617,6 +622,10 @@
       "member_not_found": "Żadne konto nie ma tego adresu e-mail.",
       "member_not_end_user": "Do organizacji mogą należeć tylko użytkownicy końcowi.",
       "member_of_other_organization": "Ta osoba należy już do innej organizacji."
+    },
+    "ticket": {
+      "project_immutable": "Zgłoszenia nie można przenieść do innego projektu.",
+      "assignee_not_eligible": "Przypisać można tylko aktywnych członków zespołu projektu."
     },
     "invitation": {
       "account_kind_mismatch": "Ten adres należy do konta innego rodzaju. Rodzaj konta może zmienić tylko Administrator.",

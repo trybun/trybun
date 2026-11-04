@@ -40,6 +40,7 @@ function project(overrides: Partial<Project> = {}): Project {
     createdAt: '2026-10-27T09:00:00.000Z',
     updatedAt: '2026-10-27T09:00:00.000Z',
     role: 'project_manager',
+    hasTickets: false,
     allowedActions: ['read', 'update_settings', 'read_members', 'manage_members'],
     ...overrides,
   };
@@ -166,6 +167,19 @@ describe('ProjectGeneralForm', () => {
     expect(html).toContain('Save changes');
   });
 
+  it('freezes the key for the Administrator once the project has tickets (§3.1)', () => {
+    const html = render(
+      <ProjectGeneralForm
+        project={project({ role: null, hasTickets: true, allowedActions: ADMIN_ACTIONS })}
+      />,
+    );
+
+    expect(html.match(/readOnly=""/g)).toHaveLength(1);
+    expect(html).toContain(
+      'The key cannot be changed after the first ticket, because it is part of ticket identifiers.',
+    );
+  });
+
   it('offers nothing to save to a Developer', () => {
     const html = render(
       <ProjectGeneralForm project={project({ role: 'developer', allowedActions: ['read'] })} />,
@@ -182,6 +196,16 @@ describe('ProjectDangerZone', () => {
     expect(html).toContain('Archive project');
     expect(html).toContain('Delete project');
     expect(html).not.toContain('Unarchive project');
+  });
+
+  it('disables the deletion of a project with tickets, with the reason', () => {
+    const html = render(
+      <ProjectDangerZone project={project({ hasTickets: true, allowedActions: ADMIN_ACTIONS })} />,
+    );
+
+    expect(html).toContain('Projects with tickets cannot be deleted. Archive the project instead.');
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Delete project<\/button>/);
+    expect(html).toContain('Archive project');
   });
 
   it('asks to unarchive an archived project before deleting it', () => {

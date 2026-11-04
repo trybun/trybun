@@ -147,6 +147,21 @@ test.describe('organizations of the Administrator', () => {
     );
   });
 
+  test('keeps an organization with tickets', async ({ page }) => {
+    const organizations = new OrganizationsPage(page);
+    await organizations.goto();
+    await organizations.organization('Customer company').click();
+    await expect(organizations.heading).toHaveText('Customer company');
+
+    await expect(page.getByRole('button', { name: 'Delete organization' })).toBeDisabled();
+    await expect(
+      page.getByText(
+        'Organizations with tickets cannot be deleted. Archive the organization instead.',
+      ),
+    ).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+  });
+
   test('is reached from the sections of the Administrator panel', async ({ page }) => {
     await page.goto('/admin');
 

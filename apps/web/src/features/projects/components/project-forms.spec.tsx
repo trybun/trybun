@@ -29,6 +29,7 @@ const project: Project = {
   createdAt: '2026-10-27T09:00:00.000Z',
   updatedAt: '2026-10-27T09:00:00.000Z',
   role: null,
+  hasTickets: false,
   allowedActions: ['read', 'update', 'update_settings'],
 };
 
