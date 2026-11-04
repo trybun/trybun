@@ -97,6 +97,11 @@ export type OrganizationSummary = z.infer<typeof organizationSummarySchema>;
 export const organizationSchema = z.object({
   ...organizationFields,
   projects: z.array(organizationProjectSchema),
+  /**
+   * Whether a ticket has the organization as its snapshot (§3.2): it cannot be deleted. A fact for
+   * hints of the UI only; the API enforces the rule.
+   */
+  hasTickets: z.boolean(),
 });
 export type Organization = z.infer<typeof organizationSchema>;
 

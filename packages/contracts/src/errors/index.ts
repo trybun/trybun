@@ -21,6 +21,8 @@ export const errorCodeSchema = z.enum([
   'setup.email_taken',
   'project.archived',
   'project.key_taken',
+  'project.key_immutable',
+  'project.has_tickets',
   'project_member.exists',
   'project_member.user_not_eligible',
   'organization.name_taken',
@@ -31,6 +33,8 @@ export const errorCodeSchema = z.enum([
   'organization.member_not_found',
   'organization.member_not_end_user',
   'organization.member_of_other_organization',
+  'ticket.project_immutable',
+  'ticket.assignee_not_eligible',
   'invitation.account_kind_mismatch',
   'invitation.account_deactivated',
   'invitation.access_exists',
@@ -79,6 +83,10 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'project.archived': 409,
   // A key that another active or archived project has (§3.1).
   'project.key_taken': 422,
+  // A change of the key of a project that has had a ticket: the key is part of its identifiers (§3.1).
+  'project.key_immutable': 409,
+  // Deleting a project that has had a ticket; it is archived instead (§7.3).
+  'project.has_tickets': 409,
   // The account is already a member of the project (§7.4).
   'project_member.exists': 409,
   // A member must be an active team account (§7.4).
@@ -99,6 +107,10 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'organization.member_not_end_user': 422,
   // The account belongs to another organization and the move was not confirmed (§7.3).
   'organization.member_of_other_organization': 409,
+  // A ticket never moves to another project (§3.2).
+  'ticket.project_immutable': 422,
+  // The assignee must be an active team member of the ticket's project (§3.2).
+  'ticket.assignee_not_eligible': 422,
   // The address has an account of the other kind; a kind change is an Administrator action (§7.4).
   'invitation.account_kind_mismatch': 422,
   // The address has a deactivated account, which the Administrator reactivates first (§7.4).

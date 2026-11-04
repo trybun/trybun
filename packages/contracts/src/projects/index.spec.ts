@@ -24,6 +24,7 @@ describe('project enums', () => {
         'delete',
         'read_members',
         'manage_members',
+        'create_ticket',
       ],
     ],
   ])('lists the codes', (schema, codes) => {
