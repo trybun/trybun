@@ -723,6 +723,16 @@ describe('projects endpoints', () => {
           details: { userId: member.id, role: 'project_manager' },
         },
       ]);
+      // Its job unassigns the member's open tickets of the project (§7.4).
+      expect(
+        await prisma.outboxEvent.findMany({
+          where: {
+            type: 'project_member.removed',
+            payload: { path: ['projectId'], equals: project.id },
+          },
+          select: { payload: true },
+        }),
+      ).toEqual([{ payload: { projectId: project.id, userId: member.id } }]);
     });
 
     it('gives the personal access of an end user no team role', async () => {

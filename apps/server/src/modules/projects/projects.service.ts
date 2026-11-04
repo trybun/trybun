@@ -35,9 +35,11 @@ import { PrismaService, type Transaction } from '../../platform/database/prisma.
 import { isForeignKeyViolation } from '../../platform/database/foreign-key-violation.js';
 import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
+import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
 import { CREATE, PROJECT, projectRuleSelect } from './projects.abilities.js';
+import { PROJECT_MEMBER_REMOVED, type ProjectMemberRemovedPayload } from './projects.events.js';
 import {
   lockProjectForShare,
   lockProjectForUpdate,
@@ -165,6 +167,7 @@ export class ProjectsService {
     private readonly abilities: AbilityFactory,
     private readonly auditLog: AuditLogEntriesService,
     private readonly invitationRevocations: InvitationRevocationsService,
+    private readonly outbox: OutboxService,
   ) {}
 
   /** The projects in one state the principal can see, sorted by name. */
@@ -494,7 +497,8 @@ export class ProjectsService {
 
   /**
    * Removes a member from a project. Removing the last Project manager is allowed; the web
-   * application warns about it (§7.4). Unassigning their open tickets arrives with S1-05.
+   * application warns about it (§7.4). The outbox event `project_member.removed` lets a Worker job
+   * unassign their open tickets of the project (§7.4).
    */
   async removeMember(principal: UserPrincipal, projectId: string, userId: string): Promise<void> {
     const ability = this.abilities.forPrincipal(principal);
@@ -507,6 +511,10 @@ export class ProjectsService {
         actorId: principal.userId,
         target: { type: PROJECT, id: projectId },
         details: { userId, role: member.role },
+      });
+      await this.outbox.add(tx, {
+        type: PROJECT_MEMBER_REMOVED,
+        payload: { projectId, userId } satisfies ProjectMemberRemovedPayload,
       });
     });
   }
