@@ -49,4 +49,4 @@ Build the ticket model of S1-05 exactly as the approved change specification dec
 - [x] 3.3 Web hints for the frozen key and the deletion guards — 7c86766
 - [x] 3.4 Demo dataset tickets and events — e1f9c82
 - [x] 3.5 User documentation — ac3cd0c
-- [ ] 3.6 System specification, glossary, plan and project memory
+- [x] 3.6 System specification, glossary, plan and project memory — a87690d, 75322d6
