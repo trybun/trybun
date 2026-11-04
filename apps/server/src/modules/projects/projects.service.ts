@@ -37,7 +37,11 @@ import { AppError } from '../../platform/errors/app-error.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
 import { CREATE, PROJECT, projectRuleSelect } from './projects.abilities.js';
-import { lockProjectForShare } from './projects.sql.js';
+import {
+  lockProjectForShare,
+  lockProjectForUpdate,
+  lockProjectMemberForShare,
+} from './projects.sql.js';
 
 /** The fields of a project response and of its rules (§18.3). */
 function projectSelect(principal: UserPrincipal) {
@@ -49,6 +53,8 @@ function projectSelect(principal: UserPrincipal) {
     version: true,
     createdAt: true,
     updatedAt: true,
+    // The counter exists from the first ticket on (§3.1): the project "has tickets".
+    ticketCounter: { select: { projectId: true } },
   } satisfies Prisma.ProjectSelect;
 }
 
@@ -88,6 +94,7 @@ function toProjectResponse(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     role: roleOf(row, principal),
+    hasTickets: row.ticketCounter !== null,
     allowedActions: projectActionSchema.options.filter((action) => ability.can(action, record)),
   };
 }
@@ -483,6 +490,15 @@ export class ProjectsService {
    */
   lockForShare(tx: Transaction, projectId: string): Promise<boolean> {
     return lockProjectForShare(tx, projectId);
+  }
+
+  /**
+   * Locks the membership of an account in a project in share mode for the rest of a transaction of
+   * another module whose change depends on it (the assignment of a ticket, S1-05): a concurrent
+   * removal of the member waits for it. Returns whether the membership exists.
+   */
+  lockMemberForShare(tx: Transaction, projectId: string, userId: string): Promise<boolean> {
+    return lockProjectMemberForShare(tx, projectId, userId);
   }
 
   /**

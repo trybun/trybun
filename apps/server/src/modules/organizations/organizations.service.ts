@@ -61,6 +61,8 @@ const DETAIL_SELECT = {
     select: { project: { select: { id: true, key: true, name: true, state: true } } },
     orderBy: { project: { key: 'asc' } },
   },
+  // One ticket with the organization as its snapshot is enough to keep it (§7.3).
+  tickets: { select: { id: true }, take: 1 },
 } satisfies Prisma.OrganizationSelect;
 
 type SummaryRow = Prisma.OrganizationGetPayload<{ select: typeof SUMMARY_SELECT }>;
@@ -94,6 +96,7 @@ function toOrganizationResponse(row: DetailRow, ability: AppAbility): Organizati
       name: project.name,
       state: project.state,
     })),
+    hasTickets: row.tickets.length > 0,
   };
 }
 

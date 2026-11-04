@@ -47,7 +47,7 @@ import { INVITATION } from '../invitations/invitations.abilities.js';
 import { CREATE, PROJECT } from '../projects/projects.abilities.js';
 import { USER } from './users.abilities.js';
 import { USER_DEACTIVATED, USER_REACTIVATED, type UserEventPayload } from './users.events.js';
-import { lockAccount, lockActiveAdministrators } from './users.sql.js';
+import { lockAccount, lockAccountForShare, lockActiveAdministrators } from './users.sql.js';
 
 const PRODUCT_TOUR_PROGRESS_SELECT = {
   tourId: true,
@@ -369,6 +369,15 @@ export class UsersService {
       });
       await this.record(tx, principal, userId, 'user.admin_revoked');
     });
+  }
+
+  /**
+   * Locks an account in share mode for the rest of a transaction of another module whose change
+   * depends on its state (the assignment of a ticket, S1-05): a concurrent deactivation waits for
+   * it. Returns whether the account exists.
+   */
+  lockForShare(tx: Transaction, userId: string): Promise<boolean> {
+    return lockAccountForShare(tx, userId);
   }
 
   /**

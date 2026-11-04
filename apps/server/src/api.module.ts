@@ -18,6 +18,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { InvitationsModule } from './modules/invitations/invitations.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
+import { TicketsModule } from './modules/tickets/tickets.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 /** Root module of the API process (§14.6). */
@@ -46,6 +47,7 @@ export class ApiModule {
         ProjectsModule,
         OrganizationsModule,
         InvitationsModule,
+        TicketsModule,
       ],
     };
   }
