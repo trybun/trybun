@@ -54,9 +54,9 @@ Keep PR #115 a design-only change specification for S1-05 that is correct agains
 ### Phase 2: Bring the proposal up to date with main
 
 - [x] 2.1 Merge main into the branch — 9d71265
-- [ ] 2.2 Align the spec with the implemented S1-01 to S1-04 code and specifications
-- [ ] 2.3 Align the spec with the plan tasks S1-20 and S1-21
-- [ ] 2.4 Validate (spec lint, Prettier) and record the changelog entry
+- [x] 2.2 Align the spec with the implemented S1-01 to S1-04 code and specifications — 8f96ef2
+- [x] 2.3 Align the spec with the plan tasks S1-20 and S1-21 — 8f96ef2
+- [x] 2.4 Validate (spec lint, Prettier) and record the changelog entry — 8f96ef2
 
 ### Phase 3: Review and hand back
 
