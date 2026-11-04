@@ -155,6 +155,8 @@ describe('administration endpoints', () => {
     });
   });
 
+  // Creating and migrating its own database takes as long as the hooks of the other such files
+  // allow (`hookTimeout`), not the default time of a test.
   it('ticks "Invite the team" once a team account other than the first Administrator is invited or active', async () => {
     // A fresh database: the first Administrator is the oldest team account (§15.6).
     await start({ databaseUrl: await createOwnDatabase() });
@@ -172,5 +174,5 @@ describe('administration endpoints', () => {
     await createUser(prisma, { kind: 'team', state: 'invited' });
 
     expect(await inviteTeam()).toMatchObject({ isDone: true });
-  });
+  }, 120_000);
 });
