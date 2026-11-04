@@ -61,3 +61,7 @@ Keep PR #115 a design-only change specification for S1-05 that is correct agains
 ### Phase 3: Review and hand back
 
 - [x] 3.1 Specification review pass and fixes — c3b868f
+
+### Phase 4: Record the maintainer's decisions
+
+- [x] 4.1 Record the approved answers to Q1–Q16 — b6e87b6
