@@ -36,7 +36,7 @@ Anonymization of an account affects every store of personal data:
 | Saved views, notification settings, notifications, watcher entries | Deleted |
 | Attachments uploaded by the user | Deleted |
 | Tickets and comments authored by the user | Content kept; author shown as "Deleted user"; edit-history revisions of the user's own text are purged ([§6.1](06-comments-notifications.md)) |
-| Activity events and audit log entries | Kept; actor and person references point to the tombstone |
+| Activity events and audit log entries | Kept; actor and person references point to the tombstone; the display name in the snapshots of activity events ([§4.5](04-ticket-lifecycle.md)) is replaced with "Deleted user" |
 | Outgoing webhook delivery logs | Payloads containing the user are purged; they are never redelivered after anonymization ([§12.4](12-api-webhooks-import.md)) |
 | Search index and embeddings ([§5.6](05-visibility-and-search.md)) | Recomputed from the anonymized data |
 | Backups ([§13.6](#136-reliability-and-backups)) | Not modified; the data expires with the backup retention, which is stated in the privacy information |

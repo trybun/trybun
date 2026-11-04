@@ -61,7 +61,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 ### Deleting data
 
 - Tickets are never deleted; they are closed as `rejected` or `duplicate` ([§4.3](04-ticket-lifecycle.md)). Personal data is removed only through anonymization ([§13.2](13-non-functional.md)).
-- **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)), possible only while no ticket of the batch has activity events other than "Imported": the tickets of the batch are deleted physically, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused. The undo is recorded in the administrative audit log.
+- **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)), possible only while no ticket of the batch has activity events other than "Imported": the tickets of the batch are deleted physically with their activity events, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused: the ticket number counter is never lowered. The undo is recorded in the administrative audit log.
 - Other records (e.g. labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log.
 - Activity events never reference deletable records by foreign key; they store the values they show (ID and display name, e.g. of a label or milestone) in their own data, so deleting a record never changes or breaks the history ([§4.5](04-ticket-lifecycle.md)).
 - There is no generic soft-delete (`deleted_at`) mechanism.
@@ -91,7 +91,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 ### Concurrency
 
-- **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique and never reused even under concurrent creation. Numbers are consecutive except for tickets removed by undoing an import (see "Deleting data").
+- **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique and never reused even under concurrent creation. The counter is a record of its own (`ticket_number_counters`), created by the first ticket of a project with one upsert and never lowered or deleted while the project exists. Numbers are consecutive except for tickets removed by undoing an import (see "Deleting data").
 - **Optimistic locking** protects records edited by people:
   - Versioned records: tickets, comments (including internal notes), milestones, labels, saved views, organizations, projects, SLA policies, business calendars, ticket templates and webhooks. Each has a `version` field.
   - The API returns the version as a weak `ETag` (`W/"<version>"`). `PATCH`, `PUT` and `DELETE` of a versioned record must send `If-Match`; a missing header (or `*`, which would match any version) returns `428 Precondition Required` (code `request.precondition_required`), a stale one – or a value that is not the ETag of a version – `412 Precondition Failed` (code `request.precondition_failed`), and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
