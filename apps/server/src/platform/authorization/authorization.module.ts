@@ -11,8 +11,9 @@ import { RecordAccess } from './record-access.js';
 import { TargetRecordGuard } from './target-record.guard.js';
 
 /**
- * Authorization of the API (§18.3). Global, because the target record guard runs in the context
- * of every feature module that declares `@TargetRecord()`, and every service checks the ability.
+ * Authorization of the API, also loaded by the Worker for the services its jobs use (§18.3).
+ * Global, because the target record guard runs in the context of every feature module that
+ * declares `@TargetRecord()`, and every service checks the ability.
  */
 @Global()
 @Module({})

@@ -21,8 +21,8 @@ type ReasonHolds = (tx: Transaction) => Promise<boolean>;
  * (§7.4), the Worker's side of both changes, with an automatic event of the system for each
  * ticket. It acts as the system and re-checks the reason in every batch under the share lock of
  * the account or the membership – as the assignment takes it – so a person reactivated or re-added
- * meanwhile keeps their tickets from the next batch on, a concurrent change waits for the batch,
- * and a repeated delivery finds nothing left. Tickets of archived projects are unassigned too: a
+ * meanwhile keeps their tickets from the next batch on, a concurrent reactivation, role change or
+ * removal waits for the batch, and a repeated delivery finds nothing left. Tickets of archived projects are unassigned too: a
  * consequence of the Administrator's change, not a change of a person (§7.3).
  */
 @Injectable()

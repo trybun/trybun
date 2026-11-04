@@ -37,7 +37,7 @@ export class WorkerModule {
         DatabaseModule,
         I18nModule,
         QueuesModule,
-        // The exported services of the feature modules used by the jobs check the ability.
+        // The services of the feature modules the jobs use depend on the ability factory.
         AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         KeycloakAdminModule,
         OutboxWorkerModule.forRoot([
