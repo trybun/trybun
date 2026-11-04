@@ -153,7 +153,14 @@ describe('project abilities', () => {
 
       const refused = projectActionSchema.options.filter((action) => !ability.can(action, record));
 
-      expect(refused).toEqual(['update', 'update_settings', 'archive', 'delete', 'manage_members']);
+      expect(refused).toEqual([
+        'update',
+        'update_settings',
+        'archive',
+        'delete',
+        'manage_members',
+        'create_ticket',
+      ]);
       for (const action of refused) {
         expect(reasonCode(ability.relevantRuleFor(action, record)?.reason), action).toBe(
           'project.archived',

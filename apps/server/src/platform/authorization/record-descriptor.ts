@@ -6,6 +6,7 @@ import type {
   InvitationRuleRecord,
   OrganizationRuleRecord,
   ProjectRuleRecord,
+  TicketRuleRecord,
   UserRuleRecord,
 } from './ability-factory.js';
 
@@ -15,6 +16,7 @@ export interface RuleRecords {
   Organization: OrganizationRuleRecord;
   Invitation: InvitationRuleRecord;
   User: UserRuleRecord;
+  Ticket: TicketRuleRecord;
 }
 
 /** The Prisma filter of each subject with records. */
@@ -23,6 +25,7 @@ export interface RecordFilters {
   Organization: Prisma.OrganizationWhereInput;
   Invitation: Prisma.InvitationWhereInput;
   User: Prisma.UserWhereInput;
+  Ticket: Prisma.TicketWhereInput;
 }
 
 export type RecordSubject = keyof RuleRecords;

@@ -47,7 +47,13 @@ async function selectOf(
       return Promise.resolve(null);
     },
   };
-  const delegates = { project: capture, organization: capture, invitation: capture, user: capture };
+  const delegates = {
+    project: capture,
+    organization: capture,
+    invitation: capture,
+    user: capture,
+    ticket: capture,
+  };
   await descriptor.find(delegates as unknown as Transaction, {}, principal);
   return select;
 }

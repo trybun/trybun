@@ -15,6 +15,7 @@ import { createOrganization } from '../test/factories/organization.factory.js';
 import { PRINCIPAL_FIXTURES, type PrincipalFixture } from '../test/factories/principal.factory.js';
 import { createProjectMember } from '../test/factories/project-member.factory.js';
 import { buildProjectKey, createProject } from '../test/factories/project.factory.js';
+import { createTicket } from '../test/factories/ticket.factory.js';
 import { createUser } from '../test/factories/user.factory.js';
 import { mswServer } from '../test/msw/server.js';
 import { integrationConfig } from '../test/setup/config.js';
@@ -42,6 +43,11 @@ describe('permission layer', () => {
     archivedOrganization: { id: string };
     projectInvitation: { id: string };
     organizationInvitation: { id: string };
+    teamTicket: { id: string };
+    personalTicket: { id: string };
+    organizationTicket: { id: string };
+    archivedTicket: { id: string };
+    ticketB: { id: string };
   };
   const users = {} as Record<PrincipalFixture, User>;
 
@@ -113,6 +119,43 @@ describe('permission layer', () => {
       target: 'organization',
       organizationId: records.organization.id,
     });
+    // Tickets of project A by the Developer and by both end users with access, a ticket of the
+    // archived project by the end user with personal access, and one of project B by the end user
+    // of the archived organization, created while it was active.
+    records.teamTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.developer.id,
+    });
+    records.personalTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.end_user_personal.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
+    records.organizationTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.end_user_organization.id,
+      organizationId: records.organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
+    records.archivedTicket = await createTicket(prisma, {
+      projectId: records.archivedProject.id,
+      requesterId: users.end_user_personal.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
+    records.ticketB = await createTicket(prisma, {
+      projectId: records.projectB.id,
+      requesterId: users.end_user_archived_organization.id,
+      organizationId: records.archivedOrganization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
   });
 
   beforeEach(() => {
@@ -171,7 +214,10 @@ describe('permission layer', () => {
           .set('Authorization', await authorizationOf(fixture));
 
         expect(res.status).toBe(200);
-        expect(res.body).toMatchObject({ role: 'end_user', allowedActions: ['read'] });
+        expect(res.body).toMatchObject({
+          role: 'end_user',
+          allowedActions: ['read', 'create_ticket'],
+        });
       },
     );
 
@@ -237,6 +283,11 @@ describe('permission layer', () => {
             where: { AND: [accessibleBy(ability, 'read').ofType('User'), where] },
             select,
           });
+        case 'Ticket':
+          return prisma.ticket.findMany({
+            where: { AND: [accessibleBy(ability, 'read').ofType('Ticket'), where] },
+            select,
+          });
       }
     }
 
@@ -250,6 +301,13 @@ describe('permission layer', () => {
           Organization: [records.organization.id, records.archivedOrganization.id],
           Invitation: [records.projectInvitation.id, records.organizationInvitation.id],
           User: Object.values(users).map(({ id }) => id),
+          Ticket: [
+            records.teamTicket.id,
+            records.personalTicket.id,
+            records.organizationTicket.id,
+            records.archivedTicket.id,
+            records.ticketB.id,
+          ],
         };
 
         for (const descriptor of ABILITY_DEFINITIONS.records) {
@@ -275,10 +333,10 @@ describe('permission layer', () => {
       [
         'project_manager',
         'projectA',
-        ['read', 'update_settings', 'read_members', 'manage_members'],
+        ['read', 'update_settings', 'read_members', 'manage_members', 'create_ticket'],
       ],
       ['project_manager', 'archivedProject', ['read', 'read_members']],
-      ['developer', 'projectA', ['read', 'read_members']],
+      ['developer', 'projectA', ['read', 'read_members', 'create_ticket']],
       ['developer', 'archivedProject', ['read', 'read_members']],
       ['end_user_personal', 'archivedProject', ['read']],
       ['end_user_organization', 'archivedProject', ['read']],
