@@ -10,7 +10,7 @@ Projekty tworzy, archiwizuje, przywraca z archiwum i usuwa tylko Administrator.
 
 1. Wybierz **Projekty** w nawigacji, a potem **Nowy projekt**.
 2. Wpisz **Nazwę**. Trybun podpowiada **Klucz** na podstawie nazwy, dopóki sam go nie zmienisz; wpisywane litery są wyświetlane wielkimi.
-3. Sprawdź **Klucz**: 2–10 wielkich liter lub cyfr, zaczynając od litery (np. `ERP`). Musi być unikalny wśród wszystkich projektów, aktywnych i zarchiwizowanych.
+3. Sprawdź **Klucz**: 2–10 wielkich liter lub cyfr, zaczynając od litery (np. `ERP`). Musi być unikalny wśród wszystkich projektów, aktywnych i zarchiwizowanych. W ustawieniach projektu możesz go zmienić tylko do utworzenia pierwszego zgłoszenia w projekcie, ponieważ jest częścią identyfikatorów zgłoszeń, takich jak `ERP-12`.
 4. Wybierz **Utwórz projekt**.
 
 Ustawienia nowego projektu otwierają się na zakładce **Członkowie**, gdzie [dodajesz zespół](../../team/how-to/manage-project-members.md).
@@ -29,7 +29,7 @@ Przez chwilę komunikat oferuje **Cofnij**. Zarchiwizowany projekt jest tylko do
 
 ## Usuń projekt
 
-Usunąć można tylko aktywny projekt – zarchiwizowany najpierw przywróć z archiwum.
+Usunąć można tylko aktywny projekt bez zgłoszeń – zarchiwizowany najpierw przywróć z archiwum. Projektu, który kiedykolwiek miał zgłoszenie, nie można usunąć, aby identyfikatory jego zgłoszeń nigdy nie zostały użyte ponownie; zamiast tego go zarchiwizuj.
 
 1. Otwórz projekt, potem **Strefę zagrożenia** i wybierz **Usuń projekt**.
 2. Wpisz klucz projektu, aby potwierdzić.
