@@ -40,7 +40,7 @@ Build the ticket model of S1-05 exactly as the approved change specification dec
 
 - [x] 2.1 Activity events module with the immutable table — 1d2075b
 - [x] 2.2 Ticket updates with events and assignment rules — ddde7dd
-- [ ] 2.3 Project key and deletion guards, hasTickets, organization deletion guard
+- [x] 2.3 Project key and deletion guards, hasTickets, organization deletion guard — 015534e
 
 ### Phase 3: Unassignment, permissions, web and documentation
 
