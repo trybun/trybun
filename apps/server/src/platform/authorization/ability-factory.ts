@@ -16,6 +16,7 @@ export type AppSubject =
       Organization: OrganizationRuleRecord;
       Invitation: InvitationRuleRecord;
       User: UserRuleRecord;
+      Ticket: TicketRuleRecord;
     }>
   | 'Administration';
 
@@ -54,6 +55,16 @@ export type UserRuleRecord = {
   kind: string;
   state: string;
   isAdmin: boolean;
+};
+
+/**
+ * A ticket as its rules read it (§7.5): its requester and its project as the project's rules read
+ * it.
+ */
+export type TicketRuleRecord = {
+  id: string;
+  requesterId: string;
+  project: ProjectRuleRecord;
 };
 
 /** The conditions of a rule: the Prisma `WhereInput` of its subject. */

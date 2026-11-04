@@ -89,3 +89,23 @@ export function buildInvitationRecord(
     organization: organizationState === null ? null : { state: organizationState },
   });
 }
+
+/**
+ * A ticket as its record descriptor loads it for the principal of a fixture: of its project, as the
+ * project descriptor loads it; requested by the principal (`own`) or by someone else.
+ */
+export function buildTicketRecord(
+  fixture: PrincipalFixture,
+  options: { own?: boolean; state?: 'active' | 'archived' } = {},
+) {
+  return subject('Ticket', {
+    id: 'ticket',
+    requesterId: options.own === true ? PRINCIPAL_ID : '0190f2f4-7c1e-7000-8000-000000000099',
+    project: {
+      id: 'project',
+      state: options.state ?? 'active',
+      members: buildMembers(fixture),
+      organizations: buildOrganizationAccess(fixture),
+    },
+  });
+}

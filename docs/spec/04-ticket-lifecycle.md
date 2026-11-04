@@ -98,7 +98,7 @@ Every ticket has an activity timeline (pattern: GitHub) in which comments are in
 
 Rules:
 
-- Every change of a ticket field is recorded with the author, timestamp, previous and new value.
+- Every change of a ticket field is recorded with the author, timestamp, previous and new value: one event per changed field (one change of two fields writes two events), with its type (`activity_event.type`, e.g. `priority_changed`), `{ from, to }`, the person who made it or the source of an automatic change, and whether it is public, decided by the rule that writes it. Creating a ticket writes no event: the timeline begins with the ticket itself.
   - Values that refer to other records (assignee, label, milestone, status) are stored as a snapshot – identifier plus display name – so the event stays readable after the record is renamed or deleted. Events have no foreign keys to labels or milestones.
   - Changes of the description and of comments are recorded only as "edited" with author and time. The text itself is kept in **content revisions** ([§6.1](06-comments-notifications.md)), not in events, so it can be redacted.
 - The history is **immutable**: nobody, including the Administrator, can edit or delete events. (GDPR anonymization replaces personal data of the author but keeps the event, [§13.2](13-non-functional.md).) Redaction of content ([§5.2](05-visibility-and-search.md)) is itself recorded as an event "Content redacted" (PL: „Treść zredagowana”) with author and time, without the removed content.

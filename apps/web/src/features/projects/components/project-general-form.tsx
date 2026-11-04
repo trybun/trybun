@@ -41,6 +41,8 @@ export function ProjectGeneralForm({ project }: { project: Project }) {
   const errorMessage = useErrorMessage();
   const updateProject = useUpdateProject();
   const canUpdate = project.allowedActions.includes('update');
+  // The key is part of the identifiers of the tickets: frozen from the first ticket on (§3.1).
+  const canUpdateKey = canUpdate && !project.hasTickets;
   const canUpdateSettings = project.allowedActions.includes('update_settings');
   const form = useForm<GeneralValues>({
     resolver: zodResolver(generalSchema, FORM_ERROR_MAP),
@@ -54,7 +56,7 @@ export function ProjectGeneralForm({ project }: { project: Project }) {
   const submit = form.handleSubmit(async (values) => {
     const input: UpdateProjectDto = {
       ...(canUpdate && values.name !== project.name ? { name: values.name } : {}),
-      ...(canUpdate && values.key !== project.key ? { key: values.key } : {}),
+      ...(canUpdateKey && values.key !== project.key ? { key: values.key } : {}),
       ...(canUpdateSettings && values.confirmResolution !== project.confirmResolution
         ? { confirmResolution: values.confirmResolution }
         : {}),
@@ -107,7 +109,7 @@ export function ProjectGeneralForm({ project }: { project: Project }) {
               <FieldLabel>{t('create.key')}</FieldLabel>
               <Input
                 {...field}
-                readOnly={!canUpdate}
+                readOnly={!canUpdateKey}
                 autoComplete="off"
                 autoCapitalize="characters"
                 spellCheck={false}
@@ -117,7 +119,11 @@ export function ProjectGeneralForm({ project }: { project: Project }) {
               />
               {(canUpdate || project.state === 'active') && (
                 <FieldDescription>
-                  {canUpdate ? t('create.keyDescription') : t('general.readOnly')}
+                  {canUpdate
+                    ? project.hasTickets
+                      ? t('general.keyFrozen')
+                      : t('create.keyDescription')
+                    : t('general.readOnly')}
                 </FieldDescription>
               )}
               <FieldError

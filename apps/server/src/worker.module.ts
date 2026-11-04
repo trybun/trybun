@@ -1,6 +1,11 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { AuditLogEntriesWorkerModule } from './modules/audit-log-entries/audit-log-entries-worker.module.js';
 import { InvitationsWorkerModule } from './modules/invitations/invitations-worker.module.js';
+import {
+  UNASSIGN_DEACTIVATED_USER_SUBSCRIPTION,
+  UNASSIGN_REMOVED_MEMBER_SUBSCRIPTION,
+} from './modules/tickets/tickets.jobs.js';
+import { TicketsWorkerModule } from './modules/tickets/tickets-worker.module.js';
 import { USERS_KEYCLOAK_SUBSCRIPTION } from './modules/users/users.jobs.js';
 import { UsersWorkerModule } from './modules/users/users-worker.module.js';
 import type { TrybunConfig } from './platform/config/config.schema.js';
@@ -31,10 +36,15 @@ export class WorkerModule {
         I18nModule,
         QueuesModule,
         KeycloakAdminModule,
-        OutboxWorkerModule.forRoot([USERS_KEYCLOAK_SUBSCRIPTION]),
+        OutboxWorkerModule.forRoot([
+          USERS_KEYCLOAK_SUBSCRIPTION,
+          UNASSIGN_DEACTIVATED_USER_SUBSCRIPTION,
+          UNASSIGN_REMOVED_MEMBER_SUBSCRIPTION,
+        ]),
         AuditLogEntriesWorkerModule,
         InvitationsWorkerModule,
         UsersWorkerModule,
+        TicketsWorkerModule,
         HeartbeatModule,
       ],
     };

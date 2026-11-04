@@ -117,6 +117,7 @@
     "archivedBanner": "This project is archived and read-only.",
     "general": {
       "readOnly": "Only the Administrator changes the name and the key.",
+      "keyFrozen": "The key cannot be changed after the first ticket, because it is part of ticket identifiers.",
       "confirmResolution": "Resolution confirmation",
       "confirmResolutionDescription": "Ask the requester to confirm that the problem is solved.",
       "save": "Save changes",
@@ -162,6 +163,7 @@
       "delete": "Delete project",
       "deleteDescription": "Deletes the project and its memberships. This cannot be undone.",
       "deleteArchived": "Unarchive the project before you delete it.",
+      "deleteHasTickets": "Projects with tickets cannot be deleted. Archive the project instead.",
       "deleteTitle": "Delete {name}?",
       "deleteConfirmLabel": "Type {key} to confirm",
       "deleteConfirm": "Delete project",
@@ -285,6 +287,7 @@
       "unarchived": "Organization unarchived",
       "delete": "Delete organization",
       "deleteDescription": "Deletes the organization with its e-mail domains, project access and memberships. The accounts of the members stay. This cannot be undone.",
+      "deleteHasTickets": "Organizations with tickets cannot be deleted. Archive the organization instead.",
       "deleteTitle": "Delete {name}?",
       "deleteConfirm": "Delete organization",
       "deleting": "Deleting…",
@@ -602,7 +605,9 @@
     },
     "project": {
       "archived": "This project is archived and read-only. Unarchive it to make changes.",
-      "key_taken": "Another project already uses this key."
+      "key_taken": "Another project already uses this key.",
+      "key_immutable": "The key cannot be changed after the first ticket, because it is part of ticket identifiers.",
+      "has_tickets": "Projects with tickets cannot be deleted. Archive the project instead."
     },
     "project_member": {
       "exists": "This person is already a member of the project.",
@@ -617,6 +622,10 @@
       "member_not_found": "No account has this e-mail address.",
       "member_not_end_user": "Only end users can belong to an organization.",
       "member_of_other_organization": "This person already belongs to another organization."
+    },
+    "ticket": {
+      "project_immutable": "A ticket cannot be moved to another project.",
+      "assignee_not_eligible": "Only active team members of the project can be assigned."
     },
     "invitation": {
       "account_kind_mismatch": "This address belongs to an account of the other kind. Only the Administrator can change the kind of an account.",

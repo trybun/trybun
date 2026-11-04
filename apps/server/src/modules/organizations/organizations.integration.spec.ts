@@ -19,6 +19,7 @@ import {
   createOrganization,
 } from '../../../test/factories/organization.factory.js';
 import { createProject } from '../../../test/factories/project.factory.js';
+import { createTicket } from '../../../test/factories/ticket.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
@@ -644,6 +645,37 @@ describe('organizations endpoints', () => {
         },
         { action: 'organization.deleted', actorId: user.id, details: null },
       ]);
+    });
+
+    it('keeps an organization with tickets (409 organization.not_empty) and reports it', async () => {
+      const { authorization } = await signIn();
+      const organization = await createOrganization(prisma);
+      const project = await createProject(prisma);
+      const member = await createUser(prisma);
+      await prisma.organizationMember.create({
+        data: { organizationId: organization.id, userId: member.id },
+      });
+      await createTicket(prisma, {
+        projectId: project.id,
+        requesterId: member.id,
+        organizationId: organization.id,
+        source: 'user',
+        status: 'new',
+      });
+
+      const detail = await http()
+        .get(`/api/v1/organizations/${organization.id}`)
+        .set('Authorization', authorization);
+      const res = await http()
+        .delete(`/api/v1/organizations/${organization.id}`)
+        .set('Authorization', authorization)
+        .set('If-Match', ifMatch(organization));
+
+      expect(detail.body).toMatchObject({ hasTickets: true });
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: 'organization.not_empty' });
+      expect(await prisma.organizationMember.count({ where: { userId: member.id } })).toBe(1);
+      expect(await auditEntries(organization.id)).toEqual([]);
     });
   });
 

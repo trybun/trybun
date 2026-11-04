@@ -9,7 +9,7 @@ Every ticket belongs to exactly one **project**.
 | Field | Description |
 |---|---|
 | Name | Full project name: trimmed, 1–100 characters, not unique (the key identifies the project) |
-| Key | Short prefix used in ticket identifiers, e.g. `ERP` → `ERP-123` (convention from Jira/Linear). Pattern `^[A-Z][A-Z0-9]{1,9}$` (2–10 characters, starts with a letter). Unique across active and archived projects; the key of a deleted project (only possible without tickets, [§7.3](07-users-organizations-permissions.md)) may be reused. The key can be changed only while the project has no tickets; afterwards it is immutable, because it is part of identifiers, branch names ([§11.3](11-github-integration.md)) and e-mails. The creation form suggests a key from the name until the person edits it – the initials of the words for a name of several words, otherwise its first letters, upper case, at most 4 characters – and shows typed letters in upper case; the API accepts only the exact pattern |
+| Key | Short prefix used in ticket identifiers, e.g. `ERP` → `ERP-123` (convention from Jira/Linear). Pattern `^[A-Z][A-Z0-9]{1,9}$` (2–10 characters, starts with a letter). Unique across active and archived projects; the key of a deleted project (only possible without tickets, [§7.3](07-users-organizations-permissions.md)) may be reused. The key can be changed only while the project has had no ticket; afterwards it is immutable (`409 project.key_immutable`), because it is part of identifiers, branch names ([§11.3](11-github-integration.md)) and e-mails. "Has had a ticket" means that a ticket was ever created in the project – its ticket number counter exists ([§17.2](17-conventions.md)) – so undoing an import that removed every ticket ([§12.5](12-api-webhooks-import.md)) neither unfreezes the key nor allows deleting the project. The creation form suggests a key from the name until the person edits it – the initials of the words for a name of several words, otherwise its first letters, upper case, at most 4 characters – and shows typed letters in upper case; the API accepts only the exact pattern |
 | GitHub repositories | One or more linked repositories; one marked as default for new issues ([§11.2](11-github-integration.md)) |
 | Default SLA policy | SLA policy for users without an organization and organizations without their own policy ([§9.3](09-sla.md)) |
 | Sync direction | GitHub issue synchronization direction ([§11.5](11-github-integration.md)) |
@@ -23,20 +23,20 @@ End users always create tickets **within a specific project**, so the `project` 
 | Field | Description | End user | Team |
 |---|---|---|---|
 | Identifier | Assigned automatically, format `KEY-number`; numbers are sequential per project and never reused. Stored as project + number; `KEY-number` is the display form ([§17.2](17-conventions.md)) | sees (read-only) | sees |
-| Title | Short description of the problem/task | fills in | fills in |
-| Description | GFM Markdown content ([§6.2](06-comments-notifications.md)) | fills in | fills in |
+| Title | Short description of the problem/task; trimmed, 1–255 characters | fills in | fills in |
+| Description | GFM Markdown content ([§6.2](06-comments-notifications.md)), at most 65,536 characters | fills in | fills in |
 | Attachments | Files, screenshots ([§13.3](13-non-functional.md)) | optional | optional |
-| Project | Project the ticket belongs to. Set at creation and **immutable** afterwards: tickets are not moved between projects (attempts are rejected with the error code `ticket.project_immutable`) | set automatically, hidden | fills in at creation (defaults to current project) |
-| Type | `bug` / `feature` / `task` / `question` | – | fills in (completed during triage) |
+| Project | Project the ticket belongs to. Set at creation and **immutable** afterwards: tickets are not moved between projects (a change to another project is rejected with `422 ticket.project_immutable`, pointer `/projectId`; the current project is accepted and changes nothing) | set automatically, hidden | fills in at creation (defaults to current project) |
+| Type | `bug` / `feature` / `task` / `question`; empty for a ticket of an end user until the team sets it during triage, `task` when the team omits it | – | fills in (completed during triage) |
 | Source | `user` / `developer` / `integration` | set automatically | set automatically |
 | Occurrence count | For integration tickets: how many times the same error was reported ([§12.3](12-api-webhooks-import.md)) | – | set automatically |
-| Organization | Requester's organization at the moment of creation, if any; a snapshot that never changes, also when the requester later changes organization ([§7.3](07-users-organizations-permissions.md)) | set automatically, hidden | sees |
+| Organization | Requester's organization membership at the moment of creation, if any – whatever the state of the organization and whether the requester reached the project through it or through personal access; a snapshot that never changes, also when the requester later changes organization ([§7.3](07-users-organizations-permissions.md)). Team accounts have none | set automatically, hidden | sees |
 | Visibility | `only_me` / `my_organization` / `all_customers` ([§5.1](05-visibility-and-search.md)) | chooses (default `only_me`) | sees; may change it and approve sharing ([§5.2](05-visibility-and-search.md)) |
 | Sharing request | `none` / `pending` / `rejected` – state of the requester's request to share the ticket with all customers ([§5.2](05-visibility-and-search.md)) | set by choosing `all_customers` | approves or rejects |
 | Priority | `low` / `normal` / `high` / `critical` | – | fills in (default `normal`) |
 | Status | Internal status ([§4.1](04-ticket-lifecycle.md)) | sees the public status | changes |
 | Requester | Author of the ticket | set automatically | set automatically |
-| Assignee | Responsible person; only an active team member of the project can be assigned ([§7.5](07-users-organizations-permissions.md)) | – | Developer (self only) or Project manager |
+| Assignee | Responsible person; only an active team account with a team role in the project can be assigned (`422 ticket.assignee_not_eligible` otherwise) – an Administrator works on tickets as a member of the project ([§7.5](07-users-organizations-permissions.md)) | – | Developer (self only) or Project manager |
 | Created / updated | Timestamps | set automatically | set automatically |
 | Milestone | Milestone the ticket belongs to ([§10.1](10-roadmap-gantt.md)) | sees an approximate period if the milestone is public | set by Project manager |
 | Start / due date | Planned schedule ([§10.4](10-roadmap-gantt.md)) | – | set by Project manager |

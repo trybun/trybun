@@ -38,7 +38,8 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Term | Code identifier | UI label (EN / PL) | Definition |
 |---|---|---|---|
 | Ticket | `ticket` | Ticket / Zgłoszenie | The single unit of work in the system ([03-ticket-model.md](03-ticket-model.md)) |
-| Ticket identifier | `ticket.identifier` | – | `KEY-number`, e.g. `ERP-123` |
+| Ticket identifier | `ticket.identifier` | – | `KEY-number`, e.g. `ERP-123`; the display form of the project key and the ticket number, never stored |
+| Ticket number | `ticket.number` | – | The per-project number of a ticket, allocated from the project's counter and never reused ([§17.2](17-conventions.md)) |
 | Source | `ticket.source`: `user`, `developer`, `integration` | User / Użytkownik, Developer / Developer, Integration / Integracja | Where the ticket came from |
 | Type | `ticket.type`: `bug`, `feature`, `task`, `question` | Bug / Błąd, Feature / Funkcjonalność, Task / Zadanie, Question / Pytanie | Kind of ticket |
 | Priority | `ticket.priority`: `low`, `normal`, `high`, `critical` | Low / Niski, Normal / Normalny, High / Wysoki, Critical / Krytyczny | Urgency |
@@ -60,6 +61,8 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Public comment | `comment.kind = public` | Comment / Komentarz | Visible to everyone who can see the ticket |
 | Internal note | `comment.kind = internal` | Internal note / Notatka wewnętrzna | Visible to the team only |
 | Activity timeline | `activity_event` | Activity / Aktywność | Immutable history of comments and events ([§4.5](04-ticket-lifecycle.md)) |
+| Activity event type | `activity_event.type`: `title_changed`, `description_edited`, `type_changed`, `priority_changed`, `assignee_changed` | changed the title / zmienił(a) tytuł, edited the description / edytował(a) opis, changed the type / zmienił(a) typ, changed the priority / zmienił(a) priorytet, changed the assignee / zmienił(a) przypisanie | The field change an event records; later tasks add theirs ([§4.5](04-ticket-lifecycle.md)) |
+| Automatic source | `activity_event.automatic_source`: `system` | System / System | Who made an automatic change: the rules of the system; later `github`, `integration` ([§4.5](04-ticket-lifecycle.md)) |
 | Sub-ticket | `ticket.parent_id` | Sub-ticket / Podzadanie | Ticket belonging to a parent ticket ([§3.5](03-ticket-model.md)) |
 | Relation | `ticket_relation`: `blocks`, `relates_to`, `duplicate_of` | Blocks / Blokuje, Relates to / Powiązane z, Duplicate of / Duplikat | Link between tickets; `blocks` = Gantt dependency |
 | Label | `label` | Label / Etykieta | Project-scoped tag |

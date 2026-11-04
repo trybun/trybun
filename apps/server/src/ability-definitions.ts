@@ -14,6 +14,11 @@ import {
   projectRecords,
   projectsAbilities,
 } from './modules/projects/projects.abilities.js';
+import {
+  archivedProjectsOfTicketsRestriction,
+  ticketRecords,
+  ticketsAbilities,
+} from './modules/tickets/tickets.abilities.js';
 import { userRecords, usersAbilities } from './modules/users/users.abilities.js';
 
 /**
@@ -28,11 +33,13 @@ export const ABILITY_DEFINITIONS = {
     organizationsAbilities,
     invitationsAbilities,
     usersAbilities,
+    ticketsAbilities,
   ],
   restrictions: [
     archivedProjectsRestriction,
     archivedOrganizationsRestriction,
     archivedTargetsOfInvitationsRestriction,
+    archivedProjectsOfTicketsRestriction,
   ],
-  records: [projectRecords, organizationRecords, invitationRecords, userRecords],
+  records: [projectRecords, organizationRecords, invitationRecords, userRecords, ticketRecords],
 };

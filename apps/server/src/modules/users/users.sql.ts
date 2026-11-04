@@ -21,3 +21,14 @@ export async function lockAccount(tx: Transaction, userId: string): Promise<bool
     SELECT "id" FROM "users" WHERE "id" = ${userId}::uuid FOR UPDATE`;
   return rows.length > 0;
 }
+
+/**
+ * Locks the row of an account in share mode for the rest of the transaction (§18.3, raw SQL): an
+ * assignment takes it before it checks that the assignee is active, so a concurrent deactivation –
+ * which locks the account for an update – waits for it. Returns whether the account exists.
+ */
+export async function lockAccountForShare(tx: Transaction, userId: string): Promise<boolean> {
+  const rows = await tx.$queryRaw<{ id: string }[]>`
+    SELECT "id" FROM "users" WHERE "id" = ${userId}::uuid FOR SHARE`;
+  return rows.length > 0;
+}

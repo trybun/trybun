@@ -35,7 +35,8 @@ function DangerAction({
 /**
  * The Danger zone of the project settings (§7.3), for the Administrator: archive – with Undo
  * instead of a confirmation (Rule 2) – unarchive, and delete, which cannot be undone and is
- * confirmed by typing the key, following GitHub's repository deletion.
+ * confirmed by typing the key, following GitHub's repository deletion. A project that has had a
+ * ticket cannot be deleted (§3.1): the button is disabled with the reason, archiving is the way.
  */
 export function ProjectDangerZone({ project }: { project: Project }) {
   const t = useTranslations('projects.danger');
@@ -50,6 +51,12 @@ export function ProjectDangerZone({ project }: { project: Project }) {
   const showError = (error: unknown) => toast.add({ title: errorMessage(error), type: 'error' });
   const can = (action: Project['allowedActions'][number]) =>
     project.allowedActions.includes(action);
+  const isDeletable = can('delete') && !project.hasTickets;
+  const deleteHint = project.hasTickets
+    ? t('deleteHasTickets')
+    : can('delete')
+      ? t('deleteDescription')
+      : t('deleteArchived');
 
   const archiveProject = () =>
     archive.mutate(project, {
@@ -94,15 +101,8 @@ export function ProjectDangerZone({ project }: { project: Project }) {
         </DangerAction>
       )}
       {(can('delete') || (project.state === 'archived' && can('unarchive'))) && (
-        <DangerAction
-          title={t('delete')}
-          description={can('delete') ? t('deleteDescription') : t('deleteArchived')}
-        >
-          <Button
-            variant="destructive"
-            disabled={!can('delete')}
-            onClick={() => setIsDeleting(true)}
-          >
+        <DangerAction title={t('delete')} description={deleteHint}>
+          <Button variant="destructive" disabled={!isDeletable} onClick={() => setIsDeleting(true)}>
             {t('delete')}
           </Button>
         </DangerAction>

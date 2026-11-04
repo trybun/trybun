@@ -7,6 +7,7 @@ import { accessibleBy } from '@casl/prisma/runtime';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { type Project, type ProjectPage, projectActionSchema } from '@trybun/contracts/projects';
+import { type Ticket, ticketActionSchema } from '@trybun/contracts/tickets';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { keycloakJwksHandler, signAccessToken } from '../test/factories/access-token.factory.js';
@@ -15,6 +16,7 @@ import { createOrganization } from '../test/factories/organization.factory.js';
 import { PRINCIPAL_FIXTURES, type PrincipalFixture } from '../test/factories/principal.factory.js';
 import { createProjectMember } from '../test/factories/project-member.factory.js';
 import { buildProjectKey, createProject } from '../test/factories/project.factory.js';
+import { createTicket } from '../test/factories/ticket.factory.js';
 import { createUser } from '../test/factories/user.factory.js';
 import { mswServer } from '../test/msw/server.js';
 import { integrationConfig } from '../test/setup/config.js';
@@ -42,6 +44,11 @@ describe('permission layer', () => {
     archivedOrganization: { id: string };
     projectInvitation: { id: string };
     organizationInvitation: { id: string };
+    teamTicket: { id: string };
+    personalTicket: { id: string };
+    organizationTicket: { id: string };
+    archivedTicket: { id: string };
+    ticketB: { id: string };
   };
   const users = {} as Record<PrincipalFixture, User>;
 
@@ -113,6 +120,43 @@ describe('permission layer', () => {
       target: 'organization',
       organizationId: records.organization.id,
     });
+    // Tickets of project A by the Developer and by both end users with access, a ticket of the
+    // archived project by the end user with personal access, and one of project B by the end user
+    // of the archived organization, created while it was active.
+    records.teamTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.developer.id,
+    });
+    records.personalTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.end_user_personal.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
+    records.organizationTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.end_user_organization.id,
+      organizationId: records.organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
+    records.archivedTicket = await createTicket(prisma, {
+      projectId: records.archivedProject.id,
+      requesterId: users.end_user_personal.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
+    records.ticketB = await createTicket(prisma, {
+      projectId: records.projectB.id,
+      requesterId: users.end_user_archived_organization.id,
+      organizationId: records.archivedOrganization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
   });
 
   beforeEach(() => {
@@ -171,7 +215,10 @@ describe('permission layer', () => {
           .set('Authorization', await authorizationOf(fixture));
 
         expect(res.status).toBe(200);
-        expect(res.body).toMatchObject({ role: 'end_user', allowedActions: ['read'] });
+        expect(res.body).toMatchObject({
+          role: 'end_user',
+          allowedActions: ['read', 'create_ticket'],
+        });
       },
     );
 
@@ -237,6 +284,11 @@ describe('permission layer', () => {
             where: { AND: [accessibleBy(ability, 'read').ofType('User'), where] },
             select,
           });
+        case 'Ticket':
+          return prisma.ticket.findMany({
+            where: { AND: [accessibleBy(ability, 'read').ofType('Ticket'), where] },
+            select,
+          });
       }
     }
 
@@ -250,6 +302,13 @@ describe('permission layer', () => {
           Organization: [records.organization.id, records.archivedOrganization.id],
           Invitation: [records.projectInvitation.id, records.organizationInvitation.id],
           User: Object.values(users).map(({ id }) => id),
+          Ticket: [
+            records.teamTicket.id,
+            records.personalTicket.id,
+            records.organizationTicket.id,
+            records.archivedTicket.id,
+            records.ticketB.id,
+          ],
         };
 
         for (const descriptor of ABILITY_DEFINITIONS.records) {
@@ -275,10 +334,10 @@ describe('permission layer', () => {
       [
         'project_manager',
         'projectA',
-        ['read', 'update_settings', 'read_members', 'manage_members'],
+        ['read', 'update_settings', 'read_members', 'manage_members', 'create_ticket'],
       ],
       ['project_manager', 'archivedProject', ['read', 'read_members']],
-      ['developer', 'projectA', ['read', 'read_members']],
+      ['developer', 'projectA', ['read', 'read_members', 'create_ticket']],
       ['developer', 'archivedProject', ['read', 'read_members']],
       ['end_user_personal', 'archivedProject', ['read']],
       ['end_user_organization', 'archivedProject', ['read']],
@@ -301,6 +360,41 @@ describe('permission layer', () => {
         expect(res.status).toBe(404);
       },
     );
+  });
+
+  describe('the actions of the ticket response (§7.5, §18.3)', () => {
+    it.each([
+      ['admin', 'teamTicket', ticketActionSchema.options],
+      ['project_manager', 'teamTicket', ticketActionSchema.options],
+      ['developer', 'teamTicket', ['read', 'update', 'update_fields', 'assign_self']],
+      ['admin', 'archivedTicket', ['read']],
+      ['end_user_personal', 'personalTicket', ['read', 'update']],
+      ['end_user_organization', 'organizationTicket', ['read', 'update']],
+      ['end_user_personal', 'archivedTicket', ['read']],
+      // A requester keeps reading a ticket after losing access to its project (§7.3).
+      ['end_user_archived_organization', 'ticketB', ['read']],
+    ] as const)('lists for %s on %s exactly %o', async (fixture, ticket, actions) => {
+      const res = await http()
+        .get(`/api/v1/tickets/${records[ticket].id}`)
+        .set('Authorization', await authorizationOf(fixture));
+
+      expect(res.status).toBe(200);
+      expect((res.body as Ticket).allowedActions).toEqual(actions);
+    });
+
+    it.each([
+      ['team_member', 'teamTicket'],
+      ['end_user_personal', 'teamTicket'],
+      ['end_user_personal', 'organizationTicket'],
+      ['end_user', 'personalTicket'],
+      ['developer', 'ticketB'],
+    ] as const)('hides from %s the ticket %s (404)', async (fixture, ticket) => {
+      const res = await http()
+        .get(`/api/v1/tickets/${records[ticket].id}`)
+        .set('Authorization', await authorizationOf(fixture));
+
+      expect(res.status).toBe(404);
+    });
   });
 
   describe('the denied case of every endpoint', () => {
@@ -451,6 +545,104 @@ describe('permission layer', () => {
 
       expect(res.status).toBe(status);
     });
+
+    /** Requests of a Developer of project A: `404` for a ticket of project B, as for a missing one. */
+    it.each([
+      ['GET', (id: string) => `/api/v1/tickets/${id}`],
+      ['PATCH', (id: string) => `/api/v1/tickets/${id}`],
+      ['GET', (id: string) => `/api/v1/tickets/${id}/activity-events`],
+    ] as const)(
+      'answers %s %s of a ticket of project B with 404, as for a missing ticket',
+      async (method, path) => {
+        const authorization = await authorizationOf('developer');
+        const send = (id: string) =>
+          http()
+            [method.toLowerCase() as 'get'](path(id))
+            .set('Authorization', authorization)
+            .set('If-Match', 'W/"1"')
+            .send(method === 'GET' ? undefined : { title: 'Changed' });
+
+        const invisible = await send(records.ticketB.id);
+        const missing = await send(randomUUID());
+
+        expect(invisible.status).toBe(404);
+        expect({ ...invisible.body, instance: undefined }).toEqual({
+          ...missing.body,
+          instance: undefined,
+        });
+      },
+    );
+
+    it.each([
+      [
+        'a Developer assigning someone else',
+        'developer',
+        'teamTicket',
+        () => ({
+          assigneeId: users.project_manager.id,
+        }),
+        403,
+      ],
+      [
+        'an end user changing the priority',
+        'end_user_personal',
+        'personalTicket',
+        () => ({
+          priority: 'high',
+        }),
+        403,
+      ],
+      [
+        'a requester without access editing',
+        'end_user_archived_organization',
+        'ticketB',
+        () => ({
+          title: 'Changed',
+        }),
+        403,
+      ],
+      [
+        'an end user editing a ticket of an archived project',
+        'end_user_personal',
+        'archivedTicket',
+        () => ({
+          title: 'Changed',
+        }),
+        409,
+      ],
+    ] as const)('refuses %s with %i', async (_case, fixture, ticket, body, status) => {
+      const res = await http()
+        .patch(`/api/v1/tickets/${records[ticket].id}`)
+        .set('Authorization', await authorizationOf(fixture))
+        .set('If-Match', 'W/"1"')
+        .send(body());
+
+      expect(res.status).toBe(status);
+    });
+
+    it.each([
+      ['a Developer', 'developer', 'projectB', {}, 404],
+      ['a team account without membership', 'team_member', 'projectA', {}, 404],
+      ['a Developer', 'developer', 'archivedProject', {}, 409],
+      ['an end user', 'end_user_personal', 'archivedProject', {}, 409],
+      [
+        'an end user with a field of the full form',
+        'end_user_personal',
+        'projectA',
+        { type: 'bug' },
+        403,
+      ],
+    ] as const)(
+      'refuses %s (%s) a ticket in %s with %i',
+      async (_who, fixture, project, extra, status) => {
+        const res = await http()
+          .post('/api/v1/tickets')
+          .set('Authorization', await authorizationOf(fixture))
+          .send({ projectId: records[project].id, title: 'New', ...extra });
+
+        expect(res.status).toBe(status);
+      },
+    );
 
     it('lists for a Developer no invitation they cannot see', async () => {
       const res = await http()

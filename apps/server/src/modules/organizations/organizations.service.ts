@@ -28,6 +28,7 @@ import {
   versionedWhere,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { isForeignKeyViolation } from '../../platform/database/foreign-key-violation.js';
 import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
 import {
@@ -61,6 +62,8 @@ const DETAIL_SELECT = {
     select: { project: { select: { id: true, key: true, name: true, state: true } } },
     orderBy: { project: { key: 'asc' } },
   },
+  // One ticket with the organization as its snapshot is enough to keep it (§7.3).
+  tickets: { select: { id: true }, take: 1 },
 } satisfies Prisma.OrganizationSelect;
 
 type SummaryRow = Prisma.OrganizationGetPayload<{ select: typeof SUMMARY_SELECT }>;
@@ -94,6 +97,7 @@ function toOrganizationResponse(row: DetailRow, ability: AppAbility): Organizati
       name: project.name,
       state: project.state,
     })),
+    hasTickets: row.tickets.length > 0,
   };
 }
 
@@ -320,10 +324,24 @@ export class OrganizationsService {
   /**
    * Deletes an organization with its domains, project access and memberships (§7.3): an audit
    * entry for each removed member and one for the deletion. The members keep their accounts and
-   * their personal project access. Organizations with tickets are kept by the foreign key of the
-   * ticket snapshot (S1-05), answered with `organization.not_empty`.
+   * their personal project access. Organizations with tickets are kept by the restricting foreign
+   * key of the ticket snapshot (§3.2), answered with `409 organization.not_empty`.
    */
   async delete(principal: UserPrincipal, target: VersionedTarget): Promise<void> {
+    try {
+      await this.deleteWithMembers(principal, target);
+    } catch (error) {
+      if (isForeignKeyViolation(error, 'tickets_organization_id_fkey')) {
+        throw new AppError('organization.not_empty');
+      }
+      throw error;
+    }
+  }
+
+  private async deleteWithMembers(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+  ): Promise<void> {
     const ability = this.abilities.forPrincipal(principal);
     await this.prisma.$transaction(async (tx) => {
       // Membership changes hold a share lock of the row: the update lock waits for them, so the

@@ -18,7 +18,8 @@ export type ProjectMemberRole = z.infer<typeof projectMemberRoleSchema>;
 
 /**
  * The action codes of a project (§18.3), sent in its `allowedActions`. `update` changes the name
- * and the key, `update_settings` the project settings (resolution confirmation).
+ * and the key, `update_settings` the project settings (resolution confirmation), `create_ticket`
+ * creates a ticket in it (§3.2).
  */
 export const projectActionSchema = z.enum([
   'read',
@@ -29,6 +30,7 @@ export const projectActionSchema = z.enum([
   'delete',
   'read_members',
   'manage_members',
+  'create_ticket',
 ]);
 export type ProjectAction = z.infer<typeof projectActionSchema>;
 
@@ -75,6 +77,11 @@ export const projectSchema = z.object({
   updatedAt: z.iso.datetime(),
   /** The principal's own role in the project; `end_user` for personal access of an end user. */
   role: projectMemberRoleSchema.nullable(),
+  /**
+   * Whether a ticket was ever created in the project (§3.1): its key is frozen and it cannot be
+   * deleted. A fact for hints of the UI only; the API enforces both rules.
+   */
+  hasTickets: z.boolean(),
   allowedActions: z.array(projectActionSchema),
 });
 export type Project = z.infer<typeof projectSchema>;

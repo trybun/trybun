@@ -11,7 +11,7 @@ Ustawienia projektu otwierasz z **Projektów**. Strona ma trzy zakładki.
 | Ustawienie | Znaczenie | Kto może zmieniać |
 |---|---|---|
 | **Nazwa** | Nazwa projektu | Tylko Administrator; dla pozostałych tylko do odczytu |
-| **Klucz** | Prefiks identyfikatorów zgłoszeń, np. `ERP` | Tylko Administrator; dla pozostałych tylko do odczytu |
+| **Klucz** | Prefiks identyfikatorów zgłoszeń, np. `ERP-12` | Tylko Administrator i tylko do utworzenia pierwszego zgłoszenia w projekcie: klucz jest częścią identyfikatorów zgłoszeń, więc później nie można go zmienić. Dla pozostałych tylko do odczytu |
 | **Potwierdzanie rozwiązania** | Przełącznik: prosi zgłaszającego o potwierdzenie, że problem jest rozwiązany | Kierownicy projektu i Administrator |
 
 Wybierz **Zapisz zmiany**, aby je zastosować.

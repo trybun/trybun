@@ -13,8 +13,11 @@ export function isUniqueViolation(error: unknown, index?: string): boolean {
   return index === undefined || violatedIndex(error.meta) === index;
 }
 
-/** The index the driver adapter reports in `meta.driverAdapterError.cause.constraint.index`. */
-function violatedIndex(meta: Record<string, unknown> | undefined): string | undefined {
+/**
+ * The index or constraint the driver adapter reports in
+ * `meta.driverAdapterError.cause.constraint.index`.
+ */
+export function violatedIndex(meta: Record<string, unknown> | undefined): string | undefined {
   const cause = (meta?.driverAdapterError as { cause?: { constraint?: { index?: unknown } } })
     ?.cause;
   const index = cause?.constraint?.index;

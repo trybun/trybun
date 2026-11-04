@@ -57,6 +57,7 @@ function organization(overrides: Partial<Organization> = {}): Organization {
         state: 'active',
       },
     ],
+    hasTickets: false,
     ...overrides,
   };
 }
@@ -92,6 +93,7 @@ function project(id: string, name: string, key: string): Project {
     key,
     state: 'active',
     confirmResolution: false,
+    hasTickets: false,
     version: 1,
     createdAt: '2026-10-27T09:00:00.000Z',
     updatedAt: '2026-10-27T09:00:00.000Z',
@@ -326,6 +328,17 @@ describe('OrganizationDangerZone', () => {
 
     expect(html).toContain('Archive organization');
     expect(html).toContain('Delete organization');
+  });
+
+  it('disables the deletion of an organization with tickets, with the reason', () => {
+    const html = render(
+      <OrganizationDangerZone organization={organization({ hasTickets: true })} />,
+    );
+
+    expect(html).toContain(
+      'Organizations with tickets cannot be deleted. Archive the organization instead.',
+    );
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Delete organization<\/button>/);
   });
 
   it('renders nothing without an action of it', () => {

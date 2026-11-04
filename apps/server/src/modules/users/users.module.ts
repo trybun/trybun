@@ -11,5 +11,6 @@ import { UsersService } from './users.service.js';
   imports: [AuditLogEntriesModule, InvitationRevocationsModule, OutboxModule, SessionsModule],
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}

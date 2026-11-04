@@ -32,12 +32,19 @@ import {
   versionedWhere,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { isForeignKeyViolation } from '../../platform/database/foreign-key-violation.js';
 import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
+import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
 import { CREATE, PROJECT, projectRuleSelect } from './projects.abilities.js';
-import { lockProjectForShare } from './projects.sql.js';
+import { PROJECT_MEMBER_REMOVED, type ProjectMemberRemovedPayload } from './projects.events.js';
+import {
+  lockProjectForShare,
+  lockProjectForUpdate,
+  lockProjectMemberForShare,
+} from './projects.sql.js';
 
 /** The fields of a project response and of its rules (§18.3). */
 function projectSelect(principal: UserPrincipal) {
@@ -49,6 +56,8 @@ function projectSelect(principal: UserPrincipal) {
     version: true,
     createdAt: true,
     updatedAt: true,
+    // The counter exists from the first ticket on (§3.1): the project "has tickets".
+    ticketCounter: { select: { projectId: true } },
   } satisfies Prisma.ProjectSelect;
 }
 
@@ -88,6 +97,7 @@ function toProjectResponse(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     role: roleOf(row, principal),
+    hasTickets: row.ticketCounter !== null,
     allowedActions: projectActionSchema.options.filter((action) => ability.can(action, record)),
   };
 }
@@ -157,6 +167,7 @@ export class ProjectsService {
     private readonly abilities: AbilityFactory,
     private readonly auditLog: AuditLogEntriesService,
     private readonly invitationRevocations: InvitationRevocationsService,
+    private readonly outbox: OutboxService,
   ) {}
 
   /** The projects in one state the principal can see, sorted by name. */
@@ -214,7 +225,9 @@ export class ProjectsService {
   /**
    * Changes the name and the key (`update`) or the settings (`update_settings`). A body with a
    * field the principal may not change is rejected as a whole with `403` (§18.3). The key stays
-   * editable while the project has no tickets (§3.1), which is always the case before S1-05.
+   * editable while the project has had no ticket (§3.1): a key change locks the project for an
+   * update, so the creation of a first ticket – holding the share lock – commits before it and is
+   * seen, or waits for it.
    */
   async update(
     principal: UserPrincipal,
@@ -224,6 +237,9 @@ export class ProjectsService {
     const ability = this.abilities.forPrincipal(principal);
     return this.withUniqueKey(() =>
       this.prisma.$transaction(async (tx) => {
+        if (input.key !== undefined && !(await lockProjectForUpdate(tx, target.id))) {
+          throw new AppError('request.not_found');
+        }
         const row = await this.findVisible(tx, ability, principal, target.id);
         if (input.name !== undefined || input.key !== undefined) {
           this.assertCan(ability, 'update', row);
@@ -232,6 +248,9 @@ export class ProjectsService {
           this.assertCan(ability, 'update_settings', row);
         }
         if (input.key !== undefined && input.key !== row.key) {
+          if (await this.hasTickets(tx, target.id)) {
+            throw new AppError('project.key_immutable');
+          }
           await this.assertKeyFree(tx, input.key);
         }
         assertVersionMatched(await tx.project.updateMany(versionedUpdate(target, input)));
@@ -295,19 +314,38 @@ export class ProjectsService {
 
   /**
    * Deletes a project with its memberships (§7.3); one audit entry stands for both. The key becomes
-   * free again (§3.1).
+   * free again (§3.1). A project that has had a ticket is kept (`409 project.has_tickets`): the lock
+   * for an update makes a concurrent first creation commit before the check or wait for it, and
+   * the restricting foreign key of the tickets is the backstop.
    */
   async delete(principal: UserPrincipal, target: VersionedTarget): Promise<void> {
     const ability = this.abilities.forPrincipal(principal);
-    await this.prisma.$transaction(async (tx) => {
-      this.assertCan(ability, 'delete', await this.findVisible(tx, ability, principal, target.id));
-      assertVersionMatched(await tx.project.deleteMany({ where: versionedWhere(target) }));
-      await this.auditLog.record(tx, {
-        action: 'project.deleted',
-        actorId: principal.userId,
-        target: { type: PROJECT, id: target.id },
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        if (!(await lockProjectForUpdate(tx, target.id))) {
+          throw new AppError('request.not_found');
+        }
+        this.assertCan(
+          ability,
+          'delete',
+          await this.findVisible(tx, ability, principal, target.id),
+        );
+        if (await this.hasTickets(tx, target.id)) {
+          throw new AppError('project.has_tickets');
+        }
+        assertVersionMatched(await tx.project.deleteMany({ where: versionedWhere(target) }));
+        await this.auditLog.record(tx, {
+          action: 'project.deleted',
+          actorId: principal.userId,
+          target: { type: PROJECT, id: target.id },
+        });
       });
-    });
+    } catch (error) {
+      if (isForeignKeyViolation(error, 'tickets_project_id_fkey')) {
+        throw new AppError('project.has_tickets');
+      }
+      throw error;
+    }
   }
 
   /** The members of a project, sorted by display name; `role` filters them. */
@@ -459,7 +497,8 @@ export class ProjectsService {
 
   /**
    * Removes a member from a project. Removing the last Project manager is allowed; the web
-   * application warns about it (§7.4). Unassigning their open tickets arrives with S1-05.
+   * application warns about it (§7.4). The outbox event `project_member.removed` lets a Worker job
+   * unassign their open tickets of the project (§7.4).
    */
   async removeMember(principal: UserPrincipal, projectId: string, userId: string): Promise<void> {
     const ability = this.abilities.forPrincipal(principal);
@@ -473,6 +512,10 @@ export class ProjectsService {
         target: { type: PROJECT, id: projectId },
         details: { userId, role: member.role },
       });
+      await this.outbox.add(tx, {
+        type: PROJECT_MEMBER_REMOVED,
+        payload: { projectId, userId } satisfies ProjectMemberRemovedPayload,
+      });
     });
   }
 
@@ -483,6 +526,15 @@ export class ProjectsService {
    */
   lockForShare(tx: Transaction, projectId: string): Promise<boolean> {
     return lockProjectForShare(tx, projectId);
+  }
+
+  /**
+   * Locks the membership of an account in a project in share mode for the rest of a transaction of
+   * another module whose change depends on it (the assignment of a ticket, S1-05): a concurrent
+   * removal of the member waits for it. Returns whether the membership exists.
+   */
+  lockMemberForShare(tx: Transaction, projectId: string, userId: string): Promise<boolean> {
+    return lockProjectMemberForShare(tx, projectId, userId);
   }
 
   /**
@@ -568,6 +620,14 @@ export class ProjectsService {
       throw new AppError('request.not_found');
     }
     return member;
+  }
+
+  /**
+   * Whether a ticket was ever created in the project (§3.1): its counter exists from the first
+   * ticket on, also after undoing an import removed every ticket (§12.5).
+   */
+  private async hasTickets(tx: Transaction, projectId: string): Promise<boolean> {
+    return (await tx.ticketNumberCounter.count({ where: { projectId } })) > 0;
   }
 
   private async assertKeyFree(tx: Transaction, key: string): Promise<void> {

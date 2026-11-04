@@ -10,7 +10,7 @@ Only the Administrator creates, archives, unarchives and deletes projects.
 
 1. Select **Projects** in the navigation, then **New project**.
 2. Enter the **Name**. Trybun suggests the **Key** from the name until you edit it yourself; the letters you type are shown in upper case.
-3. Check the **Key**: 2–10 capital letters or digits, starting with a letter (for example `ERP`). It must be unique among all projects, active and archived.
+3. Check the **Key**: 2–10 capital letters or digits, starting with a letter (for example `ERP`). It must be unique among all projects, active and archived. You can change it in the project settings only until the first ticket of the project, because it is part of ticket identifiers such as `ERP-12`.
 4. Select **Create project**.
 
 The settings of the new project open on **Members**, where you [add the team](../../team/how-to/manage-project-members.md).
@@ -29,7 +29,7 @@ A message offers **Undo** for a moment. An archived project is read-only for eve
 
 ## Delete a project
 
-Only an active project can be deleted – unarchive an archived one first.
+Only an active project without tickets can be deleted – unarchive an archived one first. A project that has ever had a ticket cannot be deleted, so that its ticket identifiers are never used again; archive it instead.
 
 1. Open the project, then **Danger zone** and select **Delete project**.
 2. Type the key of the project to confirm.

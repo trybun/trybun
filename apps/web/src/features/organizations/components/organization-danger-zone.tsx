@@ -35,8 +35,9 @@ function DangerAction({
 
 /**
  * The Danger zone of an organization (§7.3), as the one of projects: archive – with Undo instead
- * of a confirmation (Rule 2) – and delete, which cannot be undone and is confirmed. Unarchiving is
- * offered by the banner of an archived organization.
+ * of a confirmation (Rule 2) – and delete, which cannot be undone and is confirmed. An
+ * organization with tickets cannot be deleted: the button is disabled with the reason, and the API
+ * refuses it anyway. Unarchiving is offered by the banner of an archived organization.
  */
 export function OrganizationDangerZone({ organization }: { organization: Organization }) {
   const t = useTranslations('organizations.danger');
@@ -74,8 +75,15 @@ export function OrganizationDangerZone({ organization }: { organization: Organiz
         </DangerAction>
       )}
       {can('delete') && (
-        <DangerAction title={t('delete')} description={t('deleteDescription')}>
-          <Button variant="destructive" onClick={() => setIsDeleting(true)}>
+        <DangerAction
+          title={t('delete')}
+          description={organization.hasTickets ? t('deleteHasTickets') : t('deleteDescription')}
+        >
+          <Button
+            variant="destructive"
+            disabled={organization.hasTickets}
+            onClick={() => setIsDeleting(true)}
+          >
             {t('delete')}
           </Button>
         </DangerAction>
