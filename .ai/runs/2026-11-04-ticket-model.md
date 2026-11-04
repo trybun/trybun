@@ -31,15 +31,15 @@ Build the ticket model of S1-05 exactly as the approved change specification dec
 
 ### Phase 1: Model and creation
 
-- [ ] 1.1 Contracts of tickets and activity events
-- [ ] 1.2 Ticket and counter models, migration and factories
-- [ ] 1.3 Ticket abilities, record descriptor and archived restriction
-- [ ] 1.4 Create, list and read tickets with the locked counter
+- [x] 1.1 Contracts of tickets and activity events — bc87c00
+- [x] 1.2 Ticket and counter models, migration and factories — 33f1a58
+- [x] 1.3 Ticket abilities, record descriptor and archived restriction — 14dc594
+- [x] 1.4 Create, list and read tickets with the locked counter — ddde7dd
 
 ### Phase 2: Changes and activity events
 
-- [ ] 2.1 Activity events module with the immutable table
-- [ ] 2.2 Ticket updates with events and assignment rules
+- [x] 2.1 Activity events module with the immutable table — 1d2075b
+- [x] 2.2 Ticket updates with events and assignment rules — ddde7dd
 - [ ] 2.3 Project key and deletion guards, hasTickets, organization deletion guard
 
 ### Phase 3: Unassignment, permissions, web and documentation
