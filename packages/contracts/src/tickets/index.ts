@@ -53,9 +53,12 @@ export const ticketTitleSchema = z.string().trim().min(1).max(TICKET_TITLE_MAX_L
 export const TICKET_DESCRIPTION_MAX_LENGTH = 65_536;
 export const ticketDescriptionSchema = z.string().max(TICKET_DESCRIPTION_MAX_LENGTH);
 
-/** `ticket.identifier` (§3.2): `KEY-number`, e.g. `ERP-12`; composed, never stored. */
+/**
+ * `ticket.identifier` (§3.2): `KEY-number`, e.g. `ERP-12`; composed, never stored. The number has
+ * at most nine digits, so it always fits the 32-bit integer column of the database.
+ */
 export const TICKET_IDENTIFIER_PATTERN = new RegExp(
-  `^${PROJECT_KEY_PATTERN.source.slice(1, -1)}-[1-9][0-9]{0,9}$`,
+  `^${PROJECT_KEY_PATTERN.source.slice(1, -1)}-[1-9][0-9]{0,8}$`,
 );
 export const ticketIdentifierSchema = z.string().regex(TICKET_IDENTIFIER_PATTERN);
 

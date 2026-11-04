@@ -325,6 +325,21 @@ describe('tickets endpoints', () => {
       expect((hidden.body as TicketPage).items).toEqual([]);
     });
 
+    it('rejects an identifier whose number no ticket can have with 422, not 500', async () => {
+      const project = await createProject(prisma);
+      const { authorization } = await signIn('developer', { project });
+
+      const res = await http()
+        .get('/api/v1/tickets')
+        .query({ identifier: `${project.key}-9999999999` })
+        .set('Authorization', authorization);
+
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        errors: [{ pointer: '/identifier', code: 'string.invalid_format' }],
+      });
+    });
+
     it('lists the tickets of a project newest first, page by page', async () => {
       const project = await createProject(prisma);
       const { user, authorization } = await signIn('developer', { project });

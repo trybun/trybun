@@ -83,6 +83,8 @@ describe('ticket identifiers', () => {
     ['ERP-0', false],
     ['ERP-012', false],
     ['ERP12', false],
+    ['ERP-999999999', true],
+    ['ERP-1000000000', false],
   ])('accepts the identifier %s: %s', (identifier, isValid) => {
     expect(listTicketsQuerySchema.safeParse({ identifier }).success).toBe(isValid);
   });
