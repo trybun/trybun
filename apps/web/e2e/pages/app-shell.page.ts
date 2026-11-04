@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** The application shell around the team views (§2.9). */
 export class AppShellPage {
@@ -28,23 +28,59 @@ export class AppShellPage {
     );
   }
 
-  /** Opens the help menu (§2.3, §2.4). */
-  async openHelpMenu(): Promise<Locator> {
-    await this.help.click();
-    return this.openedMenu();
+  /**
+   * The tooltip with an item name of the collapsed side navigation. Tooltips have no role (they
+   * are visual only, `Tooltip` of `@trybun/ui`), so the slot of the component finds them.
+   */
+  navigationTooltip(name: string): Locator {
+    return this.page.locator('[data-slot="tooltip-content"]').filter({ hasText: name });
   }
 
-  async openAccountMenu(): Promise<Locator> {
-    await this.accountMenu.click();
-    return this.openedMenu();
+  /** The visible button that collapses or expands the side navigation (§2.9). */
+  navigationToggle(name: 'Collapse navigation' | 'Expand navigation'): Locator {
+    return this.navigation.getByRole('button', { name, exact: true });
   }
 
   /**
-   * The open menu once its opening animation has finished: during the fade-in its text is
-   * semi-transparent, and axe would measure a colour contrast nobody sees (#72).
+   * Collapses or expands the side navigation. A click before the hydration does nothing (#191),
+   * so the click repeats until the toggle shows the other state.
    */
-  private async openedMenu(): Promise<Locator> {
+  async toggleNavigation(name: 'Collapse navigation' | 'Expand navigation'): Promise<void> {
+    const other = name === 'Collapse navigation' ? 'Expand navigation' : 'Collapse navigation';
+    await expect(async () => {
+      if (await this.navigationToggle(name).isVisible()) {
+        await this.navigationToggle(name).click();
+      }
+      await expect(this.navigationToggle(other)).toBeVisible({ timeout: 1000 });
+    }).toPass();
+  }
+
+  /** Opens the help menu (§2.3, §2.4). */
+  openHelpMenu(): Promise<Locator> {
+    return this.openMenu(this.help);
+  }
+
+  /** Opens the account menu (§7.4). */
+  openAccountMenu(): Promise<Locator> {
+    return this.openMenu(this.accountMenu);
+  }
+
+  /**
+   * Opens a header menu and returns it once its opening animation has finished.
+   *
+   * The server renders the button and the menu loads after the first paint (#72); a click before
+   * the hydration opens nothing (WebKit, #191, #206), so the click repeats until the menu shows.
+   * During the fade-in the text is semi-transparent, and axe would measure a colour contrast
+   * nobody sees (#72).
+   */
+  private async openMenu(trigger: Locator): Promise<Locator> {
     const menu = this.page.getByRole('menu');
+    await expect(async () => {
+      if (!(await menu.isVisible())) {
+        await trigger.click();
+      }
+      await expect(menu).toBeVisible({ timeout: 1000 });
+    }).toPass();
     await menu.evaluate((popup) =>
       Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
     );

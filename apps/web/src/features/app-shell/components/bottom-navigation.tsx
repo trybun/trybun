@@ -31,7 +31,7 @@ export function BottomNavigation({
                 href={href}
                 aria-current={isCurrentPage ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
+                  'flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset',
                   isCurrentPage && 'text-foreground',
                 )}
               >

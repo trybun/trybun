@@ -12,8 +12,11 @@ import { HttpModule } from './platform/http/http.module.js';
 import { LoggingModule } from './platform/logging/logging.module.js';
 import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.module.js';
 import { RateLimitingModule } from './platform/rate-limiting/rate-limiting.module.js';
-import { administrationAbilities } from './modules/administration/administration.abilities.js';
+import { ABILITY_DEFINITIONS } from './ability-definitions.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
+import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { InvitationsModule } from './modules/invitations/invitations.module.js';
+import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
@@ -34,12 +37,15 @@ export class ApiModule {
         AuthenticationModule,
         // After the authentication guard: the rate limit is keyed by the principal (§14.4).
         RateLimitingModule,
-        AuthorizationModule.forRoot([administrationAbilities]),
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         KeycloakAdminModule,
         HealthModule,
         UsersModule,
         SetupModule,
         AdministrationModule,
+        ProjectsModule,
+        OrganizationsModule,
+        InvitationsModule,
       ],
     };
   }

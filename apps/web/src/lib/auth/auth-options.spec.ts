@@ -8,6 +8,16 @@ import type { SignInTokens } from './session-adapter.js';
 
 vi.mock('server-only', () => ({}));
 
+/** The cookies the response of the sign-in sets. */
+const responseCookies = new Map<string, string>();
+vi.mock('next/headers.js', () => ({
+  cookies: () =>
+    Promise.resolve({
+      set: (name: string, value: string) => responseCookies.set(name, value),
+      delete: (name: string) => responseCookies.delete(name),
+    }),
+}));
+
 const { createAuthOptions, toKeycloakTokens } = await import('./auth-options.js');
 
 const ID_TOKEN = await new SignJWT({ sub: 'user-1', sid: 'keycloak-session-1' })
@@ -52,6 +62,7 @@ describe('createAuthOptions', () => {
 
   afterEach(() => {
     mswServer.resetHandlers();
+    responseCookies.clear();
   });
 
   afterAll(() => {
@@ -82,6 +93,8 @@ describe('createAuthOptions', () => {
         displayName: 'Ada Admin',
         email: 'ada@example.com',
         kind: 'end_user',
+        language: null,
+        timeZone: null,
         allowedActions: [],
       }),
     );
@@ -90,6 +103,27 @@ describe('createAuthOptions', () => {
     expect(await signInCallback(signIn, ACCOUNT)).toBe(true);
     expect(signIn.current?.refreshToken).toBe('refresh-token');
     expect(signIn.accountKind).toBe('end_user');
+    // Without a language of the account, the language of this device stays; without a time zone,
+    // the system default applies.
+    expect(responseCookies.size).toBe(0);
+  });
+
+  it('sets the language cookie from the language of the account', async () => {
+    currentUser(
+      HttpResponse.json({
+        id: '0190f2f4-7c1e-7000-8000-000000000001',
+        displayName: 'Ada Admin',
+        email: 'ada@example.com',
+        kind: 'team',
+        language: 'pl',
+        timeZone: 'Europe/Warsaw',
+        allowedActions: [],
+      }),
+    );
+
+    expect(await signInCallback({}, ACCOUNT)).toBe(true);
+    expect(responseCookies.get('NEXT_LOCALE')).toBe('pl');
+    expect(responseCookies.get('TRYBUN_TIME_ZONE')).toBe('Europe/Warsaw');
   });
 
   it('leaves the account kind unknown when the API refuses the account', async () => {
@@ -98,6 +132,7 @@ describe('createAuthOptions', () => {
 
     expect(await signInCallback(signIn, ACCOUNT)).toBe(true);
     expect(signIn.accountKind).toBeUndefined();
+    expect(responseCookies.size).toBe(0);
   });
 
   it.each([
