@@ -31,9 +31,9 @@ Build the status changes of S1-06 exactly as the approved change specification d
 
 ### Phase 1: Rules and model
 
-- [ ] 1.1 Contracts of statuses, answers, actions and errors
-- [ ] 1.2 Migration of the status fields and ticket relations, factories
-- [ ] 1.3 Domain rule status-transitions with unit tests
+- [x] 1.1 Contracts of statuses, answers, actions and errors — d8c49d6
+- [x] 1.2 Migration of the status fields and ticket relations, factories — d0d4c27
+- [x] 1.3 Domain rule status-transitions with unit tests — 443bd9c
 
 ### Phase 2: Team status changes
 
