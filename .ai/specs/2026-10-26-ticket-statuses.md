@@ -214,7 +214,7 @@ The `tickets` namespace of `@trybun/i18n` gains, in EN and PL, the labels of the
 | §4.5 | Status values in events are codes; labels come from the catalogues (Q13) |
 | §18.3 | The example of the Row lock pattern also names ticket changes, which lock the project in share mode (Q23) |
 | Glossary | New terms below |
-| Plan | S1-12: publish the stored rejection reason as a public comment and remove `rejection_reason` (Q2). S1-15: watcher transfer for duplicates, the confirmation e-mail with signed links (Q10, Q11). S1-09: the confirmation page that signed links open (Q11). S2-02: the affected user for duplicates (Q10). The maintainer changes the plan |
+| Plan | S1-12: publish the stored rejection reason as a public comment and remove `rejection_reason` (Q2). S1-15: watcher transfer for duplicates, the confirmation e-mail with signed links (Q10, Q11). S1-09: the confirmation page that signed links open (Q11). S2-02: the affected user for duplicates (Q10). S1-16: `rejection_reason` while it exists (Q2). Applied to the plan on 2026-11-05 |
 
 New or changed glossary terms (code identifier, EN/PL labels):
 
@@ -297,3 +297,4 @@ Each step leaves the application working and has its tests.
 - 2026-10-26 – Created.
 - 2026-11-05 – Brought up to date with `main` after S1-05 was implemented (#226, #228, #230): the related specifications point to `implemented/`; Q1 is approved as S1-05 Q1; the contracts reuse `ticketStatusSchema` and `TERMINAL_TICKET_STATUSES`; the archived check is `archivedProjectsOfTicketsRestriction`. Note from the review of #226: new section [Concurrency](#concurrency) and Q23 – the status change, the resolution answer, the automatic close and S1-05's field `PATCH` take the project's share lock before reading the ticket; the reopen's assignee check (Q22) takes the membership and account share locks, in S1-05's lock order. No question was renumbered; only Q1 changed its state.
 - 2026-11-05 – Approved: the maintainer accepted every proposed answer, Q2 (⚠) explicitly and Q3–Q23 as proposed (Q1 earlier as S1-05 Q1); status `approved`.
+- 2026-11-05 – Plan changes applied at the maintainer's request: rows S1-06, S1-09, S1-12, S1-15, S1-16 and S2-02.
