@@ -4,7 +4,7 @@ import { react } from '@trybun/eslint-config/react';
 import { tailwind } from '@trybun/eslint-config/tailwind';
 
 export default [
-  ...library({ allowedPackages: ['@trybun/i18n', '@trybun/ui'] }),
+  ...library({ allowedPackages: ['@trybun/i18n', '@trybun/markdown', '@trybun/ui'] }),
   ...react,
   ...tailwind({ entryPoint: join(import.meta.dirname, 'src/styles/globals.css') }),
 ];
