@@ -24,7 +24,7 @@
 | Data access from the web | Typed API client generated from the OpenAPI document (`openapi-typescript` + `openapi-fetch`) calling the BFF endpoint `/api/v1/*` of the web application; TanStack Query in client components |
 | Internationalization | `next-intl` in the web application; `intl-messageformat` in the server (e-mails, API messages); message catalogues in ICU MessageFormat in `@trybun/i18n`, shared by web and server ([§14.6](#146-monorepo-structure)). Keycloak theme messages (`messages_en.properties`, `messages_pl.properties`) are generated from `@trybun/i18n` at build time into the login theme `trybun` (`docker/keycloak/themes/`), which is committed as part of the Keycloak configuration of the deployment package; `pnpm lint` fails when it differs from the catalogues |
 | Dates and time zones | `date-fns` with `@date-fns/tz` for all time-zone and business-calendar arithmetic (SLA, [§9.4](09-sla.md)); IANA time-zone names |
-| Markdown (GFM) | Own editor component in `@trybun/ui` (textarea, toolbar, Write/Preview, as on GitHub); rendering with `react-markdown` + `remark-gfm` + `rehype-sanitize`; the same unified pipeline renders Markdown on the server (e-mails) and the user documentation ([§2.3](02-agent-rules.md)) |
+| Markdown (GFM) | Own editor component `MarkdownEditor` in `@trybun/ui` (textarea, toolbar, Write/Preview, as on GitHub); rendering with `react-markdown` + `remark-gfm` and the one rule set of `@trybun/markdown` (`rehype-sanitize` with GitHub's schema, allowed link protocols, attachment images, `rel` of external links); code highlighting with `rehype-highlight` (lowlight, class-based, so the CSP needs no change); the same unified pipeline renders Markdown on the server for e-mails (`hast-util-to-jsx-runtime` into React elements with inline styles) and the user documentation ([§2.3](02-agent-rules.md), [§6.2](06-comments-notifications.md)) |
 | Drag and drop | `dnd-kit` (pointer, touch and keyboard sensors) |
 | Gantt chart | SVAR React Gantt, open-source MIT edition only (never the commercial PRO edition); scheduling logic lives in the API ([§10.4](10-roadmap-gantt.md)) |
 | Charts | Recharts (basis of the shadcn/ui `Chart` component) |
@@ -195,6 +195,7 @@ packages/
   ui/               @trybun/ui         Component library (Rule 6)
   contracts/        @trybun/contracts  Zod schemas, API types, status codes and mapping
   i18n/             @trybun/i18n       Message catalogues (EN, PL) in ICU MessageFormat for web and server
+  markdown/         @trybun/markdown   The Markdown rule set of every renderer: sanitize schema, links, images
   tsconfig/         @trybun/tsconfig   Shared TypeScript configuration (strict mode)
   eslint-config/    @trybun/eslint-config  Shared lint rules, incl. Tailwind and boundary rules
 docker/
@@ -221,6 +222,6 @@ docs/
 - A package is created only for a concrete reason: the code is used by at least two applications, or a hard boundary is needed (e.g. `@trybun/ui` must not import application code). No packages "just in case".
 - Every package has one clear responsibility visible in its name. Catch-all packages such as `shared`, `common` or `utils` are not allowed.
 - `@trybun/contracts` contains only what frontend and backend must understand identically (schemas, types, codes, mappings, labels). It contains no permission or visibility logic, which stays in the API ([§14.4](#144-architectural-principles)).
-- Dependencies point in one direction only: applications → packages. Packages never import applications, and there are no cycles. `@trybun/contracts` and `@trybun/i18n` depend on no other project package; `@trybun/ui` does not depend on `@trybun/server`. These boundaries are enforced by lint rules in CI.
+- Dependencies point in one direction only: applications → packages. Packages never import applications, and there are no cycles. `@trybun/contracts`, `@trybun/i18n` and `@trybun/markdown` depend on no other project package; `@trybun/markdown` is imported by `@trybun/ui` and `apps/server`, so the web views, the editor's preview and the e-mails apply the same security rules; `@trybun/ui` does not depend on `@trybun/server`. These boundaries are enforced by lint rules in CI.
 - Packages are **internal packages**: `"private": true`, referenced with the `workspace:*` protocol and consumed as TypeScript source, without a separate build or publishing step (Turborepo recommendation). The web application compiles them through `transpilePackages`, Vitest compiles them on the fly, and the server bundle inlines them (see above).
 - A package is published to npm only when there is an external consumer. The first expected candidate is a client SDK for the public API (`@trybun/sdk`, generated from the OpenAPI document, [§12.1](12-api-webhooks-import.md)), added when the public API exists.

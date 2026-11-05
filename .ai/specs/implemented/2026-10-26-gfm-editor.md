@@ -2,21 +2,21 @@
 
 | | |
 |---|---|
-| Status | `approved` |
+| Status | `implemented` |
 | Created | 2026-10-26 |
 | Plan task | `S1-07` |
 | System specification sections | §6.2, §14.2; also §8.4, §13.3, §13.4, §13.5, §14.6, §18.2, §18.5, §18.6, §18.9 |
-| Related issues / PRs | [ADR 0008](../../docs/adr/0008-attachment-serving.md), [attachment serving](2026-10-25-attachment-serving.md) (item 5: previews of draft attachments) |
+| Related issues / PRs | [ADR 0008](../../../docs/adr/0008-attachment-serving.md), [attachment serving](../2026-10-25-attachment-serving.md) (item 5: previews of draft attachments) |
 
 ## Context
 
-Ticket descriptions, comments and internal notes are written in GitHub Flavored Markdown ([§6.2](../../docs/spec/06-comments-notifications.md)). The editor works like GitHub's: a toolbar, "Write" and "Preview" tabs, task lists, code blocks with syntax highlighting, tables and keyboard shortcuts, where Ctrl+K inserts a link instead of opening the command palette ([§8.4](../../docs/spec/08-team-views.md)). Rendered HTML is sanitized following OWASP. Images are shown only from the ticket's own attachments, referenced by their stable path `/api/v1/attachments/{id}/content` ([§13.3](../../docs/spec/13-non-functional.md)). Images with external URLs are shown as links. [§14.2](../../docs/spec/14-architecture.md) names the stack: an own textarea-based editor in `@trybun/ui`, rendering with `react-markdown` + `remark-gfm` + `rehype-sanitize`, and the same unified pipeline on the server for e-mails.
+Ticket descriptions, comments and internal notes are written in GitHub Flavored Markdown ([§6.2](../../../docs/spec/06-comments-notifications.md)). The editor works like GitHub's: a toolbar, "Write" and "Preview" tabs, task lists, code blocks with syntax highlighting, tables and keyboard shortcuts, where Ctrl+K inserts a link instead of opening the command palette ([§8.4](../../../docs/spec/08-team-views.md)). Rendered HTML is sanitized following OWASP. Images are shown only from the ticket's own attachments, referenced by their stable path `/api/v1/attachments/{id}/content` ([§13.3](../../../docs/spec/13-non-functional.md)). Images with external URLs are shown as links. [§14.2](../../../docs/spec/14-architecture.md) names the stack: an own textarea-based editor in `@trybun/ui`, rendering with `react-markdown` + `remark-gfm` + `rehype-sanitize`, and the same unified pipeline on the server for e-mails.
 
 Current state:
 
 - `@trybun/ui` has a `Markdown` component (S0-09, used by the help viewer). It renders GFM with GitHub's sanitize schema and the default URL transform of `react-markdown`. It has no syntax highlighting, no image rule and no editor.
 - `@trybun/ui` has a `Tabs` component (Base UI, its `TabsList` wrapped in `ScrollFade`), but no `Textarea`.
-- The server has no Markdown rendering. Lint does not let `apps/server` import `@trybun/ui` ([§14.6](../../docs/spec/14-architecture.md), `allowedPackages` in `apps/server/eslint.config.js`), so the server cannot reuse the pipeline of the `Markdown` component.
+- The server has no Markdown rendering. Lint does not let `apps/server` import `@trybun/ui` ([§14.6](../../../docs/spec/14-architecture.md), `allowedPackages` in `apps/server/eslint.config.js`), so the server cannot reuse the pipeline of the `Markdown` component.
 - No view writes Markdown yet. The ticket forms (S1-09, S1-10), comments (S1-12) and notification e-mails (S1-15) will be the consumers. Uploads come with S1-08.
 
 S1-07 builds the editor and the single rendering pipeline those tasks use. This specification proposes the behaviour and the structure for approval.
@@ -29,7 +29,7 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
 
 ## Non-goals
 
-- WYSIWYG editing ([§14.2](../../docs/spec/14-architecture.md) and the plan forbid it).
+- WYSIWYG editing ([§14.2](../../../docs/spec/14-architecture.md) and the plan forbid it).
 - Uploading files, the attachment list and the "Checking…" state (S1-08). S1-07 provides only the editor's entry points for files (Q7).
 - `@mentions` and their suggestions (S1-12), ticket references such as `ERP-123` as links, emoji shortcodes, saved replies.
 - Ticking task-list checkboxes in the rendered view (Q6).
@@ -41,8 +41,8 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
 
 ### What the user sees
 
-- **Write tab** (default): a textarea with a toolbar above it. The textarea grows with its content up to a maximum height, then scrolls. On phones and tablets it uses 16 px text ([§18.6](../../docs/spec/18-code-patterns.md), Rule 9).
-- **Toolbar** ([§6.2](../../docs/spec/06-comments-notifications.md)), with the shortcut of each button (Cmd instead of Ctrl on macOS, as on GitHub):
+- **Write tab** (default): a textarea with a toolbar above it. The textarea grows with its content up to a maximum height, then scrolls. On phones and tablets it uses 16 px text ([§18.6](../../../docs/spec/18-code-patterns.md), Rule 9).
+- **Toolbar** ([§6.2](../../../docs/spec/06-comments-notifications.md)), with the shortcut of each button (Cmd instead of Ctrl on macOS, as on GitHub):
 
   | Button | Inserts or wraps | Shortcut |
   |---|---|---|
@@ -66,8 +66,8 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
   - Code blocks with a language (` ```ts `) are highlighted in the views and the preview (Q3). E-mails show them as plain monospaced blocks.
   - Raw HTML in the source is not rendered (Q5). `<script>` and every other tag disappear.
   - Links keep only the `http`, `https` and `mailto` protocols and paths relative to the site (starting with a single `/`, or none). Any other link, including `javascript:`, `data:` and `vbscript:`, renders as plain text. Links to other sites, including protocol-relative ones (`//example.com`), get `rel="nofollow ugc noopener noreferrer"`.
-  - Images: an `<img>` is rendered only when its source is exactly the stable path of an attachment in the set the view allows (the ticket's attachments; while writing, also the writer's own drafts **if** item 5 of [attachment serving](2026-10-25-attachment-serving.md) is approved – S1-07 only takes the set as given). Every other image renders as a link with its alt text, or with its URL when there is no alt text (Q4); an image whose source the sanitizer removed renders as its alt text only. This includes external URLs, attachments of other tickets and unknown IDs. E-mails always show images as links ([§13.3](../../docs/spec/13-non-functional.md)).
-- **Accessibility** ([§13.4](../../docs/spec/13-non-functional.md)):
+  - Images: an `<img>` is rendered only when its source is exactly the stable path of an attachment in the set the view allows (the ticket's attachments; while writing, also the writer's own drafts **if** item 5 of [attachment serving](../2026-10-25-attachment-serving.md) is approved – S1-07 only takes the set as given). Every other image renders as a link with its alt text, or with its URL when there is no alt text (Q4); an image whose source the sanitizer removed renders as its alt text only. This includes external URLs, attachments of other tickets and unknown IDs. E-mails always show images as links ([§13.3](../../../docs/spec/13-non-functional.md)).
+- **Accessibility** ([§13.4](../../../docs/spec/13-non-functional.md)):
   - The toolbar is a labelled `role="toolbar"` with one Tab stop and arrow-key navigation (Base UI `Toolbar`).
   - Every button has a label from the catalogues and `aria-keyshortcuts`.
   - Write/Preview are ARIA tabs (`Tabs` of `@trybun/ui`, on Base UI).
@@ -81,11 +81,11 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
   - `markdownSanitizeSchema` – GitHub's schema of `hast-util-sanitize` (as today) with the protocols above and the `user-content-` prefix for IDs;
   - `rehypeAttachmentImages({ allowedIds })` – runs after sanitizing and replaces every disallowed `img` with a link, as described above;
   - `rehypeExternalLinks` – adds the `rel` value;
-  - `attachmentContentPath(id)` and `parseAttachmentContentPath(src)` – the stable path of [§13.3](../../docs/spec/13-non-functional.md), matched exactly (relative, a UUID, nothing appended);
+  - `attachmentContentPath(id)` and `parseAttachmentContentPath(src)` – the stable path of [§13.3](../../../docs/spec/13-non-functional.md), matched exactly (relative, a UUID, nothing appended);
   - `markdownRehypePlugins(options)` – the ordered list `[sanitize, attachment images, external links]` that both renderers use.
 
   The package depends only on npm packages (`unified` ecosystem). `@trybun/ui` and `apps/server` may import it.
-- **Web rendering**: the `Markdown` component of `@trybun/ui` uses `markdownRehypePlugins` and adds `rehype-highlight` last (after sanitizing, so its classes are trusted) with the token-based highlight theme in `globals.css`. A new prop `attachmentImageIds` (default: none) is the allowed set. The help viewer passes nothing; the help pages contain no images today. `Markdown` stays usable in Server Components, so content in views is highlighted on the server and adds no JavaScript to the page. Only the Preview tab renders on the client, inside the lazily loaded editor ([§18.5](../../docs/spec/18-code-patterns.md)).
+- **Web rendering**: the `Markdown` component of `@trybun/ui` uses `markdownRehypePlugins` and adds `rehype-highlight` last (after sanitizing, so its classes are trusted) with the token-based highlight theme in `globals.css`. A new prop `attachmentImageIds` (default: none) is the allowed set. The help viewer passes nothing; the help pages contain no images today. `Markdown` stays usable in Server Components, so content in views is highlighted on the server and adds no JavaScript to the page. Only the Preview tab renders on the client, inside the lazily loaded editor ([§18.5](../../../docs/spec/18-code-patterns.md)).
 - **E-mail rendering** (server): `apps/server/src/platform/markdown/` exports `renderEmailMarkdown(source, { baseUrl })`:
   - It runs `remark-parse` → `remark-gfm` → `remark-rehype` → `markdownRehypePlugins({ allowedIds: none })` and a step that makes relative URLs absolute against `baseUrl`, which the caller passes from the typed configuration (`https://${TRYBUN_DOMAIN}`). Attachment links in e-mails need a session like any other link (ADR 0008); whether a recipient may see an attachment is decided when the e-mail is built (S1-15), never by the renderer.
   - It converts the tree with `hast-util-to-jsx-runtime` into React elements styled with inline styles, for the React Email templates of S1-15.
@@ -93,11 +93,11 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
   - It has no syntax highlighting.
 - **Editor**: `MarkdownEditor` in `@trybun/ui` (`packages/ui/src/components/markdown-editor.tsx`), built from the new `Textarea` component (shadcn/ui on Base UI, Rule 6), the existing `Tabs`, Base UI `Toolbar`, `DropdownMenu` and `Markdown`.
   - Its props follow Base UI: `value` / `defaultValue` / `onValueChange`, `name`, `placeholder`, `disabled`, `invalid`, `ref`, `attachmentImageIds`, and `onFilesAdd` (Q7).
-  - It is presentational ([§18.6](../../docs/spec/18-code-patterns.md)): no fetching, no routing, no API paths except through `@trybun/markdown`.
+  - It is presentational ([§18.6](../../../docs/spec/18-code-patterns.md)): no fetching, no routing, no API paths except through `@trybun/markdown`.
   - The text changes of the toolbar and shortcuts are pure functions `(text, selection) → { text, selection }` in `markdown-editor-format.ts`, tested with tables.
   - They are applied with `document.execCommand('insertText')`, which keeps the textarea's native undo history (also used by GitHub's `markdown-toolbar-element`). Where the browser rejects it, `setRangeText` plus an `input` event is the fallback, without undo.
   - Keyboard shortcuts are handled by the editor on its own textarea (Q2). A handled shortcut calls `preventDefault()` and `stopPropagation()`, so Ctrl+K never reaches the command palette.
-- **Forms**: the editor is a controlled field like any other ([§18.5](../../docs/spec/18-code-patterns.md) "Forms"): `Controller` + `Field`. Forms load it through a `lazy-markdown-editor.tsx` wrapper of their feature.
+- **Forms**: the editor is a controlled field like any other ([§18.5](../../../docs/spec/18-code-patterns.md) "Forms"): `Controller` + `Field`. Forms load it through a `lazy-markdown-editor.tsx` wrapper of their feature.
 
 ### Tests
 
@@ -124,15 +124,15 @@ New or changed glossary terms: none.
 
 The maintainer approved every answer below on 2026-11-05, the ⚠ ones (Q1, Q2) explicitly and the others as proposed; no alternative was chosen. Q2 is a clarification of the pattern of §18.5, not a change, so it needs no ADR.
 
-1. ⚠ **Where the shared pipeline lives.** The plan requires the same pipeline on the server, but `apps/server` may not import `@trybun/ui`, and `@trybun/contracts` holds schemas and codes, not processing code. — **Answer (approved by the maintainer on 2026-11-05):** a new internal package `@trybun/markdown` (`packages/markdown/`). It meets the rule of [§14.6](../../docs/spec/14-architecture.md) (used by two applications, one responsibility in its name). `@trybun/ui` and `apps/server` may import it, and it imports no project package; §14.6 and the lint boundaries change. Alternatives:
+1. ⚠ **Where the shared pipeline lives.** The plan requires the same pipeline on the server, but `apps/server` may not import `@trybun/ui`, and `@trybun/contracts` holds schemas and codes, not processing code. — **Answer (approved by the maintainer on 2026-11-05):** a new internal package `@trybun/markdown` (`packages/markdown/`). It meets the rule of [§14.6](../../../docs/spec/14-architecture.md) (used by two applications, one responsibility in its name). `@trybun/ui` and `apps/server` may import it, and it imports no project package; §14.6 and the lint boundaries change. Alternatives:
    - Let `apps/server` import a React-free subpath `@trybun/ui/markdown-pipeline`. No new package, but the server would depend on the component library.
    - Two copies of the configuration with a parity test. Rejected: two places to change one security rule.
-2. ⚠ **Editor shortcuts and the command registry.** [§18.5](../../docs/spec/18-code-patterns.md) says every shortcut is registered once in the command registry of `apps/web` and that components never bind keys. But the editor lives in `@trybun/ui`, which may not import the web application, and its shortcuts edit text in one focused textarea, like a native text control. — **Answer (approved by the maintainer on 2026-11-05):** the editor handles its text-editing shortcuts on its own textarea and stops their propagation. The registry stays the only place for application-level shortcuts. §18.5 gets one sentence for this case, as a clarification of the pattern; the maintainer confirmed that it is not a change of the pattern, so no ADR is needed (Rule 12). The shortcut table lives in §6.2, so the palette can still list it in a help section later.
-3. **Library for syntax highlighting.** Not named in [§14.2](../../docs/spec/14-architecture.md). — **Answer (approved by the maintainer on 2026-11-05):** `rehype-highlight` (MIT, `lowlight` with highlight.js grammars) with its `common` language set. It marks tokens with classes, so the strict CSP of [§13.5](../../docs/spec/13-non-functional.md) needs no change and the colours come from theme tokens (light and dark). It runs synchronously in Server Components. Alternative: Shiki (`@shikijs/rehype`). Its highlighting is more exact, but it is larger, ships its themes as inline styles, and needs a WebAssembly or JavaScript regex engine that is asynchronous to load. Reversible: only the last plugin changes.
-4. **What a disallowed image shows.** [§6.2](../../docs/spec/06-comments-notifications.md) says external images are shown as links. For an image of another ticket, the Done-when says only "not displayed". — **Answer (approved by the maintainer on 2026-11-05):** every disallowed image is shown the same way, as a link labelled by its alt text (or its URL), whatever the reason. The reader sees that something is referenced. Opening an attachment link still passes the API's access check, which answers 404 for an invisible attachment. Alternative: drop images of other tickets entirely.
-5. **Raw HTML.** GitHub renders a safe subset of raw HTML (`<details>`, `<kbd>`, `<sub>`, …). — **Answer (approved by the maintainer on 2026-11-05):** no raw HTML at all, as the `Markdown` component does today. The source keeps the tags, so they reach GitHub unchanged ([§11.4](../../docs/spec/11-github-integration.md)), but Trybun does not render them. A subset can be allowed later with `rehype-raw` before the sanitizer.
+2. ⚠ **Editor shortcuts and the command registry.** [§18.5](../../../docs/spec/18-code-patterns.md) says every shortcut is registered once in the command registry of `apps/web` and that components never bind keys. But the editor lives in `@trybun/ui`, which may not import the web application, and its shortcuts edit text in one focused textarea, like a native text control. — **Answer (approved by the maintainer on 2026-11-05):** the editor handles its text-editing shortcuts on its own textarea and stops their propagation. The registry stays the only place for application-level shortcuts. §18.5 gets one sentence for this case, as a clarification of the pattern; the maintainer confirmed that it is not a change of the pattern, so no ADR is needed (Rule 12). The shortcut table lives in §6.2, so the palette can still list it in a help section later.
+3. **Library for syntax highlighting.** Not named in [§14.2](../../../docs/spec/14-architecture.md). — **Answer (approved by the maintainer on 2026-11-05):** `rehype-highlight` (MIT, `lowlight` with highlight.js grammars) with its `common` language set. It marks tokens with classes, so the strict CSP of [§13.5](../../../docs/spec/13-non-functional.md) needs no change and the colours come from theme tokens (light and dark). It runs synchronously in Server Components. Alternative: Shiki (`@shikijs/rehype`). Its highlighting is more exact, but it is larger, ships its themes as inline styles, and needs a WebAssembly or JavaScript regex engine that is asynchronous to load. Reversible: only the last plugin changes.
+4. **What a disallowed image shows.** [§6.2](../../../docs/spec/06-comments-notifications.md) says external images are shown as links. For an image of another ticket, the Done-when says only "not displayed". — **Answer (approved by the maintainer on 2026-11-05):** every disallowed image is shown the same way, as a link labelled by its alt text (or its URL), whatever the reason. The reader sees that something is referenced. Opening an attachment link still passes the API's access check, which answers 404 for an invisible attachment. Alternative: drop images of other tickets entirely.
+5. **Raw HTML.** GitHub renders a safe subset of raw HTML (`<details>`, `<kbd>`, `<sub>`, …). — **Answer (approved by the maintainer on 2026-11-05):** no raw HTML at all, as the `Markdown` component does today. The source keeps the tags, so they reach GitHub unchanged ([§11.4](../../../docs/spec/11-github-integration.md)), but Trybun does not render them. A subset can be allowed later with `rehype-raw` before the sanitizer.
 6. **Ticking task-list items in the rendered view.** GitHub lets readers who may edit a text tick its checkboxes. — **Answer (approved by the maintainer on 2026-11-05):** not in S1-07. Rendered checkboxes are read-only, and ticking means editing the text in the editor. Ticking in place is an edit of a description or comment with a version and `If-Match`, so it belongs to the editing tasks (S1-10, S1-12) if wanted.
-7. **Scope of files in the editor.** [§6.2](../../docs/spec/06-comments-notifications.md) inserts images and files by drag and drop, pasting or choosing from disk; uploads arrive with S1-08 (same group). — **Answer (approved by the maintainer on 2026-11-05):** S1-07 builds the three entry points and the text handling:
+7. **Scope of files in the editor.** [§6.2](../../../docs/spec/06-comments-notifications.md) inserts images and files by drag and drop, pasting or choosing from disk; uploads arrive with S1-08 (same group). — **Answer (approved by the maintainer on 2026-11-05):** S1-07 builds the three entry points and the text handling:
    - It calls `onFilesAdd(files)`, which returns, per file, a promise of `{ id, name, isImage }`.
    - It inserts a placeholder `[Uploading name…]()` at the cursor and then replaces it with `![name](/api/v1/attachments/{id}/content)` for an image or `[name](/api/v1/attachments/{id}/content)` for another file, as ADR 0008 describes. A rejected promise removes the placeholder.
 
@@ -167,3 +167,9 @@ One phase, one PR. Each step leaves the application working.
 - 2026-10-26 – Created (draft) for S1-07.
 - 2026-11-05 – Brought up to date with `main`: `Tabs` already exists in `@trybun/ui` (with `ScrollFade`), so S1-07 adds only `Textarea`; the server's import boundary is its `allowedPackages`.
 - 2026-11-05 – Approved: the maintainer accepted every proposed answer, Q1 and Q2 (⚠) explicitly – Q2 as a clarification of §18.5 without an ADR – and Q3–Q8 as proposed; status `approved`.
+- 2026-11-05 – Implemented (#234), with these details decided in the implementation:
+  - `markdownSanitizeSchema` adds no `user-content-` prefix of its own (`clobberPrefix: ''`): `remark-rehype` already prefixes the footnote IDs, and a second prefix broke every footnote link. Raw HTML, the only other source of IDs, is never rendered.
+  - `markdownRehypePlugins` has a fourth plugin, `rehypeTaskListLabels`: axe requires an accessible name for the read-only task-list checkboxes, so each is named by its item's text (§13.4).
+  - A backslash URL (`/\evil.example`) is percent-encoded by the Markdown parser and stays a path of the site; protocol-relative URLs get `rel` as specified.
+  - The highlight theme shows keywords bold in the text colour: the danger token of the dark theme has no WCAG AA contrast on `muted`.
+  - `Textarea` is a Base UI `Field.Control`, so `FieldLabel` and `FieldDescription` link to it like to `Input`.

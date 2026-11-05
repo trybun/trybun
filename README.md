@@ -102,6 +102,7 @@ pnpm workspaces with Turborepo ([§14.6](docs/spec/14-architecture.md)). Applica
 | `packages/contracts` | `@trybun/contracts` | Zod schemas, types and error codes shared by web and server |
 | `packages/ui` | `@trybun/ui` | Component library (shadcn/ui on Base UI, Tailwind CSS) |
 | `packages/i18n` | `@trybun/i18n` | Message catalogues (EN, PL) in ICU MessageFormat for web, server and the Keycloak login theme |
+| `packages/markdown` | `@trybun/markdown` | The Markdown rule set of the web views, the editor's preview and the e-mails: sanitize schema, allowed links, attachment images |
 | `packages/tsconfig` | `@trybun/tsconfig` | Shared TypeScript configuration (strict) |
 | `packages/eslint-config` | `@trybun/eslint-config` | Shared lint rules: naming conventions, package and layer boundaries, Tailwind classes |
 | `docs/` | | Specification, implementation plan, ADRs, brand, user documentation (`docs/user/`) |

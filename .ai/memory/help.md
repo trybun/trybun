@@ -17,5 +17,4 @@ Non-obvious behaviour found when the documentation infrastructure was built (S0-
 
 ## Markdown
 
-- `react-markdown` passes the hast `node` to every custom component; destructuring it only to drop it fails `no-unused-vars`. `@trybun/ui`'s `Markdown` styles the elements with descendant variants (`[&_h2]:…`) instead of a `components` map.
-- Without `rehype-raw`, raw HTML in the source is not rendered at all; `rehype-sanitize` still guards the generated HTML. `urlTransform` replaces the default protocol filter, so `Markdown` runs `defaultUrlTransform` first and the caller's transform after it.
+- The rendering pitfalls (`react-markdown`, sanitizing, footnotes, the URL transform) moved to `.ai/memory/markdown.md`.

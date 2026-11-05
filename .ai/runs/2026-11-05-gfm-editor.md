@@ -1,6 +1,6 @@
 # Execution plan — implement the GFM editor and the shared Markdown pipeline (S1-07)
 
-Source doc: .ai/specs/2026-10-26-gfm-editor.md
+Source doc: .ai/specs/implemented/2026-10-26-gfm-editor.md
 Spec PR: #117 (merged, design only)
 Plan task: `S1-07`
 
