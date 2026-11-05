@@ -48,4 +48,4 @@ PR: #234
 
 ### Phase 4: Review
 
-- [ ] 4.1 Apply the findings of the code review
+- [x] 4.1 Apply the findings of the code review — afa215b, 6380423
