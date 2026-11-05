@@ -30,6 +30,13 @@ type Who = 'admin' | 'project_manager' | 'developer' | 'end_user';
 
 /** The concurrent creations of the test of the counter (§17.2). */
 const CONCURRENT_CREATIONS = 50;
+/**
+ * The time of the test of the counter (#232). The creations run one after another on the
+ * counter's row lock, which each holds over the insert, the reading of the response and the
+ * commit: about 1 s alone, up to 5 s and more in `pnpm test:coverage`, where the integration
+ * files share one PostgreSQL. The default 5 s of a test is too short for this serialized workload.
+ */
+const CONCURRENT_CREATIONS_TIMEOUT = 30_000;
 
 describe('tickets endpoints', () => {
   const config = integrationConfig();
@@ -122,24 +129,28 @@ describe('tickets endpoints', () => {
   }
 
   describe('creating', () => {
-    it(`numbers ${CONCURRENT_CREATIONS} concurrent creations 1–${CONCURRENT_CREATIONS} without gaps or duplicates`, async () => {
-      const project = await createProject(prisma);
-      const { authorization } = await signIn('developer', { project });
+    it(
+      `numbers ${CONCURRENT_CREATIONS} concurrent creations 1–${CONCURRENT_CREATIONS} without gaps or duplicates`,
+      { timeout: CONCURRENT_CREATIONS_TIMEOUT },
+      async () => {
+        const project = await createProject(prisma);
+        const { authorization } = await signIn('developer', { project });
 
-      const responses = await Promise.all(
-        Array.from({ length: CONCURRENT_CREATIONS }, (_, index) =>
-          create(authorization, { projectId: project.id, title: `Ticket ${index}` }),
-        ),
-      );
+        const responses = await Promise.all(
+          Array.from({ length: CONCURRENT_CREATIONS }, (_, index) =>
+            create(authorization, { projectId: project.id, title: `Ticket ${index}` }),
+          ),
+        );
 
-      expect(responses.map(({ status }) => status)).toEqual(
-        Array.from({ length: CONCURRENT_CREATIONS }, () => 201),
-      );
-      const numbers = responses.map(({ body }) => (body as Ticket).number).sort((a, b) => a - b);
-      expect(numbers).toEqual(
-        Array.from({ length: CONCURRENT_CREATIONS }, (_, index) => index + 1),
-      );
-    });
+        expect(responses.map(({ status }) => status)).toEqual(
+          Array.from({ length: CONCURRENT_CREATIONS }, () => 201),
+        );
+        const numbers = responses.map(({ body }) => (body as Ticket).number).sort((a, b) => a - b);
+        expect(numbers).toEqual(
+          Array.from({ length: CONCURRENT_CREATIONS }, (_, index) => index + 1),
+        );
+      },
+    );
 
     it('leaves no gap after a rolled-back creation, and numbers each project on its own', async () => {
       const project = await createProject(prisma);
