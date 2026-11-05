@@ -623,6 +623,24 @@
     },
     "combobox": {
       "show": "Pokaż opcje"
+    },
+    "markdownEditor": {
+      "write": "Pisz",
+      "preview": "Podgląd",
+      "toolbar": "Formatowanie",
+      "heading": "Nagłówek",
+      "bold": "Pogrubienie",
+      "italic": "Kursywa",
+      "quote": "Cytat",
+      "code": "Kod",
+      "link": "Link",
+      "bulletedList": "Lista punktowana",
+      "numberedList": "Lista numerowana",
+      "taskList": "Lista zadań",
+      "attachFiles": "Dołącz pliki",
+      "moreFormatting": "Więcej formatowania",
+      "nothingToPreview": "Brak podglądu",
+      "uploading": "Przesyłanie {name}…"
     }
   },
   "errors": {

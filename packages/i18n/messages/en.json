@@ -623,6 +623,24 @@
     },
     "combobox": {
       "show": "Show options"
+    },
+    "markdownEditor": {
+      "write": "Write",
+      "preview": "Preview",
+      "toolbar": "Formatting",
+      "heading": "Heading",
+      "bold": "Bold",
+      "italic": "Italic",
+      "quote": "Quote",
+      "code": "Code",
+      "link": "Link",
+      "bulletedList": "Bulleted list",
+      "numberedList": "Numbered list",
+      "taskList": "Task list",
+      "attachFiles": "Attach files",
+      "moreFormatting": "More formatting",
+      "nothingToPreview": "Nothing to preview",
+      "uploading": "Uploading {name}…"
     }
   },
   "errors": {
