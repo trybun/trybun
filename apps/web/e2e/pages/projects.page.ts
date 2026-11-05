@@ -57,6 +57,21 @@ export class ProjectsPage {
   }
 
   /**
+   * Opens the Add member dialog of the Members tab. Like New project, the button is server-rendered
+   * and its dialog loads after the first paint, so the click repeats until the dialog shows (#236).
+   */
+  async openAddMember(): Promise<Locator> {
+    const dialog = this.page.getByRole('dialog', { name: 'Add member' });
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        await this.page.getByRole('button', { name: 'Add member' }).click();
+      }
+      await expect(dialog).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    return dialog;
+  }
+
+  /**
    * Opens the Add member dialog with an e-mail address and a role, waiting for the preview of
    * what sending will do (§7.4).
    */
@@ -64,8 +79,7 @@ export class ProjectsPage {
     email: string,
     role: 'Developer' | 'Project manager' | 'End user',
   ): Promise<Locator> {
-    await this.page.getByRole('button', { name: 'Add member' }).click();
-    const dialog = this.page.getByRole('dialog', { name: 'Add member' });
+    const dialog = await this.openAddMember();
     await dialog.getByRole('radio', { name: 'By e-mail address' }).check();
     await dialog.getByRole('textbox', { name: 'E-mail address' }).fill(email);
     await dialog.getByRole('combobox', { name: 'Role' }).click();
@@ -75,8 +89,7 @@ export class ProjectsPage {
 
   /** Adds a team member found by the search of the Add member dialog. */
   async addMember(search: string, name: string): Promise<void> {
-    await this.page.getByRole('button', { name: 'Add member' }).click();
-    const dialog = this.page.getByRole('dialog', { name: 'Add member' });
+    const dialog = await this.openAddMember();
     await dialog.getByLabel('Search by name or GitHub login').fill(search);
     await dialog.getByRole('radio', { name: new RegExp(name) }).check();
     await dialog.getByRole('button', { name: 'Add', exact: true }).click();
