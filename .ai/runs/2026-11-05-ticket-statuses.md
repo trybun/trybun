@@ -37,14 +37,14 @@ Build the status changes of S1-06 exactly as the approved change specification d
 
 ### Phase 2: Team status changes
 
-- [ ] 2.1 change_status rule, allowedActions and response fields
-- [ ] 2.2 Status change endpoint with events, outbox and locks
-- [ ] 2.3 Project share lock in the field PATCH
-- [ ] 2.4 Resolution-confirmation redirect
+- [x] 2.1 change_status rule, allowedActions and response fields — 63930bf, 5334117
+- [x] 2.2 Status change endpoint with events, outbox and locks — 5334117
+- [x] 2.3 Project share lock in the field PATCH — 5334117
+- [x] 2.4 Resolution-confirmation redirect — 5334117
 
 ### Phase 3: Requester answer and timer
 
-- [ ] 3.1 confirm_resolution rule and endpoint
+- [x] 3.1 confirm_resolution rule and endpoint — 63930bf, 5334117
 - [ ] 3.2 Worker scheduler and automatic close timer
 - [ ] 3.3 Catalogue texts, generated API client and demo dataset
 - [ ] 3.4 System specification, glossary, plan and project memory
