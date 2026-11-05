@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { expect } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
+import { Field, FieldDescription, FieldLabel } from './field.js';
 import { Textarea } from './textarea.js';
 
 const meta = {
@@ -70,6 +71,22 @@ export const Invalid: Story = {
     await expect(textarea).toHaveAccessibleDescription(
       'Describe the problem in at least 10 characters.',
     );
+  },
+};
+
+/** Inside a `Field`, the label and the description link to the textarea without IDs. */
+export const InField: Story = {
+  decorators: [(story) => <div className="max-w-md">{story()}</div>],
+  render: () => (
+    <Field>
+      <FieldLabel>Steps to reproduce</FieldLabel>
+      <Textarea />
+      <FieldDescription>One step per line.</FieldDescription>
+    </Field>
+  ),
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole('textbox', { name: 'Steps to reproduce' });
+    await expect(textarea).toHaveAccessibleDescription('One step per line.');
   },
 };
 
