@@ -625,7 +625,10 @@
     },
     "ticket": {
       "project_immutable": "A ticket cannot be moved to another project.",
-      "assignee_not_eligible": "Only active team members of the project can be assigned."
+      "assignee_not_eligible": "Only active team members of the project can be assigned.",
+      "duplicate_of_self": "A ticket cannot be a duplicate of itself.",
+      "duplicate_other_project": "The original ticket must be in the same project.",
+      "resolution_confirmation_not_pending": "This ticket no longer waits for your confirmation."
     },
     "invitation": {
       "account_kind_mismatch": "This address belongs to an account of the other kind. Only the Administrator can change the kind of an account.",

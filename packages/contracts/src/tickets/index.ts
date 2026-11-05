@@ -31,10 +31,54 @@ export type TicketStatus = z.infer<typeof ticketStatusSchema>;
 /** The terminal statuses (§4.1): a ticket in one of them is not open. */
 export const TERMINAL_TICKET_STATUSES: readonly TicketStatus[] = ['done', 'rejected', 'duplicate'];
 
+/** Whether a status is terminal (§4.1): `done`, `rejected` or `duplicate`. */
+export function isTerminalStatus(status: TicketStatus): boolean {
+  return TERMINAL_TICKET_STATUSES.includes(status);
+}
+
+/**
+ * `ticket.waiting_reason` (§4.3): why a ticket in `waiting_for_requester` waits – the team asked
+ * for `information`, or the requester is asked for the `confirmation` of the resolution.
+ */
+export const ticketWaitingReasonSchema = z.enum(['information', 'confirmation']);
+export type TicketWaitingReason = z.infer<typeof ticketWaitingReasonSchema>;
+
+/** The public statuses (§4.1): what end users see instead of the internal status. */
+export const ticketPublicStatusSchema = z.enum([
+  'received',
+  'awaiting_reply',
+  'in_progress',
+  'resolved',
+  'closed',
+]);
+export type TicketPublicStatus = z.infer<typeof ticketPublicStatusSchema>;
+
+const PUBLIC_STATUSES: Record<TicketStatus, TicketPublicStatus> = {
+  new: 'received',
+  triage: 'received',
+  todo: 'in_progress',
+  in_progress: 'in_progress',
+  in_verification: 'in_progress',
+  waiting_for_requester: 'awaiting_reply',
+  done: 'resolved',
+  rejected: 'closed',
+  duplicate: 'closed',
+};
+
+/** The public status of an internal status (§4.2), the one mapping of the API and the web. */
+export function publicStatusOf(status: TicketStatus): TicketPublicStatus {
+  return PUBLIC_STATUSES[status];
+}
+
+/** The requester's answer to "Is your problem solved?" (§4.3). */
+export const resolutionAnswerSchema = z.enum(['solved', 'not_solved']);
+export type ResolutionAnswer = z.infer<typeof resolutionAnswerSchema>;
+
 /**
  * The action codes of a ticket (§18.3), sent in its `allowedActions`: `update` changes the title
  * and the description, `update_fields` the type and the priority, `assign` sets any eligible
- * assignee, `assign_self` only the principal (§7.5).
+ * assignee, `assign_self` only the principal, `change_status` changes the status (team), and
+ * `confirm_resolution` answers the resolution confirmation (the requester, §7.5).
  */
 export const ticketActionSchema = z.enum([
   'read',
@@ -42,6 +86,8 @@ export const ticketActionSchema = z.enum([
   'update_fields',
   'assign',
   'assign_self',
+  'change_status',
+  'confirm_resolution',
 ]);
 export type TicketAction = z.infer<typeof ticketActionSchema>;
 
@@ -98,6 +144,40 @@ export const updateTicketSchema = z
   .refine((input) => Object.values(input).some((value) => value !== undefined));
 export type UpdateTicketDto = z.infer<typeof updateTicketSchema>;
 
+/** The reason of a rejection: GFM Markdown, trimmed, 1–2000 characters (§4.3). */
+export const TICKET_REJECTION_REASON_MAX_LENGTH = 2000;
+export const ticketRejectionReasonSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(TICKET_REJECTION_REASON_MAX_LENGTH);
+
+/** The statuses that need no further field when a ticket is moved to them. */
+const PLAIN_TARGET_STATUSES = ticketStatusSchema.exclude(['rejected', 'duplicate']);
+
+/**
+ * `PUT /api/v1/tickets/{ticketId}/status` (§4.3): the target status, with the reason for
+ * `rejected` and the original for `duplicate`; any other field is unrecognized.
+ */
+export const changeTicketStatusSchema = z.discriminatedUnion('status', [
+  z.strictObject({ status: z.literal('rejected'), rejectionReason: ticketRejectionReasonSchema }),
+  z.strictObject({ status: z.literal('duplicate'), duplicateOfTicketId: z.uuid() }),
+  z.strictObject({ status: PLAIN_TARGET_STATUSES }),
+]);
+export type ChangeTicketStatusDto = z.infer<typeof changeTicketStatusSchema>;
+
+/** `POST /api/v1/tickets/{ticketId}/resolution-confirmation` (§4.3): the requester's answer. */
+export const confirmResolutionSchema = z.object({ answer: resolutionAnswerSchema });
+export type ConfirmResolutionDto = z.infer<typeof confirmResolutionSchema>;
+
+/** The original of a duplicate as a ticket shows it (§3.5). */
+export const ticketReferenceSchema = z.object({
+  id: z.uuid(),
+  number: z.int().min(1),
+  projectKey: z.string(),
+});
+export type TicketReference = z.infer<typeof ticketReferenceSchema>;
+
 /** A person as a ticket shows them: the display name, never the e-mail address. */
 export const ticketPersonSchema = z.object({
   id: z.uuid(),
@@ -118,6 +198,11 @@ const commonTicketFields = {
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
   allowedActions: z.array(ticketActionSchema),
+  /** The public status (§4.2); with `waitingReason` it selects the public description. */
+  publicStatus: ticketPublicStatusSchema,
+  waitingReason: ticketWaitingReasonSchema.nullable(),
+  /** The original of a duplicate; for an end user only when they may read it (§3.5). */
+  duplicateOf: ticketReferenceSchema.nullable(),
 };
 
 /** A ticket as the team sees it (§3.2). */
@@ -129,12 +214,16 @@ export const ticketSchema = z.object({
   status: ticketStatusSchema,
   organization: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   assignee: ticketPersonSchema.nullable(),
+  /** The time of the latest transition into a terminal status (§4.3); none while open. */
+  closedAt: z.iso.datetime().nullable(),
+  /** The reason of a rejection, for the team only until S1-12 publishes it as a comment. */
+  rejectionReason: z.string().nullable(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 
 /**
  * A ticket as an end user sees it (§3.2, columns "End user"): without type, priority, assignee,
- * source, organization and the internal status.
+ * source, organization, the internal status and the rejection reason.
  */
 export const endUserTicketSchema = z.object(commonTicketFields);
 export type EndUserTicket = z.infer<typeof endUserTicketSchema>;

@@ -625,7 +625,10 @@
     },
     "ticket": {
       "project_immutable": "Zgłoszenia nie można przenieść do innego projektu.",
-      "assignee_not_eligible": "Przypisać można tylko aktywnych członków zespołu projektu."
+      "assignee_not_eligible": "Przypisać można tylko aktywnych członków zespołu projektu.",
+      "duplicate_of_self": "Zgłoszenie nie może być duplikatem samego siebie.",
+      "duplicate_other_project": "Oryginalne zgłoszenie musi należeć do tego samego projektu.",
+      "resolution_confirmation_not_pending": "To zgłoszenie nie czeka już na Twoje potwierdzenie."
     },
     "invitation": {
       "account_kind_mismatch": "Ten adres należy do konta innego rodzaju. Rodzaj konta może zmienić tylko Administrator.",

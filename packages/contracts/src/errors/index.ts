@@ -35,6 +35,9 @@ export const errorCodeSchema = z.enum([
   'organization.member_of_other_organization',
   'ticket.project_immutable',
   'ticket.assignee_not_eligible',
+  'ticket.duplicate_of_self',
+  'ticket.duplicate_other_project',
+  'ticket.resolution_confirmation_not_pending',
   'invitation.account_kind_mismatch',
   'invitation.account_deactivated',
   'invitation.access_exists',
@@ -111,6 +114,9 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'ticket.project_immutable': 422,
   // The assignee must be an active team member of the ticket's project (§3.2).
   'ticket.assignee_not_eligible': 422,
+  'ticket.duplicate_of_self': 422,
+  'ticket.duplicate_other_project': 422,
+  'ticket.resolution_confirmation_not_pending': 409,
   // The address has an account of the other kind; a kind change is an Administrator action (§7.4).
   'invitation.account_kind_mismatch': 422,
   // The address has a deactivated account, which the Administrator reactivates first (§7.4).

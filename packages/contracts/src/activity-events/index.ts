@@ -2,8 +2,9 @@ import { z } from 'zod';
 import { pageQuerySchema, pageSchema } from '../pagination/index.js';
 
 /**
- * `activity_event.type` (§4.5): one event per changed field of a ticket. Later tasks add theirs
- * (`status_changed` in S1-06, …).
+ * `activity_event.type` (§4.5): one event per changed field of a ticket, and the events of its
+ * status (S1-06): a status change, the re-pointing and the removal of a duplicate's link, and a
+ * new rejection reason (without its text). Later tasks add theirs.
  */
 export const activityEventTypeSchema = z.enum([
   'title_changed',
@@ -11,6 +12,10 @@ export const activityEventTypeSchema = z.enum([
   'type_changed',
   'priority_changed',
   'assignee_changed',
+  'status_changed',
+  'duplicate_original_changed',
+  'duplicate_link_removed',
+  'rejection_reason_changed',
 ]);
 export type ActivityEventType = z.infer<typeof activityEventTypeSchema>;
 
@@ -31,18 +36,40 @@ export const activityEventSnapshotSchema = z.object({
 });
 export type ActivityEventSnapshot = z.infer<typeof activityEventSnapshotSchema>;
 
-/** A value of a change: an enum code, a text, a snapshot of a reference, or none. */
+/**
+ * A ticket stored in an event as a snapshot (§4.5), e.g. the original of a duplicate: its ID and
+ * its identifier parts at the time of the change.
+ */
+export const activityEventTicketSnapshotSchema = z.object({
+  id: z.uuid(),
+  number: z.int().min(1),
+  projectKey: z.string(),
+});
+export type ActivityEventTicketSnapshot = z.infer<typeof activityEventTicketSnapshotSchema>;
+
+/**
+ * A value of a change: an enum code (a status is stored as its code, its label comes from the
+ * catalogues), a text, a snapshot of a person or a ticket, or none.
+ */
 export const activityEventValueSchema = z.union([
   z.string(),
   activityEventSnapshotSchema,
+  activityEventTicketSnapshotSchema,
   z.null(),
 ]);
 export type ActivityEventValue = z.infer<typeof activityEventValueSchema>;
 
-/** The previous and the new value of a field; absent for `description_edited`. */
+/**
+ * The previous and the new value of a field; absent for `description_edited` and
+ * `rejection_reason_changed`. A `status_changed` event adds whether it reopened the ticket, the
+ * waiting reason of the new status and the original of a new duplicate.
+ */
 export const activityEventDataSchema = z.object({
   from: activityEventValueSchema,
   to: activityEventValueSchema,
+  reopen: z.boolean().optional(),
+  waitingReason: z.string().nullable().optional(),
+  duplicateOf: activityEventTicketSnapshotSchema.nullable().optional(),
 });
 export type ActivityEventData = z.infer<typeof activityEventDataSchema>;
 
