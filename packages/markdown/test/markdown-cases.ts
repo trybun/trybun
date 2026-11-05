@@ -62,7 +62,8 @@ export function unsafeHtmlFindings(html: string): string[] {
     }
   }
   // Attribute values are removed first: a quoted value is text, not an attribute.
-  const tags = html.match(/<[a-z][^>]*>/gi) ?? [];
+  // `[^<>]` keeps the match linear: a tag never contains another `<`.
+  const tags = html.match(/<[a-z][^<>]*>/gi) ?? [];
   if (tags.some((tag) => /\son[a-z]+\s*=/i.test(tag.replace(/"[^"]*"|'[^']*'/g, '""')))) {
     findings.push('event-handler attribute');
   }

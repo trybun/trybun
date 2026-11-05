@@ -6,17 +6,21 @@ import {
   textEdit,
 } from './markdown-editor-format.js';
 
-// A text with its selection: `[` and `]` mark the selected range, `|` a cursor.
+// A text with its selection: `[[` and `]]` mark the selected range, `|` a cursor; each marker
+// appears once.
 function parse(marked: string) {
   const cursor = marked.indexOf('|');
   if (cursor !== -1) {
-    return { text: marked.replace('|', ''), selection: { start: cursor, end: cursor } };
+    return {
+      text: marked.slice(0, cursor) + marked.slice(cursor + 1),
+      selection: { start: cursor, end: cursor },
+    };
   }
   const start = marked.indexOf('[[');
-  const end = marked.indexOf(']]') - 2;
+  const close = marked.indexOf(']]');
   return {
-    text: marked.replace('[[', '').replace(']]', ''),
-    selection: { start, end },
+    text: marked.slice(0, start) + marked.slice(start + 2, close) + marked.slice(close + 2),
+    selection: { start, end: close - 2 },
   };
 }
 
