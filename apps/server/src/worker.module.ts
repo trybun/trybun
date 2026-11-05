@@ -3,6 +3,7 @@ import { ABILITY_DEFINITIONS } from './ability-definitions.js';
 import { AuditLogEntriesWorkerModule } from './modules/audit-log-entries/audit-log-entries-worker.module.js';
 import { InvitationsWorkerModule } from './modules/invitations/invitations-worker.module.js';
 import {
+  SCHEDULE_RESOLUTION_CONFIRMATION_CLOSE_SUBSCRIPTION,
   UNASSIGN_DEACTIVATED_USER_SUBSCRIPTION,
   UNASSIGN_REMOVED_MEMBER_SUBSCRIPTION,
 } from './modules/tickets/tickets.jobs.js';
@@ -44,6 +45,7 @@ export class WorkerModule {
           USERS_KEYCLOAK_SUBSCRIPTION,
           UNASSIGN_DEACTIVATED_USER_SUBSCRIPTION,
           UNASSIGN_REMOVED_MEMBER_SUBSCRIPTION,
+          SCHEDULE_RESOLUTION_CONFIRMATION_CLOSE_SUBSCRIPTION,
         ]),
         AuditLogEntriesWorkerModule,
         InvitationsWorkerModule,

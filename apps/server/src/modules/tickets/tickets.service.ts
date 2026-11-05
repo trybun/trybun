@@ -539,6 +539,20 @@ export class TicketsService {
   }
 
   /**
+   * When the automatic close of a ticket is due (§4.3): 7 × 24 hours after it started waiting for
+   * the confirmation of its resolution; `null` when it does not wait for it (any more).
+   */
+  async automaticCloseDueAt(ticketId: string): Promise<Date | null> {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { status: true, waitingReason: true, waitingSince: true },
+    });
+    return ticket === null || !waitsForConfirmation(ticket) || ticket.waitingSince === null
+      ? null
+      : automaticCloseDueAt(ticket.waitingSince);
+  }
+
+  /**
    * Writes a status change (§4.3) in the caller's transaction: the status fields with a new
    * version – conditional on `version` from `If-Match`, or on the status fields read under the
    * lock for an answer or the timer –, an ineligible assignee removed on a reopen (Q22), the
