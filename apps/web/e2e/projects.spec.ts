@@ -68,8 +68,7 @@ test.describe('projects of the Administrator', () => {
   test('suggests the key from the name', async ({ page }) => {
     const projects = new ProjectsPage(page);
     await projects.goto();
-    await projects.newProject.click();
-    const dialog = page.getByRole('dialog', { name: 'New project' });
+    const dialog = await projects.openNewProject();
 
     // The initials of the words: `self-service` counts as two.
     await dialog.getByLabel('Name').fill('Customer self-service');
