@@ -65,3 +65,4 @@ Keep PR #116 a design-only change specification for S1-06 that is correct agains
 ### Phase 4: Approval
 
 - [x] 4.1 Record the maintainer's approval of every open question — a1ab210
+- [x] 4.2 Apply the approved plan changes — 9a04d5a
