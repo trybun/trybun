@@ -101,14 +101,14 @@ function effectiveTarget(
   ticket: StatusTicket,
   request: StatusChangeRequest,
 ): { status: TicketStatus; waitingReason: TicketWaitingReason | null } {
-  const waitsForConfirmation =
+  const isWaitingForConfirmation =
     ticket.status === 'waiting_for_requester' && ticket.waitingReason === 'confirmation';
   if (
     request.target === 'done' &&
     request.confirmResolution &&
     ticket.source === 'user' &&
     !isTerminalStatus(ticket.status) &&
-    !waitsForConfirmation
+    !isWaitingForConfirmation
   ) {
     return { status: 'waiting_for_requester', waitingReason: 'confirmation' };
   }
@@ -202,7 +202,7 @@ export function changeStatus(ticket: StatusTicket, request: StatusChangeRequest)
   }
   const from = ticket.status;
   const to = target.status;
-  const reopen = isTerminalStatus(from) && !isTerminalStatus(to);
+  const isReopen = isTerminalStatus(from) && !isTerminalStatus(to);
   const isWaiting = to === 'waiting_for_requester';
   const fields: StatusFields = {
     status: to,
@@ -216,7 +216,11 @@ export function changeStatus(ticket: StatusTicket, request: StatusChangeRequest)
   };
   const duplicateOf = to === 'duplicate' ? (request.original ?? null) : null;
   const events: StatusEvent[] = [
-    statusChangedEvent(from, to, { reopen, waitingReason: target.waitingReason, duplicateOf }),
+    statusChangedEvent(from, to, {
+      reopen: isReopen,
+      waitingReason: target.waitingReason,
+      duplicateOf,
+    }),
   ];
   let relation: DuplicateRelationChange = { kind: 'keep' };
   if (duplicateOf !== null) {
@@ -233,8 +237,8 @@ export function changeStatus(ticket: StatusTicket, request: StatusChangeRequest)
     fields,
     relation,
     events,
-    statusChanged: { from, to, waitingReason: target.waitingReason, reopen },
-    reopen,
+    statusChanged: { from, to, waitingReason: target.waitingReason, reopen: isReopen },
+    reopen: isReopen,
   };
 }
 

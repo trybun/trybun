@@ -61,3 +61,22 @@ export function unassignOpenTickets(
       AND "status" NOT IN (${terminal})
     RETURNING "id", "title", "description", "type"::text AS "type", "priority"::text AS "priority"`;
 }
+
+/**
+ * Locks the rows of tickets for an update for the rest of the transaction (§18.3, raw SQL), in ID
+ * order so that two changes locking the same tickets never wait for each other in a cycle: a
+ * change of a duplicate's link locks the duplicate, its original and the duplicates that point to
+ * it. Returns the IDs of the tickets that exist.
+ */
+export async function lockTicketsForUpdate(
+  tx: Transaction,
+  ticketIds: readonly string[],
+): Promise<string[]> {
+  if (ticketIds.length === 0) {
+    return [];
+  }
+  const ids = Prisma.join([...new Set(ticketIds)].sort().map((id) => Prisma.sql`${id}::uuid`));
+  const rows = await tx.$queryRaw<{ id: string }[]>`
+    SELECT "id" FROM "tickets" WHERE "id" IN (${ids}) ORDER BY "id" FOR UPDATE`;
+  return rows.map((row) => row.id);
+}
