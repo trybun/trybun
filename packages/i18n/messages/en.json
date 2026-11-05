@@ -295,6 +295,49 @@
       "deleted": "Organization deleted"
     }
   },
+  "tickets": {
+    "statuses": {
+      "new": "New",
+      "triage": "Triage",
+      "todo": "To do",
+      "in_progress": "In progress",
+      "in_verification": "In verification",
+      "waiting_for_requester": "Waiting for requester",
+      "done": "Done",
+      "rejected": "Rejected",
+      "duplicate": "Duplicate"
+    },
+    "publicStatuses": {
+      "received": "Received",
+      "awaiting_reply": "Awaiting your reply",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "publicDescriptions": {
+      "new": "We have received your ticket",
+      "triage": "We are analyzing your ticket",
+      "waiting_for_information": "We need more information from you",
+      "waiting_for_confirmation": "Please confirm whether your problem is solved",
+      "todo": "Your ticket has been scheduled",
+      "in_progress": "We are working on a solution",
+      "in_verification": "We are testing the solution",
+      "done": "Your ticket has been resolved",
+      "rejected": "Ticket closed",
+      "duplicate": "Ticket merged with another one"
+    },
+    "waitingReasons": {
+      "information": "Waiting for information",
+      "confirmation": "Waiting for confirmation"
+    },
+    "resolutionConfirmation": {
+      "question": "Is your problem solved?",
+      "answers": {
+        "solved": "Yes, solved",
+        "not_solved": "No, still a problem"
+      }
+    }
+  },
   "users": {
     "accounts": {
       "title": "Accounts",

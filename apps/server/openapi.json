@@ -5047,9 +5047,54 @@
                                     "update",
                                     "update_fields",
                                     "assign",
-                                    "assign_self"
+                                    "assign_self",
+                                    "change_status",
+                                    "confirm_resolution"
                                   ]
                                 }
+                              },
+                              "publicStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "received",
+                                  "awaiting_reply",
+                                  "in_progress",
+                                  "resolved",
+                                  "closed"
+                                ]
+                              },
+                              "waitingReason": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "information",
+                                  "confirmation"
+                                ]
+                              },
+                              "duplicateOf": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "projectKey": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number",
+                                  "projectKey"
+                                ],
+                                "additionalProperties": false
                               },
                               "type": {
                                 "nullable": true,
@@ -5130,6 +5175,16 @@
                                   "displayName"
                                 ],
                                 "additionalProperties": false
+                              },
+                              "closedAt": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
+                              "rejectionReason": {
+                                "nullable": true,
+                                "type": "string"
                               }
                             },
                             "required": [
@@ -5144,12 +5199,17 @@
                               "createdAt",
                               "updatedAt",
                               "allowedActions",
+                              "publicStatus",
+                              "waitingReason",
+                              "duplicateOf",
                               "type",
                               "source",
                               "priority",
                               "status",
                               "organization",
-                              "assignee"
+                              "assignee",
+                              "closedAt",
+                              "rejectionReason"
                             ],
                             "additionalProperties": false
                           },
@@ -5223,9 +5283,54 @@
                                     "update",
                                     "update_fields",
                                     "assign",
-                                    "assign_self"
+                                    "assign_self",
+                                    "change_status",
+                                    "confirm_resolution"
                                   ]
                                 }
+                              },
+                              "publicStatus": {
+                                "type": "string",
+                                "enum": [
+                                  "received",
+                                  "awaiting_reply",
+                                  "in_progress",
+                                  "resolved",
+                                  "closed"
+                                ]
+                              },
+                              "waitingReason": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "information",
+                                  "confirmation"
+                                ]
+                              },
+                              "duplicateOf": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "projectKey": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number",
+                                  "projectKey"
+                                ],
+                                "additionalProperties": false
                               }
                             },
                             "required": [
@@ -5239,7 +5344,10 @@
                               "version",
                               "createdAt",
                               "updatedAt",
-                              "allowedActions"
+                              "allowedActions",
+                              "publicStatus",
+                              "waitingReason",
+                              "duplicateOf"
                             ],
                             "additionalProperties": false
                           }
@@ -5399,9 +5507,54 @@
                               "update",
                               "update_fields",
                               "assign",
-                              "assign_self"
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
                             ]
                           }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
                         },
                         "type": {
                           "nullable": true,
@@ -5482,6 +5635,16 @@
                             "displayName"
                           ],
                           "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -5496,12 +5659,17 @@
                         "createdAt",
                         "updatedAt",
                         "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
                         "type",
                         "source",
                         "priority",
                         "status",
                         "organization",
-                        "assignee"
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason"
                       ],
                       "additionalProperties": false
                     },
@@ -5575,9 +5743,54 @@
                               "update",
                               "update_fields",
                               "assign",
-                              "assign_self"
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
                             ]
                           }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -5591,7 +5804,10 @@
                         "version",
                         "createdAt",
                         "updatedAt",
-                        "allowedActions"
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf"
                       ],
                       "additionalProperties": false
                     }
@@ -5698,9 +5914,54 @@
                               "update",
                               "update_fields",
                               "assign",
-                              "assign_self"
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
                             ]
                           }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
                         },
                         "type": {
                           "nullable": true,
@@ -5781,6 +6042,16 @@
                             "displayName"
                           ],
                           "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -5795,12 +6066,17 @@
                         "createdAt",
                         "updatedAt",
                         "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
                         "type",
                         "source",
                         "priority",
                         "status",
                         "organization",
-                        "assignee"
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason"
                       ],
                       "additionalProperties": false
                     },
@@ -5874,9 +6150,54 @@
                               "update",
                               "update_fields",
                               "assign",
-                              "assign_self"
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
                             ]
                           }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -5890,7 +6211,10 @@
                         "version",
                         "createdAt",
                         "updatedAt",
-                        "allowedActions"
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf"
                       ],
                       "additionalProperties": false
                     }
@@ -6045,9 +6369,54 @@
                               "update",
                               "update_fields",
                               "assign",
-                              "assign_self"
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
                             ]
                           }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
                         },
                         "type": {
                           "nullable": true,
@@ -6128,6 +6497,16 @@
                             "displayName"
                           ],
                           "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -6142,12 +6521,17 @@
                         "createdAt",
                         "updatedAt",
                         "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
                         "type",
                         "source",
                         "priority",
                         "status",
                         "organization",
-                        "assignee"
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason"
                       ],
                       "additionalProperties": false
                     },
@@ -6221,9 +6605,54 @@
                               "update",
                               "update_fields",
                               "assign",
-                              "assign_self"
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
                             ]
                           }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -6237,7 +6666,920 @@
                         "version",
                         "createdAt",
                         "updatedAt",
-                        "allowedActions"
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Tickets"
+        ]
+      }
+    },
+    "/api/v1/tickets/{ticketId}/status": {
+      "put": {
+        "operationId": "TicketsController_changeStatus",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "rejected"
+                        ]
+                      },
+                      "rejectionReason": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000
+                      }
+                    },
+                    "required": [
+                      "status",
+                      "rejectionReason"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "duplicate"
+                        ]
+                      },
+                      "duplicateOfTicketId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "status",
+                      "duplicateOfTicketId"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "new",
+                          "triage",
+                          "todo",
+                          "in_progress",
+                          "in_verification",
+                          "waiting_for_requester",
+                          "done"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "type": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "bug",
+                            "feature",
+                            "task",
+                            "question"
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "developer",
+                            "integration"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "low",
+                            "normal",
+                            "high",
+                            "critical"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "triage",
+                            "todo",
+                            "in_progress",
+                            "in_verification",
+                            "waiting_for_requester",
+                            "done",
+                            "rejected",
+                            "duplicate"
+                          ]
+                        },
+                        "organization": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "assignee": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "requester",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "type",
+                        "source",
+                        "priority",
+                        "status",
+                        "organization",
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "requester",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Tickets"
+        ]
+      }
+    },
+    "/api/v1/tickets/{ticketId}/resolution-confirmation": {
+      "post": {
+        "operationId": "TicketsController_confirmResolution",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "answer": {
+                    "type": "string",
+                    "enum": [
+                      "solved",
+                      "not_solved"
+                    ]
+                  }
+                },
+                "required": [
+                  "answer"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "type": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "bug",
+                            "feature",
+                            "task",
+                            "question"
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "developer",
+                            "integration"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "low",
+                            "normal",
+                            "high",
+                            "critical"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "triage",
+                            "todo",
+                            "in_progress",
+                            "in_verification",
+                            "waiting_for_requester",
+                            "done",
+                            "rejected",
+                            "duplicate"
+                          ]
+                        },
+                        "organization": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "assignee": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "requester",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "type",
+                        "source",
+                        "priority",
+                        "status",
+                        "organization",
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "requester",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf"
                       ],
                       "additionalProperties": false
                     }
@@ -6313,7 +7655,11 @@
                               "description_edited",
                               "type_changed",
                               "priority_changed",
-                              "assignee_changed"
+                              "assignee_changed",
+                              "status_changed",
+                              "duplicate_original_changed",
+                              "duplicate_link_removed",
+                              "rejection_reason_changed"
                             ]
                           },
                           "data": {
@@ -6341,6 +7687,30 @@
                                     "required": [
                                       "id",
                                       "displayName"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "number": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "projectKey": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "number",
+                                      "projectKey"
                                     ],
                                     "additionalProperties": false
                                   },
@@ -6378,6 +7748,30 @@
                                     "additionalProperties": false
                                   },
                                   {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "number": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "projectKey": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "number",
+                                      "projectKey"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
                                     "type": "string",
                                     "nullable": true,
                                     "enum": [
@@ -6385,6 +7779,38 @@
                                     ]
                                   }
                                 ]
+                              },
+                              "reopen": {
+                                "type": "boolean"
+                              },
+                              "waitingReason": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "duplicateOf": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "projectKey": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number",
+                                  "projectKey"
+                                ],
+                                "additionalProperties": false
                               }
                             },
                             "required": [

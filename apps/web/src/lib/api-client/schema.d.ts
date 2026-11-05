@@ -500,6 +500,38 @@ export interface paths {
         patch: operations["TicketsController_update"];
         trace?: never;
     };
+    "/api/v1/tickets/{ticketId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["TicketsController_changeStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}/resolution-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TicketsController_confirmResolution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tickets/{ticketId}/activity-events": {
         parameters: {
             query?: never;
@@ -2274,7 +2306,17 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                            /** @enum {string} */
+                            publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                            /** @enum {string|null} */
+                            waitingReason: "information" | "confirmation" | null;
+                            duplicateOf: {
+                                /** Format: uuid */
+                                id: string;
+                                number: number;
+                                projectKey: string;
+                            } | null;
                             /** @enum {string|null} */
                             type: "bug" | "feature" | "task" | "question" | null;
                             /** @enum {string} */
@@ -2293,6 +2335,9 @@ export interface operations {
                                 id: string;
                                 displayName: string | null;
                             } | null;
+                            /** Format: date-time */
+                            closedAt: string | null;
+                            rejectionReason: string | null;
                         } | {
                             /** Format: uuid */
                             id: string;
@@ -2312,7 +2357,17 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                            /** @enum {string} */
+                            publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                            /** @enum {string|null} */
+                            waitingReason: "information" | "confirmation" | null;
+                            duplicateOf: {
+                                /** Format: uuid */
+                                id: string;
+                                number: number;
+                                projectKey: string;
+                            } | null;
                         })[];
                         nextCursor: string | null;
                     };
@@ -2368,7 +2423,17 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -2387,6 +2452,9 @@ export interface operations {
                             id: string;
                             displayName: string | null;
                         } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
                     } | {
                         /** Format: uuid */
                         id: string;
@@ -2406,7 +2474,17 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
                     };
                 };
             };
@@ -2447,7 +2525,17 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -2466,6 +2554,9 @@ export interface operations {
                             id: string;
                             displayName: string | null;
                         } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
                     } | {
                         /** Format: uuid */
                         id: string;
@@ -2485,7 +2576,17 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
                     };
                 };
             };
@@ -2541,7 +2642,17 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -2560,6 +2671,9 @@ export interface operations {
                             id: string;
                             displayName: string | null;
                         } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
                     } | {
                         /** Format: uuid */
                         id: string;
@@ -2579,7 +2693,244 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_changeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status: "rejected";
+                    rejectionReason: string;
+                } | {
+                    /** @enum {string} */
+                    status: "duplicate";
+                    /** Format: uuid */
+                    duplicateOfTicketId: string;
+                } | {
+                    /** @enum {string} */
+                    status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_confirmResolution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    answer: "solved" | "not_solved";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
                     };
                 };
             };
@@ -2609,18 +2960,36 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed";
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed";
                             data: {
                                 from: string | {
                                     /** Format: uuid */
                                     id: string;
                                     displayName: string | null;
+                                } | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
                                 } | (null);
                                 to: string | {
                                     /** Format: uuid */
                                     id: string;
                                     displayName: string | null;
+                                } | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
                                 } | (null);
+                                reopen?: boolean;
+                                waitingReason?: string | null;
+                                duplicateOf?: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
+                                } | null;
                             } | null;
                             actor: {
                                 /** Format: uuid */

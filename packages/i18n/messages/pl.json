@@ -295,6 +295,49 @@
       "deleted": "Organizacja usunięta"
     }
   },
+  "tickets": {
+    "statuses": {
+      "new": "Nowe",
+      "triage": "Do analizy",
+      "todo": "Do zrobienia",
+      "in_progress": "W realizacji",
+      "in_verification": "W weryfikacji",
+      "waiting_for_requester": "Oczekuje na zgłaszającego",
+      "done": "Zakończone",
+      "rejected": "Odrzucone",
+      "duplicate": "Duplikat"
+    },
+    "publicStatuses": {
+      "received": "Przyjęte",
+      "awaiting_reply": "Wymaga Twojej odpowiedzi",
+      "in_progress": "W realizacji",
+      "resolved": "Rozwiązane",
+      "closed": "Zamknięte"
+    },
+    "publicDescriptions": {
+      "new": "Otrzymaliśmy Twoje zgłoszenie",
+      "triage": "Analizujemy zgłoszenie",
+      "waiting_for_information": "Potrzebujemy od Ciebie dodatkowych informacji",
+      "waiting_for_confirmation": "Potwierdź, czy Twój problem został rozwiązany",
+      "todo": "Zgłoszenie zostało zaplanowane",
+      "in_progress": "Pracujemy nad rozwiązaniem",
+      "in_verification": "Testujemy rozwiązanie",
+      "done": "Zgłoszenie zostało rozwiązane",
+      "rejected": "Zgłoszenie zamknięte",
+      "duplicate": "Zgłoszenie połączone z innym"
+    },
+    "waitingReasons": {
+      "information": "Oczekuje na informacje",
+      "confirmation": "Oczekuje na potwierdzenie"
+    },
+    "resolutionConfirmation": {
+      "question": "Czy Twój problem został rozwiązany?",
+      "answers": {
+        "solved": "Tak, rozwiązane",
+        "not_solved": "Nie, problem nadal występuje"
+      }
+    }
+  },
   "users": {
     "accounts": {
       "title": "Konta",

@@ -482,7 +482,7 @@ model TicketRelation {
   /// The duplicate of a `duplicate_of`.
   sourceTicketId String             @map("source_ticket_id") @db.Uuid
   sourceTicket   Ticket             @relation("TicketRelationSource", fields: [sourceTicketId], references: [id], onDelete: Cascade)
-  /// The original of a `duplicate_of`.
+  /// The original of a `duplicate_of`: it cannot be deleted while a relation points to it.
   targetTicketId String             @map("target_ticket_id") @db.Uuid
   targetTicket   Ticket             @relation("TicketRelationTarget", fields: [targetTicketId], references: [id], onDelete: Restrict)
   createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
