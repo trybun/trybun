@@ -36,9 +36,9 @@ Build S1-07 as the approved change specification decides: the package `@trybun/m
 
 ### Phase 2: Editor
 
-- [ ] 2.1 Textarea component with stories
-- [ ] 2.2 Format functions of the editor with table tests
-- [ ] 2.3 MarkdownEditor with toolbar, tabs, shortcuts and file entry points
+- [x] 2.1 Textarea component with stories — 7b7715d, ae228ba
+- [x] 2.2 Format functions of the editor with table tests — b26f7db
+- [x] 2.3 MarkdownEditor with toolbar, tabs, shortcuts and file entry points — ae228ba
 
 ### Phase 3: Documentation and specification
 
