@@ -26,6 +26,8 @@ Build S1-07 as the approved change specification decides: the package `@trybun/m
 
 ## Progress
 
+PR: #234
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Shared rule set and renderers
@@ -42,7 +44,7 @@ Build S1-07 as the approved change specification decides: the package `@trybun/m
 
 ### Phase 3: Documentation and specification
 
-- [ ] 3.1 User documentation, specification, plan and project memory
+- [x] 3.1 User documentation, specification, plan and project memory — 84205fc
 
 ### Phase 4: Review
 
