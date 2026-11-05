@@ -45,6 +45,6 @@ Build the status changes of S1-06 exactly as the approved change specification d
 ### Phase 3: Requester answer and timer
 
 - [x] 3.1 confirm_resolution rule and endpoint — 63930bf, 5334117
-- [ ] 3.2 Worker scheduler and automatic close timer
+- [x] 3.2 Worker scheduler and automatic close timer — 8c0729c
 - [ ] 3.3 Catalogue texts, generated API client and demo dataset
 - [ ] 3.4 System specification, glossary, plan and project memory
