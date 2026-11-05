@@ -23,7 +23,7 @@ The editor works like GitHub's (issues and pull requests) and is based on **GitH
 
 - toolbar with basic formatting (bold, italic, headings, lists, quotes, links, code),
 - "Write" and "Preview" tabs (PL: „Pisz”, „Podgląd”); the preview renders the text exactly as it appears after saving, an empty text shows "Nothing to preview" (PL: „Brak podglądu”),
-- inserting images and files by drag and drop, pasting from the clipboard, or choosing from disk with the "Attach files" button (attachments, [§13.3](13-non-functional.md)); a file appears as the placeholder `[Uploading name…]()` until it is uploaded, then as `![name](/api/v1/attachments/{id}/content)` for an image or `[name](…)` for another file,
+- inserting images and files by drag and drop, pasting from the clipboard, or choosing from disk with the "Attach files" button (attachments, [§13.3](13-non-functional.md)); a paste that carries text as well as files (e.g. a range copied from a spreadsheet) pastes the text; a file appears as the placeholder `[Uploading name…]()` until it is uploaded, then as `![name](/api/v1/attachments/{id}/content)` for an image or `[name](…)` for another file,
 - task lists (`- [ ]`), code blocks with syntax highlighting, tables,
 - keyboard shortcuts (e.g. Ctrl+B; Ctrl+K inside the editor inserts a link, everywhere else it opens the command palette, [§8.4](08-team-views.md)).
 
@@ -42,7 +42,7 @@ The toolbar and its shortcuts (Cmd instead of Ctrl on macOS, as on GitHub):
 | Task list | `- [ ] ` before each selected line | Ctrl+Shift+L |
 | Attach files | opens the file chooser | – |
 
-- A second press of a button removes the formatting it would add. Every toolbar action and shortcut can be undone with Ctrl+Z, like typing.
+- A second press of Heading, Bold, Italic, Quote, Code or a list button removes the formatting it would add. Every toolbar action and shortcut can be undone with Ctrl+Z, like typing.
 - Write and Preview have no shortcut (Firefox reserves Ctrl+Shift+P); tables have no button, as on GitHub.
 - On phones the toolbar shows Bold, Italic, Link, Bulleted list, Task list and Attach files; the other buttons are in a "More formatting" menu (PL: „Więcej formatowania”).
 

@@ -37,7 +37,12 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from './dropdown-menu.js';
-import { type FormatAction, formatMarkdown, textEdit } from './markdown-editor-format.js';
+import {
+  escapeLinkText,
+  type FormatAction,
+  formatMarkdown,
+  textEdit,
+} from './markdown-editor-format.js';
 import { Markdown } from './markdown.js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs.js';
 import { Textarea } from './textarea.js';
@@ -117,9 +122,25 @@ function shortcut({ code, isShift }: FormatButton, isApple: boolean) {
   };
 }
 
+/** Replaces a range without focusing the textarea: an upload that finishes while the writer is in
+ * another field or the Preview tab must not move the focus or type there. No undo entry. */
+function replaceRangeQuietly(
+  textarea: HTMLTextAreaElement,
+  start: number,
+  end: number,
+  insert: string,
+) {
+  textarea.setRangeText(insert, start, end, 'preserve');
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 /** Replaces a range of the textarea like typing, so Ctrl+Z undoes it (§6.2). */
 function replaceRange(textarea: HTMLTextAreaElement, start: number, end: number, insert: string) {
   textarea.focus();
+  if (document.activeElement !== textarea) {
+    replaceRangeQuietly(textarea, start, end, insert);
+    return;
+  }
   textarea.setSelectionRange(start, end);
   // `insertText` keeps the browser's undo history (as GitHub's markdown-toolbar-element does). An
   // empty insert deletes the selection, which `insertText` does not do in every browser.
@@ -135,8 +156,7 @@ function replaceRange(textarea: HTMLTextAreaElement, start: number, end: number,
 }
 
 function linkMarkdown({ id, name, isImage }: AddedFile): string {
-  const label = name.replaceAll(/[[\]\\]/g, '\\$&');
-  return `${isImage ? '!' : ''}[${label}](${attachmentContentPath(id)})`;
+  return `${isImage ? '!' : ''}[${escapeLinkText(name)}](${attachmentContentPath(id)})`;
 }
 
 interface MarkdownEditorProps extends Omit<
@@ -174,7 +194,10 @@ function MarkdownEditor({
   onFilesAdd,
   className,
   disabled,
+  readOnly,
   onKeyDown,
+  onPaste,
+  onDrop,
   ...props
 }: MarkdownEditorProps) {
   const t = useTranslations('ui.markdownEditor');
@@ -193,7 +216,7 @@ function MarkdownEditor({
 
   function format(action: FormatAction) {
     const textarea = textareaRef.current;
-    if (textarea === null || disabled === true) {
+    if (textarea === null || disabled === true || readOnly === true) {
       return;
     }
     const before = textarea.value;
@@ -213,6 +236,10 @@ function MarkdownEditor({
     if (textarea === null || start === -1) {
       return;
     }
+    if (document.activeElement !== textarea) {
+      replaceRangeQuietly(textarea, start, start + placeholder.length, insert);
+      return;
+    }
     const { selectionStart, selectionEnd } = textarea;
     const shift = (position: number) =>
       position > start ? position + insert.length - placeholder.length : position;
@@ -225,7 +252,9 @@ function MarkdownEditor({
     if (onFilesAdd === undefined || textarea === null || files.length === 0) {
       return;
     }
-    const placeholders = files.map((file) => `[${t('uploading', { name: file.name })}]()`);
+    const placeholders = files.map(
+      (file) => `[${escapeLinkText(t('uploading', { name: file.name }))}]()`,
+    );
     const { selectionStart, selectionEnd } = textarea;
     replaceRange(textarea, selectionStart, selectionEnd, placeholders.join('\n'));
     onFilesAdd(files).forEach((upload, index) => {
@@ -243,8 +272,12 @@ function MarkdownEditor({
     if (event.defaultPrevented || !isModifier || event.altKey) {
       return;
     }
-    const button = FORMAT_BUTTONS.find(
-      ({ code, isShift = false }) => code === event.code && isShift === event.shiftKey,
+    // Letters by the character, as on GitHub, so Ctrl+B is Bold on every keyboard layout; the
+    // shifted keys by their position, because Shift changes their character.
+    const button = FORMAT_BUTTONS.find(({ code, isShift = false }) =>
+      code?.startsWith('Key') === true && !isShift
+        ? event.key.toLowerCase() === code.slice(3).toLowerCase() && !event.shiftKey
+        : code === event.code && isShift === event.shiftKey,
     );
     if (button === undefined) {
       return;
@@ -256,14 +289,22 @@ function MarkdownEditor({
   }
 
   function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    onPaste?.(event);
     const files = [...event.clipboardData.files];
-    if (files.length > 0) {
-      event.preventDefault();
-      addFiles(files);
+    // Office applications put an image of a copied range next to its text: the text is pasted.
+    const hasText = event.clipboardData.getData('text/plain') !== '';
+    if (event.defaultPrevented || onFilesAdd === undefined || files.length === 0 || hasText) {
+      return;
     }
+    event.preventDefault();
+    addFiles(files);
   }
 
   function handleDrop(event: DragEvent<HTMLTextAreaElement>) {
+    onDrop?.(event);
+    if (event.defaultPrevented) {
+      return;
+    }
     const files = [...event.dataTransfer.files];
     if (files.length > 0) {
       // Without onFilesAdd the files are ignored, instead of the browser opening them.
@@ -286,7 +327,7 @@ function MarkdownEditor({
           {tab === 'write' && (
             <ToolbarPrimitive.Root
               aria-label={t('toolbar')}
-              disabled={disabled}
+              disabled={disabled === true || readOnly === true}
               className="-mx-1 flex flex-wrap items-center gap-0.5 md:mx-0"
             >
               {visibleButtons.map((button) => {
@@ -375,6 +416,7 @@ function MarkdownEditor({
             onPaste={handlePaste}
             onDrop={handleDrop}
             disabled={disabled}
+            readOnly={readOnly}
             aria-invalid={invalid === true ? true : undefined}
             {...props}
           />

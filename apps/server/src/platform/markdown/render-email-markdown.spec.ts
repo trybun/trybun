@@ -40,6 +40,15 @@ describe('renderEmailMarkdown', () => {
     expect(render(`[x](${href})`)).toContain(`href="${expected}"`);
   });
 
+  it.each(['[x](//%20)', '[x](<// a>)', '[x](//[)', '![x](//a%25b)'])(
+    'renders a link the URL parser rejects as text: %s',
+    (source) => {
+      const html = render(source);
+      expect(html).toContain('x');
+      expect(html).not.toContain('<a');
+    },
+  );
+
   it('keeps links within the content, e.g. footnotes', () => {
     expect(render('Note[^1]\n\n[^1]: Text.')).toContain('href="#user-content-fn-1"');
   });

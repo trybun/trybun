@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, screen, waitFor, within } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
 import { Field, FieldDescription, FieldError, FieldLabel } from './field.js';
+import { Input } from './input.js';
 import { type AddedFile, MarkdownEditor } from './markdown-editor.js';
 
 const IMAGE_ID = '0b9c3f6e-2d1a-4e8b-9c7d-5a6f1e2d3c4b';
@@ -190,8 +191,98 @@ export const WithFiles: Story = {
     ]);
     await waitFor(() =>
       expect(textarea).toHaveValue(
-        `![screenshot.png](/api/v1/attachments/${IMAGE_ID}/content)\n[export.log](/api/v1/attachments/7e1d2c3b-4a5f-4e6d-8c9b-0a1f2e3d4c5b/content)\n`,
+        `![screenshot\\.png](/api/v1/attachments/${IMAGE_ID}/content)\n[export\\.log](/api/v1/attachments/7e1d2c3b-4a5f-4e6d-8c9b-0a1f2e3d4c5b/content)\n`,
       ),
+    );
+  },
+};
+
+/**
+ * An upload that finishes while the writer is in another field links the file in the text without
+ * moving the focus or typing into that field.
+ */
+export const UploadWhileElsewhere: Story = {
+  args: {
+    onFilesAdd: (files) =>
+      files.map(
+        (file) =>
+          new Promise<AddedFile>((resolve) => {
+            setTimeout(() => resolve({ id: IMAGE_ID, name: file.name, isImage: false }), 300);
+          }),
+      ),
+  },
+  render: (args) => (
+    <div className="flex max-w-2xl flex-col gap-4">
+      <Field>
+        <FieldLabel>Title</FieldLabel>
+        <Input />
+      </Field>
+      <Field>
+        <FieldLabel>Description</FieldLabel>
+        <MarkdownEditor {...args} />
+      </Field>
+    </div>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    const title = canvas.getByRole('textbox', { name: 'Title' });
+    const input = canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await userEvent.upload(input, new File(['log'], 'export.log', { type: 'text/plain' }));
+    await expect(textarea).toHaveValue('[Uploading export\\.log…]()');
+    await userEvent.click(title);
+    await waitFor(() =>
+      expect(textarea).toHaveValue(`[export\\.log](/api/v1/attachments/${IMAGE_ID}/content)`),
+    );
+    await expect(title).toHaveFocus();
+    await expect(title).toHaveValue('');
+  },
+};
+
+function pasteEvent(data: DataTransfer) {
+  const event = new Event('paste', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'clipboardData', { value: data });
+  return event;
+}
+
+/** A copied Office range carries its text and an image of it: the text is pasted, not uploaded. */
+export const PasteTextWithImage: Story = {
+  args: { onFilesAdd: fn(upload) },
+  play: async ({ args, canvas }) => {
+    const textarea = canvas.getByRole('textbox', { name: 'Description' });
+    const data = new DataTransfer();
+    data.setData('text/plain', 'a\tb');
+    data.items.add(new File(['png'], 'image.png', { type: 'image/png' }));
+    const event = pasteEvent(data);
+    textarea.dispatchEvent(event);
+    await expect(event.defaultPrevented).toBe(false);
+    await expect(args.onFilesAdd).not.toHaveBeenCalled();
+  },
+};
+
+/** Without `onFilesAdd`, a pasted file is ignored and the paste goes on as usual. */
+export const PasteWithoutUploads: Story = {
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole('textbox', { name: 'Description' });
+    const data = new DataTransfer();
+    data.items.add(new File(['png'], 'image.png', { type: 'image/png' }));
+    const event = pasteEvent(data);
+    textarea.dispatchEvent(event);
+    await expect(event.defaultPrevented).toBe(false);
+  },
+};
+
+/** A read-only editor cannot be changed by the toolbar or its shortcuts. */
+export const ReadOnly: Story = {
+  args: { readOnly: true, defaultValue: 'word' },
+  play: async ({ canvas, userEvent }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    textarea.focus();
+    textarea.setSelectionRange(0, 4);
+    await userEvent.keyboard('{Control>}b{/Control}');
+    await expect(textarea).toHaveValue('word');
+    await expect(canvas.getByRole('button', { name: 'Bold' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
     );
   },
 };

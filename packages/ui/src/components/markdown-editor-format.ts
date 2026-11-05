@@ -59,6 +59,15 @@ function toggleWrap(text: string, { start, end }: TextSelection, marker: string)
 /** A fenced code block around selected lines, or the block removed when it is already fenced. */
 function toggleCodeBlock(text: string, { start, end }: TextSelection): FormattedText {
   const selected = text.slice(start, end);
+  // The fences are around the selection, as after the first press: `\`\`\`\n|a\nb|\n\`\`\``.
+  const fenceBefore = /(^|\n)```[^\n]*\n$/.exec(text.slice(0, start));
+  if (fenceBefore && /^\n```(\n|$)/.test(text.slice(end))) {
+    const blockStart = start - fenceBefore[0].length + fenceBefore[1]!.length;
+    return {
+      text: text.slice(0, blockStart) + selected + text.slice(end + 4),
+      selection: { start: blockStart, end: blockStart + selected.length },
+    };
+  }
   const fenced = /^```[^\n]*\n([\s\S]*)\n```$/.exec(selected);
   if (fenced) {
     const inner = fenced[1] ?? '';
@@ -191,4 +200,9 @@ export function textEdit(before: string, after: string): TextEdit {
     end: before.length - suffix,
     insert: after.slice(start, after.length - suffix),
   };
+}
+
+/** A file name as literal text of a link: Markdown punctuation escaped, line breaks as spaces. */
+export function escapeLinkText(name: string): string {
+  return name.replaceAll(/\s+/g, ' ').replaceAll(/[!-/:-@[-`{-~]/g, '\\$&');
 }

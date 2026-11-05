@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { type FormatAction, formatMarkdown, textEdit } from './markdown-editor-format.js';
+import {
+  escapeLinkText,
+  type FormatAction,
+  formatMarkdown,
+  textEdit,
+} from './markdown-editor-format.js';
 
 // A text with its selection: `[` and `]` mark the selected range, `|` a cursor.
 function parse(marked: string) {
@@ -45,6 +50,9 @@ describe('formatMarkdown', () => {
     ['code', 'x [[a\nb]] y', 'x \n```\n[[a\nb]]\n```\n y'],
     ['code', '[[```\na\nb\n```]]', '[[a\nb]]'],
     ['code', '[[```ts\na\nb\n```]]', '[[a\nb]]'],
+    // A second press removes the block it added.
+    ['code', 'x\n```\n[[a\nb]]\n```\ny', 'x\n[[a\nb]]\ny'],
+    ['code', '```ts\n[[a\nb]]\n```', '[[a\nb]]'],
     // Link: the URL placeholder is selected; a selected URL becomes the target.
     ['link', 'see [[docs]]', 'see [docs]([[url]])'],
     ['link', '|', '[]([[url]])'],
@@ -85,5 +93,17 @@ describe('textEdit', () => {
     const edit = textEdit(before, after);
     expect(edit).toEqual(expected);
     expect(before.slice(0, edit.start) + edit.insert + before.slice(edit.end)).toBe(after);
+  });
+});
+
+describe('escapeLinkText', () => {
+  it.each([
+    ['screenshot.png', 'screenshot\\.png'],
+    ['<https://evil.example>', '\\<https\\:\\/\\/evil\\.example\\>'],
+    ['a`', 'a\\`'],
+    ['line\nbreak', 'line break'],
+    ['[x](y)', '\\[x\\]\\(y\\)'],
+  ])('%j → %j', (name, expected) => {
+    expect(escapeLinkText(name)).toBe(expected);
   });
 });

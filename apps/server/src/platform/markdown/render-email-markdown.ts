@@ -45,12 +45,15 @@ export interface EmailMarkdownOptions {
 
 type Parent = Root | Element;
 
-/** A site-relative link becomes absolute; links within the content (`#…`) stay. */
-function absoluteUrl(url: string, baseUrl: string): string {
+/**
+ * A site-relative link becomes absolute; links within the content (`#…`) stay. `undefined` for a
+ * URL the URL parser rejects, e.g. `//%20`: one such link must not fail the whole e-mail.
+ */
+function absoluteUrl(url: string, baseUrl: string): string | undefined {
   if (url.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(url)) {
     return url;
   }
-  return new URL(url, baseUrl).href;
+  return URL.canParse(url, baseUrl) ? new URL(url, baseUrl).href : undefined;
 }
 
 function styleForEmail(parent: Parent, baseUrl: string): void {
@@ -68,7 +71,14 @@ function styleForEmail(parent: Parent, baseUrl: string): void {
       continue;
     }
     if (child.tagName === 'a' && typeof child.properties.href === 'string') {
-      child.properties.href = absoluteUrl(child.properties.href, baseUrl);
+      const href = absoluteUrl(child.properties.href, baseUrl);
+      // A link without a valid target renders as its plain text, as in the views.
+      if (href === undefined) {
+        styleForEmail(child, baseUrl);
+        children.push(...child.children);
+        continue;
+      }
+      child.properties.href = href;
     }
     // In a code block, the block's style applies; the inline code style would draw a second box.
     const isCodeInBlock =

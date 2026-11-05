@@ -21,6 +21,11 @@ Non-obvious behaviour found while building the rule set `@trybun/markdown`, the 
 
 ## Editor
 
+- `execCommand('insertText')` writes into the **focused** element: an upload that finishes while the writer is in another field or on the Preview tab (hidden panel, cannot take focus) must not use it. The editor replaces the placeholder with `setRangeText` and an `input` event when the textarea does not have the focus (no undo entry).
+- Office applications put an image of a copied range in the clipboard next to its text; a paste with text and files pastes the text, and without `onFilesAdd` a paste is never prevented.
+- File names go into link text escaped (`escapeLinkText`: every ASCII punctuation character, line breaks as spaces), otherwise a name like `<https://…>` nests links and two names with backticks merge into one link.
+- `new URL(href, base)` throws for some protocol-relative links (`//%20`, `//[`): the e-mail renderer checks with `URL.canParse` and renders such a link as text, so one comment cannot fail a notification.
+- `remark-rehype` gives the footnotes' heading the fixed ID `footnote-label`; two rendered texts with footnotes on one page repeat it. Not writer-controlled; a per-text `clobberPrefix` of `remark-rehype` would fix it when comments render together (S1-12).
 - Edits of the toolbar go through `document.execCommand('insertText')` (or `'delete'` for an empty insert) on the replaced range only (`textEdit`), so Ctrl+Z undoes them; `setRangeText` plus an `input` event is the fallback without undo. React's value tracker sees the change and calls `onChange`.
 - `Textarea` is a Base UI `Field.Control` with `render={<textarea />}`, so `FieldLabel` and `FieldDescription` link to it; `value` and `defaultValue` go to the control, the other props to the textarea.
 - Disabled buttons of a Base UI `Toolbar` keep focus and get `aria-disabled`, not `disabled`.
