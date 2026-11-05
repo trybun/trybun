@@ -1,4 +1,5 @@
 import type { DehydratedState } from '@tanstack/react-query';
+import { CATALOGUES } from '@trybun/i18n/catalogues';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -31,14 +32,31 @@ vi.mock('../../lib/api-client/server-api-client.js', () => ({
   getServerApiClient: () => Promise.resolve({ GET: get }),
 }));
 
+// The cookies of the browser: the desktop choice of the side navigation (§2.9).
+const browserCookies = new Map<string, { value: string }>();
+vi.mock('next/headers.js', () => ({
+  cookies: () => Promise.resolve({ get: (name: string) => browserCookies.get(name) }),
+}));
+
+vi.mock('next-intl/server', () => ({ getMessages: () => Promise.resolve(CATALOGUES.en) }));
+
 const { default: TeamLayout } = await import('./layout.js');
 
 type Parent<Child> = ReactElement<{ children: Child }>;
 
-/** The application shell inside the hydration boundary and the product tour provider. */
-function shellOf(element: ReactElement) {
-  return (element as Parent<Parent<ReactElement<{ help: ReactElement }>>>).props.children.props
+/** The texts provider inside the hydration boundary. */
+function messagesProviderOf(element: ReactElement) {
+  return (element as Parent<ReactElement<{ messages: object; children: ReactElement }>>).props
     .children;
+}
+
+/** The application shell inside the texts provider and the product tour provider. */
+function shellOf(element: ReactElement) {
+  return (
+    messagesProviderOf(element).props.children as Parent<
+      ReactElement<{ help: ReactElement; isDesktopNavigationCollapsed: boolean }>
+    >
+  ).props.children;
 }
 
 describe('TeamLayout', () => {
@@ -57,6 +75,16 @@ describe('TeamLayout', () => {
     ]);
   });
 
+  it('passes the texts of the shell to the browser, without those of a feature', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const { messages } = messagesProviderOf(element).props;
+    expect(Object.keys(messages)).toEqual(expect.arrayContaining(['appShell', 'productTours']));
+    expect(Object.keys(messages)).not.toContain('projects');
+  });
+
   it('gives the help menu the help pages of the account kind', async () => {
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
 
@@ -66,6 +94,19 @@ describe('TeamLayout', () => {
     expect(shell.props.help.props).toMatchObject({
       views: { '/': 'team/tutorials/getting-started' },
     });
+  });
+
+  it('renders the side navigation as this browser left it on desktop', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
+      isDesktopNavigationCollapsed: false,
+    });
+    browserCookies.set('TRYBUN_NAVIGATION_COLLAPSED', { value: '1' });
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
+      isDesktopNavigationCollapsed: true,
+    });
+    browserCookies.clear();
   });
 
   it('gives only the end-user help pages when the account cannot be read', async () => {
@@ -78,5 +119,23 @@ describe('TeamLayout', () => {
     expect(shell.props.help.props).toMatchObject({
       views: { '/': 'end-user/tutorials/getting-started' },
     });
+  });
+
+  it('shows only the deactivation notice when the API refuses the account', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockResolvedValue({
+      data: undefined,
+      error: {
+        type: 'about:blank',
+        title: 'Unauthorized',
+        status: 401,
+        code: 'authentication.required',
+      },
+      response: new Response(null, { status: 401 }),
+    } as never);
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    expect((element.type as { name: string }).name).toBe('AccountDeactivatedNotice');
   });
 });

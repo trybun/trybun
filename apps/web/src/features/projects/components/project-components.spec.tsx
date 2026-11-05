@@ -1,0 +1,461 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { Invitation } from '@trybun/contracts/invitations';
+import type { OrganizationSummary } from '@trybun/contracts/organizations';
+import type { Project, ProjectAction, ProjectMemberPage } from '@trybun/contracts/projects';
+import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ComponentProps, ReactElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { prerender } from 'react-dom/static';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => '/projects',
+}));
+
+const { ProjectList } = await import('./project-list.js');
+const { ProjectSettings } = await import('./project-settings.js');
+const { ProjectGeneralForm } = await import('./project-general-form.js');
+const { ProjectDangerZone } = await import('./project-danger-zone.js');
+const { ProjectMembers } = await import('./project-members.js');
+const { ProjectStateTabs } = await import('./project-state-tabs.js');
+const { NewProjectDialog } = await import('./new-project-dialog.js');
+const { ProjectOrganizations } = await import('./project-organizations.js');
+const { ProjectInvitations } = await import('./project-invitations.js');
+const { AccountForm } = await import('./add-member-dialog.js');
+const { Dialog } = await import('@trybun/ui/components/dialog');
+
+const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
+
+function project(overrides: Partial<Project> = {}): Project {
+  return {
+    id: PROJECT_ID,
+    name: 'Customer portal',
+    key: 'CP',
+    state: 'active',
+    confirmResolution: false,
+    version: 3,
+    createdAt: '2026-10-27T09:00:00.000Z',
+    updatedAt: '2026-10-27T09:00:00.000Z',
+    role: 'project_manager',
+    hasTickets: false,
+    allowedActions: ['read', 'update_settings', 'read_members', 'manage_members'],
+    ...overrides,
+  };
+}
+
+const ADMIN_ACTIONS: ProjectAction[] = [
+  'read',
+  'update',
+  'update_settings',
+  'archive',
+  'unarchive',
+  'delete',
+  'read_members',
+  'manage_members',
+];
+
+const members: ProjectMemberPage = {
+  items: [
+    {
+      user: {
+        id: '0199a3f0-0000-7000-8000-000000000011',
+        displayName: 'Anna Nowak',
+        githubLogin: 'anowak',
+      },
+      role: 'project_manager',
+      createdAt: '2026-10-27T09:00:00.000Z',
+    },
+  ],
+  nextCursor: null,
+};
+
+function render(element: ReactElement, seed: (client: QueryClient) => void = () => {}) {
+  const queryClient = new QueryClient();
+  seed(queryClient);
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale="en" messages={CATALOGUES.en} timeZone="UTC">
+      <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>
+    </NextIntlClientProvider>,
+  );
+}
+
+/** The server HTML with the lazily loaded components resolved (§18.7). */
+async function prerenderToString(element: ReactElement, seed: (client: QueryClient) => void) {
+  const queryClient = new QueryClient();
+  seed(queryClient);
+  const { prelude } = await prerender(
+    <NextIntlClientProvider locale="en" messages={CATALOGUES.en} timeZone="UTC">
+      <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>
+    </NextIntlClientProvider>,
+  );
+  return new Response(prelude).text();
+}
+
+const page = (items: Project[]) => ({ pages: [{ items, nextCursor: null }], pageParams: [null] });
+
+describe('ProjectList', () => {
+  it('lists each project with its key and the person’s role, opening its settings', () => {
+    const html = render(<ProjectList state="active" />, (client) =>
+      client.setQueryData(
+        ['projects', 'list', 'active'],
+        page([project(), project({ id: 'other', name: 'ERP', key: 'ERP', role: null })]),
+      ),
+    );
+
+    expect(html).toContain(`href="/projects/${PROJECT_ID}/settings"`);
+    expect(html).toContain('Customer portal');
+    expect(html).toContain('Project manager');
+    expect(html).toContain('Administrator');
+  });
+
+  it.each([
+    ['active', 'No projects yet.'],
+    ['archived', 'No archived projects.'],
+  ] as const)('says when there are no %s projects', (state, text) => {
+    const html = render(<ProjectList state={state} />, (client) =>
+      client.setQueryData(['projects', 'list', state], page([])),
+    );
+
+    expect(html).toContain(text);
+  });
+});
+
+describe('ProjectSettings', () => {
+  function renderSettings(value: Project) {
+    return render(<ProjectSettings projectId={PROJECT_ID} tab="general" />, (client) => {
+      client.setQueryData(['projects', 'detail', PROJECT_ID], value);
+      client.setQueryData(['projects', 'members', PROJECT_ID], {
+        pages: [members],
+        pageParams: [null],
+      });
+    });
+  }
+
+  it('shows the Danger zone only with an action of it', () => {
+    expect(renderSettings(project())).not.toContain('Danger zone');
+    expect(renderSettings(project({ allowedActions: ADMIN_ACTIONS }))).toContain('Danger zone');
+  });
+
+  it('shows the organizations with access to the Administrator only', () => {
+    expect(renderSettings(project())).not.toContain('Organizations with access');
+    const html = render(
+      <ProjectSettings projectId={PROJECT_ID} tab="general" canSeeOrganizations />,
+      (client) => client.setQueryData(['projects', 'detail', PROJECT_ID], project()),
+    );
+
+    expect(html).toContain('Organizations with access');
+  });
+
+  it('shows the banner of an archived project', () => {
+    const html = renderSettings(
+      project({ state: 'archived', allowedActions: ['read', 'read_members'] }),
+    );
+
+    expect(html).toContain('This project is archived and read-only.');
+  });
+});
+
+describe('ProjectGeneralForm', () => {
+  it('shows the name and the key read-only to a Project manager, with the switch to save', () => {
+    const html = render(<ProjectGeneralForm project={project()} />);
+
+    expect(html.match(/readOnly=""/g)).toHaveLength(2);
+    expect(html).toContain('Only the Administrator changes the name and the key.');
+    expect(html).toContain('Save changes');
+  });
+
+  it('freezes the key for the Administrator once the project has tickets (§3.1)', () => {
+    const html = render(
+      <ProjectGeneralForm
+        project={project({ role: null, hasTickets: true, allowedActions: ADMIN_ACTIONS })}
+      />,
+    );
+
+    expect(html.match(/readOnly=""/g)).toHaveLength(1);
+    expect(html).toContain(
+      'The key cannot be changed after the first ticket, because it is part of ticket identifiers.',
+    );
+  });
+
+  it('offers nothing to save to a Developer', () => {
+    const html = render(
+      <ProjectGeneralForm project={project({ role: 'developer', allowedActions: ['read'] })} />,
+    );
+
+    expect(html).not.toContain('Save changes');
+  });
+});
+
+describe('ProjectDangerZone', () => {
+  it('offers archiving and deletion of an active project', () => {
+    const html = render(<ProjectDangerZone project={project({ allowedActions: ADMIN_ACTIONS })} />);
+
+    expect(html).toContain('Archive project');
+    expect(html).toContain('Delete project');
+    expect(html).not.toContain('Unarchive project');
+  });
+
+  it('disables the deletion of a project with tickets, with the reason', () => {
+    const html = render(
+      <ProjectDangerZone project={project({ hasTickets: true, allowedActions: ADMIN_ACTIONS })} />,
+    );
+
+    expect(html).toContain('Projects with tickets cannot be deleted. Archive the project instead.');
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Delete project<\/button>/);
+    expect(html).toContain('Archive project');
+  });
+
+  it('asks to unarchive an archived project before deleting it', () => {
+    const html = render(
+      <ProjectDangerZone
+        project={project({
+          state: 'archived',
+          allowedActions: ['read', 'read_members', 'unarchive'],
+        })}
+      />,
+    );
+
+    expect(html).toContain('Unarchive project');
+    expect(html).toContain('Unarchive the project before you delete it.');
+    expect(html).not.toContain('>Archive project<');
+  });
+});
+
+describe('ProjectMembers', () => {
+  function renderMembers(value: Project) {
+    return render(<ProjectMembers project={value} />, (client) =>
+      client.setQueryData(['projects', 'members', PROJECT_ID], {
+        pages: [members],
+        pageParams: [null],
+      }),
+    );
+  }
+
+  it('lets a Project manager change roles and remove members', () => {
+    const html = renderMembers(project());
+
+    expect(html).toContain('Anna Nowak');
+    expect(html).toContain('@anowak');
+    expect(html).toContain('aria-label="Role of Anna Nowak"');
+    expect(html).toContain('aria-label="Remove Anna Nowak"');
+  });
+
+  it('renders the Add member button on the server, before its dialog code loads', async () => {
+    const html = await prerenderToString(<ProjectMembers project={project()} />, (client) =>
+      client.setQueryData(['projects', 'members', PROJECT_ID], {
+        pages: [members],
+        pageParams: [null],
+      }),
+    );
+
+    expect(html).toContain('Add member');
+  });
+
+  it('keeps the role of an end user with personal access, never offering a team role', () => {
+    const html = render(<ProjectMembers project={project()} />, (client) =>
+      client.setQueryData(['projects', 'members', PROJECT_ID], {
+        pages: [
+          {
+            items: [
+              {
+                user: {
+                  id: '0199a3f0-0000-7000-8000-000000000012',
+                  displayName: 'Ewa Klient',
+                  githubLogin: null,
+                },
+                role: 'end_user',
+                createdAt: '2026-10-27T09:00:00.000Z',
+              },
+            ],
+            nextCursor: null,
+          },
+        ],
+        pageParams: [null],
+      }),
+    );
+
+    expect(html).toContain('End user');
+    expect(html).not.toContain('aria-label="Role of Ewa Klient"');
+    expect(html).toContain('aria-label="Remove Ewa Klient"');
+  });
+
+  it('shows a Developer the roles only', () => {
+    const html = renderMembers(
+      project({ role: 'developer', allowedActions: ['read', 'read_members'] }),
+    );
+
+    expect(html).toContain('Project manager');
+    expect(html).not.toContain('Remove');
+    expect(html).not.toContain('Add member');
+  });
+});
+
+describe('ProjectInvitations', () => {
+  function invitation(overrides: Partial<Invitation> = {}): Invitation {
+    return {
+      id: '0199a3f0-0000-7000-8000-000000000020',
+      user: {
+        id: '0199a3f0-0000-7000-8000-000000000021',
+        email: 'ewa@customer.example.com',
+        displayName: null,
+      },
+      target: {
+        type: 'project',
+        project: { id: PROJECT_ID, key: 'CP', name: 'Customer portal' },
+        role: 'end_user',
+        organization: null,
+      },
+      invitedBy: { id: '0199a3f0-0000-7000-8000-000000000011', displayName: 'Anna Nowak' },
+      state: 'pending',
+      expiresAt: '2026-11-05T09:00:00.000Z',
+      createdAt: '2026-10-29T09:00:00.000Z',
+      allowedActions: ['resend', 'revoke'],
+      ...overrides,
+    };
+  }
+
+  function renderInvitations(items: Invitation[]) {
+    return render(<ProjectInvitations projectId={PROJECT_ID} />, (client) =>
+      client.setQueryData(['invitations', 'list', { projectId: PROJECT_ID }], {
+        pages: [{ items, nextCursor: null }],
+        pageParams: [null],
+      }),
+    );
+  }
+
+  it('lists the address, role, inviting person and expiry with Copy new link and Revoke', () => {
+    const html = renderInvitations([invitation()]);
+
+    expect(html).toContain('Pending invitations');
+    expect(html).toContain('ewa@customer.example.com');
+    expect(html).toContain('End user · Invited by Anna Nowak');
+    expect(html).toContain('Expires on Nov 5, 2026');
+    expect(html).toContain('aria-label="Copy a new link for ewa@customer.example.com"');
+    expect(html).toContain('aria-label="Revoke the invitation of ewa@customer.example.com"');
+  });
+
+  it('offers only the actions the invitation allows', () => {
+    const html = renderInvitations([invitation({ allowedActions: ['revoke'], invitedBy: null })]);
+
+    expect(html).not.toContain('Copy new link');
+    expect(html).toContain('Revoke');
+    expect(html).toContain('Inviting person unknown');
+  });
+
+  it('is not shown without pending invitations', () => {
+    expect(renderInvitations([])).toBe('');
+  });
+});
+
+describe('ProjectStateTabs', () => {
+  it('shows the Active and Archived tabs with the list of the current one', () => {
+    const html = render(<ProjectStateTabs state="archived" />, (client) =>
+      client.setQueryData(['projects', 'list', 'archived'], page([project({ state: 'archived' })])),
+    );
+
+    expect(html).toContain('Active');
+    expect(html).toContain('Archived');
+    expect(html).toContain('Customer portal');
+  });
+});
+
+describe('NewProjectDialog', () => {
+  it('renders its button, the dialog opening on request', () => {
+    const html = render(<NewProjectDialog />);
+
+    expect(html).toContain('New project');
+    expect(html).not.toContain('Create project');
+  });
+});
+
+describe('ProjectOrganizations', () => {
+  const organizationPage = (items: OrganizationSummary[]) => ({
+    pages: [{ items, nextCursor: null }],
+    pageParams: [null],
+  });
+  const organization: OrganizationSummary = {
+    id: '0199a3f0-0000-7000-8000-000000000020',
+    name: 'Acme',
+    state: 'active',
+    domains: ['acme.com'],
+    memberCount: 2,
+    version: 1,
+    createdAt: '2026-10-27T09:00:00.000Z',
+    updatedAt: '2026-10-27T09:00:00.000Z',
+    allowedActions: ['read'],
+  };
+
+  it('links each organization with access, the archived ones marked', () => {
+    const html = render(<ProjectOrganizations projectId={PROJECT_ID} />, (client) => {
+      client.setQueryData(
+        ['organizations', 'list', 'active', PROJECT_ID],
+        organizationPage([organization]),
+      );
+      client.setQueryData(
+        ['organizations', 'list', 'archived', PROJECT_ID],
+        organizationPage([{ ...organization, id: 'old', name: 'Old Co', state: 'archived' }]),
+      );
+    });
+
+    expect(html).toContain(`href="/admin/organizations/${organization.id}"`);
+    expect(html).toContain('Acme');
+    expect(html).toContain('Old Co');
+    expect(html.match(/>Archived</g)).toHaveLength(1);
+  });
+
+  it('says when no organization may access the project', () => {
+    const html = render(<ProjectOrganizations projectId={PROJECT_ID} />, (client) => {
+      client.setQueryData(['organizations', 'list', 'active', PROJECT_ID], organizationPage([]));
+      client.setQueryData(['organizations', 'list', 'archived', PROJECT_ID], organizationPage([]));
+    });
+
+    expect(html).toContain('No organization may access the project.');
+  });
+});
+
+describe('AccountForm of Add member', () => {
+  const candidates =
+    (items: { id: string; displayName: string | null; githubLogin: string | null }[]) =>
+    (client: QueryClient) =>
+      client.setQueryData(['projects', 'member-candidates', PROJECT_ID, ''], {
+        items,
+        nextCursor: null,
+      });
+
+  it('lists the active team accounts by name and GitHub login, never by address, with the role', () => {
+    const html = render(
+      <Dialog>
+        <AccountForm projectId={PROJECT_ID} isOpen onDone={() => {}} />
+      </Dialog>,
+      candidates([
+        {
+          id: '0199a3f0-0000-7000-8000-000000000012',
+          displayName: 'Jan Kowalski',
+          githubLogin: 'jkowalski',
+        },
+        { id: '0199a3f0-0000-7000-8000-000000000013', displayName: null, githubLogin: null },
+      ]),
+    );
+
+    expect(html).toContain('Jan Kowalski');
+    expect(html).toContain('@jkowalski');
+    expect(html).toContain(CATALOGUES.en.projects.members.noName);
+    expect(html).toContain(CATALOGUES.en.projects.members.search);
+    expect(html).toContain(CATALOGUES.en.projects.members.role);
+    expect(html).not.toContain('@example');
+  });
+
+  it('says when no team account can be added', () => {
+    expect(
+      render(
+        <Dialog>
+          <AccountForm projectId={PROJECT_ID} isOpen onDone={() => {}} />
+        </Dialog>,
+        candidates([]),
+      ),
+    ).toContain(CATALOGUES.en.projects.members.noCandidates);
+  });
+});

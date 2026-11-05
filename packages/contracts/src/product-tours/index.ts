@@ -5,7 +5,7 @@ import { pageSchema } from '../pagination/index.js';
  * `product_tour` (Rule 4, §2.4): the closed list of product tours. The web application defines
  * the steps of each tour; the API only records the progress of its identifier.
  */
-export const productTourIdSchema = z.enum(['first_login']);
+export const productTourIdSchema = z.enum(['first_login', 'organization_detail']);
 export type ProductTourId = z.infer<typeof productTourIdSchema>;
 
 /** `product_tour_progress.status` (§2.4): how a person ended a version of a tour. */

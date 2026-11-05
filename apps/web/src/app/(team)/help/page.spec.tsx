@@ -34,7 +34,7 @@ describe('HelpPage', () => {
 
     const html = await renderPage('pl');
 
-    expect(requireSession).toHaveBeenCalledWith('/help');
+    expect(requireSession).toHaveBeenCalledWith();
     expect(html).toContain('Przeszukaj pomoc');
     expect(html).toContain('href="/help/end-user/how-to/change-language"');
     expect(html).not.toContain('href="/help/team/');

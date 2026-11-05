@@ -21,7 +21,7 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ slug
     notFound();
   }
   const slug = parsed.data.slug.join('/');
-  await requireSession(`/help/${slug}`);
+  await requireSession();
   const [locale, kind] = await Promise.all([getLocale(), getHelpReaderKind()]);
   const page = getHelpPage(locale, kind, slug);
   if (page === undefined) {

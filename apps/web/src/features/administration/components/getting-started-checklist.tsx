@@ -14,7 +14,7 @@ export async function GettingStartedChecklist({ items }: { items: GettingStarted
   const t = await getTranslations('administration');
   const done = items.filter((item) => item.isDone).length;
   return (
-    <section aria-labelledby="getting-started-title" className="flex flex-col gap-4">
+    <section aria-labelledby="getting-started-title" className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 id="getting-started-title" className="text-lg font-semibold">
           {t('gettingStarted')}
@@ -45,7 +45,7 @@ export async function GettingStartedChecklist({ items }: { items: GettingStarted
               <p className="text-sm text-muted-foreground">{t(`items.${item.id}.description`)}</p>
               <Link
                 href={helpHref(GETTING_STARTED_HELP[item.id])}
-                className="flex min-h-11 w-fit items-center text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-0"
+                className="flex min-h-11 w-fit items-center text-sm font-medium text-link underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-0"
               >
                 {t('howTo')}
               </Link>
