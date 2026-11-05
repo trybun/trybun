@@ -23,12 +23,9 @@ const abilities = new AbilityFactory(
 );
 
 type State = 'active' | 'archived';
+type RecordOptions = Parameters<typeof buildTicketRecord>[1];
 
-function can(
-  who: PrincipalFixture,
-  action: TicketAction,
-  options: { own?: boolean; state?: State } = {},
-) {
+function can(who: PrincipalFixture, action: TicketAction, options: RecordOptions = {}) {
   return abilities.forPrincipal(buildPrincipal(who)).can(action, buildTicketRecord(who, options));
 }
 
@@ -38,7 +35,7 @@ function canCreate(who: PrincipalFixture, state: State = 'active') {
     .can(CREATE_TICKET, buildProjectRecord(who, state));
 }
 
-function allowedActions(who: PrincipalFixture, options: { own?: boolean; state?: State }) {
+function allowedActions(who: PrincipalFixture, options: RecordOptions) {
   return ticketActionSchema.options.filter((action) => can(who, action, options));
 }
 
@@ -87,18 +84,74 @@ describe('ticket abilities', () => {
     ['Assign tickets', 'assign', 'developer', false, false],
     ['Assign tickets (to self only)', 'assign_self', 'developer', false, true],
     ['Assign tickets (to self only)', 'assign_self', 'end_user_personal', true, false],
+    ['Change status', 'change_status', 'developer', false, true],
+    ['Change status', 'change_status', 'project_manager', false, true],
+    ['Change status', 'change_status', 'admin', false, true],
+    ['Change status', 'change_status', 'team_member', false, false],
+    ['Change status', 'change_status', 'end_user_personal', true, false],
   ] as const)('%s (%s) – %s, own: %s: %s', (_row, action, who, own, isAllowed) => {
     expect(can(who, action, { own })).toBe(isAllowed);
   });
 
+  const WAITING_FOR_CONFIRMATION = {
+    status: 'waiting_for_requester',
+    waitingReason: 'confirmation',
+  } as const;
+
+  it.each([
+    ['end_user_personal', true, WAITING_FOR_CONFIRMATION, true],
+    // An end user who lost access to the project still answers for their own ticket.
+    ['end_user', true, WAITING_FOR_CONFIRMATION, true],
+    ['end_user_personal', false, WAITING_FOR_CONFIRMATION, false],
+    [
+      'end_user_personal',
+      true,
+      { status: 'waiting_for_requester', waitingReason: 'information' },
+      false,
+    ],
+    ['end_user_personal', true, { status: 'done' }, false],
+    // Not inherited by team roles (S1-04 Q3).
+    ['admin', true, WAITING_FOR_CONFIRMATION, false],
+    ['project_manager', true, WAITING_FOR_CONFIRMATION, false],
+    ['developer', true, WAITING_FOR_CONFIRMATION, false],
+  ] as const)(
+    'Confirm or decline resolution of own ticket – %s, own: %s, %o: %s',
+    (who, own, status, isAllowed) => {
+      expect(can(who, 'confirm_resolution', { own, ...status })).toBe(isAllowed);
+    },
+  );
+
+  it('answers a requester whose ticket waits for nothing with resolution_confirmation_not_pending', () => {
+    const ability = abilities.forPrincipal(buildPrincipal('end_user_personal'));
+
+    const rule = ability.relevantRuleFor(
+      'confirm_resolution',
+      buildTicketRecord('end_user_personal', { own: true, status: 'done' }),
+    );
+
+    expect(reasonCode(rule?.reason)).toBe('ticket.resolution_confirmation_not_pending');
+  });
+
+  const TEAM_ACTIONS = ticketActionSchema.options.filter((a) => a !== 'confirm_resolution');
+
   // The actions of the ticket response for every principal (§18.3).
   it.each([
-    ['admin', false, 'active', ticketActionSchema.options],
+    ['admin', false, 'active', TEAM_ACTIONS],
     ['admin', false, 'archived', ['read']],
-    ['project_manager', false, 'active', ticketActionSchema.options],
+    ['project_manager', false, 'active', TEAM_ACTIONS],
     ['project_manager', false, 'archived', ['read']],
-    ['developer', false, 'active', ['read', 'update', 'update_fields', 'assign_self']],
-    ['developer', true, 'active', ['read', 'update', 'update_fields', 'assign_self']],
+    [
+      'developer',
+      false,
+      'active',
+      ['read', 'update', 'update_fields', 'assign_self', 'change_status'],
+    ],
+    [
+      'developer',
+      true,
+      'active',
+      ['read', 'update', 'update_fields', 'assign_self', 'change_status'],
+    ],
     ['developer', false, 'archived', ['read']],
     ['team_member', false, 'active', []],
     ['end_user_personal', true, 'active', ['read', 'update']],
@@ -139,7 +192,11 @@ describe('ticket abilities', () => {
     'refuses %s every change of a ticket of an archived project with project.archived',
     (who) => {
       const ability = abilities.forPrincipal(buildPrincipal(who));
-      const record = buildTicketRecord(who, { own: true, state: 'archived' });
+      const record = buildTicketRecord(who, {
+        own: true,
+        state: 'archived',
+        ...WAITING_FOR_CONFIRMATION,
+      });
 
       for (const action of ticketActionSchema.options.filter((a) => a !== 'read')) {
         expect(ability.can(action, record), action).toBe(false);

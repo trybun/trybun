@@ -46,7 +46,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Internal status | `ticket.status` | see [§4.1](04-ticket-lifecycle.md) | Team workflow status |
 | Public status | `public_status` | see [§4.1](04-ticket-lifecycle.md) | Simplified status shown to end users |
 | Terminal status | – | – | `done`, `rejected` or `duplicate`; "closed"/"completed" means this |
-| Reopen | – | Reopen / Otwórz ponownie | Moving a ticket out of a terminal status |
+| Reopen | – | Reopen / Otwórz ponownie | Moving a ticket from a terminal to a non-terminal status ([§4.3](04-ticket-lifecycle.md)) |
 | Triage | – | Triage / Triage | Completing type, priority and assignee of new tickets ([§8.3](08-team-views.md)) |
 | Visibility | `ticket.visibility`: `only_me`, `my_organization`, `all_customers` | Only me / Tylko dla mnie, My organization / Moja organizacja, All customers / Wszyscy klienci | Who among end users can see the ticket ([§5.1](05-visibility-and-search.md)) |
 | Shared ticket | `ticket.visibility = all_customers` | Shared / Wspólne | Ticket visible to all end users of the project; always approved by the team ([§5.2](05-visibility-and-search.md)) |
@@ -55,6 +55,11 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Affected user | `ticket_affected_user` | Affected user / Dotknięty użytkownik | The requester or a user who clicked "I have the same problem" ([§5.6](05-visibility-and-search.md)) |
 | Requester count | `ticket.requester_count` | Affected users / Liczba zgłaszających | Number of distinct affected users, derived from `ticket_affected_user` ([§3.2](03-ticket-model.md)) |
 | Waiting reason | `ticket.waiting_reason`: `information`, `confirmation` | Waiting for information / Oczekuje na informacje, Waiting for confirmation / Oczekuje na potwierdzenie | Why a ticket is in `waiting_for_requester` ([§4.3](04-ticket-lifecycle.md)) |
+| Status before waiting | `ticket.status_before_waiting` | Status before waiting / Status przed oczekiwaniem | The status a ticket returns to after the requester's reply; `triage` after a reopen into waiting ([§4.3](04-ticket-lifecycle.md)) |
+| Waiting since | `ticket.waiting_since` | Waiting since / Oczekuje od | When the current wait started; the automatic close is due 7 × 24 hours later ([§4.3](04-ticket-lifecycle.md)) |
+| Closed at | `ticket.closed_at` | Closed at / Data zamknięcia | The time of the latest transition into a terminal status ([§4.3](04-ticket-lifecycle.md)) |
+| Rejection reason | `ticket.rejection_reason` | Rejection reason / Powód odrzucenia | Reason of a rejection, team only until comments publish it ([§4.3](04-ticket-lifecycle.md)) |
+| Resolution answer | `solved`, `not_solved` | Yes, solved / Tak, rozwiązane; No, still a problem / Nie, problem nadal występuje | The requester's answer to the resolution confirmation ([§4.3](04-ticket-lifecycle.md)) |
 | Edit history | `content_revision` | Edit history / Historia edycji | Previous versions of descriptions and comments, visible to the team and to the author of the text ([§6.1](06-comments-notifications.md)) |
 | Redaction | – | Redact / Zredaguj | Team action that replaces content and purges its revisions, leaving a "Content redacted" (PL: „Treść zredagowana”) event ([§6.1](06-comments-notifications.md)) |
 | Regression | – | Regression / Regresja | Reopening of a `done` integration ticket by a new occurrence of its fingerprint ([§12.3](12-api-webhooks-import.md)) |

@@ -1,4 +1,5 @@
 import { subject } from '@casl/ability';
+import type { TicketStatus, TicketWaitingReason } from '@trybun/contracts/tickets';
 import type { UserPrincipal } from '../../src/platform/authentication/principal.js';
 
 export const PRINCIPAL_ID = '0190f2f4-7c1e-7000-8000-000000000001';
@@ -96,11 +97,18 @@ export function buildInvitationRecord(
  */
 export function buildTicketRecord(
   fixture: PrincipalFixture,
-  options: { own?: boolean; state?: 'active' | 'archived' } = {},
+  options: {
+    own?: boolean;
+    state?: 'active' | 'archived';
+    status?: TicketStatus;
+    waitingReason?: TicketWaitingReason | null;
+  } = {},
 ) {
   return subject('Ticket', {
     id: 'ticket',
     requesterId: options.own === true ? PRINCIPAL_ID : '0190f2f4-7c1e-7000-8000-000000000099',
+    status: options.status ?? 'in_progress',
+    waitingReason: options.waitingReason ?? null,
     project: {
       id: 'project',
       state: options.state ?? 'active',

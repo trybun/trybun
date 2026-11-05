@@ -1,8 +1,14 @@
 import { subject } from '@casl/ability';
 import { accessibleBy } from '@casl/prisma/runtime';
 import { Injectable } from '@nestjs/common';
-import type { ActivityEventPage, ListActivityEventsQuery } from '@trybun/contracts/activity-events';
+import type {
+  ActivityEventPage,
+  ActivityEventTicketSnapshot,
+  ListActivityEventsQuery,
+} from '@trybun/contracts/activity-events';
 import {
+  type ChangeTicketStatusDto,
+  type ConfirmResolutionDto,
   type CreateTicketDto,
   type EndUserTicket,
   type ListTicketsQuery,
@@ -11,7 +17,9 @@ import {
   ticketActionSchema,
   ticketIdentifier,
   type TicketPage,
+  type TicketReference,
   type TicketResponse,
+  publicStatusOf,
   type UpdateTicketDto,
 } from '@trybun/contracts/tickets';
 import { z } from 'zod';
@@ -27,24 +35,47 @@ import {
   versionedUpdate,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { Clock } from '../../platform/clock/clock.js';
 import { AppError } from '../../platform/errors/app-error.js';
-import { ActivityEventsService } from '../activity-events/activity-events.service.js';
+import { OutboxService } from '../../platform/outbox/outbox.service.js';
+import {
+  type ActivityActor,
+  ActivityEventsService,
+} from '../activity-events/activity-events.service.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
 import { OrganizationsService } from '../organizations/organizations.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { UsersService } from '../users/users.service.js';
 import { creationDefaults } from './domain/creation.js';
+import {
+  answerTarget,
+  automaticCloseDueAt,
+  changeStatus,
+  type StatusChange,
+  statusFieldsOf,
+  waitsForConfirmation,
+} from './domain/status-transitions.js';
 import { CREATE_TICKET, TICKET, ticketRuleSelect } from './tickets.abilities.js';
-import { allocateTicketNumber } from './tickets.sql.js';
+import { TICKET_STATUS_CHANGED, type TicketStatusChangedPayload } from './tickets.events.js';
+import { allocateTicketNumber, lockTicketsForUpdate } from './tickets.sql.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
+
+/** The fields of a ticket a reference to it shows, with the fields of its rules. */
+function ticketReferenceSelect(principal: UserPrincipal) {
+  return {
+    ...ticketRuleSelect(principal),
+    number: true,
+    project: { select: { ...projectRuleSelect(principal), key: true } },
+  } satisfies Prisma.TicketSelect;
+}
 
 /** The fields of a ticket response and of its rules (§18.3). */
 function ticketSelect(principal: UserPrincipal) {
   return {
     ...ticketRuleSelect(principal),
-    project: { select: { ...projectRuleSelect(principal), key: true } },
+    project: { select: { ...projectRuleSelect(principal), key: true, confirmResolution: true } },
     projectId: true,
     number: true,
     title: true,
@@ -53,16 +84,80 @@ function ticketSelect(principal: UserPrincipal) {
     source: true,
     priority: true,
     status: true,
+    statusBeforeWaiting: true,
+    waitingSince: true,
+    closedAt: true,
+    rejectionReason: true,
     version: true,
     createdAt: true,
     updatedAt: true,
     organization: { select: { id: true, name: true } },
     requester: { select: PERSON_SELECT },
     assignee: { select: PERSON_SELECT },
+    // At most one (§3.5): a partial unique index of the migrations.
+    outgoingRelations: {
+      where: { kind: 'duplicate_of' },
+      select: { targetTicket: { select: ticketReferenceSelect(principal) } },
+    },
   } satisfies Prisma.TicketSelect;
 }
 
 type TicketRow = Prisma.TicketGetPayload<{ select: ReturnType<typeof ticketSelect> }>;
+type TicketReferenceRow = Prisma.TicketGetPayload<{
+  select: ReturnType<typeof ticketReferenceSelect>;
+}>;
+
+/** The fields of a ticket the automatic close reads as the system (§4.3). */
+function systemTicketSelect() {
+  return {
+    id: true,
+    projectId: true,
+    source: true,
+    status: true,
+    waitingReason: true,
+    statusBeforeWaiting: true,
+    waitingSince: true,
+    closedAt: true,
+    rejectionReason: true,
+    version: true,
+    assignee: { select: PERSON_SELECT },
+    project: { select: { state: true, confirmResolution: true } },
+  } satisfies Prisma.TicketSelect;
+}
+
+/** The fields of a ticket a status change writes from. */
+type StatusChangeSubject = Pick<
+  TicketRow,
+  'id' | 'projectId' | 'status' | 'waitingReason' | 'waitingSince' | 'version' | 'assignee'
+>;
+
+/** How long the timer waits before it checks a ticket of an archived project again (Q19). */
+export const ARCHIVED_PROJECT_RECHECK_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * What the automatic close did: closed the ticket, had nothing to do, or has to check again –
+ * before the ticket's time, or while its project is archived.
+ */
+export type AutomaticCloseOutcome =
+  { outcome: 'closed' | 'skipped' } | { outcome: 'not_due' | 'archived'; checkAgainAt: Date };
+
+/** A ticket as an event stores it (§4.5) and a response refers to it. */
+function snapshotOf(row: TicketReferenceRow): ActivityEventTicketSnapshot {
+  return { id: row.id, number: row.number, projectKey: row.project.key };
+}
+
+/** The original of a duplicate, when there is one. */
+function originalOf(row: TicketRow): TicketReferenceRow | null {
+  return row.outgoingRelations[0]?.targetTicket ?? null;
+}
+
+/** The original of a duplicate in a response: only when the principal may read it (§3.5). */
+function duplicateOfResponse(row: TicketRow, ability: AppAbility): TicketReference | null {
+  const original = originalOf(row);
+  return original !== null && ability.can('read', subject(TICKET, original))
+    ? snapshotOf(original)
+    : null;
+}
 
 /**
  * The response shape of a ticket (§18.3) with the actions the principal may perform on it: the
@@ -87,6 +182,9 @@ function toTicketResponse(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     allowedActions: ticketActionSchema.options.filter((action) => ability.can(action, record)),
+    publicStatus: publicStatusOf(row.status),
+    waitingReason: row.waitingReason,
+    duplicateOf: duplicateOfResponse(row, ability),
   };
   if (principal.userKind === 'end_user') {
     return endUserTicket;
@@ -99,6 +197,8 @@ function toTicketResponse(
     status: row.status,
     organization: row.organization,
     assignee: row.assignee,
+    closedAt: row.closedAt?.toISOString() ?? null,
+    rejectionReason: row.rejectionReason,
   } satisfies Ticket;
 }
 
@@ -138,6 +238,8 @@ export class TicketsService {
     private readonly users: UsersService,
     private readonly organizations: OrganizationsService,
     private readonly activityEvents: ActivityEventsService,
+    private readonly outbox: OutboxService,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -267,7 +369,7 @@ export class TicketsService {
   ): Promise<TicketResponse> {
     const ability = this.abilities.forPrincipal(principal);
     return this.prisma.$transaction(async (tx) => {
-      const before = await this.findVisible(tx, ability, principal, target.id);
+      const before = await this.lockProjectAndFind(tx, ability, principal, target.id);
       const record = subject(TICKET, before);
       if (input.title !== undefined || input.description !== undefined) {
         this.assertCan(ability, 'update', before);
@@ -323,6 +425,377 @@ export class TicketsService {
       );
       return toTicketResponse(after, ability, principal);
     });
+  }
+
+  /**
+   * Changes the status of a ticket (§4.3) by the team: the rules of `status-transitions.ts` decide
+   * the new status fields, the `duplicate_of` relation and the events; a request for the current
+   * status changes nothing but a new reason or a new original (Q16).
+   */
+  async changeStatus(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    input: ChangeTicketStatusDto,
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      let before = await this.lockProjectAndFind(tx, ability, principal, target.id);
+      this.assertCan(ability, 'change_status', before);
+      let original: ActivityEventTicketSnapshot | undefined;
+      if (input.status === 'duplicate') {
+        original = await this.lockOriginal(
+          tx,
+          ability,
+          principal,
+          before,
+          input.duplicateOfTicketId,
+        );
+        // The ticket is locked now: the rules decide on a read after the lock, so a concurrent
+        // change committed in between – e.g. one that left `duplicate` – is seen (§18.3).
+        before = await this.findVisible(tx, ability, principal, target.id);
+        this.assertCan(ability, 'change_status', before);
+      }
+      const change = changeStatus(
+        { ...statusFieldsOf(before), source: before.source },
+        {
+          target: input.status,
+          ...(input.status === 'rejected' ? { rejectionReason: input.rejectionReason } : {}),
+          ...(original === undefined ? {} : { original }),
+          currentOriginal: this.currentOriginal(before),
+          confirmResolution: before.project.confirmResolution,
+          now: this.clock.now(),
+        },
+      );
+      await this.applyStatusChange(
+        tx,
+        { userId: principal.userId },
+        before,
+        target.version,
+        change,
+      );
+      return toTicketResponse(
+        await this.findVisible(tx, ability, principal, target.id),
+        ability,
+        principal,
+      );
+    });
+  }
+
+  /**
+   * The requester's answer to the resolution confirmation (§4.3): "Yes, solved" closes the ticket,
+   * "No, still a problem" moves it to `in_progress`. The first answer wins – of the requester, the
+   * team or the timer: the update is conditional on the ticket still waiting for the confirmation,
+   * so a lost race answers `409` like a ticket that no longer waits.
+   */
+  async confirmResolution(
+    principal: UserPrincipal,
+    ticketId: string,
+    input: ConfirmResolutionDto,
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockProjectAndFind(tx, ability, principal, ticketId);
+      this.assertCan(ability, 'confirm_resolution', before);
+      const change = changeStatus(
+        { ...statusFieldsOf(before), source: before.source },
+        {
+          target: answerTarget(input.answer),
+          currentOriginal: null,
+          confirmResolution: before.project.confirmResolution,
+          now: this.clock.now(),
+        },
+      );
+      if (!(await this.applyStatusChange(tx, { userId: principal.userId }, before, null, change))) {
+        throw new AppError('ticket.resolution_confirmation_not_pending');
+      }
+      return toTicketResponse(
+        await this.findVisible(tx, ability, principal, ticketId),
+        ability,
+        principal,
+      );
+    });
+  }
+
+  /**
+   * The automatic close of a ticket whose requester did not answer within 7 days (§4.3), run by
+   * the timer as the system. It changes nothing when the ticket no longer waits for the
+   * confirmation or when it is gone. When its time has not come yet – a timer that fires early –
+   * or the project is archived (Q19), it returns when to check again.
+   */
+  async closeUnconfirmedResolution(ticketId: string): Promise<AutomaticCloseOutcome> {
+    return this.prisma.$transaction(async (tx) => {
+      const located = await tx.ticket.findUnique({
+        where: { id: ticketId },
+        select: { projectId: true },
+      });
+      if (located === null || !(await this.projects.lockForShare(tx, located.projectId))) {
+        return { outcome: 'skipped' };
+      }
+      const before = await tx.ticket.findUnique({
+        where: { id: ticketId },
+        select: systemTicketSelect(),
+      });
+      if (before === null || !waitsForConfirmation(before) || before.waitingSince === null) {
+        return { outcome: 'skipped' };
+      }
+      const dueAt = automaticCloseDueAt(before.waitingSince);
+      if (dueAt > this.clock.now()) {
+        return { outcome: 'not_due', checkAgainAt: dueAt };
+      }
+      if (before.project.state === 'archived') {
+        return {
+          outcome: 'archived',
+          checkAgainAt: new Date(this.clock.now().getTime() + ARCHIVED_PROJECT_RECHECK_MS),
+        };
+      }
+      const change = changeStatus(
+        { ...statusFieldsOf(before), source: before.source },
+        {
+          target: 'done',
+          currentOriginal: null,
+          confirmResolution: before.project.confirmResolution,
+          now: this.clock.now(),
+        },
+      );
+      // A change of the team between the read and the update wins; the timer then does nothing.
+      const isClosed = await this.applyStatusChange(
+        tx,
+        { automaticSource: 'system' },
+        before,
+        null,
+        change,
+      );
+      return { outcome: isClosed ? 'closed' : 'skipped' };
+    });
+  }
+
+  /**
+   * When the automatic close of a ticket is due (§4.3): 7 × 24 hours after it started waiting for
+   * the confirmation of its resolution; `null` when it does not wait for it (any more).
+   */
+  async automaticCloseDueAt(ticketId: string): Promise<Date | null> {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { status: true, waitingReason: true, waitingSince: true },
+    });
+    return ticket === null || !waitsForConfirmation(ticket) || ticket.waitingSince === null
+      ? null
+      : automaticCloseDueAt(ticket.waitingSince);
+  }
+
+  /**
+   * Writes a status change (§4.3) in the caller's transaction: the status fields with a new
+   * version – conditional on `version` from `If-Match`, or on the status fields read under the
+   * lock for an answer or the timer –, an ineligible assignee removed on a reopen (Q22), the
+   * `duplicate_of` relation and the re-pointed duplicates of the ticket (Q8), the activity events
+   * and the outbox event. A change that leaves the status fields as they are keeps the version,
+   * after checking it. Returns `false`, writing nothing, when the state an answer or the timer read
+   * has changed meanwhile.
+   */
+  private async applyStatusChange(
+    tx: Transaction,
+    actor: ActivityActor,
+    before: StatusChangeSubject,
+    version: number | null,
+    change: StatusChange,
+  ): Promise<boolean> {
+    if (change.fields === null) {
+      if (version !== null) {
+        assertVersionMatched({ count: before.version === version ? 1 : 0 });
+      }
+    } else {
+      const removedAssignee = change.reopen ? await this.ineligibleAssignee(tx, before) : null;
+      const data = {
+        ...change.fields,
+        ...(removedAssignee === null ? {} : { assigneeId: null }),
+      } satisfies Prisma.TicketUncheckedUpdateManyInput;
+      const result =
+        version === null
+          ? // The first answer wins (§4.3): the condition is the state read under the lock.
+            await tx.ticket.updateMany({
+              where: {
+                id: before.id,
+                status: before.status,
+                waitingReason: before.waitingReason,
+                waitingSince: before.waitingSince,
+              },
+              data: { ...data, version: { increment: 1 } },
+            })
+          : await tx.ticket.updateMany(versionedUpdate({ id: before.id, version }, data));
+      if (version === null && result.count === 0) {
+        return false;
+      }
+      assertVersionMatched(result);
+      if (removedAssignee !== null) {
+        await this.activityEvents.record(tx, { automaticSource: 'system' }, before.id, [
+          {
+            type: 'assignee_changed',
+            data: { from: removedAssignee, to: null },
+            isPublic: false,
+          },
+        ]);
+      }
+    }
+    await this.applyRelationChange(tx, before, change);
+    await this.activityEvents.record(tx, actor, before.id, change.events);
+    if (change.statusChanged !== null) {
+      const { from, to, waitingReason } = change.statusChanged;
+      await this.outbox.add(tx, {
+        type: TICKET_STATUS_CHANGED,
+        payload: {
+          ticketId: before.id,
+          projectId: before.projectId,
+          from,
+          to,
+          fromPublic: publicStatusOf(from),
+          toPublic: publicStatusOf(to),
+          waitingReason,
+          reopen: change.statusChanged.reopen,
+          actorId: 'userId' in actor ? actor.userId : null,
+        } satisfies TicketStatusChangedPayload,
+      });
+    }
+    return true;
+  }
+
+  /**
+   * The `duplicate_of` relation of a change (§3.5): set or replaced, or removed on leaving
+   * `duplicate`. A ticket that becomes a duplicate passes its own duplicates on to its original,
+   * each with an automatic event (Q8), so no chain arises.
+   */
+  private async applyRelationChange(
+    tx: Transaction,
+    before: StatusChangeSubject,
+    change: StatusChange,
+  ): Promise<void> {
+    const { relation } = change;
+    if (relation.kind === 'remove') {
+      await tx.ticketRelation.deleteMany({
+        where: { kind: 'duplicate_of', sourceTicketId: before.id },
+      });
+      return;
+    }
+    if (relation.kind === 'keep') {
+      return;
+    }
+    await tx.ticketRelation.deleteMany({
+      where: { kind: 'duplicate_of', sourceTicketId: before.id },
+    });
+    await tx.ticketRelation.create({
+      data: {
+        kind: 'duplicate_of',
+        sourceTicketId: before.id,
+        targetTicketId: relation.original.id,
+      },
+      select: { id: true },
+    });
+    const duplicates = await tx.ticketRelation.findMany({
+      where: { kind: 'duplicate_of', targetTicketId: before.id },
+      select: { id: true, sourceTicketId: true },
+      orderBy: { sourceTicketId: 'asc' },
+    });
+    if (duplicates.length === 0) {
+      return;
+    }
+    const self = await tx.ticket.findUniqueOrThrow({
+      where: { id: before.id },
+      select: { id: true, number: true, project: { select: { key: true } } },
+    });
+    await tx.ticketRelation.updateMany({
+      where: { id: { in: duplicates.map((duplicate) => duplicate.id) } },
+      data: { targetTicketId: relation.original.id },
+    });
+    for (const duplicate of duplicates) {
+      await this.activityEvents.record(
+        tx,
+        { automaticSource: 'system' },
+        duplicate.sourceTicketId,
+        [
+          {
+            type: 'duplicate_original_changed',
+            data: {
+              from: { id: self.id, number: self.number, projectKey: self.project.key },
+              to: relation.original,
+            },
+            isPublic: false,
+          },
+        ],
+      );
+    }
+  }
+
+  /**
+   * The original a ticket becomes a duplicate of (§3.5): visible to the principal (`404`), in the
+   * same project (`422 ticket.duplicate_other_project`), flattened to the original of a
+   * duplicate, never the ticket itself (`422 ticket.duplicate_of_self`). The ticket, the requested
+   * original and the duplicates of the ticket are locked for an update in ID order, the original
+   * of a duplicate after them, and every decision is taken on a read after the lock – so two
+   * concurrent changes can create neither a chain nor a cycle.
+   */
+  private async lockOriginal(
+    tx: Transaction,
+    ability: AppAbility,
+    principal: UserPrincipal,
+    ticket: TicketRow,
+    originalId: string,
+  ): Promise<ActivityEventTicketSnapshot> {
+    // Visibility and project first, so a ticket of another project is never locked; the project
+    // of a ticket never changes.
+    const requested = await this.findVisible(tx, ability, principal, originalId);
+    if (requested.projectId !== ticket.projectId) {
+      throw new AppError('ticket.duplicate_other_project', [
+        { pointer: '/duplicateOfTicketId', code: 'field.invalid' },
+      ]);
+    }
+    const duplicates = await tx.ticketRelation.findMany({
+      where: { kind: 'duplicate_of', targetTicketId: ticket.id },
+      select: { sourceTicketId: true },
+    });
+    await lockTicketsForUpdate(tx, [
+      ticket.id,
+      originalId,
+      ...duplicates.map((duplicate) => duplicate.sourceTicketId),
+    ]);
+    let original = await this.findVisible(tx, ability, principal, originalId);
+    // No chains exist, so one step reaches the original; a concurrent change of that original
+    // is seen once it is locked.
+    for (let step = 0; original.status === 'duplicate'; step += 1) {
+      const next = originalOf(original);
+      if (next === null || step > 1) {
+        throw new Error(`The duplicate ${original.id} has no original`);
+      }
+      await lockTicketsForUpdate(tx, [next.id]);
+      original = await this.findVisible(tx, ability, principal, next.id);
+    }
+    if (original.id === ticket.id) {
+      throw new AppError('ticket.duplicate_of_self', [
+        { pointer: '/duplicateOfTicketId', code: 'field.invalid' },
+      ]);
+    }
+    return { id: original.id, number: original.number, projectKey: original.project.key };
+  }
+
+  /** The current original of a duplicate, as events store it. */
+  private currentOriginal(row: TicketRow): ActivityEventTicketSnapshot | null {
+    const original = originalOf(row);
+    return original === null ? null : snapshotOf(original);
+  }
+
+  /**
+   * The assignee of a reopened ticket who may no longer be assigned (§3.2, Q22), decided after the
+   * share locks of the membership and the account as an assignment takes them, so a concurrent
+   * removal or deactivation waits for the reopen and its unassignment then finds the ticket open.
+   */
+  private async ineligibleAssignee(
+    tx: Transaction,
+    ticket: StatusChangeSubject,
+  ): Promise<{ id: string; displayName: string | null } | null> {
+    if (ticket.assignee === null) {
+      return null;
+    }
+    return (await this.isEligibleAssignee(tx, ticket.projectId, ticket.assignee.id))
+      ? null
+      : ticket.assignee;
   }
 
   /**
@@ -397,11 +870,22 @@ export class TicketsService {
     projectId: string,
     userId: string,
   ): Promise<void> {
-    if (!(await this.projects.lockMemberForShare(tx, projectId, userId))) {
+    if (!(await this.isEligibleAssignee(tx, projectId, userId))) {
       throw assigneeNotEligible();
     }
+  }
+
+  /** Whether an account may be assigned in a project, after the share locks of the assignment. */
+  private async isEligibleAssignee(
+    tx: Transaction,
+    projectId: string,
+    userId: string,
+  ): Promise<boolean> {
+    if (!(await this.projects.lockMemberForShare(tx, projectId, userId))) {
+      return false;
+    }
     if (!(await this.users.lockForShare(tx, userId))) {
-      throw assigneeNotEligible();
+      return false;
     }
     const eligible = await tx.projectMember.count({
       where: {
@@ -411,9 +895,29 @@ export class TicketsService {
         user: { kind: 'team', state: 'active' },
       },
     });
-    if (eligible === 0) {
-      throw assigneeNotEligible();
+    return eligible > 0;
+  }
+
+  /**
+   * A ticket the principal can see, read after the share lock of its project (§18.3, Q23): a
+   * concurrent archive, key change or deletion of the project waits for the change, or the change
+   * waits for it and reads the archived state. The project of a ticket never changes, so it is
+   * read before the lock; `404` when the ticket does not exist or is invisible.
+   */
+  private async lockProjectAndFind(
+    tx: Transaction,
+    ability: AppAbility,
+    principal: UserPrincipal,
+    ticketId: string,
+  ): Promise<TicketRow> {
+    const located = await tx.ticket.findUnique({
+      where: { id: ticketId },
+      select: { projectId: true },
+    });
+    if (located === null || !(await this.projects.lockForShare(tx, located.projectId))) {
+      throw new AppError('request.not_found');
     }
+    return this.findVisible(tx, ability, principal, ticketId);
   }
 
   /**

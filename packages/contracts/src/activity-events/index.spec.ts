@@ -17,6 +17,10 @@ describe('activity event enums', () => {
         'type_changed',
         'priority_changed',
         'assignee_changed',
+        'status_changed',
+        'duplicate_original_changed',
+        'duplicate_link_removed',
+        'rejection_reason_changed',
       ],
     ],
     [activityEventSourceSchema, ['system']],
@@ -30,6 +34,23 @@ describe('activityEventSchema', () => {
     ['an enum change', { from: 'low', to: 'high' }],
     ['a snapshot of a reference', { from: { id: ID, displayName: 'Ewa' }, to: null }],
     ['no data', null],
+    [
+      'a status change into a duplicate',
+      {
+        from: 'todo',
+        to: 'duplicate',
+        reopen: false,
+        waitingReason: null,
+        duplicateOf: { id: ID, number: 7, projectKey: 'ERP' },
+      },
+    ],
+    [
+      'a snapshot of a ticket',
+      {
+        from: { id: ID, number: 7, projectKey: 'ERP' },
+        to: { id: ID, number: 9, projectKey: 'ERP' },
+      },
+    ],
   ])('accepts %s', (_case, data) => {
     const event = {
       id: ID,

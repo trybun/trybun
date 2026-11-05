@@ -37,3 +37,9 @@ Found when tickets were built (S1-05, November 2026):
 
 - **A restricting foreign key (`P2003`)** reports its constraint like a unique index: `meta.driverAdapterError.cause.constraint.index` holds the constraint name (e.g. `tickets_organization_id_fkey`, `kind: RestrictViolation`); `isForeignKeyViolation(error, constraint)` reads it (S1-05).
 - **`activity_events` is immutable** (S1-05): its triggers refuse every `UPDATE`, every `TRUNCATE` and every `DELETE` while the event's ticket exists, so tests and the demo dataset never clean it up directly – they delete the tickets, whose deletion cascades to their events. The demo dataset deletes the tickets of the demo projects and of the demo organization before the organization, which the restricting foreign key of the ticket snapshot would keep.
+
+Found when ticket statuses were built (S1-06, November 2026):
+
+- **Prisma queries are lazy**: `prisma.x.delete(...)` returns a `PrismaPromise` that runs only once it is awaited or `then` is called. A race test that starts a query on another connection and waits for it in `pg_stat_activity` must call `.then((row) => row)` on it first, or the query never starts and the wait times out.
+- **Deleting an original and its duplicate in one statement** fails on the restricting foreign key `ticket_relations_target_ticket_id_fkey`, even with `ON DELETE NO ACTION` – the cascade from the duplicate does not run before the check. Delete the relations first (the demo dataset does).
+- **Check constraints across columns** keep status-dependent fields consistent (`tickets_waiting_fields`, `tickets_closed_at_terminal`, `tickets_rejection_reason_rejected`); the test factory `createTicket` fills the fields a status requires, so tests that create a `waiting_for_requester`, terminal or `rejected` ticket pass only the status.

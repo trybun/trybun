@@ -1,4 +1,16 @@
-import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
 import {
   type ActivityEventPage,
   activityEventPageSchema,
@@ -6,6 +18,10 @@ import {
   listActivityEventsQuerySchema,
 } from '@trybun/contracts/activity-events';
 import {
+  type ChangeTicketStatusDto,
+  changeTicketStatusSchema,
+  type ConfirmResolutionDto,
+  confirmResolutionSchema,
   type CreateTicketDto,
   createTicketSchema,
   type ListTicketsQuery,
@@ -80,6 +96,39 @@ export class TicketsController {
     @ExpectedVersion() version: number,
   ): Promise<TicketResponse> {
     return this.tickets.update(principal, { id: ticketId, version }, input);
+  }
+
+  /**
+   * Changes the status of a ticket (§4.3): the reason for `rejected`, the original for
+   * `duplicate`; the response carries the actual status, e.g. after the redirect of `done` to the
+   * resolution confirmation.
+   */
+  @Put(':ticketId/status')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'change_status' })
+  @ResponseSchema(ticketResponseSchema)
+  changeStatus(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: changeTicketStatusSchema }) input: ChangeTicketStatusDto,
+    @ExpectedVersion() version: number,
+  ): Promise<TicketResponse> {
+    return this.tickets.changeStatus(principal, { id: ticketId, version }, input);
+  }
+
+  /**
+   * The requester's answer to "Is your problem solved?" (§4.3). No `If-Match`: the state of the
+   * ticket protects the answer, and the first one wins.
+   */
+  @Post(':ticketId/resolution-confirmation')
+  @HttpCode(HttpStatus.OK)
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'confirm_resolution' })
+  @ResponseSchema(ticketResponseSchema)
+  confirmResolution(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: confirmResolutionSchema }) input: ConfirmResolutionDto,
+  ): Promise<TicketResponse> {
+    return this.tickets.confirmResolution(principal, ticketId, input);
   }
 
   /** The activity history of a ticket, oldest first (§4.5). */

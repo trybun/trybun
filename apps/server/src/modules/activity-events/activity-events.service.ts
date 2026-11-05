@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type {
   ActivityEvent,
+  ActivityEventData,
   ActivityEventPage,
   ActivityEventSource,
+  ActivityEventType,
   ListActivityEventsQuery,
 } from '@trybun/contracts/activity-events';
 import {
@@ -79,6 +81,35 @@ export class ActivityEventsService {
         actorId: 'userId' in actor ? actor.userId : null,
         automaticSource: 'automaticSource' in actor ? actor.automaticSource : null,
         isPublic: false,
+      })),
+    });
+  }
+
+  /**
+   * Records events a rule of the producing module has decided (§18.3), e.g. a status change, in
+   * the transaction of the change; each event says itself whether it is public (§4.5).
+   */
+  async record(
+    tx: Transaction,
+    actor: ActivityActor,
+    ticketId: string,
+    events: readonly {
+      type: ActivityEventType;
+      data: ActivityEventData | null;
+      isPublic: boolean;
+    }[],
+  ): Promise<void> {
+    if (events.length === 0) {
+      return;
+    }
+    await tx.activityEvent.createMany({
+      data: events.map((event) => ({
+        ticketId,
+        type: event.type,
+        data: event.data ?? undefined,
+        actorId: 'userId' in actor ? actor.userId : null,
+        automaticSource: 'automaticSource' in actor ? actor.automaticSource : null,
+        isPublic: event.isPublic,
       })),
     });
   }

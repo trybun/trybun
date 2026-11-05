@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto';
 import { base, en, Faker, pl } from '@faker-js/faker';
 import type { ProductTourId } from '@trybun/contracts/product-tours';
+import { publicStatusOf } from '@trybun/contracts/tickets';
 import type { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
 
 const FAKER_SEED = 20_261_023;
@@ -36,6 +37,7 @@ export interface DemoDataset {
   organizationMembers: Prisma.OrganizationMemberCreateManyInput[];
   invitations: Prisma.InvitationCreateManyInput[];
   tickets: Prisma.TicketCreateManyInput[];
+  ticketRelations: Prisma.TicketRelationCreateManyInput[];
   ticketNumberCounters: Prisma.TicketNumberCounterCreateManyInput[];
   activityEvents: Prisma.ActivityEventCreateManyInput[];
 }
@@ -46,7 +48,13 @@ export interface DemoDataset {
  * role covers every project.
  */
 const DEMO_PROJECTS = [
-  { name: 'Customer portal', key: 'CP', state: 'active', members: ['manager', 'developer'] },
+  {
+    name: 'Customer portal',
+    key: 'CP',
+    state: 'active',
+    members: ['manager', 'developer'],
+    confirmResolution: true,
+  },
   {
     name: 'ERP',
     key: 'ERP',
@@ -91,9 +99,9 @@ const DEMO_INVITED_AND_DEACTIVATED = [
 
 /**
  * The demo tickets (§3.2) in the active projects and the archived one: every source, type and
- * priority, the end users' tickets with the organization of their requester, some assigned. Their
- * statuses are the initial ones; status changes come with S1-06. `events` are the field changes
- * recorded after the creation (§4.5), by the account named in `by`.
+ * priority, the end users' tickets with the organization of their requester, some assigned. They
+ * start in their initial statuses; `DEMO_STATUS_CHANGES` moves some of them. `events` are the
+ * field changes recorded after the creation (§4.5), by the account named in `by`.
  */
 const DEMO_TICKETS = [
   {
@@ -195,6 +203,27 @@ const DEMO_TICKETS = [
     assignee: null,
     events: [],
   },
+  {
+    project: 'CP',
+    title: 'Invoice PDF does not download',
+    description: 'Clicking **Download** on an invoice has no effect.',
+    requester: 'endUser1',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+] as const;
+
+/**
+ * The status changes of demo tickets after their field changes (§4.3), by their index in
+ * `DEMO_TICKETS`: a ticket that waits for the confirmation of its resolution (the Customer portal
+ * asks for it) and a duplicate of it.
+ */
+const DEMO_STATUS_CHANGES = [
+  { ticket: 0, by: 'developer', to: 'waiting_for_requester', waitingReason: 'confirmation' },
+  { ticket: 8, by: 'developer', to: 'duplicate', duplicateOf: 0 },
 ] as const;
 
 /** The event type of a change of a field of a demo ticket (§4.5). */
@@ -286,16 +315,15 @@ export function buildDemoDataset(): DemoDataset {
     developer: team[2]?.id ?? '',
     newcomer: team[3]?.id ?? '',
   };
-  const projects = DEMO_PROJECTS.map(
-    ({ name, key, state }, index): Prisma.ProjectCreateManyInput => ({
-      id: demoId(300 + index),
-      name,
-      key,
-      state,
-      createdAt: CREATED_AT,
-      updatedAt: CREATED_AT,
-    }),
-  );
+  const projects = DEMO_PROJECTS.map((project, index): Prisma.ProjectCreateManyInput => ({
+    id: demoId(300 + index),
+    name: project.name,
+    key: project.key,
+    state: project.state,
+    confirmResolution: 'confirmResolution' in project ? project.confirmResolution : false,
+    createdAt: CREATED_AT,
+    updatedAt: CREATED_AT,
+  }));
   const projectMembers = DEMO_PROJECTS.flatMap(({ members }, index) =>
     members.map((member): Prisma.ProjectMemberCreateManyInput => ({
       projectId: demoId(300 + index),
@@ -335,7 +363,7 @@ export function buildDemoDataset(): DemoDataset {
       updatedAt: CREATED_AT,
     },
   ];
-  const { tickets, ticketNumberCounters, activityEvents } = buildDemoTickets(
+  const { tickets, ticketRelations, ticketNumberCounters, activityEvents } = buildDemoTickets(
     [...team, ...endUsers],
     projects,
     organizationId,
@@ -370,6 +398,7 @@ export function buildDemoDataset(): DemoDataset {
       .map(({ id }) => ({ organizationId, userId: id ?? '', createdAt: CREATED_AT })),
     invitations,
     tickets,
+    ticketRelations,
     ticketNumberCounters,
     activityEvents,
   };
@@ -384,7 +413,7 @@ function buildDemoTickets(
   projects: Prisma.ProjectCreateManyInput[],
   organizationId: string,
   organizationMembers: string[],
-): Pick<DemoDataset, 'tickets' | 'ticketNumberCounters' | 'activityEvents'> {
+): Pick<DemoDataset, 'tickets' | 'ticketRelations' | 'ticketNumberCounters' | 'activityEvents'> {
   const accountIds: Record<string, string> = {
     admin: accounts[0]?.id ?? '',
     manager: accounts[1]?.id ?? '',
@@ -403,6 +432,7 @@ function buildDemoTickets(
   const numbers = new Map<string, number>();
   const tickets: Prisma.TicketCreateManyInput[] = [];
   const activityEvents: Prisma.ActivityEventCreateManyInput[] = [];
+  const ticketRelations: Prisma.TicketRelationCreateManyInput[] = [];
   DEMO_TICKETS.forEach((ticket, index) => {
     const projectId = projects.find(({ key }) => key === ticket.project)?.id ?? '';
     const number = (numbers.get(projectId) ?? 0) + 1;
@@ -444,8 +474,51 @@ function buildDemoTickets(
       });
     });
   });
+  DEMO_STATUS_CHANGES.forEach((change, index) => {
+    const ticket = tickets[change.ticket];
+    if (ticket === undefined) {
+      return;
+    }
+    const from = ticket.status;
+    const changedAt = new Date((ticket.createdAt as Date).getTime() + 12 * 60 * 60 * 1000);
+    const original = 'duplicateOf' in change ? tickets[change.duplicateOf] : undefined;
+    const originalKey = projects.find(({ id }) => id === original?.projectId)?.key ?? '';
+    const duplicateOf =
+      original === undefined
+        ? null
+        : { id: original.id ?? '', number: original.number, projectKey: originalKey };
+    const waitingReason = 'waitingReason' in change ? change.waitingReason : null;
+    Object.assign(ticket, {
+      status: change.to,
+      ...(waitingReason === null
+        ? {}
+        : { waitingReason, statusBeforeWaiting: from, waitingSince: changedAt }),
+      ...(change.to === 'duplicate' ? { closedAt: changedAt } : {}),
+      version: (ticket.version ?? 1) + 1,
+      updatedAt: changedAt,
+    });
+    if (duplicateOf !== null) {
+      ticketRelations.push({
+        id: demoId(900 + index),
+        kind: 'duplicate_of',
+        sourceTicketId: ticket.id ?? '',
+        targetTicketId: duplicateOf.id,
+        createdAt: changedAt,
+      });
+    }
+    activityEvents.push({
+      id: demoId(800 + index),
+      ticketId: ticket.id ?? '',
+      type: 'status_changed',
+      data: { from, to: change.to, reopen: false, waitingReason, duplicateOf },
+      actorId: accountIds[change.by] ?? null,
+      isPublic: publicStatusOf(from) !== publicStatusOf(change.to),
+      createdAt: changedAt,
+    });
+  });
   return {
     tickets,
+    ticketRelations,
     ticketNumberCounters: [...numbers].map(([projectId, lastNumber]) => ({
       projectId,
       lastNumber,
@@ -484,14 +557,17 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     await tx.projectMember.createMany({ data: projectMembers });
     // Before the organization, which the tickets keep. Deleting a ticket removes its events.
     const projectIds = projects.map((project) => project.id ?? '');
-    await tx.ticket.deleteMany({
-      where: {
-        OR: [
-          { projectId: { in: projectIds } },
-          { organizationId: { in: organizations.map((organization) => organization.id ?? '') } },
-        ],
-      },
+    const demoTickets = {
+      OR: [
+        { projectId: { in: projectIds } },
+        { organizationId: { in: organizations.map((organization) => organization.id ?? '') } },
+      ],
+    } satisfies Prisma.TicketWhereInput;
+    // A ticket's original cannot be deleted while a relation points to it: relations first.
+    await tx.ticketRelation.deleteMany({
+      where: { OR: [{ sourceTicket: { is: demoTickets } }, { targetTicket: { is: demoTickets } }] },
     });
+    await tx.ticket.deleteMany({ where: demoTickets });
     await tx.ticketNumberCounter.deleteMany({ where: { projectId: { in: projectIds } } });
     // Deleting the organization removes its domains, project access and members (§7.3).
     await tx.organization.deleteMany({
@@ -514,6 +590,7 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     });
     await tx.invitation.createMany({ data: dataset.invitations });
     await tx.ticket.createMany({ data: dataset.tickets });
+    await tx.ticketRelation.createMany({ data: dataset.ticketRelations });
     await tx.ticketNumberCounter.createMany({ data: dataset.ticketNumberCounters });
     await tx.activityEvent.createMany({ data: dataset.activityEvents });
   });

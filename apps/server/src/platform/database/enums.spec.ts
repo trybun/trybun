@@ -9,6 +9,7 @@ import {
   ticketSourceSchema,
   ticketStatusSchema,
   ticketTypeSchema,
+  ticketWaitingReasonSchema,
 } from '@trybun/contracts/tickets';
 import { userKindSchema, userStateSchema } from '@trybun/contracts/users';
 import { describe, expect, it } from 'vitest';
@@ -23,6 +24,7 @@ import {
   TicketSource,
   TicketStatus,
   TicketType,
+  TicketWaitingReason,
   UserKind,
   UserState,
 } from '../../generated/prisma/enums.js';
@@ -40,6 +42,7 @@ describe('Prisma enums', () => {
     ['TicketSource', TicketSource, ticketSourceSchema.options],
     ['TicketPriority', TicketPriority, ticketPrioritySchema.options],
     ['TicketStatus', TicketStatus, ticketStatusSchema.options],
+    ['TicketWaitingReason', TicketWaitingReason, ticketWaitingReasonSchema.options],
     ['ActivityEventSource', ActivityEventSource, activityEventSourceSchema.options],
   ])('%s matches its contract enum', (_name, prismaEnum, contractValues) => {
     expect(Object.values(prismaEnum)).toEqual(contractValues);

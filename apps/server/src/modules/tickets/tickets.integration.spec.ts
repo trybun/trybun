@@ -187,7 +187,12 @@ describe('tickets endpoints', () => {
         requester: { id: user.id, displayName: user.displayName },
         assignee: null,
         version: 1,
-        allowedActions: ['read', 'update', 'update_fields', 'assign_self'],
+        allowedActions: ['read', 'update', 'update_fields', 'assign_self', 'change_status'],
+        publicStatus: 'in_progress',
+        waitingReason: null,
+        duplicateOf: null,
+        closedAt: null,
+        rejectionReason: null,
       });
       expect(await events(ticket.id)).toEqual([]);
     });
@@ -222,6 +227,9 @@ describe('tickets endpoints', () => {
         createdAt: expect.any(String) as string,
         updatedAt: expect.any(String) as string,
         allowedActions: ['read', 'update'],
+        publicStatus: 'received',
+        waitingReason: null,
+        duplicateOf: null,
       });
       expect(
         await prisma.ticket.findUniqueOrThrow({
@@ -385,14 +393,17 @@ describe('tickets endpoints', () => {
           'allowedActions',
           'createdAt',
           'description',
+          'duplicateOf',
           'id',
           'identifier',
           'number',
           'projectId',
+          'publicStatus',
           'requester',
           'title',
           'updatedAt',
           'version',
+          'waitingReason',
         ].sort(),
       );
       expect(foreignDetail.status).toBe(404);
