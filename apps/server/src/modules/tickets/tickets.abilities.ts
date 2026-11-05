@@ -16,6 +16,12 @@ export const CREATE_TICKET = 'create_ticket';
 /** The contract's closed list (§18.3): an action added to it is restricted by default. */
 const ALL_ACTIONS = ticketActionSchema.options;
 
+/**
+ * The actions of the team (§7.5): every action except answering the resolution confirmation,
+ * which belongs to the requester's end-user account and is not inherited by team roles (S1-04 Q3).
+ */
+const TEAM_ACTIONS = ALL_ACTIONS.filter((action) => action !== 'confirm_resolution');
+
 /** The actions an archived project still allows on its tickets: reading them (§7.3). */
 const ACTIONS_OF_ARCHIVED_PROJECTS: readonly TicketAction[] = ['read'];
 
@@ -24,9 +30,11 @@ const ACTIONS_OF_ARCHIVED_PROJECTS: readonly TicketAction[] = ['read'];
  * edits them and assigns only themselves, a Project manager assigns anyone eligible; the
  * Administrator does everything. An end user creates tickets in the projects they can read and
  * sees the tickets they requested (§3.2, `only_me` until S1-11), and edits them while they can
- * still read the project: after losing access, a requester keeps reading (§7.3).
+ * still read the project: after losing access, a requester keeps reading (§7.3). The team changes
+ * the status; only the requester answers the resolution confirmation, and only while the ticket
+ * waits for it (§4.3).
  */
-export const ticketsAbilities: AbilityRules = ({ can }, principal) => {
+export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
   if (principal.userKind === 'end_user') {
     // The `read` conditions of the projects of an end user (§7.3): personal access, or access
     // through their active organization. `is`: the in-memory check of a record supports a to-one
@@ -48,11 +56,17 @@ export const ticketsAbilities: AbilityRules = ({ can }, principal) => {
       can('update', TICKET, { requesterId: principal.userId, project: { is: access } });
     }
     can('read', TICKET, { requesterId: principal.userId });
+    can('confirm_resolution', TICKET, { requesterId: principal.userId });
+    // The reason makes the API answer `409` instead of `403`, and keeps the action out of
+    // `allowedActions` while no answer is possible (§18.3).
+    cannot('confirm_resolution', TICKET, {
+      OR: [{ status: { not: 'waiting_for_requester' } }, { waitingReason: 'information' }],
+    }).because('ticket.resolution_confirmation_not_pending');
     return;
   }
   if (principal.isAdmin) {
     can(CREATE_TICKET, PROJECT);
-    can([...ALL_ACTIONS], TICKET);
+    can([...TEAM_ACTIONS], TICKET);
     return;
   }
   // Only team roles count: a membership that contradicts the account kind grants nothing (§7.1).
@@ -60,7 +74,7 @@ export const ticketsAbilities: AbilityRules = ({ can }, principal) => {
     members: { some: { userId: principal.userId, role: { in: teamRolesFrom(role) } } },
   });
   can(CREATE_TICKET, PROJECT, memberFrom('developer'));
-  can(['read', 'update', 'update_fields', 'assign_self'], TICKET, {
+  can(['read', 'update', 'update_fields', 'assign_self', 'change_status'], TICKET, {
     project: { is: memberFrom('developer') },
   });
   can('assign', TICKET, { project: { is: memberFrom('project_manager') } });
@@ -81,14 +95,16 @@ export const archivedProjectsOfTicketsRestriction: AbilityRules = ({ cannot }) =
 };
 
 /**
- * The fields of a ticket its rules read (§18.3): its requester and, of its project, the fields the
- * project's rules read – its state, the principal's own membership and the access of the
- * principal's organization.
+ * The fields of a ticket its rules read (§18.3): its requester, its status and waiting reason and,
+ * of its project, the fields the project's rules read – its state, the principal's own membership
+ * and the access of the principal's organization.
  */
 export function ticketRuleSelect(principal: Principal) {
   return {
     id: true,
     requesterId: true,
+    status: true,
+    waitingReason: true,
     project: { select: projectRuleSelect(principal) },
   } satisfies Prisma.TicketSelect;
 }
