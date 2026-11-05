@@ -364,9 +364,18 @@ describe('permission layer', () => {
 
   describe('the actions of the ticket response (§7.5, §18.3)', () => {
     it.each([
-      ['admin', 'teamTicket', ticketActionSchema.options],
-      ['project_manager', 'teamTicket', ticketActionSchema.options],
-      ['developer', 'teamTicket', ['read', 'update', 'update_fields', 'assign_self']],
+      // Answering the resolution confirmation belongs to the requester only (S1-04 Q3).
+      ['admin', 'teamTicket', ticketActionSchema.options.filter((a) => a !== 'confirm_resolution')],
+      [
+        'project_manager',
+        'teamTicket',
+        ticketActionSchema.options.filter((a) => a !== 'confirm_resolution'),
+      ],
+      [
+        'developer',
+        'teamTicket',
+        ['read', 'update', 'update_fields', 'assign_self', 'change_status'],
+      ],
       ['admin', 'archivedTicket', ['read']],
       ['end_user_personal', 'personalTicket', ['read', 'update']],
       ['end_user_organization', 'organizationTicket', ['read', 'update']],
