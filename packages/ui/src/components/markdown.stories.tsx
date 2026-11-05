@@ -3,6 +3,8 @@ import { expect, within } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
 import { Markdown } from './markdown.js';
 
+const ALLOWED_ID = '0b9c3f6e-2d1a-4e8b-9c7d-5a6f1e2d3c4b';
+
 const HELP_PAGE = `Trybun is where you report problems and requests to the team.
 
 ## Sign in
@@ -43,7 +45,7 @@ export const Default: Story = {};
 
 export const Empty: Story = { args: { children: '' } };
 
-/** Raw HTML is sanitized and unsafe link protocols are removed (§13.5). */
+/** Raw HTML is not rendered and links with unsafe protocols are plain text (§13.5). */
 export const Sanitized: Story = {
   args: {
     children:
@@ -52,8 +54,76 @@ export const Sanitized: Story = {
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('script')).toBeNull();
     await expect(canvasElement.querySelector('[onerror]')).toBeNull();
-    const link = within(canvasElement).getByText('a link');
-    await expect(link.getAttribute('href') ?? '').not.toContain('javascript');
+    // A link with an unsafe target renders as its plain text.
+    await expect(within(canvasElement).queryByRole('link')).toBeNull();
+    await expect(canvasElement).toHaveTextContent('and a link.');
+  },
+};
+
+/** Code blocks with a language are highlighted with the theme's tokens (§6.2). */
+export const Code: Story = {
+  args: {
+    children: `Inline \`code\` and a block:
+
+\`\`\`ts
+// Returns the answer.
+export function answer(question: string): number {
+  return question.length > 0 ? 42 : 0;
+}
+\`\`\`
+`,
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('.hljs-keyword')).not.toBeNull();
+  },
+};
+
+/** A table scrolls sideways on narrow screens instead of widening the page (Rule 9). */
+export const Table: Story = {
+  args: {
+    children: `| Ticket | Title | Status | Assignee | Updated |
+|---|---|---|---|---|
+| ERP-101 | Invoices are not exported to the accounting system | In progress | Anna Nowak | 2026-11-04 |
+| ERP-102 | Printing a delivery note takes a minute | Open | – | 2026-11-05 |
+`,
+  },
+};
+
+/**
+ * Only attachments the view allows render as images (§13.3); an external image and an image of an
+ * unknown attachment render as links (§6.2).
+ */
+export const Images: Story = {
+  args: {
+    attachmentImageIds: [ALLOWED_ID],
+    children: `![Screenshot of the error](/api/v1/attachments/${ALLOWED_ID}/content)
+
+![External logo](https://example.com/logo.png)
+
+![Another ticket's file](/api/v1/attachments/7e1d2c3b-4a5f-4e6d-8c9b-0a1f2e3d4c5b/content)
+`,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('img', { name: 'Screenshot of the error' })).toBeInTheDocument();
+    await expect(canvas.getByRole('link', { name: 'External logo' })).toHaveAttribute(
+      'rel',
+      'nofollow ugc noopener noreferrer',
+    );
+    await expect(canvas.getByRole('link', { name: "Another ticket's file" })).toBeInTheDocument();
+    await expect(canvas.getAllByRole('img')).toHaveLength(1);
+  },
+};
+
+/** Task lists render with read-only checkboxes (§6.2). */
+export const TaskList: Story = {
+  args: { children: '- [x] Reproduce the error\n- [ ] Fix the export\n- [ ] Tell the requester' },
+  play: async ({ canvasElement }) => {
+    const boxes = within(canvasElement).getAllByRole('checkbox');
+    await expect(boxes).toHaveLength(3);
+    for (const box of boxes) {
+      await expect(box).toBeDisabled();
+    }
   },
 };
 

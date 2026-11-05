@@ -10,7 +10,7 @@ loadEnvConfig(join(import.meta.dirname, '../..'), undefined, undefined, true);
 const nextConfig: NextConfig = {
   output: 'standalone',
   reactCompiler: true,
-  transpilePackages: ['@trybun/contracts', '@trybun/i18n', '@trybun/ui'],
+  transpilePackages: ['@trybun/contracts', '@trybun/i18n', '@trybun/markdown', '@trybun/ui'],
 };
 
 const withNextIntl = createNextIntlPlugin('./src/lib/i18n/request.ts');

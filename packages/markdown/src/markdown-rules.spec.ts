@@ -85,10 +85,22 @@ describe('markdownRehypePlugins', () => {
 
   it('renders GFM: task lists read-only, tables, strikethrough, footnotes', () => {
     const html = render('- [x] done\n\n| a |\n|---|\n| b |\n\n~~old~~ note[^1]\n\n[^1]: Footnote.');
-    expect(html).toContain('<input type="checkbox" checked disabled>');
+    expect(html).toContain('<input type="checkbox" checked disabled aria-label="done">');
     expect(html).toContain('<table>');
     expect(html).toContain('<del>old</del>');
     expect(html).toContain('id="user-content-fn-1"');
+  });
+});
+
+describe('task-list labels', () => {
+  it('names a checkbox by its item text without nested lists', () => {
+    expect(render('- [ ] Fix **the** export\n  - [x] nested')).toContain(
+      'aria-label="Fix the export"',
+    );
+  });
+
+  it('names a checkbox in a loose list', () => {
+    expect(render('- [ ] one\n\n- [x] two')).toContain('aria-label="two"');
   });
 });
 

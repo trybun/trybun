@@ -195,3 +195,58 @@
     @apply -outline-offset-3;
   }
 }
+
+/*
+ * Syntax highlighting of code blocks in rendered Markdown (§6.2): the classes of `rehype-highlight`
+ * (highlight.js) coloured with theme tokens, so light and dark follow the theme and the strict CSP
+ * needs no inline styles (§13.5). Every colour keeps the text contrast of WCAG AA on `muted`.
+ */
+@layer components {
+  [data-slot='markdown'] {
+    .hljs-comment,
+    .hljs-quote,
+    .hljs-meta {
+      @apply text-muted-foreground italic;
+    }
+    /* Keywords are bold in the text colour: no token reaches 4.5:1 on `muted` in both themes. */
+    .hljs-keyword,
+    .hljs-selector-tag,
+    .hljs-built_in,
+    .hljs-doctag {
+      @apply font-semibold;
+    }
+    .hljs-string,
+    .hljs-regexp,
+    .hljs-addition,
+    .hljs-attribute {
+      @apply text-success;
+    }
+    .hljs-number,
+    .hljs-literal,
+    .hljs-symbol,
+    .hljs-bullet,
+    .hljs-variable,
+    .hljs-template-variable {
+      @apply text-warning;
+    }
+    .hljs-title,
+    .hljs-section,
+    .hljs-name,
+    .hljs-type,
+    .hljs-attr,
+    .hljs-selector-id,
+    .hljs-selector-class,
+    .hljs-link {
+      @apply text-info;
+    }
+    .hljs-deletion {
+      @apply text-muted-foreground;
+    }
+    .hljs-emphasis {
+      @apply italic;
+    }
+    .hljs-strong {
+      @apply font-semibold;
+    }
+  }
+}
