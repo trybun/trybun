@@ -7197,7 +7197,8 @@
                 },
                 "required": [
                   "answer"
-                ]
+                ],
+                "additionalProperties": false
               }
             }
           }
