@@ -15,8 +15,8 @@ Ticket descriptions, comments and internal notes are written in GitHub Flavored 
 Current state:
 
 - `@trybun/ui` has a `Markdown` component (S0-09, used by the help viewer). It renders GFM with GitHub's sanitize schema and the default URL transform of `react-markdown`. It has no syntax highlighting, no image rule and no editor.
-- `@trybun/ui` has no `Textarea` and no `Tabs` component.
-- The server has no Markdown rendering. Lint does not let `apps/server` import `@trybun/ui` ([§14.6](../../docs/spec/14-architecture.md), `apps/server/eslint.config.js`), so the server cannot reuse the pipeline of the `Markdown` component.
+- `@trybun/ui` has a `Tabs` component (Base UI, its `TabsList` wrapped in `ScrollFade`), but no `Textarea`.
+- The server has no Markdown rendering. Lint does not let `apps/server` import `@trybun/ui` ([§14.6](../../docs/spec/14-architecture.md), `allowedPackages` in `apps/server/eslint.config.js`), so the server cannot reuse the pipeline of the `Markdown` component.
 - No view writes Markdown yet. The ticket forms (S1-09, S1-10), comments (S1-12) and notification e-mails (S1-15) will be the consumers. Uploads come with S1-08.
 
 S1-07 builds the editor and the single rendering pipeline those tasks use. This specification proposes the behaviour and the structure for approval.
@@ -70,7 +70,7 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
 - **Accessibility** ([§13.4](../../docs/spec/13-non-functional.md)):
   - The toolbar is a labelled `role="toolbar"` with one Tab stop and arrow-key navigation (Base UI `Toolbar`).
   - Every button has a label from the catalogues and `aria-keyshortcuts`.
-  - Write/Preview are ARIA tabs (Base UI `Tabs`).
+  - Write/Preview are ARIA tabs (`Tabs` of `@trybun/ui`, on Base UI).
   - The textarea is labelled by the form's `FieldLabel` and described by its `FieldDescription` and `FieldError`.
   - Drag and drop of files always has the "Attach files" button as an alternative (WCAG 2.5.7).
 - **Texts** in the `ui` namespace of `@trybun/i18n` (EN, PL).
@@ -91,7 +91,7 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
   - It converts the tree with `hast-util-to-jsx-runtime` into React elements styled with inline styles, for the React Email templates of S1-15.
   - Task-list checkboxes become the characters ☐/☑, because e-mail clients drop form controls.
   - It has no syntax highlighting.
-- **Editor**: `MarkdownEditor` in `@trybun/ui` (`packages/ui/src/components/markdown-editor.tsx`), built from the new `Textarea` and `Tabs` components (shadcn/ui on Base UI, Rule 6), Base UI `Toolbar`, `DropdownMenu` and `Markdown`.
+- **Editor**: `MarkdownEditor` in `@trybun/ui` (`packages/ui/src/components/markdown-editor.tsx`), built from the new `Textarea` component (shadcn/ui on Base UI, Rule 6), the existing `Tabs`, Base UI `Toolbar`, `DropdownMenu` and `Markdown`.
   - Its props follow Base UI: `value` / `defaultValue` / `onValueChange`, `name`, `placeholder`, `disabled`, `invalid`, `ref`, `attachmentImageIds`, and `onFilesAdd` (Q7).
   - It is presentational ([§18.6](../../docs/spec/18-code-patterns.md)): no fetching, no routing, no API paths except through `@trybun/markdown`.
   - The text changes of the toolbar and shortcuts are pure functions `(text, selection) → { text, selection }` in `markdown-editor-format.ts`, tested with tables.
@@ -103,7 +103,7 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
 
 - `@trybun/markdown`: a table of XSS cases from the OWASP XSS Filter Evasion Cheat Sheet. Each case runs through the web renderer (`Markdown`, rendered with `prerender`) and through `renderEmailMarkdown`, and both outputs are checked for no script, no event-handler attribute and no `javascript:`/`data:` URL. Cases include `<script>`, `<img onerror>`, `[x](javascript:alert(1))`, entity-encoded and mixed-case protocols, `<svg>`, `<iframe>`, `<a href="&#106;avascript:…">` and protocol-relative or backslash URLs (`//evil.example`, `/\evil.example`) as links and images. The image and link rules have their own table cases: external image, image of another ticket's attachment, unknown ID, path with a suffix, allowed attachment.
 - `markdown-editor-format.ts`: table tests of every toolbar action, with and without selection, and for the second press.
-- Storybook stories of `Textarea`, `Tabs` and `MarkdownEditor` for every state (empty, filled, preview, disabled, invalid, with an allowed image) in the three viewports. Play functions check that:
+- Storybook stories of `Textarea` and `MarkdownEditor` for every state (empty, filled, preview, disabled, invalid, with an allowed image) in the three viewports. Play functions check that:
   - Ctrl+K inserts a link, Ctrl+B makes text bold, and Ctrl+Z undoes it;
   - the toolbar's arrow-key navigation works and every target is at least 44 px;
   - the preview of a `<script>` and a `javascript:` link shows neither.
@@ -146,7 +146,7 @@ One phase, one PR. Each step leaves the application working.
 1. Package `@trybun/markdown`: schema, plugins, path helpers. Lint boundaries of §14.6. Test: the XSS and image/link tables against a plain unified processor.
 2. `Markdown` of `@trybun/ui` on `markdownRehypePlugins` with `attachmentImageIds` and `rehype-highlight`; highlight theme tokens. Test: the shared tables through `prerender`; the help viewer's existing tests pass unchanged; the stories of `Markdown` gain code, table and image states.
 3. `renderEmailMarkdown` in `apps/server/src/platform/markdown/`. Test: the shared tables, absolute URLs, images as links, ☐/☑.
-4. `Textarea` and `Tabs` in `@trybun/ui` with stories (Rule 6).
+4. `Textarea` in `@trybun/ui` with stories (Rule 6).
 5. `markdown-editor-format.ts` and `MarkdownEditor` with toolbar, tabs, shortcuts, the phone menu and the file entry points. Test: format tables; stories with play functions (Ctrl+K, Ctrl+B, undo, preview sanitizing, 44 px targets, keyboard toolbar).
 6. User documentation, specification changes of the table above, §18.9 reference row, project memory (`help.md` Markdown notes moved or extended), this file moved to `implemented/`. Test: `pnpm lint`, `pnpm lint:spec`.
 
@@ -158,7 +158,7 @@ One phase, one PR. Each step leaves the application working.
 - [ ] Ctrl+K in the textarea inserts a link and does not propagate; Ctrl+Z undoes it
 - [ ] Every toolbar action works by touch, mouse and keyboard; the toolbar is one Tab stop with arrow-key navigation
 - [ ] Code blocks are highlighted in views and the preview without a CSP change; e-mails show them plain
-- [ ] `@trybun/ui` stories for `Textarea`, `Tabs` and `MarkdownEditor` in all states and viewports (Rule 6)
+- [ ] `@trybun/ui` stories for `Textarea` and `MarkdownEditor` in all states and viewports (Rule 6)
 - [ ] Works on phone, tablet and desktop (Rule 9)
 - [ ] User documentation: a reference page "Formatting text" (EN, PL) for team members and end users with the syntax and the shortcut table; no product tour (the "Creating a ticket" tour comes with S1-18) (Rules 3, 4)
 
