@@ -479,6 +479,52 @@ describe('ticket status endpoints', () => {
       ]);
     });
 
+    it('refuses a re-point that read the ticket before a change left duplicate', async () => {
+      const { project, developer, ticket, original } = await duplicateSetUp();
+      const linked = (
+        await changeStatus(developer.authorization, ticket, {
+          status: 'duplicate',
+          duplicateOfTicketId: original.id,
+        })
+      ).body as Ticket;
+      const other = await createTicket(prisma, {
+        projectId: project.id,
+        requesterId: developer.user.id,
+      });
+
+      let repoint: Promise<request.Response> | undefined;
+      await prisma.$transaction(
+        async (tx) => {
+          // Another change leaves `duplicate` and holds the row until it commits.
+          await tx.ticketRelation.deleteMany({ where: { sourceTicketId: ticket.id } });
+          await tx.ticket.update({
+            where: { id: ticket.id },
+            data: { status: 'in_progress', closedAt: null, version: { increment: 1 } },
+          });
+          repoint = changeStatus(developer.authorization, linked, {
+            status: 'duplicate',
+            duplicateOfTicketId: other.id,
+          }).then((res) => res);
+          await vi.waitFor(
+            async () => {
+              const [waiting] = await prisma.$queryRaw<[{ count: bigint }]>`
+                SELECT count(*) FROM pg_stat_activity
+                WHERE datname = current_database() AND pid <> pg_backend_pid()
+                  AND wait_event_type = 'Lock' AND query LIKE '%FOR UPDATE%'`;
+              expect(waiting.count).toBeGreaterThanOrEqual(1n);
+            },
+            { timeout: 5000, interval: 20 },
+          );
+        },
+        { timeout: 10_000 },
+      );
+      const res = await (repoint as Promise<request.Response>);
+
+      expect(res.status).toBe(412);
+      expect(await originalOf(ticket.id)).toEqual([]);
+      expect((await read(ticket.id)).status).toBe('in_progress');
+    });
+
     it('answers an invisible original with 404, another project with 422 and itself with 422', async () => {
       const { developer, ticket } = await duplicateSetUp();
       const elsewhere = await createProject(prisma);

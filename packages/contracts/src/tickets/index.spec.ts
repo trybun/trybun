@@ -132,6 +132,7 @@ describe('confirmResolutionSchema', () => {
     [{ answer: 'solved' }, true],
     [{ answer: 'not_solved' }, true],
     [{ answer: 'maybe' }, false],
+    [{ answer: 'solved', comment: 'Thanks' }, false],
     [{}, false],
   ])('validates %j', (body, isValid) => {
     expect(confirmResolutionSchema.safeParse(body).success).toBe(isValid);

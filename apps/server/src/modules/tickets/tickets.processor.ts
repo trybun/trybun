@@ -69,9 +69,6 @@ export const scheduleResolutionConfirmationCloseJobSchema = z.object({
 /** The job data of the timer (§17.2): the ticket only; the handler reads its current state. */
 export const closeUnconfirmedResolutionJobSchema = z.object({ ticketId: z.uuid() });
 
-/** How long the timer waits before it checks a ticket of an archived project again (Q19). */
-export const ARCHIVED_PROJECT_RECHECK_MS = 24 * 60 * 60 * 1000;
-
 /**
  * Schedules the automatic close when a ticket starts waiting for the confirmation of its
  * resolution (§4.3): the timer runs 7 × 24 hours after the wait started. It reads the current
@@ -112,25 +109,25 @@ export class ScheduleResolutionConfirmationCloseProcessor extends WorkerHost {
 /**
  * Closes a ticket whose requester did not answer within 7 days (§4.3), with an automatic event.
  * In an archived project it moves itself back to the delayed state for 24 hours – the same job,
- * no new key – so the ticket closes on the first run after unarchiving (Q19).
+ * no new key – so the ticket closes on the first run after unarchiving (Q19); a run before the
+ * ticket's time (a Worker clock behind the one that scheduled it) waits until that time.
  */
 @Processor(CLOSE_UNCONFIRMED_RESOLUTION_QUEUE)
 export class CloseUnconfirmedResolutionProcessor extends WorkerHost {
   constructor(
     private readonly tickets: TicketsService,
-    private readonly clock: Clock,
     private readonly logContext: LogContext,
   ) {
     super();
   }
 
   async process(job: Job, token?: string): Promise<void> {
-    const outcome = await this.logContext.runJob(job, () => {
+    const result = await this.logContext.runJob(job, () => {
       const { ticketId } = closeUnconfirmedResolutionJobSchema.parse(job.data);
       return this.tickets.closeUnconfirmedResolution(ticketId);
     });
-    if (outcome === 'archived') {
-      await job.moveToDelayed(this.clock.now().getTime() + ARCHIVED_PROJECT_RECHECK_MS, token);
+    if (result.outcome === 'not_due' || result.outcome === 'archived') {
+      await job.moveToDelayed(result.checkAgainAt.getTime(), token);
       throw new DelayedError();
     }
   }

@@ -35,12 +35,11 @@ import {
   resolutionConfirmationTimerKey,
 } from './tickets.jobs.js';
 import {
-  ARCHIVED_PROJECT_RECHECK_MS,
   CloseUnconfirmedResolutionProcessor,
   ScheduleResolutionConfirmationCloseProcessor,
   UnassignRemovedMemberProcessor,
 } from './tickets.processor.js';
-import { TicketsService } from './tickets.service.js';
+import { ARCHIVED_PROJECT_RECHECK_MS, TicketsService } from './tickets.service.js';
 
 const NOW = new Date('2026-11-05T10:00:00.000Z');
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -266,11 +265,18 @@ describe('the automatic close of an unconfirmed resolution', () => {
       );
     });
 
-    it('does nothing before 7 days have passed since the confirmation was asked again', async () => {
-      const { ticket } = await waitingTicket({ waitingSince: new Date(NOW.getTime() - DAY_MS) });
+    it('waits until 7 days have passed since the confirmation was asked (again)', async () => {
+      const waitingSince = new Date(NOW.getTime() - DAY_MS);
+      const { ticket } = await waitingTicket({ waitingSince });
+      const job = timerJob(ticket.id);
 
-      await runTimer(timerJob(ticket.id));
+      // A timer that runs early – the Worker's clock behind the one that scheduled it – waits.
+      await expect(runTimer(job)).rejects.toBeInstanceOf(DelayedError);
 
+      expect(job.moveToDelayed).toHaveBeenCalledWith(
+        waitingSince.getTime() + RESOLUTION_CONFIRMATION_PERIOD_MS,
+        'token',
+      );
       expect(await prisma.ticket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject({
         status: 'waiting_for_requester',
         version: ticket.version,

@@ -167,7 +167,7 @@ export const changeTicketStatusSchema = z.discriminatedUnion('status', [
 export type ChangeTicketStatusDto = z.infer<typeof changeTicketStatusSchema>;
 
 /** `POST /api/v1/tickets/{ticketId}/resolution-confirmation` (§4.3): the requester's answer. */
-export const confirmResolutionSchema = z.object({ answer: resolutionAnswerSchema });
+export const confirmResolutionSchema = z.strictObject({ answer: resolutionAnswerSchema });
 export type ConfirmResolutionDto = z.infer<typeof confirmResolutionSchema>;
 
 /** The original of a duplicate as a ticket shows it (§3.5). */
