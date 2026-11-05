@@ -2,20 +2,25 @@
 import { randomUUID } from 'node:crypto';
 import { Test } from '@nestjs/testing';
 import type { Job } from 'bullmq';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createProjectMember } from '../../../test/factories/project-member.factory.js';
 import { createProject } from '../../../test/factories/project.factory.js';
 import { createTicket } from '../../../test/factories/ticket.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { integrationConfig } from '../../../test/setup/config.js';
+import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import type { Project, User } from '../../generated/prisma/client.js';
+import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
+import { ClockModule } from '../../platform/clock/clock.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
 import { DatabaseModule } from '../../platform/database/database.module.js';
 import { PrismaService } from '../../platform/database/prisma.service.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
 import { ActivityEventsModule } from '../activity-events/activity-events.module.js';
 import { PROJECT_MEMBER_REMOVED } from '../projects/projects.events.js';
+import { ProjectsModule } from '../projects/projects.module.js';
 import { USER_DEACTIVATED } from '../users/users.events.js';
+import { UsersModule } from '../users/users.module.js';
 import { TicketUnassignmentService } from './ticket-unassignment.service.js';
 import {
   UnassignDeactivatedUserProcessor,
@@ -33,8 +38,12 @@ describe('the unassignment of deactivated and removed team members', () => {
       imports: [
         ConfigModule.forRoot(integrationConfig()),
         LoggingModule.forRoot(),
+        ClockModule,
         DatabaseModule,
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         ActivityEventsModule,
+        ProjectsModule,
+        UsersModule,
       ],
       providers: [
         TicketUnassignmentService,
@@ -52,6 +61,26 @@ describe('the unassignment of deactivated and removed team members', () => {
   afterAll(async () => {
     await close();
   });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** Runs `meanwhile` once, after the first batch of the job has committed. */
+  function afterFirstBatch(meanwhile: () => Promise<unknown>) {
+    const transaction = prisma.$transaction.bind(prisma);
+    let batches = 0;
+    vi.spyOn(prisma, '$transaction').mockImplementation(async (...args: unknown[]) => {
+      const result: unknown = await (transaction as (...args: unknown[]) => Promise<unknown>)(
+        ...args,
+      );
+      batches += 1;
+      if (batches === 1) {
+        await meanwhile();
+      }
+      return result;
+    });
+  }
 
   function job(type: string, payload: Record<string, string>) {
     return { id: randomUUID(), name: type, data: { payload, requestId: null } } as Job;
@@ -204,5 +233,71 @@ describe('the unassignment of deactivated and removed team members', () => {
     await runRemoval(project, member);
 
     expect(await assigneeOf(ticket.id)).toBe(member.id);
+  });
+
+  it('keeps every assignment from the next batch on of a person reactivated between two batches', async () => {
+    const project = await createProject(prisma);
+    const { member, requester } = await assignedMember([project]);
+    for (let index = 0; index < 105; index += 1) {
+      await createTicket(prisma, {
+        projectId: project.id,
+        requesterId: requester.id,
+        assigneeId: member.id,
+      });
+    }
+    await prisma.user.update({ where: { id: member.id }, data: { state: 'deactivated' } });
+    let assigned = '';
+    afterFirstBatch(async () => {
+      await prisma.user.update({ where: { id: member.id }, data: { state: 'active' } });
+      assigned = (
+        await createTicket(prisma, {
+          projectId: project.id,
+          requesterId: requester.id,
+          assigneeId: member.id,
+        })
+      ).id;
+    });
+
+    await runDeactivation(member);
+
+    expect(await assigneeOf(assigned)).toBe(member.id);
+    expect(await prisma.ticket.count({ where: { assigneeId: member.id } })).toBe(6);
+    expect(await prisma.activityEvent.count({ where: { ticket: { projectId: project.id } } })).toBe(
+      100,
+    );
+  });
+
+  it('keeps every assignment from the next batch on of a member added back between two batches', async () => {
+    const project = await createProject(prisma);
+    const { member, requester } = await assignedMember([project]);
+    for (let index = 0; index < 105; index += 1) {
+      await createTicket(prisma, {
+        projectId: project.id,
+        requesterId: requester.id,
+        assigneeId: member.id,
+      });
+    }
+    await prisma.projectMember.delete({
+      where: { projectId_userId: { projectId: project.id, userId: member.id } },
+    });
+    let assigned = '';
+    afterFirstBatch(async () => {
+      await createProjectMember(prisma, { projectId: project.id, userId: member.id });
+      assigned = (
+        await createTicket(prisma, {
+          projectId: project.id,
+          requesterId: requester.id,
+          assigneeId: member.id,
+        })
+      ).id;
+    });
+
+    await runRemoval(project, member);
+
+    expect(await assigneeOf(assigned)).toBe(member.id);
+    expect(await prisma.ticket.count({ where: { assigneeId: member.id } })).toBe(6);
+    expect(await prisma.activityEvent.count({ where: { ticket: { projectId: project.id } } })).toBe(
+      100,
+    );
   });
 });

@@ -1,4 +1,5 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { ABILITY_DEFINITIONS } from './ability-definitions.js';
 import { AuditLogEntriesWorkerModule } from './modules/audit-log-entries/audit-log-entries-worker.module.js';
 import { InvitationsWorkerModule } from './modules/invitations/invitations-worker.module.js';
 import {
@@ -9,6 +10,7 @@ import { TicketsWorkerModule } from './modules/tickets/tickets-worker.module.js'
 import { USERS_KEYCLOAK_SUBSCRIPTION } from './modules/users/users.jobs.js';
 import { UsersWorkerModule } from './modules/users/users-worker.module.js';
 import type { TrybunConfig } from './platform/config/config.schema.js';
+import { AuthorizationModule } from './platform/authorization/authorization.module.js';
 import { ClockModule } from './platform/clock/clock.module.js';
 import { ConfigModule } from './platform/config/config.module.js';
 import { DatabaseModule } from './platform/database/database.module.js';
@@ -35,6 +37,8 @@ export class WorkerModule {
         DatabaseModule,
         I18nModule,
         QueuesModule,
+        // The services of the feature modules the jobs use depend on the ability factory.
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         KeycloakAdminModule,
         OutboxWorkerModule.forRoot([
           USERS_KEYCLOAK_SUBSCRIPTION,
