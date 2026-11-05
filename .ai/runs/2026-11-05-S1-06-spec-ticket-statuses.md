@@ -54,6 +54,6 @@ Keep PR #116 a design-only change specification for S1-06 that is correct agains
 ### Phase 2: Bring the proposal up to date with main and the review of #226
 
 - [x] 2.1 Merge main into the branch — e73d40b
-- [ ] 2.2 Apply the maintainer's project share lock note to the spec
-- [ ] 2.3 Align the spec with the implemented S1-05 code and specification
-- [ ] 2.4 Validate (spec lint, Prettier) and record the changelog entry
+- [x] 2.2 Apply the maintainer's project share lock note to the spec — 2da47a5
+- [x] 2.3 Align the spec with the implemented S1-05 code and specification — 2da47a5
+- [x] 2.4 Validate (spec lint, Prettier) and record the changelog entry — 2da47a5
