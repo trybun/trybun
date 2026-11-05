@@ -48,3 +48,7 @@ Build the status changes of S1-06 exactly as the approved change specification d
 - [x] 3.2 Worker scheduler and automatic close timer — 8c0729c
 - [x] 3.3 Catalogue texts, generated API client and demo dataset — 46f2c34
 - [x] 3.4 System specification, glossary, plan and project memory — c07cab0
+
+### Phase 4: Review
+
+- [x] 4.1 Apply the findings of the code review — f1d0b0b
