@@ -30,9 +30,9 @@ Build S1-07 as the approved change specification decides: the package `@trybun/m
 
 ### Phase 1: Shared rule set and renderers
 
-- [ ] 1.1 Package @trybun/markdown with the XSS and image/link tables
-- [ ] 1.2 Markdown component on the shared rule set with highlighting
-- [ ] 1.3 renderEmailMarkdown of the server
+- [x] 1.1 Package @trybun/markdown with the XSS and image/link tables — 5ec3b89
+- [x] 1.2 Markdown component on the shared rule set with highlighting — 8817dca
+- [x] 1.3 renderEmailMarkdown of the server — 790ee80
 
 ### Phase 2: Editor
 
