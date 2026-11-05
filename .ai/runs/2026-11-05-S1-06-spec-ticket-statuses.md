@@ -61,3 +61,7 @@ Keep PR #116 a design-only change specification for S1-06 that is correct agains
 ### Phase 3: Specification review
 
 - [x] 3.1 Apply the findings of the specification review — 4ce6f57
+
+### Phase 4: Approval
+
+- [x] 4.1 Record the maintainer's approval of every open question — a1ab210
