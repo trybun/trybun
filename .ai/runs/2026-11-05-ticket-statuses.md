@@ -27,6 +27,8 @@ Build the status changes of S1-06 exactly as the approved change specification d
 
 ## Progress
 
+PR: #231
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Rules and model
