@@ -2,8 +2,9 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Manrope } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { pickClientMessages } from '../lib/i18n/messages.js';
 import { QueryProvider } from '../lib/query-client/query-provider.js';
 
 // The UI typeface of the brand, self-hosted by Next.js (docs/brand/README.md). `subsets` are the
@@ -29,10 +30,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
+  // Only the shared texts; the layout of a route adds the texts of its client components (§18.5).
+  const messages = pickClientMessages(await getMessages(), 'root');
   return (
     <html lang={locale} className={manrope.variable}>
       <body>
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
           <QueryProvider>{children}</QueryProvider>
         </NextIntlClientProvider>
       </body>

@@ -50,7 +50,7 @@ describe('HelpTopicPage', () => {
     expect(html).toContain(back);
     // A relative link to another page leads to its address in the help.
     expect(html).toContain('href="/help/team/explanation/help-for-end-users"');
-    expect(requireSession).toHaveBeenCalledWith('/help/team/tutorials/getting-started');
+    expect(requireSession).toHaveBeenCalledWith();
   });
 
   it('never gives an end user a team page', async () => {

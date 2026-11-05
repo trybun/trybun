@@ -17,7 +17,7 @@ export class AdministrationController {
   /** The getting-started checklist of the Administrator panel (§15.6). */
   @Get('getting-started')
   @ResponseSchema(gettingStartedPageSchema)
-  findGettingStarted(@CurrentPrincipal() principal: Principal): GettingStartedPage {
+  findGettingStarted(@CurrentPrincipal() principal: Principal): Promise<GettingStartedPage> {
     return this.administration.findGettingStarted(principal);
   }
 
