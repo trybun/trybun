@@ -6,7 +6,7 @@
 | Created | 2026-10-26 |
 | Plan task | `S1-07` |
 | System specification sections | §6.2, §14.2; also §8.4, §13.3, §13.4, §13.5, §14.6, §18.2, §18.5, §18.6, §18.9 |
-| Related issues / PRs | [ADR 0008](../../../docs/adr/0008-attachment-serving.md), [attachment serving](../2026-10-25-attachment-serving.md) (item 5: previews of draft attachments) |
+| Related issues / PRs | [ADR 0008](../../../docs/adr/0008-attachment-serving.md), [attachment serving](2026-10-25-attachment-serving.md) (item 5: previews of draft attachments) |
 
 ## Context
 
@@ -66,7 +66,7 @@ S1-07 builds the editor and the single rendering pipeline those tasks use. This 
   - Code blocks with a language (` ```ts `) are highlighted in the views and the preview (Q3). E-mails show them as plain monospaced blocks.
   - Raw HTML in the source is not rendered (Q5). `<script>` and every other tag disappear.
   - Links keep only the `http`, `https` and `mailto` protocols and paths relative to the site (starting with a single `/`, or none). Any other link, including `javascript:`, `data:` and `vbscript:`, renders as plain text. Links to other sites, including protocol-relative ones (`//example.com`), get `rel="nofollow ugc noopener noreferrer"`.
-  - Images: an `<img>` is rendered only when its source is exactly the stable path of an attachment in the set the view allows (the ticket's attachments; while writing, also the writer's own drafts **if** item 5 of [attachment serving](../2026-10-25-attachment-serving.md) is approved – S1-07 only takes the set as given). Every other image renders as a link with its alt text, or with its URL when there is no alt text (Q4); an image whose source the sanitizer removed renders as its alt text only. This includes external URLs, attachments of other tickets and unknown IDs. E-mails always show images as links ([§13.3](../../../docs/spec/13-non-functional.md)).
+  - Images: an `<img>` is rendered only when its source is exactly the stable path of an attachment in the set the view allows (the ticket's attachments; while writing, also the writer's own drafts **if** item 5 of [attachment serving](2026-10-25-attachment-serving.md) is approved – S1-07 only takes the set as given). Every other image renders as a link with its alt text, or with its URL when there is no alt text (Q4); an image whose source the sanitizer removed renders as its alt text only. This includes external URLs, attachments of other tickets and unknown IDs. E-mails always show images as links ([§13.3](../../../docs/spec/13-non-functional.md)).
 - **Accessibility** ([§13.4](../../../docs/spec/13-non-functional.md)):
   - The toolbar is a labelled `role="toolbar"` with one Tab stop and arrow-key navigation (Base UI `Toolbar`).
   - Every button has a label from the catalogues and `aria-keyshortcuts`.

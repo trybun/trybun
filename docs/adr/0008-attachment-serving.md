@@ -1,11 +1,12 @@
 # 0008 – Attachment serving
 
-- Status: proposed
-- Date: 2026-10-25
+- Status: accepted
+- Date: 2026-10-25, its open questions answered by the maintainer on 2026-11-06, amended by the change specification of S1-08 and its implementation, accepted on 2026-11-06 with the PR that finished S1-08 (#247), as that change specification, approved by the maintainer, provides
 - Deciders: the maintainer (`@dtk7c2`)
 - Specification: [§13.3](../spec/13-non-functional.md), [§13.5](../spec/13-non-functional.md), [§14.2](../spec/14-architecture.md), [§14.4](../spec/14-architecture.md), [§17.2](../spec/17-conventions.md), [§18.3](../spec/18-code-patterns.md)
-- Change specification of the gaps found: [`.ai/specs/2026-10-25-attachment-serving.md`](../../.ai/specs/2026-10-25-attachment-serving.md)
-- Change specification of S1-08, which amends this ADR (see "Amendments"): [`.ai/specs/2026-10-26-attachments.md`](../../.ai/specs/2026-10-26-attachments.md)
+- Change specification of the gaps found: [`2026-10-25-attachment-serving.md`](../../.ai/specs/implemented/2026-10-25-attachment-serving.md) (implemented)
+- Change specification of S1-08, which amends this ADR (see "Amendments"): [`2026-10-26-attachments.md`](../../.ai/specs/implemented/2026-10-26-attachments.md) (implemented)
+- Implementation: plan task S1-08 (#244, #247)
 
 ## Context and problem statement
 
@@ -121,9 +122,9 @@ The state on 2026-10-25 (versions pinned in the repository, the latest stable li
 
 ## Open questions
 
-These belong to the specification and are proposed in [`.ai/specs/2026-10-25-attachment-serving.md`](../../.ai/specs/2026-10-25-attachment-serving.md); S1-08 starts only once they are answered.
+These belong to the specification and are proposed in [`2026-10-25-attachment-serving.md`](../../.ai/specs/implemented/2026-10-25-attachment-serving.md); S1-08 starts only once they are answered.
 
-**Answered** by the maintainer on 2026-11-06, as proposed in the [approved change specification](../../.ai/specs/2026-10-25-attachment-serving.md): (1) a text file is valid UTF-8 without NUL bytes and no detected binary format, `json` must parse, always a download; an image that cannot be decoded is removed like a file that cannot be scanned completely; (2) the configurable size is at most 100 MB, `clamd.conf` sets `AlertExceedsMax yes` and `AlertEncryptedArchive yes`, and the new status `rejected` ("File removed: could not be checked") is notified like an infected file; (3) the content endpoint answers `409 attachment.not_available` in `quarantine` and `410 attachment.removed` for `infected` and `rejected`; (4) both headers join the content response; (5) the preview of a form shows images of the current user's own drafts; (6) encrypted PDFs are rejected with `attachment.type_not_allowed`; (7) `clamscan` stays behind the ClamAV adapter. [§13.3](../spec/13-non-functional.md), [§6.2](../spec/06-comments-notifications.md) and [§14.4](../spec/14-architecture.md) carry the answers.
+**Answered** by the maintainer on 2026-11-06, as proposed in the [approved change specification](../../.ai/specs/implemented/2026-10-25-attachment-serving.md): (1) a text file is valid UTF-8 without NUL bytes and no detected binary format, `json` must parse, always a download; an image that cannot be decoded is removed like a file that cannot be scanned completely; (2) the configurable size is at most 100 MB, `clamd.conf` sets `AlertExceedsMax yes` and `AlertEncryptedArchive yes`, and the new status `rejected` ("File removed: could not be checked") is notified like an infected file; (3) the content endpoint answers `409 attachment.not_available` in `quarantine` and `410 attachment.removed` for `infected` and `rejected`; (4) both headers join the content response; (5) the preview of a form shows images of the current user's own drafts; (6) encrypted PDFs are rejected with `attachment.type_not_allowed`; (7) `clamscan` stays behind the ClamAV adapter. [§13.3](../spec/13-non-functional.md), [§6.2](../spec/06-comments-notifications.md) and [§14.4](../spec/14-architecture.md) carry the answers.
 
 1. **Text formats without magic bytes** (`txt`, `log`, `csv`, `json`) and images that cannot be decoded: what "detected from the content" means for them.
 2. **ClamAV limits**: whether the configurable maximum size has an upper bound (clamd's `StreamMaxLength`/`MaxFileSize`, 100 MB by default), and how a file is shown that clamd reports as not completely scannable (`Heuristics.Limits.Exceeded`, `Heuristics.Encrypted.*`) – today `attachment.status` knows only `available` and `infected`, and "malware detected" would be wrong.
@@ -135,7 +136,7 @@ These belong to the specification and are proposed in [`.ai/specs/2026-10-25-att
 
 ## Amendments
 
-Recorded while the ADR is `proposed`, by the [change specification of S1-08](../../.ai/specs/2026-10-26-attachments.md) (its questions Q10, Q12, Q21, Q22, approved by the maintainer on 2026-11-06) and by its implementation:
+Recorded while the ADR was `proposed`, by the [change specification of S1-08](../../.ai/specs/implemented/2026-10-26-attachments.md) (its questions Q10, Q12, Q21, Q22, approved by the maintainer on 2026-11-06) and by its implementation:
 
 1. **Recovery of lost scans** (Q10) replaces `job.retry()` of failed scan jobs. The recurring job (every 5 minutes) checks clamd with `PING` and, only when it answers, writes a new outbox event `attachment.uploaded` for every attachment in `quarantine` unchanged for more than 15 minutes and sets its `updatedAt`, in one transaction per batch – so a row is re-enqueued at most every 15 minutes and never during an outage. A scan that failed all its attempts is picked up as a row still in `quarantine`, and scan jobs lost with Valkey (not backed up) or removed after 30 days are covered too. The scan keeps one consumer (queue `scan-attachment`), one job data shape and its `jobId` (the outbox event ID). A row still in `quarantine` 24 hours after its upload, while `PING` answers, is set to `rejected`, so a file whose scan never finishes is neither released nor rescanned forever.
 2. **Infected and rejected rows are updated before their objects are deleted** (Q21), like the move: the row is set to `infected` or `rejected` with its outbox event first, then the objects are deleted, so a duplicate scan in between finds the row no longer in `quarantine`. Rows and objects out of step – e.g. after a restore, because the backup dumps the database before it copies the objects – are reconciled: a scan that finds `quarantine/{id}` gone but `available/{id}` present finishes the move; a scan that finds neither object sets the row `rejected` (or ends without effect when the row is no longer in `quarantine`); the content of an `available` row whose object is gone answers `410 attachment.removed`; the purge also deletes `available/` objects without a row older than 24 hours.
