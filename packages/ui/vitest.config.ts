@@ -27,7 +27,7 @@ function storyTests(theme: 'light' | 'dark'): ViteUserConfig {
 export default defineConfig({
   test: {
     projects: [
-      { test: { name: 'ui', include: ['src/**/*.spec.ts'] } },
+      { test: { name: 'ui', include: ['src/**/*.spec.{ts,tsx}'] } },
       storyTests('light'),
       storyTests('dark'),
     ],

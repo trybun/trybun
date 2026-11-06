@@ -92,6 +92,11 @@
         },
         {
           "type": "json",
+          "path": "packages/markdown/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
           "path": "packages/tsconfig/package.json",
           "jsonpath": "$.version"
         },

@@ -1,0 +1,25 @@
+---
+title: Project settings
+description: The tabs of the project settings – General, Members and Danger zone – and who can see and change what.
+views: ['/projects/[projectId]/settings']
+---
+
+Open the settings of a project from **Projects**. The page has three tabs.
+
+## General
+
+| Setting | Meaning | Who can change it |
+|---|---|---|
+| **Name** | Name of the project | Administrator only; read-only for others |
+| **Key** | Prefix of ticket identifiers, e.g. `ERP-12` | Administrator only, and only until the first ticket of the project: the key is part of ticket identifiers, so it cannot be changed afterwards. Read-only for others |
+| **Resolution confirmation** | Switch: asks the requester to confirm that the problem is solved | Project managers of the project and the Administrator |
+
+Select **Save changes** to apply them.
+
+## Members
+
+The list shows each member's display name, GitHub login and role. The project's team members and the Administrator see it; Project managers and the Administrator manage it ([manage project members](../how-to/manage-project-members.md)). **Pending invitations**, below the list, shows the invitations that have not been accepted yet, with **Copy new link** and **Revoke** ([invite people to a project](../how-to/invite-people-to-a-project.md)).
+
+## Danger zone
+
+Visible to the Administrator only: archive, unarchive and delete the project ([create, archive and delete a project](../../administrator/how-to/create-archive-and-delete-a-project.md)).
