@@ -56,6 +56,6 @@ Build phases 1–3 of the approved change specification (Q1: phase 4, the backup
 
 ### Phase 4: Specification and finish
 
-- [ ] 4.1 System specification, ADR 0008 amendments, plan and memory
+- [x] 4.1 System specification, ADR 0008 amendments, plan and memory — 37f07cf
 - [ ] 4.2 Full validation gate
 - [ ] 4.3 Review pass
