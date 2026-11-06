@@ -43,3 +43,7 @@ Found when ticket statuses were built (S1-06, November 2026):
 - **Prisma queries are lazy**: `prisma.x.delete(...)` returns a `PrismaPromise` that runs only once it is awaited or `then` is called. A race test that starts a query on another connection and waits for it in `pg_stat_activity` must call `.then((row) => row)` on it first, or the query never starts and the wait times out.
 - **Deleting an original and its duplicate in one statement** fails on the restricting foreign key `ticket_relations_target_ticket_id_fkey`, even with `ON DELETE NO ACTION` – the cascade from the duplicate does not run before the check. Delete the relations first (the demo dataset does).
 - **Check constraints across columns** keep status-dependent fields consistent (`tickets_waiting_fields`, `tickets_closed_at_terminal`, `tickets_rejection_reason_rejected`); the test factory `createTicket` fills the fields a status requires, so tests that create a `waiting_for_requester`, terminal or `rejected` ticket pass only the status.
+
+Found when attachments were built (S1-08, November 2026):
+
+- **Partial non-unique indexes written in the migration SQL** (`CREATE INDEX … WHERE "ticket_id" IS NULL`) are ignored by `prisma migrate diff` of Prisma 7.10 like expression indexes: the drift check (`--exit-code`) stays 0 with them in the database and none in the schema. The schema comment of the model names them (`Attachment`).

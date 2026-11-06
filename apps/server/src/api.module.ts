@@ -15,6 +15,7 @@ import { RateLimitingModule } from './platform/rate-limiting/rate-limiting.modul
 import { StorageModule } from './platform/storage/storage.module.js';
 import { ABILITY_DEFINITIONS } from './ability-definitions.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
+import { AttachmentsModule } from './modules/attachments/attachments.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
 import { InvitationsModule } from './modules/invitations/invitations.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
@@ -50,6 +51,7 @@ export class ApiModule {
         OrganizationsModule,
         InvitationsModule,
         TicketsModule,
+        AttachmentsModule,
       ],
     };
   }

@@ -381,6 +381,16 @@ export class UsersService {
   }
 
   /**
+   * Locks an account for an update for the rest of a transaction of another module whose decision
+   * depends on the records of the account and must not run twice at once (the draft quota of an
+   * upload, S1-08 Q23): a concurrent one waits and then reads its records. Returns whether the
+   * account exists.
+   */
+  lockForUpdate(tx: Transaction, userId: string): Promise<boolean> {
+    return lockAccount(tx, userId);
+  }
+
+  /**
    * Locks an account for a change of its state or role and reads it through the `read` filter of
    * the ability (`404` otherwise, §17.2). Accounts are not versioned: the lock makes concurrent
    * changes wait and re-read. A change that may remove an active Administrator first locks all of

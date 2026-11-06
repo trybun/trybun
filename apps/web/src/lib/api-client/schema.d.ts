@@ -548,6 +548,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttachmentsController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3129,6 +3145,52 @@ export interface operations {
                             createdAt: string;
                         })[];
                         nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AttachmentsController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    files: string[];
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
                     };
                 };
             };

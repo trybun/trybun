@@ -247,6 +247,9 @@ importers:
       clamscan:
         specifier: ^2.4.0
         version: 2.4.0
+      file-type:
+        specifier: ^22.3.0
+        version: 22.3.0(supports-color@10.2.2)
       hast-util-to-jsx-runtime:
         specifier: ^2.3.6
         version: 2.3.6(supports-color@10.2.2)
@@ -259,6 +262,9 @@ importers:
       jose:
         specifier: ^6.2.13
         version: 6.2.13
+      multer:
+        specifier: ^2.5.0
+        version: 2.5.0
       nestjs-pino:
         specifier: ^5.3.1
         version: 5.3.1(@nestjs/common@12.2.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.2.0)(pino-http@11.0.0)(pino@10.4.0)(rxjs@7.8.2)
@@ -298,6 +304,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      yauzl:
+        specifier: ^3.4.0
+        version: 3.4.0
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -341,6 +350,9 @@ importers:
       '@types/hast':
         specifier: ^3.0.5
         version: 3.0.5
+      '@types/multer':
+        specifier: ^2.3.0
+        version: 2.3.0
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
@@ -359,6 +371,9 @@ importers:
       '@types/webpack-node-externals':
         specifier: ^3.0.4
         version: 3.0.4(@swc/core@1.16.20(@swc/helpers@0.5.23))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.30)(sharp@0.35.5(@types/node@24.19.2))
+      '@types/yauzl':
+        specifier: ^3.4.0
+        version: 3.4.0
       eslint:
         specifier: ^10.13.0
         version: 10.13.0(jiti@2.6.1)(supports-color@10.2.2)
@@ -518,7 +533,7 @@ importers:
         version: 30.1.3(@noble/hashes@1.8.0)
       lighthouse:
         specifier: ^13.5.0
-        version: 13.5.0(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
+        version: 13.5.0(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)(yauzl@3.4.0)
       msw:
         specifier: ^3.0.3
         version: 3.0.3(@types/node@24.19.2)(supports-color@10.2.2)(typescript@6.0.3)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
@@ -3697,6 +3712,10 @@ packages:
     resolution: {integrity: sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA==}
     engines: {node: '>=18'}
 
+  '@tokenizer/inflate@0.6.0':
+    resolution: {integrity: sha512-+0RDxhBkyT9xMnGdJAwmats9yxRLR8ypJrQgrnLqOu4Gv/aHlnxYgdGVy2QTwvBl6IF/w2Hr+ZNirH+iMUbVZA==}
+    engines: {node: '>=18'}
+
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
 
@@ -3856,6 +3875,9 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
+  '@types/multer@2.3.0':
+    resolution: {integrity: sha512-i7STIm9V4K2MPH4ZYMtrZAwNxs3kglk2LgleaTuB9pUXgADBcQYQuYMd7+6xgTIxfoggIkFA/DkkvycdZpIARA==}
+
   '@types/node@18.19.130':
     resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
 
@@ -3917,6 +3939,9 @@ packages:
 
   '@types/webpack-node-externals@3.0.4':
     resolution: {integrity: sha512-8Z3/edqxE3RRlOJwKSgOFxLZRt/i1qFlv/Bi308ZUKo9jh8oGngd9r8GR0ZNKW5AEJq8QNQE3b17CwghTjQ0Uw==}
+
+  '@types/yauzl@3.4.0':
+    resolution: {integrity: sha512-NRPn5w6h8dhcnmx3YIRQcqMywY/+nND/uOkJessedcrowO3C0AssHp3tMJpxKAwOhFOo0OV1y9VtsC5hbKKBAw==}
 
   '@typescript-eslint/eslint-plugin@8.72.0':
     resolution: {integrity: sha512-aysKgysPX9XOv/dk95UkvUDe++Q3n3dJPG9CEWT3RUccxfkPJ+Qn6nhKPDhZXU6Ofo9kgwGWwKyQCnZIXTgngg==}
@@ -5457,6 +5482,10 @@ packages:
     resolution: {integrity: sha512-sEB0oStmeLGtpmSAD88RDNuLsvhv4iC3u0lE25CUvfCULvj49xoQ3l3K525Vn+ZzsZ6DOLajQCV6RmhwwhqiJg==}
     engines: {node: '>=22'}
 
+  file-type@22.3.0:
+    resolution: {integrity: sha512-PrPedgnnWl5bWz3JHgar0QSzRvzeyFh7dZ9JpYOgcPZu4KALS9zw4MMa6qXRYyjeBsAlpaWB2boLuG991+0HIQ==}
+    engines: {node: '>=22'}
+
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
@@ -6931,6 +6960,9 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
+  pend@1.2.0:
+    resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
+
   perfect-debounce@2.1.0:
     resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
 
@@ -7684,6 +7716,10 @@ packages:
     resolution: {integrity: sha512-PgAsgIuizbZN/r4+g4UNvbVCTpJWdoIdI71kIWwKmdIH0vJ0q7ylMVGU8PWj2s9O98y4MtFWiDTIrtNukZMMgQ==}
     engines: {node: '>=18'}
 
+  strtok3@10.6.3:
+    resolution: {integrity: sha512-MD8mENgyXMr2mDaDfzP3RWYDSyYQxIIou7HhCiCJiBekrsoDtUG0id3vYnjDfY9ndOEbazFXe13Qw6u/1AB8ew==}
+    engines: {node: '>=18'}
+
   stubborn-fs@2.0.0:
     resolution: {integrity: sha512-Y0AvSwDw8y+nlSNFXMm2g6L51rBGdAQT20J3YSOqxC53Lo3bjWRtr2BKcfYoAf352WYpsZSTURrA0tqhfgudPA==}
 
@@ -8373,6 +8409,10 @@ packages:
   yargs@18.2.0:
     resolution: {integrity: sha512-9OpKOLeaoNFecEp7P6iYbzze/5CqWoH7N3SMs/6y1XF4nMvFMspEGZzJ6uFi9MmQwXhyzqYoSEKO3tvA3Z/o2w==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
+
+  yauzl@3.4.0:
+    resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==}
+    engines: {node: '>=12'}
 
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
@@ -10406,10 +10446,12 @@ snapshots:
 
   '@protobufjs/utf8@1.1.2': {}
 
-  '@puppeteer/browsers@3.2.5':
+  '@puppeteer/browsers@3.2.5(yauzl@3.4.0)':
     dependencies:
       modern-tar: 0.8.6
       yargs: 18.2.0
+    optionalDependencies:
+      yauzl: 3.4.0
 
   '@radix-ui/primitive@1.1.3': {}
 
@@ -11047,6 +11089,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@tokenizer/inflate@0.6.0(supports-color@10.2.2)':
+    dependencies:
+      debug: 4.4.3(supports-color@10.2.2)
+      strtok3: 10.6.3
+      token-types: 6.1.2
+    transitivePeerDependencies:
+      - supports-color
+
   '@tokenizer/token@0.3.0': {}
 
   '@ts-morph/common@0.27.0':
@@ -11213,6 +11263,10 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
+  '@types/multer@2.3.0':
+    dependencies:
+      '@types/express': 5.0.6
+
   '@types/node@18.19.130':
     dependencies:
       undici-types: 5.26.5
@@ -11307,6 +11361,10 @@ snapshots:
       - svgo
       - uglify-js
       - webpack-cli
+
+  '@types/yauzl@3.4.0':
+    dependencies:
+      '@types/node': 24.19.2
 
   '@typescript-eslint/eslint-plugin@8.72.0(@typescript-eslint/parser@8.72.0(eslint@10.13.0(jiti@2.6.1)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.13.0(jiti@2.6.1)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
     dependencies:
@@ -12937,6 +12995,15 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  file-type@22.3.0(supports-color@10.2.2):
+    dependencies:
+      '@tokenizer/inflate': 0.6.0(supports-color@10.2.2)
+      strtok3: 10.6.3
+      token-types: 6.1.2
+      uint8array-extras: 1.6.0
+    transitivePeerDependencies:
+      - supports-color
+
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
@@ -13484,7 +13551,7 @@ snapshots:
 
   lighthouse-stack-packs@1.12.3: {}
 
-  lighthouse@13.5.0(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2):
+  lighthouse@13.5.0(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)(yauzl@3.4.0):
     dependencies:
       '@paulirish/trace_engine': 0.0.65
       '@sentry/node': 10.76.2(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
@@ -13505,7 +13572,7 @@ snapshots:
       lodash-es: 4.18.1
       lookup-closest-locale: 6.2.0
       open: 8.4.2
-      puppeteer-core: 25.14.0
+      puppeteer-core: 25.14.0(yauzl@3.4.0)
       robots-parser: 3.0.1
       speedline-core: 1.4.3
       third-party-web: 0.30.0
@@ -14612,6 +14679,8 @@ snapshots:
 
   pathval@2.0.1: {}
 
+  pend@1.2.0: {}
+
   perfect-debounce@2.1.0: {}
 
   pg-cloudflare@1.4.1:
@@ -14838,9 +14907,9 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  puppeteer-core@25.14.0:
+  puppeteer-core@25.14.0(yauzl@3.4.0):
     dependencies:
-      '@puppeteer/browsers': 3.2.5
+      '@puppeteer/browsers': 3.2.5(yauzl@3.4.0)
       chromium-bidi: 157.0.8090-0(devtools-protocol@0.0.1696802)
       devtools-protocol: 0.0.1696802
       typed-query-selector: 2.12.3
@@ -15482,6 +15551,10 @@ snapshots:
   strip-indent@4.1.1: {}
 
   strtok3@10.5.0:
+    dependencies:
+      '@tokenizer/token': 0.3.0
+
+  strtok3@10.6.3:
     dependencies:
       '@tokenizer/token': 0.3.0
 
@@ -16155,6 +16228,10 @@ snapshots:
       string-width: 8.3.0
       y18n: 5.0.8
       yargs-parser: 22.0.0
+
+  yauzl@3.4.0:
+    dependencies:
+      pend: 1.2.0
 
   yocto-queue@0.1.0: {}
 
