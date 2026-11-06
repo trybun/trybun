@@ -134,7 +134,7 @@ test.describe('organizations of the Administrator', () => {
 
     await organizations.organization('Customer company').click();
     await expect(organizations.heading).toHaveText('Customer company');
-    await expect(organizations.members).toHaveCount(6);
+    await expect(organizations.members).toHaveCount(8);
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
     await expectTouchTarget(
