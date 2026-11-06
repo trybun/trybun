@@ -1,6 +1,6 @@
 # Execution plan — implement attachments, phase 4: backup of the storage folder (S1-08)
 
-Source doc: .ai/specs/2026-10-26-attachments.md
+Source doc: .ai/specs/implemented/2026-10-26-attachments.md
 Spec PR: #119 (merged, design only) · Phases 1–3: #244 (merged)
 Plan task: `S1-08`
 
@@ -41,8 +41,8 @@ Build phase 4 of the approved change specification (Q1, Q13): every backup copie
 
 ### Phase 2: Documentation and finish
 
-- [ ] 2.1 INSTALL.md, README, .env.example and the system specification
-- [ ] 2.2 Specifications to implemented, ADR 0008 accepted, S1-08 ticked
+- [x] 2.1 INSTALL.md, README, .env.example and the system specification — 2bdc6d7
+- [x] 2.2 Specifications to implemented, ADR 0008 accepted, S1-08 ticked — 684719d
 
 ### Phase 3: Validation and review
 
