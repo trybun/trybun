@@ -30,7 +30,9 @@ export default async function PortalRootPage() {
     redirect(portalProjectHref(onlyProject.id));
   }
   if (firstPage !== undefined && onlyProject === undefined) {
-    const tickets = await client.GET('/api/v1/tickets', { params: { query: { limit: 1 } } });
+    const tickets = await client.GET('/api/v1/tickets', {
+      params: { query: { involvement: 'mine', limit: 1 } },
+    });
     const hasTickets = (tickets.data?.items.length ?? 0) > 0;
     return (
       <div className="flex max-w-prose flex-col gap-3">

@@ -47,7 +47,10 @@ describe('NewTicketForm', () => {
       renderInApp(<NewTicketForm projectId={PROJECT_ID} />, { locale });
 
       expect(
-        (await screen.findByRole('textbox', { name: label })).getAttribute('placeholder'),
+        // The editor loads lazily; its first import takes longer under the whole suite.
+        (await screen.findByRole('textbox', { name: label }, { timeout: 5_000 })).getAttribute(
+          'placeholder',
+        ),
       ).toBe(placeholder);
     },
   );

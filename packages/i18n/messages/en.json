@@ -589,6 +589,40 @@
       "submit": "Submit",
       "cancel": "Cancel",
       "created": "Ticket {identifier} created"
+    },
+    "myTickets": {
+      "title": "My tickets",
+      "projectTitle": "My tickets in {project}",
+      "awaitingHeading": "Awaiting your reply",
+      "otherHeading": "Other tickets",
+      "empty": "You haven't created any tickets yet.",
+      "updated": "Updated {time}",
+      "loadMore": "Show more tickets",
+      "loadingMore": "Loading…"
+    },
+    "ticket": {
+      "back": "My tickets",
+      "description": "Description",
+      "noDescription": "No description.",
+      "history": "History",
+      "created": "You created this ticket",
+      "statusChanged": "Status changed to {status}",
+      "system": "System",
+      "unknownPerson": "Former user",
+      "loadMoreHistory": "Show more history",
+      "duplicateOf": "Merged with <link>{identifier}</link>",
+      "archivedBanner": "This project is archived. Its tickets can only be read.",
+      "answered": {
+        "solved": "Thank you. The ticket is resolved.",
+        "not_solved": "Thank you. The team continues working on the ticket."
+      }
+    },
+    "confirmation": {
+      "title": "Confirm the resolution",
+      "chosen": "Your answer",
+      "other": "Choose the other answer instead: {answer}",
+      "notPending": "This ticket no longer waits for your confirmation.",
+      "openTicket": "Open the ticket"
     }
   },
   "productTours": {

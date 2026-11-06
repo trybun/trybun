@@ -589,6 +589,40 @@
       "submit": "Wyślij",
       "cancel": "Anuluj",
       "created": "Utworzono zgłoszenie {identifier}"
+    },
+    "myTickets": {
+      "title": "Moje zgłoszenia",
+      "projectTitle": "Moje zgłoszenia w projekcie {project}",
+      "awaitingHeading": "Wymaga Twojej odpowiedzi",
+      "otherHeading": "Pozostałe zgłoszenia",
+      "empty": "Nie masz jeszcze żadnych zgłoszeń.",
+      "updated": "Zmienione {time}",
+      "loadMore": "Pokaż więcej zgłoszeń",
+      "loadingMore": "Ładowanie…"
+    },
+    "ticket": {
+      "back": "Moje zgłoszenia",
+      "description": "Opis",
+      "noDescription": "Brak opisu.",
+      "history": "Historia",
+      "created": "Utworzyłeś to zgłoszenie",
+      "statusChanged": "Status zmieniony na {status}",
+      "system": "System",
+      "unknownPerson": "Były użytkownik",
+      "loadMoreHistory": "Pokaż więcej historii",
+      "duplicateOf": "Połączone ze zgłoszeniem <link>{identifier}</link>",
+      "archivedBanner": "Ten projekt jest zarchiwizowany. Jego zgłoszenia można tylko czytać.",
+      "answered": {
+        "solved": "Dziękujemy. Zgłoszenie jest rozwiązane.",
+        "not_solved": "Dziękujemy. Zespół dalej pracuje nad zgłoszeniem."
+      }
+    },
+    "confirmation": {
+      "title": "Potwierdź rozwiązanie",
+      "chosen": "Twoja odpowiedź",
+      "other": "Zamiast tego wybierz drugą odpowiedź: {answer}",
+      "notPending": "To zgłoszenie nie czeka już na Twoje potwierdzenie.",
+      "openTicket": "Otwórz zgłoszenie"
     }
   },
   "productTours": {

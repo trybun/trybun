@@ -1,3 +1,4 @@
+import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { Alert, AlertDescription } from '@trybun/ui/components/alert';
 import { buttonVariants } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
@@ -6,9 +7,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
-import { newTicketHref } from '../../../../../features/portal/hrefs.js';
+import { myTicketsHref, newTicketHref } from '../../../../../features/portal/hrefs.js';
 import { getPortalProject } from '../../../../../features/portal/project-page.js';
+import { MyTicketsList } from '../../../../../features/tickets/components/my-tickets-list.js';
+import { myTicketsQueryOptions } from '../../../../../features/tickets/queries.js';
+import { getServerApiClient } from '../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
+import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
+
+/** The number of the project's tickets the project home shows; **Show all** opens the rest. */
+const PROJECT_HOME_TICKETS = 10;
 
 const paramsSchema = z.object({ projectId: z.uuid() });
 
@@ -27,10 +35,19 @@ export default async function PortalProjectPage({
     notFound();
   }
   await requireSession();
-  const [t, project] = await Promise.all([
+  const [t, project, client] = await Promise.all([
     getTranslations('portal.projectHome'),
     getPortalProject(parsed.data.projectId),
+    getServerApiClient(),
   ]);
+  const queryClient = getServerQueryClient();
+  const ticketsOptions = myTicketsQueryOptions(client, {
+    projectId: project.id,
+    limit: PROJECT_HOME_TICKETS,
+  });
+  await queryClient.prefetchInfiniteQuery(ticketsOptions);
+  const hasMoreTickets =
+    queryClient.getQueryData(ticketsOptions.queryKey)?.pages[0]?.nextCursor !== null;
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <h1 className="text-2xl font-bold break-words">{project.name}</h1>
@@ -50,6 +67,24 @@ export default async function PortalProjectPage({
           {t('createTicket')}
         </Link>
       )}
+      <section aria-labelledby="project-tickets" className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="project-tickets" className="text-lg font-semibold">
+            {t('myTickets')}
+          </h2>
+          {hasMoreTickets && (
+            <Link
+              href={myTicketsHref(project.id)}
+              className="flex min-h-11 items-center text-sm font-medium text-link underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-0"
+            >
+              {t('showAll')}
+            </Link>
+          )}
+        </div>
+        <HydrationBoundary state={dehydrate(queryClient)}>
+          <MyTicketsList projectId={project.id} limit={PROJECT_HOME_TICKETS} />
+        </HydrationBoundary>
+      </section>
     </div>
   );
 }
