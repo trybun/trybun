@@ -25,10 +25,7 @@ const DROPPED_REQUEST_HEADERS = [
   'cookie',
 ];
 
-/**
- * Headers of the connection to the API, and the encoding of a body that `fetch` has already
- * decoded; the API sets no cookies.
- */
+/** Headers of the connection to the API; the API sets no cookies. */
 const DROPPED_RESPONSE_HEADERS = [
   'connection',
   'keep-alive',
@@ -36,10 +33,15 @@ const DROPPED_RESPONSE_HEADERS = [
   'trailer',
   'transfer-encoding',
   'upgrade',
-  'content-encoding',
-  'content-length',
   'set-cookie',
 ];
+
+/**
+ * The encoding of a body that `fetch` has already decoded, and its length, which no longer matches
+ * the decoded body. Without an encoding the length is kept, so a download shows its progress
+ * (ADR 0008).
+ */
+const ENCODED_BODY_HEADERS = ['content-encoding', 'content-length'];
 
 export interface BffProxyDependencies {
   /** The API on the internal network. */
@@ -131,6 +133,11 @@ async function forward(request: NextRequest, url: string, headers: Headers): Pro
   const responseHeaders = new Headers(response.headers);
   for (const name of DROPPED_RESPONSE_HEADERS) {
     responseHeaders.delete(name);
+  }
+  if (responseHeaders.has('content-encoding')) {
+    for (const name of ENCODED_BODY_HEADERS) {
+      responseHeaders.delete(name);
+    }
   }
   return new Response(response.body, {
     status: response.status,

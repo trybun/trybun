@@ -339,6 +339,18 @@
       }
     }
   },
+  "attachments": {
+    "heading": "Załączniki",
+    "drafts": "Pliki do załączenia",
+    "tooManyFiles": "Naraz można dodać najwyżej {max, plural, one {# plik} few {# pliki} many {# plików} other {# pliku}}",
+    "tooLarge": "Plik jest większy niż {max} MB",
+    "loadMore": "Pokaż więcej plików",
+    "deleteTitle": "Usunąć {name}?",
+    "deleteDescription": "Plik zostanie usunięty dla wszystkich i nie będzie można go przywrócić.",
+    "deleteConfirm": "Usuń",
+    "cancel": "Anuluj",
+    "deleted": "Usunięto plik {name}"
+  },
   "users": {
     "accounts": {
       "title": "Konta",
@@ -607,6 +619,8 @@
       "history": "Historia",
       "created": "Utworzenie zgłoszenia",
       "statusChanged": "Status zmieniony na {status}",
+      "attachmentAdded": "{person} dodał(a) plik {file}",
+      "attachmentDeleted": "{person} usunął(-ęła) plik {file}",
       "system": "System",
       "unknownPerson": "Były użytkownik",
       "loadMoreHistory": "Pokaż więcej historii",

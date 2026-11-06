@@ -15,7 +15,7 @@ export function getWebMessages(locale: Locale): WebMessages {
 
 const ROOT = ['ui'] as const satisfies (keyof WebMessages)[];
 const SHELL = [...ROOT, 'app', 'appShell', 'help', 'languages', 'productTours'] as const;
-const PORTAL = [...SHELL, 'errors', 'portal', 'tickets'] as const;
+const PORTAL = [...SHELL, 'attachments', 'errors', 'portal', 'tickets'] as const;
 
 /**
  * The namespaces the client components of a route use, by the layout whose

@@ -45,6 +45,7 @@ const UI_COMPONENTS = join(SOURCES, '../../../packages/ui/src/components');
 /** The routes whose layouts render the components of a feature (`features/<feature>`). */
 const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   administration: ['administration'],
+  attachments: ['portal'],
   'app-shell': ['shell'],
   help: ['shell'],
   invitations: ['accounts', 'invitations', 'projects'],

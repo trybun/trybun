@@ -339,6 +339,18 @@
       }
     }
   },
+  "attachments": {
+    "heading": "Attachments",
+    "drafts": "Files to attach",
+    "tooManyFiles": "At most {max, plural, one {# file} other {# files}} can be added at once",
+    "tooLarge": "The file is larger than {max} MB",
+    "loadMore": "Show more files",
+    "deleteTitle": "Delete {name}?",
+    "deleteDescription": "The file is deleted for everyone and cannot be restored.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "deleted": "File {name} deleted"
+  },
   "users": {
     "accounts": {
       "title": "Accounts",
@@ -607,6 +619,8 @@
       "history": "History",
       "created": "Ticket created",
       "statusChanged": "Status changed to {status}",
+      "attachmentAdded": "{person} added the file {file}",
+      "attachmentDeleted": "{person} deleted the file {file}",
       "system": "System",
       "unknownPerson": "Former user",
       "loadMoreHistory": "Show more history",
