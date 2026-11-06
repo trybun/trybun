@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation.js';
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
-import { HelpArticle } from '../../../../features/help/components/help-article.js';
-import { getHelpPage } from '../../../../features/help/help-content.js';
-import { getHelpReaderKind } from '../../../../features/help/reader.js';
-import { requireSession } from '../../../../lib/auth/session.js';
+import { HelpArticle } from '../../../features/help/components/help-article.js';
+import { getHelpPage } from '../../../features/help/help-content.js';
+import { getHelpReaderKind } from '../../../features/help/reader.js';
+import { requireSession } from '../../../lib/auth/session.js';
 
 // `<audience>/<category>/<name>` of a page of `docs/user` (§2.3).
 const paramsSchema = z.object({

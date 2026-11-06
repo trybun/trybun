@@ -92,8 +92,9 @@ test.describe('invitations', () => {
     await visitorPage.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await visitorPage.getByRole('button', { name: 'Sign In' }).click();
 
-    // The landing of the project, which shows the home page until the project view exists.
-    await expect(visitorPage).toHaveURL('/');
+    // The landing of the project: its home in the portal (§5.7, S1-09 Q18).
+    await expect(visitorPage).toHaveURL(/\/portal\/projects\/[0-9a-f-]+$/);
+    await expect(visitorPage.getByRole('heading', { level: 1 })).toHaveText('Customer portal');
     const me = await visitorPage.request.get('/api/v1/users/me');
     expect(await me.json()).toMatchObject({ email, kind: 'end_user', displayName: 'Ewa Klientka' });
     await visitor.close();

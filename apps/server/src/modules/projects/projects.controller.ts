@@ -38,6 +38,8 @@ import {
   projectPageSchema,
   type ProjectParams,
   projectParamsSchema,
+  type ProjectResponse,
+  projectResponseSchema,
   projectSchema,
   type UpdateProjectDto,
   updateProjectSchema,
@@ -76,11 +78,11 @@ export class ProjectsController {
 
   @Get(':projectId')
   @TargetRecord({ subject: PROJECT, param: 'projectId', action: 'read' })
-  @ResponseSchema(projectSchema)
+  @ResponseSchema(projectResponseSchema)
   findOne(
     @CurrentPrincipal() principal: Principal,
     @Param({ schema: projectParamsSchema }) { projectId }: ProjectParams,
-  ): Promise<Project> {
+  ): Promise<ProjectResponse> {
     return this.projects.findOne(principal, projectId);
   }
 

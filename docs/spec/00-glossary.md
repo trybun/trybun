@@ -7,6 +7,9 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Term | Code identifier | UI label (EN / PL) | Definition |
 |---|---|---|---|
 | End user | `end_user` | End user / Użytkownik | A customer-side person who reports tickets through the portal ([§7.2](07-users-organizations-permissions.md)) |
+| End-user portal | `portal` | End-user portal / Portal użytkownika | The part of the web application for end users, under `/portal` ([§5.7](05-visibility-and-search.md)) |
+| Project home | – | Project home / Strona projektu | The portal page of one project: **Create ticket** and the user's tickets of the project ([§5.7](05-visibility-and-search.md)) |
+| My tickets | `involvement=mine` | My tickets / Moje zgłoszenia | The tickets an end user requested (and watches, once watching exists), those awaiting their reply first ([§5.7](05-visibility-and-search.md)) |
 | Developer | `developer` | Developer / Developer | Team role that handles tickets |
 | Project manager | `project_manager` | Project manager / Kierownik projektu | Team role that triages and plans |
 | Administrator | `admin` | Administrator / Administrator | Global role managing the system |
@@ -45,6 +48,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Priority | `ticket.priority`: `low`, `normal`, `high`, `critical` | Low / Niski, Normal / Normalny, High / Wysoki, Critical / Krytyczny | Urgency |
 | Internal status | `ticket.status` | see [§4.1](04-ticket-lifecycle.md) | Team workflow status |
 | Public status | `public_status` | see [§4.1](04-ticket-lifecycle.md) | Simplified status shown to end users |
+| Public status description | `public_status_description` | see [§4.2](04-ticket-lifecycle.md) | The description of a ticket's state shown to end users, one code per row of the mapping: `received`, `analyzing`, `information_needed`, `confirmation_needed`, `scheduled`, `working`, `testing`, `resolved`, `rejected`, `merged` |
 | Terminal status | – | – | `done`, `rejected` or `duplicate`; "closed"/"completed" means this |
 | Reopen | – | Reopen / Otwórz ponownie | Moving a ticket from a terminal to a non-terminal status ([§4.3](04-ticket-lifecycle.md)) |
 | Triage | – | Triage / Triage | Completing type, priority and assignee of new tickets ([§8.3](08-team-views.md)) |

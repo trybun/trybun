@@ -1,18 +1,13 @@
 'use client';
 
-import type { CurrentUserAction } from '@trybun/contracts/users';
 import { cn } from '@trybun/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
-import { isCurrent, navigationItemsFor } from '../navigation.js';
+import { isCurrentItem, type NavigationContext, navigationItemsFor } from '../navigation.js';
 
 /** The bottom navigation of phones (§2.9), above the home indicator. */
-export function BottomNavigation({
-  allowedActions,
-}: {
-  allowedActions: readonly CurrentUserAction[];
-}) {
+export function BottomNavigation({ navigation }: { navigation: NavigationContext }) {
   const t = useTranslations('appShell');
   const pathname = usePathname();
   return (
@@ -22,9 +17,10 @@ export function BottomNavigation({
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-safe-offset-0 md:hidden"
     >
       <ul className="flex">
-        {navigationItemsFor(allowedActions, 'phone').map(({ href, labelKey, icon }) => {
+        {navigationItemsFor(navigation, 'phone').map((item) => {
+          const { href, labelKey, icon } = item;
           const Icon = icon;
-          const isCurrentPage = isCurrent(href, pathname);
+          const isCurrentPage = isCurrentItem(item, pathname);
           return (
             <li key={href} className="flex-1">
               <Link

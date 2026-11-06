@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { pageQuerySchema, pageSchema } from '../pagination/index.js';
+import { ticketPublicStatusSchema } from '../tickets/index.js';
 
 /**
  * `activity_event.type` (§4.5): one event per changed field of a ticket, and the events of its
@@ -87,9 +88,46 @@ export const activityEventSchema = z.object({
 });
 export type ActivityEvent = z.infer<typeof activityEventSchema>;
 
+/**
+ * The data of a public event as an end user sees it (Q11): an allow-list. A status change carries
+ * the previous and the new **public** status, and the original of a new duplicate only when the
+ * reader may read it (§3.5); whether it reopened the ticket, the waiting reason and the internal
+ * statuses are left out.
+ */
+export const endUserActivityEventDataSchema = z.object({
+  from: ticketPublicStatusSchema,
+  to: ticketPublicStatusSchema,
+  duplicateOf: activityEventTicketSnapshotSchema.nullable().optional(),
+});
+export type EndUserActivityEventData = z.infer<typeof endUserActivityEventDataSchema>;
+
+/**
+ * A public activity event of a ticket as an end user sees it (§4.5, Q11): events that are not
+ * public never reach end users; the actor and the automatic source as for the team.
+ */
+export const endUserActivityEventSchema = z.object({
+  id: z.uuid(),
+  type: activityEventTypeSchema,
+  data: endUserActivityEventDataSchema.nullable(),
+  actor: z.object({ id: z.uuid(), displayName: z.string().nullable() }).nullable(),
+  automaticSource: activityEventSourceSchema.nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type EndUserActivityEvent = z.infer<typeof endUserActivityEventSchema>;
+
+/**
+ * The response of an event: the team's shape for team accounts, the end user's for end users. The
+ * serializer keeps only the fields of the matching shape.
+ */
+export const activityEventResponseSchema = z.union([
+  activityEventSchema,
+  endUserActivityEventSchema,
+]);
+export type ActivityEventResponse = z.infer<typeof activityEventResponseSchema>;
+
 /** `GET /api/v1/tickets/{ticketId}/activity-events`: oldest first. */
 export const listActivityEventsQuerySchema = pageQuerySchema;
 export type ListActivityEventsQuery = z.infer<typeof listActivityEventsQuerySchema>;
 
-export const activityEventPageSchema = pageSchema(activityEventSchema);
+export const activityEventPageSchema = pageSchema(activityEventResponseSchema);
 export type ActivityEventPage = z.infer<typeof activityEventPageSchema>;

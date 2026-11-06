@@ -13,6 +13,16 @@ export class SignInPage {
     await this.enterOneTimeCode();
   }
 
+  /** Signs in with a seeded end user: the password only, end users have no second factor (§7.4). */
+  async signInWithPassword(email: string, password = 'trybun'): Promise<void> {
+    await this.page.getByLabel('Username or email').fill(email);
+    await this.page.getByLabel('Password', { exact: true }).fill(password);
+    await this.page.getByRole('button', { name: 'Sign In' }).click();
+    await expect(
+      this.page.getByRole('button', { name: /^(Account menu|Menu konta)$/ }),
+    ).toBeVisible();
+  }
+
   /**
    * Keycloak accepts a one-time code only once, so a sign-in right after the previous one (a
    * repeated local run) waits for the next code.

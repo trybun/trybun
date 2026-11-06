@@ -1,6 +1,5 @@
 'use client';
 
-import type { CurrentUserAction } from '@trybun/contracts/users';
 import { Button } from '@trybun/ui/components/button';
 import {
   Tooltip,
@@ -16,7 +15,7 @@ import { usePathname } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { changeNavigationCollapsed } from '../change-navigation-collapsed.js';
-import { isCurrent, navigationItemsFor } from '../navigation.js';
+import { isCurrentItem, type NavigationContext, navigationItemsFor } from '../navigation.js';
 
 /**
  * The side navigation from the tablet width on (§2.9), collapsible to icons: collapsed by default
@@ -27,10 +26,10 @@ import { isCurrent, navigationItemsFor } from '../navigation.js';
  * stays its accessible name.
  */
 export function SideNavigation({
-  allowedActions,
+  navigation,
   isDesktopCollapsed: isInitiallyDesktopCollapsed,
 }: {
-  allowedActions: readonly CurrentUserAction[];
+  navigation: NavigationContext;
   isDesktopCollapsed: boolean;
 }) {
   const t = useTranslations('appShell');
@@ -70,9 +69,10 @@ export function SideNavigation({
         />
         <TooltipProvider>
           <ul className="flex flex-col gap-1">
-            {navigationItemsFor(allowedActions, 'wide').map(({ href, labelKey, icon }) => {
+            {navigationItemsFor(navigation, 'wide').map((item) => {
+              const { href, labelKey, icon } = item;
               const Icon = icon;
-              const isCurrentPage = isCurrent(href, pathname);
+              const isCurrentPage = isCurrentItem(item, pathname);
               return (
                 <li key={href}>
                   <Tooltip disabled={!isCollapsed}>

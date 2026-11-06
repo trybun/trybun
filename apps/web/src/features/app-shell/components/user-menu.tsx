@@ -23,6 +23,7 @@ import { browserApiClient } from '../../../lib/api-client/browser-api-client.js'
 import { changeLanguage } from '../../../lib/i18n/change-language.js';
 import { useUpdateCurrentUser } from '../../users/mutations.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
+import { PORTAL_SETTINGS_HREF } from '../../portal/hrefs.js';
 import { SETTINGS_HREF } from '../../users/search-params.js';
 
 /**
@@ -45,8 +46,9 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * The user menu of the header: the signed-in account, its Account settings, the Administrator
- * panel for Administrators, the language switch (§13.1) and the sign-out. The account comes from
+ * The user menu of the header: the signed-in account, its Account settings (in the portal for end
+ * users, Q17), the Administrator panel for Administrators, the language switch (§13.1) and the
+ * sign-out. The account comes from
  * the query prefetched by the application shell (§18.5). The language switch also saves the
  * language of the account, so the next sign-in on another device uses it.
  */
@@ -93,7 +95,11 @@ export function UserMenu() {
               )}
             </DropdownMenuLabel>
           )}
-          <DropdownMenuLinkItem render={<Link href={SETTINGS_HREF} />}>
+          <DropdownMenuLinkItem
+            render={
+              <Link href={user?.kind === 'end_user' ? PORTAL_SETTINGS_HREF : SETTINGS_HREF} />
+            }
+          >
             <UserCogIcon aria-hidden />
             {t('accountSettings')}
           </DropdownMenuLinkItem>

@@ -14,7 +14,8 @@ export function getWebMessages(locale: Locale): WebMessages {
 }
 
 const ROOT = ['ui'] as const satisfies (keyof WebMessages)[];
-const TEAM = [...ROOT, 'app', 'appShell', 'help', 'languages', 'productTours'] as const;
+const SHELL = [...ROOT, 'app', 'appShell', 'help', 'languages', 'productTours'] as const;
+const PORTAL = [...SHELL, 'errors', 'portal', 'tickets'] as const;
 
 /**
  * The namespaces the client components of a route use, by the layout whose
@@ -31,18 +32,23 @@ export const CLIENT_NAMESPACES = {
   setup: [...ROOT, 'errors', 'languages', 'setup'],
   /** `app/invitations/layout.tsx` */
   invitations: [...ROOT, 'errors', 'invitations'],
-  /** `app/(team)/layout.tsx`: the application shell, its menus and the product tours. */
-  team: TEAM,
+  /**
+   * `AccountShell` of `app/(team)/layout.tsx`, `app/(portal)/layout.tsx` and `app/help/layout.tsx`:
+   * the application shell, its menus and the product tours.
+   */
+  shell: SHELL,
+  /** `app/(portal)/portal/layout.tsx`: the portal views and their toasts. */
+  portal: PORTAL,
   /** `app/(team)/admin/layout.tsx` */
-  administration: [...TEAM, 'administration'],
+  administration: [...SHELL, 'administration'],
   /** `app/(team)/admin/accounts/layout.tsx` */
-  accounts: [...TEAM, 'administration', 'errors', 'invitations', 'users'],
+  accounts: [...SHELL, 'administration', 'errors', 'invitations', 'users'],
   /** `app/(team)/admin/organizations/layout.tsx` */
-  organizations: [...TEAM, 'administration', 'errors', 'organizations'],
+  organizations: [...SHELL, 'administration', 'errors', 'organizations'],
   /** `app/(team)/projects/layout.tsx` */
-  projects: [...TEAM, 'errors', 'invitations', 'projects'],
-  /** `app/(team)/settings/layout.tsx` */
-  settings: [...TEAM, 'errors', 'users'],
+  projects: [...SHELL, 'errors', 'invitations', 'projects'],
+  /** `app/(team)/settings/layout.tsx` and `app/(portal)/portal/settings/layout.tsx` */
+  settings: [...SHELL, 'errors', 'users'],
 } as const satisfies Record<string, readonly (keyof WebMessages)[]>;
 
 /** The route layouts that provide messages to client components. */

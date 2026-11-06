@@ -98,6 +98,27 @@ const DEMO_INVITED_AND_DEACTIVATED = [
 ] as const;
 
 /**
+ * The end users who sign in to the portal in the local environment and the E2E tests (§5.7); their
+ * Keycloak users have the same IDs (docker/keycloak/dev/trybun-realm.json). The customer works in
+ * one project, the customer portal of their organization; the partner also has personal access to
+ * the ERP, so they choose between two projects.
+ */
+export const DEMO_PORTAL_USERS = [
+  {
+    key: 'customer',
+    email: 'customer@customer.example.com',
+    displayName: 'Celina Customer',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'partner',
+    email: 'partner@customer.example.com',
+    displayName: 'Piotr Partner',
+    personalProjectKeys: ['ERP'],
+  },
+] as const;
+
+/**
  * The demo tickets (§3.2) in the active projects and the archived one: every source, type and
  * priority, the end users' tickets with the organization of their requester, some assigned. They
  * start in their initial statuses; `DEMO_STATUS_CHANGES` moves some of them. `events` are the
@@ -214,16 +235,125 @@ const DEMO_TICKETS = [
     assignee: null,
     events: [],
   },
+  // The tickets of the customer in every public status of §4.2 (S1-09); `DEMO_STATUS_CHANGES`
+  // moves them.
+  {
+    project: 'CP',
+    title: 'The order history loads slowly',
+    description: 'Opening **Orders** takes about 20 seconds.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Add a dark theme',
+    description: 'Working in the evening would be easier on the eyes.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Wrong VAT rate on the March invoice',
+    description: 'The invoice shows 23% instead of 8% for the books.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: 'developer',
+    // Internal changes: never shown to the requester (§4.5).
+    events: [
+      { by: 'manager', field: 'priority', from: 'normal', to: 'high' },
+      { by: 'manager', field: 'assignee', from: null, to: 'developer' },
+    ],
+  },
+  {
+    project: 'CP',
+    title: 'Cannot change my password',
+    description: 'The **Save** button stays disabled.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: 'developer',
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Export the delivery notes',
+    description: 'I need the delivery notes of last year.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'The newsletter link is broken',
+    description: 'The link in the October newsletter leads to a 404 page.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Pay invoices with a gift card',
+    description: '',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'ERP',
+    title: 'Access to the supplier reports',
+    description: 'Our purchasing team needs the supplier reports.',
+    requester: 'partner',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
 ] as const;
 
 /**
- * The status changes of demo tickets after their field changes (§4.3), by their index in
+ * The status changes of demo tickets after their field changes (§4.3), in order, by their index in
  * `DEMO_TICKETS`: a ticket that waits for the confirmation of its resolution (the Customer portal
- * asks for it) and a duplicate of it.
+ * asks for it) and a duplicate of it; the customer's tickets in every public status (S1-09) – one
+ * scheduled, one under test after internal moves, one waiting for confirmation, one waiting for
+ * information, one resolved and one rejected.
  */
 const DEMO_STATUS_CHANGES = [
   { ticket: 0, by: 'developer', to: 'waiting_for_requester', waitingReason: 'confirmation' },
   { ticket: 8, by: 'developer', to: 'duplicate', duplicateOf: 0 },
+  { ticket: 10, by: 'manager', to: 'todo' },
+  { ticket: 11, by: 'developer', to: 'in_progress' },
+  { ticket: 11, by: 'developer', to: 'in_verification' },
+  { ticket: 12, by: 'developer', to: 'in_progress' },
+  { ticket: 12, by: 'developer', to: 'waiting_for_requester', waitingReason: 'confirmation' },
+  { ticket: 13, by: 'manager', to: 'waiting_for_requester', waitingReason: 'information' },
+  { ticket: 14, by: 'developer', to: 'done' },
+  {
+    ticket: 15,
+    by: 'manager',
+    to: 'rejected',
+    rejectionReason: 'Gift cards are not part of our payment terms.',
+  },
 ] as const;
 
 /** The event type of a change of a field of a demo ticket (§4.5). */
@@ -290,6 +420,20 @@ export function buildDemoDataset(): DemoDataset {
       };
     },
   );
+  const portalUsers = DEMO_PORTAL_USERS.map(
+    ({ email, displayName }, index): Prisma.UserCreateManyInput => ({
+      id: demoId(160 + index),
+      keycloakUserId: demoId(160 + index),
+      email,
+      displayName,
+      kind: 'end_user',
+      state: 'active',
+      language: 'pl',
+      timeZone: 'Europe/Warsaw',
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    }),
+  );
   const invitedAndDeactivated = DEMO_INVITED_AND_DEACTIVATED.map(
     (account, index): Prisma.UserCreateManyInput => ({
       ...account,
@@ -324,15 +468,27 @@ export function buildDemoDataset(): DemoDataset {
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
   }));
-  const projectMembers = DEMO_PROJECTS.flatMap(({ members }, index) =>
-    members.map((member): Prisma.ProjectMemberCreateManyInput => ({
-      projectId: demoId(300 + index),
-      userId: teamByName[member],
-      role: member === 'manager' ? 'project_manager' : 'developer',
-      createdAt: CREATED_AT,
-      updatedAt: CREATED_AT,
-    })),
-  );
+  const projectMembers = [
+    ...DEMO_PROJECTS.flatMap(({ members }, index) =>
+      members.map((member): Prisma.ProjectMemberCreateManyInput => ({
+        projectId: demoId(300 + index),
+        userId: teamByName[member],
+        role: member === 'manager' ? 'project_manager' : 'developer',
+        createdAt: CREATED_AT,
+        updatedAt: CREATED_AT,
+      })),
+    ),
+    // Personal access of end users (§7.3).
+    ...DEMO_PORTAL_USERS.flatMap(({ personalProjectKeys }, userIndex) =>
+      personalProjectKeys.map((key): Prisma.ProjectMemberCreateManyInput => ({
+        projectId: demoId(300 + DEMO_PROJECTS.findIndex((project) => project.key === key)),
+        userId: portalUsers[userIndex]?.id ?? '',
+        role: 'end_user',
+        createdAt: CREATED_AT,
+        updatedAt: CREATED_AT,
+      })),
+    ),
+  ];
   const organizationId = demoId(400);
   const invitedBy = { manager: team[1]?.id ?? '', admin: team[0]?.id ?? '' };
   const invitations: Prisma.InvitationCreateManyInput[] = [
@@ -363,14 +519,18 @@ export function buildDemoDataset(): DemoDataset {
       updatedAt: CREATED_AT,
     },
   ];
+  const organizationMemberIds = [
+    ...endUsers.slice(0, DEMO_ORGANIZATION.memberCount).map(({ id }) => id ?? ''),
+    ...portalUsers.map(({ id }) => id ?? ''),
+  ];
   const { tickets, ticketRelations, ticketNumberCounters, activityEvents } = buildDemoTickets(
-    [...team, ...endUsers],
+    [...team, ...endUsers, ...portalUsers],
     projects,
     organizationId,
-    endUsers.slice(0, DEMO_ORGANIZATION.memberCount).map(({ id }) => id ?? ''),
+    organizationMemberIds,
   );
   return {
-    users: [...team, ...endUsers, ...invitedAndDeactivated],
+    users: [...team, ...endUsers, ...portalUsers, ...invitedAndDeactivated],
     productTourProgress,
     projects,
     projectMembers,
@@ -393,9 +553,11 @@ export function buildDemoDataset(): DemoDataset {
     organizationProjects: projects
       .filter(({ key }) => (DEMO_ORGANIZATION.projectKeys as readonly string[]).includes(key))
       .map(({ id }) => ({ organizationId, projectId: id ?? '', createdAt: CREATED_AT })),
-    organizationMembers: endUsers
-      .slice(0, DEMO_ORGANIZATION.memberCount)
-      .map(({ id }) => ({ organizationId, userId: id ?? '', createdAt: CREATED_AT })),
+    organizationMembers: organizationMemberIds.map((userId) => ({
+      organizationId,
+      userId,
+      createdAt: CREATED_AT,
+    })),
     invitations,
     tickets,
     ticketRelations,
@@ -421,6 +583,12 @@ function buildDemoTickets(
     newcomer: accounts[3]?.id ?? '',
     endUser0: accounts[5]?.id ?? '',
     endUser1: accounts[6]?.id ?? '',
+    ...Object.fromEntries(
+      DEMO_PORTAL_USERS.map(({ key, email }) => [
+        key,
+        accounts.find((account) => account.email === email)?.id ?? '',
+      ]),
+    ),
   };
   const snapshotOf = (name: string | null) => {
     if (name === null) {
@@ -480,7 +648,11 @@ function buildDemoTickets(
       return;
     }
     const from = ticket.status;
-    const changedAt = new Date((ticket.createdAt as Date).getTime() + 12 * 60 * 60 * 1000);
+    // Successive changes of one ticket an hour apart.
+    const changedAt = new Date(
+      (ticket.updatedAt as Date).getTime() +
+        (ticket.updatedAt === ticket.createdAt ? 12 : 1) * 60 * 60 * 1000,
+    );
     const original = 'duplicateOf' in change ? tickets[change.duplicateOf] : undefined;
     const originalKey = projects.find(({ id }) => id === original?.projectId)?.key ?? '';
     const duplicateOf =
@@ -493,7 +665,8 @@ function buildDemoTickets(
       ...(waitingReason === null
         ? {}
         : { waitingReason, statusBeforeWaiting: from, waitingSince: changedAt }),
-      ...(change.to === 'duplicate' ? { closedAt: changedAt } : {}),
+      ...(['done', 'rejected', 'duplicate'].includes(change.to) ? { closedAt: changedAt } : {}),
+      ...('rejectionReason' in change ? { rejectionReason: change.rejectionReason } : {}),
       version: (ticket.version ?? 1) + 1,
       updatedAt: changedAt,
     });

@@ -138,7 +138,8 @@
         "title": "Change your language and time zone",
         "description": "Choose the language of Trybun and the time zone of the dates and times you see; both follow you to every device.",
         "views": [
-          "/settings"
+          "/settings",
+          "/portal/settings"
         ],
         "body": "## Change the language\n\n1. Select your account menu (your initials) in the header.\n2. Under **Language**, select the language you want.\n\nThe page you are on appears again in the chosen language. Trybun saves the choice in your account, so it applies on every device you sign in with.\n\n## Change the time zone\n\n1. Select your account menu (your initials) in the header, then **Account settings**.\n2. Under **Time zone**, search for your time zone and select it, or select **Use this device's time zone**.\n3. Select **Save**.\n\nDates and times appear in this time zone on every device. Until you choose one, Trybun uses the default time zone of the system; to return to it, clear the **Time zone** field and select **Save**. You can change the language on this page too."
       },
@@ -150,6 +151,41 @@
         "description": "The rules for a password in Trybun and how to choose one that is strong and easy to remember.",
         "views": [],
         "body": "You choose a password when you create your account from an invitation and when you reset a forgotten one. Trybun accepts a password that:\n\n- has **at least 15 and at most 64 characters** – spaces and any letters count;\n- is **not your e-mail address**;\n- is **not a common password** – Trybun refuses passwords that are known from lists of leaked passwords.\n\nThere are no rules about capital letters, digits or special characters, and you never have to change a password just because time has passed: length protects a password best.\n\n## A strong password that is easy to remember\n\n- Use a **phrase of several words** that belong together only for you, e.g. `kettle on the balcony sings at dawn` – but not this one, which is now public.\n- Or let a **password manager** generate and remember the password for you.\n- Use the password **only for Trybun**: a password reused on another site is exposed when that site leaks.\n\nIf the sign-in screen refuses a password, its message says which rule it breaks; choose a longer or less common one."
+      },
+      {
+        "slug": "end-user/how-to/confirm-that-your-problem-is-solved",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Confirm that your problem is solved",
+        "description": "Tell the team with one press whether the solution works for you.",
+        "views": [
+          "/portal/tickets/[identifier]/resolution-confirmation"
+        ],
+        "body": "When the team has solved your problem, it may ask you to confirm it. The ticket is then **Awaiting your reply** and shows the question **Is your problem solved?** at the top.\n\n1. Open the ticket from **My tickets**.\n2. Select **Yes, solved** or **No, still a problem**.\n\nWith **Yes, solved** the ticket is resolved. With **No, still a problem** the team continues working on it. Your answer appears in the history of the ticket.\n\nIf you do not answer within 7 days, Trybun considers the problem solved.\n\nIf the team or Trybun has already closed the ticket, a message says that your answer is no longer needed."
+      },
+      {
+        "slug": "end-user/how-to/follow-your-tickets",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Follow your tickets",
+        "description": "See the tickets you reported, which of them need your reply, and what happens with each of them.",
+        "views": [
+          "/portal/tickets",
+          "/portal/tickets/[identifier]"
+        ],
+        "body": "## See your tickets\n\nSelect **My tickets** in the main navigation. It lists the tickets you reported, in all your projects. The home of a project shows your latest tickets of that project; **Show all** opens the whole list of the project.\n\nTickets marked **Awaiting your reply** come first: the team needs something from you – more information, or the confirmation that your problem is solved. The others follow, the most recently updated first.\n\n## Follow one ticket\n\nSelect a ticket to open it. It shows:\n\n- its status and what it means at the moment, for example **In progress** – \"We are testing the solution\";\n- your description;\n- its history: when it was created and every change of its status, with who made it.\n\nWhen the team asks whether your problem is solved, the ticket shows the question at the top: see [Confirm that your problem is solved](confirm-that-your-problem-is-solved.md)."
+      },
+      {
+        "slug": "end-user/how-to/report-a-problem",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Report a problem",
+        "description": "Create a ticket for the team in two steps, from the home of your project.",
+        "views": [
+          "/portal/projects/[projectId]",
+          "/portal/projects/[projectId]/tickets/new"
+        ],
+        "body": "1. Open your project. After signing in you are already there; if you can report to several projects, select the project in **Your projects**.\n2. Select **Create ticket**.\n3. In **Title**, describe the problem in one sentence.\n4. Optionally, describe it in more detail in **Description**. The grey questions in the empty field – what happened, what you expected and how the team can reproduce it – help you remember what the team needs; they disappear when you start typing. You can format the text: see [Format text](../reference/formatting-text.md).\n5. Select **Submit**.\n\nYour new ticket opens, and a message confirms its identifier, for example `CP-12`. Only you and the team see it. Follow its progress in **My tickets**: see [Follow your tickets](follow-your-tickets.md).\n\nIf the project is archived, it shows a note instead of **Create ticket**: you can still read your tickets there, but not create new ones."
       },
       {
         "slug": "end-user/how-to/search-the-help",
@@ -178,9 +214,9 @@
         "title": "Getting started with Trybun",
         "description": "Sign in, find your way around the screen, get help and sign out.",
         "views": [
-          "/"
+          "/portal"
         ],
-        "body": "Trybun is where you report problems and requests to the team and follow how they are handled. This tutorial walks you through the parts of the screen you will use every time.\n\n## Sign in\n\n1. Open the address of Trybun in your browser. The sign-in screen appears.\n2. Sign in with your account.\n\nAfter signing in you see the **Home** page.\n\n## Find your way around\n\n- The **header** at the top shows the Trybun logo, which always takes you back to **Home**. On its right are the help icon and your account menu.\n- The **main navigation** lists the places you can go. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left. The button at its top collapses it to icons and expands it again; on a computer Trybun remembers your choice in this browser. When it shows only icons, point at an icon or move to it with the keyboard to see its name.\n\n## Get help\n\nSelect the help icon (question mark) in the header, then **Help for this view**. It opens the help page about the view you are in. From there you can [search the help](../how-to/search-the-help.md) for any topic.\n\n## Sign out\n\n1. Select your account menu (your initials) in the header.\n2. Select **Sign out**.\n\nTrybun also signs you out by itself after 8 hours without activity, and 30 days after you signed in. Then sign in again.\n\n## Next steps\n\n- [Change your language and time zone](../how-to/change-language.md)"
+        "body": "Trybun is where you report problems and requests to the team and follow how they are handled. This tutorial walks you through the parts of the screen you will use every time.\n\n## Sign in\n\n1. Open the address of Trybun in your browser. The sign-in screen appears.\n2. Sign in with your account.\n\nAfter signing in you see your project. If you can report to several projects, you see **Your projects** first: select the project you want.\n\n## Find your way around\n\n- The **header** at the top shows the Trybun logo, which always takes you back to your project, or to **Your projects**. On its right are the help icon and your account menu.\n- The **main navigation** lists the places you can go: **My tickets**, and **Projects** when you can report to several projects. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left. The button at its top collapses it to icons and expands it again; on a computer Trybun remembers your choice in this browser. When it shows only icons, point at an icon or move to it with the keyboard to see its name.\n\n## Get help\n\nSelect the help icon (question mark) in the header, then **Help for this view**. It opens the help page about the view you are in. From there you can [search the help](../how-to/search-the-help.md) for any topic.\n\n## Sign out\n\n1. Select your account menu (your initials) in the header.\n2. Select **Sign out**.\n\nTrybun also signs you out by itself after 8 hours without activity, and 30 days after you signed in. Then sign in again.\n\n## Next steps\n\n- [Report a problem](../how-to/report-a-problem.md)\n- [Follow your tickets](../how-to/follow-your-tickets.md)\n- [Change your language and time zone](../how-to/change-language.md)"
       },
       {
         "slug": "team/explanation/help-for-end-users",
@@ -379,7 +415,8 @@
         "title": "Zmień język i strefę czasową",
         "description": "Wybierz język Trybuna i strefę czasową dat i godzin, które widzisz; oba ustawienia obowiązują na każdym urządzeniu.",
         "views": [
-          "/settings"
+          "/settings",
+          "/portal/settings"
         ],
         "body": "## Zmień język\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku.\n2. W sekcji **Język** wybierz język, którego chcesz używać.\n\nStrona, na której jesteś, pojawi się ponownie w wybranym języku. Trybun zapisuje wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu, na którym się logujesz.\n\n## Zmień strefę czasową\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku, a potem **Ustawienia konta**.\n2. W polu **Strefa czasowa** wyszukaj swoją strefę czasową i wybierz ją albo wybierz **Użyj strefy czasowej tego urządzenia**.\n3. Wybierz **Zapisz**.\n\nDaty i godziny są pokazywane w tej strefie czasowej na każdym urządzeniu. Dopóki jej nie wybierzesz, Trybun używa domyślnej strefy czasowej systemu; aby do niej wrócić, wyczyść pole **Strefa czasowa** i wybierz **Zapisz**. Na tej stronie możesz też zmienić język."
       },
@@ -391,6 +428,41 @@
         "description": "Zasady haseł w Trybunie i jak wybrać hasło silne, a łatwe do zapamiętania.",
         "views": [],
         "body": "Hasło wybierasz, gdy zakładasz konto z zaproszenia i gdy resetujesz zapomniane hasło. Trybun przyjmuje hasło, które:\n\n- ma **co najmniej 15 i najwyżej 64 znaki** – liczą się też spacje i dowolne litery;\n- **nie jest Twoim adresem e-mail**;\n- **nie jest popularnym hasłem** – Trybun odrzuca hasła znane z list wyciekłych haseł.\n\nNie ma wymagań co do wielkich liter, cyfr ani znaków specjalnych i nigdy nie musisz zmieniać hasła tylko dlatego, że minął czas: hasło najlepiej chroni jego długość.\n\n## Silne hasło, które łatwo zapamiętać\n\n- Użyj **frazy z kilku słów**, które pasują do siebie tylko dla Ciebie, np. `czajnik na balkonie śpiewa o świcie` – ale nie tę, bo jest już publiczna.\n- Albo pozwól, aby hasło wygenerował i zapamiętał **menedżer haseł**.\n- Używaj hasła **tylko w Trybunie**: hasło użyte także w innym serwisie jest zagrożone, gdy ten serwis zaliczy wyciek.\n\nJeśli ekran logowania odrzuci hasło, komunikat powie, której zasady nie spełnia; wybierz dłuższe albo mniej popularne."
+      },
+      {
+        "slug": "end-user/how-to/confirm-that-your-problem-is-solved",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Potwierdź, że problem został rozwiązany",
+        "description": "Jednym naciśnięciem przekaż zespołowi, czy rozwiązanie u Ciebie działa.",
+        "views": [
+          "/portal/tickets/[identifier]/resolution-confirmation"
+        ],
+        "body": "Gdy zespół rozwiąże Twój problem, może poprosić Cię o potwierdzenie. Zgłoszenie ma wtedy status **Wymaga Twojej odpowiedzi** i pokazuje na górze pytanie **Czy Twój problem został rozwiązany?**\n\n1. Otwórz zgłoszenie z **Moich zgłoszeń**.\n2. Wybierz **Tak, rozwiązane** albo **Nie, problem nadal występuje**.\n\nPo wybraniu **Tak, rozwiązane** zgłoszenie zostaje rozwiązane. Po wybraniu **Nie, problem nadal występuje** zespół dalej nad nim pracuje. Twoja odpowiedź pojawia się w historii zgłoszenia.\n\nJeśli nie odpowiesz w ciągu 7 dni, Trybun uzna problem za rozwiązany.\n\nJeśli zespół lub Trybun już zamknął zgłoszenie, komunikat poinformuje, że Twoja odpowiedź nie jest już potrzebna."
+      },
+      {
+        "slug": "end-user/how-to/follow-your-tickets",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Śledź swoje zgłoszenia",
+        "description": "Zobacz zgłoszenia, które wysłałeś, które z nich czekają na Twoją odpowiedź i co się z każdym z nich dzieje.",
+        "views": [
+          "/portal/tickets",
+          "/portal/tickets/[identifier]"
+        ],
+        "body": "## Zobacz swoje zgłoszenia\n\nWybierz **Moje zgłoszenia** w nawigacji głównej. Lista zawiera zgłoszenia, które wysłałeś, ze wszystkich Twoich projektów. Strona projektu pokazuje Twoje najnowsze zgłoszenia w tym projekcie; **Pokaż wszystkie** otwiera całą listę projektu.\n\nZgłoszenia oznaczone jako **Wymaga Twojej odpowiedzi** są na początku: zespół czegoś od Ciebie potrzebuje – dodatkowych informacji albo potwierdzenia, że problem został rozwiązany. Pozostałe są dalej, od ostatnio zmienionych.\n\n## Śledź jedno zgłoszenie\n\nWybierz zgłoszenie, aby je otworzyć. Zobaczysz:\n\n- jego status i to, co w tej chwili oznacza, na przykład **W realizacji** – „Testujemy rozwiązanie”;\n- Twój opis;\n- jego historię: kiedy zostało utworzone i każdą zmianę statusu wraz z osobą, która ją wprowadziła.\n\nGdy zespół pyta, czy Twój problem został rozwiązany, zgłoszenie pokazuje to pytanie na górze: zobacz [Potwierdź, że problem został rozwiązany](confirm-that-your-problem-is-solved.md)."
+      },
+      {
+        "slug": "end-user/how-to/report-a-problem",
+        "audience": "end-user",
+        "category": "how-to",
+        "title": "Zgłoś problem",
+        "description": "Utwórz zgłoszenie dla zespołu w dwóch krokach ze strony swojego projektu.",
+        "views": [
+          "/portal/projects/[projectId]",
+          "/portal/projects/[projectId]/tickets/new"
+        ],
+        "body": "1. Otwórz swój projekt. Po zalogowaniu już w nim jesteś; jeśli możesz zgłaszać do kilku projektów, wybierz projekt w **Twoich projektach**.\n2. Wybierz **Utwórz zgłoszenie**.\n3. W polu **Tytuł** opisz problem jednym zdaniem.\n4. Opcjonalnie opisz go dokładniej w polu **Opis**. Szare pytania w pustym polu – co się stało, czego się spodziewałeś i jak zespół może to powtórzyć – przypominają, czego zespół potrzebuje; znikają, gdy zaczniesz pisać. Tekst możesz formatować: zobacz [Formatowanie tekstu](../reference/formatting-text.md).\n5. Wybierz **Wyślij**.\n\nOtworzy się Twoje nowe zgłoszenie, a komunikat potwierdzi jego identyfikator, na przykład `CP-12`. Widzisz je tylko Ty i zespół. Śledź jego postęp w **Moich zgłoszeniach**: zobacz [Śledź swoje zgłoszenia](follow-your-tickets.md).\n\nJeśli projekt jest zarchiwizowany, zamiast **Utwórz zgłoszenie** pokazuje informację o tym: nadal możesz w nim czytać swoje zgłoszenia, ale nie możesz tworzyć nowych."
       },
       {
         "slug": "end-user/how-to/search-the-help",
@@ -419,9 +491,9 @@
         "title": "Pierwsze kroki w Trybunie",
         "description": "Zaloguj się, poznaj układ ekranu, skorzystaj z pomocy i wyloguj się.",
         "views": [
-          "/"
+          "/portal"
         ],
-        "body": "W Trybunie zgłaszasz zespołowi problemy i prośby oraz śledzisz, jak są obsługiwane. Ten samouczek przeprowadzi Cię przez elementy ekranu, z których korzystasz na co dzień.\n\n## Zaloguj się\n\n1. Otwórz w przeglądarce adres Trybuna. Pojawi się ekran logowania.\n2. Zaloguj się na swoje konto.\n\nPo zalogowaniu widzisz **Stronę główną**.\n\n## Poznaj układ ekranu\n\n- **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem na **Stronę główną**. Po jego prawej stronie są ikona pomocy i menu konta.\n- **Nawigacja główna** zawiera miejsca, do których możesz przejść. Na telefonie jest na dole ekranu, na tablecie i komputerze – po lewej stronie. Przycisk na jej górze zwija ją do ikon i rozwija z powrotem; na komputerze Trybun zapamiętuje Twój wybór w tej przeglądarce. Gdy widać same ikony, wskaż ikonę lub przejdź do niej klawiaturą, aby zobaczyć jej nazwę.\n\n## Skorzystaj z pomocy\n\nWybierz ikonę pomocy (znak zapytania) w nagłówku, a następnie **Pomoc do tego widoku**. Otworzy się strona pomocy o widoku, w którym jesteś. Stamtąd możesz [przeszukać pomoc](../how-to/search-the-help.md) w dowolnym temacie.\n\n## Wyloguj się\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku.\n2. Wybierz **Wyloguj się**.\n\nTrybun wylogowuje Cię także sam po 8 godzinach bez aktywności oraz 30 dni po zalogowaniu. Wtedy zaloguj się ponownie.\n\n## Co dalej\n\n- [Zmień język i strefę czasową](../how-to/change-language.md)"
+        "body": "W Trybunie zgłaszasz zespołowi problemy i prośby oraz śledzisz, jak są obsługiwane. Ten samouczek przeprowadzi Cię przez elementy ekranu, z których korzystasz na co dzień.\n\n## Zaloguj się\n\n1. Otwórz w przeglądarce adres Trybuna. Pojawi się ekran logowania.\n2. Zaloguj się na swoje konto.\n\nPo zalogowaniu widzisz swój projekt. Jeśli możesz zgłaszać do kilku projektów, najpierw widzisz **Twoje projekty**: wybierz projekt, którego dotyczy sprawa.\n\n## Poznaj układ ekranu\n\n- **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem do Twojego projektu albo do **Twoich projektów**. Po jego prawej stronie są ikona pomocy i menu konta.\n- **Nawigacja główna** zawiera miejsca, do których możesz przejść: **Moje zgłoszenia**, a gdy możesz zgłaszać do kilku projektów – także **Projekty**. Na telefonie jest na dole ekranu, na tablecie i komputerze – po lewej stronie. Przycisk na jej górze zwija ją do ikon i rozwija z powrotem; na komputerze Trybun zapamiętuje Twój wybór w tej przeglądarce. Gdy widać same ikony, wskaż ikonę lub przejdź do niej klawiaturą, aby zobaczyć jej nazwę.\n\n## Skorzystaj z pomocy\n\nWybierz ikonę pomocy (znak zapytania) w nagłówku, a następnie **Pomoc do tego widoku**. Otworzy się strona pomocy o widoku, w którym jesteś. Stamtąd możesz [przeszukać pomoc](../how-to/search-the-help.md) w dowolnym temacie.\n\n## Wyloguj się\n\n1. Wybierz menu konta (Twoje inicjały) w nagłówku.\n2. Wybierz **Wyloguj się**.\n\nTrybun wylogowuje Cię także sam po 8 godzinach bez aktywności oraz 30 dni po zalogowaniu. Wtedy zaloguj się ponownie.\n\n## Co dalej\n\n- [Zgłoś problem](../how-to/report-a-problem.md)\n- [Śledź swoje zgłoszenia](../how-to/follow-your-tickets.md)\n- [Zmień język i strefę czasową](../how-to/change-language.md)"
       },
       {
         "slug": "team/explanation/help-for-end-users",
@@ -485,9 +557,15 @@
   },
   "views": {
     "end_user": {
-      "/": "end-user/tutorials/getting-started",
       "/help": "end-user/how-to/search-the-help",
       "/invitations": "end-user/how-to/accept-an-invitation",
+      "/portal": "end-user/tutorials/getting-started",
+      "/portal/projects/[projectId]": "end-user/how-to/report-a-problem",
+      "/portal/projects/[projectId]/tickets/new": "end-user/how-to/report-a-problem",
+      "/portal/settings": "end-user/how-to/change-language",
+      "/portal/tickets": "end-user/how-to/follow-your-tickets",
+      "/portal/tickets/[identifier]": "end-user/how-to/follow-your-tickets",
+      "/portal/tickets/[identifier]/resolution-confirmation": "end-user/how-to/confirm-that-your-problem-is-solved",
       "/settings": "end-user/how-to/change-language"
     },
     "team": {
@@ -499,6 +577,13 @@
       "/admin/organizations/[organizationId]": "administrator/how-to/manage-organizations",
       "/help": "end-user/how-to/search-the-help",
       "/invitations": "end-user/how-to/accept-an-invitation",
+      "/portal": "end-user/tutorials/getting-started",
+      "/portal/projects/[projectId]": "end-user/how-to/report-a-problem",
+      "/portal/projects/[projectId]/tickets/new": "end-user/how-to/report-a-problem",
+      "/portal/settings": "end-user/how-to/change-language",
+      "/portal/tickets": "end-user/how-to/follow-your-tickets",
+      "/portal/tickets/[identifier]": "end-user/how-to/follow-your-tickets",
+      "/portal/tickets/[identifier]/resolution-confirmation": "end-user/how-to/confirm-that-your-problem-is-solved",
       "/projects": "administrator/how-to/create-archive-and-delete-a-project",
       "/projects/[projectId]/settings": "team/reference/project-settings",
       "/settings": "end-user/how-to/change-language"

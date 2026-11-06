@@ -51,7 +51,12 @@ describe('SideNavigation', () => {
   it('shows the name of a collapsed icon on keyboard focus and keeps the name of the link', async () => {
     stubWidth(false);
     const user = userEvent.setup();
-    renderInApp(<SideNavigation allowedActions={[]} isDesktopCollapsed={false} />);
+    renderInApp(
+      <SideNavigation
+        navigation={{ shell: 'team', allowedActions: [] }}
+        isDesktopCollapsed={false}
+      />,
+    );
 
     const link = await tabTo(user, 'Home');
     expect(await findTooltip('Home')).toBeTruthy();
@@ -66,7 +71,12 @@ describe('SideNavigation', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      renderInApp(<SideNavigation allowedActions={[]} isDesktopCollapsed={false} />);
+      renderInApp(
+        <SideNavigation
+          navigation={{ shell: 'team', allowedActions: [] }}
+          isDesktopCollapsed={false}
+        />,
+      );
 
       await user.hover(screen.getByRole('link', { name: 'Projects' }));
       await vi.advanceTimersByTimeAsync(700);
@@ -80,9 +90,15 @@ describe('SideNavigation', () => {
   it('shows the translated name in Polish', async () => {
     stubWidth(false);
     const user = userEvent.setup();
-    renderInApp(<SideNavigation allowedActions={[]} isDesktopCollapsed={false} />, {
-      locale: 'pl',
-    });
+    renderInApp(
+      <SideNavigation
+        navigation={{ shell: 'team', allowedActions: [] }}
+        isDesktopCollapsed={false}
+      />,
+      {
+        locale: 'pl',
+      },
+    );
 
     await tabTo(user, 'Strona główna');
 
@@ -92,7 +108,12 @@ describe('SideNavigation', () => {
   it('shows no tooltip once the tablet navigation is expanded', async () => {
     stubWidth(false);
     const user = userEvent.setup();
-    renderInApp(<SideNavigation allowedActions={[]} isDesktopCollapsed={false} />);
+    renderInApp(
+      <SideNavigation
+        navigation={{ shell: 'team', allowedActions: [] }}
+        isDesktopCollapsed={false}
+      />,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Expand navigation' }));
     await tabTo(user, 'Home');
@@ -108,7 +129,12 @@ describe('SideNavigation', () => {
     async ({ isDesktopCollapsed, hasTooltip }) => {
       stubWidth(true);
       const user = userEvent.setup();
-      renderInApp(<SideNavigation allowedActions={[]} isDesktopCollapsed={isDesktopCollapsed} />);
+      renderInApp(
+        <SideNavigation
+          navigation={{ shell: 'team', allowedActions: [] }}
+          isDesktopCollapsed={isDesktopCollapsed}
+        />,
+      );
 
       await tabTo(user, 'Home');
 

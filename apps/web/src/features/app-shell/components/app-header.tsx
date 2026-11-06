@@ -14,11 +14,19 @@ export interface AppHeaderSlots {
 }
 
 /** The header of the application shell: brand, the slots of the header actions and the user menu. */
-export function AppHeader({ search, help, notifications }: AppHeaderSlots) {
+export function AppHeader({
+  search,
+  help,
+  notifications,
+  homeHref = '/',
+}: AppHeaderSlots & {
+  /** Where the brand leads: the home of the team, or the portal root of end users (§5.7). */
+  homeHref?: string;
+}) {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-1 border-b border-border bg-background px-2 md:px-4">
       <Link
-        href="/"
+        href={homeHref}
         className="flex min-h-11 items-center gap-2 rounded-lg px-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <Brand wordmarkClassName="sr-only md:not-sr-only" />

@@ -1,7 +1,7 @@
 ---
 title: Zmień język i strefę czasową
 description: Wybierz język Trybuna i strefę czasową dat i godzin, które widzisz; oba ustawienia obowiązują na każdym urządzeniu.
-views: ['/settings']
+views: ['/settings', '/portal/settings']
 ---
 
 ## Zmień język

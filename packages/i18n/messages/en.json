@@ -21,7 +21,8 @@
     "signOut": "Sign out",
     "administration": "Administration",
     "projects": "Projects",
-    "accountSettings": "Account settings"
+    "accountSettings": "Account settings",
+    "myTickets": "My tickets"
   },
   "languages": {
     "en": "English",
@@ -315,16 +316,16 @@
       "closed": "Closed"
     },
     "publicDescriptions": {
-      "new": "We have received your ticket",
-      "triage": "We are analyzing your ticket",
-      "waiting_for_information": "We need more information from you",
-      "waiting_for_confirmation": "Please confirm whether your problem is solved",
-      "todo": "Your ticket has been scheduled",
-      "in_progress": "We are working on a solution",
-      "in_verification": "We are testing the solution",
-      "done": "Your ticket has been resolved",
+      "received": "We have received your ticket",
+      "analyzing": "We are analyzing your ticket",
+      "information_needed": "We need more information from you",
+      "confirmation_needed": "Please confirm whether your problem is solved",
+      "scheduled": "Your ticket has been scheduled",
+      "working": "We are working on a solution",
+      "testing": "We are testing the solution",
+      "resolved": "Your ticket has been resolved",
       "rejected": "Ticket closed",
-      "duplicate": "Ticket merged with another one"
+      "merged": "Ticket merged with another one"
     },
     "waitingReasons": {
       "information": "Waiting for information",
@@ -562,6 +563,65 @@
       "explanation": "Explanations"
     },
     "forThisView": "Help for this view"
+  },
+  "portal": {
+    "root": {
+      "title": "Your projects",
+      "emptyTitle": "You don't have access to any project yet",
+      "emptyDescription": "Ask the person who invited you to add you to one.",
+      "myTickets": "Go to my tickets",
+      "loadMore": "Show more projects",
+      "loadingMore": "Loading…"
+    },
+    "projectHome": {
+      "createTicket": "Create ticket",
+      "myTickets": "My tickets",
+      "showAll": "Show all",
+      "archivedBanner": "This project is archived. You can read its tickets, but you cannot create new ones."
+    },
+    "newTicket": {
+      "heading": "New ticket",
+      "project": "Project: {name}",
+      "title": "Title",
+      "titleRequired": "Enter a title.",
+      "description": "Description",
+      "placeholder": "What happened?\nWhat did you expect?\nHow can we reproduce it?",
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "created": "Ticket {identifier} created"
+    },
+    "myTickets": {
+      "title": "My tickets",
+      "projectTitle": "My tickets in {project}",
+      "awaitingHeading": "Awaiting your reply",
+      "otherHeading": "Other tickets",
+      "empty": "You haven't created any tickets yet.",
+      "updated": "Updated {time}",
+      "loadMore": "Show more tickets",
+      "loadingMore": "Loading…"
+    },
+    "ticket": {
+      "back": "My tickets",
+      "description": "Description",
+      "noDescription": "No description.",
+      "history": "History",
+      "created": "Ticket created",
+      "statusChanged": "Status changed to {status}",
+      "system": "System",
+      "unknownPerson": "Former user",
+      "loadMoreHistory": "Show more history",
+      "duplicateOf": "Merged with <link>{identifier}</link>",
+      "archivedBanner": "This project is archived. Its tickets can only be read.",
+      "answered": {
+        "solved": "Thank you. The ticket is resolved.",
+        "not_solved": "Thank you. The team continues working on the ticket."
+      }
+    },
+    "confirmation": {
+      "other": "Choose the other answer instead: {answer}",
+      "notPending": "This ticket no longer waits for your confirmation.",
+      "openTicket": "Open the ticket"
+    }
   },
   "productTours": {
     "take": "Take the tour: {name}",

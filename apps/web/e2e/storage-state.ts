@@ -9,3 +9,9 @@ export const NEWCOMER_STORAGE_STATE = 'e2e/.auth/newcomer.json';
 
 /** The browser state of the Project manager of the demo projects (§7.5). */
 export const MANAGER_STORAGE_STATE = 'e2e/.auth/manager.json';
+
+/** The browser state of the customer, the end user with one project (§5.7). */
+export const CUSTOMER_STORAGE_STATE = 'e2e/.auth/customer.json';
+
+/** The browser state of the partner, the end user with two projects (§5.7). */
+export const PARTNER_STORAGE_STATE = 'e2e/.auth/partner.json';

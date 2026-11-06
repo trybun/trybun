@@ -1,5 +1,9 @@
 import { Prisma } from '../../generated/prisma/client.js';
-import { TERMINAL_TICKET_STATUSES } from '@trybun/contracts/tickets';
+import {
+  publicStatusOf,
+  TERMINAL_TICKET_STATUSES,
+  ticketStatusSchema,
+} from '@trybun/contracts/tickets';
 import type { Transaction } from '../../platform/database/prisma.service.js';
 
 /**
@@ -79,4 +83,52 @@ export async function lockTicketsForUpdate(
   const rows = await tx.$queryRaw<{ id: string }[]>`
     SELECT "id" FROM "tickets" WHERE "id" IN (${ids}) ORDER BY "id" FOR UPDATE`;
   return rows.map((row) => row.id);
+}
+
+/** The internal statuses whose public status is `awaiting_reply` (§4.2). */
+const AWAITING_REPLY_STATUSES = ticketStatusSchema.options.filter(
+  (status) => publicStatusOf(status) === 'awaiting_reply',
+);
+
+/**
+ * The sort key of a requested ticket in "My tickets" (§5.7, Q10): whether it awaits the
+ * requester's reply, its update time and its ID.
+ */
+export interface RequestedTicketKey {
+  id: string;
+  awaitingReply: boolean;
+  updatedAt: Date;
+}
+
+/**
+ * The tickets a person requested (`involvement=mine`, raw SQL), in the fixed order of the list:
+ * those awaiting the requester's reply first, then the most recently updated, then by ID – the
+ * first key is derived from the status, which Prisma cannot order by. It filters only by the
+ * requester, the project and the keyset cursor, and returns up to `limit` keys: the records are
+ * loaded through the ability afterwards, so visibility is never re-implemented here (§18.3).
+ */
+export function listRequestedTicketKeys(
+  db: Transaction,
+  requesterId: string,
+  options: { projectId: string | null; after: RequestedTicketKey | null; limit: number },
+): Promise<RequestedTicketKey[]> {
+  const awaiting = Prisma.sql`("status"::text IN (${Prisma.join(AWAITING_REPLY_STATUSES)}))`;
+  const inProject =
+    options.projectId === null
+      ? Prisma.empty
+      : Prisma.sql`AND "project_id" = ${options.projectId}::uuid`;
+  const { after } = options;
+  // Every key descends, so the rows after the cursor are those with a smaller row value.
+  const afterCursor =
+    after === null
+      ? Prisma.empty
+      : Prisma.sql`AND (${awaiting}, "updated_at", "id") < (${after.awaitingReply}::boolean, ${after.updatedAt}::timestamptz, ${after.id}::uuid)`;
+  return db.$queryRaw<RequestedTicketKey[]>`
+    SELECT "id", ${awaiting} AS "awaitingReply", "updated_at" AS "updatedAt"
+    FROM "tickets"
+    WHERE "requester_id" = ${requesterId}::uuid
+      ${inProject}
+      ${afterCursor}
+    ORDER BY ${awaiting} DESC, "updated_at" DESC, "id" DESC
+    LIMIT ${options.limit}`;
 }
