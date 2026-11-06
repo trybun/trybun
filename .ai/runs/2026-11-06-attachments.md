@@ -36,9 +36,9 @@ Build phases 1–3 of the approved change specification (Q1: phase 4, the backup
 
 ### Phase 1: Storage and scanning
 
-- [ ] 1.1 Configuration of the storage, ClamAV and the size limit
-- [ ] 1.2 Storage adapter and readiness
-- [ ] 1.3 ClamAV adapter and clamd configuration
+- [x] 1.1 Configuration of the storage, ClamAV and the size limit — 3c19b60
+- [x] 1.2 Storage adapter and readiness — 3c19b60
+- [x] 1.3 ClamAV adapter and clamd configuration — 3c19b60
 
 ### Phase 2: Attachments in the API
 
@@ -49,7 +49,7 @@ Build phases 1–3 of the approved change specification (Q1: phase 4, the backup
 
 ### Phase 3: Web
 
-- [ ] 3.1 Attachment components of `@trybun/ui`
+- [x] 3.1 Attachment components of `@trybun/ui` — 88567e3
 - [ ] 3.2 Web feature and the BFF content length
 - [ ] 3.3 Portal form, view and timeline with attachments
 - [ ] 3.4 User documentation
