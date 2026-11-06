@@ -16,7 +16,7 @@ KEEP_SERVICES=0
 [ "${1:-}" = "--keep-services" ] && KEEP_SERVICES=1
 [ -f "$DESCRIPTOR" ] || { echo "No test environment recorded."; exit 0; }
 json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$DESCRIPTOR" | head -1; }
-for key in apiPid webPid; do
+for key in apiPid workerPid webPid; do
   pid=$(json_get "$key")
   # Each process was started in its own session: stop the whole group (pnpm, node, next).
   if [ -n "$pid" ]; then kill -- "-$pid" 2>/dev/null || true; fi
