@@ -605,7 +605,7 @@
       "description": "Opis",
       "noDescription": "Brak opisu.",
       "history": "Historia",
-      "created": "Utworzyłeś to zgłoszenie",
+      "created": "Utworzenie zgłoszenia",
       "statusChanged": "Status zmieniony na {status}",
       "system": "System",
       "unknownPerson": "Były użytkownik",

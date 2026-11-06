@@ -16,6 +16,6 @@ Select a ticket to open it. It shows:
 
 - its status and what it means at the moment, for example **In progress** – "We are testing the solution";
 - your description;
-- its history: when you created it and every change of its status, with who made it.
+- its history: when it was created and every change of its status, with who made it.
 
 When the team asks whether your problem is solved, the ticket shows the question at the top: see [Confirm that your problem is solved](confirm-that-your-problem-is-solved.md).

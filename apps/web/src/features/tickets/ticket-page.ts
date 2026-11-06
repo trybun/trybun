@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation.js';
 import { getServerApiClient } from '../../lib/api-client/server-api-client.js';
 import { ApiError } from '../../lib/errors/api-error.js';
 import { getServerQueryClient } from '../../lib/query-client/server-query-client.js';
+import { projectQueryOptions } from '../projects/queries.js';
 import { activityEventsQueryOptions, ticketQueryOptions } from './queries.js';
 
 /**
@@ -27,6 +28,11 @@ export async function getPortalTicket(identifier: string) {
   if (ticket === undefined) {
     throw error ?? new Error('The ticket could not be read');
   }
-  await queryClient.prefetchInfiniteQuery(activityEventsQueryOptions(client, ticket.id));
+  await Promise.all([
+    queryClient.prefetchInfiniteQuery(activityEventsQueryOptions(client, ticket.id)),
+    // The state of the project for the read-only banner; `404` when the requester lost access to
+    // the project, which keeps the ticket readable (§7.3) and shows no banner.
+    queryClient.prefetchQuery(projectQueryOptions(client, ticket.projectId)),
+  ]);
   return ticket;
 }

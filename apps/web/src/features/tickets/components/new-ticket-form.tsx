@@ -110,7 +110,11 @@ export function NewTicketForm({ projectId }: { projectId: string }) {
         >
           {t('cancel')}
         </Link>
-        <Button type="submit" className="w-full md:w-fit" disabled={form.formState.isSubmitting}>
+        <Button
+          type="submit"
+          className="w-full md:w-fit"
+          disabled={form.formState.isSubmitting || createTicket.isSuccess}
+        >
           {t('submit')}
         </Button>
       </div>

@@ -68,8 +68,11 @@ export async function AccountShell({
   const kind: UserKind = user?.kind ?? 'end_user';
   const shell: Shell =
     user === undefined ? (requestedShell === 'reader' ? 'portal' : requestedShell) : shellOf(kind);
-  if (requestedShell !== 'reader' && requestedShell !== shell) {
-    redirect(counterpartOf((await headers()).get(REQUEST_PATH_HEADER) ?? '/', shell));
+  const requestPath = (await headers()).get(REQUEST_PATH_HEADER);
+  // Without the path of the page (a link prefetch, which `proxy.ts` skips) the counterpart is
+  // unknown; the navigation itself is redirected.
+  if (requestedShell !== 'reader' && requestedShell !== shell && requestPath !== null) {
+    redirect(counterpartOf(requestPath, shell));
   }
   const navigation: NavigationContext =
     shell === 'team'

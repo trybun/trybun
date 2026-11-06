@@ -7,6 +7,7 @@ import { getTranslations } from 'next-intl/server';
 import { PortalProjectList } from '../../../features/portal/components/portal-project-list.js';
 import { myTicketsHref, portalProjectHref } from '../../../features/portal/hrefs.js';
 import { projectsQueryOptions } from '../../../features/projects/queries.js';
+import { myTicketsQueryOptions } from '../../../features/tickets/queries.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../lib/query-client/server-query-client.js';
@@ -30,10 +31,10 @@ export default async function PortalRootPage() {
     redirect(portalProjectHref(onlyProject.id));
   }
   if (firstPage !== undefined && onlyProject === undefined) {
-    const tickets = await client.GET('/api/v1/tickets', {
-      params: { query: { involvement: 'mine', limit: 1 } },
-    });
-    const hasTickets = (tickets.data?.items.length ?? 0) > 0;
+    const ticketsOptions = myTicketsQueryOptions(client, { limit: 1 });
+    await queryClient.prefetchInfiniteQuery(ticketsOptions);
+    const hasTickets =
+      (queryClient.getQueryData(ticketsOptions.queryKey)?.pages[0]?.items.length ?? 0) > 0;
     return (
       <div className="flex max-w-prose flex-col gap-3">
         <h1 className="text-2xl font-bold">{t('emptyTitle')}</h1>

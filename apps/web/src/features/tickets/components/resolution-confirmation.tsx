@@ -6,7 +6,6 @@ import { Button, buttonVariants } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
@@ -33,13 +32,21 @@ export function ResolutionConfirmation({
   const errorMessage = useErrorMessage();
   const ticket = useQuery(ticketQueryOptions(browserApiClient, identifier));
   const confirmResolution = useConfirmResolution();
-  const [result, setResult] = useState<string | undefined>(undefined);
   if (ticket.data === undefined) {
     return null;
   }
   const isPending = ticket.data.allowedActions.includes('confirm_resolution');
   const other: ResolutionAnswer = answer === 'solved' ? 'not_solved' : 'solved';
-  const message = result ?? (isPending ? undefined : t('notPending'));
+  // The outcome of the press decides the message; the ticket read again after it no longer waits.
+  const message = confirmResolution.isSuccess
+    ? tTicket(`answered.${answer}`)
+    : confirmResolution.isError
+      ? confirmResolution.error instanceof ApiError && confirmResolution.error.status === 409
+        ? t('notPending')
+        : errorMessage(confirmResolution.error)
+      : isPending || confirmResolution.isPending
+        ? undefined
+        : t('notPending');
   return (
     <div className="flex max-w-prose flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -55,20 +62,7 @@ export function ResolutionConfirmation({
             size="lg"
             className="w-full md:w-fit"
             disabled={confirmResolution.isPending}
-            onClick={() =>
-              confirmResolution.mutate(
-                { ticketId: ticket.data.id, answer },
-                {
-                  onSuccess: () => setResult(tTicket(`answered.${answer}`)),
-                  onError: (error) =>
-                    setResult(
-                      error instanceof ApiError && error.status === 409
-                        ? t('notPending')
-                        : errorMessage(error),
-                    ),
-                },
-              )
-            }
+            onClick={() => confirmResolution.mutate({ ticketId: ticket.data.id, answer })}
           >
             {tQuestion(`answers.${answer}`)}
           </Button>

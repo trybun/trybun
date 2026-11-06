@@ -132,7 +132,7 @@ describe('TicketView', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
     expect(screen.getByText('We are testing the solution')).toBeDefined();
-    expect(screen.getByText('You created this ticket')).toBeDefined();
+    expect(screen.getByText('Ticket created')).toBeDefined();
     expect(await screen.findByText('Status changed to In progress')).toBeDefined();
     expect(screen.getByText(/Dorota Developer/)).toBeDefined();
     expect(screen.queryByRole('heading', { name: 'Is your problem solved?' })).toBeNull();
@@ -187,7 +187,11 @@ describe('ResolutionConfirmation', () => {
         nextCursor: null,
       },
     });
-    fake.on('POST /api/v1/tickets/{ticketId}/resolution-confirmation', { data: ticket() });
+    fake.on('POST /api/v1/tickets/{ticketId}/resolution-confirmation', () => {
+      // After the answer the ticket no longer waits for it.
+      fake.on('GET /api/v1/tickets', { data: { items: [ticket()], nextCursor: null } });
+      return { data: ticket() };
+    });
     renderInApp(<ResolutionConfirmation identifier="CP-7" answer="not_solved" />);
 
     const button = await screen.findByRole('button', { name: 'No, still a problem' });
@@ -201,6 +205,8 @@ describe('ResolutionConfirmation', () => {
     expect(
       await screen.findByText('Thank you. The team continues working on the ticket.'),
     ).toBeDefined();
+    // The ticket read again no longer waits; the page still names the answer just given.
+    expect(screen.queryByText('This ticket no longer waits for your confirmation.')).toBeNull();
     expect(fake.callsTo('POST /api/v1/tickets/{ticketId}/resolution-confirmation')).toHaveLength(1);
   });
 

@@ -16,6 +16,6 @@ Wybierz zgłoszenie, aby je otworzyć. Zobaczysz:
 
 - jego status i to, co w tej chwili oznacza, na przykład **W realizacji** – „Testujemy rozwiązanie”;
 - Twój opis;
-- jego historię: kiedy je utworzyłeś i każdą zmianę statusu wraz z osobą, która ją wprowadziła.
+- jego historię: kiedy zostało utworzone i każdą zmianę statusu wraz z osobą, która ją wprowadziła.
 
 Gdy zespół pyta, czy Twój problem został rozwiązany, zgłoszenie pokazuje to pytanie na górze: zobacz [Potwierdź, że problem został rozwiązany](confirm-that-your-problem-is-solved.md).

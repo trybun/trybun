@@ -605,7 +605,7 @@
       "description": "Description",
       "noDescription": "No description.",
       "history": "History",
-      "created": "You created this ticket",
+      "created": "Ticket created",
       "statusChanged": "Status changed to {status}",
       "system": "System",
       "unknownPerson": "Former user",

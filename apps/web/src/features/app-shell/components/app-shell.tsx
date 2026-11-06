@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import type { NavigationContext } from '../navigation.js';
+import { type NavigationContext, PORTAL_HREF } from '../navigation.js';
 import { type AppHeaderSlots, AppHeader } from './app-header.js';
 import { BottomNavigation } from './bottom-navigation.js';
 import { SideNavigation } from './side-navigation.js';
@@ -32,7 +32,7 @@ export function AppShell({
       >
         {t('skipToContent')}
       </a>
-      <AppHeader {...slots} />
+      <AppHeader {...slots} homeHref={navigation.shell === 'portal' ? PORTAL_HREF : '/'} />
       <div className="flex flex-1">
         <SideNavigation navigation={navigation} isDesktopCollapsed={isDesktopNavigationCollapsed} />
         <main
