@@ -3,8 +3,10 @@ import { expect, type Page, test as setup } from '@playwright/test';
 import { SignInPage } from './pages/sign-in.page.js';
 import {
   ADMIN_STORAGE_STATE,
+  CUSTOMER_STORAGE_STATE,
   MANAGER_STORAGE_STATE,
   NEWCOMER_STORAGE_STATE,
+  PARTNER_STORAGE_STATE,
   TEAM_STORAGE_STATE,
 } from './storage-state.js';
 
@@ -57,4 +59,23 @@ setup('sign in as the Project manager', async ({ page }) => {
 
   await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
   await page.context().storageState({ path: MANAGER_STORAGE_STATE });
+});
+
+setup('sign in as the customer, the end user with one project', async ({ page }) => {
+  await page.goto('/');
+  await new SignInPage(page).signInWithPassword('customer@customer.example.com');
+  await useLanguageOfBrowser(page);
+
+  // The only project opens directly after the sign-in (§5.7).
+  await expect(page.getByRole('heading', { level: 1, name: 'Customer portal' })).toBeVisible();
+  await page.context().storageState({ path: CUSTOMER_STORAGE_STATE });
+});
+
+setup('sign in as the partner, the end user with two projects', async ({ page }) => {
+  await page.goto('/');
+  await new SignInPage(page).signInWithPassword('partner@customer.example.com');
+  await useLanguageOfBrowser(page);
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Your projects' })).toBeVisible();
+  await page.context().storageState({ path: PARTNER_STORAGE_STATE });
 });

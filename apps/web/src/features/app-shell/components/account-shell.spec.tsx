@@ -95,6 +95,9 @@ function shellOf(element: ReactElement) {
 
 describe('AccountShell', () => {
   beforeEach(() => {
+    user = developer;
+    activeProjects = [project('a')];
+    requestPath = '/';
     get.mockReset();
     get.mockImplementation(answer);
     redirect.mockClear();
@@ -157,7 +160,7 @@ describe('AccountShell', () => {
 
     const shell = shellOf(element);
     expect(shell.props.help.props).toMatchObject({
-      views: { '/': 'end-user/tutorials/getting-started' },
+      views: { '/portal': 'end-user/tutorials/getting-started' },
     });
   });
 
@@ -214,7 +217,7 @@ describe('AccountShell', () => {
 
     expect(shellOf(element).props.navigation).toEqual({ shell: 'portal', hasProjectChoice });
     expect(shellOf(element).props.help.props).toMatchObject({
-      views: { '/': 'end-user/tutorials/getting-started' },
+      views: { '/portal': 'end-user/tutorials/getting-started' },
     });
     user = developer;
     activeProjects = [project('a')];

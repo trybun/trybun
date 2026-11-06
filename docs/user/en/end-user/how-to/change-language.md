@@ -1,7 +1,7 @@
 ---
 title: Change your language and time zone
 description: Choose the language of Trybun and the time zone of the dates and times you see; both follow you to every device.
-views: ['/settings']
+views: ['/settings', '/portal/settings']
 ---
 
 ## Change the language
