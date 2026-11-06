@@ -701,6 +701,15 @@
       "moreFormatting": "More formatting",
       "nothingToPreview": "Nothing to preview",
       "uploading": "Uploading {name}…"
+    },
+    "attachmentList": {
+      "uploading": "Uploading…",
+      "checking": "Checking…",
+      "available": "Available",
+      "infected": "File removed: malware detected",
+      "rejected": "File removed: could not be checked",
+      "delete": "Delete {name}",
+      "announcement": "{name}: {status}"
     }
   },
   "errors": {

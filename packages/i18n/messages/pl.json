@@ -701,6 +701,15 @@
       "moreFormatting": "Więcej formatowania",
       "nothingToPreview": "Brak podglądu",
       "uploading": "Przesyłanie {name}…"
+    },
+    "attachmentList": {
+      "uploading": "Przesyłanie…",
+      "checking": "Sprawdzanie…",
+      "available": "Dostępny",
+      "infected": "Plik usunięty: wykryto złośliwe oprogramowanie",
+      "rejected": "Plik usunięty: nie można go sprawdzić",
+      "delete": "Usuń {name}",
+      "announcement": "{name}: {status}"
     }
   },
   "errors": {
