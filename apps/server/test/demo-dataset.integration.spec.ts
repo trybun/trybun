@@ -11,19 +11,20 @@ describe('demo dataset', () => {
     expect(buildDemoDataset()).toEqual(buildDemoDataset());
   });
 
-  it('links every team account to the seeded Keycloak user with the same ID and e-mail', async () => {
+  it('links every account that signs in to the seeded Keycloak user with the same ID and e-mail', async () => {
     const realm = JSON.parse(
       await readFile(
         join(import.meta.dirname, '../../../docker/keycloak/dev/trybun-realm.json'),
         'utf8',
       ),
     ) as { users: { id: string; email: string }[] };
-    // The invited team account has no Keycloak user until it accepts (§7.4).
-    const team = buildDemoDataset().users.filter(
-      (user) => user.kind === 'team' && user.state === 'active',
+    // The team accounts and the end users of the portal (S1-09); the invited accounts have no
+    // Keycloak user until they accept (§7.4), and the other demo end users never sign in.
+    const signingIn = buildDemoDataset().users.filter(
+      (user) => user.keycloakUserId !== undefined && user.keycloakUserId !== null,
     );
 
-    expect(team.map(({ keycloakUserId, email }) => ({ id: keycloakUserId, email }))).toEqual(
+    expect(signingIn.map(({ keycloakUserId, email }) => ({ id: keycloakUserId, email }))).toEqual(
       realm.users.map(({ id, email }) => ({ id, email })),
     );
   });
