@@ -10,8 +10,10 @@ import { TicketsService } from './tickets.service.js';
 
 /**
  * Tickets (§3.2): their creation with per-project numbers and attachments, their fields, their
- * status (§4.3) and their activity history (§4.5). It depends on projects, organizations, users,
- * attachments and activity events; none of them depends on it.
+ * status (§4.3) and their activity history (§4.5). It imports projects, organizations, users,
+ * activity events and the attachment links module (`AttachmentLinksModule`), which links drafts
+ * to a new ticket; none of these modules imports it. The attachments module uses the ticket rules
+ * (`tickets.abilities.ts`) without importing this module, so there is no module cycle.
  */
 @Module({
   imports: [
