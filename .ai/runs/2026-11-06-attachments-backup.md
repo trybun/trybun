@@ -35,9 +35,9 @@ Build phase 4 of the approved change specification (Q1, Q13): every backup copie
 
 ### Phase 1: Backup and restore of the storage folder
 
-- [ ] 1.1 Backup service: remote from the storage variables, copy and restore of the folder
-- [ ] 1.2 Server ID and the restore guard of `./trybun restore`
-- [ ] 1.3 Restore test with SeaweedFS and an external storage
+- [x] 1.1 Backup service: remote from the storage variables, copy and restore of the folder — 105ca96
+- [x] 1.2 Server ID and the restore guard of `./trybun restore` — e2d5710
+- [x] 1.3 Restore test with SeaweedFS and an external storage — 6922309
 
 ### Phase 2: Documentation and finish
 
