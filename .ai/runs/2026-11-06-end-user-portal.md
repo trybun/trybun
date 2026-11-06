@@ -65,5 +65,5 @@ Build the end-user portal exactly as the approved change specification decides (
 
 ### Phase 6: Validation and review
 
-- [ ] 6.1 Full validation gate
-- [ ] 6.2 Review pass
+- [x] 6.1 Full validation gate — bc673a2
+- [x] 6.2 Review pass — b409069
