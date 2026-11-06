@@ -57,3 +57,8 @@ Turn PR #118 into an approved, design-only change specification for S1-09: curre
 ### Phase 4: Validation and review
 
 - [x] 4.1 Run the validation gate and the specification review — 484daf6
+
+### Phase 5: Specification review fixes
+
+- [x] 5.1 Apply the findings of the specification review (Q17–Q20 approved by the maintainer) — 73097ad
+- [x] 5.2 Apply the findings of the re-review — dd07291
