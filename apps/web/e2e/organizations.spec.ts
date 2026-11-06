@@ -3,6 +3,7 @@ import { seriousViolations } from './accessibility.js';
 import { expectFullContentWidth } from './content-width.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { OrganizationsPage } from './pages/organizations.page.js';
+import { ProjectsPage } from './pages/projects.page.js';
 import { ADMIN_STORAGE_STATE } from './storage-state.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
@@ -107,8 +108,9 @@ test.describe('organizations of the Administrator', () => {
 
   test('shows the organizations with access in the project settings', async ({ page }) => {
     const organizations = new OrganizationsPage(page);
-    await page.goto('/projects');
-    await page.getByRole('link', { name: /Customer portal/ }).click();
+    const projects = new ProjectsPage(page);
+    await projects.goto();
+    await projects.openSettings('Customer portal');
 
     const section = page.getByRole('region', { name: 'Organizations with access' });
     await section.getByRole('link', { name: /Customer company/ }).click();

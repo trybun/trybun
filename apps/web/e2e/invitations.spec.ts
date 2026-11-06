@@ -29,7 +29,7 @@ test.describe('invitations', () => {
     // person gets personal access to the project (§7.3).
     const email = `e2e-${testInfo.project.name}-${Date.now().toString(36)}@example.org`;
     await projects.goto();
-    await projects.project('Customer portal').click();
+    await projects.openSettings('Customer portal');
     await projects.settingsTab('Members').click();
 
     const dialog = await projects.addByEmail(email, 'End user');
