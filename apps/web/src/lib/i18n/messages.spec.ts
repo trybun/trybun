@@ -31,7 +31,7 @@ describe('pickClientMessages', () => {
   });
 
   it('passes no texts of a feature to the sign-in and the empty shell', () => {
-    for (const route of ['root', 'signIn', 'team'] as const) {
+    for (const route of ['root', 'signIn', 'shell'] as const) {
       expect(Object.keys(pickClientMessages(getWebMessages('en'), route))).not.toContain(
         'projects',
       );
@@ -45,11 +45,12 @@ const UI_COMPONENTS = join(SOURCES, '../../../packages/ui/src/components');
 /** The routes whose layouts render the components of a feature (`features/<feature>`). */
 const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   administration: ['administration'],
-  'app-shell': ['team'],
-  help: ['team'],
+  'app-shell': ['shell'],
+  help: ['shell'],
   invitations: ['accounts', 'invitations', 'projects'],
   organizations: ['organizations'],
-  'product-tours': ['team'],
+  portal: ['portal'],
+  'product-tours': ['shell'],
   projects: ['projects'],
   sessions: ['signIn'],
   setup: ['setup'],
@@ -80,15 +81,16 @@ function namespacesOf(files: string[]): Set<string> {
 
 describe('CLIENT_NAMESPACES', () => {
   it('contain the namespaces of their parent layouts', () => {
-    const { root, team, ...routes } = CLIENT_NAMESPACES;
-    for (const namespaces of [team, ...Object.values(routes)]) {
+    const { root, shell, ...routes } = CLIENT_NAMESPACES;
+    for (const namespaces of [shell, ...Object.values(routes)]) {
       expect(namespaces).toEqual(expect.arrayContaining([...root]));
     }
-    expect(routes.administration).toEqual(expect.arrayContaining([...team]));
-    expect(routes.projects).toEqual(expect.arrayContaining([...team]));
+    expect(routes.administration).toEqual(expect.arrayContaining([...shell]));
+    expect(routes.projects).toEqual(expect.arrayContaining([...shell]));
     expect(routes.organizations).toEqual(expect.arrayContaining([...routes.administration]));
     expect(routes.accounts).toEqual(expect.arrayContaining([...routes.administration]));
-    expect(routes.settings).toEqual(expect.arrayContaining([...team]));
+    expect(routes.settings).toEqual(expect.arrayContaining([...shell]));
+    expect(routes.portal).toEqual(expect.arrayContaining([...shell]));
   });
 
   it('provide the namespaces of the components of @trybun/ui on every route', () => {

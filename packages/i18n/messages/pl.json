@@ -21,7 +21,8 @@
     "signOut": "Wyloguj się",
     "administration": "Administracja",
     "projects": "Projekty",
-    "accountSettings": "Ustawienia konta"
+    "accountSettings": "Ustawienia konta",
+    "myTickets": "Moje zgłoszenia"
   },
   "languages": {
     "en": "English",
@@ -562,6 +563,16 @@
       "explanation": "Wyjaśnienia"
     },
     "forThisView": "Pomoc do tego widoku"
+  },
+  "portal": {
+    "root": {
+      "title": "Twoje projekty",
+      "emptyTitle": "Nie masz jeszcze dostępu do żadnego projektu",
+      "emptyDescription": "Poproś osobę, która Cię zaprosiła, o dodanie do projektu.",
+      "myTickets": "Przejdź do moich zgłoszeń",
+      "loadMore": "Pokaż więcej projektów",
+      "loadingMore": "Ładowanie…"
+    }
   },
   "productTours": {
     "take": "Przejdź przewodnik: {name}",

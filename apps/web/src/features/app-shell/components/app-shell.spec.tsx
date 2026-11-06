@@ -31,7 +31,7 @@ async function renderShell(locale: 'en' | 'pl' = 'en', isDesktopNavigationCollap
     <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
       <QueryClientProvider client={queryClient}>
         <AppShell
-          allowedActions={[]}
+          navigation={{ shell: 'team', allowedActions: [] }}
           isDesktopNavigationCollapsed={isDesktopNavigationCollapsed}
           help={<button type="button">help-slot</button>}
         >

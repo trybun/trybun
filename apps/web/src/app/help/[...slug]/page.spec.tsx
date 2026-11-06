@@ -6,9 +6,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
-vi.mock('../../../../lib/auth/session.js', () => ({ requireSession }));
+vi.mock('../../../lib/auth/session.js', () => ({ requireSession }));
 const getHelpReaderKind = vi.fn();
-vi.mock('../../../../features/help/reader.js', () => ({ getHelpReaderKind }));
+vi.mock('../../../features/help/reader.js', () => ({ getHelpReaderKind }));
 const getLocale = vi.fn();
 vi.mock('next-intl/server', () => ({ getLocale }));
 const notFound = vi.fn(() => {

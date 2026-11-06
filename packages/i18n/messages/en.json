@@ -21,7 +21,8 @@
     "signOut": "Sign out",
     "administration": "Administration",
     "projects": "Projects",
-    "accountSettings": "Account settings"
+    "accountSettings": "Account settings",
+    "myTickets": "My tickets"
   },
   "languages": {
     "en": "English",
@@ -562,6 +563,16 @@
       "explanation": "Explanations"
     },
     "forThisView": "Help for this view"
+  },
+  "portal": {
+    "root": {
+      "title": "Your projects",
+      "emptyTitle": "You don't have access to any project yet",
+      "emptyDescription": "Ask the person who invited you to add you to one.",
+      "myTickets": "Go to my tickets",
+      "loadMore": "Show more projects",
+      "loadingMore": "Loading…"
+    }
   },
   "productTours": {
     "take": "Take the tour: {name}",
