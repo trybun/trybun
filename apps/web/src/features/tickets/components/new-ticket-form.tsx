@@ -14,18 +14,29 @@ import { Controller, useForm } from 'react-hook-form';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
+import { LazyAttachmentDrafts } from '../../attachments/components/lazy-attachment-drafts.js';
+import { useAttachmentDrafts } from '../../attachments/use-attachment-drafts.js';
 import { portalProjectHref, portalTicketHref } from '../../portal/hrefs.js';
 import { useCreateTicket } from '../mutations.js';
 import { LazyMarkdownEditor } from './lazy-markdown-editor.js';
 
 /**
  * The simplified ticket form of end users (§3.3): the title and the description, whose placeholder
- * is the end-user template of §3.4 in the creator's language (Q9). The ticket is created with the
- * defaults of §5.1 (only the requester sees it) until S1-11 adds the visibility switch (Q8), and
- * S1-08 adds the attachments. **Submit** stays disabled while the request is pending, so a double
- * press creates one ticket (Q20); after it the new ticket opens with a toast.
+ * is the end-user template of §3.4 in the creator's language (Q9), with the files added in the
+ * editor listed below it (S1-08 Q5, Q18). The ticket is created with the defaults of §5.1 (only
+ * the requester sees it) until S1-11 adds the visibility switch (Q8). **Submit** stays disabled
+ * while the request is pending, so a double press creates one ticket (Q20), and while a file is
+ * still uploading; files still being checked are attached. After it the new ticket opens with a
+ * toast.
  */
-export function NewTicketForm({ projectId }: { projectId: string }) {
+export function NewTicketForm({
+  projectId,
+  attachmentMaxSizeMb,
+}: {
+  projectId: string;
+  /** `TRYBUN_ATTACHMENT_MAX_SIZE_MB` of the web server (§13.3). */
+  attachmentMaxSizeMb: number;
+}) {
   const t = useTranslations('portal.newTicket');
   const errorMessage = useErrorMessage();
   const router = useRouter();
@@ -33,6 +44,11 @@ export function NewTicketForm({ projectId }: { projectId: string }) {
   const form = useForm<CreateTicketDto>({
     resolver: zodResolver(createTicketSchema, FORM_ERROR_MAP),
     defaultValues: { projectId, title: '', description: '' },
+  });
+  const attachments = useAttachmentDrafts({
+    form,
+    textField: 'description',
+    maxSizeMb: attachmentMaxSizeMb,
   });
 
   const submit = form.handleSubmit((input) =>
@@ -90,6 +106,7 @@ export function NewTicketForm({ projectId }: { projectId: string }) {
                 onBlur={field.onBlur}
                 invalid={fieldState.invalid}
                 placeholder={t('placeholder')}
+                {...attachments.editorProps}
               />
               <FieldError
                 errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}
@@ -97,6 +114,7 @@ export function NewTicketForm({ projectId }: { projectId: string }) {
             </Field>
           )}
         />
+        <LazyAttachmentDrafts drafts={attachments.drafts} onRemove={attachments.removeDraft} />
       </FieldGroup>
       {rootError !== undefined && (
         <p role="alert" className="text-sm text-destructive">
@@ -113,7 +131,9 @@ export function NewTicketForm({ projectId }: { projectId: string }) {
         <Button
           type="submit"
           className="w-full md:w-fit"
-          disabled={form.formState.isSubmitting || createTicket.isSuccess}
+          disabled={
+            form.formState.isSubmitting || createTicket.isSuccess || attachments.isUploading
+          }
         >
           {t('submit')}
         </Button>

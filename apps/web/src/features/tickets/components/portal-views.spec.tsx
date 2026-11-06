@@ -4,6 +4,7 @@ import { userEvent } from '@testing-library/user-event';
 import type { EndUserTicket } from '@trybun/contracts/tickets';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { attachmentResponse } from '../../../../test/factories/attachment.factory.js';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 
@@ -31,6 +32,7 @@ const { ResolutionConfirmation } = await import('./resolution-confirmation.js');
 const fake = createFakeApiClient();
 api.current = fake.client;
 
+const IMAGE_ID = '0199a3f0-0000-7000-8000-0000000000a1';
 const PROJECT = { id: '0199a3f0-0000-7000-8000-000000000010', key: 'CP', name: 'Customer portal' };
 
 function ticket(overrides: Partial<EndUserTicket> = {}): EndUserTicket {
@@ -124,7 +126,71 @@ describe('TicketView', () => {
         nextCursor: null,
       },
     });
+    fake.on('GET /api/v1/tickets/{ticketId}/attachments', {
+      data: { items: [], nextCursor: null },
+    });
   }
+
+  it('shows the attachments, the images of the description and the file events (S1-08)', async () => {
+    const value = ticket({
+      description: `Look:\n\n![screenshot.png](/api/v1/attachments/${IMAGE_ID}/content)`,
+    });
+    answerTicket(value);
+    const image = attachmentResponse({
+      id: IMAGE_ID,
+      fileName: 'screenshot.png',
+      contentType: 'image/png',
+      isImage: true,
+      status: 'available',
+      ticketId: value.id,
+      allowedActions: ['read', 'delete'],
+    });
+    fake.on('GET /api/v1/tickets/{ticketId}/attachments', {
+      data: { items: [image], nextCursor: null },
+    });
+    fake.on('GET /api/v1/attachments', { data: { items: [image], nextCursor: null } });
+    const anna = { id: '0199a3f0-0000-7000-8000-000000000042', displayName: 'Anna' };
+    fake.on('GET /api/v1/tickets/{ticketId}/activity-events', {
+      data: {
+        items: [
+          {
+            id: '0199a3f0-0000-7000-8000-000000000043',
+            type: 'attachment_added',
+            data: { from: null, to: { id: IMAGE_ID, displayName: 'screenshot.png' } },
+            actor: anna,
+            automaticSource: null,
+            createdAt: '2026-11-02T12:00:00.000Z',
+          },
+          {
+            id: '0199a3f0-0000-7000-8000-000000000044',
+            type: 'attachment_deleted',
+            data: { from: { id: IMAGE_ID, displayName: 'log.txt' }, to: null },
+            actor: anna,
+            automaticSource: null,
+            createdAt: '2026-11-02T13:00:00.000Z',
+          },
+        ],
+        nextCursor: null,
+      },
+    });
+    renderInApp(<TicketView identifier="CP-7" />);
+
+    const attachments = await screen.findByRole('region', { name: 'Attachments' });
+    expect(within(attachments).getByRole('link', { name: 'screenshot.png' })).toBeDefined();
+    expect(
+      within(attachments).getByRole('button', { name: 'Delete screenshot.png' }),
+    ).toBeDefined();
+    // The description shows the available image of the ticket inline (§13.3).
+    const description = screen.getByRole('region', { name: 'Description' });
+    expect(
+      (await within(description).findByRole('img', { name: 'screenshot.png' })).getAttribute('src'),
+    ).toBe(`/api/v1/attachments/${IMAGE_ID}/content`);
+    expect(fake.callsTo('GET /api/v1/attachments')[0]?.init).toMatchObject({
+      params: { query: { id: [IMAGE_ID] } },
+    });
+    expect(await screen.findByText('Anna added the file screenshot.png')).toBeDefined();
+    expect(screen.getByText('Anna deleted the file log.txt')).toBeDefined();
+  });
 
   it('shows the public status with its description and the public timeline (§4.2, §4.5)', async () => {
     answerTicket(ticket());

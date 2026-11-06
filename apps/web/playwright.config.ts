@@ -69,6 +69,11 @@ export default defineConfig({
       env: { TRYBUN_RATE_LIMIT_PER_USER: '10000', TRYBUN_RATE_LIMIT_PER_IP: '10000' },
     },
     {
+      // The Worker checks, strips and releases the uploaded attachments (§13.3). It serves no HTTP,
+      // so nothing is awaited; next to a running `pnpm dev` it is a second consumer of the queues.
+      command: 'pnpm --filter @trybun/server start:worker',
+    },
+    {
       command: 'pnpm exec next start --port 3000',
       url: 'http://localhost:3000/api/health',
       reuseExistingServer: !isCi,
