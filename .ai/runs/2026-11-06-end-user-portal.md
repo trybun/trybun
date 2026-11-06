@@ -37,8 +37,8 @@ Build the end-user portal exactly as the approved change specification decides (
 
 ### Phase 1: Shell and routing
 
-- [ ] 1.1 Portal navigation, the `(portal)` layout, `app/help/` and `/portal/settings`
-- [ ] 1.2 Counterparts table and redirects by account kind
+- [x] 1.1 Portal navigation, the `(portal)` layout, `app/help/` and `/portal/settings` — 60397fe
+- [x] 1.2 Counterparts table and redirects by account kind — 60397fe
 - [ ] 1.3 End-user project response and the portal root
 
 ### Phase 2: Creating a ticket
