@@ -53,7 +53,9 @@ Turn PR #119 into an approvable, design-only change specification for S1-08: cur
 
 ### Phase 3: Validation and review
 
-- [ ] 3.1 Run the validation gate and the specification review
+- [x] 3.1 Run the validation gate and the specification review — 82333d0
+- [x] Post-review fix: apply the re-review (cursor envelope, infected order, quota lock, scan bound, header) — e83b25b
+- [x] Post-review fix: server ID of the restore guard in backup-data — 71d47fc
 
 ### Phase 4: Approval
 
