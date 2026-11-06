@@ -5,6 +5,10 @@ import { base, en, Faker, pl } from '@faker-js/faker';
 import type { ProductTourId } from '@trybun/contracts/product-tours';
 import { publicStatusOf } from '@trybun/contracts/tickets';
 import type { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
+import {
+  ATTACHMENT_DELETED,
+  type AttachmentDeletedPayload,
+} from '../src/modules/attachments/attachments.events.js';
 
 const FAKER_SEED = 20_261_023;
 const CREATED_AT = new Date('2026-01-05T08:00:00.000Z');
@@ -705,8 +709,8 @@ function buildDemoTickets(
  * so the newcomer sees the tours again, the demo projects with their members, the demo
  * organization with its domain, project access and members, the demo invitations – a link
  * resent, revoked or accepted during a demo comes back as it was – and the demo tickets with their
- * activity: tickets created during a demo in the demo projects are removed with their events, as
- * undoing an import removes tickets (§12.5).
+ * activity: tickets created during a demo in the demo projects are removed with their events and
+ * attachments, as undoing an import removes tickets (§12.5).
  */
 export async function seedDemoData(prisma: PrismaClient): Promise<void> {
   const dataset = buildDemoDataset();
@@ -739,6 +743,19 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     // A ticket's original cannot be deleted while a relation points to it: relations first.
     await tx.ticketRelation.deleteMany({
       where: { OR: [{ sourceTicket: { is: demoTickets } }, { targetTicket: { is: demoTickets } }] },
+    });
+    // The attachments of the tickets restrict their deletion; their objects are removed by the
+    // Worker's `attachment.deleted` job, as for every deleted attachment (S1-08).
+    const attachments = await tx.attachment.findMany({
+      where: { ticket: { is: demoTickets } },
+      select: { id: true },
+    });
+    await tx.attachment.deleteMany({ where: { id: { in: attachments.map(({ id }) => id) } } });
+    await tx.outboxEvent.createMany({
+      data: attachments.map(({ id }) => ({
+        type: ATTACHMENT_DELETED,
+        payload: { attachmentId: id } satisfies AttachmentDeletedPayload,
+      })),
     });
     await tx.ticket.deleteMany({ where: demoTickets });
     await tx.ticketNumberCounter.deleteMany({ where: { projectId: { in: projectIds } } });
