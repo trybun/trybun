@@ -769,7 +769,7 @@ describe('ticket status endpoints', () => {
       expect(view.body).toMatchObject({
         publicStatus: 'awaiting_reply',
         waitingReason: 'confirmation',
-        allowedActions: ['read', 'update', 'confirm_resolution'],
+        allowedActions: ['read', 'update', 'confirm_resolution', 'add_attachment'],
       });
       expect(await read(ticket.id)).toMatchObject({ statusBeforeWaiting: 'in_verification' });
       expect((await outboxPayloads(ticket.id))[0]).toMatchObject({
@@ -811,7 +811,10 @@ describe('ticket status endpoints', () => {
       const res = await answer(requester.authorization, ticket, { answer: reply });
 
       expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ publicStatus, allowedActions: ['read', 'update'] });
+      expect(res.body).toMatchObject({
+        publicStatus,
+        allowedActions: ['read', 'update', 'add_attachment'],
+      });
       expect((await read(ticket.id)).status).toBe(status);
       const [, answered] = await events(ticket.id);
       expect(answered).toMatchObject({

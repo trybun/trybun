@@ -89,6 +89,15 @@ describe('ticket abilities', () => {
     ['Change status', 'change_status', 'admin', false, true],
     ['Change status', 'change_status', 'team_member', false, false],
     ['Change status', 'change_status', 'end_user_personal', true, false],
+    ['Add attachments to visible tickets', 'add_attachment', 'end_user_personal', true, true],
+    ['Add attachments to visible tickets', 'add_attachment', 'end_user_organization', true, true],
+    ['Add attachments to visible tickets', 'add_attachment', 'end_user_personal', false, false],
+    // Without current access to the project a requester only reads (Q14 of S1-08).
+    ['Add attachments to visible tickets', 'add_attachment', 'end_user', true, false],
+    ['Add attachments to visible tickets', 'add_attachment', 'developer', false, true],
+    ['Add attachments to visible tickets', 'add_attachment', 'project_manager', false, true],
+    ['Add attachments to visible tickets', 'add_attachment', 'admin', false, true],
+    ['Add attachments to visible tickets', 'add_attachment', 'team_member', false, false],
   ] as const)('%s (%s) – %s, own: %s: %s', (_row, action, who, own, isAllowed) => {
     expect(can(who, action, { own })).toBe(isAllowed);
   });
@@ -144,20 +153,20 @@ describe('ticket abilities', () => {
       'developer',
       false,
       'active',
-      ['read', 'update', 'update_fields', 'assign_self', 'change_status'],
+      ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
     ],
     [
       'developer',
       true,
       'active',
-      ['read', 'update', 'update_fields', 'assign_self', 'change_status'],
+      ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
     ],
     ['developer', false, 'archived', ['read']],
     ['team_member', false, 'active', []],
-    ['end_user_personal', true, 'active', ['read', 'update']],
+    ['end_user_personal', true, 'active', ['read', 'update', 'add_attachment']],
     ['end_user_personal', true, 'archived', ['read']],
     ['end_user_personal', false, 'active', []],
-    ['end_user_organization', true, 'active', ['read', 'update']],
+    ['end_user_organization', true, 'active', ['read', 'update', 'add_attachment']],
     ['end_user_archived_organization', true, 'active', ['read']],
     ['end_user', true, 'active', ['read']],
   ] as const)(

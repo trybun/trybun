@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildDemoDataset, NEWCOMER_EMAIL, seedDemoData } from '../prisma/demo-dataset.js';
 import { PrismaService } from '../src/platform/database/prisma.service.js';
+import { createAttachment } from './factories/attachment.factory.js';
 import { integrationConfig } from './setup/config.js';
 
 describe('demo dataset', () => {
@@ -138,7 +139,7 @@ describe('demo dataset', () => {
         where: { id: first?.id },
         data: { title: 'Changed in a demo', version: { increment: 1 } },
       });
-      await prisma.ticket.create({
+      const created = await prisma.ticket.create({
         data: {
           projectId: first?.projectId ?? '',
           number: 99,
@@ -148,9 +149,24 @@ describe('demo dataset', () => {
           requesterId: first?.requesterId ?? '',
         },
       });
+      // A file attached during a demo restricts the deletion of its ticket (S1-08).
+      const attachment = await createAttachment(prisma, {
+        uploadedById: first?.requesterId ?? '',
+        ticketId: created.id,
+      });
       await seedDemoData(prisma);
 
       expect(await state()).toEqual(seeded);
+      expect(await prisma.attachment.count({ where: { id: attachment.id } })).toBe(0);
+      // Its objects are removed by the job of `attachment.deleted`.
+      expect(
+        await prisma.outboxEvent.count({
+          where: {
+            type: 'attachment.deleted',
+            payload: { equals: { attachmentId: attachment.id } },
+          },
+        }),
+      ).toBe(1);
       expect(seeded.tickets).toHaveLength(tickets.length);
       expect(seeded.counters).toHaveLength(ticketNumberCounters.length);
       expect(seeded.events).toBe(activityEvents.length);

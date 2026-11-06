@@ -5,6 +5,7 @@ import { type StartedValkeyContainer, ValkeyContainer } from '@testcontainers/va
 import request from 'supertest';
 import { afterAll, describe, expect, inject, it } from 'vitest';
 import { TEST_ENV } from '../../../test/env.js';
+import { startSeaweedfs, type TestSeaweedfs } from '../../../test/storage/seaweedfs.js';
 import { VALKEY_IMAGE } from '../../../test/setup/containers.js';
 import { ApiModule } from '../../api.module.js';
 import { loadConfig } from '../config/load-config.js';
@@ -25,10 +26,11 @@ async function startApi(env: Record<string, string>): Promise<INestApplication<S
 describe('/health/ready', () => {
   const apps: INestApplication[] = [];
   let valkey: StartedValkeyContainer | undefined;
+  let seaweedfs: TestSeaweedfs | undefined;
 
   afterAll(async () => {
     await Promise.all(apps.map((app) => app.close()));
-    await valkey?.stop();
+    await Promise.all([valkey?.stop(), seaweedfs?.container.stop()]);
   });
 
   it('stays ready when Valkey goes down and reports it as degraded', async () => {
@@ -36,21 +38,69 @@ describe('/health/ready', () => {
     const app = await startApi({
       DATABASE_URL: inject('databaseUrl'),
       TRYBUN_VALKEY_URL: valkey.getConnectionUrl(),
+      TRYBUN_S3_URL: `${inject('storageEndpoint')}/trybun`,
     });
     apps.push(app);
 
     const before = await request(app.getHttpServer()).get('/health/ready');
     expect(before.status).toBe(200);
-    expect(before.body).toEqual({ status: 'ok', database: 'ok', valkey: 'ok' });
+    expect(before.body).toEqual({ status: 'ok', database: 'ok', valkey: 'ok', storage: 'ok' });
 
     await valkey.stop();
     valkey = undefined;
 
     const after = await request(app.getHttpServer()).get('/health/ready');
     expect(after.status).toBe(200);
-    expect(after.body).toEqual({ status: 'degraded', database: 'ok', valkey: 'degraded' });
+    expect(after.body).toEqual({
+      status: 'degraded',
+      database: 'ok',
+      valkey: 'degraded',
+      storage: 'ok',
+    });
     // Liveness never depends on a dependency.
     expect((await request(app.getHttpServer()).get('/health')).status).toBe(200);
+  });
+
+  it('creates the bucket at start-up and reports an outage of the storage as degraded', async () => {
+    seaweedfs = await startSeaweedfs();
+    const app = await startApi({
+      DATABASE_URL: inject('databaseUrl'),
+      TRYBUN_VALKEY_URL: inject('valkeyUrl'),
+      // A new storage without the bucket.
+      TRYBUN_S3_URL: `${seaweedfs.endpoint}/trybun-health`,
+    });
+    apps.push(app);
+
+    const before = await request(app.getHttpServer()).get('/health/ready');
+    expect(before.body).toEqual({ status: 'ok', database: 'ok', valkey: 'ok', storage: 'ok' });
+
+    await seaweedfs.container.stop();
+    seaweedfs = undefined;
+
+    const after = await request(app.getHttpServer()).get('/health/ready');
+    expect(after.status).toBe(200);
+    expect(after.body).toEqual({
+      status: 'degraded',
+      database: 'ok',
+      valkey: 'ok',
+      storage: 'degraded',
+    });
+    // Starting SeaweedFS includes its first write (test/storage/seaweedfs.ts).
+  }, 60_000);
+
+  it('starts with the storage reported as degraded when it refuses to create the bucket', async () => {
+    const app = await startApi({
+      DATABASE_URL: inject('databaseUrl'),
+      TRYBUN_VALKEY_URL: inject('valkeyUrl'),
+      TRYBUN_S3_URL: `${inject('storageEndpoint')}/trybun-refused`,
+      TRYBUN_S3_SECRET_ACCESS_KEY: 'not-the-secret',
+    });
+    apps.push(app);
+
+    const res = await request(app.getHttpServer()).get('/health/ready');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: 'degraded', storage: 'degraded' });
   });
 
   it('fails when PostgreSQL is unavailable', async () => {

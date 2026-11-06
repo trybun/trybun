@@ -1,7 +1,8 @@
 import {
+  activityEventSnapshotSchema,
   activityEventTicketSnapshotSchema,
-  endUserActivityEventDataSchema,
   endUserActivityEventSchema,
+  endUserStatusChangeDataSchema,
 } from '@trybun/contracts/activity-events';
 import { endUserProjectSchema } from '@trybun/contracts/projects';
 import {
@@ -29,10 +30,16 @@ export const strictEndUserTicketSchema = z.strictObject({
 export const strictEndUserActivityEventSchema = z.strictObject({
   ...endUserActivityEventSchema.shape,
   data: z
-    .strictObject({
-      ...endUserActivityEventDataSchema.shape,
-      duplicateOf: z.strictObject(activityEventTicketSnapshotSchema.shape).nullable().optional(),
-    })
+    .union([
+      z.strictObject({
+        ...endUserStatusChangeDataSchema.shape,
+        duplicateOf: z.strictObject(activityEventTicketSnapshotSchema.shape).nullable().optional(),
+      }),
+      z.strictObject({
+        from: z.strictObject(activityEventSnapshotSchema.shape).nullable(),
+        to: z.strictObject(activityEventSnapshotSchema.shape).nullable(),
+      }),
+    ])
     .nullable(),
   actor: z.strictObject({ id: z.uuid(), displayName: z.string().nullable() }).nullable(),
 });

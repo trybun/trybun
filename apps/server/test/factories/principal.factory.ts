@@ -91,22 +91,20 @@ export function buildInvitationRecord(
   });
 }
 
-/**
- * A ticket as its record descriptor loads it for the principal of a fixture: of its project, as the
- * project descriptor loads it; requested by the principal (`own`) or by someone else.
- */
-export function buildTicketRecord(
-  fixture: PrincipalFixture,
-  options: {
-    own?: boolean;
-    state?: 'active' | 'archived';
-    status?: TicketStatus;
-    waitingReason?: TicketWaitingReason | null;
-  } = {},
-) {
-  return subject('Ticket', {
+/** The options of a ticket record of a fixture. */
+export interface TicketRecordOptions {
+  own?: boolean;
+  state?: 'active' | 'archived';
+  status?: TicketStatus;
+  waitingReason?: TicketWaitingReason | null;
+}
+
+const SOMEONE_ELSE = '0190f2f4-7c1e-7000-8000-000000000099';
+
+function ticketFields(fixture: PrincipalFixture, options: TicketRecordOptions) {
+  return {
     id: 'ticket',
-    requesterId: options.own === true ? PRINCIPAL_ID : '0190f2f4-7c1e-7000-8000-000000000099',
+    requesterId: options.own === true ? PRINCIPAL_ID : SOMEONE_ELSE,
     status: options.status ?? 'in_progress',
     waitingReason: options.waitingReason ?? null,
     project: {
@@ -115,5 +113,31 @@ export function buildTicketRecord(
       members: buildMembers(fixture),
       organizations: buildOrganizationAccess(fixture),
     },
+  };
+}
+
+/**
+ * A ticket as its record descriptor loads it for the principal of a fixture: of its project, as the
+ * project descriptor loads it; requested by the principal (`own`) or by someone else.
+ */
+export function buildTicketRecord(fixture: PrincipalFixture, options: TicketRecordOptions = {}) {
+  return subject('Ticket', ticketFields(fixture, options));
+}
+
+/**
+ * An attachment as its record descriptor loads it for the principal of a fixture: uploaded by the
+ * principal (`own`) or by someone else, a draft or linked to a ticket as `buildTicketRecord` loads
+ * it (`ticket`, requested by the principal with `ticket.own`).
+ */
+export function buildAttachmentRecord(
+  fixture: PrincipalFixture,
+  options: { own?: boolean; ticket?: TicketRecordOptions | null } = {},
+) {
+  const ticket = options.ticket === null ? null : ticketFields(fixture, options.ticket ?? {});
+  return subject('Attachment', {
+    id: 'attachment',
+    uploadedById: options.own === true ? PRINCIPAL_ID : SOMEONE_ELSE,
+    ticketId: ticket?.id ?? null,
+    ticket,
   });
 }

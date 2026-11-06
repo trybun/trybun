@@ -43,6 +43,6 @@ Ctrl+Z undoes a change of the toolbar like typing. On a phone, the less used but
 
 - **HTML tags** such as `<details>` or `<kbd>` are not shown; the text between them is.
 - **Links** work only with `http`, `https` and `mailto` addresses and addresses within Trybun; any other link is shown as plain text.
-- **Images** are shown only for files attached to the same ticket. Any other image, for example from another website, is shown as a link with its description.
+- **Images** are shown only for files attached to the same ticket ([Attach files](../how-to/attach-files.md)). Any other image, for example from another website, is shown as a link with its description.
 - **Checkboxes** of task lists show the state; to tick one, edit the text.
 - In **e-mails**, images are always links, code is not highlighted and task items appear as ☐ and ☑.

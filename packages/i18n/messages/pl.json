@@ -339,6 +339,19 @@
       }
     }
   },
+  "attachments": {
+    "heading": "Załączniki",
+    "drafts": "Pliki do załączenia",
+    "tooManyFiles": "Naraz można dodać najwyżej {max, plural, one {# plik} few {# pliki} many {# plików} other {# pliku}}",
+    "tooLarge": "Plik jest większy niż {max} MB",
+    "loadMore": "Pokaż więcej plików",
+    "deleteTitle": "Usunąć {name}?",
+    "deleteDescription": "Plik zostanie usunięty dla wszystkich i nie będzie można go przywrócić.",
+    "deleteConfirm": "Usuń",
+    "cancel": "Anuluj",
+    "deleted": "Usunięto plik {name}",
+    "unavailable": "Plik {name} nie jest już dostępny"
+  },
   "users": {
     "accounts": {
       "title": "Konta",
@@ -607,6 +620,8 @@
       "history": "Historia",
       "created": "Utworzenie zgłoszenia",
       "statusChanged": "Status zmieniony na {status}",
+      "attachmentAdded": "{person} dodał(a) plik {file}",
+      "attachmentDeleted": "{person} usunął(-ęła) plik {file}",
       "system": "System",
       "unknownPerson": "Były użytkownik",
       "loadMoreHistory": "Pokaż więcej historii",
@@ -701,6 +716,15 @@
       "moreFormatting": "Więcej formatowania",
       "nothingToPreview": "Brak podglądu",
       "uploading": "Przesyłanie {name}…"
+    },
+    "attachmentList": {
+      "uploading": "Przesyłanie…",
+      "checking": "Sprawdzanie…",
+      "available": "Dostępny",
+      "infected": "Plik usunięty: wykryto złośliwe oprogramowanie",
+      "rejected": "Plik usunięty: nie można go sprawdzić",
+      "delete": "Usuń {name}",
+      "announcement": "{name}: {status}"
     }
   },
   "errors": {
@@ -750,6 +774,13 @@
       "duplicate_of_self": "Zgłoszenie nie może być duplikatem samego siebie.",
       "duplicate_other_project": "Oryginalne zgłoszenie musi należeć do tego samego projektu.",
       "resolution_confirmation_not_pending": "To zgłoszenie nie czeka już na Twoje potwierdzenie."
+    },
+    "attachment": {
+      "type_not_allowed": "Pliki tego typu są niedozwolone.",
+      "already_linked": "Ten plik jest już dołączony do zgłoszenia.",
+      "draft_limit_reached": "Masz zbyt wiele plików, które nie zostały jeszcze dołączone. Zapisz lub usuń część z nich i spróbuj ponownie.",
+      "not_available": "Ten plik jest jeszcze sprawdzany. Spróbuj ponownie za chwilę.",
+      "removed": "Ten plik został usunięty."
     },
     "invitation": {
       "account_kind_mismatch": "Ten adres należy do konta innego rodzaju. Rodzaj konta może zmienić tylko Administrator.",

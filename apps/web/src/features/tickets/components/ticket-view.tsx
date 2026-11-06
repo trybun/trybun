@@ -17,6 +17,8 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { MY_TICKETS_HREF } from '../../app-shell/navigation.js';
+import { TicketAttachments } from '../../attachments/components/ticket-attachments.js';
+import { useTicketImageIds } from '../../attachments/use-ticket-image-ids.js';
 import { portalTicketHref } from '../../portal/hrefs.js';
 import { projectQueryOptions } from '../../projects/queries.js';
 import { activityEventsQueryOptions, ticketQueryOptions } from '../queries.js';
@@ -26,8 +28,9 @@ import { ResolutionConfirmationPanel } from './resolution-confirmation-panel.js'
 /**
  * A ticket in the portal (§3.2, §4.2, §4.5): what an end user may see – the identifier, title,
  * public status with its description, the resolution question while it waits for the requester's
- * answer, the description and the public timeline. The API leaves internal fields and events out of
- * the response; the view only shows what it receives. The data is prefetched on the server.
+ * answer, the description with its images, the attachments and the public timeline. The API leaves
+ * internal fields and events out of the response; the view only shows what it receives. The data
+ * is prefetched on the server.
  */
 export function TicketView({ identifier }: { identifier: string }) {
   const t = useTranslations('portal.ticket');
@@ -40,6 +43,7 @@ export function TicketView({ identifier }: { identifier: string }) {
     ...projectQueryOptions(browserApiClient, ticket.data?.projectId ?? ''),
     enabled: ticket.data !== undefined,
   });
+  const imageIds = useTicketImageIds(ticket.data?.id ?? '', ticket.data?.description ?? '');
   if (ticket.isError) {
     return (
       <p role="alert" className="text-sm text-destructive">
@@ -108,9 +112,10 @@ export function TicketView({ identifier }: { identifier: string }) {
         {data.description === '' ? (
           <p className="text-sm text-muted-foreground">{t('noDescription')}</p>
         ) : (
-          <Markdown>{data.description}</Markdown>
+          <Markdown attachmentImageIds={imageIds}>{data.description}</Markdown>
         )}
       </section>
+      <TicketAttachments ticketId={data.id} />
       <Timeline ticket={data} />
     </article>
   );
@@ -118,7 +123,8 @@ export function TicketView({ identifier }: { identifier: string }) {
 
 /**
  * The public timeline (§4.5): the creation as the first item, as on GitHub (S1-05 Q11), then the
- * public events, oldest first – in Stage 1 the public status changes.
+ * public events, oldest first – in Stage 1 the public status changes and the files added to or
+ * deleted from the ticket (S1-08 Q15).
  */
 function Timeline({ ticket }: { ticket: TicketResponse }) {
   const t = useTranslations('portal.ticket');
@@ -141,16 +147,39 @@ function Timeline({ ticket }: { ticket: TicketResponse }) {
             {time(ticket.createdAt)}
           </time>
         </li>
-        {items.filter(isStatusChange).map((event) => (
-          <li key={event.id} className="flex flex-col">
-            <span>{t('statusChanged', { status: tStatuses(publicStatusTo(event)) })}</span>
-            <span className="text-sm text-muted-foreground">
-              {event.actor === null ? t('system') : (event.actor.displayName ?? t('unknownPerson'))}
-              {' · '}
-              <time dateTime={event.createdAt}>{time(event.createdAt)}</time>
-            </span>
-          </li>
-        ))}
+        {items.map((event) => {
+          const actor =
+            event.actor === null ? t('system') : (event.actor.displayName ?? t('unknownPerson'));
+          if (isStatusChange(event)) {
+            return (
+              <li key={event.id} className="flex flex-col">
+                <span>{t('statusChanged', { status: tStatuses(publicStatusTo(event)) })}</span>
+                <span className="text-sm text-muted-foreground">
+                  {actor}
+                  {' · '}
+                  <time dateTime={event.createdAt}>{time(event.createdAt)}</time>
+                </span>
+              </li>
+            );
+          }
+          const file = attachmentFileNameOf(event);
+          if (file === undefined) {
+            return null;
+          }
+          return (
+            <li key={event.id} className="flex flex-col">
+              <span className="break-words">
+                {t(event.type === 'attachment_added' ? 'attachmentAdded' : 'attachmentDeleted', {
+                  person: actor,
+                  file,
+                })}
+              </span>
+              <time dateTime={event.createdAt} className="text-sm text-muted-foreground">
+                {time(event.createdAt)}
+              </time>
+            </li>
+          );
+        })}
       </ol>
       {events.isError && (
         <p role="alert" className="text-sm text-destructive">
@@ -174,6 +203,19 @@ function Timeline({ ticket }: { ticket: TicketResponse }) {
 /** A public status change whose data the portal can show: the new public status. */
 function isStatusChange(event: ActivityEventResponse): boolean {
   return event.type === 'status_changed' && event.data !== null;
+}
+
+/** The file name of an added or deleted file: the snapshot of the attachment (S1-08 Q9). */
+function attachmentFileNameOf(event: ActivityEventResponse): string | undefined {
+  const snapshot =
+    event.type === 'attachment_added'
+      ? event.data?.to
+      : event.type === 'attachment_deleted'
+        ? event.data?.from
+        : undefined;
+  return typeof snapshot === 'object' && snapshot !== null && 'displayName' in snapshot
+    ? (snapshot.displayName ?? undefined)
+    : undefined;
 }
 
 function publicStatusTo(event: ActivityEventResponse): TicketPublicStatus {

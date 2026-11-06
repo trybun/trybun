@@ -14,7 +14,8 @@ export async function lockActiveAdministrators(tx: Transaction): Promise<string[
 /**
  * Locks the row of an account for the rest of the transaction (§18.3, raw SQL): accounts are not
  * versioned, so a change of the state or of the Administrator role takes this lock before it
- * re-reads the account. Returns whether it exists.
+ * re-reads the account, and an upload before it counts the account's drafts (S1-08). Returns
+ * whether it exists.
  */
 export async function lockAccount(tx: Transaction, userId: string): Promise<boolean> {
   const rows = await tx.$queryRaw<{ id: string }[]>`

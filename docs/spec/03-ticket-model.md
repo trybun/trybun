@@ -25,7 +25,7 @@ End users always create tickets **within a specific project**, so the `project` 
 | Identifier | Assigned automatically, format `KEY-number`; numbers are sequential per project and never reused. Stored as project + number; `KEY-number` is the display form ([§17.2](17-conventions.md)) | sees (read-only) | sees |
 | Title | Short description of the problem/task; trimmed, 1–255 characters | fills in | fills in |
 | Description | GFM Markdown content ([§6.2](06-comments-notifications.md)), at most 65,536 characters | fills in | fills in |
-| Attachments | Files, screenshots ([§13.3](13-non-functional.md)) | optional | optional |
+| Attachments | Files, screenshots ([§13.3](13-non-functional.md)). Uploaded first as drafts of the uploader, then linked explicitly: when the ticket is created (`attachmentIds` of `POST /api/v1/tickets`) or later (`POST /api/v1/tickets/{ticketId}/attachments`), at most 100 per request; only the principal's own unlinked drafts can be linked. Attachments are separate resources and do not change the ticket's `version` ([§17.2](17-conventions.md)) | optional | optional |
 | Project | Project the ticket belongs to. Set at creation and **immutable** afterwards: tickets are not moved between projects (a change to another project is rejected with `422 ticket.project_immutable`, pointer `/projectId`; the current project is accepted and changes nothing) | set automatically, hidden | fills in at creation (defaults to current project) |
 | Type | `bug` / `feature` / `task` / `question`; empty for a ticket of an end user until the team sets it during triage, `task` when the team omits it | – | fills in (completed during triage) |
 | Source | `user` / `developer` / `integration` | set automatically | set automatically |

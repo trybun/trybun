@@ -1,3 +1,8 @@
+import {
+  archivedProjectsOfAttachmentsRestriction,
+  attachmentRecords,
+  attachmentsAbilities,
+} from './modules/attachments/attachments.abilities.js';
 import { administrationAbilities } from './modules/administration/administration.abilities.js';
 import {
   archivedTargetsOfInvitationsRestriction,
@@ -34,12 +39,21 @@ export const ABILITY_DEFINITIONS = {
     invitationsAbilities,
     usersAbilities,
     ticketsAbilities,
+    attachmentsAbilities,
   ],
   restrictions: [
     archivedProjectsRestriction,
     archivedOrganizationsRestriction,
     archivedTargetsOfInvitationsRestriction,
     archivedProjectsOfTicketsRestriction,
+    archivedProjectsOfAttachmentsRestriction,
   ],
-  records: [projectRecords, organizationRecords, invitationRecords, userRecords, ticketRecords],
+  records: [
+    projectRecords,
+    organizationRecords,
+    invitationRecords,
+    userRecords,
+    ticketRecords,
+    attachmentRecords,
+  ],
 };

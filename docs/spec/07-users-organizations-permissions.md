@@ -167,8 +167,8 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Edit any ticket title and description | – | ✅ | ✅ | ✅ |
 | View edit history of descriptions and comments | own texts only | ✅ | ✅ | ✅ |
 | Redact a description or any comment ([§5.2](05-visibility-and-search.md)) | – | ✅ | ✅ | ✅ |
-| Add attachments to visible tickets | ✅ | ✅ | ✅ | ✅ |
-| Delete own attachments | ✅ | ✅ | ✅ | ✅ |
+| Add attachments to visible tickets ([§13.3](13-non-functional.md)) | ✅ (with current access to the project, [§7.3](#73-organizations)) | ✅ | ✅ | ✅ |
+| Delete own attachments | ✅ (with current access to the project, [§7.3](#73-organizations)) | ✅ | ✅ | ✅ |
 | Delete any attachment | – | ✅ | ✅ | ✅ |
 | "I have the same problem" on visible tickets | ✅ | – | – | – |
 | Watch / unwatch visible tickets | ✅ | ✅ | ✅ | ✅ |

@@ -11,6 +11,31 @@ function isSet(value: string | undefined): boolean {
   return value !== undefined && value.trim() !== '';
 }
 
+/** A bucket name of S3: 3–63 lower-case letters, digits, dots and hyphens. */
+const BUCKET_NAME = /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/;
+
+/** The segments of a URL path, without empty ones (`/trybun/files/` → `trybun`, `files`). */
+function pathSegments(url: string): string[] {
+  return new URL(url).pathname.split('/').filter((segment) => segment !== '');
+}
+
+/**
+ * The bucket URL of the object storage with an optional folder, in the form of
+ * `TRYBUN_BACKUP_S3_URL` (§15.3): the first path segment is the bucket, the rest the folder.
+ */
+const storageUrlSchema = z
+  .url({ protocol: /^https?$/ })
+  .refine((url) => BUCKET_NAME.test(pathSegments(url)[0] ?? ''), 'Must name a bucket in the path')
+  .refine((url) => {
+    const { username, password, search, hash } = new URL(url);
+    return username === '' && password === '' && search === '' && hash === '';
+  }, 'Must have no credentials, query or fragment');
+
+/** clamd over TCP (ADR 0008), e.g. `tcp://clamav:3310`. */
+const clamavUrlSchema = z
+  .url({ protocol: /^tcp$/ })
+  .refine((url) => new URL(url).port !== '', 'Must have a port');
+
 /** Environment variables of the API and the Worker (§15.3), validated at start-up. */
 export const configSchema = z
   .object({
@@ -30,6 +55,16 @@ export const configSchema = z
     TRYBUN_GITHUB_CLIENT_SECRET: z.string().optional(),
     TRYBUN_SMTP_HOST: z.string().optional(),
     TRYBUN_MAIL_FROM: z.string().optional(),
+    // The object storage of the attachments (§15.3, ADR 0008): SeaweedFS of Compose by default.
+    TRYBUN_S3_URL: storageUrlSchema.default('http://localhost:8333/trybun'),
+    TRYBUN_S3_ACCESS_KEY_ID: z.string().min(1),
+    TRYBUN_S3_SECRET_ACCESS_KEY: z.string().min(1),
+    TRYBUN_S3_REGION: z.string().min(1).default('us-east-1'),
+    // The malware scanner (§13.3, ADR 0008).
+    TRYBUN_CLAMAV_URL: clamavUrlSchema.default('tcp://localhost:3310'),
+    // The maximum size of one attachment, set by the Administrator (§13.3); at most clamd's
+    // StreamMaxLength (docker/clamav/clamd.conf).
+    TRYBUN_ATTACHMENT_MAX_SIZE_MB: z.coerce.number().int().min(1).max(100).default(25),
     // The external S3 storage of the backups (§15.10).
     TRYBUN_BACKUP_S3_URL: z.string().optional(),
     // The system default language and time zone (§13.1), set by the install script (§15.5).
@@ -63,6 +98,19 @@ export const configSchema = z
       adminUrl: `${env.TRYBUN_KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}`,
       serverClientSecret: env.TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET,
     },
+    storage: {
+      endpoint: new URL(env.TRYBUN_S3_URL).origin,
+      bucket: pathSegments(env.TRYBUN_S3_URL)[0] ?? '',
+      folder: pathSegments(env.TRYBUN_S3_URL).slice(1).join('/'),
+      region: env.TRYBUN_S3_REGION,
+      accessKeyId: env.TRYBUN_S3_ACCESS_KEY_ID,
+      secretAccessKey: env.TRYBUN_S3_SECRET_ACCESS_KEY,
+    },
+    clamav: {
+      host: new URL(env.TRYBUN_CLAMAV_URL).hostname,
+      port: Number(new URL(env.TRYBUN_CLAMAV_URL).port),
+    },
+    attachmentMaxSizeBytes: env.TRYBUN_ATTACHMENT_MAX_SIZE_MB * 1024 * 1024,
     isGithubSignInConfigured:
       isSet(env.TRYBUN_GITHUB_CLIENT_ID) && isSet(env.TRYBUN_GITHUB_CLIENT_SECRET),
     isSmtpConfigured: isSet(env.TRYBUN_SMTP_HOST),

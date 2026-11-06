@@ -53,6 +53,7 @@ async function selectOf(
     invitation: capture,
     user: capture,
     ticket: capture,
+    attachment: capture,
   };
   await descriptor.find(delegates as unknown as Transaction, {}, principal);
   return select;

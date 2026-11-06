@@ -5186,7 +5186,8 @@
                                     "assign",
                                     "assign_self",
                                     "change_status",
-                                    "confirm_resolution"
+                                    "confirm_resolution",
+                                    "add_attachment"
                                   ]
                                 }
                               },
@@ -5445,7 +5446,8 @@
                                     "assign",
                                     "assign_self",
                                     "change_status",
-                                    "confirm_resolution"
+                                    "confirm_resolution",
+                                    "add_attachment"
                                   ]
                                 }
                               },
@@ -5597,6 +5599,15 @@
                     "type": "string",
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "attachmentIds": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
                   }
                 },
                 "required": [
@@ -5708,7 +5719,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -5967,7 +5979,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6177,7 +6190,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6436,7 +6450,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6694,7 +6709,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6953,7 +6969,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7237,7 +7254,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7496,7 +7514,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7729,7 +7748,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7988,7 +8008,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -8149,7 +8170,9 @@
                                   "status_changed",
                                   "duplicate_original_changed",
                                   "duplicate_link_removed",
-                                  "rejection_reason_changed"
+                                  "rejection_reason_changed",
+                                  "attachment_added",
+                                  "attachment_deleted"
                                 ]
                               },
                               "data": {
@@ -8371,64 +8394,120 @@
                                   "status_changed",
                                   "duplicate_original_changed",
                                   "duplicate_link_removed",
-                                  "rejection_reason_changed"
+                                  "rejection_reason_changed",
+                                  "attachment_added",
+                                  "attachment_deleted"
                                 ]
                               },
                               "data": {
                                 "nullable": true,
-                                "type": "object",
-                                "properties": {
-                                  "from": {
-                                    "type": "string",
-                                    "enum": [
-                                      "received",
-                                      "awaiting_reply",
-                                      "in_progress",
-                                      "resolved",
-                                      "closed"
-                                    ]
-                                  },
-                                  "to": {
-                                    "type": "string",
-                                    "enum": [
-                                      "received",
-                                      "awaiting_reply",
-                                      "in_progress",
-                                      "resolved",
-                                      "closed"
-                                    ]
-                                  },
-                                  "duplicateOf": {
-                                    "nullable": true,
+                                "anyOf": [
+                                  {
                                     "type": "object",
                                     "properties": {
-                                      "id": {
+                                      "from": {
                                         "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        "enum": [
+                                          "received",
+                                          "awaiting_reply",
+                                          "in_progress",
+                                          "resolved",
+                                          "closed"
+                                        ]
                                       },
-                                      "number": {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 9007199254740991
+                                      "to": {
+                                        "type": "string",
+                                        "enum": [
+                                          "received",
+                                          "awaiting_reply",
+                                          "in_progress",
+                                          "resolved",
+                                          "closed"
+                                        ]
                                       },
-                                      "projectKey": {
-                                        "type": "string"
+                                      "duplicateOf": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "number": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "projectKey": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "number",
+                                          "projectKey"
+                                        ],
+                                        "additionalProperties": false
                                       }
                                     },
                                     "required": [
-                                      "id",
-                                      "number",
-                                      "projectKey"
+                                      "from",
+                                      "to"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "from": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "displayName": {
+                                            "nullable": true,
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "displayName"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "to": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "displayName": {
+                                            "nullable": true,
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "displayName"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "from",
+                                      "to"
                                     ],
                                     "additionalProperties": false
                                   }
-                                },
-                                "required": [
-                                  "from",
-                                  "to"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               "actor": {
                                 "nullable": true,
@@ -8493,6 +8572,774 @@
         },
         "tags": [
           "Tickets"
+        ]
+      }
+    },
+    "/api/v1/attachments": {
+      "post": {
+        "operationId": "AttachmentsController_upload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "files"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "contentType": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "isImage": {
+                            "type": "boolean"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "quarantine",
+                              "available",
+                              "infected",
+                              "rejected"
+                            ]
+                          },
+                          "ticketId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "uploadedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "displayName": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "allowedActions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "read",
+                                "delete"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fileName",
+                          "contentType",
+                          "size",
+                          "isImage",
+                          "status",
+                          "ticketId",
+                          "uploadedBy",
+                          "createdAt",
+                          "allowedActions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Attachments"
+        ]
+      },
+      "get": {
+        "operationId": "AttachmentsController_listByIds",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "contentType": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "isImage": {
+                            "type": "boolean"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "quarantine",
+                              "available",
+                              "infected",
+                              "rejected"
+                            ]
+                          },
+                          "ticketId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "uploadedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "displayName": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "allowedActions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "read",
+                                "delete"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fileName",
+                          "contentType",
+                          "size",
+                          "isImage",
+                          "status",
+                          "ticketId",
+                          "uploadedBy",
+                          "createdAt",
+                          "allowedActions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Attachments"
+        ]
+      }
+    },
+    "/api/v1/attachments/{attachmentId}": {
+      "get": {
+        "operationId": "AttachmentsController_findOne",
+        "parameters": [
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "fileName": {
+                      "type": "string"
+                    },
+                    "contentType": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "isImage": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "quarantine",
+                        "available",
+                        "infected",
+                        "rejected"
+                      ]
+                    },
+                    "ticketId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "uploadedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "allowedActions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "read",
+                          "delete"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "fileName",
+                    "contentType",
+                    "size",
+                    "isImage",
+                    "status",
+                    "ticketId",
+                    "uploadedBy",
+                    "createdAt",
+                    "allowedActions"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Attachments"
+        ]
+      },
+      "delete": {
+        "operationId": "AttachmentsController_delete",
+        "parameters": [
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attachments"
+        ]
+      }
+    },
+    "/api/v1/attachments/{attachmentId}/content": {
+      "get": {
+        "operationId": "AttachmentsController_content",
+        "parameters": [
+          {
+            "name": "attachmentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "description": ""
+          },
+          "304": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Attachments"
+        ]
+      }
+    },
+    "/api/v1/tickets/{ticketId}/attachments": {
+      "get": {
+        "operationId": "AttachmentsController_listOfTicket",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "contentType": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "isImage": {
+                            "type": "boolean"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "quarantine",
+                              "available",
+                              "infected",
+                              "rejected"
+                            ]
+                          },
+                          "ticketId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "uploadedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "displayName": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "allowedActions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "read",
+                                "delete"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fileName",
+                          "contentType",
+                          "size",
+                          "isImage",
+                          "status",
+                          "ticketId",
+                          "uploadedBy",
+                          "createdAt",
+                          "allowedActions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Attachments"
+        ]
+      },
+      "post": {
+        "operationId": "AttachmentsController_addToTicket",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "attachmentIds": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "attachmentIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "contentType": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "isImage": {
+                            "type": "boolean"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "quarantine",
+                              "available",
+                              "infected",
+                              "rejected"
+                            ]
+                          },
+                          "ticketId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "uploadedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "displayName": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "allowedActions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "read",
+                                "delete"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "fileName",
+                          "contentType",
+                          "size",
+                          "isImage",
+                          "status",
+                          "ticketId",
+                          "uploadedBy",
+                          "createdAt",
+                          "allowedActions"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Attachments"
         ]
       }
     }

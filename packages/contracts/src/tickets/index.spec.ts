@@ -53,6 +53,7 @@ describe('ticket enums', () => {
         'assign_self',
         'change_status',
         'confirm_resolution',
+        'add_attachment',
       ],
     ],
     [ticketWaitingReasonSchema, ['information', 'confirmation']],
@@ -219,6 +220,17 @@ describe('createTicketSchema', () => {
   ])('limits the description to 65,536 characters', (description, isValid) => {
     expect(
       createTicketSchema.safeParse({ projectId: PROJECT_ID, title: 'T', description }).success,
+    ).toBe(isValid);
+  });
+
+  it.each([
+    [[], true],
+    [Array<string>(100).fill(PROJECT_ID), true],
+    [Array<string>(101).fill(PROJECT_ID), false],
+    [['x'], false],
+  ])('limits the attachments to 100 IDs (%#)', (attachmentIds, isValid) => {
+    expect(
+      createTicketSchema.safeParse({ projectId: PROJECT_ID, title: 'T', attachmentIds }).success,
     ).toBe(isValid);
   });
 });

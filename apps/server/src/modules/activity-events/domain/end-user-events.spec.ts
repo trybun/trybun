@@ -50,6 +50,15 @@ describe('toEndUserEvent', () => {
     });
   });
 
+  it.each([
+    ['attachment_added', { from: null, to: { id: ID, displayName: 'screenshot.png' } }],
+    ['attachment_deleted', { from: { id: ID, displayName: 'log.txt' }, to: null }],
+  ] as const)('keeps the file snapshot of %s', (type, data) => {
+    const event: ActivityEvent = { ...statusChanged(null), type, data };
+
+    expect(toEndUserEvent(event, new Set())).toEqual(event);
+  });
+
   it('keeps no data of another type', () => {
     const event: ActivityEvent = {
       ...statusChanged(null),

@@ -17,6 +17,7 @@ export type AppSubject =
       Invitation: InvitationRuleRecord;
       User: UserRuleRecord;
       Ticket: TicketRuleRecord;
+      Attachment: AttachmentRuleRecord;
     }>
   | 'Administration';
 
@@ -65,6 +66,17 @@ export type TicketRuleRecord = {
   id: string;
   requesterId: string;
   project: ProjectRuleRecord;
+};
+
+/**
+ * An attachment as its rules read it (§7.5): its uploader and, once linked, its ticket as the
+ * ticket's rules read it; `null` for a draft.
+ */
+export type AttachmentRuleRecord = {
+  id: string;
+  uploadedById: string;
+  ticketId: string | null;
+  ticket: TicketRuleRecord | null;
 };
 
 /** The conditions of a rule: the Prisma `WhereInput` of its subject. */

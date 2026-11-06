@@ -22,7 +22,10 @@ services:
     ports: ['127.0.0.1:6379:6379']
     networks: [outbound]
 
+  # SeaweedFS listens on the address of one of its networks only; the published port leads to the
+  # address on `outbound`, so it listens on every address of the container.
   seaweedfs:
+    command: [server, -dir=/data, -s3, -master.telemetry=false, -ip.bind=0.0.0.0]
     ports: ['127.0.0.1:8333:8333']
     networks: [outbound]
 

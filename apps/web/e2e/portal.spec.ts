@@ -3,7 +3,19 @@ import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { PortalPage } from './pages/portal.page.js';
 import { CUSTOMER_STORAGE_STATE, PARTNER_STORAGE_STATE } from './storage-state.js';
+import { waitForToastsToClose } from './toasts.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
+
+/** A PNG of one pixel: an image the Worker checks, strips and releases in seconds (§13.3). */
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+/** Whether a response answers a request of the attachments API (S1-08). */
+function isAttachmentRequest(url: string): boolean {
+  return new URL(url).pathname.startsWith('/api/v1/attachments');
+}
 
 // The end-user portal of S1-09 (§5.7) on phone, tablet and desktop, with axe (§13.4).
 test.describe('the portal of an end user with one project', () => {
@@ -47,6 +59,123 @@ test.describe('the portal of an end user with one project', () => {
     await expect(page.getByText(/^Ticket CP-\d+ created$/)).toBeVisible();
     await expect(portal.heading).toHaveText(title);
     await expect(page.getByText('We have received your ticket')).toBeVisible();
+  });
+
+  test('attaches an image to a new ticket, shows it inline after the check and deletes it (S1-08)', async ({
+    page,
+  }, testInfo) => {
+    // The malware scan of the Worker runs between the upload and the inline image.
+    test.slow();
+    const portal = new PortalPage(page);
+    const shell = new AppShellPage(page);
+    await page.goto('/portal');
+    await portal.createTicket.click();
+    await portal.title.fill(`Screenshot of the error on ${testInfo.project.name}`);
+
+    await portal.addFiles([{ name: 'screenshot.png', mimeType: 'image/png', buffer: PNG }]);
+
+    await expect(portal.drafts.getByRole('listitem')).toHaveCount(1);
+    await expect(portal.drafts).toContainText('screenshot.png');
+    await expect(portal.description).toHaveValue(
+      /^!\[screenshot\\\.png\]\(\/api\/v1\/attachments\/[0-9a-f-]{36}\/content\)$/,
+    );
+    expect(await seriousViolations(page)).toEqual([]);
+    expect(await shell.horizontalOverflow()).toBe(0);
+    await expectTouchTarget(portal.attachFiles, minimumTargetSize(testInfo), ['height', 'width']);
+    await expectTouchTarget(
+      portal.drafts.getByRole('button', { name: 'Delete screenshot.png' }),
+      minimumTargetSize(testInfo),
+      ['height', 'width'],
+    );
+    // The form can be saved while the file is being checked.
+    await expect(portal.submit).toBeEnabled();
+    await portal.submit.click();
+
+    await expect(page).toHaveURL(/\/portal\/tickets\/CP-\d+$/);
+    // The view polls the image until the check has released it, then shows it inline.
+    const image = page
+      .getByRole('region', { name: 'Description' })
+      .getByRole('img', { name: 'screenshot.png' });
+    await expect(image).toBeVisible({ timeout: 60_000 });
+    await expect
+      .poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth))
+      .toBe(1);
+    await expect(portal.attachments.getByRole('link', { name: 'screenshot.png' })).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+    expect(await shell.horizontalOverflow()).toBe(0);
+    await expectTouchTarget(
+      portal.attachments.getByRole('button', { name: 'Delete screenshot.png' }),
+      minimumTargetSize(testInfo),
+      ['height', 'width'],
+    );
+    await waitForToastsToClose(page);
+
+    await portal.deleteAttachment('screenshot.png');
+
+    await expect(page.getByText('File screenshot.png deleted')).toBeVisible();
+    await expect(portal.attachments).toHaveCount(0);
+    await expect(portal.history.last()).toContainText(
+      'Celina Customer deleted the file screenshot.png',
+    );
+    // Files attached while creating the ticket write no event (S1-08 Q16).
+    await expect(portal.history.filter({ hasText: 'added the file' })).toHaveCount(0);
+  });
+
+  test('uploads 10 files of one selection without reaching the rate limit (S1-08 Q7)', async ({
+    page,
+  }, testInfo) => {
+    test.slow();
+    const portal = new PortalPage(page);
+    const statuses: number[] = [];
+    page.on('response', (response) => {
+      if (isAttachmentRequest(response.url())) {
+        statuses.push(response.status());
+      }
+    });
+    await page.goto('/portal');
+    await portal.createTicket.click();
+    await portal.title.fill(`Ten log files of ${testInfo.project.name}`);
+
+    await portal.addFiles(
+      Array.from({ length: 10 }, (_, index) => ({
+        name: `log-${index + 1}.txt`,
+        mimeType: 'text/plain',
+        buffer: Buffer.from(`Line ${index + 1} of the log\n`),
+      })),
+    );
+
+    await expect(portal.drafts.getByRole('listitem')).toHaveCount(10);
+    await expect(portal.submit).toBeEnabled();
+    // The drafts are polled with one request at a time while they are being checked.
+    await expect.poll(() => statuses.filter((status) => status === 200).length).toBeGreaterThan(0);
+    // Submitting attaches the drafts, so the next run of the test starts below the draft quota.
+    await portal.submit.click();
+    await expect(page).toHaveURL(/\/portal\/tickets\/CP-\d+$/);
+    await expect(portal.attachments.getByRole('listitem')).toHaveCount(10);
+    expect(statuses.filter((status) => status === 201)).toHaveLength(10);
+    expect(statuses).not.toContain(429);
+  });
+
+  test('refuses a file over the size limit before sending it (S1-08 Q2)', async ({ page }) => {
+    const portal = new PortalPage(page);
+    const uploads: string[] = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && isAttachmentRequest(request.url())) {
+        uploads.push(request.url());
+      }
+    });
+    await page.goto('/portal');
+    await portal.createTicket.click();
+
+    await portal.addFiles([
+      { name: 'large.log', mimeType: 'text/plain', buffer: Buffer.alloc(26 * 1024 * 1024, 'a') },
+    ]);
+
+    await expect(page.getByText('The file is larger than 25 MB')).toBeVisible();
+    await expect(page.getByText('large.log')).toBeVisible();
+    await expect(portal.drafts).toHaveCount(0);
+    await expect(portal.description).toHaveValue('');
+    expect(uploads).toEqual([]);
   });
 
   test('lists the tickets awaiting a reply first in My tickets', async ({ page }, testInfo) => {

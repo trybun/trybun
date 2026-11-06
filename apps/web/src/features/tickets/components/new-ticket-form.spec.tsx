@@ -2,6 +2,7 @@
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { attachmentResponse } from '../../../../test/factories/attachment.factory.js';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 
@@ -24,6 +25,9 @@ vi.stubGlobal('matchMedia', (query: string) => ({
   removeEventListener: () => undefined,
 }));
 
+// jsdom has no `execCommand`: the editor replaces its placeholders without an undo entry.
+Object.defineProperty(document, 'execCommand', { value: () => false });
+
 const { NewTicketForm } = await import('./new-ticket-form.js');
 
 const fake = createFakeApiClient();
@@ -44,7 +48,7 @@ describe('NewTicketForm', () => {
   ] as const)(
     'shows the end-user template as the placeholder of the description (%s, §3.4)',
     async (locale, label, placeholder) => {
-      renderInApp(<NewTicketForm projectId={PROJECT_ID} />, { locale });
+      renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />, { locale });
 
       expect(
         // The editor loads lazily; its first import takes longer under the whole suite.
@@ -58,7 +62,7 @@ describe('NewTicketForm', () => {
   it('creates the ticket and opens it with a toast', async () => {
     const events = userEvent.setup();
     fake.on('POST /api/v1/tickets', { status: 201, data: { identifier: 'CP-7' } });
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} />);
+    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
 
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Invoice PDF is empty');
     await events.type(await screen.findByRole('textbox', { name: 'Description' }), 'Since Monday');
@@ -73,7 +77,7 @@ describe('NewTicketForm', () => {
 
   it('asks for a title without sending anything', async () => {
     const events = userEvent.setup();
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} />);
+    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
 
     await events.click(screen.getByRole('button', { name: 'Submit' }));
 
@@ -93,7 +97,7 @@ describe('NewTicketForm', () => {
         errors: [{ pointer: '/title', code: 'string.too_long', detail: 'Too long' }],
       },
     });
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} />);
+    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
 
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'A title');
     await events.click(screen.getByRole('button', { name: 'Submit' }));
@@ -119,7 +123,7 @@ describe('NewTicketForm', () => {
             });
         }),
     );
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} />);
+    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
 
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Invoice PDF is empty');
     const submit = screen.getByRole('button', { name: 'Submit' });
@@ -130,5 +134,53 @@ describe('NewTicketForm', () => {
     expect(fake.client.POST).toHaveBeenCalledOnce();
     answer();
     await waitFor(() => expect(push).toHaveBeenCalledOnce());
+  });
+
+  it('attaches the files added in the editor (S1-08 Q5)', async () => {
+    const events = userEvent.setup();
+    const attachmentId = '0199a3f0-0000-7000-8000-0000000000a1';
+    let answerUpload: () => void = () => undefined;
+    fake.client.POST.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          answerUpload = () =>
+            resolve({
+              data: { items: [attachmentResponse({ id: attachmentId, fileName: 'log.txt' })] },
+              response: new Response(null, { status: 201 }),
+            });
+        }),
+    );
+    fake.on('GET /api/v1/attachments', {
+      data: { items: [attachmentResponse({ id: attachmentId })], nextCursor: null },
+    });
+    fake.on('POST /api/v1/tickets', { status: 201, data: { identifier: 'CP-7' } });
+    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
+    await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Invoice PDF is empty');
+    await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (input === null) {
+      throw new Error('The editor has no file input');
+    }
+
+    await events.upload(input, new File(['log'], 'log.txt', { type: 'text/plain' }));
+
+    // A file still uploading has no reference in the text yet: the form waits for it.
+    const submit = screen.getByRole('button', { name: 'Submit' });
+    expect(await screen.findByText('Uploading…')).toBeDefined();
+    expect(submit.hasAttribute('disabled')).toBe(true);
+    answerUpload();
+    // A file still being checked is attached.
+    expect(await screen.findByText('Checking…')).toBeDefined();
+    await waitFor(() => expect(submit.hasAttribute('disabled')).toBe(false));
+    await events.click(submit);
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/portal/tickets/CP-7'));
+    expect(fake.callsTo('POST /api/v1/tickets')[0]?.init).toMatchObject({
+      body: {
+        title: 'Invoice PDF is empty',
+        description: `[log\\.txt](/api/v1/attachments/${attachmentId}/content)`,
+        attachmentIds: [attachmentId],
+      },
+    });
   });
 });

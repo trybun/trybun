@@ -27,6 +27,8 @@ API_HEALTH="http://localhost:$API_PORT/health/ready"   # checks PostgreSQL too
 # The parallel E2E/QA requests share the seeded accounts, as in playwright.config.ts.
 export TRYBUN_RATE_LIMIT_PER_USER=10000 TRYBUN_RATE_LIMIT_PER_IP=10000
 API_COMMAND="pnpm --filter @trybun/server start"
+# The Worker scans and releases uploaded attachments (S1-08); without it they stay "Checking…".
+WORKER_COMMAND="pnpm --filter @trybun/server start:worker"
 WEB_COMMAND="pnpm --filter @trybun/web exec next start --port $WEB_PORT"
 PREP_CHAIN="pnpm install --frozen-lockfile && pnpm build"
 ARTIFACTS="apps/server/dist/main.js apps/web/.next/BUILD_ID"
@@ -113,8 +115,9 @@ CURRENT_FP=$(fingerprint)
 # --- reuse check: attach to a running environment of this checkout
 if [ "$FORCE" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR")" = running ]; then
   api_pid=$(json_get apiPid "$DESCRIPTOR")
+  worker_pid=$(json_get workerPid "$DESCRIPTOR")
   web_pid=$(json_get webPid "$DESCRIPTOR")
-  if alive "$api_pid" && alive "$web_pid" && healthy "$WEB_HEALTH" && healthy "$API_HEALTH" &&
+  if alive "$api_pid" && alive "$worker_pid" && alive "$web_pid" && healthy "$WEB_HEALTH" && healthy "$API_HEALTH" &&
      [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://localhost:$API_PORT/api/v1/users/me")" = 401 ] &&
      [ "$(age_seconds "$(json_get startedAt "$DESCRIPTOR")")" -lt "$TTL_SECONDS" ] &&
      [ "$(json_get sourceFingerprint "$DESCRIPTOR")" = "$CURRENT_FP" ]; then
@@ -151,8 +154,7 @@ done
 # --- services: the Compose infrastructure of the local environment (§15.12), as in CI
 if [ ! -f .env ]; then
   cp .env.example .env
-  sed -i.bak 's/^COMPOSE_PROFILES=.*/COMPOSE_PROFILES=/' .env && rm -f .env.bak
-  log "created .env from .env.example without the optional services"
+  log "created .env from .env.example with its optional services (SeaweedFS and ClamAV for attachments)"
 fi
 SERVICES_STARTED=true
 [ -n "$($COMPOSE ps -q postgres 2>/dev/null)" ] && SERVICES_STARTED=false
@@ -183,13 +185,14 @@ start_bg() { # $1 log name, $2 command – in its own session, so the down scrip
   echo $!
 }
 API_PID=$(start_bg api "$API_COMMAND")
+WORKER_PID=$(start_bg worker "$WORKER_COMMAND")
 WEB_PID=$(start_bg web "$WEB_COMMAND")
 log "waiting for the API (PID $API_PID) and the web application (PID $WEB_PID)"
 waited=0
 until healthy "$API_HEALTH" && healthy "$WEB_HEALTH"; do
-  if ! alive "$API_PID" || ! alive "$WEB_PID" || [ "$waited" -ge 180 ]; then
-    log "the application did not become healthy; see $LOG_DIR/api.log and $LOG_DIR/web.log"
-    kill -- "-$API_PID" "-$WEB_PID" 2>/dev/null || true
+  if ! alive "$API_PID" || ! alive "$WORKER_PID" || ! alive "$WEB_PID" || [ "$waited" -ge 180 ]; then
+    log "the application did not become healthy; see $LOG_DIR/api.log, $LOG_DIR/worker.log and $LOG_DIR/web.log"
+    kill -- "-$API_PID" "-$WORKER_PID" "-$WEB_PID" 2>/dev/null || true
     exit 1
   fi
   sleep 2
@@ -227,7 +230,7 @@ cat > "$DESCRIPTOR" <<EOF
   "composeProject": "$COMPOSE_PROJECT",
   "startScript": ".ai/scripts/test-env-up.sh",
   "stopScript": ".ai/scripts/test-env-down.sh",
-  "app": { "startCommand": "$API_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "webPid": "$WEB_PID", "apiUrl": "http://localhost:$API_PORT" },
+  "app": { "startCommand": "$API_COMMAND & $WORKER_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "workerPid": "$WORKER_PID", "webPid": "$WEB_PID", "apiUrl": "http://localhost:$API_PORT" },
   "services": [
     { "type": "compose", "command": "$COMPOSE", "note": "Compose project $COMPOSE_PROJECT, its own containers and volumes; PostgreSQL 5432, Valkey 6379, SeaweedFS 8333, Keycloak 8080, Mailpit 8025" }
   ],

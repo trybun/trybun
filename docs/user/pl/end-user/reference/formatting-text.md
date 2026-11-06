@@ -43,6 +43,6 @@ Ctrl+Z cofa zmianę z paska narzędzi tak samo jak pisanie. Na telefonie rzadzie
 
 - **Znaczniki HTML**, np. `<details>` albo `<kbd>`, nie są pokazywane; tekst między nimi tak.
 - **Linki** działają tylko z adresami `http`, `https` i `mailto` oraz z adresami w Trybunie; każdy inny link jest pokazywany jako zwykły tekst.
-- **Obrazy** są pokazywane tylko dla plików dołączonych do tego samego zgłoszenia. Każdy inny obraz, np. z innej strony internetowej, jest pokazywany jako link z jego opisem.
+- **Obrazy** są pokazywane tylko dla plików dołączonych do tego samego zgłoszenia ([Dołącz pliki](../how-to/attach-files.md)). Każdy inny obraz, np. z innej strony internetowej, jest pokazywany jako link z jego opisem.
 - **Pola wyboru** list zadań pokazują stan; aby zaznaczyć pole, edytuj tekst.
 - W **e-mailach** obrazy są zawsze linkami, kod nie jest kolorowany, a zadania wyglądają jak ☐ i ☑.

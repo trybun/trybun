@@ -339,6 +339,19 @@
       }
     }
   },
+  "attachments": {
+    "heading": "Attachments",
+    "drafts": "Files to attach",
+    "tooManyFiles": "At most {max, plural, one {# file} other {# files}} can be added at once",
+    "tooLarge": "The file is larger than {max} MB",
+    "loadMore": "Show more files",
+    "deleteTitle": "Delete {name}?",
+    "deleteDescription": "The file is deleted for everyone and cannot be restored.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "deleted": "File {name} deleted",
+    "unavailable": "File {name} is no longer available"
+  },
   "users": {
     "accounts": {
       "title": "Accounts",
@@ -607,6 +620,8 @@
       "history": "History",
       "created": "Ticket created",
       "statusChanged": "Status changed to {status}",
+      "attachmentAdded": "{person} added the file {file}",
+      "attachmentDeleted": "{person} deleted the file {file}",
       "system": "System",
       "unknownPerson": "Former user",
       "loadMoreHistory": "Show more history",
@@ -701,6 +716,15 @@
       "moreFormatting": "More formatting",
       "nothingToPreview": "Nothing to preview",
       "uploading": "Uploading {name}…"
+    },
+    "attachmentList": {
+      "uploading": "Uploading…",
+      "checking": "Checking…",
+      "available": "Available",
+      "infected": "File removed: malware detected",
+      "rejected": "File removed: could not be checked",
+      "delete": "Delete {name}",
+      "announcement": "{name}: {status}"
     }
   },
   "errors": {
@@ -750,6 +774,13 @@
       "duplicate_of_self": "A ticket cannot be a duplicate of itself.",
       "duplicate_other_project": "The original ticket must be in the same project.",
       "resolution_confirmation_not_pending": "This ticket no longer waits for your confirmation."
+    },
+    "attachment": {
+      "type_not_allowed": "Files of this type are not allowed.",
+      "already_linked": "This file is already attached to a ticket.",
+      "draft_limit_reached": "You have too many files that are not attached yet. Save or remove some of them and try again.",
+      "not_available": "This file is still being checked. Try again in a moment.",
+      "removed": "This file was removed."
     },
     "invitation": {
       "account_kind_mismatch": "This address belongs to an account of the other kind. Only the Administrator can change the kind of an account.",
