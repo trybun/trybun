@@ -49,7 +49,7 @@ Turn PR #119 into an approvable, design-only change specification for S1-08: cur
 ### Phase 2: Bring the proposal up to date with main
 
 - [x] 2.1 Merge main into the branch — fb3f16d
-- [ ] 2.2 Check the spec against the implemented S1-04 to S1-09 code
+- [x] 2.2 Check the spec against the implemented S1-04 to S1-09 code — f576d69
 
 ### Phase 3: Validation and review
 
