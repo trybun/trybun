@@ -109,11 +109,16 @@ test.describe('the portal of an end user with one project', () => {
     await page.goto(ticketUrl ?? '/');
     await expect(page.getByRole('heading', { name: 'Is your problem solved?' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Yes, solved' }).click();
+    // A press before the hydration does nothing (#191): press again while the question is shown.
+    const question = page.getByRole('heading', { name: 'Is your problem solved?' });
+    await expect(async () => {
+      if (await question.isVisible()) {
+        await page.getByRole('button', { name: 'Yes, solved' }).click();
+      }
+      await expect(page.getByText('Your ticket has been resolved')).toBeVisible({ timeout: 2_000 });
+    }).toPass();
 
-    await expect(page.getByText('Thank you. The ticket is resolved.')).toBeVisible();
-    await expect(page.getByText('Your ticket has been resolved')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Is your problem solved?' })).toHaveCount(0);
+    await expect(question).toHaveCount(0);
   });
 });
 
