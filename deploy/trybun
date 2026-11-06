@@ -42,9 +42,11 @@ Commands:
   setup-token   Print a new setup link for the first-run wizard (valid for 24 hours, works once).
   backup        Back up both databases, the objects and the configuration now.
   backup list   List the backups on this server and on the external S3 storage.
-  restore [<backup>]
+  restore [<backup>] [--replace-foreign-objects]
                 Replace all data and the configuration with a backup (default: the newest) and
-                start the version it was taken with. Also restores onto a new server.
+                start the version it was taken with. Also restores onto a new server. Asks again
+                before it replaces a storage folder that belongs to another Trybun server; without
+                a terminal it refuses, unless --replace-foreign-objects is given.
   update <version>
                 Back up, then install and start the release <version>, e.g. 1.4.1.
   uninstall     Delete Trybun from this server: containers, all data, the backups on this server
@@ -394,6 +396,30 @@ restore_configuration() {
   trap - EXIT HUP INT TERM
 }
 
+# The restore replaces the content of the storage folder of the backup's .env (TRYBUN_S3_URL). When
+# the folder's marker names another Trybun server – e.g. production, when its backup is restored
+# onto a test server with its .env – it asks a second question, or refuses without a terminal,
+# unless --replace-foreign-objects was given. Sets $replace_objects for restore-data.
+check_storage_folder() {
+  owner=$(docker compose run --rm -T backup storage-owner) ||
+    fail "The storage folder of the backup $backup_id could not be read. See the messages above. Nothing was changed; start Trybun again with docker compose up -d --wait."
+  storage_url=${owner#* }
+  case ${owner%% *} in
+    own | none) return 0 ;;
+    foreign) ;;
+    *) fail "Unexpected answer \"$owner\" about the storage folder of the backup $backup_id. Nothing was changed; start Trybun again with docker compose up -d --wait." ;;
+  esac
+  replace_objects=--replace-foreign-objects
+  [ -z "$replace_foreign_objects" ] || return 0
+  [ -t 0 ] ||
+    fail "The storage folder $storage_url belongs to another Trybun server; the restore would replace its content. Run ./trybun restore $backup_id in a terminal to confirm, or add --replace-foreign-objects. Nothing was changed; start Trybun again with docker compose up -d --wait."
+  confirmation=$(ask "The storage folder $storage_url belongs to another Trybun server. Replace its content? [y/N]: " n)
+  case $confirmation in
+    y | Y | yes | YES) ;;
+    *) fail 'Restore stopped. Nothing was changed; start Trybun again with docker compose up -d --wait.' ;;
+  esac
+}
+
 # Sets the passwords of the database users to those of .env, also when the database volume was
 # created with other ones (§15.5): over the local socket of the container, through stdin.
 set_database_passwords() {
@@ -405,7 +431,20 @@ set_database_passwords() {
 }
 
 restore() {
-  backup_id=${1:-latest}
+  backup_id=
+  replace_foreign_objects=
+  replace_objects=
+  for argument in "$@"; do
+    case $argument in
+      --replace-foreign-objects) replace_foreign_objects=1 ;;
+      -*) fail "Unknown option \"$argument\". Use ./trybun restore [<backup>] [--replace-foreign-objects]." ;;
+      *)
+        [ -z "$backup_id" ] || fail "Name one backup, not \"$backup_id\" and \"$argument\"."
+        backup_id=$argument
+        ;;
+    esac
+  done
+  backup_id=${backup_id:-latest}
   printf '%s\n' "$backup_id" | grep -Eqx 'latest|[0-9a-f]{8,64}' ||
     fail "\"$backup_id\" is not a backup. Name the ID of a backup listed by ./trybun backup list, or nothing for the newest one."
   require_env
@@ -420,10 +459,11 @@ restore() {
   docker compose stop
   docker compose run --rm -T --no-deps backup fetch "$backup_id" ||
     fail "The backup $backup_id could not be read. Nothing was changed; start Trybun again with docker compose up -d --wait."
+  check_storage_folder
   restore_configuration
   say 'Restoring both databases and the objects.'
   { docker compose up -d --wait postgres && set_database_passwords &&
-    docker compose run --rm -T backup restore-data; } ||
+    docker compose run --rm -T backup restore-data ${replace_objects:+"$replace_objects"}; } ||
     fail "Restoring the data failed. See the messages above, fix the cause and run ./trybun restore $backup_id again."
   say 'Starting Trybun (docker compose up -d --wait).'
   docker compose up -d --wait ||
@@ -646,7 +686,10 @@ case $COMMAND in
   install) install ;;
   setup-token) setup_token ;;
   backup) backup "${2-}" ;;
-  restore) restore "${2-}" ;;
+  restore)
+    shift
+    restore "$@"
+    ;;
   update) update "${2-}" ;;
   uninstall) uninstall ;;
   '' | -h | --help | help) usage ;;

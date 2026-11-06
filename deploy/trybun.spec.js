@@ -51,9 +51,10 @@ case "$*" in
   "compose stop") ;;
   "compose run --rm -T --no-deps backup fetch "*) exit "$STUB_FETCH_EXIT" ;;
   "compose run --rm -T --no-deps backup configuration") cat "$STUB_CONFIGURATION" ;;
+  "compose run --rm -T backup storage-owner") echo "$STUB_STORAGE_OWNER"; exit "$STUB_STORAGE_OWNER_EXIT" ;;
   "compose up -d --wait postgres") ;;
   "compose exec -T postgres "*) cat >"$STUB_STDIN" ;;
-  "compose run --rm -T backup restore-data") exit "$STUB_RESTORE_EXIT" ;;
+  "compose run --rm -T backup restore-data" | "compose run --rm -T backup restore-data --replace-foreign-objects") exit "$STUB_RESTORE_EXIT" ;;
   "compose -f "*" --project-directory . config --images") printf 'ghcr.io/trybun/server:0.3.0\nvalkey:9\nghcr.io/trybun/server:0.3.0\n' ;;
   "image inspect "*) case " $STUB_PRESENT_IMAGES " in *" $3 "*) ;; *) exit 1 ;; esac ;;
   "ps -aq --filter label=com.docker.compose.project="*) printf '%b' "$STUB_CONTAINERS" ;;
@@ -128,10 +129,17 @@ function meminfo(kilobytes) {
   writeFileSync(join(folder, 'meminfo'), `MemTotal:       ${kilobytes} kB\nMemFree: 1 kB\n`);
 }
 
-function trybun(command, { input = ANSWERS, memory = GIB_16, ...stubs } = {}) {
+/**
+ * Runs `./trybun` with the stubs. `terminal` runs it in a pseudo-terminal of `script`
+ * (util-linux), which merges stderr into stdout.
+ */
+function trybun(command, { input = ANSWERS, memory = GIB_16, terminal = false, ...stubs } = {}) {
   meminfo(memory);
-  const args = Array.isArray(command) ? command : [command];
-  const result = spawnSync('sh', [join(folder, 'package/trybun'), ...args], {
+  const args = [join(folder, 'package/trybun'), ...(Array.isArray(command) ? command : [command])];
+  const [program, programArgs] = terminal
+    ? ['script', ['-qec', `sh ${args.map((arg) => `'${arg}'`).join(' ')}`, '/dev/null']]
+    : ['sh', args];
+  const result = spawnSync(program, programArgs, {
     input,
     encoding: 'utf8',
     env: {
@@ -162,6 +170,8 @@ function trybun(command, { input = ANSWERS, memory = GIB_16, ...stubs } = {}) {
       STUB_BACKUP_EXIT: '0',
       STUB_FETCH_EXIT: '0',
       STUB_RESTORE_EXIT: '0',
+      STUB_STORAGE_OWNER: 'own http://seaweedfs:8333/trybun',
+      STUB_STORAGE_OWNER_EXIT: '0',
       STUB_PULL_EXIT: '0',
       STUB_CONFIGURATION: join(folder, 'configuration.tar'),
       STUB_STDIN: join(folder, 'stdin'),
@@ -410,6 +420,7 @@ describe('./trybun --help', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/install .*\n[\s\S]*setup-token /);
+    expect(result.stdout).toContain('restore [<backup>] [--replace-foreign-objects]');
   });
 
   it('refuses an unknown command', () => {
@@ -502,6 +513,7 @@ describe('./trybun restore', () => {
       result.log,
       'compose stop',
       'backup fetch 1a2b3c4d',
+      'backup storage-owner',
       'compose up -d --wait postgres',
       'compose exec -T postgres',
       'backup restore-data',
@@ -548,6 +560,108 @@ describe('./trybun restore', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('"../backup" is not a backup');
     expect(result.log).toBe('');
+  });
+
+  it('refuses an unknown option and a second backup ID', () => {
+    for (const [args, message] of [
+      [['restore', '--replace-foreign'], 'Unknown option "--replace-foreign"'],
+      [['restore', '1a2b3c4d', '5e6f7a8b'], 'Name one backup, not "1a2b3c4d" and "5e6f7a8b"'],
+    ]) {
+      const result = trybun(args, { input: 'y\n' });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(message);
+      expect(result.log).toBe('');
+    }
+  });
+
+  it.each(['own', 'none'])(
+    'replaces a storage folder marked by this server or not at all (%s) without a second question',
+    (state) => {
+      const result = trybun('restore', {
+        input: 'y\n',
+        STUB_STORAGE_OWNER: `${state} http://seaweedfs:8333/trybun`,
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).not.toContain('belongs to another Trybun server');
+      expect(result.log).toContain('compose run --rm -T backup restore-data\n');
+    },
+  );
+
+  describe('a storage folder of another Trybun server', () => {
+    const FOREIGN = { STUB_STORAGE_OWNER: 'foreign https://s3.example.com/bucket/trybun' };
+    const QUESTION =
+      'The storage folder https://s3.example.com/bucket/trybun belongs to another Trybun server. Replace its content? [y/N]: ';
+
+    it('is refused without a terminal, before anything is changed', () => {
+      const result = trybun('restore', { input: 'y\ny\n', ...FOREIGN });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        'The storage folder https://s3.example.com/bucket/trybun belongs to another Trybun server',
+      );
+      expect(result.stderr).toContain('--replace-foreign-objects. Nothing was changed');
+      expect(result.stderr).not.toContain(QUESTION);
+      expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+      expect(result.log).not.toMatch(/backup configuration|restore-data/);
+    });
+
+    // A successful restore replaces ./trybun with the one of the backup, so one run per case.
+    it.each([
+      [['restore', '--replace-foreign-objects']],
+      [['restore', '--replace-foreign-objects', '1a2b3c4d']],
+      [['restore', '1a2b3c4d', '--replace-foreign-objects']],
+    ])('is replaced with %j after the first confirmation', (args) => {
+      const result = trybun(args, { input: 'y\n', ...FOREIGN });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toContain('Continue? [y/N]: ');
+      expect(result.stderr).not.toContain(QUESTION);
+      expect(result.log).toContain('backup restore-data --replace-foreign-objects\n');
+    });
+
+    it('still needs the first confirmation with --replace-foreign-objects', () => {
+      const result = trybun(['restore', '--replace-foreign-objects'], { input: 'n\n', ...FOREIGN });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('Restore stopped. Nothing was changed.');
+      expect(result.log).toBe(
+        'docker version --format {{.Server.Version}}\ndocker compose version --short\n',
+      );
+    });
+
+    it('is replaced in a terminal after the second question', () => {
+      const result = trybun('restore', { input: 'y\ny\n', terminal: true, ...FOREIGN });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain(QUESTION);
+      expect(result.log).toContain('backup restore-data --replace-foreign-objects\n');
+      expect(readFileSync(envPath(), 'utf8')).toBe(RESTORED_ENV);
+    });
+
+    it('is kept in a terminal unless the second question is confirmed', () => {
+      for (const input of ['y\nn\n', 'y\n\n']) {
+        const result = trybun('restore', { input, terminal: true, ...FOREIGN });
+
+        expect(result.status).toBe(1);
+        expect(result.stdout).toContain(QUESTION);
+        expect(result.stdout).toContain('Restore stopped. Nothing was changed');
+        expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+        expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      }
+    });
+  });
+
+  it('changes nothing when the storage folder of the backup cannot be read', () => {
+    const result = trybun('restore', { input: 'y\n', STUB_STORAGE_OWNER_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      'The storage folder of the backup latest could not be read. See the messages above. Nothing was changed',
+    );
+    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+    expect(result.log).not.toContain('restore-data');
   });
 
   it('explains how to restore onto a new server without .env', () => {
