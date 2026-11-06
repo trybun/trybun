@@ -1,10 +1,13 @@
 #!/bin/sh
 # Restore test of a release (§13.6), run by the release workflow before anything is published:
 # installs the deployment package on a first "server", creates a user in Keycloak, an object in the
-# object storage and records in the system database, backs up to an S3 storage outside the server,
-# destroys the server (containers, volumes, folder), restores onto a new one from the deployment
-# package, .env and the passphrase alone, and checks that the user signs in with the same ID and
-# the objects and records are the same.
+# attachment folder of SeaweedFS and records in the system database, backs up to an S3 storage
+# outside the server, destroys the server (containers, volumes, folder), restores onto a new one
+# from the deployment package, .env and the passphrase alone, and checks that the user signs in
+# with the same ID and the objects and records are the same. A second pair of servers keeps its
+# attachments on that S3 storage instead of SeaweedFS (§15.10): the restore replaces the folder of
+# the lost server only with --replace-foreign-objects, and brings back an object deleted after the
+# backup.
 # Usage: scripts/restore-test.sh <deployment package archive>
 # Needs Docker, free ports 80 and 443, and the images of the release (pulled or loaded).
 set -eu
@@ -109,9 +112,54 @@ console.log(JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString())
 EOF
 }
 
-# The objects of the object storage: path and checksum of each.
+# rclone with the remote `objects` of the backup service: the storage of TRYBUN_S3_URL.
+storage() {
+  docker compose run --rm -T --no-deps backup rclone "$@"
+}
+
+# The objects of the storage folder $1: path and checksum of each, without the installation marker.
 objects() {
-  docker compose run --rm -T --no-deps --entrypoint rclone backup md5sum objects: | sort
+  storage md5sum "$1" --exclude /.trybun-installation | sort
+}
+
+# The ID of this server, and the one in the marker of the storage folder $1.
+server_id() {
+  docker compose run --rm -T --no-deps --entrypoint cat backup /backup/server-id
+}
+marker() {
+  storage cat "$1/.trybun-installation"
+}
+
+# Installs the deployment package unpacked in the current folder, with its backups also in the
+# folder $1 of the S3 storage.
+install_server() {
+  printf 'localhost\nen\nUTC\nstored\n' | ./trybun install
+  cat >>.env <<EOF
+TRYBUN_BACKUP_S3_URL=http://$gateway:8334/trybun-backups/$1
+TRYBUN_BACKUP_S3_ACCESS_KEY_ID=restore-test
+TRYBUN_BACKUP_S3_SECRET_ACCESS_KEY=restore-test-secret
+EOF
+  docker compose up -d --wait
+}
+
+# Destroys the server of the current folder (containers, volumes, folder), keeping its .env as $1.
+destroy() {
+  cp .env "$1"
+  docker compose down --volumes --remove-orphans
+  server_folder=$(pwd)
+  cd "$work"
+  rm -rf "$server_folder"
+}
+
+# Restores onto the new server $1 from the deployment package and the .env $2, with the options
+# that follow, answering yes to the first question.
+restore_onto() {
+  [ -d "$work/$1" ] || unpack "$1"
+  cd "$work/$1"
+  cp "$2" .env
+  chmod 600 .env
+  shift 2
+  printf 'y\n' | ./trybun restore "$@"
 }
 
 # Records of the system database: the setup tokens of the installation.
@@ -133,13 +181,7 @@ docker run --detach --name "$s3" --publish "$gateway:8334:8333" \
   server -dir=/data -s3 -master.telemetry=false >/dev/null
 until docker exec "$s3" wget -q -O /dev/null http://127.0.0.1:8333/healthz 2>/dev/null; do sleep 2; done
 
-printf 'localhost\nen\nUTC\nstored\n' | ./trybun install
-cat >>.env <<EOF
-TRYBUN_BACKUP_S3_URL=http://$gateway:8334/trybun-backups/restore-test
-TRYBUN_BACKUP_S3_ACCESS_KEY_ID=restore-test
-TRYBUN_BACKUP_S3_SECRET_ACCESS_KEY=restore-test-secret
-EOF
-docker compose up -d --wait
+install_server restore-test
 
 step 'A scheduled backup, then one of ./trybun'
 # The service keeps running after its daily backup; the backup of ./trybun must not wait for it.
@@ -158,32 +200,83 @@ password=$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')
 user=$(create_user "$password")
 signed_in=$(sign_in "$password")
 [ "$signed_in" = "$user" ] || fail "the new user $user does not sign in, but $signed_in."
-docker compose run --rm -T --no-deps --entrypoint sh backup -c \
-  'printf "%s" "$1" | rclone rcat objects:restore-test/object.txt' sh "$password"
-objects_before=$(objects)
+# An object of an attachment in the folder of the default TRYBUN_S3_URL: the bucket `trybun`.
+folder=objects:trybun
+printf '%s' "$password" | storage rcat "$folder/available/restore-test"
+objects_before=$(objects "$folder")
 records_before=$(records)
-[ -n "$objects_before" ] || fail 'the object storage has no objects.'
+[ -n "$objects_before" ] || fail 'the attachment folder has no objects.'
 [ -n "$records_before" ] || fail 'the installation has no setup token.'
-cp .env "$work/kept.env"
 
 step 'Backing up'
 ./trybun backup
 
 step 'Destroying the first server'
-docker compose down --volumes --remove-orphans
-cd "$work"
-rm -rf "$work/server-a"
+destroy "$work/kept.env"
 
 step 'Restoring onto a new server from the deployment package, .env and the passphrase'
-unpack server-b
-cd "$work/server-b"
-cp "$work/kept.env" .env
-chmod 600 .env
-printf 'y\n' | ./trybun restore
+# A new SeaweedFS has no marker, so the restore asks no second question.
+restore_onto server-b "$work/kept.env"
 
 step 'Checking the restored data'
 signed_in=$(sign_in "$password")
 [ "$signed_in" = "$user" ] || fail "the user $user does not sign in with the same ID, but $signed_in."
-[ "$(objects)" = "$objects_before" ] || fail 'the objects of the object storage differ.'
+[ "$(objects "$folder")" = "$objects_before" ] || fail 'the objects of the attachment folder differ.'
 [ "$(records)" = "$records_before" ] || fail 'the records of the system database differ.'
+[ "$(marker "$folder")" = "$(server_id)" ] || fail 'the marker of the attachment folder does not name the new server.'
+destroy "$work/kept.env"
+
+step 'Installing a server with the attachments on the external S3 storage'
+# Without SeaweedFS: the attachments in a bucket of their own on the S3 storage of the backups.
+external=http://$gateway:8334/trybun-attachments/restore-test
+export COMPOSE_PROFILES=
+# The storage of the first start of ./trybun install; .env gets the same settings below.
+export TRYBUN_S3_URL="$external" TRYBUN_S3_ACCESS_KEY_ID=restore-test TRYBUN_S3_SECRET_ACCESS_KEY=restore-test-secret
+unpack server-c
+cd "$work/server-c"
+install_server restore-test-external
+sed -i '/^COMPOSE_PROFILES=/d; /^TRYBUN_S3_ACCESS_KEY_ID=/d; /^TRYBUN_S3_SECRET_ACCESS_KEY=/d' .env
+cat >>.env <<EOF
+COMPOSE_PROFILES=
+TRYBUN_S3_URL=$external
+TRYBUN_S3_ACCESS_KEY_ID=restore-test
+TRYBUN_S3_SECRET_ACCESS_KEY=restore-test-secret
+EOF
+# From here on, the restores read the storage settings from .env alone.
+unset TRYBUN_S3_URL TRYBUN_S3_ACCESS_KEY_ID TRYBUN_S3_SECRET_ACCESS_KEY
+docker compose up -d --wait
+! docker compose ps --services --status running | grep -qx seaweedfs ||
+  fail 'SeaweedFS runs without its profile.'
+
+step 'Backing up the attachment folder of the external storage'
+folder=objects:trybun-attachments/restore-test
+printf '%s' "$password" | storage rcat "$folder/available/deleted-after-the-backup"
+printf 'checking' | storage rcat "$folder/quarantine/kept"
+objects_before=$(objects "$folder")
+./trybun backup
+lost_server=$(server_id)
+[ "$(marker "$folder")" = "$lost_server" ] || fail 'the backup did not write the marker of the storage folder.'
+storage deletefile "$folder/available/deleted-after-the-backup"
+printf 'later' | storage rcat "$folder/available/uploaded-after-the-backup"
+objects_after=$(objects "$folder")
+
+step 'Destroying the server; its storage folder stays'
+destroy "$work/kept-external.env"
+
+step 'Refusing to replace the folder of the lost server without a terminal'
+if restore_onto server-d "$work/kept-external.env" 2>"$work/refused.log"; then
+  fail 'the restore replaced the storage folder of another server without --replace-foreign-objects.'
+fi
+cat "$work/refused.log" >&2
+grep -qF "The storage folder $external belongs to another Trybun server" "$work/refused.log" ||
+  fail 'the restore did not say why it refused.'
+[ "$(objects "$folder")" = "$objects_after" ] || fail 'the refused restore changed the storage folder.'
+
+step 'Restoring with --replace-foreign-objects'
+restore_onto server-d "$work/kept-external.env" --replace-foreign-objects
+[ "$(objects "$folder")" = "$objects_before" ] ||
+  fail 'the objects of the external storage folder are not those of the backup.'
+new_server=$(server_id)
+[ "$new_server" != "$lost_server" ] || fail 'the new server has the ID of the lost one.'
+[ "$(marker "$folder")" = "$new_server" ] || fail 'the marker of the storage folder does not name the new server.'
 step 'Restore test passed'
