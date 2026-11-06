@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import type {
   ActivityEvent,
   ActivityEventData,
-  ActivityEventPage,
   ActivityEventSource,
   ActivityEventType,
   ListActivityEventsQuery,
@@ -122,7 +121,7 @@ export class ActivityEventsService {
     ticketId: string,
     query: ListActivityEventsQuery,
     options: { publicOnly: boolean },
-  ): Promise<ActivityEventPage> {
+  ): Promise<{ items: ActivityEvent[]; nextCursor: string | null }> {
     const after = decodeCursor(query.cursor, eventSortKeySchema);
     const rows = await this.prisma.activityEvent.findMany({
       where: {

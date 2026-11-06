@@ -70,6 +70,52 @@ export function publicStatusOf(status: TicketStatus): TicketPublicStatus {
   return PUBLIC_STATUSES[status];
 }
 
+/**
+ * The description of a ticket's state shown to end users (§4.2): one code per row of the mapping,
+ * so the stage of the team's workflow is described without revealing the internal status (Q11).
+ */
+export const publicStatusDescriptionSchema = z.enum([
+  'received',
+  'analyzing',
+  'information_needed',
+  'confirmation_needed',
+  'scheduled',
+  'working',
+  'testing',
+  'resolved',
+  'rejected',
+  'merged',
+]);
+export type PublicStatusDescription = z.infer<typeof publicStatusDescriptionSchema>;
+
+const PUBLIC_STATUS_DESCRIPTIONS: Record<
+  Exclude<TicketStatus, 'waiting_for_requester'>,
+  PublicStatusDescription
+> = {
+  new: 'received',
+  triage: 'analyzing',
+  todo: 'scheduled',
+  in_progress: 'working',
+  in_verification: 'testing',
+  done: 'resolved',
+  rejected: 'rejected',
+  duplicate: 'merged',
+};
+
+/**
+ * The public description of a status (§4.2), next to `publicStatusOf`: a ticket waiting for the
+ * requester is described by its waiting reason; the reason of any other status is ignored.
+ */
+export function publicStatusDescriptionOf(
+  status: TicketStatus,
+  waitingReason: TicketWaitingReason | null,
+): PublicStatusDescription {
+  if (status === 'waiting_for_requester') {
+    return waitingReason === 'confirmation' ? 'confirmation_needed' : 'information_needed';
+  }
+  return PUBLIC_STATUS_DESCRIPTIONS[status];
+}
+
 /** The requester's answer to "Is your problem solved?" (§4.3). */
 export const resolutionAnswerSchema = z.enum(['solved', 'not_solved']);
 export type ResolutionAnswer = z.infer<typeof resolutionAnswerSchema>;
@@ -178,6 +224,17 @@ export const ticketReferenceSchema = z.object({
 });
 export type TicketReference = z.infer<typeof ticketReferenceSchema>;
 
+/**
+ * The project of a ticket as the ticket shows it (Q19): readable with the ticket, also when the
+ * project is archived or the requester has lost access to it.
+ */
+export const ticketProjectReferenceSchema = z.object({
+  id: z.uuid(),
+  key: z.string(),
+  name: z.string(),
+});
+export type TicketProjectReference = z.infer<typeof ticketProjectReferenceSchema>;
+
 /** A person as a ticket shows them: the display name, never the e-mail address. */
 export const ticketPersonSchema = z.object({
   id: z.uuid(),
@@ -189,6 +246,7 @@ export type TicketPerson = z.infer<typeof ticketPersonSchema>;
 const commonTicketFields = {
   id: z.uuid(),
   projectId: z.uuid(),
+  project: ticketProjectReferenceSchema,
   number: z.int().min(1),
   identifier: z.string(),
   title: z.string(),
@@ -223,9 +281,13 @@ export type Ticket = z.infer<typeof ticketSchema>;
 
 /**
  * A ticket as an end user sees it (§3.2, columns "End user"): without type, priority, assignee,
- * source, organization, the internal status and the rejection reason.
+ * source, organization, the internal status and the rejection reason, with the public description
+ * of its state instead (§4.2).
  */
-export const endUserTicketSchema = z.object(commonTicketFields);
+export const endUserTicketSchema = z.object({
+  ...commonTicketFields,
+  publicStatusDescription: publicStatusDescriptionSchema,
+});
 export type EndUserTicket = z.infer<typeof endUserTicketSchema>;
 
 /**
@@ -240,13 +302,28 @@ export const ticketParamsSchema = z.object({ ticketId: z.uuid() });
 export type TicketParams = z.infer<typeof ticketParamsSchema>;
 
 /**
+ * The involvement of the principal in the tickets of a list: `mine` – the tickets they requested
+ * ("My tickets", §5.7); S1-15 widens it to the tickets they watch.
+ */
+export const ticketInvolvementSchema = z.enum(['mine']);
+export type TicketInvolvement = z.infer<typeof ticketInvolvementSchema>;
+
+/**
  * `GET /api/v1/tickets`: newest first – by number within a project. `identifier` returns at most
  * the one ticket with it (§3.2); filters and sorting of the list views come with S1-13.
+ * `involvement=mine` lists the tickets the principal requested in a fixed order instead: those
+ * awaiting the requester's reply first, then the most recently updated, then by ID. Such a page
+ * may be shorter than `limit` while `nextCursor` is set; it is not combined with `identifier`.
  */
-export const listTicketsQuerySchema = pageQuerySchema.extend({
-  projectId: z.uuid().optional(),
-  identifier: ticketIdentifierSchema.optional(),
-});
+export const listTicketsQuerySchema = pageQuerySchema
+  .extend({
+    projectId: z.uuid().optional(),
+    identifier: ticketIdentifierSchema.optional(),
+    involvement: ticketInvolvementSchema.optional(),
+  })
+  .refine((query) => query.involvement === undefined || query.identifier === undefined, {
+    path: ['identifier'],
+  });
 export type ListTicketsQuery = z.infer<typeof listTicketsQuerySchema>;
 
 export const ticketPageSchema = pageSchema(ticketResponseSchema);

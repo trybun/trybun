@@ -316,16 +316,16 @@
       "closed": "Zamknięte"
     },
     "publicDescriptions": {
-      "new": "Otrzymaliśmy Twoje zgłoszenie",
-      "triage": "Analizujemy zgłoszenie",
-      "waiting_for_information": "Potrzebujemy od Ciebie dodatkowych informacji",
-      "waiting_for_confirmation": "Potwierdź, czy Twój problem został rozwiązany",
-      "todo": "Zgłoszenie zostało zaplanowane",
-      "in_progress": "Pracujemy nad rozwiązaniem",
-      "in_verification": "Testujemy rozwiązanie",
-      "done": "Zgłoszenie zostało rozwiązane",
+      "received": "Otrzymaliśmy Twoje zgłoszenie",
+      "analyzing": "Analizujemy zgłoszenie",
+      "information_needed": "Potrzebujemy od Ciebie dodatkowych informacji",
+      "confirmation_needed": "Potwierdź, czy Twój problem został rozwiązany",
+      "scheduled": "Zgłoszenie zostało zaplanowane",
+      "working": "Pracujemy nad rozwiązaniem",
+      "testing": "Testujemy rozwiązanie",
+      "resolved": "Zgłoszenie zostało rozwiązane",
       "rejected": "Zgłoszenie zamknięte",
-      "duplicate": "Zgłoszenie połączone z innym"
+      "merged": "Zgłoszenie połączone z innym"
     },
     "waitingReasons": {
       "information": "Oczekuje na informacje",

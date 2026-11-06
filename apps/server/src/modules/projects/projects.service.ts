@@ -5,6 +5,7 @@ import {
   type AddProjectMemberDto,
   type ChangeProjectMemberRoleDto,
   type CreateProjectDto,
+  type EndUserProject,
   type ListMemberCandidatesQuery,
   type ListProjectMembersQuery,
   type ListProjectsQuery,
@@ -17,6 +18,7 @@ import {
   type ProjectMember,
   type ProjectMemberPage,
   type ProjectPage,
+  type ProjectResponse,
   type UpdateProjectDto,
 } from '@trybun/contracts/projects';
 import { z } from 'zod';
@@ -100,6 +102,28 @@ function toProjectResponse(
     hasTickets: row.ticketCounter !== null,
     allowedActions: projectActionSchema.options.filter((action) => ability.can(action, record)),
   };
+}
+
+/**
+ * The response shape of a project read (§18.3): the team's shape for a team account, the end
+ * user's – without the settings, the version, the role and the timestamps (Q7) – for an end user.
+ */
+function toProjectReadResponse(
+  row: ProjectRow,
+  ability: AppAbility,
+  principal: UserPrincipal,
+): ProjectResponse {
+  const project = toProjectResponse(row, ability, principal);
+  if (principal.userKind !== 'end_user') {
+    return project;
+  }
+  return {
+    id: project.id,
+    name: project.name,
+    key: project.key,
+    state: project.state,
+    allowedActions: project.allowedActions,
+  } satisfies EndUserProject;
 }
 
 const ACCOUNT_SELECT = {
@@ -191,15 +215,15 @@ export class ProjectsService {
     return toPage(
       rows,
       query.limit,
-      (row) => toProjectResponse(row, ability, principal),
+      (row) => toProjectReadResponse(row, ability, principal),
       (row) => [row.name, row.id],
     );
   }
 
-  async findOne(principal: UserPrincipal, projectId: string): Promise<Project> {
+  async findOne(principal: UserPrincipal, projectId: string): Promise<ProjectResponse> {
     const ability = this.abilities.forPrincipal(principal);
     const row = await this.findVisible(this.prisma, ability, principal, projectId);
-    return toProjectResponse(row, ability, principal);
+    return toProjectReadResponse(row, ability, principal);
   }
 
   /** Creates a project (§3.1); the key is unique across active and archived projects. */

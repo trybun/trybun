@@ -5,6 +5,8 @@ import {
   confirmResolutionSchema,
   createTicketSchema,
   isTerminalStatus,
+  publicStatusDescriptionOf,
+  publicStatusDescriptionSchema,
   publicStatusOf,
   resolutionAnswerSchema,
   listTicketsQuerySchema,
@@ -56,6 +58,21 @@ describe('ticket enums', () => {
     [ticketWaitingReasonSchema, ['information', 'confirmation']],
     [ticketPublicStatusSchema, ['received', 'awaiting_reply', 'in_progress', 'resolved', 'closed']],
     [resolutionAnswerSchema, ['solved', 'not_solved']],
+    [
+      publicStatusDescriptionSchema,
+      [
+        'received',
+        'analyzing',
+        'information_needed',
+        'confirmation_needed',
+        'scheduled',
+        'working',
+        'testing',
+        'resolved',
+        'rejected',
+        'merged',
+      ],
+    ],
   ])('lists the codes', (schema, codes) => {
     expect(schema.options).toEqual(codes);
   });
@@ -80,6 +97,51 @@ describe('status mapping', () => {
   it('maps every internal status', () => {
     for (const status of ticketStatusSchema.options) {
       expect(ticketPublicStatusSchema.options).toContain(publicStatusOf(status));
+    }
+  });
+});
+
+describe('public status description', () => {
+  /** One row of §4.2 per status and waiting reason; a reason outside waiting changes nothing. */
+  const DESCRIPTIONS = {
+    new: { none: 'received', information: 'received', confirmation: 'received' },
+    triage: { none: 'analyzing', information: 'analyzing', confirmation: 'analyzing' },
+    todo: { none: 'scheduled', information: 'scheduled', confirmation: 'scheduled' },
+    in_progress: { none: 'working', information: 'working', confirmation: 'working' },
+    in_verification: { none: 'testing', information: 'testing', confirmation: 'testing' },
+    waiting_for_requester: {
+      none: 'information_needed',
+      information: 'information_needed',
+      confirmation: 'confirmation_needed',
+    },
+    done: { none: 'resolved', information: 'resolved', confirmation: 'resolved' },
+    rejected: { none: 'rejected', information: 'rejected', confirmation: 'rejected' },
+    duplicate: { none: 'merged', information: 'merged', confirmation: 'merged' },
+  } as const;
+
+  const combinations = ticketStatusSchema.options.flatMap((status) =>
+    [null, ...ticketWaitingReasonSchema.options].map(
+      (reason) => [status, reason, DESCRIPTIONS[status][reason ?? 'none']] as const,
+    ),
+  );
+
+  it.each(combinations)('describes %s with the reason %s as %s', (status, reason, description) => {
+    expect(publicStatusDescriptionOf(status, reason)).toBe(description);
+  });
+
+  it('uses every description, each within one public status', () => {
+    const publicStatuses = new Map<string, Set<string>>();
+    for (const [status, , description] of combinations) {
+      publicStatuses.set(
+        description,
+        (publicStatuses.get(description) ?? new Set()).add(publicStatusOf(status)),
+      );
+    }
+    expect([...publicStatuses.keys()].sort()).toEqual(
+      [...publicStatusDescriptionSchema.options].sort(),
+    );
+    for (const statuses of publicStatuses.values()) {
+      expect(statuses.size).toBe(1);
     }
   });
 });
@@ -190,10 +252,33 @@ describe('ticket identifiers', () => {
   });
 });
 
+describe('listTicketsQuerySchema', () => {
+  it('lists the tickets the principal requested with involvement=mine', () => {
+    expect(listTicketsQuerySchema.parse({ involvement: 'mine', projectId: PROJECT_ID })).toEqual({
+      involvement: 'mine',
+      projectId: PROJECT_ID,
+      limit: 50,
+    });
+  });
+
+  it.each([
+    [{ involvement: 'watched' }, '/involvement', 'field.invalid_value'],
+    [{ involvement: 'mine', identifier: 'ERP-1' }, '/identifier', 'field.invalid'],
+  ])('rejects %j at %s with %s', (query, pointer, code) => {
+    const result = listTicketsQuerySchema.safeParse(query);
+
+    expect(result.success).toBe(false);
+    const issue = result.error?.issues[0];
+    expect((issue?.path ?? []).map((key) => `/${String(key)}`).join('')).toBe(pointer);
+    expect(issue === undefined ? undefined : toFieldErrorCode(issue)).toBe(code);
+  });
+});
+
 describe('ticketResponseSchema', () => {
   const common = {
     id: PROJECT_ID,
     projectId: PROJECT_ID,
+    project: { id: PROJECT_ID, key: 'ERP', name: 'ERP system' },
     number: 1,
     identifier: 'ERP-1',
     title: 'Login fails',
@@ -225,13 +310,16 @@ describe('ticketResponseSchema', () => {
   });
 
   it("strips every field outside the end user's shape", () => {
+    const endUserTicket = { ...common, publicStatusDescription: 'testing' };
+
     expect(
       ticketResponseSchema.parse({
-        ...common,
+        ...endUserTicket,
         source: 'user',
         priority: 'high',
+        status: 'in_verification',
         rejectionReason: 'Internal',
       }),
-    ).toEqual(common);
+    ).toEqual(endUserTicket);
   });
 });

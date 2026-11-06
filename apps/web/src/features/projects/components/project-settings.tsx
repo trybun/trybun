@@ -44,7 +44,8 @@ export function ProjectSettings({
   if (error instanceof ApiError && error.status === 404) {
     notFound();
   }
-  if (project === undefined) {
+  // The settings belong to the team's shape of a project; end users receive their own (Q7).
+  if (project === undefined || !('version' in project)) {
     return null;
   }
   const can = (action: (typeof project.allowedActions)[number]) =>

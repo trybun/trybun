@@ -19,6 +19,7 @@ import {
   type TicketPage,
   type TicketReference,
   type TicketResponse,
+  publicStatusDescriptionOf,
   publicStatusOf,
   type UpdateTicketDto,
 } from '@trybun/contracts/tickets';
@@ -42,6 +43,7 @@ import {
   type ActivityActor,
   ActivityEventsService,
 } from '../activity-events/activity-events.service.js';
+import { originalIdsOf, toEndUserEvent } from '../activity-events/domain/end-user-events.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
 import { OrganizationsService } from '../organizations/organizations.service.js';
@@ -58,7 +60,11 @@ import {
 } from './domain/status-transitions.js';
 import { CREATE_TICKET, TICKET, ticketRuleSelect } from './tickets.abilities.js';
 import { TICKET_STATUS_CHANGED, type TicketStatusChangedPayload } from './tickets.events.js';
-import { allocateTicketNumber, lockTicketsForUpdate } from './tickets.sql.js';
+import {
+  allocateTicketNumber,
+  listRequestedTicketKeys,
+  lockTicketsForUpdate,
+} from './tickets.sql.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
 
@@ -75,7 +81,9 @@ function ticketReferenceSelect(principal: UserPrincipal) {
 function ticketSelect(principal: UserPrincipal) {
   return {
     ...ticketRuleSelect(principal),
-    project: { select: { ...projectRuleSelect(principal), key: true, confirmResolution: true } },
+    project: {
+      select: { ...projectRuleSelect(principal), key: true, name: true, confirmResolution: true },
+    },
     projectId: true,
     number: true,
     title: true,
@@ -170,9 +178,11 @@ function toTicketResponse(
   principal: UserPrincipal,
 ): TicketResponse {
   const record = subject(TICKET, row);
-  const endUserTicket: EndUserTicket = {
+  const commonFields = {
     id: row.id,
     projectId: row.projectId,
+    // The project's own read rules do not apply: the reference goes with the ticket (Q19).
+    project: { id: row.project.id, key: row.project.key, name: row.project.name },
     number: row.number,
     identifier: ticketIdentifier(row.project.key, row.number),
     title: row.title,
@@ -187,10 +197,13 @@ function toTicketResponse(
     duplicateOf: duplicateOfResponse(row, ability),
   };
   if (principal.userKind === 'end_user') {
-    return endUserTicket;
+    return {
+      ...commonFields,
+      publicStatusDescription: publicStatusDescriptionOf(row.status, row.waitingReason),
+    } satisfies EndUserTicket;
   }
   return {
-    ...endUserTicket,
+    ...commonFields,
     type: row.type,
     source: row.source,
     priority: row.priority,
@@ -216,6 +229,8 @@ function trackedFields(row: TicketRow): TrackedTicketFields {
 /** Tickets of one project are listed by number; others by creation, newest first. */
 const numberSortKeySchema = z.tuple([z.int()]);
 const creationSortKeySchema = z.tuple([z.iso.datetime(), z.uuid()]);
+/** "My tickets" are listed awaiting the requester's reply first, then by update, then by ID. */
+const requestedSortKeySchema = z.tuple([z.boolean(), z.iso.datetime(), z.uuid()]);
 
 function assigneeNotEligible(): AppError {
   return new AppError('ticket.assignee_not_eligible', [
@@ -301,10 +316,14 @@ export class TicketsService {
 
   /**
    * The tickets the principal can see, newest first: by number within a project. `identifier`
-   * finds the one ticket with it, or none when it is invisible.
+   * finds the one ticket with it, or none when it is invisible; `involvement=mine` lists the
+   * tickets the principal requested in the order of "My tickets".
    */
   async list(principal: UserPrincipal, query: ListTicketsQuery): Promise<TicketPage> {
     const ability = this.abilities.forPrincipal(principal);
+    if (query.involvement === 'mine') {
+      return this.listRequested(principal, ability, query);
+    }
     const filters: Prisma.TicketWhereInput[] = [accessibleBy(ability, 'read').ofType(TICKET)];
     if (query.projectId !== undefined) {
       filters.push({ projectId: query.projectId });
@@ -348,6 +367,47 @@ export class TicketsService {
       take: query.limit + 1,
     });
     return toPage(rows, query.limit, toItem, (row) => [row.createdAt.toISOString(), row.id]);
+  }
+
+  /**
+   * "My tickets" (`involvement=mine`, §5.7, Q10): the tickets the principal requested, awaiting
+   * their reply first. The order comes from raw SQL by the requester alone; the records are then
+   * loaded through the `read` filter of the ability, so a ticket the principal may no longer read
+   * – a team member's ticket in a project they left – leaves a page shorter than `limit`, while
+   * the cursor still follows the last key of the SQL.
+   */
+  private async listRequested(
+    principal: UserPrincipal,
+    ability: AppAbility,
+    query: ListTicketsQuery,
+  ): Promise<TicketPage> {
+    const after = decodeCursor(query.cursor, requestedSortKeySchema);
+    const keys = await listRequestedTicketKeys(this.prisma, principal.userId, {
+      projectId: query.projectId ?? null,
+      after:
+        after === null
+          ? null
+          : { awaitingReply: after[0], updatedAt: new Date(after[1]), id: after[2] },
+      limit: query.limit + 1,
+    });
+    const page = toPage(
+      keys,
+      query.limit,
+      (key) => key.id,
+      (key) => [key.awaitingReply, key.updatedAt.toISOString(), key.id],
+    );
+    const rows = await this.prisma.ticket.findMany({
+      where: { AND: [accessibleBy(ability, 'read').ofType(TICKET), { id: { in: page.items } }] },
+      select: ticketSelect(principal),
+    });
+    const rowsById = new Map(rows.map((row) => [row.id, row]));
+    return {
+      items: page.items.flatMap((id) => {
+        const row = rowsById.get(id);
+        return row === undefined ? [] : [toTicketResponse(row, ability, principal)];
+      }),
+      nextCursor: page.nextCursor,
+    };
   }
 
   async findOne(principal: UserPrincipal, ticketId: string): Promise<TicketResponse> {
@@ -800,16 +860,37 @@ export class TicketsService {
 
   /**
    * The activity events of a ticket the target record guard let the principal read, oldest first:
-   * end users see only the public ones (§4.5).
+   * end users see only the public ones (§4.5), in their shape (Q11) – public status codes, and the
+   * original of a duplicate only when they may read it, checked for the whole page in one query.
    */
-  listActivityEvents(
+  async listActivityEvents(
     principal: UserPrincipal,
     ticketId: string,
     query: ListActivityEventsQuery,
   ): Promise<ActivityEventPage> {
-    return this.activityEvents.list(ticketId, query, {
-      publicOnly: principal.userKind === 'end_user',
-    });
+    const isEndUser = principal.userKind === 'end_user';
+    const page = await this.activityEvents.list(ticketId, query, { publicOnly: isEndUser });
+    if (!isEndUser) {
+      return page;
+    }
+    const originalIds = originalIdsOf(page.items);
+    const readableOriginals =
+      originalIds.length === 0
+        ? []
+        : await this.prisma.ticket.findMany({
+            where: {
+              AND: [
+                accessibleBy(this.abilities.forPrincipal(principal), 'read').ofType(TICKET),
+                { id: { in: originalIds } },
+              ],
+            },
+            select: { id: true },
+          });
+    const readableIds = new Set(readableOriginals.map(({ id }) => id));
+    return {
+      items: page.items.map((event) => toEndUserEvent(event, readableIds)),
+      nextCursor: page.nextCursor,
+    };
   }
 
   /**
