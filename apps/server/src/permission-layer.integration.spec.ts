@@ -28,6 +28,7 @@ import { AbilityFactory, type AppAbility } from './platform/authorization/abilit
 import type { RecordSubject } from './platform/authorization/record-descriptor.js';
 import { PrismaService } from './platform/database/prisma.service.js';
 import { API_PREFIX } from './platform/http/api-prefix.js';
+import { strictEndUserProjectSchema, strictPageSchema } from '../test/end-user-schemas.js';
 
 describe('permission layer', () => {
   const config = integrationConfig();
@@ -202,21 +203,19 @@ describe('permission layer', () => {
       expect(ids.filter((id) => Object.values(records).some((r) => r.id === id))).toEqual(
         expected.map((name) => records[name].id),
       );
-      for (const project of (res.body as ProjectPage).items) {
-        expect(project.role).toBe('end_user');
-      }
+      // End users receive the reduced shape, without the role and the settings (Q7).
+      strictPageSchema(strictEndUserProjectSchema).parse(res.body);
     });
 
     it.each(['end_user_personal', 'end_user_organization'] as const)(
-      'shows project A to %s with the role end_user',
+      'shows project A to %s in the end-user shape',
       async (fixture) => {
         const res = await http()
           .get(`/api/v1/projects/${records.projectA.id}`)
           .set('Authorization', await authorizationOf(fixture));
 
         expect(res.status).toBe(200);
-        expect(res.body).toMatchObject({
-          role: 'end_user',
+        expect(strictEndUserProjectSchema.parse(res.body)).toMatchObject({
           allowedActions: ['read', 'create_ticket'],
         });
       },

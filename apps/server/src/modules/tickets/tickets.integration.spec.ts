@@ -25,6 +25,7 @@ import { PrismaClient, type Project, type User } from '../../generated/prisma/cl
 import { PrismaService } from '../../platform/database/prisma.service.js';
 import { allocateTicketNumber } from './tickets.sql.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
+import { strictEndUserTicketSchema } from '../../../test/end-user-schemas.js';
 
 type Who = 'admin' | 'project_manager' | 'developer' | 'end_user';
 
@@ -229,6 +230,7 @@ describe('tickets endpoints', () => {
       expect(res.body).toEqual({
         id: expect.any(String) as string,
         projectId: project.id,
+        project: { id: project.id, key: project.key, name: project.name },
         number: 1,
         identifier: `${project.key}-1`,
         title: 'Invoice missing',
@@ -239,6 +241,7 @@ describe('tickets endpoints', () => {
         updatedAt: expect.any(String) as string,
         allowedActions: ['read', 'update'],
         publicStatus: 'received',
+        publicStatusDescription: 'received',
         waitingReason: null,
         duplicateOf: null,
       });
@@ -399,24 +402,8 @@ describe('tickets endpoints', () => {
         .set('Authorization', authorization);
 
       expect((list.body as TicketPage).items.map(({ id }) => id)).toEqual([own.id]);
-      expect(Object.keys(detail.body as object).sort()).toEqual(
-        [
-          'allowedActions',
-          'createdAt',
-          'description',
-          'duplicateOf',
-          'id',
-          'identifier',
-          'number',
-          'projectId',
-          'publicStatus',
-          'requester',
-          'title',
-          'updatedAt',
-          'version',
-          'waitingReason',
-        ].sort(),
-      );
+      // The strict schema rejects any field outside the end user's shape (§3.2).
+      strictEndUserTicketSchema.parse(detail.body);
       expect(foreignDetail.status).toBe(404);
     });
 
