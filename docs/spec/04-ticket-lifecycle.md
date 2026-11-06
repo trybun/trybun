@@ -58,6 +58,8 @@ Every internal status maps to exactly one public status. As a result:
 | `rejected` | `closed` | Ticket closed (with the reason) | Zgłoszenie zamknięte (z podaniem powodu) |
 | `duplicate` | `closed` | Ticket merged with another one (with a link) | Zgłoszenie połączone z innym (z odnośnikiem) |
 
+The description shown to the user is a code of the API response (`publicStatusDescription` of the end-user ticket response: `received`, `analyzing`, `information_needed`, `confirmation_needed`, `scheduled`, `working`, `testing`, `resolved`, `rejected`, `merged`, one per row), so the internal status never reaches end users. Status changes reach end users with public statuses only.
+
 ## 4.3 Transition rules
 
 - **Initial status:** tickets from end users and integrations start in `new` (they go through triage). Tickets created by the team start in `todo`. Tickets created from GitHub issues ([§11.5](11-github-integration.md)) start in `todo`.
@@ -68,7 +70,7 @@ Every internal status maps to exactly one public status. As a result:
 - **Resolution confirmation** (optional per project, [§3.1](03-ticket-model.md)): when the setting is on and a ticket with source `user` is moved to `done` from any non-terminal status, it goes to `waiting_for_requester` with reason `confirmation` instead. The requester is asked "Is your problem solved?" (PL: „Czy Twój problem został rozwiązany?”) and gets two explicit actions in the portal and in the e-mail:
   - "Yes, solved" (PL: „Tak, rozwiązane”) → `done`,
   - "No, still a problem" (PL: „Nie, problem nadal występuje”) → `in_progress`.
-  - In the e-mail both actions are signed one-click links that open a confirmation page in the portal; the change happens only after the button on that page is pressed (POST), so link scanners in mail systems cannot trigger it.
+  - In the e-mail both actions are signed one-click links that open the confirmation page of the portal, `/portal/tickets/{identifier}/resolution-confirmation?answer=solved|not_solved` ([§5.7](05-visibility-and-search.md)); the change happens only after the button on that page is pressed (POST), so link scanners in mail systems cannot trigger it. The signed token is carried in the URL fragment, never in the path or the query ([§17.2](17-conventions.md)).
   - Any other public comment by the requester counts as "No, still a problem" → `in_progress`.
   - Only the requester's actions count; comments of other end users do not change the status.
   - With no action within **7 calendar days** of the request – 7 × 24 hours after the ticket started waiting, independent of time zones – the ticket moves to `done` automatically (an automatic event, [§4.5](#45-activity-timeline)). In an archived project the automatic close waits; it happens on the first daily check after the project is unarchived.
