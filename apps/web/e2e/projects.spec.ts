@@ -46,8 +46,7 @@ test.describe('projects of the Administrator', () => {
   test('freezes the key and keeps a project with tickets (§3.1)', async ({ page }) => {
     const projects = new ProjectsPage(page);
     await projects.goto();
-    await projects.project('Customer portal').click();
-    await expect(projects.settingsTabs).toBeVisible();
+    await projects.openSettings('Customer portal');
 
     await expect(page.getByLabel('Key')).toHaveAttribute('readonly', '');
     await expect(
@@ -91,8 +90,7 @@ test.describe('projects of the Administrator', () => {
       minimumTargetSize(testInfo),
     );
 
-    await projects.project('Customer portal').click();
-    await expect(projects.settingsTabs).toBeVisible();
+    await projects.openSettings('Customer portal');
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
     await expectTouchTarget(projects.settingsTab('Members'), minimumTargetSize(testInfo));
@@ -114,7 +112,7 @@ test.describe('projects of a Developer', () => {
     await expect(projects.project('Legacy intranet')).toBeVisible();
 
     await projects.goto();
-    await projects.project('Customer portal').click();
+    await projects.openSettings('Customer portal');
 
     await expect(page.getByLabel('Name')).toHaveAttribute('readonly', '');
     await expect(page.getByRole('switch', { name: 'Resolution confirmation' })).toBeDisabled();

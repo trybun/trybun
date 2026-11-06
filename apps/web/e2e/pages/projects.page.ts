@@ -33,6 +33,20 @@ export class ProjectsPage {
   }
 
   /**
+   * Opens the settings of a project from the list. The server renders the links of the list, and a
+   * click before the list hydrates navigates nowhere – on the tablet (WebKit) the page stayed on the
+   * list (#241) – so the click repeats until the settings tabs show.
+   */
+  async openSettings(name: string): Promise<void> {
+    await expect(async () => {
+      if (!(await this.settingsTabs.isVisible())) {
+        await this.project(name).click({ timeout: 1000 });
+      }
+      await expect(this.settingsTabs).toBeVisible({ timeout: 1000 });
+    }).toPass();
+  }
+
+  /**
    * Opens the New project dialog. The server renders the button and the dialog loads after the
    * first paint; a click before the hydration opens nothing (WebKit, #236), so the click repeats
    * until the dialog shows.
