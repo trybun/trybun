@@ -138,6 +138,43 @@ describe('TicketView', () => {
     expect(screen.queryByRole('heading', { name: 'Is your problem solved?' })).toBeNull();
   });
 
+  it.each([
+    ['solved', 'Yes, solved', 'Thank you. The ticket is resolved.'],
+    ['not_solved', 'No, still a problem', 'Thank you. The team continues working on the ticket.'],
+  ] as const)(
+    'thanks for the answer %s although the ticket read again no longer asks (§4.3)',
+    async (_answer, button, message) => {
+      const events = userEvent.setup();
+      answerTicket(
+        ticket({
+          publicStatus: 'awaiting_reply',
+          waitingReason: 'confirmation',
+          publicStatusDescription: 'confirmation_needed',
+          allowedActions: ['read', 'confirm_resolution'],
+        }),
+      );
+      const get = fake.client.GET.getMockImplementation();
+      fake.on('POST /api/v1/tickets/{ticketId}/resolution-confirmation', () => {
+        // The ticket read again after the answer no longer offers it, and the panel unmounts
+        // when the reading arrives; here it never arrives. The thanks must not wait for it, or
+        // TanStack Query skips the toast of the unmounted panel.
+        fake.client.GET.mockImplementation(() => new Promise(() => undefined));
+        return { data: ticket() };
+      });
+      renderInApp(<TicketView identifier="CP-7" />);
+
+      try {
+        await events.click(await screen.findByRole('button', { name: button }));
+
+        await waitFor(() =>
+          expect(toastAdd).toHaveBeenCalledWith({ title: message, type: 'success' }),
+        );
+      } finally {
+        fake.client.GET.mockImplementation(get!);
+      }
+    },
+  );
+
   it('answers the resolution question, and shows a late answer as such (§4.3)', async () => {
     const events = userEvent.setup();
     answerTicket(
@@ -148,14 +185,18 @@ describe('TicketView', () => {
         allowedActions: ['read', 'confirm_resolution'],
       }),
     );
-    fake.on('POST /api/v1/tickets/{ticketId}/resolution-confirmation', {
-      status: 409,
-      error: {
-        type: 'about:blank',
-        title: 'Conflict',
+    fake.on('POST /api/v1/tickets/{ticketId}/resolution-confirmation', () => {
+      // The team answered first: the ticket read again no longer asks.
+      answerTicket(ticket({ publicStatus: 'resolved', publicStatusDescription: 'resolved' }));
+      return {
         status: 409,
-        code: 'ticket.resolution_confirmation_not_pending',
-      },
+        error: {
+          type: 'about:blank',
+          title: 'Conflict',
+          status: 409,
+          code: 'ticket.resolution_confirmation_not_pending',
+        },
+      };
     });
     renderInApp(<TicketView identifier="CP-7" />);
 

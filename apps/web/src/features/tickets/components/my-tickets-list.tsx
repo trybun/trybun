@@ -24,8 +24,11 @@ export function MyTicketsList({
   projectId,
   limit,
   emptyAction,
+  headingLevel = 2,
 }: {
   projectId?: string;
+  /** The level of the group headings: 3 inside a section of its own, e.g. on the project home. */
+  headingLevel?: 2 | 3;
   limit?: number;
   /** What the empty list offers, e.g. **Create ticket** in a project that takes tickets. */
   emptyAction?: ReactNode;
@@ -58,6 +61,7 @@ export function MyTicketsList({
           heading={t('awaitingHeading')}
           tickets={awaiting}
           showsProject={projectId === undefined}
+          headingLevel={headingLevel}
           isHighlighted
         />
       )}
@@ -66,6 +70,7 @@ export function MyTicketsList({
           heading={awaiting.length > 0 ? t('otherHeading') : undefined}
           tickets={others}
           showsProject={projectId === undefined}
+          headingLevel={headingLevel}
         />
       )}
       {limit === undefined && tickets.hasNextPage && (
@@ -86,18 +91,25 @@ function TicketGroup({
   heading,
   tickets,
   showsProject,
+  headingLevel,
   isHighlighted = false,
 }: {
   heading: string | undefined;
   tickets: TicketResponse[];
   showsProject: boolean;
+  headingLevel: 2 | 3;
   isHighlighted?: boolean;
 }) {
   const t = useTranslations('portal.myTickets');
   const format = useFormatter();
   return (
     <section className="flex flex-col gap-2" aria-label={heading}>
-      {heading !== undefined && <h2 className="text-lg font-semibold">{heading}</h2>}
+      {heading !== undefined &&
+        (headingLevel === 2 ? (
+          <h2 className="text-lg font-semibold">{heading}</h2>
+        ) : (
+          <h3 className="text-base font-semibold">{heading}</h3>
+        ))}
       <ul className="flex flex-col gap-2">
         {tickets.map((ticket) => (
           <li key={ticket.id}>

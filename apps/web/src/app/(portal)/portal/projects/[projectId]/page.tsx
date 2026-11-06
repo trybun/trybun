@@ -82,7 +82,7 @@ export default async function PortalProjectPage({
           )}
         </div>
         <HydrationBoundary state={dehydrate(queryClient)}>
-          <MyTicketsList projectId={project.id} limit={PROJECT_HOME_TICKETS} />
+          <MyTicketsList projectId={project.id} limit={PROJECT_HOME_TICKETS} headingLevel={3} />
         </HydrationBoundary>
       </section>
     </div>

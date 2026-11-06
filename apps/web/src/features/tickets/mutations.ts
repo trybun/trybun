@@ -26,7 +26,9 @@ export function useCreateTicket() {
 
 /**
  * Answers "Is your problem solved?" (§4.3): the ticket and its timeline change, so both are read
- * again – also after a `409`, when the team or the timer answered first.
+ * again – also after a `409`, when the team or the timer answered first. The reading is not
+ * awaited: the ticket read again no longer offers the answer, so the panel that sent it unmounts,
+ * and TanStack Query would skip the callbacks of `mutate()` – its toast – after that.
  */
 export function useConfirmResolution() {
   const queryClient = useQueryClient();
@@ -39,10 +41,11 @@ export function useConfirmResolution() {
           body: { answer },
         }),
       ),
-    onSettled: () =>
-      Promise.all([
+    onSettled: () => {
+      void Promise.all([
         invalidateTickets(),
         queryClient.invalidateQueries({ queryKey: ['activity-events'] }),
-      ]),
+      ]);
+    },
   });
 }
