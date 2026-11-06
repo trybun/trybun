@@ -43,4 +43,6 @@ Potrzebujesz pakietu wdrożeniowego dowolnego wydania, kopii pliku `.env` przech
    ./trybun restore
    ```
 
+   Gdy załączone pliki są przechowywane w zewnętrznym magazynie S3, odtwarzanie zadaje drugie pytanie, bo ich folder wciąż należy do starego serwera: „The storage folder … belongs to another Trybun server. Replace its content? [y/N]”. Odpowiedz `y`, gdy stary serwer przepadł. Odpowiedz `n`, dopóki stary serwer działa, np. gdy tylko testujesz odtwarzanie: `y` zastąpiłoby jego załączone pliki plikami z kopii zapasowej.
+
 Użytkownicy logują się swoimi hasłami i kodami uwierzytelniania dwuskładnikowego tak jak wcześniej. Jeśli plik `.env` przepadł, uruchom `./trybun install` na nowym serwerze, ustaw w nowym pliku `.env` zmienną `TRYBUN_BACKUP_PASSPHRASE` i zmienne `TRYBUN_BACKUP_S3_*` starej instalacji i uruchom `./trybun restore`; przywróci on także stary plik `.env`.

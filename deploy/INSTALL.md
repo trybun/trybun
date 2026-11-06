@@ -73,9 +73,28 @@ Optional settings (e-mail, sign-in providers, backup storage) are described next
 
 Keep `.env` and the backup passphrase safe: `.env` holds every password of the installation. Keep a copy of both outside the server – with them, this package restores Trybun onto a new server.
 
+## Attachments on an external S3 storage
+
+The attached files are kept in SeaweedFS, a service of this package on the server, unless an S3-compatible storage is configured instead. Switch before the first file is attached: Trybun does not move files between storages, so the files of the storage used before stay there and can no longer be opened.
+
+1. Create a bucket, or a folder in one, for the attachments of this installation and an access key that may list, read, write and delete its objects. The folder must belong to this installation alone – not to another application, another Trybun server or the backups of `TRYBUN_BACKUP_S3_URL` – because a restore deletes every object in it that is not in the backup.
+2. Set the variables of the **Attachments** section of `.env` and remove `seaweedfs` from `COMPOSE_PROFILES`:
+
+   ```sh
+   TRYBUN_S3_URL=https://s3.eu-central-1.amazonaws.com/my-bucket/trybun
+   TRYBUN_S3_REGION=eu-central-1
+   COMPOSE_PROFILES=clamav
+   ```
+
+   `TRYBUN_S3_URL` is the address of the bucket followed by an optional folder; the requests use path-style addressing. Replace the generated `TRYBUN_S3_ACCESS_KEY_ID` and `TRYBUN_S3_SECRET_ACCESS_KEY` with the access key of the storage. Set the region when your provider needs one.
+
+3. Apply the change with `docker compose up -d --wait`, then back up right away with `./trybun backup`.
+
+The backups contain the attachment folder on the external storage as they contain SeaweedFS. A backup taken before the switch restores only while SeaweedFS runs: without `seaweedfs` in `COMPOSE_PROFILES`, `./trybun restore` of such a backup stops and changes nothing.
+
 ## Backups
 
-The service `backup` backs up both databases, the stored files and the configuration (`.env` and the files of this package) every day at 03:00 UTC, encrypted with the backup passphrase, and keeps the backups of the last 30 days. Without external storage they stay on a volume of this server; set the `TRYBUN_BACKUP_S3_*` variables of `.env` to keep them on S3-compatible storage in another location as well (strongly recommended), then run `docker compose up -d --wait`.
+The service `backup` backs up both databases, the attached files – the folder of `TRYBUN_S3_URL`, in SeaweedFS or on an external storage – and the configuration (`.env` and the files of this package) every day at 03:00 UTC, encrypted with the backup passphrase, and keeps the backups of the last 30 days. Without external storage they stay on a volume of this server; set the `TRYBUN_BACKUP_S3_*` variables of `.env` to keep them on S3-compatible storage in another location as well (strongly recommended), then run `docker compose up -d --wait`.
 
 ```sh
 ./trybun backup        # back up now
@@ -93,14 +112,21 @@ The command downloads the release and checks its checksum, shows its changes, as
 ## Restoring a backup
 
 ```sh
-./trybun restore [<backup>]
+./trybun restore [<backup>] [--replace-foreign-objects]
 ```
 
 It asks for confirmation, then replaces all data and the configuration with the backup (the newest without an ID) and starts the version it was taken with. On a new server: unpack the package of any release, copy the kept `.env` into its folder and run `./trybun restore`; the backup comes from the S3 storage.
 
+The restore replaces the content of the attachment folder of the backup's `.env` and deletes the objects in it that are not in the backup. Every server marks the folder it uses with an ID of its own, which no backup contains. When the folder is marked by another Trybun server, the restore asks a second question before it changes anything: "The storage folder {url} belongs to another Trybun server. Replace its content? [y/N]".
+
+- Answer `y` when that server is lost or no longer uses the folder, e.g. on a new server after a disaster: with an external storage, the folder still names the lost server, so this restore always asks.
+- Answer `n`, the default, when the other server still uses the folder, e.g. when a backup of production is restored onto a test server: the `.env` of the backup points to the folder of production, and `y` would replace the attachments of production with those of the backup.
+
+Without a terminal, e.g. in a script, the restore refuses a folder of another server; `--replace-foreign-objects` answers the question with yes.
+
 ## Testing a restore
 
-Restore onto a separate server at least once a quarter: follow "Restoring a backup" on a new server with the backups of the S3 storage, then sign in with two-factor authentication and check that your data and files are there. Every release passes the same restore automatically before it is published.
+Restore onto a separate server at least once a quarter: follow "Restoring a backup" on a new server with the backups of the S3 storage, then sign in with two-factor authentication and check that your data and files are there. With the attachments on an external storage, never answer the second question of the restore with `y` while the installation whose backup you test still runs. Every release passes the same restore automatically before it is published.
 
 ## Uninstalling
 
@@ -112,5 +138,6 @@ The command deletes Trybun from the server: its containers and networks, both da
 
 - With external S3 storage, it first stores a last backup there; the backups on the S3 storage stay. If the backup fails, nothing is deleted.
 - Without it, no backup remains anywhere – the command warns before it asks. Run `./trybun backup` and keep a copy elsewhere first if you may need the data.
+- The attachment folder on an external storage (`TRYBUN_S3_URL`) is not deleted; delete it on the storage if the files are not needed. The ID of the server is deleted with the backups on this server, so a later restore into that folder asks the second question, as on a new server.
 
 The folder of the package with `.env` stays. Keep `.env` and the backup passphrase outside the server – with them and the backups on the S3 storage, `./trybun restore` brings Trybun back, as described in "Restoring a backup". Then delete the folder with the command the script prints (`rm -rf <folder>`).

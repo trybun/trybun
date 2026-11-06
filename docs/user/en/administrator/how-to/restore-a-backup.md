@@ -43,4 +43,6 @@ You need the deployment package of any release, the copy of `.env` you kept outs
    ./trybun restore
    ```
 
+   When the attached files are kept on an external S3 storage, the restore asks a second question, because their folder still belongs to the old server: "The storage folder … belongs to another Trybun server. Replace its content? [y/N]". Answer `y` when the old server is lost. Answer `n` while the old server still runs, e.g. when you only test a restore: `y` would replace its attached files with those of the backup.
+
 The users sign in with their passwords and two-factor codes as before. If the `.env` is lost, run `./trybun install` on the new server, set `TRYBUN_BACKUP_PASSPHRASE` and the `TRYBUN_BACKUP_S3_*` variables of the old installation in the new `.env`, and run `./trybun restore`; it brings back the old `.env` too.
