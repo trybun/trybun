@@ -572,6 +572,23 @@
       "myTickets": "Przejdź do moich zgłoszeń",
       "loadMore": "Pokaż więcej projektów",
       "loadingMore": "Ładowanie…"
+    },
+    "projectHome": {
+      "createTicket": "Utwórz zgłoszenie",
+      "myTickets": "Moje zgłoszenia",
+      "showAll": "Pokaż wszystkie",
+      "archivedBanner": "Ten projekt jest zarchiwizowany. Możesz czytać jego zgłoszenia, ale nie możesz tworzyć nowych."
+    },
+    "newTicket": {
+      "heading": "Nowe zgłoszenie",
+      "project": "Projekt: {name}",
+      "title": "Tytuł",
+      "titleRequired": "Wpisz tytuł.",
+      "description": "Opis",
+      "placeholder": "Co się stało?\nCzego się spodziewałeś?\nJak możemy to powtórzyć?",
+      "submit": "Wyślij",
+      "cancel": "Anuluj",
+      "created": "Utworzono zgłoszenie {identifier}"
     }
   },
   "productTours": {

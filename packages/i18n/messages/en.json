@@ -572,6 +572,23 @@
       "myTickets": "Go to my tickets",
       "loadMore": "Show more projects",
       "loadingMore": "Loading…"
+    },
+    "projectHome": {
+      "createTicket": "Create ticket",
+      "myTickets": "My tickets",
+      "showAll": "Show all",
+      "archivedBanner": "This project is archived. You can read its tickets, but you cannot create new ones."
+    },
+    "newTicket": {
+      "heading": "New ticket",
+      "project": "Project: {name}",
+      "title": "Title",
+      "titleRequired": "Enter a title.",
+      "description": "Description",
+      "placeholder": "What happened?\nWhat did you expect?\nHow can we reproduce it?",
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "created": "Ticket {identifier} created"
     }
   },
   "productTours": {

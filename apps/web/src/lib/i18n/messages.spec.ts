@@ -54,6 +54,7 @@ const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   projects: ['projects'],
   sessions: ['signIn'],
   setup: ['setup'],
+  tickets: ['portal'],
   users: ['accounts', 'settings'],
 };
 
