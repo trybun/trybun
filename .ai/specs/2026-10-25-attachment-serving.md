@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-10-25 |
 | Plan task | `S0-22` (found while writing [ADR 0008](../../docs/adr/0008-attachment-serving.md)); implemented by `S1-08` |
 | System specification sections | §13.3, §14.2, §6.2, §17.1 |
@@ -52,15 +52,15 @@ New or changed glossary terms (code identifier, EN/PL labels):
 
 ## Open questions
 
-Implementation must not start until every question has an answer.
+Every question is answered; S1-08 implements them together with its [change specification](2026-10-26-attachments.md).
 
-1. Content check of `txt`, `log`, `csv`, `json`, and images that cannot be decoded (item 1) — **Answer:** …
-2. Upper bound of the size limit and the state of files that cannot be scanned completely: a new status `rejected` or `infected` (item 2) — **Answer:** …
-3. Responses of the content endpoint for `quarantine` and `infected` attachments (item 3) — **Answer:** …
-4. `Content-Security-Policy: default-src 'none'; sandbox` and `Cross-Origin-Resource-Policy: same-origin` on the content response (item 4) — **Answer:** …
-5. Previews of the user's own draft attachments (item 5) — **Answer:** …
-6. Encrypted PDF files: rejected or accepted (item 6) — **Answer:** …
-7. Keep `clamscan` or an own `INSTREAM` client in the adapter (item 7) — **Answer:** …
+1. Content check of `txt`, `log`, `csv`, `json`, and images that cannot be decoded (item 1) — **Answer (approved by the maintainer on 2026-11-06):** as proposed: valid UTF-8 (optional BOM) without NUL bytes and no binary format detected, `json` must parse, always a download; an image that cannot be decoded is removed like a file that cannot be scanned completely.
+2. Upper bound of the size limit and the state of files that cannot be scanned completely: a new status `rejected` or `infected` (item 2) — **Answer (approved by the maintainer on 2026-11-06):** as proposed: at most 100 MB, `AlertExceedsMax yes` and `AlertEncryptedArchive yes`, and the new status `rejected` ("File removed: could not be checked" / „Plik usunięty: nie można go sprawdzić”), notified like an infected file.
+3. Responses of the content endpoint for `quarantine` and `infected` attachments (item 3) — **Answer (approved by the maintainer on 2026-11-06):** as proposed: `409 attachment.not_available` in `quarantine`, `410 attachment.removed` for `infected` and `rejected`, `404` for an invisible attachment.
+4. `Content-Security-Policy: default-src 'none'; sandbox` and `Cross-Origin-Resource-Policy: same-origin` on the content response (item 4) — **Answer (approved by the maintainer on 2026-11-06):** as proposed: both headers on the content response.
+5. Previews of the user's own draft attachments (item 5) — **Answer (approved by the maintainer on 2026-11-06):** as proposed: the preview of a form shows images of the current user's own drafts; after saving, the rule of the same ticket applies.
+6. Encrypted PDF files: rejected or accepted (item 6) — **Answer (approved by the maintainer on 2026-11-06):** as proposed: rejected at upload with `attachment.type_not_allowed`.
+7. Keep `clamscan` or an own `INSTREAM` client in the adapter (item 7) — **Answer (approved by the maintainer on 2026-11-06):** as proposed: `clamscan` stays behind the ClamAV adapter, with an integration test on the pinned ClamAV image; §14.2 unchanged.
 
 ## Acceptance criteria
 
@@ -74,3 +74,4 @@ Implementation must not start until every question has an answer.
 ## Changelog
 
 - 2026-10-25 – Created from the open questions of ADR 0008.
+- 2026-11-06 – Approved: the maintainer accepted every proposed answer (in the session that approved the S1-08 specification, PR #119); status `approved`.
