@@ -1,5 +1,10 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { ABILITY_DEFINITIONS } from './ability-definitions.js';
+import {
+  DELETE_ATTACHMENT_OBJECTS_SUBSCRIPTION,
+  SCAN_ATTACHMENT_SUBSCRIPTION,
+} from './modules/attachments/attachments.jobs.js';
+import { AttachmentsWorkerModule } from './modules/attachments/attachments-worker.module.js';
 import { AuditLogEntriesWorkerModule } from './modules/audit-log-entries/audit-log-entries-worker.module.js';
 import { InvitationsWorkerModule } from './modules/invitations/invitations-worker.module.js';
 import {
@@ -50,11 +55,14 @@ export class WorkerModule {
           UNASSIGN_DEACTIVATED_USER_SUBSCRIPTION,
           UNASSIGN_REMOVED_MEMBER_SUBSCRIPTION,
           SCHEDULE_RESOLUTION_CONFIRMATION_CLOSE_SUBSCRIPTION,
+          SCAN_ATTACHMENT_SUBSCRIPTION,
+          DELETE_ATTACHMENT_OBJECTS_SUBSCRIPTION,
         ]),
         AuditLogEntriesWorkerModule,
         InvitationsWorkerModule,
         UsersWorkerModule,
         TicketsWorkerModule,
+        AttachmentsWorkerModule,
         HeartbeatModule,
       ],
     };
