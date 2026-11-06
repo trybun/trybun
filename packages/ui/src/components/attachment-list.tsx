@@ -55,10 +55,10 @@ const FILE_KINDS: [RegExp, keyof typeof TYPE_ICONS][] = [
   [/^image\//, 'image'],
   [/^video\//, 'video'],
   [/^audio\//, 'audio'],
-  [/^text\/csv$|spreadsheet|excel/, 'spreadsheet'],
+  [/(?:^text\/csv$)|(?:spreadsheet|excel)/, 'spreadsheet'],
   [/zip|compressed|tar|gzip/, 'archive'],
   [/json|xml|javascript|yaml/, 'code'],
-  [/^text\/|pdf|word|opendocument\.text|rtf/, 'text'],
+  [/(?:^text\/)|(?:pdf|word|opendocument\.text|rtf)/, 'text'],
 ];
 
 function fileKind(contentType: string | undefined): keyof typeof TYPE_ICONS {
