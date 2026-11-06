@@ -69,6 +69,7 @@ model User {
   requestedTickets    Ticket[]              @relation("TicketRequester")
   assignedTickets     Ticket[]              @relation("TicketAssignee")
   activityEvents      ActivityEvent[]
+  attachments         Attachment[]
 
   @@map("users")
 }
@@ -464,6 +465,7 @@ model Ticket {
   outgoingRelations TicketRelation[] @relation("TicketRelationSource")
   /// The relations that point to the ticket, e.g. its duplicates.
   incomingRelations TicketRelation[] @relation("TicketRelationTarget")
+  attachments       Attachment[]
 
   @@unique([projectId, number])
   @@index([assigneeId])
@@ -533,4 +535,42 @@ model ActivityEvent {
 
   @@index([ticketId, id])
   @@map("activity_events")
+}
+
+/// `attachment.status` (§13.3): quarantine until the malware scan, then available, or removed as
+/// infected or as not completely scannable (`rejected`).
+enum AttachmentStatus {
+  quarantine
+  available
+  infected
+  rejected
+
+  @@map("attachment_status")
+}
+
+/// A file of a ticket (§3.2, §13.3, ADR 0008). Its ID is the key of its object in the storage
+/// and is generated before the upload. Unlinked, it is a draft of its uploader, purged after 24
+/// hours. Never changed through the API, so not versioned; a child record that does not change the
+/// ticket's version (§17.2). Partial indexes of the migrations serve the purge of drafts and the
+/// recovery of scans.
+model Attachment {
+  id           String           @id @db.Uuid
+  /// The normalized file name of the client, 1–255 characters with its extension. Never logged.
+  fileName     String           @map("file_name")
+  /// The type of the allowlist entry of the extension, never the type sent by the client.
+  contentType  String           @map("content_type")
+  /// Bytes of the stored object, updated after EXIF stripping; at most 100 MB.
+  size         Int
+  status       AttachmentStatus @default(quarantine)
+  uploadedById String           @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User             @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  /// None while a draft.
+  ticketId     String?          @map("ticket_id") @db.Uuid
+  ticket       Ticket?          @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([ticketId, createdAt, id])
+  @@index([uploadedById])
+  @@map("attachments")
 }

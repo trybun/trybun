@@ -11,6 +11,7 @@ import { type Ticket, ticketActionSchema } from '@trybun/contracts/tickets';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { keycloakJwksHandler, signAccessToken } from '../test/factories/access-token.factory.js';
+import { createAttachment } from '../test/factories/attachment.factory.js';
 import { createInvitation } from '../test/factories/invitation.factory.js';
 import { createOrganization } from '../test/factories/organization.factory.js';
 import { PRINCIPAL_FIXTURES, type PrincipalFixture } from '../test/factories/principal.factory.js';
@@ -51,6 +52,8 @@ describe('permission layer', () => {
     archivedTicket: { id: string };
     ticketB: { id: string };
   };
+  /** Drafts and attachments of the tickets above. */
+  const attachments: { id: string }[] = [];
   const users = {} as Record<PrincipalFixture, User>;
 
   beforeAll(async () => {
@@ -158,6 +161,27 @@ describe('permission layer', () => {
       status: 'new',
       type: null,
     });
+    // Drafts of a team member and of an end user, and an attachment of each ticket by its
+    // requester and by the Developer.
+    attachments.push(
+      await createAttachment(prisma, { uploadedById: users.developer.id }),
+      await createAttachment(prisma, { uploadedById: users.end_user_personal.id }),
+    );
+    for (const ticket of [
+      records.teamTicket,
+      records.personalTicket,
+      records.organizationTicket,
+      records.archivedTicket,
+      records.ticketB,
+    ]) {
+      const { requesterId } = await prisma.ticket.findUniqueOrThrow({
+        where: { id: ticket.id },
+        select: { requesterId: true },
+      });
+      for (const uploadedById of new Set([requesterId, users.developer.id])) {
+        attachments.push(await createAttachment(prisma, { uploadedById, ticketId: ticket.id }));
+      }
+    }
   });
 
   beforeEach(() => {
@@ -288,6 +312,11 @@ describe('permission layer', () => {
             where: { AND: [accessibleBy(ability, 'read').ofType('Ticket'), where] },
             select,
           });
+        case 'Attachment':
+          return prisma.attachment.findMany({
+            where: { AND: [accessibleBy(ability, 'read').ofType('Attachment'), where] },
+            select,
+          });
       }
     }
 
@@ -308,6 +337,7 @@ describe('permission layer', () => {
             records.archivedTicket.id,
             records.ticketB.id,
           ],
+          Attachment: attachments.map(({ id }) => id),
         };
 
         for (const descriptor of ABILITY_DEFINITIONS.records) {
@@ -373,11 +403,11 @@ describe('permission layer', () => {
       [
         'developer',
         'teamTicket',
-        ['read', 'update', 'update_fields', 'assign_self', 'change_status'],
+        ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
       ],
       ['admin', 'archivedTicket', ['read']],
-      ['end_user_personal', 'personalTicket', ['read', 'update']],
-      ['end_user_organization', 'organizationTicket', ['read', 'update']],
+      ['end_user_personal', 'personalTicket', ['read', 'update', 'add_attachment']],
+      ['end_user_organization', 'organizationTicket', ['read', 'update', 'add_attachment']],
       ['end_user_personal', 'archivedTicket', ['read']],
       // A requester keeps reading a ticket after losing access to its project (§7.3).
       ['end_user_archived_organization', 'ticketB', ['read']],

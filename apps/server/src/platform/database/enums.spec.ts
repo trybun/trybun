@@ -1,5 +1,6 @@
 // Every Prisma enum has the values of its contract enum (§18.4).
 import { activityEventSourceSchema } from '@trybun/contracts/activity-events';
+import { attachmentStatusSchema } from '@trybun/contracts/attachments';
 import { invitationTargetTypeSchema } from '@trybun/contracts/invitations';
 import { organizationStateSchema } from '@trybun/contracts/organizations';
 import { productTourStatusSchema } from '@trybun/contracts/product-tours';
@@ -15,6 +16,7 @@ import { userKindSchema, userStateSchema } from '@trybun/contracts/users';
 import { describe, expect, it } from 'vitest';
 import {
   ActivityEventSource,
+  AttachmentStatus,
   InvitationTarget,
   OrganizationState,
   ProductTourStatus,
@@ -44,6 +46,7 @@ describe('Prisma enums', () => {
     ['TicketStatus', TicketStatus, ticketStatusSchema.options],
     ['TicketWaitingReason', TicketWaitingReason, ticketWaitingReasonSchema.options],
     ['ActivityEventSource', ActivityEventSource, activityEventSourceSchema.options],
+    ['AttachmentStatus', AttachmentStatus, attachmentStatusSchema.options],
   ])('%s matches its contract enum', (_name, prismaEnum, contractValues) => {
     expect(Object.values(prismaEnum)).toEqual(contractValues);
   });

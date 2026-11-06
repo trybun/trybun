@@ -123,8 +123,9 @@ export type ResolutionAnswer = z.infer<typeof resolutionAnswerSchema>;
 /**
  * The action codes of a ticket (§18.3), sent in its `allowedActions`: `update` changes the title
  * and the description, `update_fields` the type and the priority, `assign` sets any eligible
- * assignee, `assign_self` only the principal, `change_status` changes the status (team), and
- * `confirm_resolution` answers the resolution confirmation (the requester, §7.5).
+ * assignee, `assign_self` only the principal, `change_status` changes the status (team),
+ * `confirm_resolution` answers the resolution confirmation (the requester, §7.5), and
+ * `add_attachment` links files to the ticket (§3.2).
  */
 export const ticketActionSchema = z.enum([
   'read',
@@ -134,6 +135,7 @@ export const ticketActionSchema = z.enum([
   'assign_self',
   'change_status',
   'confirm_resolution',
+  'add_attachment',
 ]);
 export type TicketAction = z.infer<typeof ticketActionSchema>;
 

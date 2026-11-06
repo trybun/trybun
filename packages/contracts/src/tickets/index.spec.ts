@@ -53,6 +53,7 @@ describe('ticket enums', () => {
         'assign_self',
         'change_status',
         'confirm_resolution',
+        'add_attachment',
       ],
     ],
     [ticketWaitingReasonSchema, ['information', 'confirmation']],

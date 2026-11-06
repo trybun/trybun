@@ -38,6 +38,11 @@ export const errorCodeSchema = z.enum([
   'ticket.duplicate_of_self',
   'ticket.duplicate_other_project',
   'ticket.resolution_confirmation_not_pending',
+  'attachment.type_not_allowed',
+  'attachment.already_linked',
+  'attachment.draft_limit_reached',
+  'attachment.not_available',
+  'attachment.removed',
   'invitation.account_kind_mismatch',
   'invitation.account_deactivated',
   'invitation.access_exists',
@@ -117,6 +122,17 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'ticket.duplicate_of_self': 422,
   'ticket.duplicate_other_project': 422,
   'ticket.resolution_confirmation_not_pending': 409,
+  // A file whose content does not match its extension, an extension outside the allowlist, or an
+  // encrypted ZIP archive or PDF file (§13.3).
+  'attachment.type_not_allowed': 422,
+  // Linking an own attachment that is already linked to a ticket (§13.3).
+  'attachment.already_linked': 422,
+  // More than 50 drafts or 250 MB of drafts of one user at a time (§13.3).
+  'attachment.draft_limit_reached': 422,
+  // The content of an attachment that is still in quarantine (§13.3).
+  'attachment.not_available': 409,
+  // The content of an attachment removed as infected or not completely scannable (§13.3).
+  'attachment.removed': 410,
   // The address has an account of the other kind; a kind change is an Administrator action (§7.4).
   'invitation.account_kind_mismatch': 422,
   // The address has a deactivated account, which the Administrator reactivates first (§7.4).

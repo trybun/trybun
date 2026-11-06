@@ -760,6 +760,13 @@
       "duplicate_other_project": "The original ticket must be in the same project.",
       "resolution_confirmation_not_pending": "This ticket no longer waits for your confirmation."
     },
+    "attachment": {
+      "type_not_allowed": "Files of this type are not allowed.",
+      "already_linked": "This file is already attached to a ticket.",
+      "draft_limit_reached": "You have too many files that are not attached yet. Save or remove some of them and try again.",
+      "not_available": "This file is still being checked. Try again in a moment.",
+      "removed": "This file was removed."
+    },
     "invitation": {
       "account_kind_mismatch": "This address belongs to an account of the other kind. Only the Administrator can change the kind of an account.",
       "account_deactivated": "This address belongs to a deactivated account. The Administrator must reactivate it first.",

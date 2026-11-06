@@ -760,6 +760,13 @@
       "duplicate_other_project": "Oryginalne zgłoszenie musi należeć do tego samego projektu.",
       "resolution_confirmation_not_pending": "To zgłoszenie nie czeka już na Twoje potwierdzenie."
     },
+    "attachment": {
+      "type_not_allowed": "Pliki tego typu są niedozwolone.",
+      "already_linked": "Ten plik jest już dołączony do zgłoszenia.",
+      "draft_limit_reached": "Masz zbyt wiele plików, które nie zostały jeszcze dołączone. Zapisz lub usuń część z nich i spróbuj ponownie.",
+      "not_available": "Ten plik jest jeszcze sprawdzany. Spróbuj ponownie za chwilę.",
+      "removed": "Ten plik został usunięty."
+    },
     "invitation": {
       "account_kind_mismatch": "Ten adres należy do konta innego rodzaju. Rodzaj konta może zmienić tylko Administrator.",
       "account_deactivated": "Ten adres należy do dezaktywowanego konta. Administrator musi je najpierw ponownie aktywować.",

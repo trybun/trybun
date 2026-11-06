@@ -5186,7 +5186,8 @@
                                     "assign",
                                     "assign_self",
                                     "change_status",
-                                    "confirm_resolution"
+                                    "confirm_resolution",
+                                    "add_attachment"
                                   ]
                                 }
                               },
@@ -5445,7 +5446,8 @@
                                     "assign",
                                     "assign_self",
                                     "change_status",
-                                    "confirm_resolution"
+                                    "confirm_resolution",
+                                    "add_attachment"
                                   ]
                                 }
                               },
@@ -5708,7 +5710,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -5967,7 +5970,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6177,7 +6181,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6436,7 +6441,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6694,7 +6700,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -6953,7 +6960,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7237,7 +7245,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7496,7 +7505,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7729,7 +7739,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },
@@ -7988,7 +7999,8 @@
                               "assign",
                               "assign_self",
                               "change_status",
-                              "confirm_resolution"
+                              "confirm_resolution",
+                              "add_attachment"
                             ]
                           }
                         },

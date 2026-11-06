@@ -26,36 +26,82 @@ const TEAM_ACTIONS = ALL_ACTIONS.filter((action) => action !== 'confirm_resoluti
 const ACTIONS_OF_ARCHIVED_PROJECTS: readonly TicketAction[] = ['read'];
 
 /**
+ * The membership condition of a team rule on a project (§18.3): the principal's membership with
+ * `role` or a higher team role. Only team roles count, so a membership that contradicts the
+ * account kind grants nothing (§7.1).
+ */
+export function memberFrom(principal: Principal, role: 'developer' | 'project_manager') {
+  return {
+    members: { some: { userId: principal.userId, role: { in: teamRolesFrom(role) } } },
+  } satisfies Prisma.ProjectWhereInput;
+}
+
+/**
+ * The `read` conditions of the projects of an end user (§7.3): personal access, or access through
+ * their active organization. `is`: the in-memory check of a record supports a to-one relation only
+ * in this form.
+ */
+function endUserProjectAccess(principal: Principal): Prisma.ProjectWhereInput[] {
+  return [
+    { members: { some: { userId: principal.userId, role: 'end_user' } } },
+    {
+      organizations: {
+        some: {
+          organization: {
+            is: { state: 'active', members: { some: { userId: principal.userId } } },
+          },
+        },
+      },
+    },
+  ];
+}
+
+/**
+ * The conditions under which a principal reads a ticket (§7.5): an end user the tickets they
+ * requested (`only_me` until S1-11), also after losing access to the project (§7.3); a team member
+ * the tickets of their projects; the Administrator every ticket. The attachment rules wrap them, so
+ * attachments follow every visibility rule of tickets.
+ */
+export function ticketReadConditions(principal: Principal): Prisma.TicketWhereInput {
+  if (principal.userKind === 'end_user') {
+    return { requesterId: principal.userId };
+  }
+  return principal.isAdmin ? {} : { project: { is: memberFrom(principal, 'developer') } };
+}
+
+/**
+ * The conditions under which a principal changes a ticket they read – edits it or adds
+ * attachments (§7.5), one rule per condition: an end user while they can still read the project
+ * (Q14), the team under the read conditions.
+ */
+export function ticketChangeConditions(principal: Principal): Prisma.TicketWhereInput[] {
+  if (principal.userKind !== 'end_user') {
+    return [ticketReadConditions(principal)];
+  }
+  return endUserProjectAccess(principal).map((access) => ({
+    ...ticketReadConditions(principal),
+    project: { is: access },
+  }));
+}
+
+/**
  * The rules of tickets (§7.5): the team works on the tickets of their projects – a Developer
- * edits them and assigns only themselves, a Project manager assigns anyone eligible; the
- * Administrator does everything. An end user creates tickets in the projects they can read and
- * sees the tickets they requested (§3.2, `only_me` until S1-11), and edits them while they can
+ * edits them, adds attachments and assigns only themselves, a Project manager assigns anyone
+ * eligible; the Administrator does everything. An end user creates tickets in the projects they
+ * can read and sees the tickets they requested, and edits them and adds attachments while they can
  * still read the project: after losing access, a requester keeps reading (§7.3). The team changes
  * the status; only the requester answers the resolution confirmation, and only while the ticket
  * waits for it (§4.3).
  */
 export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
   if (principal.userKind === 'end_user') {
-    // The `read` conditions of the projects of an end user (§7.3): personal access, or access
-    // through their active organization. `is`: the in-memory check of a record supports a to-one
-    // relation only in this form.
-    const personalAccess = {
-      members: { some: { userId: principal.userId, role: 'end_user' as const } },
-    };
-    const organizationAccess = {
-      organizations: {
-        some: {
-          organization: {
-            is: { state: 'active' as const, members: { some: { userId: principal.userId } } },
-          },
-        },
-      },
-    };
-    for (const access of [personalAccess, organizationAccess]) {
+    for (const access of endUserProjectAccess(principal)) {
       can(CREATE_TICKET, PROJECT, access);
-      can('update', TICKET, { requesterId: principal.userId, project: { is: access } });
     }
-    can('read', TICKET, { requesterId: principal.userId });
+    for (const conditions of ticketChangeConditions(principal)) {
+      can(['update', 'add_attachment'], TICKET, conditions);
+    }
+    can('read', TICKET, ticketReadConditions(principal));
     can('confirm_resolution', TICKET, { requesterId: principal.userId });
     // The reason makes the API answer `409` instead of `403`, and keeps the action out of
     // `allowedActions` while no answer is possible (§18.3).
@@ -69,15 +115,13 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
     can([...TEAM_ACTIONS], TICKET);
     return;
   }
-  // Only team roles count: a membership that contradicts the account kind grants nothing (§7.1).
-  const memberFrom = (role: 'developer' | 'project_manager') => ({
-    members: { some: { userId: principal.userId, role: { in: teamRolesFrom(role) } } },
-  });
-  can(CREATE_TICKET, PROJECT, memberFrom('developer'));
-  can(['read', 'update', 'update_fields', 'assign_self', 'change_status'], TICKET, {
-    project: { is: memberFrom('developer') },
-  });
-  can('assign', TICKET, { project: { is: memberFrom('project_manager') } });
+  can(CREATE_TICKET, PROJECT, memberFrom(principal, 'developer'));
+  can(
+    ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
+    TICKET,
+    ticketReadConditions(principal),
+  );
+  can('assign', TICKET, { project: { is: memberFrom(principal, 'project_manager') } });
 };
 
 /**

@@ -2329,7 +2329,7 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                             /** @enum {string} */
                             publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                             /** @enum {string|null} */
@@ -2386,7 +2386,7 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                             /** @enum {string} */
                             publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                             /** @enum {string|null} */
@@ -2460,7 +2460,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2517,7 +2517,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2576,7 +2576,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2633,7 +2633,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2707,7 +2707,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2764,7 +2764,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2839,7 +2839,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2896,7 +2896,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2962,7 +2962,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3019,7 +3019,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
