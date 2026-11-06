@@ -50,9 +50,13 @@ export default defineConfig({
     },
     {
       // The performance budget of the key pages, measured with the mobile profile of Lighthouse.
+      // It runs after the other projects and one page at a time: the simulated TBT multiplies
+      // the observed main-thread tasks by the CPU slowdown, so a parallel test on the same
+      // runner moves the measurement (#146).
       name: 'lighthouse',
       testMatch: /lighthouse\.spec\.ts$/,
-      dependencies: ['setup'],
+      dependencies: ['setup', 'phone', 'tablet', 'desktop'],
+      workers: 1,
     },
   ],
   webServer: [

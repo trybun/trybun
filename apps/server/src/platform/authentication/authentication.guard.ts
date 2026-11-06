@@ -16,6 +16,11 @@ export type AuthenticatedRequest = Request & { principal: Principal };
  */
 const BEARER_JWT = /^Bearer ([\w-]+\.[\w-]+\.[\w-]+)$/i;
 
+/** The JWT of the `Authorization` header; `undefined` without one. */
+export function bearerJwt(request: Pick<Request, 'headers'>): string | undefined {
+  return BEARER_JWT.exec(request.headers.authorization ?? '')?.[1];
+}
+
 /**
  * Step 1 of the request pipeline (§18.3): resolves the principal from the access token in the
  * `Authorization` header, otherwise `401`. API tokens join with their task (§12.2) and are
@@ -38,7 +43,7 @@ export class AuthenticationGuard implements CanActivate {
       return true;
     }
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const token = BEARER_JWT.exec(request.headers.authorization ?? '')?.[1];
+    const token = bearerJwt(request);
     // Every request goes through the verification; without a JWT it fails as an invalid token.
     const claims = await this.verifier.verify(token ?? '');
     const principal =

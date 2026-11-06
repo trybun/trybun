@@ -100,11 +100,21 @@ UX rules (Rule 2):
 
 ## 5.7 End-user portal
 
-The end-user portal is the part of the web application that end users work in (Rule 2: the shortest path to reporting and following a problem).
+The end-user portal is the part of the web application that end users work in (Rule 2: the shortest path to reporting and following a problem). Its routes live under `/portal` ([§18.5](18-code-patterns.md)).
 
-- **Portal root**: lists the projects the user has access to ([§7.1](07-users-organizations-permissions.md)). If the user has access to exactly one project, the root redirects straight to that project's home.
-- **Project home**: the large search field ([§5.5](#55-search-in-the-end-user-portal)), the "Create ticket" action (PL: „Utwórz zgłoszenie”) and "My tickets" (PL: „Moje zgłoszenia”) for that project.
-- **My tickets**: also available across all projects of the user, from the portal navigation. It lists tickets the user created or watches, with their public status; tickets with `awaiting_reply` are shown first and highlighted ([§4.4](04-ticket-lifecycle.md)).
-- **Ticket view**: title, description, public status with its description ([§4.2](04-ticket-lifecycle.md)), the public timeline and the comment field (subject to [§4.3](04-ticket-lifecycle.md) for terminal tickets).
-- After accepting an invitation ([§7.4](07-users-organizations-permissions.md)), the user lands on the home of the project they were invited to; after a later sign-in, on the portal root.
-- Team members who open the portal see the team views instead ([08-team-views.md](08-team-views.md)).
+| Route | View |
+|---|---|
+| `/portal` | Portal root |
+| `/portal/projects/{projectId}` | Project home |
+| `/portal/projects/{projectId}/tickets/new` | Simplified ticket form ([§3.3](03-ticket-model.md)) |
+| `/portal/tickets` | My tickets (`?projectId=` for one project) |
+| `/portal/tickets/{identifier}` | Ticket view |
+| `/portal/tickets/{identifier}/resolution-confirmation?answer=solved\|not_solved` | Confirmation page of the resolution answer ([§4.3](04-ticket-lifecycle.md)) |
+| `/portal/settings` | Account settings ([§13.1](13-non-functional.md)) |
+
+- **Portal root**: lists the **active** projects the user has access to ([§7.1](07-users-organizations-permissions.md)). If the user has exactly one active project, the root redirects straight to that project's home; archived projects do not count. Without an active project, the root shows an empty state, with a link to "My tickets" when the user has tickets.
+- **Project home**: the "Create ticket" action (PL: „Utwórz zgłoszenie”) and "My tickets" (PL: „Moje zgłoszenia”) for that project. An archived project shows its read-only banner instead of "Create ticket". The large search field ([§5.5](#55-search-in-the-end-user-portal)) is added with the portal search; until then the project home has none.
+- **My tickets**: also available across all projects of the user, from the portal navigation. It lists tickets the user created, and the tickets they watch once watching exists ([§6.4](06-comments-notifications.md)), with their public status; tickets with `awaiting_reply` are shown first and highlighted ([§4.4](04-ticket-lifecycle.md)), then the most recently updated. The API serves it as `GET /api/v1/tickets?involvement=mine` in this fixed order.
+- **Ticket view**: title, description, public status with its description ([§4.2](04-ticket-lifecycle.md)), the resolution question while the ticket waits for it ([§4.3](04-ticket-lifecycle.md)), the public timeline and the comment field (subject to [§4.3](04-ticket-lifecycle.md) for terminal tickets).
+- After accepting an invitation ([§7.4](07-users-organizations-permissions.md)), the user lands on the home of the project they were invited to; after accepting an invitation to an organization, which has no single project, on the portal root (team members invited to the Administrator role land on the team home); after a later sign-in, on the portal root.
+- **Portal and team views by account kind**: team members who open the portal see the team views instead ([08-team-views.md](08-team-views.md)), and end users who open a team view see the portal. The server redirects by the account kind of the signed-in account to the counterpart of the opened route – `/` ↔ `/portal`, `/projects/{projectId}` ↔ `/portal/projects/{projectId}`, `/tickets/{identifier}` ↔ `/portal/tickets/{identifier}`, `/settings` ↔ `/portal/settings` – and to the root of the other side for every other route. The redirect only shapes the UI; the API decides every access ([§14.4](14-architecture.md)).

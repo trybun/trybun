@@ -22,10 +22,37 @@
 The editor works like GitHub's (issues and pull requests) and is based on **GitHub Flavored Markdown (GFM)**. It is used for ticket descriptions, comments and notes.
 
 - toolbar with basic formatting (bold, italic, headings, lists, quotes, links, code),
-- "Write" and "Preview" tabs,
-- inserting images and files by drag and drop, pasting from the clipboard, or choosing from disk (attachments, [§13.3](13-non-functional.md)),
+- "Write" and "Preview" tabs (PL: „Pisz”, „Podgląd”); the preview renders the text exactly as it appears after saving, an empty text shows "Nothing to preview" (PL: „Brak podglądu”),
+- inserting images and files by drag and drop, pasting from the clipboard, or choosing from disk with the "Attach files" button (attachments, [§13.3](13-non-functional.md)); a paste that carries text as well as files (e.g. a range copied from a spreadsheet) pastes the text; a file appears as the placeholder `[Uploading name…]()` until it is uploaded, then as `![name](/api/v1/attachments/{id}/content)` for an image or `[name](…)` for another file,
 - task lists (`- [ ]`), code blocks with syntax highlighting, tables,
 - keyboard shortcuts (e.g. Ctrl+B; Ctrl+K inside the editor inserts a link, everywhere else it opens the command palette, [§8.4](08-team-views.md)).
+
+The toolbar and its shortcuts (Cmd instead of Ctrl on macOS, as on GitHub):
+
+| Button | Inserts or wraps | Shortcut |
+|---|---|---|
+| Heading | `### ` at the start of the line | – |
+| Bold | `**…**` | Ctrl+B |
+| Italic | `_…_` | Ctrl+I |
+| Quote | `> ` before each selected line | Ctrl+Shift+. |
+| Code | `` `…` ``, or a fenced block when the selection spans lines | Ctrl+E |
+| Link | `[…](url)` with `url` selected; a selected URL becomes the target | Ctrl+K |
+| Bulleted list | `- ` before each selected line | Ctrl+Shift+8 |
+| Numbered list | `1. `, `2. `, … | Ctrl+Shift+7 |
+| Task list | `- [ ] ` before each selected line | Ctrl+Shift+L |
+| Attach files | opens the file chooser | – |
+
+- A second press of Heading, Bold, Italic, Quote, Code or a list button removes the formatting it would add. Every toolbar action and shortcut can be undone with Ctrl+Z, like typing.
+- Write and Preview have no shortcut (Firefox reserves Ctrl+Shift+P); tables have no button, as on GitHub.
+- On phones the toolbar shows Bold, Italic, Link, Bulleted list, Task list and Attach files; the other buttons are in a "More formatting" menu (PL: „Więcej formatowania”).
+
+Rendered content (views, the preview and e-mails):
+
+- Raw HTML in the source is not rendered.
+- Links keep only the `http`, `https` and `mailto` protocols and paths of the site; any other link, including `javascript:`, `data:` and `vbscript:`, renders as plain text. Links to other sites, including protocol-relative ones, get `rel="nofollow ugc noopener noreferrer"`.
+- An image is rendered only when its source is exactly the stable path of an attachment the view allows. Every other image – an external URL, an attachment of another ticket, an unknown ID – renders as a link labelled by its alt text (or its URL); an image whose source the sanitizer removed renders as its alt text.
+- Task-list checkboxes are read-only and named by the item's text; ticking means editing the text.
+- E-mails show every image as a link, have no syntax highlighting and show task items as ☐/☑.
 
 Using GFM also simplifies the GitHub integration: ticket content goes into issues without format conversion ([§11.4](11-github-integration.md)).
 

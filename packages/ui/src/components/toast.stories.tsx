@@ -1,8 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useEffect, useState } from 'react';
-import { expect, screen, waitFor } from 'storybook/test';
+import { expect, screen, waitFor, within } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
 import { Button } from './button.js';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './dialog.js';
 import { createToastManager, Toaster } from './toast.js';
 
 const TYPES = [
@@ -81,3 +89,56 @@ export const Phone: Story = { args: { open: true }, globals: viewport('phone') }
 export const Tablet: Story = { args: { open: true }, globals: viewport('tablet') };
 
 export const Desktop: Story = { args: { open: true }, globals: viewport('desktop') };
+
+/** A toast added from an open dialog, like "Link copied" of the invitation link (#172). */
+function ToastInDialogDemo() {
+  const [manager] = useState(createToastManager);
+  return (
+    <Toaster toastManager={manager}>
+      <Dialog>
+        <DialogTrigger render={<Button variant="outline" />}>Copy new link</DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New invitation link</DialogTitle>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => manager.add({ type: 'success', title: 'Link copied' })}>
+              Copy link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Toaster>
+  );
+}
+
+// On phones the dialog is a bottom sheet: the toast stays above it (#172) and sits at the top of the
+// screen, so it never covers the actions of the sheet (#207).
+export const AboveDialogOnPhone: Story = {
+  render: () => <ToastInDialogDemo />,
+  globals: viewport('phone'),
+  play: async ({ canvas, userEvent }) => {
+    // The dialog opens after the toaster mounted, so its portal comes later in the document.
+    await userEvent.click(canvas.getByRole('button', { name: 'Copy new link' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New invitation link' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Copy link' }));
+    const title = await screen.findByText('Link copied');
+    await waitFor(async () => {
+      const { left, top, width, height } = title.getBoundingClientRect();
+      const topmost = document.elementFromPoint(left + width / 2, top + height / 2);
+      await expect(title.contains(topmost)).toBe(true);
+    });
+    const action = within(dialog).getByRole('button', { name: 'Copy link' });
+    const toastBox = title.closest('[data-slot="toast"]')!.getBoundingClientRect();
+    const actionBox = action.getBoundingClientRect();
+    await expect(toastBox.bottom).toBeLessThan(actionBox.top);
+    const center = document.elementFromPoint(
+      actionBox.left + actionBox.width / 2,
+      actionBox.top + actionBox.height / 2,
+    );
+    await expect(action.contains(center)).toBe(true);
+    await userEvent.click(screen.getByLabelText('Close notification'));
+    await waitFor(() => expect(screen.queryByText('Link copied')).not.toBeInTheDocument());
+    await expect(dialog).toBeInTheDocument();
+  },
+};

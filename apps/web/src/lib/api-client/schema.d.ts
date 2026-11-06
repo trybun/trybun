@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["UsersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me": {
         parameters: {
             query?: never;
@@ -17,7 +33,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["UsersController_updateCurrent"];
         trace?: never;
     };
     "/api/v1/users/me/product-tours": {
@@ -47,6 +63,54 @@ export interface paths {
         put: operations["UsersController_recordProductTourProgress"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{userId}/deactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UsersController_deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{userId}/reactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UsersController_reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{userId}/administrator-role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UsersController_grantAdministratorRole"];
+        post?: never;
+        delete: operations["UsersController_revokeAdministratorRole"];
         options?: never;
         head?: never;
         patch?: never;
@@ -132,6 +196,358 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ProjectsController_list"];
+        put?: never;
+        post: operations["ProjectsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ProjectsController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["ProjectsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["ProjectsController_update"];
+        trace?: never;
+    };
+    "/api/v1/projects/{projectId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ProjectsController_archive"];
+        post?: never;
+        delete: operations["ProjectsController_unarchive"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ProjectsController_listMembers"];
+        put?: never;
+        post: operations["ProjectsController_addMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["ProjectsController_removeMember"];
+        options?: never;
+        head?: never;
+        patch: operations["ProjectsController_changeMemberRole"];
+        trace?: never;
+    };
+    "/api/v1/projects/{projectId}/member-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ProjectsController_listMemberCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OrganizationsController_list"];
+        put?: never;
+        post: operations["OrganizationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organizationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OrganizationsController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["OrganizationsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["OrganizationsController_update"];
+        trace?: never;
+    };
+    "/api/v1/organizations/{organizationId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["OrganizationsController_archive"];
+        post?: never;
+        delete: operations["OrganizationsController_unarchive"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organizationId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OrganizationsController_listMembers"];
+        put?: never;
+        post: operations["OrganizationsController_addMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organizationId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["OrganizationsController_removeMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitation-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InvitationsController_list"];
+        put?: never;
+        post: operations["InvitationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/{invitationId}/resending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_resend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/{invitationId}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/token-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_verifyToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InvitationsController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TicketsController_list"];
+        put?: never;
+        post: operations["TicketsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TicketsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["TicketsController_update"];
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["TicketsController_changeStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}/resolution-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TicketsController_confirmResolution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}/activity-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TicketsController_listActivityEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -144,6 +560,49 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    UsersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                kind?: "team" | "end_user";
+                state?: "invited" | "active" | "deactivated" | "anonymized";
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            email: string | null;
+                            /** @enum {string} */
+                            kind: "team" | "end_user";
+                            /** @enum {string} */
+                            state: "invited" | "active" | "deactivated" | "anonymized";
+                            isAdmin: boolean;
+                            githubLogin: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            pendingInvitationCount: number;
+                            allowedActions: ("deactivate" | "reactivate" | "grant_admin" | "revoke_admin")[];
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
     UsersController_findCurrent: {
         parameters: {
             query?: never;
@@ -165,7 +624,48 @@ export interface operations {
                         email: string | null;
                         /** @enum {string} */
                         kind: "team" | "end_user";
-                        allowedActions: "open_administration"[];
+                        /** @enum {string|null} */
+                        language: "en" | "pl" | null;
+                        timeZone: string | null;
+                        allowedActions: ("open_administration" | "create_project" | "create_organization")[];
+                    };
+                };
+            };
+        };
+    };
+    UsersController_updateCurrent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    language?: "en" | "pl";
+                    timeZone?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        displayName: string | null;
+                        email: string | null;
+                        /** @enum {string} */
+                        kind: "team" | "end_user";
+                        /** @enum {string|null} */
+                        language: "en" | "pl" | null;
+                        timeZone: string | null;
+                        allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };
             };
@@ -188,7 +688,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            tourId: "first_login";
+                            tourId: "first_login" | "organization_detail";
                             tourVersion: number;
                             /** @enum {string} */
                             status: "completed" | "skipped";
@@ -206,7 +706,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                tourId: "first_login";
+                tourId: "first_login" | "organization_detail";
             };
             cookie?: never;
         };
@@ -227,7 +727,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         /** @enum {string} */
-                        tourId: "first_login";
+                        tourId: "first_login" | "organization_detail";
                         tourVersion: number;
                         /** @enum {string} */
                         status: "completed" | "skipped";
@@ -235,6 +735,82 @@ export interface operations {
                         updatedAt: string;
                     };
                 };
+            };
+        };
+    };
+    UsersController_deactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_reactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_grantAdministratorRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UsersController_revokeAdministratorRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -347,7 +923,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            id: "configure_github_sign_in" | "configure_email" | "configure_backup_storage";
+                            id: "create_project" | "configure_github_sign_in" | "invite_team" | "create_organization" | "configure_email" | "configure_backup_storage";
                             isDone: boolean;
                             isOptional: boolean;
                         }[];
@@ -375,6 +951,2184 @@ export interface operations {
                         version: string;
                         /** @enum {string} */
                         license: "MIT";
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                state?: "active" | "archived";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: ({
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            key: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                            confirmResolution: boolean;
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            /** @enum {string|null} */
+                            role: "developer" | "project_manager" | "end_user" | null;
+                            hasTickets: boolean;
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        } | {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            key: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        })[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    key: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        key: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        confirmResolution: boolean;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | "end_user" | null;
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        key: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        confirmResolution: boolean;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | "end_user" | null;
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        key: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProjectsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    key?: string;
+                    confirmResolution?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        key: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        confirmResolution: boolean;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | "end_user" | null;
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        key: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        confirmResolution: boolean;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @enum {string|null} */
+                        role: "developer" | "project_manager" | "end_user" | null;
+                        hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProjectsController_listMembers: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                role?: "developer" | "project_manager";
+            };
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                                githubLogin: string | null;
+                            };
+                            /** @enum {string} */
+                            role: "developer" | "project_manager" | "end_user";
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_addMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    userId: string;
+                    /** @enum {string} */
+                    role: "developer" | "project_manager";
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            githubLogin: string | null;
+                        };
+                        /** @enum {string} */
+                        role: "developer" | "project_manager" | "end_user";
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_removeMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProjectsController_changeMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    role: "developer" | "project_manager";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            githubLogin: string | null;
+                        };
+                        /** @enum {string} */
+                        role: "developer" | "project_manager" | "end_user";
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    ProjectsController_listMemberCandidates: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                query?: string;
+            };
+            header?: never;
+            path: {
+                projectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            githubLogin: string | null;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                state?: "active" | "archived";
+                projectId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                            domains: string[];
+                            memberCount: number;
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            allowedActions: ("read" | "update" | "archive" | "unarchive" | "delete" | "manage_projects" | "manage_members")[];
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** @default [] */
+                    domains?: string[];
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        domains: string[];
+                        memberCount: number;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "archive" | "unarchive" | "delete" | "manage_projects" | "manage_members")[];
+                        projects: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                        }[];
+                        hasTickets: boolean;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        domains: string[];
+                        memberCount: number;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "archive" | "unarchive" | "delete" | "manage_projects" | "manage_members")[];
+                        projects: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                        }[];
+                        hasTickets: boolean;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OrganizationsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    domains?: string[];
+                    projectIds?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        domains: string[];
+                        memberCount: number;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "archive" | "unarchive" | "delete" | "manage_projects" | "manage_members")[];
+                        projects: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                        }[];
+                        hasTickets: boolean;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
+                        domains: string[];
+                        memberCount: number;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "archive" | "unarchive" | "delete" | "manage_projects" | "manage_members")[];
+                        projects: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                        }[];
+                        hasTickets: boolean;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_unarchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OrganizationsController_listMembers: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                                email: string | null;
+                                /** @enum {string} */
+                                state: "invited" | "active" | "deactivated" | "anonymized";
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_addMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    /** @default false */
+                    move?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The account is a member already; nothing changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            email: string | null;
+                            /** @enum {string} */
+                            state: "invited" | "active" | "deactivated" | "anonymized";
+                        };
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            email: string | null;
+                            /** @enum {string} */
+                            state: "invited" | "active" | "deactivated" | "anonymized";
+                        };
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    OrganizationsController_removeMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organizationId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InvitationsController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    target: {
+                        /** @enum {string} */
+                        type: "project";
+                        /** Format: uuid */
+                        projectId: string;
+                        /** @enum {string} */
+                        role: "developer" | "project_manager" | "end_user";
+                    } | {
+                        /** @enum {string} */
+                        type: "organization";
+                        /** Format: uuid */
+                        organizationId: string;
+                    } | {
+                        /** @enum {string} */
+                        type: "administrator";
+                    };
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        outcome: "invite" | "grant";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                projectId?: string;
+                organizationId?: string;
+                userId?: string;
+                state?: "pending" | "accepted" | "revoked" | "expired";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    target: {
+                        /** @enum {string} */
+                        type: "project";
+                        /** Format: uuid */
+                        projectId: string;
+                        /** @enum {string} */
+                        role: "developer" | "project_manager" | "end_user";
+                    } | {
+                        /** @enum {string} */
+                        type: "organization";
+                        /** Format: uuid */
+                        organizationId: string;
+                    } | {
+                        /** @enum {string} */
+                        type: "administrator";
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description The address has an active account: the access was granted directly. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        outcome: "invited";
+                        invitation: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        };
+                        /** Format: uri */
+                        link: string;
+                    } | {
+                        /** @enum {string} */
+                        outcome: "access_granted";
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                    };
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        outcome: "invited";
+                        invitation: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        };
+                        /** Format: uri */
+                        link: string;
+                    } | {
+                        /** @enum {string} */
+                        outcome: "access_granted";
+                        user: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_resend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        invitation: {
+                            /** Format: uuid */
+                            id: string;
+                            user: {
+                                /** Format: uuid */
+                                id: string;
+                                email: string | null;
+                                displayName: string | null;
+                            };
+                            target: {
+                                /** @enum {string} */
+                                type: "project";
+                                project: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @enum {string} */
+                                role: "developer" | "project_manager" | "end_user";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                } | null;
+                            } | {
+                                /** @enum {string} */
+                                type: "organization";
+                                organization: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                };
+                            } | {
+                                /** @enum {string} */
+                                type: "administrator";
+                            };
+                            invitedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string} */
+                            state: "pending" | "accepted" | "revoked" | "expired";
+                            /** Format: date-time */
+                            expiresAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("resend" | "revoke")[];
+                        };
+                        /** Format: uri */
+                        link: string;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    InvitationsController_verifyToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        /** @enum {string} */
+                        kind: "team" | "end_user";
+                        /** @enum {string} */
+                        accountState: "invited" | "active";
+                        target: {
+                            /** @enum {string} */
+                            type: "project";
+                            project: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                name: string;
+                            };
+                            /** @enum {string} */
+                            role: "developer" | "project_manager" | "end_user";
+                            organization: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                        } | {
+                            /** @enum {string} */
+                            type: "organization";
+                            organization: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            };
+                        } | {
+                            /** @enum {string} */
+                            type: "administrator";
+                        };
+                        invitedBy: {
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+        };
+    };
+    InvitationsController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    method: "password";
+                    token: string;
+                    firstName: string;
+                    lastName: string;
+                    password: string;
+                    /** @enum {string} */
+                    language: "en" | "pl";
+                    timeZone?: string;
+                } | {
+                    /** @enum {string} */
+                    method: "identity_provider";
+                    token: string;
+                    /** @enum {string} */
+                    language: "en" | "pl";
+                    timeZone?: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "team" | "end_user";
+                        /** Format: starts_with */
+                        landingPath: string;
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                projectId?: string;
+                identifier?: string;
+                involvement?: "mine";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: ({
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            projectId: string;
+                            project: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                name: string;
+                            };
+                            number: number;
+                            identifier: string;
+                            title: string;
+                            description: string;
+                            requester: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                            /** @enum {string} */
+                            publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                            /** @enum {string|null} */
+                            waitingReason: "information" | "confirmation" | null;
+                            duplicateOf: {
+                                /** Format: uuid */
+                                id: string;
+                                number: number;
+                                projectKey: string;
+                            } | null;
+                            /** @enum {string|null} */
+                            type: "bug" | "feature" | "task" | "question" | null;
+                            /** @enum {string} */
+                            source: "user" | "developer" | "integration";
+                            /** @enum {string} */
+                            priority: "low" | "normal" | "high" | "critical";
+                            /** @enum {string} */
+                            status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                            organization: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            } | null;
+                            assignee: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** Format: date-time */
+                            closedAt: string | null;
+                            rejectionReason: string | null;
+                        } | {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            projectId: string;
+                            project: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                name: string;
+                            };
+                            number: number;
+                            identifier: string;
+                            title: string;
+                            description: string;
+                            requester: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                            /** @enum {string} */
+                            publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                            /** @enum {string|null} */
+                            waitingReason: "information" | "confirmation" | null;
+                            duplicateOf: {
+                                /** Format: uuid */
+                                id: string;
+                                number: number;
+                                projectKey: string;
+                            } | null;
+                            /** @enum {string} */
+                            publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
+                        })[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    projectId: string;
+                    title: string;
+                    description?: string;
+                    /** @enum {string} */
+                    type?: "bug" | "feature" | "task" | "question";
+                    /** @enum {string} */
+                    priority?: "low" | "normal" | "high" | "critical";
+                    /** Format: uuid */
+                    assigneeId?: string | null;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    projectId?: string;
+                    title?: string;
+                    description?: string;
+                    /** @enum {string} */
+                    type?: "bug" | "feature" | "task" | "question";
+                    /** @enum {string} */
+                    priority?: "low" | "normal" | "high" | "critical";
+                    /** Format: uuid */
+                    assigneeId?: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_changeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status: "rejected";
+                    rejectionReason: string;
+                } | {
+                    /** @enum {string} */
+                    status: "duplicate";
+                    /** Format: uuid */
+                    duplicateOfTicketId: string;
+                } | {
+                    /** @enum {string} */
+                    status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_confirmResolution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    answer: "solved" | "not_solved";
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
+                    };
+                };
+            };
+        };
+    };
+    TicketsController_listActivityEvents: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: ({
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed";
+                            data: {
+                                from: string | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    displayName: string | null;
+                                } | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
+                                } | (null);
+                                to: string | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    displayName: string | null;
+                                } | {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
+                                } | (null);
+                                reopen?: boolean;
+                                waitingReason?: string | null;
+                                duplicateOf?: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
+                                } | null;
+                            } | null;
+                            actor: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string|null} */
+                            automaticSource: "system" | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        } | {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed";
+                            data: {
+                                /** @enum {string} */
+                                from: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                                /** @enum {string} */
+                                to: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                                duplicateOf?: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
+                                } | null;
+                            } | null;
+                            actor: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string|null} */
+                            automaticSource: "system" | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        })[];
+                        nextCursor: string | null;
                     };
                 };
             };
