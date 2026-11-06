@@ -39,24 +39,31 @@ Build the end-user portal exactly as the approved change specification decides (
 
 - [x] 1.1 Portal navigation, the `(portal)` layout, `app/help/` and `/portal/settings` — 60397fe
 - [x] 1.2 Counterparts table and redirects by account kind — 60397fe
-- [ ] 1.3 End-user project response and the portal root
+- [x] 1.3 End-user project response and the portal root — fff2ec4
 
 ### Phase 2: Creating a ticket
 
-- [ ] 2.1 Project home and the simplified ticket form
-- [ ] 2.2 Attachments and visibility switch (deferred parts recorded)
+- [x] 2.1 Project home and the simplified ticket form — 184a4e6
+- [x] 2.2 Attachments and visibility switch (deferred parts recorded) — 508a3e4
+
+  > Deferred: S1-08 and S1-11 are not merged; their plan rows wire the attachment field and the visibility switch into the portal (Q8).
 
 ### Phase 3: Following tickets
 
-- [ ] 3.1 `involvement=mine` and the project reference
-- [ ] 3.2 Public status description and end-user activity events
-- [ ] 3.3 My tickets and the ticket view
+- [x] 3.1 `involvement=mine` and the project reference — fa4c877
+- [x] 3.2 Public status description and end-user activity events — fa4c877
+- [x] 3.3 My tickets and the ticket view — 2c64f12
 
 ### Phase 4: Resolution confirmation
 
-- [ ] 4.1 Confirmation panel and confirmation page
+- [x] 4.1 Confirmation panel and confirmation page — 2c64f12
 
 ### Phase 5: Documentation and data
 
-- [ ] 5.1 User documentation, demo dataset and generated artifacts
-- [ ] 5.2 System specification, plan and spec moved to `implemented/`
+- [x] 5.1 User documentation, demo dataset and generated artifacts — ac36954
+- [x] 5.2 System specification, plan and spec moved to `implemented/` — 508a3e4
+
+### Phase 6: Validation and review
+
+- [ ] 6.1 Full validation gate
+- [ ] 6.2 Review pass
