@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   escapeLinkText,
+  filesInsert,
   type FormatAction,
   formatMarkdown,
   textEdit,
@@ -109,5 +110,21 @@ describe('escapeLinkText', () => {
     ['[x](y)', '\\[x\\]\\(y\\)'],
   ])('%j → %j', (name, expected) => {
     expect(escapeLinkText(name)).toBe(expected);
+  });
+});
+
+describe('filesInsert', () => {
+  // `|` marks the cursor or `[[`…`]]` the selection, as in `parse` above.
+  it.each([
+    ['|', 'A\nB'],
+    ['Text|', '\nA\nB'],
+    ['Text\n|', 'A\nB'],
+    ['|Text', 'A\nB\n'],
+    ['Te|xt', '\nA\nB\n'],
+    ['Line\n|\nNext', 'A\nB'],
+    ['Te[[x]]t', '\nA\nB\n'],
+  ])('%j → %j', (marked, expected) => {
+    const { text, selection } = parse(marked);
+    expect(filesInsert(text, selection, ['A', 'B'])).toBe(expected);
   });
 });

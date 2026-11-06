@@ -23,7 +23,7 @@ The editor works like GitHub's (issues and pull requests) and is based on **GitH
 
 - toolbar with basic formatting (bold, italic, headings, lists, quotes, links, code),
 - "Write" and "Preview" tabs (PL: „Pisz”, „Podgląd”); the preview renders the text exactly as it appears after saving, an empty text shows "Nothing to preview" (PL: „Brak podglądu”),
-- inserting images and files by drag and drop, pasting from the clipboard, or choosing from disk with the "Attach files" button (attachments, [§13.3](13-non-functional.md)); a paste that carries text as well as files (e.g. a range copied from a spreadsheet) pastes the text; a file appears as the placeholder `[Uploading name…]()` until it is uploaded, then as `![name](/api/v1/attachments/{id}/content)` for an image or `[name](…)` for another file,
+- inserting images and files by drag and drop, pasting from the clipboard, or choosing from disk with the "Attach files" button (attachments, [§13.3](13-non-functional.md)); a paste that carries text as well as files (e.g. a range copied from a spreadsheet) pastes the text; a file appears, on a line of its own at the cursor (as GitHub inserts uploads), as the placeholder `[Uploading name…]()` until it is uploaded, then as `![name](/api/v1/attachments/{id}/content)` for an image or `[name](…)` for another file,
 - task lists (`- [ ]`), code blocks with syntax highlighting, tables,
 - keyboard shortcuts (e.g. Ctrl+B; Ctrl+K inside the editor inserts a link, everywhere else it opens the command palette, [§8.4](08-team-views.md)).
 

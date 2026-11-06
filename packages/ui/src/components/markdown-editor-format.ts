@@ -206,3 +206,13 @@ export function textEdit(before: string, after: string): TextEdit {
 export function escapeLinkText(name: string): string {
   return name.replaceAll(/\s+/g, ' ').replaceAll(/[!-/:-@[-`{-~]/g, '\\$&');
 }
+
+/**
+ * The text inserted for files added at the selection: their placeholders, one per line, on lines
+ * of their own (as GitHub inserts uploads), so a reference never sticks to the writer's text.
+ */
+export function filesInsert(text: string, { start, end }: TextSelection, lines: string[]): string {
+  const before = start > 0 && text[start - 1] !== '\n' ? '\n' : '';
+  const after = end < text.length && text[end] !== '\n' ? '\n' : '';
+  return before + lines.join('\n') + after;
+}

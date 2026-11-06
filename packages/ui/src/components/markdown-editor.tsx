@@ -39,6 +39,7 @@ import {
 } from './dropdown-menu.js';
 import {
   escapeLinkText,
+  filesInsert,
   type FormatAction,
   formatMarkdown,
   textEdit,
@@ -256,7 +257,12 @@ function MarkdownEditor({
       (file) => `[${escapeLinkText(t('uploading', { name: file.name }))}]()`,
     );
     const { selectionStart, selectionEnd } = textarea;
-    replaceRange(textarea, selectionStart, selectionEnd, placeholders.join('\n'));
+    replaceRange(
+      textarea,
+      selectionStart,
+      selectionEnd,
+      filesInsert(textarea.value, { start: selectionStart, end: selectionEnd }, placeholders),
+    );
     onFilesAdd(files).forEach((upload, index) => {
       const placeholder = placeholders[index]!;
       upload.then(
