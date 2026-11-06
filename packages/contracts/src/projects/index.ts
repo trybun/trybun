@@ -86,6 +86,26 @@ export const projectSchema = z.object({
 });
 export type Project = z.infer<typeof projectSchema>;
 
+/**
+ * A project as an end user sees it (Q7): without the settings, the version, the role, the facts
+ * for the team's hints and the timestamps – end users never see what they cannot change.
+ */
+export const endUserProjectSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  key: z.string(),
+  state: projectStateSchema,
+  allowedActions: z.array(projectActionSchema),
+});
+export type EndUserProject = z.infer<typeof endUserProjectSchema>;
+
+/**
+ * The response of a project read: the team's shape for team accounts, the end user's for end
+ * users. The serializer keeps only the fields of the matching shape.
+ */
+export const projectResponseSchema = z.union([projectSchema, endUserProjectSchema]);
+export type ProjectResponse = z.infer<typeof projectResponseSchema>;
+
 /** The path parameters of a project. */
 export const projectParamsSchema = z.object({ projectId: z.uuid() });
 export type ProjectParams = z.infer<typeof projectParamsSchema>;
@@ -96,7 +116,7 @@ export const listProjectsQuerySchema = pageQuerySchema.extend({
 });
 export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
 
-export const projectPageSchema = pageSchema(projectSchema);
+export const projectPageSchema = pageSchema(projectResponseSchema);
 export type ProjectPage = z.infer<typeof projectPageSchema>;
 
 /** A team account as the members of a project show it: no e-mail address. */

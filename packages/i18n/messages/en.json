@@ -315,16 +315,16 @@
       "closed": "Closed"
     },
     "publicDescriptions": {
-      "new": "We have received your ticket",
-      "triage": "We are analyzing your ticket",
-      "waiting_for_information": "We need more information from you",
-      "waiting_for_confirmation": "Please confirm whether your problem is solved",
-      "todo": "Your ticket has been scheduled",
-      "in_progress": "We are working on a solution",
-      "in_verification": "We are testing the solution",
-      "done": "Your ticket has been resolved",
+      "received": "We have received your ticket",
+      "analyzing": "We are analyzing your ticket",
+      "information_needed": "We need more information from you",
+      "confirmation_needed": "Please confirm whether your problem is solved",
+      "scheduled": "Your ticket has been scheduled",
+      "working": "We are working on a solution",
+      "testing": "We are testing the solution",
+      "resolved": "Your ticket has been resolved",
       "rejected": "Ticket closed",
-      "duplicate": "Ticket merged with another one"
+      "merged": "Ticket merged with another one"
     },
     "waitingReasons": {
       "information": "Waiting for information",
