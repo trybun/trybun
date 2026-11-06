@@ -31,7 +31,7 @@ export function contentETag(attachmentId: string): string {
   return `"${attachmentId}"`;
 }
 
-/** The request headers of a conditional `GET` (RFC 9110 §13.1.2). */
+/** The request headers of a conditional `GET` (RFC 9110, section 13.1.2). */
 export interface ConditionalHeaders {
   ifNoneMatch: string | undefined;
   ifModifiedSince: string | undefined;
@@ -39,7 +39,7 @@ export interface ConditionalHeaders {
 }
 
 /**
- * Whether a conditional `GET` is answered with `304` (RFC 9110 §13.1.2): `If-None-Match` is `*` or
+ * Whether a conditional `GET` is answered with `304` (RFC 9110, section 13.1.2): `If-None-Match` is `*` or
  * lists the ETag, compared weakly. A request that forbids a stored answer (`Cache-Control:
  * no-cache`) or asks `If-Modified-Since` – the API sends no `Last-Modified` – gets the content, as
  * Express decides for the `304` it sends (`req.fresh`).

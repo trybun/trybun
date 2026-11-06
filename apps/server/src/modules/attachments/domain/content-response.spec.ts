@@ -26,7 +26,7 @@ describe('content of an attachment (attachment serving item 3)', () => {
   });
 });
 
-describe('isNotModified (RFC 9110 §13.1.2)', () => {
+describe('isNotModified (RFC 9110, section 13.1.2)', () => {
   const headers = (overrides: Partial<ConditionalHeaders>): ConditionalHeaders => ({
     ifNoneMatch: undefined,
     ifModifiedSince: undefined,
