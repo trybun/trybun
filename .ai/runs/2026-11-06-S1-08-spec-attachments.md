@@ -17,7 +17,7 @@ Turn PR #119 into an approvable, design-only change specification for S1-08: cur
 
 - Implementation of S1-08 (its own PR via `om-auto-implement-spec`).
 - Changes to `docs/spec/` and `docs/plan/`: listed in the spec's "Changes to the system specification" and applied when it is implemented.
-- Answering the open questions of `.ai/specs/2026-10-25-attachment-serving.md` (a separate draft; the S1-08 plan row requires its answers before implementation).
+- Answering the open questions of `.ai/specs/2026-10-25-attachment-serving.md` was a non-goal at adoption; the maintainer answered them in the same session (2026-11-06), and they are recorded in this PR.
 
 ## Evidence
 
@@ -59,4 +59,4 @@ Turn PR #119 into an approvable, design-only change specification for S1-08: cur
 
 ### Phase 4: Approval
 
-- [ ] 4.1 Record the maintainer's answers to the open questions
+- [x] 4.1 Record the maintainer's answers to the open questions — c101fef
