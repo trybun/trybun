@@ -117,6 +117,10 @@ describe('TicketAttachments', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity-events', 'list', TICKET_ID] });
     await waitFor(() => expect(screen.queryByRole('link', { name: 'screenshot.png' })).toBeNull());
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    // The Delete button is gone with the file: the focus stays in the list, not at the page top.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Attachments' })),
+    );
   });
 
   it('keeps the file when the confirmation is cancelled', async () => {

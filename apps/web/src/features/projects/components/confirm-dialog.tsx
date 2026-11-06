@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trybun/ui/components/dialog';
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 /**
  * A confirmation of a change that cannot be undone with Undo – removing a member, demoting the last
@@ -25,6 +25,7 @@ export function ConfirmDialog({
   isPending = false,
   isConfirmDisabled = false,
   children,
+  finalFocus,
   onConfirm,
   onClose,
 }: {
@@ -37,6 +38,11 @@ export function ConfirmDialog({
   isConfirmDisabled?: boolean;
   /** Further content, e.g. the field of a typed confirmation. */
   children?: ReactNode;
+  /**
+   * Where the focus goes when the dialog closes, when its trigger may be gone by then (e.g. the
+   * Delete button of a deleted item); by default it returns to the trigger.
+   */
+  finalFocus?: RefObject<HTMLElement | null>;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -49,7 +55,7 @@ export function ConfirmDialog({
         }
       }}
     >
-      <DialogContent>
+      <DialogContent {...(finalFocus === undefined ? {} : { finalFocus })}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description !== undefined && <DialogDescription>{description}</DialogDescription>}

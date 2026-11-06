@@ -7,7 +7,7 @@ import { Button } from '@trybun/ui/components/button';
 import { toast } from '@trybun/ui/components/toast';
 import { attachmentContentPath } from '@trybun/ui/lib/attachment-path';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
@@ -27,6 +27,8 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
   const attachments = useInfiniteQuery(ticketAttachmentsQueryOptions(browserApiClient, ticketId));
   const deleteAttachment = useDeleteAttachment();
   const [pending, setPending] = useState<Attachment | null>(null);
+  // The Delete button of a deleted file is gone when the dialog closes: the list keeps the focus.
+  const heading = useRef<HTMLHeadingElement>(null);
   const items = attachments.data?.pages.flatMap((page) => page.items) ?? [];
 
   function confirmDelete(attachment: Attachment) {
@@ -51,7 +53,12 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
 
   return (
     <section aria-labelledby="ticket-attachments" className="flex flex-col gap-2">
-      <h2 id="ticket-attachments" className="text-lg font-semibold">
+      <h2
+        id="ticket-attachments"
+        ref={heading}
+        tabIndex={-1}
+        className="text-lg font-semibold outline-none"
+      >
         {t('heading')}
       </h2>
       <AttachmentList>
@@ -91,6 +98,7 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
           cancelLabel={t('cancel')}
           isDestructive
           isPending={deleteAttachment.isPending}
+          finalFocus={heading}
           onConfirm={() => confirmDelete(pending)}
           onClose={() => setPending(null)}
         />
