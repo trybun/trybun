@@ -32,6 +32,8 @@ Build phases 1–3 of the approved change specification (Q1: phase 4, the backup
 
 ## Progress
 
+PR: #244
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Storage and scanning
@@ -58,4 +60,4 @@ Build phases 1–3 of the approved change specification (Q1: phase 4, the backup
 
 - [x] 4.1 System specification, ADR 0008 amendments, plan and memory — 37f07cf
 - [x] 4.2 Full validation gate — 7371f57
-- [ ] 4.3 Review pass
+- [x] 4.3 Review pass — a92a2bb
