@@ -555,9 +555,57 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["AttachmentsController_listByIds"];
         put?: never;
         post: operations["AttachmentsController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AttachmentsController_findOne"];
+        put?: never;
+        post?: never;
+        delete: operations["AttachmentsController_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/attachments/{attachmentId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AttachmentsController_content"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticketId}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AttachmentsController_listOfTicket"];
+        put?: never;
+        post: operations["AttachmentsController_addToTicket"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2442,6 +2490,7 @@ export interface operations {
                     priority?: "low" | "normal" | "high" | "critical";
                     /** Format: uuid */
                     assigneeId?: string | null;
+                    attachmentIds?: string[];
                 };
             };
         };
@@ -3077,7 +3126,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed";
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted";
                             data: {
                                 from: string | {
                                     /** Format: uuid */
@@ -3121,8 +3170,8 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed";
-                            data: {
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted";
+                            data: ({
                                 /** @enum {string} */
                                 from: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                                 /** @enum {string} */
@@ -3133,7 +3182,18 @@ export interface operations {
                                     number: number;
                                     projectKey: string;
                                 } | null;
-                            } | null;
+                            } | {
+                                from: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    displayName: string | null;
+                                } | null;
+                                to: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    displayName: string | null;
+                                } | null;
+                            }) | null;
                             actor: {
                                 /** Format: uuid */
                                 id: string;
@@ -3144,6 +3204,49 @@ export interface operations {
                             /** Format: date-time */
                             createdAt: string;
                         })[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AttachmentsController_listByIds: {
+        parameters: {
+            query: {
+                id: string | string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
                         nextCursor: string | null;
                     };
                 };
@@ -3166,6 +3269,188 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    AttachmentsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        fileName: string;
+                        contentType: string;
+                        size: number;
+                        isImage: boolean;
+                        /** @enum {string} */
+                        status: "quarantine" | "available" | "infected" | "rejected";
+                        /** Format: uuid */
+                        ticketId: string | null;
+                        uploadedBy: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        /** Format: date-time */
+                        createdAt: string;
+                        allowedActions: ("read" | "delete")[];
+                    };
+                };
+            };
+        };
+    };
+    AttachmentsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentsController_content: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path: {
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentsController_listOfTicket: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    AttachmentsController_addToTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    attachmentIds: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

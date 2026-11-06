@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { pageSchema } from '../pagination/index.js';
-import { ticketPersonSchema } from '../tickets/index.js';
+import { pageQuerySchema, pageSchema } from '../pagination/index.js';
+import { MAX_LINKED_ATTACHMENTS_PER_REQUEST, ticketPersonSchema } from '../tickets/index.js';
 
 /**
  * `attachment.status` (§13.3): `quarantine` until the malware scan has finished, then `available`;
@@ -21,9 +21,6 @@ export const ATTACHMENT_FILE_NAME_MAX_LENGTH = 255;
 
 /** The number of attachment IDs of one list request (`GET /api/v1/attachments?id=…`). */
 export const MAX_ATTACHMENT_IDS_PER_REQUEST = 50;
-
-/** The number of drafts linked by one request (§3.2). */
-export const MAX_LINKED_ATTACHMENTS_PER_REQUEST = 100;
 
 /**
  * An attachment (§13.3): its file name, the type of its allowlist entry and its stored size;
@@ -65,6 +62,10 @@ export const listAttachmentsQuerySchema = z.object({
     .pipe(z.array(z.uuid()).min(1).max(MAX_ATTACHMENT_IDS_PER_REQUEST)),
 });
 export type ListAttachmentsQuery = z.infer<typeof listAttachmentsQuerySchema>;
+
+/** `GET /api/v1/tickets/{ticketId}/attachments`: the attachments of a ticket, oldest first. */
+export const listTicketAttachmentsQuerySchema = pageQuerySchema;
+export type ListTicketAttachmentsQuery = z.infer<typeof listTicketAttachmentsQuerySchema>;
 
 /** `POST /api/v1/tickets/{ticketId}/attachments` (§3.2): the principal's own drafts to link. */
 export const addTicketAttachmentsSchema = z.strictObject({

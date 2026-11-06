@@ -222,6 +222,17 @@ describe('createTicketSchema', () => {
       createTicketSchema.safeParse({ projectId: PROJECT_ID, title: 'T', description }).success,
     ).toBe(isValid);
   });
+
+  it.each([
+    [[], true],
+    [Array<string>(100).fill(PROJECT_ID), true],
+    [Array<string>(101).fill(PROJECT_ID), false],
+    [['x'], false],
+  ])('limits the attachments to 100 IDs (%#)', (attachmentIds, isValid) => {
+    expect(
+      createTicketSchema.safeParse({ projectId: PROJECT_ID, title: 'T', attachmentIds }).success,
+    ).toBe(isValid);
+  });
 });
 
 describe('updateTicketSchema', () => {

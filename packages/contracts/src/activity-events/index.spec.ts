@@ -23,6 +23,8 @@ describe('activity event enums', () => {
         'duplicate_original_changed',
         'duplicate_link_removed',
         'rejection_reason_changed',
+        'attachment_added',
+        'attachment_deleted',
       ],
     ],
     [activityEventSourceSchema, ['system']],
@@ -95,6 +97,15 @@ describe('endUserActivityEventSchema', () => {
       ).toBe(false);
     },
   );
+
+  it.each([
+    ['added', { from: null, to: { id: ID, displayName: 'screenshot.png' } }],
+    ['deleted', { from: { id: ID, displayName: 'log.txt' }, to: null }],
+  ])('accepts the snapshot of a file %s', (_case, data) => {
+    const attachmentEvent = { ...event, type: `attachment_${_case}`, data };
+
+    expect(endUserActivityEventSchema.parse(attachmentEvent)).toEqual(attachmentEvent);
+  });
 
   it('strips the internal data of a status change', () => {
     expect(

@@ -43,6 +43,7 @@ import {
   type ActivityActor,
   ActivityEventsService,
 } from '../activity-events/activity-events.service.js';
+import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
 import { originalIdsOf, toEndUserEvent } from '../activity-events/domain/end-user-events.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
@@ -253,6 +254,7 @@ export class TicketsService {
     private readonly users: UsersService,
     private readonly organizations: OrganizationsService,
     private readonly activityEvents: ActivityEventsService,
+    private readonly attachmentLinks: AttachmentLinksService,
     private readonly outbox: OutboxService,
     private readonly clock: Clock,
   ) {}
@@ -261,7 +263,8 @@ export class TicketsService {
    * Creates a ticket (§3.2). The project is locked in share mode and read through the ability
    * after the lock, so a concurrent archive, key change or deletion – which lock it exclusively –
    * either waits or is seen; concurrent creations do not block each other on it, and get
-   * consecutive numbers from the counter. Creating writes no activity event (§4.5).
+   * consecutive numbers from the counter. The principal's drafts in `attachmentIds` are linked to
+   * it in the same transaction (§3.2). Creating writes no activity event (§4.5, S1-08 Q16).
    */
   async create(principal: UserPrincipal, input: CreateTicketDto): Promise<TicketResponse> {
     const ability = this.abilities.forPrincipal(principal);
@@ -310,6 +313,7 @@ export class TicketsService {
         },
         select: ticketSelect(principal),
       });
+      await this.attachmentLinks.linkDrafts(tx, principal, row.id, input.attachmentIds ?? []);
       return toTicketResponse(row, ability, principal);
     });
   }

@@ -6,6 +6,7 @@ import type { Server } from 'node:http';
 import { accessibleBy } from '@casl/prisma/runtime';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { AttachmentPage } from '@trybun/contracts/attachments';
 import { type Project, type ProjectPage, projectActionSchema } from '@trybun/contracts/projects';
 import { type Ticket, ticketActionSchema } from '@trybun/contracts/tickets';
 import request from 'supertest';
@@ -54,6 +55,11 @@ describe('permission layer', () => {
   };
   /** Drafts and attachments of the tickets above. */
   const attachments: { id: string }[] = [];
+  /** The attachments of the tickets above by their requester and by the Developer, by ticket. */
+  const attachmentsOf = {} as Record<
+    'teamTicket' | 'personalTicket' | 'organizationTicket' | 'archivedTicket' | 'ticketB',
+    { byRequester: { id: string }; byDeveloper: { id: string } }
+  >;
   const users = {} as Record<PrincipalFixture, User>;
 
   beforeAll(async () => {
@@ -167,20 +173,32 @@ describe('permission layer', () => {
       await createAttachment(prisma, { uploadedById: users.developer.id }),
       await createAttachment(prisma, { uploadedById: users.end_user_personal.id }),
     );
-    for (const ticket of [
-      records.teamTicket,
-      records.personalTicket,
-      records.organizationTicket,
-      records.archivedTicket,
-      records.ticketB,
-    ]) {
+    for (const name of [
+      'teamTicket',
+      'personalTicket',
+      'organizationTicket',
+      'archivedTicket',
+      'ticketB',
+    ] as const) {
+      const ticket = records[name];
       const { requesterId } = await prisma.ticket.findUniqueOrThrow({
         where: { id: ticket.id },
         select: { requesterId: true },
       });
-      for (const uploadedById of new Set([requesterId, users.developer.id])) {
-        attachments.push(await createAttachment(prisma, { uploadedById, ticketId: ticket.id }));
-      }
+      const byRequester = await createAttachment(prisma, {
+        uploadedById: requesterId,
+        ticketId: ticket.id,
+      });
+      // The Developer requested the team ticket: one attachment for both.
+      const byDeveloper =
+        requesterId === users.developer.id
+          ? byRequester
+          : await createAttachment(prisma, {
+              uploadedById: users.developer.id,
+              ticketId: ticket.id,
+            });
+      attachmentsOf[name] = { byRequester, byDeveloper };
+      attachments.push(...new Set([byRequester, byDeveloper]));
     }
   });
 
@@ -589,6 +607,8 @@ describe('permission layer', () => {
       ['GET', (id: string) => `/api/v1/tickets/${id}`],
       ['PATCH', (id: string) => `/api/v1/tickets/${id}`],
       ['GET', (id: string) => `/api/v1/tickets/${id}/activity-events`],
+      ['GET', (id: string) => `/api/v1/tickets/${id}/attachments`],
+      ['POST', (id: string) => `/api/v1/tickets/${id}/attachments`],
     ] as const)(
       'answers %s %s of a ticket of project B with 404, as for a missing ticket',
       async (method, path) => {
@@ -608,6 +628,100 @@ describe('permission layer', () => {
           ...missing.body,
           instance: undefined,
         });
+      },
+    );
+
+    /** Requests of a Developer of project A: `404` for an attachment of project B, as for a missing one. */
+    it.each([
+      ['GET', (id: string) => `/api/v1/attachments/${id}`],
+      ['GET', (id: string) => `/api/v1/attachments/${id}/content`],
+      ['DELETE', (id: string) => `/api/v1/attachments/${id}`],
+    ] as const)(
+      'answers %s %s of an attachment of project B with 404, as for a missing attachment',
+      async (method, path) => {
+        const authorization = await authorizationOf('developer');
+        const send = (id: string) =>
+          http()[method.toLowerCase() as 'get'](path(id)).set('Authorization', authorization);
+
+        const invisible = await send(attachmentsOf.ticketB.byRequester.id);
+        const missing = await send(randomUUID());
+
+        expect(invisible.status).toBe(404);
+        expect({ ...invisible.body, instance: undefined }).toEqual({
+          ...missing.body,
+          instance: undefined,
+        });
+      },
+    );
+
+    it.each([
+      [
+        "an end user deleting the Developer's attachment",
+        'end_user_personal',
+        'DELETE',
+        () => `/api/v1/attachments/${attachmentsOf.personalTicket.byDeveloper.id}`,
+        403,
+      ],
+      [
+        'a requester without access deleting their own attachment',
+        'end_user_archived_organization',
+        'DELETE',
+        () => `/api/v1/attachments/${attachmentsOf.ticketB.byRequester.id}`,
+        403,
+      ],
+      [
+        'a requester without access adding an attachment',
+        'end_user_archived_organization',
+        'POST',
+        () => `/api/v1/tickets/${records.ticketB.id}/attachments`,
+        403,
+      ],
+      [
+        'an end user deleting their own attachment of an archived project',
+        'end_user_personal',
+        'DELETE',
+        () => `/api/v1/attachments/${attachmentsOf.archivedTicket.byRequester.id}`,
+        409,
+      ],
+      [
+        'a Developer adding an attachment in an archived project',
+        'developer',
+        'POST',
+        () => `/api/v1/tickets/${records.archivedTicket.id}/attachments`,
+        409,
+      ],
+    ] as const)('refuses %s with %i', async (_case, fixture, method, path, status) => {
+      const res = await http()
+        [method.toLowerCase() as 'post'](path())
+        .set('Authorization', await authorizationOf(fixture))
+        .send(method === 'POST' ? { attachmentIds: [randomUUID()] } : undefined);
+
+      expect(res.status).toBe(status);
+    });
+
+    it.each(PRINCIPAL_FIXTURES)(
+      'lists for %s by ID only the attachments its detail check allows',
+      async (fixture) => {
+        const ability = abilities.forPrincipal(principalOf(fixture));
+        const readable = await prisma.attachment.findMany({
+          where: {
+            AND: [
+              accessibleBy(ability, 'read').ofType('Attachment'),
+              { id: { in: attachments.map(({ id }) => id) } },
+            ],
+          },
+          select: { id: true },
+        });
+
+        const res = await http()
+          .get('/api/v1/attachments')
+          .query({ id: attachments.map(({ id }) => id) })
+          .set('Authorization', await authorizationOf(fixture));
+
+        expect(res.status).toBe(200);
+        expect((res.body as AttachmentPage).items.map(({ id }) => id).sort()).toEqual(
+          readable.map(({ id }) => id).sort(),
+        );
       },
     );
 

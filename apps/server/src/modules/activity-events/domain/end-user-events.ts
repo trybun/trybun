@@ -1,7 +1,8 @@
-import type {
-  ActivityEvent,
-  EndUserActivityEvent,
-  EndUserActivityEventData,
+import {
+  type ActivityEvent,
+  type EndUserActivityEvent,
+  type EndUserActivityEventData,
+  endUserSnapshotChangeDataSchema,
 } from '@trybun/contracts/activity-events';
 import { publicStatusOf, ticketStatusSchema } from '@trybun/contracts/tickets';
 
@@ -9,13 +10,20 @@ import { publicStatusOf, ticketStatusSchema } from '@trybun/contracts/tickets';
  * The data of a public event as an end user sees it (Q11): an allow-list. A status change shows
  * the public statuses only, and the original of a new duplicate only when the reader may read it
  * (§3.5); whether it reopened the ticket, the waiting reason and the internal statuses never leave
- * the server. Other types have no public data yet.
+ * the server. A file added or deleted keeps its snapshot with the file name (S1-08 Q15). Other
+ * types have no public data yet.
  */
 function endUserDataOf(
   event: ActivityEvent,
   readableOriginalIds: ReadonlySet<string>,
 ): EndUserActivityEventData | null {
-  if (event.type !== 'status_changed' || event.data === null) {
+  if (event.data === null) {
+    return null;
+  }
+  if (event.type === 'attachment_added' || event.type === 'attachment_deleted') {
+    return endUserSnapshotChangeDataSchema.parse(event.data);
+  }
+  if (event.type !== 'status_changed') {
     return null;
   }
   const { from, to, duplicateOf } = event.data;

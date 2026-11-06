@@ -23,6 +23,7 @@ import { PrismaService } from '../../platform/database/prisma.service.js';
 import { LoggingModule } from '../../platform/logging/logging.module.js';
 import { OutboxModule } from '../../platform/outbox/outbox.module.js';
 import { ActivityEventsModule } from '../activity-events/activity-events.module.js';
+import { AttachmentLinksModule } from '../attachments/attachment-links.module.js';
 import { OrganizationsModule } from '../organizations/organizations.module.js';
 import { ProjectsModule } from '../projects/projects.module.js';
 import { ProjectsService } from '../projects/projects.service.js';
@@ -72,6 +73,7 @@ describe('the automatic close of an unconfirmed resolution', () => {
         DatabaseModule,
         AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         ActivityEventsModule,
+        AttachmentLinksModule,
         OrganizationsModule,
         OutboxModule,
         ProjectsModule,

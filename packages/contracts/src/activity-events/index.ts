@@ -3,9 +3,10 @@ import { pageQuerySchema, pageSchema } from '../pagination/index.js';
 import { ticketPublicStatusSchema } from '../tickets/index.js';
 
 /**
- * `activity_event.type` (§4.5): one event per changed field of a ticket, and the events of its
- * status (S1-06): a status change, the re-pointing and the removal of a duplicate's link, and a
- * new rejection reason (without its text). Later tasks add theirs.
+ * `activity_event.type` (§4.5): one event per changed field of a ticket, the events of its
+ * status (S1-06) – a status change, the re-pointing and the removal of a duplicate's link, and a
+ * new rejection reason (without its text) – and a file added to or deleted from an existing ticket
+ * (S1-08). Later tasks add theirs.
  */
 export const activityEventTypeSchema = z.enum([
   'title_changed',
@@ -17,6 +18,8 @@ export const activityEventTypeSchema = z.enum([
   'duplicate_original_changed',
   'duplicate_link_removed',
   'rejection_reason_changed',
+  'attachment_added',
+  'attachment_deleted',
 ]);
 export type ActivityEventType = z.infer<typeof activityEventTypeSchema>;
 
@@ -89,16 +92,31 @@ export const activityEventSchema = z.object({
 export type ActivityEvent = z.infer<typeof activityEventSchema>;
 
 /**
- * The data of a public event as an end user sees it (Q11): an allow-list. A status change carries
- * the previous and the new **public** status, and the original of a new duplicate only when the
- * reader may read it (§3.5); whether it reopened the ticket, the waiting reason and the internal
- * statuses are left out.
+ * The data of a public status change as an end user sees it (Q11): the previous and the new
+ * **public** status, and the original of a new duplicate only when the reader may read it (§3.5);
+ * whether it reopened the ticket, the waiting reason and the internal statuses are left out.
  */
-export const endUserActivityEventDataSchema = z.object({
+export const endUserStatusChangeDataSchema = z.object({
   from: ticketPublicStatusSchema,
   to: ticketPublicStatusSchema,
   duplicateOf: activityEventTicketSnapshotSchema.nullable().optional(),
 });
+
+/**
+ * The data of a file added to or deleted from a ticket (`attachment_added`, `attachment_deleted`,
+ * S1-08 Q15): the snapshot of the file with its name, as for the team – the name is visible to
+ * everyone who sees the ticket's attachments.
+ */
+export const endUserSnapshotChangeDataSchema = z.object({
+  from: activityEventSnapshotSchema.nullable(),
+  to: activityEventSnapshotSchema.nullable(),
+});
+
+/** The data of a public event as an end user sees it (Q11): an allow-list of shapes. */
+export const endUserActivityEventDataSchema = z.union([
+  endUserStatusChangeDataSchema,
+  endUserSnapshotChangeDataSchema,
+]);
 export type EndUserActivityEventData = z.infer<typeof endUserActivityEventDataSchema>;
 
 /**

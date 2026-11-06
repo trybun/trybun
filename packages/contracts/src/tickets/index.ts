@@ -161,9 +161,13 @@ export function ticketIdentifier(projectKey: string, number: number): string {
   return `${projectKey}-${number}`;
 }
 
+/** The number of draft attachments linked to a ticket by one request (§3.2). */
+export const MAX_LINKED_ATTACHMENTS_PER_REQUEST = 100;
+
 /**
  * `POST /api/v1/tickets`. `type`, `priority` and `assigneeId` belong to the full form of the team
- * (§7.5): an end user sending them gets `403`.
+ * (§7.5): an end user sending them gets `403`. `attachmentIds` are the principal's own drafts,
+ * linked to the new ticket without activity events (§3.2, §4.5).
  */
 export const createTicketSchema = z.object({
   projectId: z.uuid(),
@@ -172,6 +176,7 @@ export const createTicketSchema = z.object({
   type: ticketTypeSchema.optional(),
   priority: ticketPrioritySchema.optional(),
   assigneeId: z.uuid().nullable().optional(),
+  attachmentIds: z.array(z.uuid()).max(MAX_LINKED_ATTACHMENTS_PER_REQUEST).optional(),
 });
 export type CreateTicketDto = z.infer<typeof createTicketSchema>;
 
