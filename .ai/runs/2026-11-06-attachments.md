@@ -44,7 +44,7 @@ Build phases 1–3 of the approved change specification (Q1: phase 4, the backup
 
 - [x] 2.1 Model, contracts, abilities and record descriptor — 4e2f4d5
 - [x] 2.2 Upload with type detection, limits and the draft quota — 97d5056
-- [ ] 2.3 Scan, move, EXIF stripping, recovery, reconciliation and purge
+- [x] 2.3 Scan, move, EXIF stripping, recovery, reconciliation and purge — 0c78709
 - [ ] 2.4 Content, detail, lists, link, delete and activity events
 
 ### Phase 3: Web
