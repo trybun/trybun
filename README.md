@@ -134,7 +134,7 @@ Trybun runs on a single Linux server with Docker Compose ([15-deployment.md](doc
 docker compose up --build --wait
 ```
 
-The API and the Worker log JSON lines to standard output (`docker compose logs api worker`) at the level of `TRYBUN_LOG_LEVEL`; every line of a request – and of the Worker jobs it causes – carries its request ID, which the API returns in `X-Request-Id`. On the internal network, `/health` of the API reports liveness and `/health/ready` readiness: it fails only without PostgreSQL and reports Valkey as `degraded` ([§17.2](docs/spec/17-conventions.md)).
+The API and the Worker log JSON lines to standard output (`docker compose logs api worker`) at the level of `TRYBUN_LOG_LEVEL`; every line of a request – and of the Worker jobs it causes – carries its request ID, which the API returns in `X-Request-Id`. On the internal network, `/health` of the API reports liveness and `/health/ready` readiness: it fails only without PostgreSQL and reports Valkey and the object storage as `degraded` ([§17.2](docs/spec/17-conventions.md)).
 
 The system is then served on `https://${TRYBUN_DOMAIN}` (for `localhost` with a certificate of Caddy's local authority). `/health` also reports the installed version.
 

@@ -50,13 +50,13 @@ Rendered content (views, the preview and e-mails):
 
 - Raw HTML in the source is not rendered.
 - Links keep only the `http`, `https` and `mailto` protocols and paths of the site; any other link, including `javascript:`, `data:` and `vbscript:`, renders as plain text. Links to other sites, including protocol-relative ones, get `rel="nofollow ugc noopener noreferrer"`.
-- An image is rendered only when its source is exactly the stable path of an attachment the view allows. Every other image – an external URL, an attachment of another ticket, an unknown ID – renders as a link labelled by its alt text (or its URL); an image whose source the sanitizer removed renders as its alt text.
+- An image is rendered only when its source is exactly the stable path of an attachment the view allows: an available image of the same ticket, and in the preview of a form also an available image among the current user's own draft attachments; once the text is saved, the rule of the same ticket applies ([§13.3](13-non-functional.md)). Every other image – an external URL, an attachment of another ticket, an unknown ID – renders as a link labelled by its alt text (or its URL); an image whose source the sanitizer removed renders as its alt text.
 - Task-list checkboxes are read-only and named by the item's text; ticking means editing the text.
 - E-mails show every image as a link, have no syntax highlighting and show task items as ☐/☑.
 
 Using GFM also simplifies the GitHub integration: ticket content goes into issues without format conversion ([§11.4](11-github-integration.md)).
 
-Security (Rule 1): rendered HTML is sanitized according to OWASP recommendations to prevent XSS. Images are displayed only from the ticket's own attachments, referenced by their stable path ([§13.3](13-non-functional.md)); images referenced by external URLs are not loaded (they could track readers and bypass the Content Security Policy) and are shown as links instead.
+Security (Rule 1): rendered HTML is sanitized according to OWASP recommendations to prevent XSS. Images are displayed only from the ticket's own attachments (and, in the preview of a form, the current user's own drafts), referenced by their stable path ([§13.3](13-non-functional.md)); images referenced by external URLs are not loaded (they could track readers and bypass the Content Security Policy) and are shown as links instead.
 
 ## 6.3 E-mail replies
 
@@ -110,7 +110,7 @@ Team members choose, per event type, which channel they want (pattern: GitHub). 
 
 Events that do not exist yet in a stage of the implementation plan are added by the task that introduces them; the defaults above apply from the first stage in which an event exists, and the per-event settings UI is added later.
 
-End users do not configure channels. They receive an e-mail and an in-app notification for public comments and public status changes of tickets they watch, and an in-app notification when an attachment they uploaded was removed as infected ([§13.3](13-non-functional.md)).
+End users do not configure channels. They receive an e-mail and an in-app notification for public comments and public status changes of tickets they watch, and an in-app notification when an attachment they uploaded was removed as infected or because it could not be checked ([§13.3](13-non-functional.md)).
 
 ## 6.7 Rules
 

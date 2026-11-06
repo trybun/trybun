@@ -70,7 +70,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Public comment | `comment.kind = public` | Comment / Komentarz | Visible to everyone who can see the ticket |
 | Internal note | `comment.kind = internal` | Internal note / Notatka wewnętrzna | Visible to the team only |
 | Activity timeline | `activity_event` | Activity / Aktywność | Immutable history of comments and events ([§4.5](04-ticket-lifecycle.md)) |
-| Activity event type | `activity_event.type`: `title_changed`, `description_edited`, `type_changed`, `priority_changed`, `assignee_changed` | changed the title / zmienił(a) tytuł, edited the description / edytował(a) opis, changed the type / zmienił(a) typ, changed the priority / zmienił(a) priorytet, changed the assignee / zmienił(a) przypisanie | The field change an event records; later tasks add theirs ([§4.5](04-ticket-lifecycle.md)) |
+| Activity event type | `activity_event.type`: `title_changed`, `description_edited`, `type_changed`, `priority_changed`, `assignee_changed`, `attachment_added`, `attachment_deleted` | changed the title / zmienił(a) tytuł, edited the description / edytował(a) opis, changed the type / zmienił(a) typ, changed the priority / zmienił(a) priorytet, changed the assignee / zmienił(a) przypisanie, added the file {name} / dodał(a) plik {name}, deleted the file {name} / usunął(-ęła) plik {name} | The field change an event records; later tasks add theirs ([§4.5](04-ticket-lifecycle.md)) |
 | Automatic source | `activity_event.automatic_source`: `system` | System / System | Who made an automatic change: the rules of the system; later `github`, `integration` ([§4.5](04-ticket-lifecycle.md)) |
 | Sub-ticket | `ticket.parent_id` | Sub-ticket / Podzadanie | Ticket belonging to a parent ticket ([§3.5](03-ticket-model.md)) |
 | Relation | `ticket_relation`: `blocks`, `relates_to`, `duplicate_of` | Blocks / Blokuje, Relates to / Powiązane z, Duplicate of / Duplikat | Link between tickets; `blocks` = Gantt dependency |
@@ -79,7 +79,10 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Fingerprint | `ticket.fingerprint` | – | Error identifier sent by integrations for grouping ([§12.3](12-api-webhooks-import.md)) |
 | Occurrence count | `ticket.occurrence_count` | Occurrences / Wystąpienia | How many times an integration reported the same error |
 | Attachment | `attachment` | Attachment / Załącznik | File attached to a ticket or comment ([§13.3](13-non-functional.md)) |
-| Attachment status | `attachment.status`: `quarantine`, `available`, `infected` | Checking… / Sprawdzanie…, –, Infected / Zainfekowany | Malware scan state of an attachment ([§13.3](13-non-functional.md)) |
+| Attachment status | `attachment.status`: `quarantine`, `available`, `infected`, `rejected` | Checking… / Sprawdzanie…, –, File removed: malware detected / Plik usunięty: wykryto złośliwe oprogramowanie, File removed: could not be checked / Plik usunięty: nie można go sprawdzić | Malware scan state of an attachment; `rejected` is a file that could not be scanned completely or an image that could not be decoded ([§13.3](13-non-functional.md)) |
+| Uploading | – (client only, not an `attachment.status`) | Uploading… / Przesyłanie… | A file the browser is still sending; afterwards it is `quarantine` ([§13.3](13-non-functional.md)) |
+| Draft attachment | `attachment.ticket_id = null` | Files to attach / Pliki do załączenia | An attachment not linked to a ticket or comment yet, visible only to its uploader and purged after 24 hours ([§13.3](13-non-functional.md)) |
+| Attachment actions | `allowed_actions` of an attachment: `read`, `delete`; ticket action `add_attachment` | – | What a principal may do with an attachment, and whether they may link files to a ticket ([§7.5](07-users-organizations-permissions.md)) |
 
 ## Planning
 
