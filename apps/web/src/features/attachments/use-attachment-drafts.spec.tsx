@@ -252,4 +252,41 @@ describe('useAttachmentDrafts', () => {
     // No confirmation: the draft is the person's own and nobody has seen it.
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('drops a draft the list no longer returns from the form, with a toast', async () => {
+    const events = userEvent.setup();
+    answerUploads('available');
+    // The second draft is gone: purged after 24 hours or deleted in another tab.
+    fake.on('GET /api/v1/attachments', (init) => {
+      const { id } = (init as { params: { query: { id: string[] } } }).params.query;
+      return {
+        data: {
+          items: id
+            .filter((attachmentId) => attachmentId !== idOf(2))
+            .map((attachmentId) =>
+              attachmentResponse({ id: attachmentId, fileName: 'first.log', status: 'available' }),
+            ),
+          nextCursor: null,
+        },
+      };
+    });
+    renderInApp(<DraftsForm />);
+    const textbox = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+
+    await events.upload(fileInput(), [textFile('first.log'), textFile('second.log')]);
+
+    await waitFor(() =>
+      expect(toastAdd).toHaveBeenCalledWith({
+        title: 'File second.log is no longer available',
+        type: 'error',
+      }),
+    );
+    expect(toastAdd).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('Attachment IDs').textContent).toBe(idOf(1));
+    expect(textbox.value).toContain(`[first\\.log](/api/v1/attachments/${idOf(1)}/content)`);
+    expect(textbox.value).not.toContain(idOf(2));
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    // The draft is gone already: nothing to delete.
+    expect(fake.callsTo('DELETE /api/v1/attachments/{attachmentId}')).toHaveLength(0);
+  });
 });

@@ -6,7 +6,7 @@ import type { AttachmentState } from '@trybun/ui/components/attachment-list';
 import type { AddedFile } from '@trybun/ui/components/markdown-editor';
 import { toast } from '@trybun/ui/components/toast';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import type { FieldValues, Path, PathValue, UseFormReturn } from 'react-hook-form';
 import { browserApiClient } from '../../lib/api-client/browser-api-client.js';
 import { ApiError } from '../../lib/errors/api-error.js';
@@ -55,7 +55,8 @@ export interface UseAttachmentDraftsOptions<Values extends FieldValues> {
  * refused before it is sent (Q2), and every rejection is an error toast naming the file. The drafts
  * are polled with one request while one of them is being checked (Q7). The form's `attachmentIds`
  * holds the IDs of the uploaded drafts. Removing a draft deletes it at once and removes its
- * references from the text. The preview shows the form's available image drafts (attachment
+ * references from the text. A draft the list no longer returns – purged after 24 hours or deleted
+ * elsewhere – leaves the form the same way, with a toast naming the file. The preview shows the form's available image drafts (attachment
  * serving item 5) and the images of the ticket.
  */
 export function useAttachmentDrafts<Values extends FieldValues & { attachmentIds?: string[] }>({
@@ -75,6 +76,23 @@ export function useAttachmentDrafts<Values extends FieldValues & { attachmentIds
   const byId = new Map<string, Attachment>(
     (attachments.data ?? []).map((attachment) => [attachment.id, attachment]),
   );
+
+  // An answer for the current IDs (not the previous one kept while it loads) leaves out the drafts
+  // that are gone: they leave the list while rendering, and the form in the effect below.
+  const [answered, setAnswered] = useState<Attachment[]>();
+  const [unavailable, setUnavailable] = useState<{ id: string; fileName: string }[]>([]);
+  const answer = attachments.isPlaceholderData ? undefined : attachments.data;
+  if (answer !== undefined && answer !== answered) {
+    setAnswered(answer);
+    const gone = added.flatMap(({ id, file }) =>
+      id === undefined || byId.has(id) ? [] : [{ id, fileName: file.name }],
+    );
+    if (gone.length > 0) {
+      const goneIds = new Set(gone.map(({ id }) => id));
+      setAdded((previous) => previous.filter(({ id }) => id === undefined || !goneIds.has(id)));
+      setUnavailable(gone);
+    }
+  }
 
   // `attachmentIds` is a field of the form's values; its path type cannot be checked generically.
   const idsField = 'attachmentIds' as Path<Values>;
@@ -147,13 +165,8 @@ export function useAttachmentDrafts<Values extends FieldValues & { attachmentIds
     };
   });
 
-  /** Deletes an uploaded draft at once and removes its references from the text (Q18). */
-  function removeDraft(draft: AttachmentDraft) {
-    const { id } = draft;
-    if (id === undefined) {
-      return;
-    }
-    setAdded((previous) => previous.filter(({ key }) => key !== draft.key));
+  /** Removes a draft from the form's `attachmentIds` and its references from the text. */
+  function removeFromForm(id: string) {
     setAttachmentIds(attachmentIdsOfForm().filter((attachmentId) => attachmentId !== id));
     const text: unknown = form.getValues(textField);
     if (typeof text === 'string') {
@@ -163,6 +176,26 @@ export function useAttachmentDrafts<Values extends FieldValues & { attachmentIds
         { shouldDirty: true },
       );
     }
+  }
+
+  const removeUnavailable = useEffectEvent(
+    (drafts: readonly { id: string; fileName: string }[]) => {
+      for (const { id, fileName } of drafts) {
+        removeFromForm(id);
+        toast.add({ title: t('unavailable', { name: fileName }), type: 'error' });
+      }
+    },
+  );
+  useEffect(() => removeUnavailable(unavailable), [unavailable]);
+
+  /** Deletes an uploaded draft at once and removes its references from the text (Q18). */
+  function removeDraft(draft: AttachmentDraft) {
+    const { id } = draft;
+    if (id === undefined) {
+      return;
+    }
+    setAdded((previous) => previous.filter(({ key }) => key !== draft.key));
+    removeFromForm(id);
     deleteAttachment.mutate(
       { id, ticketId: null },
       { onError: (error) => reject(draft.fileName, errorMessage(error)) },

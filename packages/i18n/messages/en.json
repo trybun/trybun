@@ -349,7 +349,8 @@
     "deleteDescription": "The file is deleted for everyone and cannot be restored.",
     "deleteConfirm": "Delete",
     "cancel": "Cancel",
-    "deleted": "File {name} deleted"
+    "deleted": "File {name} deleted",
+    "unavailable": "File {name} is no longer available"
   },
   "users": {
     "accounts": {

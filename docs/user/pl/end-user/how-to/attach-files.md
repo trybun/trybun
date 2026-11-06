@@ -32,7 +32,7 @@ Trybun usuwa z obrazów lokalizację i inne dane zdjęcia (EXIF).
 
 Wybierz ikonę kosza (**Usuń**) obok pliku na liście pod polem. Plik zostaje od razu usunięty, a odwołanie do niego znika z opisu.
 
-Pliki, które dodasz, ale nigdy nie wyślesz, są automatycznie usuwane po 24 godzinach.
+Pliki, które dodasz, ale nigdy nie wyślesz, są automatycznie usuwane po 24 godzinach. Jeśli stanie się to, gdy formularz jest jeszcze otwarty, plik znika z formularza, a komunikat podaje jego nazwę.
 
 ## Otwórz pliki zgłoszenia
 

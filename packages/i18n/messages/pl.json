@@ -349,7 +349,8 @@
     "deleteDescription": "Plik zostanie usunięty dla wszystkich i nie będzie można go przywrócić.",
     "deleteConfirm": "Usuń",
     "cancel": "Anuluj",
-    "deleted": "Usunięto plik {name}"
+    "deleted": "Usunięto plik {name}",
+    "unavailable": "Plik {name} nie jest już dostępny"
   },
   "users": {
     "accounts": {

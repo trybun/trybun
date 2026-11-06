@@ -32,7 +32,7 @@ Trybun removes the location and other photo details (EXIF) from images.
 
 Select the bin icon (**Delete**) next to the file in the list below the field. The file is deleted at once, and its reference disappears from the description.
 
-Files you add but never submit are deleted automatically after 24 hours.
+Files you add but never submit are deleted automatically after 24 hours. If that happens while the form is still open, the file leaves the form and a message names it.
 
 ## Open the files of a ticket
 
