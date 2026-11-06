@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** The Projects page and the settings of a project (§3.1, §7.3, §7.4). */
 export class ProjectsPage {
@@ -32,13 +32,43 @@ export class ProjectsPage {
     return this.settingsTabs.getByRole('tab', { name });
   }
 
+  /**
+   * Opens the New project dialog. The server renders the button and the dialog loads after the
+   * first paint; a click before the hydration opens nothing (WebKit, #236), so the click repeats
+   * until the dialog shows.
+   */
+  async openNewProject(): Promise<Locator> {
+    const dialog = this.page.getByRole('dialog', { name: 'New project' });
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        await this.newProject.click();
+      }
+      await expect(dialog).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    return dialog;
+  }
+
   /** Creates a project in the New project dialog. */
   async create(name: string, key: string): Promise<void> {
-    await this.newProject.click();
-    const dialog = this.page.getByRole('dialog', { name: 'New project' });
+    const dialog = await this.openNewProject();
     await dialog.getByLabel('Name').fill(name);
     await dialog.getByLabel('Key').fill(key);
     await dialog.getByRole('button', { name: 'Create project' }).click();
+  }
+
+  /**
+   * Opens the Add member dialog of the Members tab. Like New project, the button is server-rendered
+   * and its dialog loads after the first paint, so the click repeats until the dialog shows (#236).
+   */
+  async openAddMember(): Promise<Locator> {
+    const dialog = this.page.getByRole('dialog', { name: 'Add member' });
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        await this.page.getByRole('button', { name: 'Add member' }).click();
+      }
+      await expect(dialog).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    return dialog;
   }
 
   /**
@@ -49,8 +79,7 @@ export class ProjectsPage {
     email: string,
     role: 'Developer' | 'Project manager' | 'End user',
   ): Promise<Locator> {
-    await this.page.getByRole('button', { name: 'Add member' }).click();
-    const dialog = this.page.getByRole('dialog', { name: 'Add member' });
+    const dialog = await this.openAddMember();
     await dialog.getByRole('radio', { name: 'By e-mail address' }).check();
     await dialog.getByRole('textbox', { name: 'E-mail address' }).fill(email);
     await dialog.getByRole('combobox', { name: 'Role' }).click();
@@ -60,8 +89,7 @@ export class ProjectsPage {
 
   /** Adds a team member found by the search of the Add member dialog. */
   async addMember(search: string, name: string): Promise<void> {
-    await this.page.getByRole('button', { name: 'Add member' }).click();
-    const dialog = this.page.getByRole('dialog', { name: 'Add member' });
+    const dialog = await this.openAddMember();
     await dialog.getByLabel('Search by name or GitHub login').fill(search);
     await dialog.getByRole('radio', { name: new RegExp(name) }).check();
     await dialog.getByRole('button', { name: 'Add', exact: true }).click();
