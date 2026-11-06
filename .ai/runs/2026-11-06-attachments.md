@@ -50,9 +50,9 @@ Build phases 1–3 of the approved change specification (Q1: phase 4, the backup
 ### Phase 3: Web
 
 - [x] 3.1 Attachment components of `@trybun/ui` — 88567e3
-- [ ] 3.2 Web feature and the BFF content length
-- [ ] 3.3 Portal form, view and timeline with attachments
-- [ ] 3.4 User documentation
+- [x] 3.2 Web feature and the BFF content length — 1fdf494
+- [x] 3.3 Portal form, view and timeline with attachments — 4f149bc
+- [x] 3.4 User documentation — ca1e0d4
 
 ### Phase 4: Specification and finish
 
