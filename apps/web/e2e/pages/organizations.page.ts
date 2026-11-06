@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { waitForToastsToClose } from '../toasts.js';
 
 /** The Organizations page of the Administrator panel and the detail of an organization (§7.3). */
@@ -46,10 +46,25 @@ export class OrganizationsPage {
       .getByRole('button', { name: 'Undo' });
   }
 
+  /**
+   * Opens the New organization dialog. The server renders the button and the dialog loads after
+   * the first paint; a click before the hydration opens nothing (WebKit, #238), so the click
+   * repeats until the dialog shows.
+   */
+  async openNewOrganization(): Promise<Locator> {
+    const dialog = this.page.getByRole('dialog', { name: 'New organization' });
+    await expect(async () => {
+      if (!(await dialog.isVisible())) {
+        await this.newOrganization.click();
+      }
+      await expect(dialog).toBeVisible({ timeout: 1000 });
+    }).toPass();
+    return dialog;
+  }
+
   /** Creates an organization in the New organization dialog. */
   async create(name: string, domains = ''): Promise<void> {
-    await this.newOrganization.click();
-    const dialog = this.page.getByRole('dialog', { name: 'New organization' });
+    const dialog = await this.openNewOrganization();
     await dialog.getByLabel('Name').fill(name);
     await dialog.getByLabel('E-mail domains (optional)').fill(domains);
     await dialog.getByRole('button', { name: 'Create organization' }).click();
