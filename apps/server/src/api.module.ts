@@ -12,6 +12,7 @@ import { HttpModule } from './platform/http/http.module.js';
 import { LoggingModule } from './platform/logging/logging.module.js';
 import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.module.js';
 import { RateLimitingModule } from './platform/rate-limiting/rate-limiting.module.js';
+import { StorageModule } from './platform/storage/storage.module.js';
 import { ABILITY_DEFINITIONS } from './ability-definitions.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
 import { OrganizationsModule } from './modules/organizations/organizations.module.js';
@@ -40,6 +41,7 @@ export class ApiModule {
         RateLimitingModule,
         AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         KeycloakAdminModule,
+        StorageModule,
         HealthModule,
         UsersModule,
         SetupModule,

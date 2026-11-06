@@ -17,6 +17,7 @@ describe('parseEnv', () => {
       shouldUseSecureCookies: true,
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
+      attachmentMaxSizeMb: 25,
       isDevelopment: false,
       endUserIdentityProviders: [],
       keycloak: {
@@ -65,6 +66,12 @@ describe('parseEnv', () => {
     });
   });
 
+  it('takes the maximum attachment size', () => {
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '100' }).attachmentMaxSizeMb,
+    ).toBe(100);
+  });
+
   it.each([
     [{ ...TEST_ENV, TRYBUN_DOMAIN: undefined }, 'TRYBUN_DOMAIN'],
     [{ ...TEST_ENV, TRYBUN_API_URL: undefined }, 'TRYBUN_API_URL'],
@@ -76,6 +83,8 @@ describe('parseEnv', () => {
     [{ ...TEST_ENV, TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: '' }, 'TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET'],
     [{ ...TEST_ENV, TRYBUN_DEFAULT_LANGUAGE: 'de' }, 'TRYBUN_DEFAULT_LANGUAGE'],
     [{ ...TEST_ENV, TRYBUN_DEFAULT_TIME_ZONE: 'Europe/Nowhere' }, 'TRYBUN_DEFAULT_TIME_ZONE'],
+    [{ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '0' }, 'TRYBUN_ATTACHMENT_MAX_SIZE_MB'],
+    [{ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '101' }, 'TRYBUN_ATTACHMENT_MAX_SIZE_MB'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => parseEnv(env)).toThrow(InvalidEnvError);
     expect(() => parseEnv(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));

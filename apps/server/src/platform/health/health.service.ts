@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../database/prisma.service.js';
 import { AppError } from '../errors/app-error.js';
+import { OBJECT_STORAGE, type ObjectStorage } from '../storage/object-storage.js';
 import { selectOne } from './health.sql.js';
 import { ValkeyProbe } from './valkey-probe.js';
 
@@ -12,6 +13,7 @@ export interface Readiness {
   status: OptionalDependencyStatus;
   database: 'ok';
   valkey: OptionalDependencyStatus;
+  storage: OptionalDependencyStatus;
 }
 
 /** A check that does not answer in this time counts as failed. */
@@ -25,19 +27,20 @@ function withTimeout<T>(check: Promise<T>, fallback: T): Promise<T> {
 }
 
 /**
- * Readiness of the API (§17.2): it fails only when PostgreSQL is unavailable; Valkey is reported
- * as `degraded` without failing. Object storage joins with its adapter (S1-08).
+ * Readiness of the API (§17.2): it fails only when PostgreSQL is unavailable; Valkey and the
+ * object storage are reported as `degraded` without failing.
  */
 @Injectable()
 export class HealthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly valkey: ValkeyProbe,
+    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
     @InjectPinoLogger(HealthService.name) private readonly logger: PinoLogger,
   ) {}
 
   async readiness(): Promise<Readiness> {
-    const [isDatabaseAvailable, isValkeyAvailable] = await Promise.all([
+    const [isDatabaseAvailable, isValkeyAvailable, isStorageAvailable] = await Promise.all([
       withTimeout(
         selectOne(this.prisma).then(
           () => true,
@@ -46,6 +49,7 @@ export class HealthService {
         false,
       ),
       withTimeout(this.valkey.isAvailable(), false),
+      withTimeout(this.storage.isAvailable(AbortSignal.timeout(CHECK_TIMEOUT_MS)), false),
     ]);
     if (!isDatabaseAvailable) {
       this.logger.error({ dependency: 'postgresql' }, 'Dependency unavailable');
@@ -54,7 +58,16 @@ export class HealthService {
     if (!isValkeyAvailable) {
       this.logger.warn({ dependency: 'valkey' }, 'Dependency unavailable');
     }
-    const valkeyStatus = isValkeyAvailable ? 'ok' : 'degraded';
-    return { status: valkeyStatus, database: 'ok', valkey: valkeyStatus };
+    if (!isStorageAvailable) {
+      this.logger.warn({ dependency: 'object-storage' }, 'Dependency unavailable');
+    }
+    const valkey = isValkeyAvailable ? 'ok' : 'degraded';
+    const storage = isStorageAvailable ? 'ok' : 'degraded';
+    return {
+      status: valkey === 'ok' && storage === 'ok' ? 'ok' : 'degraded',
+      database: 'ok',
+      valkey,
+      storage,
+    };
   }
 }

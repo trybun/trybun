@@ -5,6 +5,8 @@ export const TEST_ENV = {
   TRYBUN_VALKEY_URL: 'redis://localhost:6379',
   TRYBUN_KEYCLOAK_URL: 'http://keycloak:8080/auth',
   TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET: 'server-client-secret',
+  TRYBUN_S3_ACCESS_KEY_ID: 'trybun-test',
+  TRYBUN_S3_SECRET_ACCESS_KEY: 'object-storage-secret',
   // Tests that check log lines set their own level.
   TRYBUN_LOG_LEVEL: 'silent',
 };

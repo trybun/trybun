@@ -33,6 +33,9 @@ const envSchema = z
       .string()
       .refine(isTimeZone, 'Invalid IANA time zone')
       .default('UTC'),
+    // The maximum size of one attachment (§13.3), the same variable as the server's: the browser
+    // refuses a larger file before sending it.
+    TRYBUN_ATTACHMENT_MAX_SIZE_MB: z.coerce.number().int().min(1).max(100).default(25),
     // The optional sign-in providers of end users (§15.3): the acceptance page of an invitation
     // offers a provider only when its client is configured (ADR 0009).
     TRYBUN_MICROSOFT_CLIENT_ID: z.string().optional(),
@@ -52,6 +55,7 @@ const envSchema = z
     shouldUseSecureCookies: env.NEXTAUTH_URL.startsWith('https://'),
     defaultLanguage: env.TRYBUN_DEFAULT_LANGUAGE,
     defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
+    attachmentMaxSizeMb: env.TRYBUN_ATTACHMENT_MAX_SIZE_MB,
     isDevelopment: env.NODE_ENV === 'development',
     endUserIdentityProviders: [
       ...(isSet(env.TRYBUN_MICROSOFT_CLIENT_ID) ? (['microsoft'] as const) : []),
