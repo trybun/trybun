@@ -53,7 +53,9 @@ export function ProjectList({ state }: { state: ProjectState }) {
                     {project.key}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
-                    {project.role === null ? t('list.noRole') : t(`roles.${project.role}`)}
+                    {!('role' in project) || project.role === null
+                      ? t('list.noRole')
+                      : t(`roles.${project.role}`)}
                   </span>
                 </span>
               </span>

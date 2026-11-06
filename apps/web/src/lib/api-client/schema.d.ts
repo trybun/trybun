@@ -975,7 +975,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: {
+                        items: ({
                             /** Format: uuid */
                             id: string;
                             name: string;
@@ -992,7 +992,15 @@ export interface operations {
                             role: "developer" | "project_manager" | "end_user" | null;
                             hasTickets: boolean;
                             allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
-                        }[];
+                        } | {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            key: string;
+                            /** @enum {string} */
+                            state: "active" | "archived";
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        })[];
                         nextCursor: string | null;
                     };
                 };
@@ -1074,6 +1082,14 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        key: string;
+                        /** @enum {string} */
+                        state: "active" | "archived";
                         allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
                     };
                 };
@@ -2274,6 +2290,7 @@ export interface operations {
                 limit?: number;
                 projectId?: string;
                 identifier?: string;
+                involvement?: "mine";
             };
             header?: never;
             path?: never;
@@ -2292,6 +2309,12 @@ export interface operations {
                             id: string;
                             /** Format: uuid */
                             projectId: string;
+                            project: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                name: string;
+                            };
                             number: number;
                             identifier: string;
                             title: string;
@@ -2343,6 +2366,12 @@ export interface operations {
                             id: string;
                             /** Format: uuid */
                             projectId: string;
+                            project: {
+                                /** Format: uuid */
+                                id: string;
+                                key: string;
+                                name: string;
+                            };
                             number: number;
                             identifier: string;
                             title: string;
@@ -2368,6 +2397,8 @@ export interface operations {
                                 number: number;
                                 projectKey: string;
                             } | null;
+                            /** @enum {string} */
+                            publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                         })[];
                         nextCursor: string | null;
                     };
@@ -2409,6 +2440,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2460,6 +2497,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2485,6 +2528,8 @@ export interface operations {
                             number: number;
                             projectKey: string;
                         } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
                 };
             };
@@ -2511,6 +2556,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2562,6 +2613,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2587,6 +2644,8 @@ export interface operations {
                             number: number;
                             projectKey: string;
                         } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
                 };
             };
@@ -2628,6 +2687,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2679,6 +2744,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2704,6 +2775,8 @@ export interface operations {
                             number: number;
                             projectKey: string;
                         } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
                 };
             };
@@ -2746,6 +2819,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2797,6 +2876,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2822,6 +2907,8 @@ export interface operations {
                             number: number;
                             projectKey: string;
                         } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
                 };
             };
@@ -2855,6 +2942,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2906,6 +2999,12 @@ export interface operations {
                         id: string;
                         /** Format: uuid */
                         projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
                         number: number;
                         identifier: string;
                         title: string;
@@ -2931,6 +3030,8 @@ export interface operations {
                             number: number;
                             projectKey: string;
                         } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
                 };
             };
@@ -2956,7 +3057,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: {
+                        items: ({
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
@@ -3000,7 +3101,33 @@ export interface operations {
                             automaticSource: "system" | null;
                             /** Format: date-time */
                             createdAt: string;
-                        }[];
+                        } | {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed";
+                            data: {
+                                /** @enum {string} */
+                                from: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                                /** @enum {string} */
+                                to: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                                duplicateOf?: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: number;
+                                    projectKey: string;
+                                } | null;
+                            } | null;
+                            actor: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @enum {string|null} */
+                            automaticSource: "system" | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        })[];
                         nextCursor: string | null;
                     };
                 };
