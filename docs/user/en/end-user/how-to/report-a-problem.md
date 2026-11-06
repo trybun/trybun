@@ -8,7 +8,8 @@ views: ['/portal/projects/[projectId]', '/portal/projects/[projectId]/tickets/ne
 2. Select **Create ticket**.
 3. In **Title**, describe the problem in one sentence.
 4. Optionally, describe it in more detail in **Description**. The grey questions in the empty field – what happened, what you expected and how the team can reproduce it – help you remember what the team needs; they disappear when you start typing. You can format the text: see [Format text](../reference/formatting-text.md).
-5. Select **Submit**.
+5. Optionally, attach screenshots, logs or documents: drag them onto **Description**, paste them, or select **Attach files**. See [Attach files](attach-files.md).
+6. Select **Submit**.
 
 Your new ticket opens, and a message confirms its identifier, for example `CP-12`. Only you and the team see it. Follow its progress in **My tickets**: see [Follow your tickets](follow-your-tickets.md).
 
