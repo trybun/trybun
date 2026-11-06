@@ -47,7 +47,7 @@ export default async function PortalProjectPage({
   });
   await queryClient.prefetchInfiniteQuery(ticketsOptions);
   const hasMoreTickets =
-    queryClient.getQueryData(ticketsOptions.queryKey)?.pages[0]?.nextCursor !== null;
+    typeof queryClient.getQueryData(ticketsOptions.queryKey)?.pages[0]?.nextCursor === 'string';
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <h1 className="text-2xl font-bold break-words">{project.name}</h1>

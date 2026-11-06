@@ -2,7 +2,12 @@
 
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { ActivityEventResponse } from '@trybun/contracts/activity-events';
-import { type TicketResponse, ticketIdentifier } from '@trybun/contracts/tickets';
+import {
+  type TicketPublicStatus,
+  type TicketResponse,
+  ticketIdentifier,
+  ticketPublicStatusSchema,
+} from '@trybun/contracts/tickets';
 import { Alert, AlertDescription } from '@trybun/ui/components/alert';
 import { Button } from '@trybun/ui/components/button';
 import { Markdown } from '@trybun/ui/components/markdown';
@@ -171,13 +176,7 @@ function isStatusChange(event: ActivityEventResponse): boolean {
   return event.type === 'status_changed' && event.data !== null;
 }
 
-function publicStatusTo(event: ActivityEventResponse) {
-  const to = event.data?.to;
-  return to === 'received' ||
-    to === 'awaiting_reply' ||
-    to === 'in_progress' ||
-    to === 'resolved' ||
-    to === 'closed'
-    ? to
-    : 'received';
+function publicStatusTo(event: ActivityEventResponse): TicketPublicStatus {
+  // The response is a union whose team arm carries any status code; the portal receives public ones.
+  return ticketPublicStatusSchema.catch('received').parse(event.data?.to);
 }

@@ -618,8 +618,6 @@
       }
     },
     "confirmation": {
-      "title": "Confirm the resolution",
-      "chosen": "Your answer",
       "other": "Choose the other answer instead: {answer}",
       "notPending": "This ticket no longer waits for your confirmation.",
       "openTicket": "Open the ticket"

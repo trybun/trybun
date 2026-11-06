@@ -1,6 +1,6 @@
 # Execution plan — implement the end-user portal (S1-09)
 
-Source doc: .ai/specs/2026-10-26-end-user-portal.md
+Source doc: .ai/specs/implemented/2026-10-26-end-user-portal.md
 Spec PR: #118 (merged, design only)
 Plan task: `S1-09`
 

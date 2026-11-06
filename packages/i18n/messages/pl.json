@@ -618,8 +618,6 @@
       }
     },
     "confirmation": {
-      "title": "Potwierdź rozwiązanie",
-      "chosen": "Twoja odpowiedź",
       "other": "Zamiast tego wybierz drugą odpowiedź: {answer}",
       "notPending": "To zgłoszenie nie czeka już na Twoje potwierdzenie.",
       "openTicket": "Otwórz zgłoszenie"
