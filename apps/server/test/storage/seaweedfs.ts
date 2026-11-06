@@ -39,7 +39,15 @@ async function warmUp(endpoint: string): Promise<void> {
 
 export async function startSeaweedfs(): Promise<TestSeaweedfs> {
   const container = await new GenericContainer(SEAWEEDFS_IMAGE)
-    .withCommand(['server', '-dir=/data', '-s3', '-master.telemetry=false'])
+    // Every bucket is a collection with volumes of its own; with the default size limit of 1 GB
+    // the disk of the container holds the volumes of only four buckets that are written to.
+    .withCommand([
+      'server',
+      '-dir=/data',
+      '-s3',
+      '-master.telemetry=false',
+      '-master.volumeSizeLimitMB=64',
+    ])
     .withEnvironment({ AWS_ACCESS_KEY_ID: ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY: SECRET_ACCESS_KEY })
     .withExposedPorts(8333)
     .withWaitStrategy(Wait.forHttp('/healthz', 8333).withStartupTimeout(120_000))
