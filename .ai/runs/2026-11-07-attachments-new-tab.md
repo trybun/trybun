@@ -24,6 +24,8 @@ Low. The list of inline media types is duplicated from §13.3; a comment ties th
 
 ## Progress
 
+PR: #253
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: New tab for images
