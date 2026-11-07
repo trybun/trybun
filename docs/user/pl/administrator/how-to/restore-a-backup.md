@@ -45,19 +45,28 @@ Potrzebujesz pakietu wdrożeniowego dowolnego wydania, kopii pliku `.env` przech
 
    Gdy załączone pliki są przechowywane w zewnętrznym magazynie S3, odtwarzanie zadaje drugie pytanie, bo ich folder wciąż należy do starego serwera: „The storage folder … belongs to another Trybun server. Replace its content? [y/N]”. Odpowiedz `y`, gdy stary serwer przepadł. Odpowiedz `n`, dopóki stary serwer działa: `y` zastąpiłoby jego załączone pliki plikami z kopii zapasowej. Aby przetestować odtwarzanie, postępuj zamiast tego według sekcji „Przetestuj odtwarzanie, gdy instalacja działa” poniżej.
 
+   Odtwarzanie pyta też, zanim zastąpi folder z plikami, ale bez znacznika serwera Trybun, bo może on należeć do innej aplikacji: „The storage folder … holds objects but no Trybun marker. Replace its content? [y/N]”. Dla pustego folderu nie pada żadne pytanie.
+
 Użytkownicy logują się swoimi hasłami i kodami uwierzytelniania dwuskładnikowego tak jak wcześniej. Jeśli plik `.env` przepadł, uruchom `./trybun install` na nowym serwerze, ustaw w nowym pliku `.env` zmienną `TRYBUN_BACKUP_PASSPHRASE` i zmienne `TRYBUN_BACKUP_S3_*` starej instalacji i uruchom `./trybun restore`; przywróci on także stary plik `.env`.
 
 ## Przetestuj odtwarzanie, gdy instalacja działa
 
-Przynajmniej raz na kwartał przetestuj odtwarzanie na osobnym serwerze, tak jak opisuje sekcja „Na nowym serwerze”. Gdy załączone pliki są przechowywane w zewnętrznym magazynie S3, odtworzony plik `.env` wskazuje na folder testowanej instalacji, więc odtwórz pliki do osobnego folderu:
+Przynajmniej raz na kwartał przetestuj odtwarzanie na osobnym serwerze, tak jak opisuje sekcja „Na nowym serwerze”, ale z opcją `--test`. Odtwarzanie testowe opróżnia `TRYBUN_BACKUP_S3_URL` w odtworzonym pliku `.env`, więc serwer testowy nie tworzy kopii zapasowych w zewnętrznym magazynie S3 i nie narusza kopii instalacji; aby tworzyć jego kopie poza serwerem, ustaw w `TRYBUN_BACKUP_S3_URL` jego własne repozytorium, nigdy repozytorium instalacji.
 
-1. W magazynie utwórz pusty kubełek albo folder poza folderem z `TRYBUN_S3_URL`, do którego może zapisywać klucz dostępu z pliku `.env` (`TRYBUN_S3_ACCESS_KEY_ID`).
-2. Odtwórz kopię do niego:
+- Gdy załączone pliki są przechowywane w SeaweedFS na serwerze (domyślnie), odtwórz kopię poleceniem:
 
-   ```sh
-   ./trybun restore --storage-url https://s3.example.com/my-bucket-restore-test
-   ```
+  ```sh
+  ./trybun restore --test
+  ```
 
-   Odtworzony plik `.env` używa tego folderu, a folder instalacji pozostaje bez zmian. Dla pustego folderu nie pada drugie pytanie; jeśli mimo to się pojawi, odpowiedz `n`. Odtwarzanie odmawia folderu, który zawiera folder instalacji albo leży w nim. Opróżnia też `TRYBUN_BACKUP_S3_URL` w odtworzonym pliku `.env`, więc serwer testowy nie tworzy kopii zapasowych w zewnętrznym magazynie S3 i nie narusza kopii instalacji; aby tworzyć jego kopie poza serwerem, ustaw w `TRYBUN_BACKUP_S3_URL` jego własne repozytorium, nigdy repozytorium instalacji.
+- Gdy są przechowywane w zewnętrznym magazynie S3, odtworzony plik `.env` wskazuje na folder testowanej instalacji, więc odtwórz pliki do osobnego folderu. Bez niego opcja `--test` zostaje odrzucona.
+  1. W magazynie utwórz pusty kubełek albo folder poza folderami z `TRYBUN_S3_URL` i `TRYBUN_BACKUP_S3_URL`, do którego może zapisywać klucz dostępu z pliku `.env` (`TRYBUN_S3_ACCESS_KEY_ID`).
+  2. Odtwórz kopię do niego:
 
-3. Zaloguj się z uwierzytelnianiem dwuskładnikowym i sprawdź, czy są Twoje dane i pliki. Potem usuń folder testowy w magazynie.
+     ```sh
+     ./trybun restore --test --storage-url https://s3.example.com/my-bucket-restore-test
+     ```
+
+     Odtworzony plik `.env` używa tego folderu, a folder instalacji pozostaje bez zmian. Dla pustego folderu nie pada drugie pytanie; jeśli mimo to się pojawi, odpowiedz `n`. Odtwarzanie odmawia folderu, który zawiera folder instalacji albo kopii zapasowych lub leży w jednym z nich.
+
+Następnie zaloguj się z uwierzytelnianiem dwuskładnikowym i sprawdź, czy są Twoje dane i pliki. Potem usuń folder testowy w zewnętrznym magazynie.
