@@ -333,7 +333,6 @@ services:
       PGPASSWORD: ${TRYBUN_POSTGRES_PASSWORD}
       # The storage folder of the attachments, on SeaweedFS (its profile) or an external storage;
       # backup.sh configures the rclone remote `objects` from these (§15.3).
-      COMPOSE_PROFILES: ${COMPOSE_PROFILES:-}
       TRYBUN_S3_URL: ${TRYBUN_S3_URL:-http://seaweedfs:8333/trybun}
       TRYBUN_S3_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:?TRYBUN_S3_ACCESS_KEY_ID must be set}
       TRYBUN_S3_SECRET_ACCESS_KEY: ${TRYBUN_S3_SECRET_ACCESS_KEY:?TRYBUN_S3_SECRET_ACCESS_KEY must be set}
