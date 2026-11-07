@@ -7,8 +7,9 @@
 # with the same ID and the objects and records are the same. A second pair of servers keeps its
 # attachments on that S3 storage instead of SeaweedFS (§15.10): the restore refuses the folder of
 # the lost server without a terminal, restores a test copy into another folder with --storage-url
-# while the folder of the backup stays unchanged, and replaces the folder of the lost server with
-# --replace-foreign-objects, bringing back an object deleted after the backup.
+# while the folder of the backup stays unchanged and the copy backs up nowhere off-site, and
+# replaces the folder of the lost server with --replace-foreign-objects, bringing back an object
+# deleted after the backup.
 # Usage: scripts/restore-test.sh <deployment package archive>
 # Needs Docker, free ports 80 and 443, and the images of the release (pulled or loaded).
 set -eu
@@ -129,6 +130,12 @@ server_id() {
 }
 marker() {
   storage cat "$1/.trybun-installation"
+}
+
+# The backups in the restic repository $1 of the S3 storage, as ./trybun backup list shows them.
+off_site_backups() {
+  TRYBUN_BACKUP_S3_URL=$1 docker compose run --rm -T --no-deps backup list |
+    sed -n '/^Backups on the external S3 storage/,$p'
 }
 
 # Installs the deployment package unpacked in the current folder, with its backups also in the
@@ -286,13 +293,30 @@ step 'Restoring a test copy into another folder with --storage-url, without a se
 # As the quarterly test restore while production runs: a new, empty folder has no marker.
 copy=http://$gateway:8334/trybun-attachments/restore-test-copy
 copy_folder=objects:trybun-attachments/restore-test-copy
-restore_onto server-d "$work/kept-external.env" --storage-url "$copy"
+production_backups=$(sed -n 's/^TRYBUN_BACKUP_S3_URL=//p' "$work/kept-external.env")
+backups_before=$(off_site_backups "$production_backups")
+[ -n "$backups_before" ] || fail 'the backups of the lost server on the S3 storage could not be listed.'
+restore_onto server-d "$work/kept-external.env" --storage-url "$copy" >"$work/copy.log"
+cat "$work/copy.log"
 [ "$(sed -n 's/^TRYBUN_S3_URL=//p' .env)" = "$copy" ] || fail 'the restored .env does not use the folder of --storage-url.'
 [ "$(objects "$copy_folder")" = "$objects_before" ] ||
   fail 'the objects of the --storage-url folder are not those of the backup.'
 [ "$(objects "$folder")" = "$objects_after" ] || fail 'the restore with --storage-url changed the folder of the backup.'
 [ "$(marker "$folder")" = "$lost_server" ] || fail 'the restore with --storage-url changed the marker of the folder of the backup.'
 [ "$(marker "$copy_folder")" = "$(server_id)" ] || fail 'the marker of the --storage-url folder does not name the new server.'
+
+step 'Backing up the test copy: nothing goes into the repository of the backup'
+[ "$(grep '^TRYBUN_BACKUP_S3_URL=' .env)" = 'TRYBUN_BACKUP_S3_URL=' ] ||
+  fail 'the restore with --storage-url kept TRYBUN_BACKUP_S3_URL of the backup.'
+grep -qF 'TRYBUN_BACKUP_S3_URL of .env was emptied' "$work/copy.log" ||
+  fail 'the restore with --storage-url did not say that the test copy makes no off-site backups.'
+./trybun backup >"$work/copy-backup.log"
+cat "$work/copy-backup.log"
+! grep -q 'external S3 storage' "$work/copy-backup.log" || fail 'the test copy backed up off-site.'
+[ "$(off_site_backups "$production_backups")" = "$backups_before" ] ||
+  fail 'the backup of the test copy changed the repository of the backup.'
+# The newest backup of this server is now the test copy's; the next restore starts as a new server.
+docker compose down --volumes --remove-orphans
 
 step 'Restoring with --replace-foreign-objects'
 restore_onto server-d "$work/kept-external.env" --replace-foreign-objects
