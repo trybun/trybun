@@ -5,9 +5,10 @@
 # outside the server, destroys the server (containers, volumes, folder), restores onto a new one
 # from the deployment package, .env and the passphrase alone, and checks that the user signs in
 # with the same ID and the objects and records are the same. A second pair of servers keeps its
-# attachments on that S3 storage instead of SeaweedFS (§15.10): the restore replaces the folder of
-# the lost server only with --replace-foreign-objects, and brings back an object deleted after the
-# backup.
+# attachments on that S3 storage instead of SeaweedFS (§15.10): the restore refuses the folder of
+# the lost server without a terminal, restores a test copy into another folder with --storage-url
+# while the folder of the backup stays unchanged, and replaces the folder of the lost server with
+# --replace-foreign-objects, bringing back an object deleted after the backup.
 # Usage: scripts/restore-test.sh <deployment package archive>
 # Needs Docker, free ports 80 and 443, and the images of the release (pulled or loaded).
 set -eu
@@ -271,6 +272,27 @@ cat "$work/refused.log" >&2
 grep -qF "The storage folder $external belongs to another Trybun server" "$work/refused.log" ||
   fail 'the restore did not say why it refused.'
 [ "$(objects "$folder")" = "$objects_after" ] || fail 'the refused restore changed the storage folder.'
+
+step 'Refusing a --storage-url folder that contains the folder of the backup'
+if restore_onto server-d "$work/kept-external.env" --storage-url "http://$gateway:8334/trybun-attachments" 2>"$work/overlap.log"; then
+  fail 'the restore accepted a --storage-url folder that contains the folder of the backup.'
+fi
+cat "$work/overlap.log" >&2
+grep -qF "overlaps the storage folder $external of the backup" "$work/overlap.log" ||
+  fail 'the restore did not say why it refused the overlapping folder.'
+[ "$(objects "$folder")" = "$objects_after" ] || fail 'the refused restore changed the storage folder.'
+
+step 'Restoring a test copy into another folder with --storage-url, without a second question'
+# As the quarterly test restore while production runs: a new, empty folder has no marker.
+copy=http://$gateway:8334/trybun-attachments/restore-test-copy
+copy_folder=objects:trybun-attachments/restore-test-copy
+restore_onto server-d "$work/kept-external.env" --storage-url "$copy"
+[ "$(sed -n 's/^TRYBUN_S3_URL=//p' .env)" = "$copy" ] || fail 'the restored .env does not use the folder of --storage-url.'
+[ "$(objects "$copy_folder")" = "$objects_before" ] ||
+  fail 'the objects of the --storage-url folder are not those of the backup.'
+[ "$(objects "$folder")" = "$objects_after" ] || fail 'the restore with --storage-url changed the folder of the backup.'
+[ "$(marker "$folder")" = "$lost_server" ] || fail 'the restore with --storage-url changed the marker of the folder of the backup.'
+[ "$(marker "$copy_folder")" = "$(server_id)" ] || fail 'the marker of the --storage-url folder does not name the new server.'
 
 step 'Restoring with --replace-foreign-objects'
 restore_onto server-d "$work/kept-external.env" --replace-foreign-objects
