@@ -28,6 +28,6 @@ Low. The list of inline media types is duplicated from §13.3; a comment ties th
 
 ### Phase 1: New tab for images
 
-- [ ] 1.1 New-tab link and accessible hint for available images, with component tests
-- [ ] 1.2 Stories for an available image and a download, with play assertions on target and rel
-- [ ] 1.3 State the behaviour in §13.3
+- [x] 1.1 New-tab link and accessible hint for available images, with component tests — bd943bb
+- [x] 1.2 Stories for an available image and a download, with play assertions on target and rel — bd943bb
+- [x] 1.3 State the behaviour in §13.3 — caafd2c
