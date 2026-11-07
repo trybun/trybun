@@ -112,7 +112,7 @@ The command downloads the release and checks its checksum, shows its changes, as
 ## Restoring a backup
 
 ```sh
-./trybun restore [<backup>] [--replace-foreign-objects]
+./trybun restore [<backup>] [--storage-url <url>] [--replace-foreign-objects]
 ```
 
 It asks for confirmation, then replaces all data and the configuration with the backup (the newest without an ID) and starts the version it was taken with. On a new server: unpack the package of any release, copy the kept `.env` into its folder and run `./trybun restore`; the backup comes from the S3 storage.
@@ -120,13 +120,23 @@ It asks for confirmation, then replaces all data and the configuration with the 
 The restore replaces the content of the attachment folder of the backup's `.env` and deletes the objects in it that are not in the backup. Every server marks the folder it uses with an ID of its own, which no backup contains. When the folder is marked by another Trybun server, the restore asks a second question before it changes anything: "The storage folder {url} belongs to another Trybun server. Replace its content? [y/N]".
 
 - Answer `y` when that server is lost or no longer uses the folder, e.g. on a new server after a disaster: with an external storage, the folder still names the lost server, so this restore always asks.
-- Answer `n`, the default, when the other server still uses the folder, e.g. when a backup of production is restored onto a test server: the `.env` of the backup points to the folder of production, and `y` would replace the attachments of production with those of the backup.
+- Answer `n`, the default, when the other server still uses the folder, e.g. when a backup of production is restored onto a test server: the `.env` of the backup points to the folder of production, and `y` would replace the attachments of production with those of the backup. Restore such a backup with `--storage-url` instead (below).
 
 Without a terminal, e.g. in a script, the restore refuses a folder of another server; `--replace-foreign-objects` answers the question with yes.
 
+`--storage-url <url>` restores the attachments into another folder instead – the address of a bucket followed by an optional folder, as `TRYBUN_S3_URL`. The restored `.env` gets `TRYBUN_S3_URL=<url>`; the folder of the backup's `.env` is not changed. The restore checks the marker of the new folder, so an empty folder asks no second question, and refuses a folder that contains the folder of the backup or lies inside it. It uses the access key of the backup's `.env` (`TRYBUN_S3_ACCESS_KEY_ID`, `TRYBUN_S3_SECRET_ACCESS_KEY`), so the folder must be on a storage that key may write to, e.g. another bucket of the same account.
+
 ## Testing a restore
 
-Restore onto a separate server at least once a quarter: follow "Restoring a backup" on a new server with the backups of the S3 storage, then sign in with two-factor authentication and check that your data and files are there. With the attachments on an external storage, never answer the second question of the restore with `y` while the installation whose backup you test still runs. Every release passes the same restore automatically before it is published.
+Restore onto a separate server at least once a quarter: follow "Restoring a backup" on a new server with the backups of the S3 storage, then sign in with two-factor authentication and check that your data and files are there. Every release passes the same restore automatically before it is published.
+
+With the attachments on an external storage, the backup's `.env` points to the folder of the installation you test, which still runs. Create an empty folder for the test – another bucket, or a folder outside the one of `TRYBUN_S3_URL` – that the access key of `.env` may write to, and restore into it:
+
+```sh
+./trybun restore --storage-url https://s3.eu-central-1.amazonaws.com/my-bucket-restore-test
+```
+
+The restore asks no second question for the empty folder and leaves the folder of the installation unchanged. If the second question appears anyway, answer `n`: the folder belongs to another server. Delete the test folder on the storage when the test is done.
 
 ## Uninstalling
 

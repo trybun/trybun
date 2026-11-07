@@ -43,6 +43,21 @@ You need the deployment package of any release, the copy of `.env` you kept outs
    ./trybun restore
    ```
 
-   When the attached files are kept on an external S3 storage, the restore asks a second question, because their folder still belongs to the old server: "The storage folder … belongs to another Trybun server. Replace its content? [y/N]". Answer `y` when the old server is lost. Answer `n` while the old server still runs, e.g. when you only test a restore: `y` would replace its attached files with those of the backup.
+   When the attached files are kept on an external S3 storage, the restore asks a second question, because their folder still belongs to the old server: "The storage folder … belongs to another Trybun server. Replace its content? [y/N]". Answer `y` when the old server is lost. Answer `n` while the old server still runs: `y` would replace its attached files with those of the backup. To test a restore, follow "Test a restore while the installation runs" below instead.
 
 The users sign in with their passwords and two-factor codes as before. If the `.env` is lost, run `./trybun install` on the new server, set `TRYBUN_BACKUP_PASSPHRASE` and the `TRYBUN_BACKUP_S3_*` variables of the old installation in the new `.env`, and run `./trybun restore`; it brings back the old `.env` too.
+
+## Test a restore while the installation runs
+
+Test a restore on a separate server at least once a quarter, as described in "Onto a new server". When the attached files are kept on an external S3 storage, the restored `.env` points to the folder of the installation you test, so restore the files into a folder of their own:
+
+1. On the storage, create an empty bucket, or a folder outside the one of `TRYBUN_S3_URL`, that the access key of `.env` (`TRYBUN_S3_ACCESS_KEY_ID`) may write to.
+2. Restore into it:
+
+   ```sh
+   ./trybun restore --storage-url https://s3.example.com/my-bucket-restore-test
+   ```
+
+   The restored `.env` uses this folder, and the folder of the installation stays unchanged. An empty folder asks no second question; if it appears anyway, answer `n`. The restore refuses a folder that contains the folder of the installation or lies inside it.
+
+3. Sign in with two-factor authentication and check that your data and files are there. Delete the test folder on the storage afterwards.

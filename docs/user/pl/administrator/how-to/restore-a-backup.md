@@ -43,6 +43,21 @@ Potrzebujesz pakietu wdrożeniowego dowolnego wydania, kopii pliku `.env` przech
    ./trybun restore
    ```
 
-   Gdy załączone pliki są przechowywane w zewnętrznym magazynie S3, odtwarzanie zadaje drugie pytanie, bo ich folder wciąż należy do starego serwera: „The storage folder … belongs to another Trybun server. Replace its content? [y/N]”. Odpowiedz `y`, gdy stary serwer przepadł. Odpowiedz `n`, dopóki stary serwer działa, np. gdy tylko testujesz odtwarzanie: `y` zastąpiłoby jego załączone pliki plikami z kopii zapasowej.
+   Gdy załączone pliki są przechowywane w zewnętrznym magazynie S3, odtwarzanie zadaje drugie pytanie, bo ich folder wciąż należy do starego serwera: „The storage folder … belongs to another Trybun server. Replace its content? [y/N]”. Odpowiedz `y`, gdy stary serwer przepadł. Odpowiedz `n`, dopóki stary serwer działa: `y` zastąpiłoby jego załączone pliki plikami z kopii zapasowej. Aby przetestować odtwarzanie, postępuj zamiast tego według sekcji „Przetestuj odtwarzanie, gdy instalacja działa” poniżej.
 
 Użytkownicy logują się swoimi hasłami i kodami uwierzytelniania dwuskładnikowego tak jak wcześniej. Jeśli plik `.env` przepadł, uruchom `./trybun install` na nowym serwerze, ustaw w nowym pliku `.env` zmienną `TRYBUN_BACKUP_PASSPHRASE` i zmienne `TRYBUN_BACKUP_S3_*` starej instalacji i uruchom `./trybun restore`; przywróci on także stary plik `.env`.
+
+## Przetestuj odtwarzanie, gdy instalacja działa
+
+Przynajmniej raz na kwartał przetestuj odtwarzanie na osobnym serwerze, tak jak opisuje sekcja „Na nowym serwerze”. Gdy załączone pliki są przechowywane w zewnętrznym magazynie S3, odtworzony plik `.env` wskazuje na folder testowanej instalacji, więc odtwórz pliki do osobnego folderu:
+
+1. W magazynie utwórz pusty kubełek albo folder poza folderem z `TRYBUN_S3_URL`, do którego może zapisywać klucz dostępu z pliku `.env` (`TRYBUN_S3_ACCESS_KEY_ID`).
+2. Odtwórz kopię do niego:
+
+   ```sh
+   ./trybun restore --storage-url https://s3.example.com/my-bucket-restore-test
+   ```
+
+   Odtworzony plik `.env` używa tego folderu, a folder instalacji pozostaje bez zmian. Dla pustego folderu nie pada drugie pytanie; jeśli mimo to się pojawi, odpowiedz `n`. Odtwarzanie odmawia folderu, który zawiera folder instalacji albo leży w nim.
+
+3. Zaloguj się z uwierzytelnianiem dwuskładnikowym i sprawdź, czy są Twoje dane i pliki. Potem usuń folder testowy w magazynie.
