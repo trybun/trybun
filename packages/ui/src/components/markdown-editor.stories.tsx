@@ -287,6 +287,53 @@ export const ReadOnly: Story = {
   },
 };
 
+function findTooltip(name: string) {
+  return screen.findByText(name, { selector: '[data-slot=tooltip-content]' }, { timeout: 2000 });
+}
+
+/** "Attach files" shows its name on hover, like the formatting buttons, and keeps it (§18.6). */
+export const AttachFilesTooltip: Story = {
+  args: { onFilesAdd: upload },
+  play: async ({ canvas, userEvent }) => {
+    const button = canvas.getByRole('button', { name: 'Attach files' });
+    await userEvent.hover(button);
+    await waitFor(async () => expect(await findTooltip('Attach files')).toBeVisible());
+    await expect(button).not.toHaveAttribute('aria-describedby');
+    await userEvent.unhover(button);
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Attach files', { selector: '[data-slot=tooltip-content]' }),
+      ).not.toBeInTheDocument(),
+    );
+  },
+};
+
+/** In Polish, the tooltip of "Attach files" is translated; keyboard focus shows it too. */
+export const AttachFilesTooltipPolish: Story = {
+  args: { onFilesAdd: upload },
+  globals: { locale: 'pl' },
+  play: async ({ canvas }) => {
+    const button = canvas.getByRole('button', { name: 'Dołącz pliki' });
+    button.focus();
+    await expect(await findTooltip('Dołącz pliki')).toBeInTheDocument();
+  },
+};
+
+/** "More formatting" shows its name on hover; a click opens its menu and hides the tooltip. */
+export const MoreFormattingTooltip: Story = {
+  globals: viewport('phone'),
+  play: async ({ canvas, userEvent }) => {
+    const button = canvas.getByRole('button', { name: 'More formatting' });
+    await userEvent.hover(button);
+    const tooltip = await findTooltip('More formatting');
+    await waitFor(() => expect(tooltip).toBeVisible());
+    await userEvent.click(button);
+    await expect(await screen.findByRole('menuitem', { name: /Heading/ })).toBeInTheDocument();
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(tooltip).not.toBeInTheDocument());
+  },
+};
+
 export const WithoutFiles: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole('button', { name: 'Attach files' })).toBeNull();
