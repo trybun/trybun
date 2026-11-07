@@ -41,12 +41,21 @@ Conventions: links open in the same tab by default; for documents outside the we
 - An available inline image renders its link with `target="_blank"` and `rel="noopener noreferrer"`, and appends a visually hidden text to the link: `<span className="sr-only"> ({t('opensInNewTab')})</span>`. The accessible name becomes "screenshot.png (opens in a new tab)". The visible name, the 44 px hit area, the focus ring and the thumbnail are unchanged.
 - Every other available file keeps its link exactly as today.
 - New catalogue key `ui.attachmentList.opensInNewTab` in `packages/i18n/messages/en.json` ("opens in a new tab") and `pl.json` („otwiera się w nowej karcie”).
-- The props of `AttachmentItem` do not change; callers need no edit.
+- The props of `AttachmentItem` do not change; the callers' code needs no edit. Their tests do: see "Tests and stories".
 
 ### Tests and stories
 
-- Component tests of `AttachmentItem` (Vitest, jsdom, `@trybun/ui`): an available PNG has `target="_blank"`, `rel="noopener noreferrer"` and the accessible name with "(opens in a new tab)" in EN and PL; an available PDF and an item without `contentType` have neither `target` nor the hint; a non-available image is no link.
-- The stories of `attachment-list.stories.tsx` cover an available image and an available download, with play assertions on `target` and `rel`.
+A component of `@trybun/ui` is tested through the `play` functions of its stories, which run in Chromium with the accessibility check, in EN and PL (§18, "Stories"). jsdom component tests are a pattern of the web application only (§18.7, ADR 0012).
+
+- `attachment-list.stories.tsx`, extending the existing stories:
+  - `AvailableImage`: the link of an available PNG has `target="_blank"`, `rel="noopener noreferrer"` and the accessible name "screenshot.png (opens in a new tab)".
+  - `AvailableFile`: an available text file has no `target` and no hint, and so has an available item without `contentType`, added to this story.
+  - `Polish`: the PNG's accessible name is "screenshot.png (otwiera się w nowej karcie)".
+- The new name makes existing exact-name assertions fail. Testing Library and Playwright match a string `name` exactly, so these queries need the new name (or a regular expression):
+  - `attachment-list.stories.tsx`: `Default`, `AvailableImage` and `StateChanges`.
+  - `apps/web/src/features/attachments/components/ticket-attachments.spec.tsx`.
+  - `apps/web/src/features/tickets/components/portal-views.spec.tsx`.
+  - `apps/web/e2e/portal.spec.ts`.
 
 ## Changes to the system specification
 
@@ -66,7 +75,7 @@ No glossary changes; no new pattern in §18.
 
 ## Risks & Impact Review
 
-Low and fully reversible: two attributes and a hidden text in one component, one catalogue key per language, one sentence of specification. No API, schema or protected contract surface (`BACKWARD_COMPATIBILITY.md`) changes. The list of inline media types is duplicated from the server's rule in the UI; the comment and §13.3 tie them together, and a mismatch only means an image downloads in place or opens in a new tab – never a security effect, because the content endpoint's headers (`sandbox` CSP, `nosniff`) apply in any tab.
+Low and fully reversible: two attributes and a hidden text in one component, one catalogue key per language, one sentence of specification, and the image link's new accessible name in the existing tests. No API, schema or protected contract surface (`BACKWARD_COMPATIBILITY.md`) changes. The list of inline media types is duplicated from the server's rule in the UI; the comment and §13.3 tie them together, and a mismatch only means an image downloads in place or opens in a new tab – never a security effect, because the content endpoint's headers (`sandbox` CSP, `nosniff`) apply in any tab.
 
 ## Resolved assumptions (autonomous defaults)
 
@@ -85,7 +94,7 @@ The ticket left the browser question open with its own fallback; these choices w
 - [ ] Clicking an available image in the attachment list of a ticket and of the ticket form opens it in a new tab; the Trybun tab stays.
 - [ ] The link's accessible name announces the new tab (EN and PL).
 - [ ] A non-image file still downloads from a same-tab link and leaves no empty tab behind.
-- [ ] The stories and component tests cover `target` and `rel`; §13.3 states the behaviour.
+- [ ] The play functions of the stories cover `target`, `rel` and the hint in EN and PL; §13.3 states the behaviour.
 - [ ] Works on phone, tablet and desktop (Rule 9)
 - [ ] User documentation and product tour updated where relevant (Rules 3, 4) – none affected (A5)
 
@@ -93,10 +102,11 @@ The ticket left the browser question open with its own fallback; these choices w
 
 Phase 1 – one pull request, `Closes #246`:
 
-1. Add `ui.attachmentList.opensInNewTab` to `en.json` and `pl.json`; in `AttachmentItem`, add the inline image media types and render `target`, `rel` and the hidden hint for an available inline image. Component tests as in "Tests and stories". The app works; downloads are unchanged.
-2. Extend `attachment-list.stories.tsx` with an available image and an available download and play assertions on `target` and `rel`.
+1. Add `ui.attachmentList.opensInNewTab` to `en.json` and `pl.json`. In `AttachmentItem`, add the inline image media types and render `target`, `rel` and the hidden hint for an available inline image. Update the image link's name in the existing story, component and E2E assertions listed in "Tests and stories". The app works; downloads are unchanged.
+2. Extend the stories `AvailableImage`, `AvailableFile` and `Polish` with the play assertions of "Tests and stories".
 3. Update §13.3 with the sentence above; set this specification to `implemented`, add its changelog entry and move it to `implemented/`.
 
 ## Changelog
 
 - 2026-11-07 – Created (autonomous draft from #246).
+- 2026-11-07 – Review: tests moved to story play functions (§18), existing name assertions listed.
