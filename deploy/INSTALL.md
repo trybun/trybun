@@ -136,7 +136,7 @@ With the attachments on an external storage, the backup's `.env` points to the f
 ./trybun restore --storage-url https://s3.eu-central-1.amazonaws.com/my-bucket-restore-test
 ```
 
-The restore asks no second question for the empty folder and leaves the folder of the installation unchanged. If the second question appears anyway, answer `n`: the folder belongs to another server. Delete the test folder on the storage when the test is done.
+The restore asks no second question for the empty folder and leaves the folder of the installation unchanged. It also empties `TRYBUN_BACKUP_S3_URL` in the restored `.env`, so the test server makes no backups on the external S3 storage and cannot prune the backups of the installation; to back the test server up off-site, set `TRYBUN_BACKUP_S3_URL` to a repository of its own, never the one of the installation. If the second question appears anyway, answer `n`: the folder belongs to another server. Delete the test folder on the storage when the test is done.
 
 ## Uninstalling
 

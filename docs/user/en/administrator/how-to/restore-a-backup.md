@@ -58,6 +58,6 @@ Test a restore on a separate server at least once a quarter, as described in "On
    ./trybun restore --storage-url https://s3.example.com/my-bucket-restore-test
    ```
 
-   The restored `.env` uses this folder, and the folder of the installation stays unchanged. An empty folder asks no second question; if it appears anyway, answer `n`. The restore refuses a folder that contains the folder of the installation or lies inside it.
+   The restored `.env` uses this folder, and the folder of the installation stays unchanged. An empty folder asks no second question; if it appears anyway, answer `n`. The restore refuses a folder that contains the folder of the installation or lies inside it. It also empties `TRYBUN_BACKUP_S3_URL` in the restored `.env`, so the test server makes no backups on the external S3 storage and leaves those of the installation alone; to back it up off-site, set `TRYBUN_BACKUP_S3_URL` to a repository of its own, never the one of the installation.
 
 3. Sign in with two-factor authentication and check that your data and files are there. Delete the test folder on the storage afterwards.

@@ -58,6 +58,6 @@ Przynajmniej raz na kwartał przetestuj odtwarzanie na osobnym serwerze, tak jak
    ./trybun restore --storage-url https://s3.example.com/my-bucket-restore-test
    ```
 
-   Odtworzony plik `.env` używa tego folderu, a folder instalacji pozostaje bez zmian. Dla pustego folderu nie pada drugie pytanie; jeśli mimo to się pojawi, odpowiedz `n`. Odtwarzanie odmawia folderu, który zawiera folder instalacji albo leży w nim.
+   Odtworzony plik `.env` używa tego folderu, a folder instalacji pozostaje bez zmian. Dla pustego folderu nie pada drugie pytanie; jeśli mimo to się pojawi, odpowiedz `n`. Odtwarzanie odmawia folderu, który zawiera folder instalacji albo leży w nim. Opróżnia też `TRYBUN_BACKUP_S3_URL` w odtworzonym pliku `.env`, więc serwer testowy nie tworzy kopii zapasowych w zewnętrznym magazynie S3 i nie narusza kopii instalacji; aby tworzyć jego kopie poza serwerem, ustaw w `TRYBUN_BACKUP_S3_URL` jego własne repozytorium, nigdy repozytorium instalacji.
 
 3. Zaloguj się z uwierzytelnianiem dwuskładnikowym i sprawdź, czy są Twoje dane i pliki. Potem usuń folder testowy w magazynie.
