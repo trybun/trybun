@@ -250,8 +250,8 @@ write_marker() {
 }
 
 # Marks the storage folder as the folder of this server, unless its marker names another server:
-# only a restore takes over the folder of another server (§15.10). Runs as a condition, also in
-# the daily backup, where `set -e` does not apply: explicit returns.
+# only a restore takes over the folder of another server (§15.10). Runs as a condition, where
+# `set -e` does not apply: explicit returns.
 claim_marker() {
   state=$(owner) || return 1
   case $state in
@@ -533,8 +533,17 @@ schedule() {
     sleep "$wait_seconds" &
     wait $!
     # In a subshell, which closes the lock when it ends: the service runs on, and a lock held by
-    # this shell would block every later `./trybun backup`, `restore` and `update`.
-    (backup daily) >/dev/null || log 'Error: the daily backup failed; the next one runs tomorrow.'
+    # this shell would block every later `./trybun backup`, `restore` and `update`. Not as a
+    # condition (`… || log`), where shells ignore `set -e` in the whole subshell, so a failing
+    # step would not stop the backup: `set +e` keeps only this shell running.
+    set +e
+    (
+      set -e
+      backup daily
+    ) >/dev/null
+    status=$?
+    set -e
+    [ "$status" -eq 0 ] || log 'Error: the daily backup failed; the next one runs tomorrow.'
   done
 }
 
