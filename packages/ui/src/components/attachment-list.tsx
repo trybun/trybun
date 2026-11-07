@@ -191,7 +191,7 @@ function AttachmentItem({
 
   const isAvailable = state === 'available';
   const isRemoved = REMOVED_STATES.has(state);
-  const opensInNewTab = contentType !== undefined && INLINE_CONTENT_TYPES.has(contentType);
+  const isInlineImage = contentType !== undefined && INLINE_CONTENT_TYPES.has(contentType);
   const TypeIcon = TYPE_ICONS[fileKind(contentType)];
   const StateIcon = isAvailable ? undefined : STATE_ICONS[state];
   const { value, unit } = fileSize(size);
@@ -233,13 +233,13 @@ function AttachmentItem({
           // opens in a new tab and says so in its accessible name (WCAG G201, §13.3).
           <a
             href={href}
-            target={opensInNewTab ? '_blank' : undefined}
-            rel={opensInNewTab ? 'noopener noreferrer' : undefined}
+            target={isInlineImage ? '_blank' : undefined}
+            rel={isInlineImage ? 'noopener noreferrer' : undefined}
             className="truncate font-medium text-link underline-offset-4 outline-none after:absolute after:inset-0 after:rounded-lg hover:underline focus-visible:after:ring-2 focus-visible:after:ring-ring"
           >
             {fileName}
             {/* The space stays outside the hidden text: some name computations trim a child's text. */}
-            {opensInNewTab && (
+            {isInlineImage && (
               <>
                 {' '}
                 <span className="sr-only">({t('opensInNewTab')})</span>
