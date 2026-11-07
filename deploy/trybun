@@ -449,7 +449,7 @@ restore_configuration() {
 # no quoting in .env. parse_storage_url of docker/backup/backup.sh applies the same rules.
 valid_storage_url() {
   printf '%s\n' "$1" |
-    grep -Eqx "[Hh][Tt][Tt][Pp]([Ss])?://(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(:[0-9]{1,5})?/[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](/[A-Za-z0-9._~%+,:@=!-]*)*" ||
+    grep -Eqx "[Hh][Tt][Tt][Pp]([Ss])?://(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._-]+)(:[0-9]{1,5})?/[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](/[A-Za-z0-9._~%+,:@=!-]*)*" ||
     return 1
   case $(printf '%s/\n' "${1#*://*/}" | sed 's/%2[Ee]/./g') in
     ./* | ../* | */./* | */../*) return 1 ;;

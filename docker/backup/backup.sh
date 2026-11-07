@@ -37,7 +37,7 @@ COMPOSE_SEAWEEDFS=http://seaweedfs:8333
 # A storage URL as the server reads TRYBUN_S3_URL (§15.3) and valid_storage_url of deploy/trybun
 # accepts it: http or https, a host, an optional port, a bucket name of S3 and an optional folder,
 # no credentials, query or fragment, only characters that need no quoting in .env.
-STORAGE_URL_PATTERN='[Hh][Tt][Tt][Pp]([Ss])?://(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(:[0-9]{1,5})?/[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](/[A-Za-z0-9._~%+,:@=!-]*)*'
+STORAGE_URL_PATTERN='[Hh][Tt][Tt][Pp]([Ss])?://(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._-]+)(:[0-9]{1,5})?/[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](/[A-Za-z0-9._~%+,:@=!-]*)*'
 
 log() {
   printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >&2
@@ -174,6 +174,7 @@ configure_storage() {
   export RCLONE_CONFIG_OBJECTS_TYPE=s3
   if is_compose_seaweedfs; then
     export RCLONE_CONFIG_OBJECTS_PROVIDER=SeaweedFS
+    unset RCLONE_CONFIG_OBJECTS_NO_CHECK_BUCKET
   else
     export RCLONE_CONFIG_OBJECTS_PROVIDER=Other
     # The API creates a missing bucket when it starts; rclone would try to create it before every

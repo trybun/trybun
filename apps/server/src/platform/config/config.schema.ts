@@ -14,6 +14,15 @@ function isSet(value: string | undefined): boolean {
 /** A bucket name of S3: 3–63 lower-case letters, digits, dots and hyphens. */
 const BUCKET_NAME = /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/;
 
+const STORAGE_URL_PATTERN =
+  /^[Hh][Tt][Tt][Pp][Ss]?:\/\/(?:\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._-]+)(?::[0-9]{1,5})?\/[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](?:\/[A-Za-z0-9._~%+,:@=!-]*)*$/;
+
+/** Whether the path of a URL, as written, has a `.` or `..` segment, also percent-encoded. */
+function hasDotSegment(url: string): boolean {
+  const path = url.replace(/^[^:]+:\/\/[^/]*/, '').replace(/%2e/gi, '.');
+  return path.split('/').some((segment) => segment === '.' || segment === '..');
+}
+
 /** The segments of a URL path, without empty ones (`/trybun/files/` → `trybun`, `files`). */
 function pathSegments(url: string): string[] {
   return new URL(url).pathname.split('/').filter((segment) => segment !== '');
@@ -25,6 +34,13 @@ function pathSegments(url: string): string[] {
  */
 const storageUrlSchema = z
   .url({ protocol: /^https?$/ })
+  // The characters the backup service and `./trybun restore` accept, so a URL the API runs with
+  // is never refused by them (§15.3): a host name or IP, a bucket, folder segments without dot
+  // segments.
+  .refine(
+    (url) => STORAGE_URL_PATTERN.test(url) && !hasDotSegment(url),
+    'Must be http(s)://host[:port]/bucket[/folder] without dot segments or other characters',
+  )
   .refine((url) => BUCKET_NAME.test(pathSegments(url)[0] ?? ''), 'Must name a bucket in the path')
   .refine((url) => {
     const { username, password, search, hash } = new URL(url);

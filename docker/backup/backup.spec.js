@@ -196,6 +196,7 @@ describe('the storage folder of TRYBUN_S3_URL', () => {
       'objects:bucket/trybun',
     ],
     ['http://s3.example.com/bucket//folder/', 'http://s3.example.com', 'objects:bucket/folder'],
+    ['http://my_minio:9000/bucket/trybun', 'http://my_minio:9000', 'objects:bucket/trybun'],
   ])('reads %s like the server', (url, endpoint, remote) => {
     storage({ 'bucket/x': 'x' });
     const result = backupSh(['rclone', 'lsf', 'objects:'], { TRYBUN_S3_URL: url });
