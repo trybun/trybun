@@ -68,6 +68,12 @@ describe('loadConfig', () => {
     });
   });
 
+  it('accepts the storage URLs the backup service accepts (§15.3)', () => {
+    for (const url of ['http://my_minio:9000/trybun', 'HTTPS://S3.example.com/trybun/a~b']) {
+      expect(loadConfig({ ...TEST_ENV, TRYBUN_S3_URL: url }).storage.bucket).toBe('trybun');
+    }
+  });
+
   it('takes the address of clamd and the maximum attachment size', () => {
     const config = loadConfig({
       ...TEST_ENV,
@@ -135,6 +141,9 @@ describe('loadConfig', () => {
     [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com' }, 'TRYBUN_S3_URL'],
     [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/My_Bucket' }, 'TRYBUN_S3_URL'],
     [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://key:secret@s3.example.com/trybun' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/trybun/a/../b' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/trybun/%2e%2e/b' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/trybun/files(1)' }, 'TRYBUN_S3_URL'],
     [{ ...TEST_ENV, TRYBUN_S3_ACCESS_KEY_ID: undefined }, 'TRYBUN_S3_ACCESS_KEY_ID'],
     [{ ...TEST_ENV, TRYBUN_S3_SECRET_ACCESS_KEY: '' }, 'TRYBUN_S3_SECRET_ACCESS_KEY'],
     [{ ...TEST_ENV, TRYBUN_S3_REGION: '' }, 'TRYBUN_S3_REGION'],

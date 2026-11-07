@@ -43,4 +43,30 @@ You need the deployment package of any release, the copy of `.env` you kept outs
    ./trybun restore
    ```
 
+   When the attached files are kept on an external S3 storage, the restore asks a second question, because their folder still belongs to the old server: "The storage folder … belongs to another Trybun server. Replace its content? [y/N]". Answer `y` when the old server is lost. Answer `n` while the old server still runs: `y` would replace its attached files with those of the backup. To test a restore, follow "Test a restore while the installation runs" below instead.
+
+   The restore also asks before it replaces a folder that holds files but no mark of a Trybun server, because it may belong to another application: "The storage folder … holds objects but no Trybun marker. Replace its content? [y/N]". An empty folder asks nothing.
+
 The users sign in with their passwords and two-factor codes as before. If the `.env` is lost, run `./trybun install` on the new server, set `TRYBUN_BACKUP_PASSPHRASE` and the `TRYBUN_BACKUP_S3_*` variables of the old installation in the new `.env`, and run `./trybun restore`; it brings back the old `.env` too.
+
+## Test a restore while the installation runs
+
+Test a restore on a separate server at least once a quarter, as described in "Onto a new server", but restore with `--test`. A test restore empties `TRYBUN_BACKUP_S3_URL` in the restored `.env`, so the test server makes no backups on the external S3 storage and leaves those of the installation alone; to back it up off-site, set `TRYBUN_BACKUP_S3_URL` to a repository of its own, never the one of the installation.
+
+- When the attached files are kept in SeaweedFS on the server (the default), restore with:
+
+  ```sh
+  ./trybun restore --test
+  ```
+
+- When they are kept on an external S3 storage, the restored `.env` points to the folder of the installation you test, so restore the files into a folder of their own. `--test` without it is refused.
+  1. On the storage, create an empty bucket, or a folder outside the one of `TRYBUN_S3_URL` and of `TRYBUN_BACKUP_S3_URL`, that the access key of `.env` (`TRYBUN_S3_ACCESS_KEY_ID`) may write to.
+  2. Restore into it:
+
+     ```sh
+     ./trybun restore --test --storage-url https://s3.example.com/my-bucket-restore-test
+     ```
+
+     The restored `.env` uses this folder, and the folder of the installation stays unchanged. An empty folder asks no second question; if it appears anyway, answer `n`. The restore refuses a folder that contains the folder of the installation or of the backups, or lies inside one of them.
+
+Then sign in with two-factor authentication and check that your data and files are there. Delete the test folder on an external storage afterwards.
