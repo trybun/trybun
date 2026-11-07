@@ -100,7 +100,12 @@ test.describe('the portal of an end user with one project', () => {
     await expect
       .poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth))
       .toBe(1);
-    await expect(portal.attachments.getByRole('link', { name: 'screenshot.png' })).toBeVisible();
+    // The image opens in a new tab, so the application tab stays (§13.3).
+    const attachmentLink = portal.attachments.getByRole('link', {
+      name: 'screenshot.png (opens in a new tab)',
+    });
+    await expect(attachmentLink).toBeVisible();
+    await expect(attachmentLink).toHaveAttribute('target', '_blank');
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
     await expectTouchTarget(

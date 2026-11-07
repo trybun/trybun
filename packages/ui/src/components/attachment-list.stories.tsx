@@ -142,11 +142,25 @@ export const AvailableImage: Story = {
 
 // Any other file is a download: a link in the same tab, without the new-tab hint.
 export const AvailableFile: Story = {
-  args: { items: only('available') },
+  args: {
+    items: [
+      ...only('available'),
+      {
+        id: '8',
+        fileName: 'contract.pdf',
+        size: 98_304,
+        contentType: 'application/pdf',
+        href: '#contract',
+        state: 'available',
+      },
+    ],
+  },
   play: async ({ canvas }) => {
-    const link = canvas.getByRole('link', { name: 'server-log-2026-11-06.txt' });
-    await expect(link).not.toHaveAttribute('target');
-    await expect(link).not.toHaveAttribute('rel');
+    for (const name of ['server-log-2026-11-06.txt', 'contract.pdf']) {
+      const link = canvas.getByRole('link', { name });
+      await expect(link).not.toHaveAttribute('target');
+      await expect(link).not.toHaveAttribute('rel');
+    }
   },
 };
 

@@ -18,6 +18,10 @@ An available raster image in the attachment list opens in a new tab (`target="_b
 - Downloads, Markdown images, the content endpoint and the API (spec A1, A3)
 - Moving the spec to `implemented/`: the spec reaches `main` through #252, so the move follows after that merge
 
+## Notes
+
+`@trybun/ui` has no jsdom tests: its story play tests (Vitest, Chromium) are the component tests the spec asks for.
+
 ## Risks
 
 Low. The list of inline media types is duplicated from §13.3; a comment ties the two together.
