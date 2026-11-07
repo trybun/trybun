@@ -1,7 +1,7 @@
 # 0008 – Attachment serving
 
 - Status: accepted
-- Date: 2026-10-25, its open questions answered by the maintainer on 2026-11-06, amended by the change specification of S1-08 and its implementation, accepted on 2026-11-06 with the PR that finished S1-08 (#247), as that change specification, approved by the maintainer, provides
+- Date: 2026-10-25, its open questions answered by the maintainer on 2026-11-06, amended by the change specification of S1-08 and its implementation, accepted by the maintainer on 2026-11-07 with S1-08 (#244, #247)
 - Deciders: the maintainer (`@dtk7c2`)
 - Specification: [§13.3](../spec/13-non-functional.md), [§13.5](../spec/13-non-functional.md), [§14.2](../spec/14-architecture.md), [§14.4](../spec/14-architecture.md), [§17.2](../spec/17-conventions.md), [§18.3](../spec/18-code-patterns.md)
 - Change specification of the gaps found: [`2026-10-25-attachment-serving.md`](../../.ai/specs/implemented/2026-10-25-attachment-serving.md) (implemented)
