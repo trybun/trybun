@@ -269,6 +269,50 @@ describe('a backup repository and the storage folder', () => {
   });
 });
 
+describe('the daily backup of the service', () => {
+  // The first wait returns, so the service runs one daily backup; the second ends the service.
+  const SLEEP = `#!/bin/sh
+if [ -e "$STUB_S3/../slept" ]; then kill -TERM "$PPID"; else : >"$STUB_S3/../slept"; fi
+`;
+  // Writes a part of the dump and fails, as when the database restarts during the dump.
+  const FAILING_PG_DUMP = `#!/bin/sh
+for argument; do case $argument in --file=*) printf 'part' >"\${argument#--file=}" ;; esac; done
+echo 'pg_dump: error: connection to server lost' >&2
+exit 1
+`;
+
+  function stub(name, script) {
+    writeFileSync(join(folder, 'bin', name), script);
+    chmodSync(join(folder, 'bin', name), 0o755);
+  }
+
+  beforeEach(() => {
+    stub('sleep', SLEEP);
+    storage({ 'trybun/available/a': 'a' });
+  });
+
+  it('stores the set', () => {
+    const result = backupSh(['schedule']);
+
+    expect(result.status).toBe(0);
+    expect(result.log).toMatch(/restic .* backup --json .*--tag daily /);
+    expect(result.stderr).not.toContain('the daily backup failed');
+  });
+
+  it('stops at a failing pg_dump, stores nothing and runs on', () => {
+    stub('pg_dump', FAILING_PG_DUMP);
+    const result = backupSh(['schedule']);
+
+    expect(result.status).toBe(0);
+    expect(existsSync(join(folder, 'data/set/databases/trybun.dump'))).toBe(false);
+    expect(result.stderr).not.toContain('Dumping the database keycloak');
+    expect(result.log).not.toMatch(/rclone sync|restic .* backup /);
+    expect(result.stderr.match(/Error: the daily backup failed/g)).toHaveLength(1);
+    // The service waits for the next backup.
+    expect(result.stderr.match(/Next backup at 03:00 UTC/g)).toHaveLength(2);
+  });
+});
+
 describe('the marker of the storage folder', () => {
   it('is written by a backup into an unmarked folder', () => {
     storage({ 'bucket/trybun/available/a': 'a' });
