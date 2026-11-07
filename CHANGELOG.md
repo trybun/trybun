@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/trybun/trybun/compare/v0.4.0...v0.5.0) (2026-11-07)
+
+
+### Added
+
+* add attachments (S1-08) ([#244](https://github.com/trybun/trybun/issues/244)) ([05c15ea](https://github.com/trybun/trybun/commit/05c15eaa37fd6bcc956ba206ec2220b10c18ed48))
+* **deploy:** back up and restore the attachment storage (S1-08) ([#247](https://github.com/trybun/trybun/issues/247)) ([b46c5f4](https://github.com/trybun/trybun/commit/b46c5f4c1c123fb3e9e696a4c10c507ec62cbad7))
+* **server:** implement the permission layer (S1-04) ([#225](https://github.com/trybun/trybun/issues/225)) ([21c748c](https://github.com/trybun/trybun/commit/21c748c0d07c8bfc4767fe8747add6b5bb00d8a7))
+* **server:** implement the ticket model (S1-05) ([#226](https://github.com/trybun/trybun/issues/226)) ([99975f0](https://github.com/trybun/trybun/commit/99975f0289fcad6dc1242b859cbc94c78b068a4d))
+* **server:** implement ticket statuses and resolution confirmation (S1-06) ([#231](https://github.com/trybun/trybun/issues/231)) ([8152ff0](https://github.com/trybun/trybun/commit/8152ff045d439d393d78c8756fd1dc438eb5a729))
+* **ui:** add the GFM editor and the shared Markdown pipeline (S1-07) ([#234](https://github.com/trybun/trybun/issues/234)) ([153a215](https://github.com/trybun/trybun/commit/153a215e1a2bd5001f6bc3b6983f3c617176723b))
+* **web:** add the end-user portal (S1-09) ([#240](https://github.com/trybun/trybun/issues/240)) ([9ee9b0e](https://github.com/trybun/trybun/commit/9ee9b0e31cdd4ae80822d6f646a2a703b08f01ef))
+
+
+### Fixed
+
+* **deploy:** stop the daily backup at its first failing step ([#249](https://github.com/trybun/trybun/issues/249)) ([#250](https://github.com/trybun/trybun/issues/250)) ([3fb894c](https://github.com/trybun/trybun/commit/3fb894c106ed19c5e79329d9113a4e9700f9da41))
+* **deps:** bump fast-uri from 3.1.8 to 3.1.9 ([#223](https://github.com/trybun/trybun/issues/223)) ([bd019e1](https://github.com/trybun/trybun/commit/bd019e1533197cda6bc75f56a5e724224accf85c))
+* **deps:** bump qs from 6.16.0 to 6.17.1 ([#235](https://github.com/trybun/trybun/issues/235)) ([233386e](https://github.com/trybun/trybun/commit/233386e9d6ca2ba7720893fd060bf53b7d41cf9f))
+* **server:** lock the organization of a new ticket's snapshot (S1-05) ([#228](https://github.com/trybun/trybun/issues/228)) ([6ff9b47](https://github.com/trybun/trybun/commit/6ff9b477baba527a450efeb4db47eb6b4ddad8a1))
+* **server:** re-check the reason of the unassignment under a lock in every batch ([#229](https://github.com/trybun/trybun/issues/229)) ([#230](https://github.com/trybun/trybun/issues/230)) ([8e8675c](https://github.com/trybun/trybun/commit/8e8675c21085a8816b20374b3281fbbe8c209524))
+
 ## [0.4.0](https://github.com/trybun/trybun/compare/v0.3.0...v0.4.0) (2026-11-03)
 
 
