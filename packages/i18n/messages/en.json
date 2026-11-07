@@ -724,7 +724,8 @@
       "infected": "File removed: malware detected",
       "rejected": "File removed: could not be checked",
       "delete": "Delete {name}",
-      "announcement": "{name}: {status}"
+      "announcement": "{name}: {status}",
+      "opensInNewTab": "opens in a new tab"
     }
   },
   "errors": {

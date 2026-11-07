@@ -176,7 +176,9 @@ describe('TicketView', () => {
     renderInApp(<TicketView identifier="CP-7" />);
 
     const attachments = await screen.findByRole('region', { name: 'Attachments' });
-    expect(within(attachments).getByRole('link', { name: 'screenshot.png' })).toBeDefined();
+    expect(
+      within(attachments).getByRole('link', { name: 'screenshot.png (opens in a new tab)' }),
+    ).toBeDefined();
     expect(
       within(attachments).getByRole('button', { name: 'Delete screenshot.png' }),
     ).toBeDefined();

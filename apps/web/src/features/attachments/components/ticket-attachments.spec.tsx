@@ -66,9 +66,13 @@ describe('TicketAttachments', () => {
     renderInApp(<TicketAttachments ticketId={TICKET_ID} />);
 
     const section = await screen.findByRole('region', { name: 'Attachments' });
-    expect(within(section).getByRole('link', { name: 'screenshot.png' }).getAttribute('href')).toBe(
-      `/api/v1/attachments/${OWN_ID}/content`,
-    );
+    // An image opens in a new tab, so the application tab stays (§13.3).
+    const image = within(section).getByRole('link', {
+      name: 'screenshot.png (opens in a new tab)',
+    });
+    expect(image.getAttribute('href')).toBe(`/api/v1/attachments/${OWN_ID}/content`);
+    expect(image.getAttribute('target')).toBe('_blank');
+    expect(image.getAttribute('rel')).toBe('noopener noreferrer');
     expect(within(section).getByText('Checking…')).toBeDefined();
     expect(within(section).getByText('File removed: malware detected')).toBeDefined();
     expect(within(section).queryByRole('link', { name: 'invoice.pdf' })).toBeNull();
@@ -115,7 +119,11 @@ describe('TicketAttachments', () => {
     });
     // The timeline of the ticket records the deletion.
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity-events', 'list', TICKET_ID] });
-    await waitFor(() => expect(screen.queryByRole('link', { name: 'screenshot.png' })).toBeNull());
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('link', { name: 'screenshot.png (opens in a new tab)' }),
+      ).toBeNull(),
+    );
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     // The Delete button is gone with the file: the focus stays in the list, not at the page top.
     await waitFor(() =>
@@ -134,6 +142,6 @@ describe('TicketAttachments', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(fake.callsTo('DELETE /api/v1/attachments/{attachmentId}')).toHaveLength(0);
-    expect(screen.getByRole('link', { name: 'screenshot.png' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'screenshot.png (opens in a new tab)' })).toBeDefined();
   });
 });

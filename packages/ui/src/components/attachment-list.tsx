@@ -61,6 +61,17 @@ const FILE_KINDS: [RegExp, keyof typeof TYPE_ICONS][] = [
   [/(?:^text\/)|(?:pdf|word|opendocument\.text|rtf)/, 'text'],
 ];
 
+/**
+ * The media types the content endpoint serves inline – raster images (§13.3). An available one
+ * opens in a new tab, so the application tab stays; every other file is a download.
+ */
+const INLINE_CONTENT_TYPES: ReadonlySet<string> = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+]);
+
 function fileKind(contentType: string | undefined): keyof typeof TYPE_ICONS {
   return FILE_KINDS.find(([pattern]) => pattern.test(contentType ?? ''))?.[1] ?? 'other';
 }
@@ -180,6 +191,7 @@ function AttachmentItem({
 
   const isAvailable = state === 'available';
   const isRemoved = REMOVED_STATES.has(state);
+  const opensInNewTab = contentType !== undefined && INLINE_CONTENT_TYPES.has(contentType);
   const TypeIcon = TYPE_ICONS[fileKind(contentType)];
   const StateIcon = isAvailable ? undefined : STATE_ICONS[state];
   const { value, unit } = fileSize(size);
@@ -217,12 +229,22 @@ function AttachmentItem({
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         {isAvailable ? (
-          // The `after` element stretches the link over the item: a 44 px target (§2.9).
+          // The `after` element stretches the link over the item: a 44 px target (§2.9). An image
+          // opens in a new tab and says so in its accessible name (WCAG G201, §13.3).
           <a
             href={href}
+            target={opensInNewTab ? '_blank' : undefined}
+            rel={opensInNewTab ? 'noopener noreferrer' : undefined}
             className="truncate font-medium text-link underline-offset-4 outline-none after:absolute after:inset-0 after:rounded-lg hover:underline focus-visible:after:ring-2 focus-visible:after:ring-ring"
           >
             {fileName}
+            {/* The space stays outside the hidden text: some name computations trim a child's text. */}
+            {opensInNewTab && (
+              <>
+                {' '}
+                <span className="sr-only">({t('opensInNewTab')})</span>
+              </>
+            )}
           </a>
         ) : (
           <span className={cn('truncate font-medium', isRemoved && 'text-muted-foreground')}>

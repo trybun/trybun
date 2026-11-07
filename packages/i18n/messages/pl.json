@@ -724,7 +724,8 @@
       "infected": "Plik usunięty: wykryto złośliwe oprogramowanie",
       "rejected": "Plik usunięty: nie można go sprawdzić",
       "delete": "Usuń {name}",
-      "announcement": "{name}: {status}"
+      "announcement": "{name}: {status}",
+      "opensInNewTab": "otwiera się w nowej karcie"
     }
   },
   "errors": {
