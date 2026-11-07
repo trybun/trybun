@@ -698,6 +698,41 @@ describe('./trybun restore', () => {
         BACKUP_ENV.replace(`TRYBUN_S3_URL=${BACKUP_FOLDER}`, `TRYBUN_S3_URL=${TEST_FOLDER}`),
       );
       expect(statSync(envPath()).mode & 0o777).toBe(0o600);
+      // No off-site backups were configured, so nothing to say about them.
+      expect(result.stdout).not.toContain('TRYBUN_BACKUP_S3_URL');
+    });
+
+    describe('with backups on an external S3 storage', () => {
+      const BACKUP_REPOSITORY = 'https://backups.example.com/bucket/trybun';
+      const OFF_SITE_ENV = `${BACKUP_ENV}TRYBUN_BACKUP_S3_URL=${BACKUP_REPOSITORY}\nTRYBUN_BACKUP_S3_ACCESS_KEY_ID=backup-key\nTRYBUN_BACKUP_S3_SECRET_ACCESS_KEY=backup-secret\n`;
+      const NOTICE = `TRYBUN_BACKUP_S3_URL of .env was emptied, so this test server makes no backups on the external S3 storage and leaves the backups of ${BACKUP_REPOSITORY} untouched. To back it up off-site, set TRYBUN_BACKUP_S3_URL to a repository of its own, not that one.`;
+
+      it('empties TRYBUN_BACKUP_S3_URL of the restored .env and says so', () => {
+        backupWithEnv(OFF_SITE_ENV);
+        const result = trybun(['restore', '--storage-url', TEST_FOLDER], {
+          input: 'y\n',
+          ...NEW_FOLDER,
+        });
+
+        expect(result.status).toBe(0);
+        // The line stays with an empty value; the unused credentials stay unchanged.
+        expect(readFileSync(envPath(), 'utf8')).toBe(
+          OFF_SITE_ENV.replace(
+            `TRYBUN_S3_URL=${BACKUP_FOLDER}`,
+            `TRYBUN_S3_URL=${TEST_FOLDER}`,
+          ).replace(`TRYBUN_BACKUP_S3_URL=${BACKUP_REPOSITORY}`, 'TRYBUN_BACKUP_S3_URL='),
+        );
+        expect(result.stdout).toContain(NOTICE);
+      });
+
+      it('keeps TRYBUN_BACKUP_S3_URL without --storage-url', () => {
+        backupWithEnv(OFF_SITE_ENV);
+        const result = trybun('restore', { input: 'y\n' });
+
+        expect(result.status).toBe(0);
+        expect(readFileSync(envPath(), 'utf8')).toBe(OFF_SITE_ENV);
+        expect(result.stdout).not.toContain('TRYBUN_BACKUP_S3_URL');
+      });
     });
 
     it('sets TRYBUN_S3_URL in a restored .env that uses the default folder', () => {

@@ -391,9 +391,14 @@ restore_configuration() {
   tar -xf "$temporary/configuration.tar" -C "$temporary/files"
   [ -f "$temporary/files/.env" ] || fail 'The backup contains no .env. Nothing was changed.'
   if [ -n "$target_storage_url" ]; then
-    # --storage-url: the restored .env uses that folder instead of the backup's one.
+    # --storage-url: the restored .env uses that folder instead of the backup's one. A test
+    # restore must not back up into the repository of the server it copies, whose old snapshots
+    # its daily `forget` would prune (same host name), so TRYBUN_BACKUP_S3_URL is emptied; without
+    # it the backup service makes no off-site backup (the credentials alone are not used).
+    backup_s3_url=$(sed -n 's/^TRYBUN_BACKUP_S3_URL=//p' "$temporary/files/.env" | tail -n 1)
     TRYBUN_RESTORE_STORAGE_URL=$target_storage_url awk '
       /^TRYBUN_S3_URL=/ { if (!done) print "TRYBUN_S3_URL=" ENVIRON["TRYBUN_RESTORE_STORAGE_URL"]; done = 1; next }
+      /^TRYBUN_BACKUP_S3_URL=/ { print "TRYBUN_BACKUP_S3_URL="; next }
       { print }
       END { if (!done) print "TRYBUN_S3_URL=" ENVIRON["TRYBUN_RESTORE_STORAGE_URL"] }
     ' "$temporary/files/.env" >"$temporary/env"
@@ -465,6 +470,7 @@ restore() {
   replace_objects=
   target_storage_url=
   storage_url_given=
+  backup_s3_url=
   while [ "$#" -gt 0 ]; do
     argument=$1
     shift
@@ -518,6 +524,8 @@ restore() {
     fail 'Trybun did not start after the restore. See docker compose ps and docker compose logs <service>.'
   say "Restored the backup $backup_id."
   [ -z "$target_storage_url" ] || say "The attachments are in $target_storage_url (TRYBUN_S3_URL of .env)."
+  [ -z "$backup_s3_url" ] ||
+    say "TRYBUN_BACKUP_S3_URL of .env was emptied, so this test server makes no backups on the external S3 storage and leaves the backups of $backup_s3_url untouched. To back it up off-site, set TRYBUN_BACKUP_S3_URL to a repository of its own, not that one."
 }
 
 # --- Updates (§15.7) ---
