@@ -31,6 +31,8 @@ Build phase 4 of the approved change specification (Q1, Q13): every backup copie
 
 ## Progress
 
+PR: #247
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Backup and restore of the storage folder
@@ -46,5 +48,5 @@ Build phase 4 of the approved change specification (Q1, Q13): every backup copie
 
 ### Phase 3: Validation and review
 
-- [ ] 3.1 Full validation gate
-- [ ] 3.2 Review pass
+- [x] 3.1 Full validation gate — 1454fce
+- [x] 3.2 Review pass — 07a563d
