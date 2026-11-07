@@ -363,16 +363,23 @@ function MarkdownEditor({
               })}
               {menuButtons.length > 0 && (
                 <DropdownMenu>
-                  <ToolbarPrimitive.Button
-                    render={
-                      <DropdownMenuTrigger
-                        render={<Button type="button" variant="ghost" size="icon" />}
-                      />
-                    }
-                    aria-label={t('moreFormatting')}
-                  >
-                    <EllipsisIcon aria-hidden />
-                  </ToolbarPrimitive.Button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <ToolbarPrimitive.Button
+                          render={
+                            <DropdownMenuTrigger
+                              render={<Button type="button" variant="ghost" size="icon" />}
+                            />
+                          }
+                          aria-label={t('moreFormatting')}
+                        />
+                      }
+                    >
+                      <EllipsisIcon aria-hidden />
+                    </TooltipTrigger>
+                    <TooltipContent>{t('moreFormatting')}</TooltipContent>
+                  </Tooltip>
                   <DropdownMenuContent align="end" className="w-auto">
                     {menuButtons.map((button) => {
                       const Icon = button.icon;
@@ -395,13 +402,20 @@ function MarkdownEditor({
                 </DropdownMenu>
               )}
               {onFilesAdd !== undefined && (
-                <ToolbarPrimitive.Button
-                  render={<Button type="button" variant="ghost" size="icon" />}
-                  aria-label={t('attachFiles')}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <PaperclipIcon aria-hidden />
-                </ToolbarPrimitive.Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <ToolbarPrimitive.Button
+                        render={<Button type="button" variant="ghost" size="icon" />}
+                        aria-label={t('attachFiles')}
+                        onClick={() => fileInputRef.current?.click()}
+                      />
+                    }
+                  >
+                    <PaperclipIcon aria-hidden />
+                  </TooltipTrigger>
+                  <TooltipContent>{t('attachFiles')}</TooltipContent>
+                </Tooltip>
               )}
             </ToolbarPrimitive.Root>
           )}
