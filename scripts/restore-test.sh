@@ -4,12 +4,14 @@
 # attachment folder of SeaweedFS and records in the system database, backs up to an S3 storage
 # outside the server, destroys the server (containers, volumes, folder), restores onto a new one
 # from the deployment package, .env and the passphrase alone, and checks that the user signs in
-# with the same ID and the objects and records are the same. A second pair of servers keeps its
-# attachments on that S3 storage instead of SeaweedFS (§15.10): the restore refuses the folder of
-# the lost server without a terminal, restores a test copy into another folder with --storage-url
-# while the folder of the backup stays unchanged and the copy backs up nowhere off-site, and
-# replaces the folder of the lost server with --replace-foreign-objects, bringing back an object
-# deleted after the backup.
+# with the same ID and the objects and records are the same; that restore is a test restore
+# (--test), which empties the off-site repository of the restored .env. A second pair of servers
+# keeps its attachments on that S3 storage instead of SeaweedFS (§15.10): the restore refuses the
+# folder of the lost server without a terminal, a test restore without --storage-url, folders that
+# overlap the folder or the repository of the backup and a folder with objects but no marker;
+# it restores a test copy into another folder with --test --storage-url while the folder of the
+# backup stays unchanged and the copy backs up nowhere off-site, and replaces the folder of the
+# lost server with --replace-foreign-objects, bringing back an object deleted after the backup.
 # Usage: scripts/restore-test.sh <deployment package archive>
 # Needs Docker, free ports 80 and 443, and the images of the release (pulled or loaded).
 set -eu
@@ -181,12 +183,14 @@ unpack server-a
 cd "$work/server-a"
 
 step 'The S3 storage of the backups: SeaweedFS of the package, outside the server'
-# On the address of the host in Docker's default bridge network, which the containers reach.
+# On the address of the host in Docker's default bridge network, which the containers reach. With
+# volumes of 64 MB: with the default of 1 GB, the free disk of a runner may not hold the volumes
+# of its buckets.
 gateway=$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')
 docker run --detach --name "$s3" --publish "$gateway:8334:8333" \
   --env AWS_ACCESS_KEY_ID=restore-test --env AWS_SECRET_ACCESS_KEY=restore-test-secret \
   "$(sed -n 's/^ *image: \(chrislusf\/seaweedfs:.*\)$/\1/p' compose.yaml)" \
-  server -dir=/data -s3 -master.telemetry=false >/dev/null
+  server -dir=/data -s3 -master.telemetry=false -master.volumeSizeLimitMB=64 >/dev/null
 until docker exec "$s3" wget -q -O /dev/null http://127.0.0.1:8333/healthz 2>/dev/null; do sleep 2; done
 
 install_server restore-test
@@ -223,8 +227,14 @@ step 'Destroying the first server'
 destroy "$work/kept.env"
 
 step 'Restoring onto a new server from the deployment package, .env and the passphrase'
-# A new SeaweedFS has no marker, so the restore asks no second question.
-restore_onto server-b "$work/kept.env"
+# A new SeaweedFS has no marker, so the restore asks no second question. As the quarterly test
+# restore: --test, so the new server makes no backups into the repository of the first one.
+restore_onto server-b "$work/kept.env" --test >"$work/test.log"
+cat "$work/test.log"
+[ "$(grep '^TRYBUN_BACKUP_S3_URL=' .env)" = 'TRYBUN_BACKUP_S3_URL=' ] ||
+  fail 'the test restore kept TRYBUN_BACKUP_S3_URL of the backup.'
+grep -qF 'TRYBUN_BACKUP_S3_URL of .env was emptied' "$work/test.log" ||
+  fail 'the test restore did not say that the new server makes no off-site backups.'
 
 step 'Checking the restored data'
 signed_in=$(sign_in "$password")
@@ -280,8 +290,16 @@ grep -qF "The storage folder $external belongs to another Trybun server" "$work/
   fail 'the restore did not say why it refused.'
 [ "$(objects "$folder")" = "$objects_after" ] || fail 'the refused restore changed the storage folder.'
 
+step 'Refusing a test restore of the external storage without --storage-url'
+if restore_onto server-d "$work/kept-external.env" --test 2>"$work/external.log"; then
+  fail 'the test restore accepted the folder of the backup on the external storage.'
+fi
+cat "$work/external.log" >&2
+grep -qF "The attachments of the backup are on the external storage $external" "$work/external.log" ||
+  fail 'the test restore did not ask for --storage-url.'
+
 step 'Refusing a --storage-url folder that contains the folder of the backup'
-if restore_onto server-d "$work/kept-external.env" --storage-url "http://$gateway:8334/trybun-attachments" 2>"$work/overlap.log"; then
+if restore_onto server-d "$work/kept-external.env" --test --storage-url "http://$gateway:8334/trybun-attachments" 2>"$work/overlap.log"; then
   fail 'the restore accepted a --storage-url folder that contains the folder of the backup.'
 fi
 cat "$work/overlap.log" >&2
@@ -289,14 +307,33 @@ grep -qF "overlaps the storage folder $external of the backup" "$work/overlap.lo
   fail 'the restore did not say why it refused the overlapping folder.'
 [ "$(objects "$folder")" = "$objects_after" ] || fail 'the refused restore changed the storage folder.'
 
-step 'Restoring a test copy into another folder with --storage-url, without a second question'
-# As the quarterly test restore while production runs: a new, empty folder has no marker.
-copy=http://$gateway:8334/trybun-attachments/restore-test-copy
-copy_folder=objects:trybun-attachments/restore-test-copy
+step 'Refusing a --storage-url folder inside the backup repository'
 production_backups=$(sed -n 's/^TRYBUN_BACKUP_S3_URL=//p' "$work/kept-external.env")
 backups_before=$(off_site_backups "$production_backups")
 [ -n "$backups_before" ] || fail 'the backups of the lost server on the S3 storage could not be listed.'
-restore_onto server-d "$work/kept-external.env" --storage-url "$copy" >"$work/copy.log"
+if restore_onto server-d "$work/kept-external.env" --test --storage-url "$production_backups/test" 2>"$work/repository.log"; then
+  fail 'the restore accepted a --storage-url folder inside the backup repository.'
+fi
+cat "$work/repository.log" >&2
+grep -qF 'overlaps the backup repository' "$work/repository.log" ||
+  fail 'the restore did not say why it refused the folder inside the backup repository.'
+
+step 'Refusing a --storage-url folder with objects but without a marker'
+unmarked=objects:trybun-attachments/restore-test-unmarked
+printf 'other' | storage rcat "$unmarked/other-application"
+if restore_onto server-d "$work/kept-external.env" --test --storage-url "http://$gateway:8334/trybun-attachments/restore-test-unmarked" 2>"$work/unmarked.log"; then
+  fail 'the restore replaced a folder with objects but without a marker without --replace-foreign-objects.'
+fi
+cat "$work/unmarked.log" >&2
+grep -qF 'holds objects but no Trybun marker' "$work/unmarked.log" ||
+  fail 'the restore did not say why it refused the folder without a marker.'
+[ "$(storage cat "$unmarked/other-application")" = other ] || fail 'the refused restore changed the folder without a marker.'
+
+step 'Restoring a test copy into another folder with --test --storage-url, without a second question'
+# As the quarterly test restore while production runs: a new, empty folder has no marker.
+copy=http://$gateway:8334/trybun-attachments/restore-test-copy
+copy_folder=objects:trybun-attachments/restore-test-copy
+restore_onto server-d "$work/kept-external.env" --test --storage-url "$copy" >"$work/copy.log"
 cat "$work/copy.log"
 [ "$(sed -n 's/^TRYBUN_S3_URL=//p' .env)" = "$copy" ] || fail 'the restored .env does not use the folder of --storage-url.'
 [ "$(objects "$copy_folder")" = "$objects_before" ] ||
@@ -307,9 +344,9 @@ cat "$work/copy.log"
 
 step 'Backing up the test copy: nothing goes into the repository of the backup'
 [ "$(grep '^TRYBUN_BACKUP_S3_URL=' .env)" = 'TRYBUN_BACKUP_S3_URL=' ] ||
-  fail 'the restore with --storage-url kept TRYBUN_BACKUP_S3_URL of the backup.'
+  fail 'the test restore with --storage-url kept TRYBUN_BACKUP_S3_URL of the backup.'
 grep -qF 'TRYBUN_BACKUP_S3_URL of .env was emptied' "$work/copy.log" ||
-  fail 'the restore with --storage-url did not say that the test copy makes no off-site backups.'
+  fail 'the test restore with --storage-url did not say that the test copy makes no off-site backups.'
 ./trybun backup >"$work/copy-backup.log"
 cat "$work/copy-backup.log"
 ! grep -q 'external S3 storage' "$work/copy-backup.log" || fail 'the test copy backed up off-site.'
