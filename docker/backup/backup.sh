@@ -113,6 +113,11 @@ configure_storage() {
   folder=${path#"$bucket"}
   STORAGE=objects:$bucket$folder
   STORAGE_URL=$url
+  # The folder in a comparable form: the origin in lower case without a default port, then the
+  # bucket and the folder, ending in a slash.
+  origin=$(printf '%s\n' "$endpoint" | tr '[:upper:]' '[:lower:]' |
+    sed 's|^\(https://.*\):443$|\1|; s|^\(http://.*\):80$|\1|')
+  LOCATION=$origin/$bucket$folder/
   export RCLONE_CONFIG_OBJECTS_TYPE=s3
   if has_seaweedfs; then
     export RCLONE_CONFIG_OBJECTS_PROVIDER=SeaweedFS
@@ -267,6 +272,9 @@ restored_env() {
 
 # Prints `own|none|foreign <URL>` for the storage folder of the fetched backup's `.env`, the folder
 # its restore replaces: `./trybun restore` asks before it replaces a folder of another server.
+# With a URL (`--storage-url` of `./trybun restore`), for that folder instead, with the credentials
+# of the backup's `.env`; `overlap <URL of the backup's folder>` when one folder contains the
+# other, since such a restore would change the backup's folder.
 storage_owner() {
   [ -f "$RESTORED/configuration/.env" ] || fail 'No fetched backup. Run fetch first.'
   # Created here on a new server, before the restore marks the folder.
@@ -275,6 +283,20 @@ storage_owner() {
     export "$name=$(restored_env "$name")"
   done
   configure_storage
+  if [ -n "${1-}" ]; then
+    backup_url=$STORAGE_URL
+    backup_location=$LOCATION
+    TRYBUN_S3_URL=$1
+    configure_storage
+    case $LOCATION in
+      "$backup_location"*) overlap=1 ;;
+      *) case $backup_location in "$LOCATION"*) overlap=1 ;; *) overlap= ;; esac ;;
+    esac
+    if [ -n "$overlap" ]; then
+      printf 'overlap %s\n' "$backup_url"
+      return 0
+    fi
+  fi
   state=$(owner) || exit 1
   printf '%s %s\n' "$state" "$STORAGE_URL"
 }
@@ -354,7 +376,7 @@ case ${1-} in
   list) list ;;
   fetch) fetch "${2-}" ;;
   configuration) configuration ;;
-  storage-owner) storage_owner ;;
+  storage-owner) storage_owner "${2-}" ;;
   restore-data) restore_data "${2-}" ;;
   # rclone with the remote `objects` of the storage, for the restore test and diagnosis.
   rclone)
@@ -362,5 +384,5 @@ case ${1-} in
     configure_storage
     exec rclone "$@"
     ;;
-  *) fail "Unknown command \"${1-}\". Commands: schedule, backup [tag], list, fetch [snapshot], configuration, storage-owner, restore-data [--replace-foreign-objects], rclone <arguments>." ;;
+  *) fail "Unknown command \"${1-}\". Commands: schedule, backup [tag], list, fetch [snapshot], configuration, storage-owner [url], restore-data [--replace-foreign-objects], rclone <arguments>." ;;
 esac

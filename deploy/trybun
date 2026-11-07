@@ -42,11 +42,13 @@ Commands:
   setup-token   Print a new setup link for the first-run wizard (valid for 24 hours, works once).
   backup        Back up both databases, the objects and the configuration now.
   backup list   List the backups on this server and on the external S3 storage.
-  restore [<backup>] [--replace-foreign-objects]
+  restore [<backup>] [--storage-url <url>] [--replace-foreign-objects]
                 Replace all data and the configuration with a backup (default: the newest) and
                 start the version it was taken with. Also restores onto a new server. Asks again
                 before it replaces a storage folder that belongs to another Trybun server; without
                 a terminal it refuses, unless --replace-foreign-objects is given.
+                --storage-url restores the attachments into another folder, e.g. for a test
+                restore while the backed-up server runs, and sets TRYBUN_S3_URL of .env to it.
   update <version>
                 Back up, then install and start the release <version>, e.g. 1.4.1.
   uninstall     Delete Trybun from this server: containers, all data, the backups on this server
@@ -388,6 +390,15 @@ restore_configuration() {
   mkdir "$temporary/files"
   tar -xf "$temporary/configuration.tar" -C "$temporary/files"
   [ -f "$temporary/files/.env" ] || fail 'The backup contains no .env. Nothing was changed.'
+  if [ -n "$target_storage_url" ]; then
+    # --storage-url: the restored .env uses that folder instead of the backup's one.
+    TRYBUN_RESTORE_STORAGE_URL=$target_storage_url awk '
+      /^TRYBUN_S3_URL=/ { if (!done) print "TRYBUN_S3_URL=" ENVIRON["TRYBUN_RESTORE_STORAGE_URL"]; done = 1; next }
+      { print }
+      END { if (!done) print "TRYBUN_S3_URL=" ENVIRON["TRYBUN_RESTORE_STORAGE_URL"] }
+    ' "$temporary/files/.env" >"$temporary/env"
+    mv "$temporary/env" "$temporary/files/.env"
+  fi
   chmod 600 "$temporary/files/.env"
   for name in $PACKAGE_FILES .env; do
     [ ! -e "$temporary/files/$name" ] || replace "$name" "$temporary/files"
@@ -396,23 +407,41 @@ restore_configuration() {
   trap - EXIT HUP INT TERM
 }
 
-# The restore replaces the content of the storage folder of the backup's .env (TRYBUN_S3_URL). When
-# the folder's marker names another Trybun server – e.g. production, when its backup is restored
-# onto a test server with its .env – it asks a second question, or refuses without a terminal,
-# unless --replace-foreign-objects was given. Sets $replace_objects for restore-data.
+# A storage folder for --storage-url, as the server reads TRYBUN_S3_URL (§15.3): http(s), a bucket
+# name of S3, an optional folder, no credentials, query or fragment. Only characters that need no
+# quoting in .env.
+valid_storage_url() {
+  printf '%s\n' "$1" |
+    grep -Eqx "https?://(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9.-]+)(:[0-9]{1,5})?/[a-z0-9][a-z0-9.-]{1,61}[a-z0-9](/[A-Za-z0-9._~%+,:@=!-]*)*" ||
+    return 1
+  case "${1#*://*/}/" in
+    ./* | ../* | */./* | */../*) return 1 ;;
+  esac
+}
+
+# The restore replaces the content of the storage folder of the backup's .env (TRYBUN_S3_URL), or
+# of the folder of --storage-url, which must lie outside the backup's one. When the folder's marker
+# names another Trybun server – e.g. production, when its backup is restored onto a test server
+# with its .env – it asks a second question, or refuses without a terminal, unless
+# --replace-foreign-objects was given. Sets $replace_objects for restore-data.
 check_storage_folder() {
-  owner=$(docker compose run --rm -T backup storage-owner) ||
+  owner=$(docker compose run --rm -T backup storage-owner ${target_storage_url:+"$target_storage_url"}) ||
     fail "The storage folder of the backup $backup_id could not be read. See the messages above. Nothing was changed; start Trybun again with docker compose up -d --wait."
   storage_url=${owner#* }
   case ${owner%% *} in
     own | none) return 0 ;;
     foreign) ;;
+    overlap) fail "The folder $target_storage_url of --storage-url overlaps the storage folder $storage_url of the backup, which the restore leaves untouched. Name a folder outside it, e.g. another bucket. Nothing was changed; start Trybun again with docker compose up -d --wait." ;;
     *) fail "Unexpected answer \"$owner\" about the storage folder of the backup $backup_id. Nothing was changed; start Trybun again with docker compose up -d --wait." ;;
   esac
   replace_objects=--replace-foreign-objects
   [ -z "$replace_foreign_objects" ] || return 0
-  [ -t 0 ] ||
-    fail "The storage folder $storage_url belongs to another Trybun server; the restore would replace its content. Run ./trybun restore $backup_id in a terminal to confirm, or add --replace-foreign-objects. Nothing was changed; start Trybun again with docker compose up -d --wait."
+  if [ ! -t 0 ]; then
+    hint=
+    [ -n "$target_storage_url" ] ||
+      hint=' To test a restore while that server runs, restore the attachments into another folder with --storage-url <url>.'
+    fail "The storage folder $storage_url belongs to another Trybun server; the restore would replace its content. Run ./trybun restore $backup_id in a terminal to confirm, or add --replace-foreign-objects.$hint Nothing was changed; start Trybun again with docker compose up -d --wait."
+  fi
   confirmation=$(ask "The storage folder $storage_url belongs to another Trybun server. Replace its content? [y/N]: " n)
   case $confirmation in
     y | Y | yes | YES) ;;
@@ -434,10 +463,27 @@ restore() {
   backup_id=
   replace_foreign_objects=
   replace_objects=
-  for argument in "$@"; do
+  target_storage_url=
+  storage_url_given=
+  while [ "$#" -gt 0 ]; do
+    argument=$1
+    shift
     case $argument in
       --replace-foreign-objects) replace_foreign_objects=1 ;;
-      -*) fail "Unknown option \"$argument\". Use ./trybun restore [<backup>] [--replace-foreign-objects]." ;;
+      --storage-url | --storage-url=*)
+        [ -z "$storage_url_given" ] || fail 'Name one folder with --storage-url, not two.'
+        storage_url_given=1
+        if [ "$argument" = --storage-url ]; then
+          [ "$#" -gt 0 ] || fail 'Name the folder after --storage-url, e.g. --storage-url https://s3.example.com/bucket/trybun-test.'
+          target_storage_url=$1
+          shift
+        else
+          target_storage_url=${argument#--storage-url=}
+        fi
+        valid_storage_url "$target_storage_url" ||
+          fail "\"$target_storage_url\" is not the URL of a storage folder. Name http:// or https://, the address of the storage, a bucket and an optional folder, without credentials, query or fragment, e.g. --storage-url https://s3.example.com/bucket/trybun-test."
+        ;;
+      -*) fail "Unknown option \"$argument\". Use ./trybun restore [<backup>] [--storage-url <url>] [--replace-foreign-objects]." ;;
       *)
         [ -z "$backup_id" ] || fail "Name one backup, not \"$backup_id\" and \"$argument\"."
         backup_id=$argument
@@ -450,6 +496,8 @@ restore() {
   require_env
   check_docker
   say "This replaces all data and the configuration of Trybun with the backup $backup_id and starts the version it was taken with."
+  [ -z "$target_storage_url" ] ||
+    say "The attachments are restored into $target_storage_url, which replaces TRYBUN_S3_URL of the backup's .env; the storage folder of the backup stays unchanged."
   confirmation=$(ask 'Continue? [y/N]: ' n)
   case $confirmation in
     y | Y | yes | YES) ;;
@@ -469,6 +517,7 @@ restore() {
   docker compose up -d --wait ||
     fail 'Trybun did not start after the restore. See docker compose ps and docker compose logs <service>.'
   say "Restored the backup $backup_id."
+  [ -z "$target_storage_url" ] || say "The attachments are in $target_storage_url (TRYBUN_S3_URL of .env)."
 }
 
 # --- Updates (§15.7) ---

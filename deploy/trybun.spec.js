@@ -51,7 +51,7 @@ case "$*" in
   "compose stop") ;;
   "compose run --rm -T --no-deps backup fetch "*) exit "$STUB_FETCH_EXIT" ;;
   "compose run --rm -T --no-deps backup configuration") cat "$STUB_CONFIGURATION" ;;
-  "compose run --rm -T backup storage-owner") echo "$STUB_STORAGE_OWNER"; exit "$STUB_STORAGE_OWNER_EXIT" ;;
+  "compose run --rm -T backup storage-owner" | "compose run --rm -T backup storage-owner "*) echo "$STUB_STORAGE_OWNER"; exit "$STUB_STORAGE_OWNER_EXIT" ;;
   "compose up -d --wait postgres") ;;
   "compose exec -T postgres "*) cat >"$STUB_STDIN" ;;
   "compose run --rm -T backup restore-data" | "compose run --rm -T backup restore-data --replace-foreign-objects") exit "$STUB_RESTORE_EXIT" ;;
@@ -420,7 +420,9 @@ describe('./trybun --help', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toMatch(/install .*\n[\s\S]*setup-token /);
-    expect(result.stdout).toContain('restore [<backup>] [--replace-foreign-objects]');
+    expect(result.stdout).toContain(
+      'restore [<backup>] [--storage-url <url>] [--replace-foreign-objects]',
+    );
   });
 
   it('refuses an unknown command', () => {
@@ -526,6 +528,8 @@ describe('./trybun restore', () => {
       "ALTER ROLE trybun PASSWORD 'it''s-old';\nALTER ROLE keycloak PASSWORD 'keycloak-old';\n",
     );
     expect(result.log).not.toContain('old');
+    // The folder of the backup's .env: storage-owner without a URL.
+    expect(result.log).toContain('backup storage-owner\n');
     expect(result.stdout).toContain('Restored the backup 1a2b3c4d.');
   });
 
@@ -601,7 +605,9 @@ describe('./trybun restore', () => {
       expect(result.stderr).toContain(
         'The storage folder https://s3.example.com/bucket/trybun belongs to another Trybun server',
       );
-      expect(result.stderr).toContain('--replace-foreign-objects. Nothing was changed');
+      expect(result.stderr).toContain(
+        '--replace-foreign-objects. To test a restore while that server runs, restore the attachments into another folder with --storage-url <url>. Nothing was changed',
+      );
       expect(result.stderr).not.toContain(QUESTION);
       expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
       expect(result.log).not.toMatch(/backup configuration|restore-data/);
@@ -649,6 +655,152 @@ describe('./trybun restore', () => {
         expect(result.stdout).toContain('Restore stopped. Nothing was changed');
         expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
         expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      }
+    });
+  });
+
+  describe('--storage-url', () => {
+    const TEST_FOLDER = 'https://s3.example.com/bucket/trybun-test';
+    const BACKUP_FOLDER = 'https://s3.example.com/bucket/trybun';
+    const BACKUP_ENV = `${RESTORED_ENV}TRYBUN_S3_URL=${BACKUP_FOLDER}\nTRYBUN_S3_ACCESS_KEY_ID=production-key\n# TRYBUN_S3_REGION=\n`;
+    const NEW_FOLDER = { STUB_STORAGE_OWNER: `none ${TEST_FOLDER}` };
+
+    /** The backup's configuration with the .env $1. */
+    function backupWithEnv(env) {
+      const backup = join(folder, 'backup');
+      writeFileSync(join(backup, '.env'), env);
+      execFileSync('tar', ['-cf', join(folder, 'configuration.tar'), '-C', backup, '.']);
+    }
+
+    // A successful restore replaces ./trybun with the one of the backup, so one run per case.
+    it.each([
+      [['restore', '--storage-url', TEST_FOLDER]],
+      [['restore', '--storage-url', TEST_FOLDER, '1a2b3c4d']],
+      [['restore', '1a2b3c4d', '--storage-url', TEST_FOLDER]],
+      [['restore', `--storage-url=${TEST_FOLDER}`, '1a2b3c4d']],
+    ])('restores the attachments into that folder with %j', (args) => {
+      backupWithEnv(BACKUP_ENV);
+      const result = trybun(args, { input: 'y\n', ...NEW_FOLDER });
+
+      expect(result.status).toBe(0);
+      // The guard checks the new folder; an empty one asks no second question.
+      expect(result.log).toContain(`backup storage-owner ${TEST_FOLDER}\n`);
+      expect(result.stderr).not.toContain('belongs to another Trybun server');
+      expect(result.log).toContain('compose run --rm -T backup restore-data\n');
+      expect(result.stdout).toContain(
+        `The attachments are restored into ${TEST_FOLDER}, which replaces TRYBUN_S3_URL of the backup's .env; the storage folder of the backup stays unchanged.`,
+      );
+      expect(result.stdout).toContain(
+        `The attachments are in ${TEST_FOLDER} (TRYBUN_S3_URL of .env).`,
+      );
+      // Only TRYBUN_S3_URL of the restored .env changes; the credentials stay those of the backup.
+      expect(readFileSync(envPath(), 'utf8')).toBe(
+        BACKUP_ENV.replace(`TRYBUN_S3_URL=${BACKUP_FOLDER}`, `TRYBUN_S3_URL=${TEST_FOLDER}`),
+      );
+      expect(statSync(envPath()).mode & 0o777).toBe(0o600);
+    });
+
+    it('sets TRYBUN_S3_URL in a restored .env that uses the default folder', () => {
+      const result = trybun(['restore', '--storage-url', 'http://seaweedfs:8333/trybun-test'], {
+        input: 'y\n',
+        STUB_STORAGE_OWNER: 'none http://seaweedfs:8333/trybun-test',
+      });
+
+      expect(result.status).toBe(0);
+      expect(readFileSync(envPath(), 'utf8')).toBe(
+        `${RESTORED_ENV}TRYBUN_S3_URL=http://seaweedfs:8333/trybun-test\n`,
+      );
+    });
+
+    it('keeps one TRYBUN_S3_URL when the restored .env sets it twice', () => {
+      backupWithEnv(
+        `TRYBUN_S3_URL=${BACKUP_FOLDER}\n${RESTORED_ENV}TRYBUN_S3_URL=${BACKUP_FOLDER}\n`,
+      );
+      const result = trybun(['restore', '--storage-url', TEST_FOLDER], {
+        input: 'y\n',
+        ...NEW_FOLDER,
+      });
+
+      expect(result.status).toBe(0);
+      expect(readFileSync(envPath(), 'utf8')).toBe(`TRYBUN_S3_URL=${TEST_FOLDER}\n${RESTORED_ENV}`);
+    });
+
+    it('asks the second question for a new folder of another Trybun server', () => {
+      backupWithEnv(BACKUP_ENV);
+      const result = trybun(['restore', '--storage-url', TEST_FOLDER], {
+        input: 'y\ny\n',
+        STUB_STORAGE_OWNER: `foreign ${TEST_FOLDER}`,
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        `The storage folder ${TEST_FOLDER} belongs to another Trybun server; the restore would replace its content.`,
+      );
+      expect(result.stderr).not.toContain('restore the attachments into another folder');
+      expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+      expect(result.log).not.toMatch(/backup configuration|restore-data/);
+    });
+
+    it('replaces a new folder of another Trybun server with --replace-foreign-objects', () => {
+      backupWithEnv(BACKUP_ENV);
+      const result = trybun(
+        ['restore', '--replace-foreign-objects', '--storage-url', TEST_FOLDER],
+        { input: 'y\n', STUB_STORAGE_OWNER: `foreign ${TEST_FOLDER}` },
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.log).toContain('backup restore-data --replace-foreign-objects\n');
+      expect(variables(readFileSync(envPath(), 'utf8')).TRYBUN_S3_URL).toBe(TEST_FOLDER);
+    });
+
+    it.each([`${BACKUP_FOLDER}`, 'https://s3.example.com/bucket', `${BACKUP_FOLDER}/test`])(
+      'refuses %s, which overlaps the folder of the backup, before anything is changed',
+      (url) => {
+        backupWithEnv(BACKUP_ENV);
+        const result = trybun(['restore', '--storage-url', url], {
+          input: 'y\n',
+          STUB_STORAGE_OWNER: `overlap ${BACKUP_FOLDER}`,
+        });
+
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain(
+          `The folder ${url} of --storage-url overlaps the storage folder ${BACKUP_FOLDER} of the backup, which the restore leaves untouched. Name a folder outside it, e.g. another bucket. Nothing was changed`,
+        );
+        expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+        expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      },
+    );
+
+    it.each([
+      ['https://key:secret@s3.example.com/bucket/trybun-test', 'credentials'],
+      ['https://s3.example.com/bucket/trybun-test?versionId=1', 'a query'],
+      ['https://s3.example.com/bucket/trybun-test#part', 'a fragment'],
+      ['https://s3.example.com/', 'no bucket'],
+      ['https://s3.example.com/My_Bucket', 'a bucket name S3 does not allow'],
+      ['s3://bucket/trybun-test', 'another protocol'],
+      ['https://s3.example.com/bucket/../trybun', 'a parent folder'],
+      ['https://s3.example.com/bucket/$HOME', 'a character that needs quoting in .env'],
+    ])('refuses %s (%s) before anything is changed', (url) => {
+      const result = trybun(['restore', '--storage-url', url], { input: 'y\n' });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(`"${url}" is not the URL of a storage folder.`);
+      expect(result.log).toBe('');
+    });
+
+    it('refuses a missing URL and a second --storage-url', () => {
+      for (const [args, message] of [
+        [['restore', '--storage-url'], 'Name the folder after --storage-url'],
+        [
+          ['restore', '--storage-url', TEST_FOLDER, `--storage-url=${TEST_FOLDER}`],
+          'Name one folder with --storage-url, not two.',
+        ],
+      ]) {
+        const result = trybun(args, { input: 'y\n' });
+
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain(message);
+        expect(result.log).toBe('');
       }
     });
   });
