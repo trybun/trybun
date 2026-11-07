@@ -319,16 +319,18 @@ export const AttachFilesTooltipPolish: Story = {
   },
 };
 
-/** "More formatting" shows its name on hover, and a click still opens its menu. */
+/** "More formatting" shows its name on hover; a click opens its menu and hides the tooltip. */
 export const MoreFormattingTooltip: Story = {
   globals: viewport('phone'),
   play: async ({ canvas, userEvent }) => {
     const button = canvas.getByRole('button', { name: 'More formatting' });
     await userEvent.hover(button);
-    await waitFor(async () => expect(await findTooltip('More formatting')).toBeVisible());
+    const tooltip = await findTooltip('More formatting');
+    await waitFor(() => expect(tooltip).toBeVisible());
     await userEvent.click(button);
     await expect(await screen.findByRole('menuitem', { name: /Heading/ })).toBeInTheDocument();
     await expect(button).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(tooltip).not.toBeInTheDocument());
   },
 };
 
