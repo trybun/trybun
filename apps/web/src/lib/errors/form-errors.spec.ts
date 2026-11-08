@@ -29,6 +29,6 @@ describe('FORM_ERROR_MAP', () => {
   it('turns a Zod issue into its field error code', () => {
     const result = z.object({ name: z.string().min(1) }).safeParse({ name: '' }, FORM_ERROR_MAP);
 
-    expect(result.error?.issues[0]?.message).toBe('string.too_short');
+    expect(result.error?.issues[0]?.message).toBe('string.empty');
   });
 });

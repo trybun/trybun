@@ -14,7 +14,7 @@ export function HelpTopicLink({
   return (
     <Link
       href={helpHref(slug)}
-      className="flex min-h-11 flex-col justify-center gap-0.5 rounded-lg px-3 py-2 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
+      className="flex min-h-11 flex-col justify-center gap-0.5 rounded-lg px-3 py-2 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
       <span className="font-medium">{title}</span>
       <span className="text-sm text-muted-foreground">{description}</span>

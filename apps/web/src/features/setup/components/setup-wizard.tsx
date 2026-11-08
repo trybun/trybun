@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { ApiError } from '../../../lib/errors/api-error.js';
@@ -25,18 +25,27 @@ function useSetupToken(): string | undefined {
 /**
  * The first-run wizard (§15.6): checks the token of the setup link, then shows the one-step form
  * that creates the first Administrator; a used, expired or unknown token, or a system that is set
- * up, gets its message instead.
+ * up, gets its message instead. Its own creation completes the setup too, so the success message
+ * wins over the completed status until the page is reloaded.
  */
 export function SetupWizard() {
   const t = useTranslations('setup');
   const queryClient = useQueryClient();
   const token = useSetupToken();
+  const [isCreated, setIsCreated] = useState(false);
   const setup = useQuery(setupQueryOptions(browserApiClient));
   const verification = useQuery({
     ...setupTokenVerificationQueryOptions(browserApiClient, token ?? ''),
     enabled: token !== undefined && token !== '' && setup.data?.status === 'available',
   });
 
+  if (isCreated) {
+    return (
+      <SetupMessage title={t('doneTitle')} signIn>
+        {t('doneText')}
+      </SetupMessage>
+    );
+  }
   const isCompleted =
     setup.data?.status === 'completed' ||
     (verification.error instanceof ApiError && verification.error.code === 'setup.completed');
@@ -63,6 +72,7 @@ export function SetupWizard() {
     <AdministratorForm
       token={token}
       setup={verification.data}
+      onCreated={() => setIsCreated(true)}
       onTokenRejected={() => void queryClient.invalidateQueries({ queryKey: ['setup'] })}
     />
   );

@@ -35,6 +35,14 @@ x-server: &server
     TRYBUN_SMTP_HOST: ${TRYBUN_SMTP_HOST:-}
     TRYBUN_MAIL_FROM: ${TRYBUN_MAIL_FROM:-}
     TRYBUN_BACKUP_S3_URL: ${TRYBUN_BACKUP_S3_URL:-}
+    # The object storage of the attachments: SeaweedFS below or an external S3 storage (§15.3).
+    TRYBUN_S3_URL: ${TRYBUN_S3_URL:-http://seaweedfs:8333/trybun}
+    TRYBUN_S3_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:?TRYBUN_S3_ACCESS_KEY_ID must be set}
+    TRYBUN_S3_SECRET_ACCESS_KEY: ${TRYBUN_S3_SECRET_ACCESS_KEY:?TRYBUN_S3_SECRET_ACCESS_KEY must be set}
+    TRYBUN_S3_REGION: ${TRYBUN_S3_REGION:-us-east-1}
+    # The malware scanner of the uploads (§13.3).
+    TRYBUN_CLAMAV_URL: ${TRYBUN_CLAMAV_URL:-tcp://clamav:3310}
+    TRYBUN_ATTACHMENT_MAX_SIZE_MB: ${TRYBUN_ATTACHMENT_MAX_SIZE_MB:-25}
     # The system default language and time zone (§13.1).
     TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
     TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}
@@ -64,6 +72,11 @@ services:
       TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: ${TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET:?TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET must be set}
       TRYBUN_DEFAULT_LANGUAGE: ${TRYBUN_DEFAULT_LANGUAGE:-en}
       TRYBUN_DEFAULT_TIME_ZONE: ${TRYBUN_DEFAULT_TIME_ZONE:-UTC}
+      # The browser refuses a larger file before uploading it (§13.3).
+      TRYBUN_ATTACHMENT_MAX_SIZE_MB: ${TRYBUN_ATTACHMENT_MAX_SIZE_MB:-25}
+      # The acceptance page of an invitation offers only the configured providers (ADR 0009).
+      TRYBUN_MICROSOFT_CLIENT_ID: ${TRYBUN_MICROSOFT_CLIENT_ID:-}
+      TRYBUN_GOOGLE_CLIENT_ID: ${TRYBUN_GOOGLE_CLIENT_ID:-}
     mem_limit: 512m
     healthcheck:
       test:
@@ -86,6 +99,8 @@ services:
       # The image of the API, the Worker and the migrations.
       context: .
       dockerfile: docker/server/Dockerfile
+    # An external S3 storage of the attachments is outside the server (§15.3).
+    networks: [internal, outbound]
     healthcheck:
       test:
         - CMD
@@ -102,6 +117,10 @@ services:
         condition: service_completed_successfully
       valkey:
         condition: service_healthy
+      # Not started with an external S3 storage (§15.9).
+      seaweedfs:
+        condition: service_healthy
+        required: false
 
   worker:
     <<: *server
@@ -122,6 +141,9 @@ services:
         condition: service_completed_successfully
       valkey:
         condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+        required: false
 
   # One-off: database migrations before the API and the Worker start (§15.7).
   migrate:
@@ -175,7 +197,7 @@ services:
   seaweedfs:
     <<: *service
     profiles: [seaweedfs]
-    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    image: chrislusf/seaweedfs:4.50@sha256:c2658820e763294a9e9de7b36c81e59b879e3459148351aee4e31a126ca64860
     command: [server, -dir=/data, -s3, -master.telemetry=false]
     environment:
       AWS_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:?TRYBUN_S3_ACCESS_KEY_ID must be set}
@@ -192,7 +214,7 @@ services:
   # Identity provider under /auth on the system domain (§15.5).
   keycloak:
     <<: *service
-    image: quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b
+    image: quay.io/keycloak/keycloak:26.8.1@sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332
     command: [start]
     environment:
       KC_DB: postgres
@@ -277,6 +299,8 @@ services:
     image: clamav/clamav:1.5.4@sha256:e19130cdebaeacc71fa46eab3ed6f69941f2f22aa5e08d55e9197f8edf43ce5e
     volumes:
       - clamav-data:/var/lib/clamav
+      # A file clamd cannot scan completely is never reported clean (ADR 0008).
+      - ./docker/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
     # Signature reloads briefly hold two copies of the database in memory.
     mem_limit: 3g
     networks: [internal, outbound]
@@ -307,13 +331,12 @@ services:
       PGHOST: postgres
       PGUSER: trybun
       PGPASSWORD: ${TRYBUN_POSTGRES_PASSWORD}
-      # The objects are backed up from SeaweedFS when its profile is enabled.
-      COMPOSE_PROFILES: ${COMPOSE_PROFILES:-}
-      RCLONE_CONFIG_OBJECTS_TYPE: s3
-      RCLONE_CONFIG_OBJECTS_PROVIDER: SeaweedFS
-      RCLONE_CONFIG_OBJECTS_ENDPOINT: http://seaweedfs:8333
-      RCLONE_CONFIG_OBJECTS_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:-}
-      RCLONE_CONFIG_OBJECTS_SECRET_ACCESS_KEY: ${TRYBUN_S3_SECRET_ACCESS_KEY:-}
+      # The storage folder of the attachments, on SeaweedFS (its profile) or an external storage;
+      # backup.sh configures the rclone remote `objects` from these (§15.3).
+      TRYBUN_S3_URL: ${TRYBUN_S3_URL:-http://seaweedfs:8333/trybun}
+      TRYBUN_S3_ACCESS_KEY_ID: ${TRYBUN_S3_ACCESS_KEY_ID:?TRYBUN_S3_ACCESS_KEY_ID must be set}
+      TRYBUN_S3_SECRET_ACCESS_KEY: ${TRYBUN_S3_SECRET_ACCESS_KEY:?TRYBUN_S3_SECRET_ACCESS_KEY must be set}
+      TRYBUN_S3_REGION: ${TRYBUN_S3_REGION:-us-east-1}
     volumes:
       - backup-data:/backup
       # The installation folder: `.env` and the files of the deployment package.
@@ -363,7 +386,8 @@ networks:
   # Service-to-service traffic; no access to or from outside the server.
   internal:
     internal: true
-  # Outgoing connections (GitHub, SMTP, sign-in providers, signature updates) and the public ports.
+  # Outgoing connections (GitHub, SMTP, sign-in providers, signature updates, an external object
+  # storage) and the public ports.
   outbound: {}
 
 volumes:

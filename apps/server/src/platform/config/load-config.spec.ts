@@ -18,6 +18,16 @@ describe('loadConfig', () => {
         adminUrl: 'http://keycloak:8080/auth/admin/realms/trybun',
         serverClientSecret: 'server-client-secret',
       },
+      storage: {
+        endpoint: 'http://localhost:8333',
+        bucket: 'trybun',
+        folder: '',
+        region: 'us-east-1',
+        accessKeyId: 'trybun-test',
+        secretAccessKey: 'object-storage-secret',
+      },
+      clamav: { host: 'localhost', port: 3310 },
+      attachmentMaxSizeBytes: 25 * 1024 * 1024,
       isGithubSignInConfigured: false,
       isSmtpConfigured: false,
       isBackupStorageConfigured: false,
@@ -41,6 +51,40 @@ describe('loadConfig', () => {
     });
 
     expect(config).toMatchObject({ defaultLanguage: 'pl', defaultTimeZone: 'Europe/Warsaw' });
+  });
+
+  it('splits the URL of an external storage into endpoint, bucket and folder', () => {
+    const config = loadConfig({
+      ...TEST_ENV,
+      TRYBUN_S3_URL: 'https://s3.eu-central-1.amazonaws.com/my-bucket/trybun/attachments/',
+      TRYBUN_S3_REGION: 'eu-central-1',
+    });
+
+    expect(config.storage).toMatchObject({
+      endpoint: 'https://s3.eu-central-1.amazonaws.com',
+      bucket: 'my-bucket',
+      folder: 'trybun/attachments',
+      region: 'eu-central-1',
+    });
+  });
+
+  it('accepts the storage URLs the backup service accepts (§15.3)', () => {
+    for (const url of ['http://my_minio:9000/trybun', 'HTTPS://S3.example.com/trybun/a~b']) {
+      expect(loadConfig({ ...TEST_ENV, TRYBUN_S3_URL: url }).storage.bucket).toBe('trybun');
+    }
+  });
+
+  it('takes the address of clamd and the maximum attachment size', () => {
+    const config = loadConfig({
+      ...TEST_ENV,
+      TRYBUN_CLAMAV_URL: 'tcp://clamav:3310',
+      TRYBUN_ATTACHMENT_MAX_SIZE_MB: '100',
+    });
+
+    expect(config).toMatchObject({
+      clamav: { host: 'clamav', port: 3310 },
+      attachmentMaxSizeBytes: 100 * 1024 * 1024,
+    });
   });
 
   it.each([
@@ -93,6 +137,21 @@ describe('loadConfig', () => {
       'TRYBUN_KEYCLOAK_SERVER_CLIENT_SECRET',
     ],
     [{ ...TEST_ENV, TRYBUN_SMTP_HOST: 'smtp.example.com' }, 'TRYBUN_MAIL_FROM'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'ftp://s3.example.com/trybun' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/My_Bucket' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://key:secret@s3.example.com/trybun' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/trybun/a/../b' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/trybun/%2e%2e/b' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_URL: 'https://s3.example.com/trybun/files(1)' }, 'TRYBUN_S3_URL'],
+    [{ ...TEST_ENV, TRYBUN_S3_ACCESS_KEY_ID: undefined }, 'TRYBUN_S3_ACCESS_KEY_ID'],
+    [{ ...TEST_ENV, TRYBUN_S3_SECRET_ACCESS_KEY: '' }, 'TRYBUN_S3_SECRET_ACCESS_KEY'],
+    [{ ...TEST_ENV, TRYBUN_S3_REGION: '' }, 'TRYBUN_S3_REGION'],
+    [{ ...TEST_ENV, TRYBUN_CLAMAV_URL: 'http://clamav:3310' }, 'TRYBUN_CLAMAV_URL'],
+    [{ ...TEST_ENV, TRYBUN_CLAMAV_URL: 'tcp://clamav' }, 'TRYBUN_CLAMAV_URL'],
+    [{ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '0' }, 'TRYBUN_ATTACHMENT_MAX_SIZE_MB'],
+    [{ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '101' }, 'TRYBUN_ATTACHMENT_MAX_SIZE_MB'],
+    [{ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '2.5' }, 'TRYBUN_ATTACHMENT_MAX_SIZE_MB'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => loadConfig(env)).toThrow(InvalidConfigError);
     expect(() => loadConfig(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));

@@ -1,9 +1,9 @@
-import Image from 'next/image';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import { LazyUserMenu } from '../../users/components/lazy-user-menu.js';
+import { Brand } from './brand.js';
+import { LazyUserMenu } from './lazy-user-menu.js';
 
+/** The slots of the header actions; each draws its icon with `APP_HEADER_ICON_CLASS_NAME` (`app-header-icon.ts`). */
 export interface AppHeaderSlots {
   /** The search button that opens the command palette (§8.4, S2-05). */
   search?: ReactNode;
@@ -14,18 +14,22 @@ export interface AppHeaderSlots {
 }
 
 /** The header of the application shell: brand, the slots of the header actions and the user menu. */
-export function AppHeader({ search, help, notifications }: AppHeaderSlots) {
-  const t = useTranslations('app');
+export function AppHeader({
+  search,
+  help,
+  notifications,
+  homeHref = '/',
+}: AppHeaderSlots & {
+  /** Where the brand leads: the home of the team, or the portal root of end users (§5.7). */
+  homeHref?: string;
+}) {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-1 border-b border-border bg-background px-2 md:px-4">
       <Link
-        href="/"
-        className="flex min-h-11 items-center gap-2 rounded-lg px-1 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
+        href={homeHref}
+        className="flex min-h-11 items-center gap-2 rounded-lg px-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
-        <Image src="/icons/trybun-icon.svg" alt="" width={32} height={32} unoptimized priority />
-        <span className="sr-only text-lg font-extrabold lowercase md:not-sr-only">
-          {t('title')}
-        </span>
+        <Brand wordmarkClassName="sr-only md:not-sr-only" />
       </Link>
       <div className="ml-auto flex items-center gap-1">
         {search}

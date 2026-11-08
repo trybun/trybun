@@ -61,7 +61,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 ### Deleting data
 
 - Tickets are never deleted; they are closed as `rejected` or `duplicate` ([§4.3](04-ticket-lifecycle.md)). Personal data is removed only through anonymization ([§13.2](13-non-functional.md)).
-- **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)), possible only while no ticket of the batch has activity events other than "Imported": the tickets of the batch are deleted physically, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused. The undo is recorded in the administrative audit log.
+- **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)), possible only while no ticket of the batch has activity events other than "Imported": the tickets of the batch are deleted physically with their activity events, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused: the ticket number counter is never lowered. The undo is recorded in the administrative audit log.
 - Other records (e.g. labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log.
 - Activity events never reference deletable records by foreign key; they store the values they show (ID and display name, e.g. of a label or milestone) in their own data, so deleting a record never changes or breaks the history ([§4.5](04-ticket-lifecycle.md)).
 - There is no generic soft-delete (`deleted_at`) mechanism.
@@ -91,7 +91,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 ### Concurrency
 
-- **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique and never reused even under concurrent creation. Numbers are consecutive except for tickets removed by undoing an import (see "Deleting data").
+- **Ticket numbers** are allocated from a per-project counter incremented inside the ticket-creation transaction with a row lock, so numbers are unique and never reused even under concurrent creation. The counter is a record of its own (`ticket_number_counters`), created by the first ticket of a project with one upsert and never lowered or deleted while the project exists. Numbers are consecutive except for tickets removed by undoing an import (see "Deleting data").
 - **Optimistic locking** protects records edited by people:
   - Versioned records: tickets, comments (including internal notes), milestones, labels, saved views, organizations, projects, SLA policies, business calendars, ticket templates and webhooks. Each has a `version` field.
   - The API returns the version as a weak `ETag` (`W/"<version>"`). `PATCH`, `PUT` and `DELETE` of a versioned record must send `If-Match`; a missing header (or `*`, which would match any version) returns `428 Precondition Required` (code `request.precondition_required`), a stale one – or a value that is not the ETag of a version – `412 Precondition Failed` (code `request.precondition_failed`), and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
@@ -127,6 +127,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 | Code | Schema rule |
 |---|---|
 | `string.too_long` / `string.too_short` | Maximum / minimum length of a string |
+| `string.empty` | An empty required string – a minimum length of 1 (`min(1)`, after trimming) |
 | `string.invalid_format` | Format of a string (e-mail, URL, UUID, pattern, …) |
 | `array.too_long` / `array.too_short` | Maximum / minimum number of items |
 | `number.too_large` / `number.too_small` | Maximum / minimum of a number |
@@ -151,7 +152,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 - **No secrets or search text in URLs**, because URLs end up in access logs, browser history and `Referer` headers: setup and invitation tokens are submitted in the request body (or the URL fragment, which is never sent to the server), and the search query of the global search ([§8.5](08-team-views.md)) is kept in client state and sent in the request body. Caddy access logs record paths without query strings and never log the `Authorization` or `Cookie` headers ([§15.9](15-deployment.md)).
 - **Health endpoints** of the API (internal network only, [§14.4](14-architecture.md)):
   - `/health` – liveness: returns `{ "status": "ok", "version": "X.Y.Z" }` without checking dependencies, so an outage of a dependency never makes Compose restart the API (Rule 11, [§2.11](02-agent-rules.md)).
-  - `/health/ready` – readiness: fails only when PostgreSQL is unavailable (`503`, code `server.unavailable`); the status of Valkey and the object storage is reported in the body as `ok` or `degraded` without failing the check (see "Dependency failures"), e.g. `{ "status": "degraded", "database": "ok", "valkey": "degraded" }`; `status` is `degraded` when any of them is. A check that does not answer within 2 seconds counts as failed. The object storage joins the body with its adapter (S1-08).
+  - `/health/ready` – readiness: fails only when PostgreSQL is unavailable (`503`, code `server.unavailable`); the status of Valkey and the object storage (`storage`, whether its bucket answers) is reported in the body as `ok` or `degraded` without failing the check (see "Dependency failures"), e.g. `{ "status": "degraded", "database": "ok", "valkey": "degraded", "storage": "ok" }`; `status` is `degraded` when any of them is. A check that does not answer within 2 seconds counts as failed.
   - The web application has its own liveness endpoint `/api/health`.
   - The Worker has no HTTP server ([§14.6](14-architecture.md)); it writes a heartbeat file every 15 seconds, and its Compose health check fails when the file is older than 60 seconds.
 
@@ -161,7 +162,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 |---|---|
 | Keycloak | No new sign-ins; existing sessions work until their access token cannot be refreshed; API tokens keep working |
 | SMTP / e-mail provider | Outgoing e-mails stay in the outbox and are retried with exponential backoff; the Administrator panel shows a warning |
-| ClamAV | Uploaded files stay in quarantine ("Checking…") until the scanner is back; nothing is released unscanned |
+| ClamAV | Uploaded files stay in quarantine ("Checking…") until the scanner is back, when the recovery job re-enqueues their scans ([§13.3](13-non-functional.md)); nothing is released unscanned |
 | Object storage | Uploads and downloads fail with a clear message; the rest of the system works; `/health/ready` reports `degraded` |
 | GitHub | Outgoing changes are retried with exponential backoff. GitHub does **not** redeliver failed webhook deliveries automatically, so a recurring Worker job lists the failed deliveries of the GitHub App through the GitHub API and requests their redelivery; duplicates are skipped by the delivery ID ([§11.1](11-github-integration.md)). The Administrator can also start a manual resynchronization of a repository |
 | Valkey | Background jobs and real-time updates pause; the web UI and API keep working with reduced functionality; jobs resume from the outbox; API rate limiting fails open; `/health/ready` reports `degraded` |
