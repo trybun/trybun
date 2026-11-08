@@ -28,6 +28,8 @@ export interface PickerGroup {
 export interface PickerSearch {
   label: string;
   value: string;
+  /** The longest search the server accepts. */
+  maxLength?: number;
   onValueChange: (value: string) => void;
 }
 
@@ -78,6 +80,7 @@ export function FieldSheet({
               <Input
                 type="search"
                 value={search.value}
+                maxLength={search.maxLength}
                 autoComplete="off"
                 onChange={(event) => search.onValueChange(event.target.value)}
               />

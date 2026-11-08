@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { MEMBER_CANDIDATE_QUERY_MAX_LENGTH } from '@trybun/contracts/projects';
 import type { Ticket } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import {
@@ -169,7 +170,12 @@ export function AssigneePicker({
             title={label}
             value={selected.value}
             groups={[{ label: '', options: members.isSuccess ? choices : [] }]}
-            search={{ label: t('view.searchPeople'), value: search, onValueChange: setSearch }}
+            search={{
+              label: t('view.searchPeople'),
+              value: search,
+              maxLength: MEMBER_CANDIDATE_QUERY_MAX_LENGTH,
+              onValueChange: setSearch,
+            }}
             empty={
               <p className="text-sm text-muted-foreground">
                 {members.isPending ? t('view.loadingPeople') : t('view.noPeople')}
@@ -211,7 +217,11 @@ export function AssigneePicker({
         }
       }}
     >
-      <ComboboxInput aria-label={label} placeholder={currentName} />
+      <ComboboxInput
+        aria-label={label}
+        placeholder={currentName}
+        maxLength={MEMBER_CANDIDATE_QUERY_MAX_LENGTH}
+      />
       <ComboboxContent>
         <ComboboxEmpty>{t('view.noPeople')}</ComboboxEmpty>
         <ComboboxList aria-label={t('view.people')}>
