@@ -32,4 +32,4 @@ The template is in the language of your account (**Account settings**). While th
 
 ## Leaving the form
 
-If you leave the form after typing a title or a description, Trybun asks "Discard your changes?" first. Select **Keep editing** to return to the form.
+If you leave the form after typing a title or a description – through a link or with the back button of your browser or phone – Trybun asks "Discard your changes?" first. Select **Keep editing** to return to the form. If you close or reload the tab, your browser asks instead.

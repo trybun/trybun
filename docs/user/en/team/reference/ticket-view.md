@@ -16,7 +16,7 @@ You can change only what your role allows; everything else is shown as text. In 
 
 ## Description and files
 
-The description is shown formatted ([format text](../../end-user/reference/formatting-text.md)). Select **Edit** to change it, then **Save**. If you select **Cancel** or leave the page with unsaved text, Trybun asks "Discard your changes?" first. The files of the ticket are listed below the description ([attach files](../../end-user/how-to/attach-files.md)).
+The description is shown formatted ([format text](../../end-user/reference/formatting-text.md)). Select **Edit** to change it, then **Save**. If you select **Cancel** or leave the page with unsaved text – through a link or with the back button of your browser or phone – Trybun asks "Discard your changes?" first. The files of the ticket are listed below the description ([attach files](../../end-user/how-to/attach-files.md)).
 
 ## Fields
 

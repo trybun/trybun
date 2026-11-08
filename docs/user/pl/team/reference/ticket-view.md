@@ -16,7 +16,7 @@ Możesz zmieniać tylko to, na co pozwala Twoja rola; wszystko inne jest wyświe
 
 ## Opis i pliki
 
-Opis jest wyświetlany ze sformatowaniem ([formatowanie tekstu](../../end-user/reference/formatting-text.md)). Wybierz **Edytuj**, aby go zmienić, a potem **Zapisz**. Jeśli wybierzesz **Anuluj** albo opuścisz stronę z niezapisanym tekstem, Trybun najpierw zapyta „Odrzucić zmiany?”. Pliki zgłoszenia są wymienione pod opisem ([dołącz pliki](../../end-user/how-to/attach-files.md)).
+Opis jest wyświetlany ze sformatowaniem ([formatowanie tekstu](../../end-user/reference/formatting-text.md)). Wybierz **Edytuj**, aby go zmienić, a potem **Zapisz**. Jeśli wybierzesz **Anuluj** albo opuścisz stronę z niezapisanym tekstem – przez link albo przyciskiem Wstecz przeglądarki lub telefonu – Trybun najpierw zapyta „Odrzucić zmiany?”. Pliki zgłoszenia są wymienione pod opisem ([dołącz pliki](../../end-user/how-to/attach-files.md)).
 
 ## Pola
 

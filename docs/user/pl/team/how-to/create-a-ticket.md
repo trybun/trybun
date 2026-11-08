@@ -32,4 +32,4 @@ Szablon jest w języku Twojego konta (**Ustawienia konta**). Dopóki opis jest p
 
 ## Opuszczanie formularza
 
-Jeśli opuścisz formularz po wpisaniu tytułu lub opisu, Trybun najpierw zapyta „Odrzucić zmiany?”. Wybierz **Edytuj dalej**, aby wrócić do formularza.
+Jeśli opuścisz formularz po wpisaniu tytułu lub opisu – przez link albo przyciskiem Wstecz przeglądarki lub telefonu – Trybun najpierw zapyta „Odrzucić zmiany?”. Wybierz **Edytuj dalej**, aby wrócić do formularza. Jeśli zamkniesz albo odświeżysz kartę, zapyta przeglądarka.
