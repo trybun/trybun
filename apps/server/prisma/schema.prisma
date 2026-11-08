@@ -47,6 +47,7 @@ model User {
   id             String    @id @default(uuid(7)) @db.Uuid
   /// The `sub` of the Keycloak user; missing until an invited person signs in for the first time.
   keycloakUserId String?   @unique @map("keycloak_user_id")
+  /// Normalized – trimmed and lower-cased (§7.4); a check constraint of the migrations keeps it so.
   email          String?   @unique
   displayName    String?   @map("display_name")
   /// Set on the first sign-in (§13.1).
@@ -61,8 +62,76 @@ model User {
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   productTourProgress ProductTourProgress[]
+  projectMemberships  ProjectMember[]
+  organizationMember  OrganizationMember?
+  invitations         Invitation[]          @relation("InvitationUser")
+  issuedInvitations   Invitation[]          @relation("InvitationInvitedBy")
+  requestedTickets    Ticket[]              @relation("TicketRequester")
+  assignedTickets     Ticket[]              @relation("TicketAssignee")
+  activityEvents      ActivityEvent[]
+  attachments         Attachment[]
 
   @@map("users")
+}
+
+/// `project.state` (§7.3)
+enum ProjectState {
+  active
+  archived
+
+  @@map("project_state")
+}
+
+/// `project_member.role` (§7.2): the team roles of a project and `end_user`, the personal access of
+/// an end user who reaches the project through no organization (§7.3).
+enum ProjectRole {
+  developer
+  project_manager
+  end_user
+
+  @@map("project_role")
+}
+
+/// A project (§3.1): the container of tickets. A versioned record (§17.2). An archived project is
+/// read-only until it is unarchived (§7.3).
+model Project {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  /// Trimmed, 1–100 characters, not unique.
+  name              String
+  /// A capital letter, then 1–9 capitals or digits (§3.1), unique across active and archived
+  /// projects; a check constraint of the migrations enforces the pattern too.
+  key               String       @unique
+  state             ProjectState @default(active)
+  /// Resolution confirmation (§4.3).
+  confirmResolution Boolean      @default(false) @map("confirm_resolution")
+  version           Int          @default(1)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  members       ProjectMember[]
+  organizations OrganizationProject[]
+  invitations   Invitation[]
+  tickets       Ticket[]
+  ticketCounter TicketNumberCounter?
+
+  @@index([name, id])
+  @@map("projects")
+}
+
+/// A team account with a team role in one project (§7.4): one role per person and project.
+/// Deleting the project deletes its memberships; a user is never deleted (§13.2).
+model ProjectMember {
+  projectId String      @map("project_id") @db.Uuid
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String      @map("user_id") @db.Uuid
+  user      User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role      ProjectRole
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([projectId, userId])
+  @@index([userId])
+  @@map("project_members")
 }
 
 /// `product_tour_progress.status` (§2.4)
@@ -117,6 +186,9 @@ model AuditLogEntry {
   /// The Prisma model name of the target record, e.g. `User`.
   targetType String   @map("target_type")
   targetId   String   @map("target_id") @db.Uuid
+  /// Further identifiers and non-personal values of the entry, typed per action (§13.5), e.g. the
+  /// user and the role of a membership change; never content or personal data.
+  details    Json?    @db.JsonB
   /// The client IP of a security event; removed after 14 days by the Worker (§13.2).
   ipAddress  String?  @map("ip_address") @db.Inet
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -170,4 +242,335 @@ model Session {
   @@index([keycloakUserId])
   @@index([keycloakSessionId])
   @@map("sessions")
+}
+
+/// `organization.state` (§7.3): an archived organization is read-only until it is unarchived.
+enum OrganizationState {
+  active
+  archived
+
+  @@map("organization_state")
+}
+
+/// A customer company that groups end users (§7.3); only the Administrator manages it (§7.5).
+model Organization {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  /// Trimmed, 1–100 characters, unique case-insensitively across active and archived
+  /// organizations; the unique index on the lower-case name is created by the migrations.
+  name      String
+  state     OrganizationState @default(active)
+  version   Int               @default(1)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  domains     OrganizationDomain[]
+  projects    OrganizationProject[]
+  members     OrganizationMember[]
+  invitations Invitation[]
+  tickets     Ticket[]
+
+  @@index([name, id])
+  @@map("organizations")
+}
+
+/// An e-mail domain of an organization (§7.3), unique across all organizations, archived ones
+/// included; stored lower-case in ASCII (punycode).
+model OrganizationDomain {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  domain         String       @unique
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organizationId])
+  @@map("organization_domains")
+}
+
+/// The access of an organization to a project (§7.3).
+model OrganizationProject {
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String       @map("project_id") @db.Uuid
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([organizationId, projectId])
+  @@index([projectId])
+  @@map("organization_projects")
+}
+
+/// `organization_member` (§7.3): an end-user account belongs to at most one organization, by the
+/// primary key on the account; `createdAt` is the date the person joined.
+model OrganizationMember {
+  userId         String       @id @map("user_id") @db.Uuid
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  organizationId String       @map("organization_id") @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+/// `invitation.target` (§7.4)
+enum InvitationTarget {
+  project
+  organization
+  administrator
+
+  @@map("invitation_target")
+}
+
+/// An invitation (§7.4, ADR 0009): grants its one target to the account it activates. It holds no
+/// personal data of its own – the account carries the e-mail address. The state (pending,
+/// accepted, revoked, expired) is derived from the timestamps; a check constraint of the
+/// migrations keeps the columns consistent with the target.
+model Invitation {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  /// The invited account, in state `invited` until the first acceptance.
+  userId         String           @map("user_id") @db.Uuid
+  user           User             @relation("InvitationUser", fields: [userId], references: [id], onDelete: Restrict)
+  target         InvitationTarget
+  /// The project of a `project` invitation.
+  projectId      String?          @map("project_id") @db.Uuid
+  project        Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// The role of a `project` invitation.
+  role           ProjectRole?
+  /// The organization of an `organization` invitation, or the organization matched by the e-mail
+  /// domain for a `project` invitation with role `end_user` (§7.3).
+  organizationId String?          @map("organization_id") @db.Uuid
+  organization   Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /// The person who issued it; none for the system.
+  invitedById    String?          @map("invited_by_id") @db.Uuid
+  invitedBy      User?            @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  /// SHA-256 of the token, base64url; replaced by resending.
+  tokenHash      String           @unique @map("token_hash")
+  expiresAt      DateTime         @map("expires_at") @db.Timestamptz(3)
+  /// Set in the transaction of the acceptance.
+  usedAt         DateTime?        @map("used_at") @db.Timestamptz(3)
+  revokedAt      DateTime?        @map("revoked_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([organizationId])
+  @@index([createdAt, id])
+  @@map("invitations")
+}
+
+/// `ticket.type` (§3.2)
+enum TicketType {
+  bug
+  feature
+  task
+  question
+
+  @@map("ticket_type")
+}
+
+/// `ticket.source` (§3.2)
+enum TicketSource {
+  user
+  developer
+  integration
+
+  @@map("ticket_source")
+}
+
+/// `ticket.priority` (§3.2)
+enum TicketPriority {
+  low
+  normal
+  high
+  critical
+
+  @@map("ticket_priority")
+}
+
+/// `ticket.status` (§4.1): the internal statuses; changed only by the status use cases (S1-06).
+enum TicketStatus {
+  new
+  triage
+  todo
+  in_progress
+  in_verification
+  waiting_for_requester
+  done
+  rejected
+  duplicate
+
+  @@map("ticket_status")
+}
+
+/// `ticket.waiting_reason` (§4.3): why a ticket in `waiting_for_requester` waits.
+enum TicketWaitingReason {
+  information
+  confirmation
+
+  @@map("ticket_waiting_reason")
+}
+
+/// `ticket_relation.kind` (§3.5): S1-06 creates `duplicate_of`; S2-08 adds the other kinds.
+enum TicketRelationKind {
+  duplicate_of
+
+  @@map("ticket_relation_kind")
+}
+
+/// A ticket (§3.2): the single unit of work. A versioned record (§17.2). Its project never changes,
+/// and its identifier `KEY-number` is composed from the project key and the number, never stored.
+/// Tickets are deleted only by undoing an import (§12.5); the restricting foreign keys keep a
+/// project, an organization or an account with tickets from being deleted.
+model Ticket {
+  id                  String               @id @default(uuid(7)) @db.Uuid
+  projectId           String               @map("project_id") @db.Uuid
+  project             Project              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  /// The per-project number from `ticket_number_counters`, unique in the project and never reused;
+  /// a check constraint of the migrations keeps it at least 1.
+  number              Int
+  /// Trimmed, 1–255 characters.
+  title               String
+  /// GFM Markdown, at most 65,536 characters; empty when none.
+  description         String               @default("")
+  /// Empty until triage for tickets of end users.
+  type                TicketType?
+  source              TicketSource
+  priority            TicketPriority       @default(normal)
+  status              TicketStatus
+  /// Set exactly while the status is `waiting_for_requester`, with `statusBeforeWaiting` and
+  /// `waitingSince` – check constraints of the migrations keep the three together (§4.3).
+  waitingReason       TicketWaitingReason? @map("waiting_reason")
+  /// The status the ticket had before it started waiting; `triage` after a reopen into waiting.
+  statusBeforeWaiting TicketStatus?        @map("status_before_waiting")
+  waitingSince        DateTime?            @map("waiting_since") @db.Timestamptz(3)
+  /// The time of the latest transition into a terminal status; set exactly while terminal.
+  closedAt            DateTime?            @map("closed_at") @db.Timestamptz(3)
+  /// The reason of a rejection, set exactly while `rejected`; team only. Personal data: S1-16
+  /// covers it like a description until S1-12 publishes the reasons as comments and drops it.
+  rejectionReason     String?              @map("rejection_reason")
+  /// The requester's organization at creation, never changed (§3.2).
+  organizationId      String?              @map("organization_id") @db.Uuid
+  organization        Organization?        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  requesterId         String               @map("requester_id") @db.Uuid
+  requester           User                 @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assigneeId          String?              @map("assignee_id") @db.Uuid
+  assignee            User?                @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
+  version             Int                  @default(1)
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  activityEvents    ActivityEvent[]
+  /// The relations of which the ticket is the source, e.g. its `duplicate_of`.
+  outgoingRelations TicketRelation[] @relation("TicketRelationSource")
+  /// The relations that point to the ticket, e.g. its duplicates.
+  incomingRelations TicketRelation[] @relation("TicketRelationTarget")
+  attachments       Attachment[]
+
+  @@unique([projectId, number])
+  @@index([assigneeId])
+  @@index([requesterId])
+  @@index([organizationId])
+  @@index([createdAt, id])
+  @@map("tickets")
+}
+
+/// A relation between two tickets of one project (§3.5). A partial unique index of the migrations
+/// allows one `duplicate_of` per source ticket; same project and "the target is not a duplicate"
+/// are rules of the status use case. A child record: it does not change the tickets' versions.
+model TicketRelation {
+  id             String             @id @default(uuid(7)) @db.Uuid
+  kind           TicketRelationKind
+  /// The duplicate of a `duplicate_of`.
+  sourceTicketId String             @map("source_ticket_id") @db.Uuid
+  sourceTicket   Ticket             @relation("TicketRelationSource", fields: [sourceTicketId], references: [id], onDelete: Cascade)
+  /// The original of a `duplicate_of`: it cannot be deleted while a relation points to it.
+  targetTicketId String             @map("target_ticket_id") @db.Uuid
+  targetTicket   Ticket             @relation("TicketRelationTarget", fields: [targetTicketId], references: [id], onDelete: Restrict)
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([sourceTicketId])
+  @@index([targetTicketId])
+  @@map("ticket_relations")
+}
+
+/// The ticket number counter of a project (§17.2): the creation of a ticket increments it under the
+/// row lock of one upsert, so numbers are consecutive and never reused. It exists from the first
+/// ticket on and is never lowered or deleted while its project exists, so "the project has tickets"
+/// (§3.1) means that it exists.
+model TicketNumberCounter {
+  projectId  String  @id @map("project_id") @db.Uuid
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lastNumber Int     @map("last_number")
+
+  @@map("ticket_number_counters")
+}
+
+/// `activity_event.automatic_source` (§4.5): the source of an automatic change.
+enum ActivityEventSource {
+  system
+
+  @@map("activity_event_source")
+}
+
+/// An activity event of a ticket (§4.5): one field change with its previous and new value. The
+/// history is immutable – triggers of the migrations refuse every update, every truncation and
+/// every delete except the one cascaded from the deletion of its ticket by an import undo.
+model ActivityEvent {
+  id              String               @id @default(uuid(7)) @db.Uuid
+  ticketId        String               @map("ticket_id") @db.Uuid
+  ticket          Ticket               @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  /// `activityEventTypeSchema` of `@trybun/contracts`; a string, so a new type needs no migration.
+  type            String
+  /// The previous and the new value (`from`, `to`); a reference is stored as a snapshot of its ID
+  /// and display name. None for `description_edited`.
+  data            Json?                @db.JsonB
+  /// The person who made the change; none for an automatic event.
+  actorId         String?              @map("actor_id") @db.Uuid
+  actor           User?                @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  automaticSource ActivityEventSource? @map("automatic_source")
+  /// Decided by the producing rule when the event is written; end users see only public events.
+  isPublic        Boolean              @default(false) @map("is_public")
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([ticketId, id])
+  @@map("activity_events")
+}
+
+/// `attachment.status` (§13.3): quarantine until the malware scan, then available, or removed as
+/// infected or as not completely scannable (`rejected`).
+enum AttachmentStatus {
+  quarantine
+  available
+  infected
+  rejected
+
+  @@map("attachment_status")
+}
+
+/// A file of a ticket (§3.2, §13.3, ADR 0008). Its ID is the key of its object in the storage
+/// and is generated before the upload. Unlinked, it is a draft of its uploader, purged after 24
+/// hours. Never changed through the API, so not versioned; a child record that does not change the
+/// ticket's version (§17.2). Partial indexes of the migrations serve the purge of drafts and the
+/// recovery of scans.
+model Attachment {
+  id           String           @id @db.Uuid
+  /// The normalized file name of the client, 1–255 characters with its extension. Never logged.
+  fileName     String           @map("file_name")
+  /// The type of the allowlist entry of the extension, never the type sent by the client.
+  contentType  String           @map("content_type")
+  /// Bytes of the stored object, updated after EXIF stripping; at most 100 MB.
+  size         Int
+  status       AttachmentStatus @default(quarantine)
+  uploadedById String           @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User             @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  /// None while a draft.
+  ticketId     String?          @map("ticket_id") @db.Uuid
+  ticket       Ticket?          @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([ticketId, createdAt, id])
+  @@index([uploadedById])
+  @@map("attachments")
 }

@@ -80,11 +80,11 @@ jobs:
       - uses: ./.github/actions/setup
       # Chromium for the phone, desktop and Lighthouse projects, WebKit for the tablet (§2.9).
       - run: pnpm --filter @trybun/web exec playwright install --with-deps chromium webkit
-      # The local environment (§15.12) with the seeded accounts, without the optional services.
+      # The local environment (§15.12) with the seeded accounts and the optional services of
+      # `.env.example` – SeaweedFS and ClamAV, which the attachments of the portal tests need.
       - name: Start the infrastructure
         run: |
           cp .env.example .env
-          sed -i 's/^COMPOSE_PROFILES=.*/COMPOSE_PROFILES=/' .env
           docker compose -f compose.yaml -f compose.dev.yaml up -d --wait
           docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config
       - run: pnpm db:migrate && pnpm db:seed

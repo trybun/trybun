@@ -1,6 +1,6 @@
 {
   "name": "@trybun/eslint-config",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -17,15 +17,15 @@
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",
-    "@next/eslint-plugin-next": "^16.4.2",
+    "@next/eslint-plugin-next": "^16.4.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.5",
-    "eslint-plugin-better-tailwindcss": "^4.9.1",
+    "eslint-plugin-better-tailwindcss": "^4.10.0",
     "eslint-plugin-check-file": "^3.3.2",
     "eslint-plugin-import-x": "^4.17.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
-    "typescript-eslint": "^8.71.2"
+    "typescript-eslint": "^8.72.0"
   },
   "peerDependencies": {
     "eslint": "^10.13.0",

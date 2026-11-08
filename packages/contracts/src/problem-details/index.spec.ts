@@ -39,6 +39,8 @@ describe('toFieldErrorCode', () => {
   it.each([
     [z.string().max(2), 'abc', 'string.too_long'],
     [z.string().min(2), 'a', 'string.too_short'],
+    [z.string().min(1), '', 'string.empty'],
+    [z.string().trim().min(1), '  ', 'string.empty'],
     [z.array(z.string()).max(1), ['a', 'b'], 'array.too_long'],
     [z.number().max(1), 2, 'number.too_large'],
     [z.number().min(1), 0, 'number.too_small'],
