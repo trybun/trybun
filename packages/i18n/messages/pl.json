@@ -22,7 +22,8 @@
     "administration": "Administracja",
     "projects": "Projekty",
     "accountSettings": "Ustawienia konta",
-    "myTickets": "Moje zgłoszenia"
+    "myTickets": "Moje zgłoszenia",
+    "newTicket": "Nowe zgłoszenie"
   },
   "languages": {
     "en": "English",
@@ -412,6 +413,23 @@
       "searchPeople": "Szukaj po nazwie lub loginie GitHub",
       "loadingPeople": "Wczytywanie…",
       "noPeople": "Nikogo nie znaleziono."
+    },
+    "form": {
+      "heading": "Nowe zgłoszenie",
+      "project": "Projekt",
+      "projectPlaceholder": "Wybierz projekt",
+      "projectRequired": "Wybierz projekt.",
+      "noProjects": "Nie możesz jeszcze tworzyć zgłoszeń w żadnym projekcie.",
+      "type": "Typ",
+      "title": "Tytuł",
+      "titleRequired": "Wpisz tytuł.",
+      "description": "Opis",
+      "priority": "Priorytet",
+      "assignee": "Osoba przypisana",
+      "assignToMe": "Przypisz do mnie",
+      "submit": "Utwórz zgłoszenie",
+      "cancel": "Anuluj",
+      "created": "Utworzono zgłoszenie {identifier}"
     },
     "timeline": {
       "title": "Aktywność",

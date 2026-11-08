@@ -1,8 +1,14 @@
 import { type APIRequestContext, devices, expect, request, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
+import { TEMPLATES, TicketFormPage } from './pages/ticket-form.page.js';
 import { TicketPage } from './pages/ticket.page.js';
-import { ADMIN_STORAGE_STATE, MANAGER_STORAGE_STATE, TEAM_STORAGE_STATE } from './storage-state.js';
+import {
+  ADMIN_STORAGE_STATE,
+  CUSTOMER_STORAGE_STATE,
+  MANAGER_STORAGE_STATE,
+  TEAM_STORAGE_STATE,
+} from './storage-state.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 /**
@@ -237,6 +243,139 @@ test.describe('assignment in the team ticket view', () => {
         expect(await setAssignee(manager, identifier, null)).toBe(200);
         await manager.dispose();
       }
+    });
+  });
+});
+
+/** The ID of an active project of the demo dataset by its name. */
+async function projectIdOf(api: APIRequestContext, name: string): Promise<string> {
+  const response = await api.get('/api/v1/projects?state=active');
+  expect(response.status()).toBe(200);
+  const { items } = (await response.json()) as { items: { id: string; name: string }[] };
+  const project = items.find((candidate) => candidate.name === name);
+  expect(project, name).toBeDefined();
+  return project!.id;
+}
+
+// The full ticket form of S1-10 on phone, tablet and desktop, with axe (§13.4). The tests read
+// shared data only, except the new tickets, which have titles of their own.
+test.describe('the full ticket form', () => {
+  test('New ticket in the team header opens the form', async ({ page }, testInfo) => {
+    const newTicket = page.getByRole('banner').getByRole('link', { name: 'New ticket' });
+    await page.goto('/');
+
+    await expectTouchTarget(newTicket, minimumTargetSize(testInfo), ['height', 'width']);
+    // A link of the server-rendered header: repeated until the hydrated link navigates.
+    await expect(async () => {
+      await newTicket.click();
+      await expect(page).toHaveURL(/\/tickets\/new$/, { timeout: 2_000 });
+    }).toPass();
+    await expect(new TicketFormPage(page).heading).toHaveText('New ticket');
+  });
+
+  test('changing the type with an unchanged description replaces the template; with an edited one it never does', async ({
+    page,
+  }, testInfo) => {
+    const form = new TicketFormPage(page);
+    await form.goto();
+    // The Developer's account speaks Polish (demo dataset), which the settings test switches for
+    // a moment: the expectations follow the language the form inserted.
+    const templates = TEMPLATES[await form.insertedLanguage()];
+    await expect(form.type('Task')).toBeChecked();
+    await expect(form.priority).toContainText('Normal');
+
+    await form.chooseType('Question');
+    await expect(form.description).toHaveValue(templates.question);
+    await expect(form.priority).toContainText('Low');
+    await form.chooseType('Bug');
+    await expect(form.description).toHaveValue(templates.bug);
+    await expect(form.priority).toContainText('Normal');
+    expect(await seriousViolations(page)).toEqual([]);
+    await expectTouchTarget(
+      page.locator('label').filter({ has: form.type('Bug') }),
+      minimumTargetSize(testInfo),
+    );
+    await expectTouchTarget(form.submit, minimumTargetSize(testInfo));
+
+    const edited = `${templates.bug}\nSafari 26 on an iPad`;
+    await form.description.fill(edited);
+    await form.chooseType('Question');
+    await expect(form.description).toHaveValue(edited);
+    await form.chooseType('Task');
+    await expect(form.description).toHaveValue(edited);
+  });
+
+  test('a Developer sees only the Assign to me checkbox, and the new ticket opens in its view', async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    const developer = await apiAs(TEAM_STORAGE_STATE, baseURL ?? '');
+    const erp = await projectIdOf(developer, 'ERP');
+    await developer.dispose();
+    const form = new TicketFormPage(page);
+    await form.goto(erp);
+
+    await expect(form.project).toContainText('ERP');
+    await form.checkAssignToMe();
+    await expect(form.assigneePicker).toHaveCount(0);
+    expect(await seriousViolations(page)).toEqual([]);
+    const title = `Full form on ${testInfo.project.name} ${Date.now()}`;
+    await form.title.fill(title);
+    await expect(form.title).toHaveValue(title);
+    const created = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/tickets' &&
+        response.request().method() === 'POST',
+    );
+    await form.submit.click();
+    expect((await created).status()).toBe(201);
+
+    await expect(page).toHaveURL(/\/tickets\/ERP-\d+$/);
+    const ticket = new TicketPage(page);
+    await expect(ticket.heading).toHaveText(title);
+    await expect(ticket.details).toContainText('Dorota Developer');
+    await expect(ticket.toast('created')).toContainText(/^Ticket ERP-\d+ created/);
+  });
+
+  test.describe('as a Project manager whose language is Polish', () => {
+    test.use({ storageState: MANAGER_STORAGE_STATE });
+
+    test('the template appears in Polish, and the picker offers anyone', async ({
+      page,
+      baseURL,
+    }) => {
+      const manager = await apiAs(MANAGER_STORAGE_STATE, baseURL ?? '');
+      const me = (await (await manager.get('/api/v1/users/me')).json()) as { language: string };
+      // The demo dataset; no test changes the manager's language.
+      expect(me.language).toBe('pl');
+      const erp = await projectIdOf(manager, 'ERP');
+      await manager.dispose();
+      const form = new TicketFormPage(page);
+      await form.goto(erp);
+
+      // The page speaks the browser's language, the template the account's (S1-10 Q4).
+      await expect(form.heading).toHaveText('New ticket');
+      await expect(form.description).toHaveValue(TEMPLATES.pl.task);
+      await form.chooseType('Bug');
+      await expect(form.description).toHaveValue(TEMPLATES.pl.bug);
+      await expect(form.assigneePicker).toBeVisible();
+      await expect(form.assignToMe).toHaveCount(0);
+      expect(await seriousViolations(page)).toEqual([]);
+    });
+  });
+
+  test.describe('as an end user', () => {
+    test.use({ storageState: CUSTOMER_STORAGE_STATE });
+
+    test('has no New ticket in the header and goes from the form to the portal', async ({
+      page,
+    }) => {
+      await page.goto('/tickets/new');
+
+      await expect(page).toHaveURL(/\/portal$/);
+      await expect(page.getByRole('banner').getByRole('link', { name: 'New ticket' })).toHaveCount(
+        0,
+      );
     });
   });
 });

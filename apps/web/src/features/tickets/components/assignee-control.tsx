@@ -57,9 +57,9 @@ export function AssigneeControl({ ticket }: { ticket: Ticket }) {
   if (ticket.allowedActions.includes('assign')) {
     return (
       <AssigneePicker
-        ticket={ticket}
+        projectId={ticket.projectId}
         me={me}
-        currentName={currentName}
+        selected={{ value: current?.id ?? null, label: currentName }}
         disabled={change.isPending}
         onAssign={(assigneeId, label) => assign(assigneeId, label)}
       />
@@ -91,20 +91,23 @@ export function AssigneeControl({ ticket }: { ticket: Ticket }) {
 }
 
 /**
- * The picker of the people who can be assigned: a `Combobox` from the tablet breakpoint on, a
- * bottom sheet with a search on phones (§18.6). The search text goes to the server as the person
- * types, deferred while they type (Q9); it stays in the component, never in the URL (§18.5).
+ * The picker of the people who can be assigned to the tickets of a project – of a ticket in the
+ * view or of the full form: a `Combobox` from the tablet breakpoint on, a bottom sheet with a
+ * search on phones (§18.6). The search text goes to the server as the person types, deferred while
+ * they type (Q9); it stays in the component, never in the URL (§18.5).
  */
-function AssigneePicker({
-  ticket,
+export function AssigneePicker({
+  projectId,
   me,
-  currentName,
+  selected: { value: selectedId, label: currentName },
   disabled,
   onAssign,
 }: {
-  ticket: Ticket;
+  projectId: string;
+  /** The ID of the person; **Assign to me** is offered while they can be assigned. */
   me: string | undefined;
-  currentName: string;
+  /** The assignee, `null` when nobody is, with the name the control shows. */
+  selected: { value: string | null; label: string };
   disabled: boolean;
   onAssign: (assigneeId: string | null, label: string) => void;
 }) {
@@ -114,7 +117,7 @@ function AssigneePicker({
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search.trim());
   const members = useQuery({
-    ...assignableMembersQueryOptions(browserApiClient, ticket.projectId, deferredSearch),
+    ...assignableMembersQueryOptions(browserApiClient, projectId, deferredSearch),
     enabled: isOpen,
   });
   const people = members.data?.items.map(({ user }) => user) ?? [];
@@ -131,7 +134,7 @@ function AssigneePicker({
       })),
     { value: UNASSIGNED, label: t('view.unassigned') },
   ];
-  const selected = { value: ticket.assignee?.id ?? UNASSIGNED, label: currentName };
+  const selected = { value: selectedId ?? UNASSIGNED, label: currentName };
   const choose = (value: string) => {
     if (value === selected.value) {
       return;

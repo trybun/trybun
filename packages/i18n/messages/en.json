@@ -22,7 +22,8 @@
     "administration": "Administration",
     "projects": "Projects",
     "accountSettings": "Account settings",
-    "myTickets": "My tickets"
+    "myTickets": "My tickets",
+    "newTicket": "New ticket"
   },
   "languages": {
     "en": "English",
@@ -412,6 +413,23 @@
       "searchPeople": "Search by name or GitHub login",
       "loadingPeople": "Loading…",
       "noPeople": "No one found."
+    },
+    "form": {
+      "heading": "New ticket",
+      "project": "Project",
+      "projectPlaceholder": "Choose a project",
+      "projectRequired": "Choose a project.",
+      "noProjects": "You cannot create tickets in any project yet.",
+      "type": "Type",
+      "title": "Title",
+      "titleRequired": "Enter a title.",
+      "description": "Description",
+      "priority": "Priority",
+      "assignee": "Assignee",
+      "assignToMe": "Assign to me",
+      "submit": "Create ticket",
+      "cancel": "Cancel",
+      "created": "Ticket {identifier} created"
     },
     "timeline": {
       "title": "Activity",

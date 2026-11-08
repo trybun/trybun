@@ -9,6 +9,9 @@ describe('counterpartOf', () => {
     ['/projects/0198-a/settings', '/portal'],
     ['/projects', '/portal'],
     ['/tickets/ERP-12', '/portal/tickets/ERP-12'],
+    // The full ticket form of S1-10 has no portal counterpart.
+    ['/tickets/new', '/portal'],
+    ['/tickets/new?projectId=0198-a', '/portal'],
     ['/settings', '/portal/settings'],
     ['/settings?tab=x', '/portal/settings'],
     ['/admin/accounts', '/portal'],

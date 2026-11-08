@@ -18,6 +18,7 @@ import { LazyProductTourMenuItems } from '../../product-tours/components/lazy-pr
 import { ProductTourProvider } from '../../product-tours/components/product-tour-provider.js';
 import { productTourProgressQueryOptions } from '../../product-tours/queries.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
+import { NewTicketButton } from '../../tickets/components/new-ticket-button.js';
 import { AccountDeactivatedNotice } from '../../sessions/components/account-deactivated-notice.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
 import { counterpartOf, type Shell } from '../counterparts.js';
@@ -88,6 +89,7 @@ export async function AccountShell({
           <AppShell
             navigation={navigation}
             isDesktopNavigationCollapsed={isNavigationCollapsedOnDesktop}
+            newTicket={shell === 'team' ? <NewTicketButton /> : undefined}
             help={
               <LazyHelpMenu views={helpViews}>
                 <LazyProductTourMenuItems />
