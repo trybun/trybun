@@ -29,7 +29,7 @@ Make the S1-11 change specification `.ai/specs/2026-10-26-ticket-visibility.md` 
 
 ## Assumptions
 
-- Answers to Q1, Q7 and Q8 come from the maintainer in this session. The 15 other answers stay reversible proposals.
+- Answers come from the maintainer in this session: Q1, Q6, Q7, Q8, Q10, Q14, Q19 and Q20 explicitly, the others as proposed.
 - The specification review runs through `om-auto-review-pr 121 --autofix`, as for PR #120.
 
 ## Risks
@@ -56,4 +56,4 @@ Make the S1-11 change specification `.ai/specs/2026-10-26-ticket-visibility.md` 
 ### Phase 4: Review and finalize
 
 - [x] 4.1 Run the specification review and apply its findings — 2de28cd
-- [ ] 4.2 Update the PR body, labels and draft state
+- [x] 4.2 Update the PR body, labels and draft state — 94e866b
