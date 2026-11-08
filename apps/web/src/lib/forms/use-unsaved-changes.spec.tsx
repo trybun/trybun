@@ -176,4 +176,51 @@ describe('useUnsavedChanges', () => {
     act(() => second.result.current.stay());
     expect(isGuardEntry()).toBe(true);
   });
+
+  it('adds no entry on the first entry of the tab, where Back has nowhere to go', () => {
+    // The Navigation API knows that no page comes before; jsdom has none of its own.
+    Object.defineProperty(window, 'navigation', {
+      configurable: true,
+      value: { canGoBack: false },
+    });
+    try {
+      const length = window.history.length;
+      const { result } = renderGuard(true);
+
+      expect(window.history.length).toBe(length);
+      expect(isGuardEntry()).toBe(false);
+      const unload = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(unload);
+      expect(unload.defaultPrevented).toBe(true);
+      expect(result.current.isAsking).toBe(false);
+    } finally {
+      Reflect.deleteProperty(window, 'navigation');
+    }
+  });
+
+  it('lets a link to a fragment of the page through, and still asks on Back', async () => {
+    const { result } = renderGuard(true);
+    const link = document.createElement('a');
+    link.href = '#main';
+    link.textContent = 'Skip to content';
+    document.body.append(link);
+
+    act(() => link.click());
+    await waitFor(() => expect(window.location.hash).toBe('#main'));
+    expect(result.current.isAsking).toBe(false);
+
+    // Back from the fragment only returns to the page.
+    await pressBack();
+    expect(result.current.isAsking).toBe(false);
+    expect(window.location.pathname).toBe('/tickets/new');
+    expect(window.location.hash).toBe('');
+    expect(isGuardEntry()).toBe(true);
+
+    await pressBack();
+    expect(result.current.isAsking).toBe(true);
+    act(() => result.current.leave());
+    await waitFor(() => expect(window.location.pathname).toBe('/tickets'));
+    expect(routerPops.at(-1)).toEqual({ ...NEXT_STATE, page: 'previous' });
+    link.remove();
+  });
 });

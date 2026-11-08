@@ -211,6 +211,37 @@ describe('one change at a time', () => {
     await waitFor(() => expect(fields().map(isDisabled)).toEqual([false, false, false, false]));
     expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')).toHaveLength(1);
   });
+
+  it('holds Save of the title and the description while a change of another field is pending', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse());
+    let respond: (() => void) | undefined;
+    fake.client.PATCH.mockImplementationOnce((path: string, init?: unknown) => {
+      fake.calls.push({ method: 'PATCH', path, init });
+      return new Promise((resolve) => {
+        respond = () =>
+          resolve({
+            data: ticketResponse({ priority: 'critical', version: 4 }),
+            response: new Response(null, { status: 200 }),
+          });
+      });
+    });
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: 'Edit description' }));
+    await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    await user.click(screen.getByRole('button', { name: 'Edit title' }));
+    await user.click(screen.getByRole('combobox', { name: 'Priority' }));
+    await user.click(await screen.findByRole('option', { name: 'Critical' }));
+
+    const saves = () => screen.getAllByRole('button', { name: 'Save' });
+    await waitFor(() => expect(saves().map(isDisabled)).toEqual([true, true]));
+
+    respond?.();
+
+    await waitFor(() => expect(saves().map(isDisabled)).toEqual([false, false]));
+    expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')).toHaveLength(1);
+  });
 });
 
 describe('title and description', () => {
@@ -294,6 +325,8 @@ describe('title and description', () => {
   it('asks when Back is pressed with a typed description (Q10)', async () => {
     const user = userEvent.setup();
     answer(ticketResponse());
+    // A page before the ticket's: on the first entry of a tab, Back has nowhere to go.
+    window.history.pushState(null, '', '/tickets/ERP-12');
     renderView();
 
     await user.click(await screen.findByRole('button', { name: 'Edit description' }));
