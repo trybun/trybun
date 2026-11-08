@@ -76,6 +76,17 @@ export class TicketFormPage {
     }).toPass();
   }
 
+  /**
+   * Types a description. Text typed into the server-rendered editor before the hydration is
+   * replaced by the form's value, so typing repeats until the description keeps it.
+   */
+  async fillDescription(text: string): Promise<void> {
+    await expect(async () => {
+      await this.description.fill(text);
+      await expect(this.description).toHaveValue(text, { timeout: 2_000 });
+    }).toPass();
+  }
+
   /** Ticks **Assign to me**, repeated until the hydrated checkbox takes the press. */
   async checkAssignToMe(): Promise<void> {
     await expect(async () => {

@@ -307,7 +307,7 @@ test.describe('the full ticket form', () => {
     await expectTouchTarget(form.submit, minimumTargetSize(testInfo));
 
     const edited = `${templates.bug}\nSafari 26 on an iPad`;
-    await form.description.fill(edited);
+    await form.fillDescription(edited);
     await form.chooseType('Question');
     await expect(form.description).toHaveValue(edited);
     await form.chooseType('Task');
@@ -323,7 +323,7 @@ test.describe('the full ticket form', () => {
     await form.goto();
     const templates = TEMPLATES[await form.insertedLanguage()];
     const text = `${templates.task}\nBack on ${testInfo.project.name}`;
-    await form.description.fill(text);
+    await form.fillDescription(text);
     await expect(form.description).toHaveValue(text);
     // The guard's history entry, above the form's own, is in place before Back is pressed.
     await page.waitForFunction(
