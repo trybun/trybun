@@ -496,6 +496,13 @@ restore_data() {
   log 'Restored.'
 }
 
+# Deletes the fetched backup, e.g. after ./trybun restore stopped before it stopped Trybun: the
+# restore folder holds the databases and the .env of the backup.
+discard() {
+  lock
+  rm -rf "$RESTORED"
+}
+
 # Seconds until the next backup time (HH:MM, UTC).
 seconds_until() {
   now=$(date -u +%s)
@@ -558,11 +565,12 @@ case ${1-} in
     storage_owner "$@"
     ;;
   restore-data) restore_data "${2-}" ;;
+  discard) discard ;;
   # rclone with the remote `objects` of the storage, for the restore test and diagnosis.
   rclone)
     shift
     configure_storage
     exec rclone "$@"
     ;;
-  *) fail "Unknown command \"${1-}\". Commands: schedule, backup [tag], list, fetch [snapshot], configuration, storage-owner [--test] [url], restore-data [--replace-foreign-objects], rclone <arguments>." ;;
+  *) fail "Unknown command \"${1-}\". Commands: schedule, backup [tag], list, fetch [snapshot], configuration, storage-owner [--test] [url], restore-data [--replace-foreign-objects], discard, rclone <arguments>." ;;
 esac
