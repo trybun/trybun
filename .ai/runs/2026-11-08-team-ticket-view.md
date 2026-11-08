@@ -44,7 +44,7 @@ Build the team ticket view at `/tickets/{identifier}` and the full ticket form a
 
 ### Phase 3: Full form
 
-- [ ] 3.1 Catalogue templates and the replacement rule
+- [x] 3.1 Catalogue templates and the replacement rule — 8224b1f
 - [ ] 3.2 Full form, header button and navigation to the new ticket
 
 ### Phase 4: Documentation and specification
