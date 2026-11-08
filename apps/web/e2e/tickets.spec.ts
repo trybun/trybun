@@ -408,7 +408,8 @@ test.describe('the full ticket form', () => {
     }) => {
       await page.goto('/tickets/new');
 
-      await expect(page).toHaveURL(/\/portal$/);
+      // The portal root, which takes the demo customer with a single project into it (S1-09).
+      await expect(page).toHaveURL(/\/portal\/projects\/[0-9a-f-]+$/);
       await expect(page.getByRole('banner').getByRole('link', { name: 'New ticket' })).toHaveCount(
         0,
       );
