@@ -109,10 +109,9 @@ const only = (state: AttachmentState, image = false) =>
 // Every state carries a text and an icon; a removed file is no link.
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: 'screenshot.png' })).toHaveAttribute(
-      'href',
-      '#screenshot',
-    );
+    await expect(
+      canvas.getByRole('link', { name: 'screenshot.png (opens in a new tab)' }),
+    ).toHaveAttribute('href', '#screenshot');
     await expect(canvas.getByText('Uploading…')).toBeVisible();
     await expect(canvas.getByText('Checking…')).toBeVisible();
     await expect(canvas.getByText('File removed: malware detected')).toBeVisible();
@@ -129,15 +128,43 @@ export const Uploading: Story = { args: { items: only('uploading') } };
 
 export const Checking: Story = { args: { items: only('checking') } };
 
+// An image opens in a new tab, so the application tab stays, and says so (§13.3, WCAG G201).
 export const AvailableImage: Story = {
   args: { items: only('available', true) },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: 'screenshot.png' })).toBeVisible();
+    const link = canvas.getByRole('link', { name: 'screenshot.png (opens in a new tab)' });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     await expect(canvas.getByRole('presentation')).toHaveAttribute('src', THUMBNAIL);
   },
 };
 
-export const AvailableFile: Story = { args: { items: only('available') } };
+// Any other file is a download: a link in the same tab, without the new-tab hint. Without a media
+// type a file counts as a download too.
+export const AvailableFile: Story = {
+  args: {
+    items: [
+      ...only('available'),
+      {
+        id: '8',
+        fileName: 'contract.pdf',
+        size: 98_304,
+        contentType: 'application/pdf',
+        href: '#contract',
+        state: 'available',
+      },
+      { id: '7', fileName: 'notes', size: 512, href: '#notes', state: 'available' },
+    ],
+  },
+  play: async ({ canvas }) => {
+    for (const name of ['server-log-2026-11-06.txt', 'contract.pdf', 'notes']) {
+      const link = canvas.getByRole('link', { name });
+      await expect(link).not.toHaveAttribute('target');
+      await expect(link).not.toHaveAttribute('rel');
+    }
+  },
+};
 
 export const Infected: Story = { args: { items: only('infected') } };
 
@@ -213,7 +240,9 @@ export const StateChanges: Story = {
     await waitFor(() => expect(region).toHaveTextContent('screenshot.png: Checking…'));
     await waitFor(() => expect(region).toHaveTextContent('screenshot.png: Available'));
     await expect(region).toHaveTextContent('setup.zip: File removed: malware detected');
-    await expect(canvas.getByRole('link', { name: 'screenshot.png' })).toBeVisible();
+    await expect(
+      canvas.getByRole('link', { name: 'screenshot.png (opens in a new tab)' }),
+    ).toBeVisible();
   },
 };
 
@@ -226,6 +255,9 @@ export const Polish: Story = {
     await expect(canvas.getByText('Plik usunięty: wykryto złośliwe oprogramowanie')).toBeVisible();
     await expect(canvas.getByText('Plik usunięty: nie można go sprawdzić')).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Usuń invoice.pdf' })).toBeVisible();
+    await expect(
+      canvas.getByRole('link', { name: 'screenshot.png (otwiera się w nowej karcie)' }),
+    ).toHaveAttribute('target', '_blank');
     await expect(canvas.getByText('1,5 MB')).toBeVisible();
   },
 };

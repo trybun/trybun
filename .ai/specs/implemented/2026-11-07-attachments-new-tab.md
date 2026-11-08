@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-07 |
 | Plan task | – |
 | System specification sections | §13.3, §13.4 |
-| Related issues / PRs | #246 (request), #244 (S1-08 attachments) |
+| Related issues / PRs | #246 (request), #252 (specification), #253 (implementation), #244 (S1-08 attachments) |
 
 ## 📝 TLDR
 
@@ -110,3 +110,4 @@ Phase 1 – one pull request, `Closes #246`:
 
 - 2026-11-07 – Created (autonomous draft from #246).
 - 2026-11-07 – Review: tests moved to story play functions (§18), existing name assertions listed.
+- 2026-11-08 – Implemented in #253.
