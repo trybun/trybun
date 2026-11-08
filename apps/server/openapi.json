@@ -213,6 +213,9 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "hideTimelineEvents": {
+                      "type": "boolean"
+                    },
                     "allowedActions": {
                       "type": "array",
                       "items": {
@@ -232,6 +235,7 @@
                     "kind",
                     "language",
                     "timeZone",
+                    "hideTimelineEvents",
                     "allowedActions"
                   ],
                   "additionalProperties": false
@@ -265,6 +269,9 @@
                     "nullable": true,
                     "type": "string",
                     "maxLength": 64
+                  },
+                  "hideTimelineEvents": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -311,6 +318,9 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "hideTimelineEvents": {
+                      "type": "boolean"
+                    },
                     "allowedActions": {
                       "type": "array",
                       "items": {
@@ -330,6 +340,7 @@
                     "kind",
                     "language",
                     "timeZone",
+                    "hideTimelineEvents",
                     "allowedActions"
                   ],
                   "additionalProperties": false
@@ -1024,7 +1035,9 @@
                                     "delete",
                                     "read_members",
                                     "manage_members",
-                                    "create_ticket"
+                                    "create_ticket",
+                                    "assign_tickets",
+                                    "assign_tickets_self"
                                   ]
                                 }
                               }
@@ -1078,7 +1091,9 @@
                                     "delete",
                                     "read_members",
                                     "manage_members",
-                                    "create_ticket"
+                                    "create_ticket",
+                                    "assign_tickets",
+                                    "assign_tickets_self"
                                   ]
                                 }
                               }
@@ -1211,7 +1226,9 @@
                           "delete",
                           "read_members",
                           "manage_members",
-                          "create_ticket"
+                          "create_ticket",
+                          "assign_tickets",
+                          "assign_tickets_self"
                         ]
                       }
                     }
@@ -1326,7 +1343,9 @@
                               "delete",
                               "read_members",
                               "manage_members",
-                              "create_ticket"
+                              "create_ticket",
+                              "assign_tickets",
+                              "assign_tickets_self"
                             ]
                           }
                         }
@@ -1380,7 +1399,9 @@
                               "delete",
                               "read_members",
                               "manage_members",
-                              "create_ticket"
+                              "create_ticket",
+                              "assign_tickets",
+                              "assign_tickets_self"
                             ]
                           }
                         }
@@ -1511,7 +1532,9 @@
                           "delete",
                           "read_members",
                           "manage_members",
-                          "create_ticket"
+                          "create_ticket",
+                          "assign_tickets",
+                          "assign_tickets_self"
                         ]
                       }
                     }
@@ -1647,7 +1670,9 @@
                           "delete",
                           "read_members",
                           "manage_members",
-                          "create_ticket"
+                          "create_ticket",
+                          "assign_tickets",
+                          "assign_tickets_self"
                         ]
                       }
                     }
@@ -1744,6 +1769,23 @@
                 "developer",
                 "project_manager"
               ]
+            }
+          },
+          {
+            "name": "assignable",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "query",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
             }
           }
         ],

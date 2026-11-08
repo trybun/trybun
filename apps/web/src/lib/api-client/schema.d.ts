@@ -691,6 +691,7 @@ export interface operations {
                         /** @enum {string|null} */
                         language: "en" | "pl" | null;
                         timeZone: string | null;
+                        hideTimelineEvents: boolean;
                         allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };
@@ -710,6 +711,7 @@ export interface operations {
                     /** @enum {string} */
                     language?: "en" | "pl";
                     timeZone?: string | null;
+                    hideTimelineEvents?: boolean;
                 };
             };
         };
@@ -729,6 +731,7 @@ export interface operations {
                         /** @enum {string|null} */
                         language: "en" | "pl" | null;
                         timeZone: string | null;
+                        hideTimelineEvents: boolean;
                         allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };
@@ -1055,7 +1058,7 @@ export interface operations {
                             /** @enum {string|null} */
                             role: "developer" | "project_manager" | "end_user" | null;
                             hasTickets: boolean;
-                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
                         } | {
                             /** Format: uuid */
                             id: string;
@@ -1063,7 +1066,7 @@ export interface operations {
                             key: string;
                             /** @enum {string} */
                             state: "active" | "archived";
-                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
                         })[];
                         nextCursor: string | null;
                     };
@@ -1108,7 +1111,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
                     };
                 };
             };
@@ -1146,7 +1149,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
                     } | {
                         /** Format: uuid */
                         id: string;
@@ -1154,7 +1157,7 @@ export interface operations {
                         key: string;
                         /** @enum {string} */
                         state: "active" | "archived";
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
                     };
                 };
             };
@@ -1219,7 +1222,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
                     };
                 };
             };
@@ -1257,7 +1260,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
                     };
                 };
             };
@@ -1288,6 +1291,8 @@ export interface operations {
                 cursor?: string;
                 limit?: number;
                 role?: "developer" | "project_manager";
+                assignable?: string;
+                query?: string;
             };
             header?: never;
             path: {

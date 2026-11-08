@@ -1,6 +1,9 @@
 'use client';
 
-import { Toast as ToastPrimitive } from '@base-ui/react/toast';
+import {
+  Toast as ToastPrimitive,
+  type ToastManager as BaseToastManager,
+} from '@base-ui/react/toast';
 import { cn } from 'cn';
 
 import { Button } from '@trybun/ui/components/button';
@@ -14,9 +17,72 @@ import {
   Loader2Icon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
-const toast = ToastPrimitive.createToastManager();
+type ToastManager = BaseToastManager<object>;
+type ToastOptions = Parameters<ToastManager['add']>[0];
+
+/** The toasts added while no `Toaster` listens to their manager, and the listening toasters. */
+interface ToastQueue {
+  manager: ToastManager;
+  toasters: number;
+  pending: { options: ToastOptions & { id: string }; queuedAt: number }[];
+}
+
+/** A toast still waiting for a toaster after this long belongs to a page that has none; dropped. */
+const PENDING_TOAST_MAX_AGE_MS = 10_000;
+
+/** By manager; keyed by `object`, as the `Toaster` receives a manager of any data type. */
+const queues = new WeakMap<object, ToastQueue>();
+let pendingIds = 0;
+
+/**
+ * A toast manager that keeps the toasts added before a `Toaster` listens and shows them when it
+ * does. Base UI's manager only passes a toast to the toasters listening at that moment, and the
+ * toaster of the app mounts after the first paint (`LazyToaster`): an action right after the page
+ * appeared – on a slow phone, its confirmation with **Undo** – would otherwise lose its toast.
+ */
+function createToastManager(): ToastManager {
+  const manager = ToastPrimitive.createToastManager<object>();
+  const queue: ToastQueue = { manager, toasters: 0, pending: [] };
+  const queued: ToastManager = {
+    ...manager,
+    add: (options) => {
+      if (queue.toasters > 0) {
+        return manager.add(options);
+      }
+      pendingIds += 1;
+      const id = options.id ?? `toast-pending-${pendingIds}`;
+      queue.pending.push({ options: { ...options, id }, queuedAt: Date.now() });
+      return id;
+    },
+    close: (id) => {
+      queue.pending =
+        id === undefined ? [] : queue.pending.filter((item) => item.options.id !== id);
+      manager.close(id);
+    },
+    update: (id, updates) => {
+      queue.pending = queue.pending.map((item) =>
+        item.options.id === id
+          ? {
+              ...item,
+              options: {
+                ...item.options,
+                ...(typeof updates === 'function'
+                  ? updates(item.options as Parameters<typeof updates>[0])
+                  : updates),
+              },
+            }
+          : item,
+      );
+      manager.update(id, updates);
+    },
+  };
+  queues.set(queued, queue);
+  return queued;
+}
+
+const toast = createToastManager();
 
 function ToastProvider({ ...props }: ToastPrimitive.Provider.Props) {
   return <ToastPrimitive.Provider {...props} />;
@@ -183,8 +249,12 @@ function ToastIcon({ type }: { type: string | undefined }) {
   );
 }
 
+// Pressing the action – Undo, as a rule – closes its toast at once (the snackbar convention, like
+// Sonner's default): the action is done, and a second press must not repeat it. Base UI leaves the
+// toast open; while it closes, its button stays in place until the exit motion ends, so it is
+// disabled for that time.
 function ToastList() {
-  const { toasts } = ToastPrimitive.useToastManager();
+  const { toasts, close } = ToastPrimitive.useToastManager();
 
   return toasts.map((toastItem) => (
     <Toast key={toastItem.id} toast={toastItem}>
@@ -194,7 +264,10 @@ function ToastList() {
           <ToastTitle />
           <ToastDescription />
         </div>
-        <ToastAction />
+        <ToastAction
+          disabled={toastItem.transitionStatus === 'ending'}
+          onClick={() => close(toastItem.id)}
+        />
         <ToastClose />
       </ToastContent>
     </Toast>
@@ -202,6 +275,26 @@ function ToastList() {
 }
 
 function Toaster({ children, toastManager = toast, ...props }: ToastPrimitive.Provider.Props) {
+  // After the effect of the provider, which subscribes to the manager: a parent's effects run
+  // after its children's.
+  useEffect(() => {
+    const queue = queues.get(toastManager);
+    if (queue === undefined) {
+      return;
+    }
+    queue.toasters += 1;
+    const pending = queue.pending;
+    queue.pending = [];
+    const now = Date.now();
+    for (const { options, queuedAt } of pending) {
+      if (now - queuedAt <= PENDING_TOAST_MAX_AGE_MS) {
+        queue.manager.add(options);
+      }
+    }
+    return () => {
+      queue.toasters -= 1;
+    };
+  }, [toastManager]);
   return (
     <ToastProvider toastManager={toastManager} {...props}>
       {children}
@@ -214,7 +307,6 @@ function Toaster({ children, toastManager = toast, ...props }: ToastPrimitive.Pr
   );
 }
 
-const createToastManager = ToastPrimitive.createToastManager;
 const useToastManager = ToastPrimitive.useToastManager;
 
 export {

@@ -14,6 +14,17 @@ export type TicketSource = z.infer<typeof ticketSourceSchema>;
 export const ticketPrioritySchema = z.enum(['low', 'normal', 'high', 'critical']);
 export type TicketPriority = z.infer<typeof ticketPrioritySchema>;
 
+/**
+ * The default priority of each type's template of the team (§3.4): what the full form proposes
+ * for the chosen type (S1-10 Q1). The API sets `normal` when a request omits the priority (§3.2).
+ */
+export const TICKET_TYPE_DEFAULT_PRIORITY: Readonly<Record<TicketType, TicketPriority>> = {
+  bug: 'normal',
+  feature: 'normal',
+  task: 'normal',
+  question: 'low',
+};
+
 /** `ticket.status` (§4.1): the internal statuses of the team workflow. */
 export const ticketStatusSchema = z.enum([
   'new',

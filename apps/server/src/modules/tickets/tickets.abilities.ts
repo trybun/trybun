@@ -13,6 +13,14 @@ export const TICKET = 'Ticket';
 /** Creating a ticket, an action on its project (§7.5). */
 export const CREATE_TICKET = 'create_ticket';
 
+/**
+ * Assigning the tickets of a project: anyone eligible, or only the principal (§7.5, S1-10 Q15) –
+ * the project's counterparts of the ticket actions `assign` and `assign_self`, which tell the full
+ * form its assignee control before the ticket exists. Creation still checks the assignee.
+ */
+export const ASSIGN_TICKETS = 'assign_tickets';
+export const ASSIGN_TICKETS_SELF = 'assign_tickets_self';
+
 /** The contract's closed list (§18.3): an action added to it is restricted by default. */
 const ALL_ACTIONS = ticketActionSchema.options;
 
@@ -91,7 +99,8 @@ export function ticketChangeConditions(principal: Principal): Prisma.TicketWhere
  * can read and sees the tickets they requested, and edits them and adds attachments while they can
  * still read the project: after losing access, a requester keeps reading (§7.3). The team changes
  * the status; only the requester answers the resolution confirmation, and only while the ticket
- * waits for it (§4.3).
+ * waits for it (§4.3). The project actions `assign_tickets` and `assign_tickets_self` follow `assign`
+ * and `assign_self`; an archived project allows neither (`archivedProjectsRestriction`).
  */
 export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
   if (principal.userKind === 'end_user') {
@@ -111,11 +120,12 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
     return;
   }
   if (principal.isAdmin) {
-    can(CREATE_TICKET, PROJECT);
+    can([CREATE_TICKET, ASSIGN_TICKETS, ASSIGN_TICKETS_SELF], PROJECT);
     can([...TEAM_ACTIONS], TICKET);
     return;
   }
-  can(CREATE_TICKET, PROJECT, memberFrom(principal, 'developer'));
+  can([CREATE_TICKET, ASSIGN_TICKETS_SELF], PROJECT, memberFrom(principal, 'developer'));
+  can(ASSIGN_TICKETS, PROJECT, memberFrom(principal, 'project_manager'));
   can(
     ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
     TICKET,

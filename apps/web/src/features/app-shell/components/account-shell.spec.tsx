@@ -67,6 +67,7 @@ vi.mock('next/navigation.js', () => ({ redirect }));
 vi.mock('next-intl/server', () => ({ getMessages: () => Promise.resolve(CATALOGUES.en) }));
 
 const { AccountShell } = await import('./account-shell.js');
+const { NewTicketButton } = await import('../../tickets/components/new-ticket-button.js');
 
 function TeamLayout({ children }: { children: ReactElement }) {
   return AccountShell({ shell: 'team', children });
@@ -86,6 +87,7 @@ function shellOf(element: ReactElement) {
     messagesProviderOf(element).props.children as Parent<
       ReactElement<{
         help: ReactElement;
+        newTicket?: ReactElement;
         isDesktopNavigationCollapsed: boolean;
         navigation: object;
       }>
@@ -234,6 +236,22 @@ describe('AccountShell', () => {
       shellOf(await AccountShell({ shell: 'reader', children: <h1>Help</h1> })).props.navigation,
     ).toEqual({ shell: 'portal', hasProjectChoice: false });
     expect(redirect).not.toHaveBeenCalled();
+    user = developer;
+  });
+
+  it('gives the header New ticket for every team account, and none to the portal (S1-10 Q7)', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props.newTicket).toMatchObject({
+      type: NewTicketButton,
+    });
+    user = customer;
+    expect(
+      shellOf(await AccountShell({ shell: 'portal', children: <h1>Portal</h1> })).props.newTicket,
+    ).toBeUndefined();
+    expect(
+      shellOf(await AccountShell({ shell: 'reader', children: <h1>Help</h1> })).props.newTicket,
+    ).toBeUndefined();
     user = developer;
   });
 });

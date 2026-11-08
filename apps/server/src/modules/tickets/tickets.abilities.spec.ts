@@ -12,6 +12,8 @@ import { AbilityFactory } from '../../platform/authorization/ability-factory.js'
 import { reasonCode } from '../../platform/authorization/prisma-record-access.js';
 import { archivedProjectsRestriction, projectsAbilities } from '../projects/projects.abilities.js';
 import {
+  ASSIGN_TICKETS,
+  ASSIGN_TICKETS_SELF,
   archivedProjectsOfTicketsRestriction,
   CREATE_TICKET,
   ticketsAbilities,
@@ -29,10 +31,16 @@ function can(who: PrincipalFixture, action: TicketAction, options: RecordOptions
   return abilities.forPrincipal(buildPrincipal(who)).can(action, buildTicketRecord(who, options));
 }
 
+function canOnProject(
+  who: PrincipalFixture,
+  action: typeof CREATE_TICKET | typeof ASSIGN_TICKETS | typeof ASSIGN_TICKETS_SELF,
+  state: State = 'active',
+) {
+  return abilities.forPrincipal(buildPrincipal(who)).can(action, buildProjectRecord(who, state));
+}
+
 function canCreate(who: PrincipalFixture, state: State = 'active') {
-  return abilities
-    .forPrincipal(buildPrincipal(who))
-    .can(CREATE_TICKET, buildProjectRecord(who, state));
+  return canOnProject(who, CREATE_TICKET, state);
 }
 
 function allowedActions(who: PrincipalFixture, options: RecordOptions) {
@@ -54,6 +62,29 @@ describe('ticket abilities', () => {
   ] as const)('%s – %s: %s', (_row, who, isAllowed) => {
     expect(canCreate(who)).toBe(isAllowed);
   });
+
+  // The project's counterparts of `assign` and `assign_self` for the full form (S1-10 Q15).
+  it.each([
+    ['Assign tickets', ASSIGN_TICKETS, 'project_manager', true],
+    ['Assign tickets', ASSIGN_TICKETS, 'admin', true],
+    ['Assign tickets', ASSIGN_TICKETS, 'developer', false],
+    ['Assign tickets', ASSIGN_TICKETS, 'end_user_personal', false],
+    ['Assign tickets (to self only)', ASSIGN_TICKETS_SELF, 'developer', true],
+    ['Assign tickets (to self only)', ASSIGN_TICKETS_SELF, 'project_manager', true],
+    ['Assign tickets (to self only)', ASSIGN_TICKETS_SELF, 'admin', true],
+    ['Assign tickets (to self only)', ASSIGN_TICKETS_SELF, 'team_member', false],
+    ['Assign tickets (to self only)', ASSIGN_TICKETS_SELF, 'end_user_personal', false],
+  ] as const)('%s on the project (%s) – %s: %s', (_row, action, who, isAllowed) => {
+    expect(canOnProject(who, action)).toBe(isAllowed);
+  });
+
+  it.each([ASSIGN_TICKETS, ASSIGN_TICKETS_SELF] as const)(
+    'refuses %s in an archived project, also to the Administrator',
+    (action) => {
+      expect(canOnProject('admin', action, 'archived')).toBe(false);
+      expect(canOnProject('project_manager', action, 'archived')).toBe(false);
+    },
+  );
 
   it.each([
     ['View own tickets', 'read', 'end_user_personal', true, true],

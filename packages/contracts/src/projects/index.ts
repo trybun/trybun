@@ -19,7 +19,9 @@ export type ProjectMemberRole = z.infer<typeof projectMemberRoleSchema>;
 /**
  * The action codes of a project (§18.3), sent in its `allowedActions`. `update` changes the name
  * and the key, `update_settings` the project settings (resolution confirmation), `create_ticket`
- * creates a ticket in it (§3.2).
+ * creates a ticket in it (§3.2). `assign_tickets` assigns anyone eligible to its tickets and
+ * `assign_tickets_self` only the principal, so the full form knows its assignee control before the
+ * ticket exists (S1-10 Q15); the ticket's own `assign` / `assign_self` decide on a ticket.
  */
 export const projectActionSchema = z.enum([
   'read',
@@ -31,6 +33,8 @@ export const projectActionSchema = z.enum([
   'read_members',
   'manage_members',
   'create_ticket',
+  'assign_tickets',
+  'assign_tickets_self',
 ]);
 export type ProjectAction = z.infer<typeof projectActionSchema>;
 
@@ -142,9 +146,19 @@ export type ProjectMember = z.infer<typeof projectMemberSchema>;
 export const projectMemberParamsSchema = z.object({ projectId: z.uuid(), userId: z.uuid() });
 export type ProjectMemberParams = z.infer<typeof projectMemberParamsSchema>;
 
-/** `GET /api/v1/projects/{projectId}/members`, sorted by display name; `role` filters. */
+/** The longest search text of the member picker. */
+export const MEMBER_CANDIDATE_QUERY_MAX_LENGTH = 100;
+
+/**
+ * `GET /api/v1/projects/{projectId}/members`, sorted by display name; `role` filters.
+ * `assignable=true` keeps the members who can be assigned to the project's tickets (active team
+ * accounts with a team role, §3.2), and `query` searches display name and GitHub login – the
+ * assignee picker of the ticket view (S1-10 Q9).
+ */
 export const listProjectMembersQuerySchema = pageQuerySchema.extend({
   role: projectRoleSchema.optional(),
+  assignable: z.stringbool().optional(),
+  query: z.string().trim().max(MEMBER_CANDIDATE_QUERY_MAX_LENGTH).optional(),
 });
 export type ListProjectMembersQuery = z.infer<typeof listProjectMembersQuerySchema>;
 
@@ -161,9 +175,6 @@ export type AddProjectMemberDto = z.infer<typeof addProjectMemberSchema>;
 /** `PATCH /api/v1/projects/{projectId}/members/{userId}` */
 export const changeProjectMemberRoleSchema = z.object({ role: projectRoleSchema });
 export type ChangeProjectMemberRoleDto = z.infer<typeof changeProjectMemberRoleSchema>;
-
-/** The longest search text of the member picker. */
-export const MEMBER_CANDIDATE_QUERY_MAX_LENGTH = 100;
 
 /**
  * `GET /api/v1/projects/{projectId}/member-candidates`: the active team accounts that are not

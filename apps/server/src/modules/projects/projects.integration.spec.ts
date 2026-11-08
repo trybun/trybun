@@ -256,7 +256,7 @@ describe('projects endpoints', () => {
         id: project.id,
         role: 'developer',
         hasTickets: false,
-        allowedActions: ['read', 'read_members', 'create_ticket'],
+        allowedActions: ['read', 'read_members', 'create_ticket', 'assign_tickets_self'],
       });
     });
 
@@ -311,16 +311,26 @@ describe('projects endpoints', () => {
           'read_members',
           'manage_members',
           'create_ticket',
+          'assign_tickets',
+          'assign_tickets_self',
         ],
       ],
       ['admin', 'archived', ['read', 'unarchive', 'read_members']],
       [
         'project_manager',
         'active',
-        ['read', 'update_settings', 'read_members', 'manage_members', 'create_ticket'],
+        [
+          'read',
+          'update_settings',
+          'read_members',
+          'manage_members',
+          'create_ticket',
+          'assign_tickets',
+          'assign_tickets_self',
+        ],
       ],
       ['project_manager', 'archived', ['read', 'read_members']],
-      ['developer', 'active', ['read', 'read_members', 'create_ticket']],
+      ['developer', 'active', ['read', 'read_members', 'create_ticket', 'assign_tickets_self']],
       ['developer', 'archived', ['read', 'read_members']],
     ] as const)('lists for a %s on an %s project exactly %j', async (who, state, actions) => {
       const project = await createProject(prisma, { state });
@@ -689,6 +699,74 @@ describe('projects endpoints', () => {
       expect(managers.body).toMatchObject({ items: [{ user: { displayName: 'Adam' } }] });
     });
 
+    it('lists only the members who can be assigned with assignable=true (S1-10 Q9)', async () => {
+      const project = await createProject(prisma);
+      const { user: viewer, authorization } = await signIn('developer', {
+        project,
+        displayName: 'Bea Assignable',
+      });
+      const manager = await createUser(prisma, { kind: 'team', displayName: 'Adam Assignable' });
+      await createProjectMember(prisma, {
+        projectId: project.id,
+        userId: manager.id,
+        role: 'project_manager',
+      });
+      const deactivated = await createUser(prisma, {
+        kind: 'team',
+        state: 'deactivated',
+        displayName: 'Dan Deactivated',
+      });
+      await createProjectMember(prisma, { projectId: project.id, userId: deactivated.id });
+      const endUser = await createUser(prisma, { kind: 'end_user', displayName: 'Eve End user' });
+      // Personal access of an end user (§7.3) is a membership with the role `end_user`.
+      await prisma.projectMember.create({
+        data: { projectId: project.id, userId: endUser.id, role: 'end_user' },
+      });
+
+      const all = await http()
+        .get(`/api/v1/projects/${project.id}/members`)
+        .set('Authorization', authorization);
+      const assignable = await http()
+        .get(`/api/v1/projects/${project.id}/members?assignable=true`)
+        .set('Authorization', authorization);
+
+      expect((all.body as ProjectMemberPage).items).toHaveLength(4);
+      expect(assignable.status).toBe(200);
+      expect((assignable.body as ProjectMemberPage).items.map(({ user }) => user.id)).toEqual([
+        manager.id,
+        viewer.id,
+      ]);
+    });
+
+    it('finds members by display name and by GitHub login with query, ignoring case', async () => {
+      const project = await createProject(prisma);
+      const login = `mem${randomUUID().slice(0, 8)}`;
+      const { authorization } = await signIn('project_manager', { project });
+      const anna = await createUser(prisma, { kind: 'team', displayName: 'Anna Nowak' });
+      const jan = await createUser(prisma, {
+        kind: 'team',
+        displayName: 'Jan Kowalski',
+        githubLogin: login,
+      });
+      for (const user of [anna, jan]) {
+        await createProjectMember(prisma, { projectId: project.id, userId: user.id });
+      }
+
+      const byName = await http()
+        .get(`/api/v1/projects/${project.id}/members?assignable=true&query=nowak`)
+        .set('Authorization', authorization);
+      const byLogin = await http()
+        .get(`/api/v1/projects/${project.id}/members?query=${login.toUpperCase()}`)
+        .set('Authorization', authorization);
+
+      expect((byName.body as ProjectMemberPage).items.map(({ user }) => user.id)).toEqual([
+        anna.id,
+      ]);
+      expect((byLogin.body as ProjectMemberPage).items.map(({ user }) => user.id)).toEqual([
+        jan.id,
+      ]);
+    });
+
     it('lets a Project manager add, re-role and remove a member, each with its audit entry', async () => {
       const project = await createProject(prisma);
       const { user: manager, authorization } = await signIn('project_manager', { project });
@@ -738,10 +816,9 @@ describe('projects endpoints', () => {
     it('gives the personal access of an end user no team role', async () => {
       const project = await createProject(prisma);
       const endUser = await createUser(prisma);
-      await createProjectMember(prisma, {
-        projectId: project.id,
-        userId: endUser.id,
-        role: 'end_user',
+      // Personal access of an end user (§7.3) is a membership with the role `end_user`.
+      await prisma.projectMember.create({
+        data: { projectId: project.id, userId: endUser.id, role: 'end_user' },
       });
       const { authorization } = await signIn('admin');
 

@@ -2,9 +2,12 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { resolutionAnswerSchema } from '@trybun/contracts/tickets';
 import { redirect } from 'next/navigation.js';
 import { z } from 'zod';
-import { portalTicketHref } from '../../../../../../features/portal/hrefs.js';
+import {
+  portalTicketHref,
+  resolutionConfirmationHref,
+} from '../../../../../../features/portal/hrefs.js';
 import { ResolutionConfirmation } from '../../../../../../features/tickets/components/resolution-confirmation.js';
-import { getPortalTicket } from '../../../../../../features/tickets/ticket-page.js';
+import { getTicketPage } from '../../../../../../features/tickets/ticket-page.js';
 import { requireSession } from '../../../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../../../lib/query-client/server-query-client.js';
 
@@ -26,7 +29,12 @@ export default async function ResolutionConfirmationPage({
     searchParams.then((values) => searchParamsSchema.parse(values)),
   ]);
   await requireSession();
-  await getPortalTicket(identifier);
+  // A lower-case identifier comes back to this page, upper case, with its answer.
+  await getTicketPage(identifier, 'portal', (canonical) =>
+    answer === undefined
+      ? portalTicketHref(canonical)
+      : resolutionConfirmationHref(canonical, answer),
+  );
   if (answer === undefined) {
     redirect(portalTicketHref(identifier));
   }

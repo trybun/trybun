@@ -6,14 +6,34 @@ import { dataOf } from '../../lib/api-client/api-client.js';
 import { browserApiClient } from '../../lib/api-client/browser-api-client.js';
 import { currentUserQueryOptions } from './queries.js';
 
-/** Changes the language and the time zone of the signed-in account (§13.1). */
+/**
+ * Changes the settings of the signed-in account: the language and the time zone (§13.1) and
+ * "Hide events" of the activity timeline (§4.5). The account in the cache changes at once, so a
+ * toggle answers immediately, and returns to its previous state when the change fails (§18.5).
+ */
 export function useUpdateCurrentUser() {
   const queryClient = useQueryClient();
+  const { queryKey } = currentUserQueryOptions(browserApiClient);
   return useMutation({
     mutationFn: (input: UpdateCurrentUserDto) =>
       dataOf(browserApiClient.PATCH('/api/v1/users/me', { body: input })),
-    onSuccess: (user) =>
-      queryClient.setQueryData(currentUserQueryOptions(browserApiClient).queryKey, user),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData(queryKey);
+      if (previous !== undefined) {
+        const changes = Object.fromEntries(
+          Object.entries(input).filter(([, value]) => value !== undefined),
+        );
+        queryClient.setQueryData(queryKey, { ...previous, ...changes });
+      }
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(queryKey, context.previous);
+      }
+    },
+    onSuccess: (user) => queryClient.setQueryData(queryKey, user),
   });
 }
 

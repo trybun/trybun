@@ -160,6 +160,8 @@ describe('project abilities', () => {
         'delete',
         'manage_members',
         'create_ticket',
+        'assign_tickets',
+        'assign_tickets_self',
       ]);
       for (const action of refused) {
         expect(reasonCode(ability.relevantRuleFor(action, record)?.reason), action).toBe(

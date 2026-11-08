@@ -10,6 +10,7 @@ import {
   publicStatusOf,
   resolutionAnswerSchema,
   listTicketsQuerySchema,
+  TICKET_TYPE_DEFAULT_PRIORITY,
   ticketActionSchema,
   ticketIdentifier,
   ticketPrioritySchema,
@@ -23,6 +24,17 @@ import {
 } from './index.js';
 
 const PROJECT_ID = '0190f2f4-7c1e-7000-8000-000000000001';
+
+describe('TICKET_TYPE_DEFAULT_PRIORITY', () => {
+  it('proposes low for a question and normal for every other type (§3.4)', () => {
+    expect(TICKET_TYPE_DEFAULT_PRIORITY).toEqual({
+      bug: 'normal',
+      feature: 'normal',
+      task: 'normal',
+      question: 'low',
+    });
+  });
+});
 
 describe('ticket enums', () => {
   it.each([

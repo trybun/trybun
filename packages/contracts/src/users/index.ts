@@ -74,18 +74,21 @@ export const currentUserSchema = z.object({
   language: languageSchema.nullable(),
   /** The IANA time zone of the account (§13.1); `null` – the system default applies. */
   timeZone: z.string().nullable(),
+  /** "Hide events" of the activity timeline (§4.5): the team sees only comments while it is on. */
+  hideTimelineEvents: z.boolean(),
   allowedActions: z.array(currentUserActionSchema),
 });
 export type CurrentUser = z.infer<typeof currentUserSchema>;
 
 /**
- * `PATCH /api/v1/users/me`: the settings of the own account (§13.1), at least one;
+ * `PATCH /api/v1/users/me`: the settings of the own account (§13.1, §4.5), at least one;
  * `timeZone: null` returns to the system default.
  */
 export const updateCurrentUserSchema = z
   .object({
     language: languageSchema.optional(),
     timeZone: timeZoneSchema.nullable().optional(),
+    hideTimelineEvents: z.boolean().optional(),
   })
   .refine((input) => Object.values(input).some((value) => value !== undefined));
 export type UpdateCurrentUserDto = z.infer<typeof updateCurrentUserSchema>;

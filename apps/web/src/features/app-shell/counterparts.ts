@@ -14,10 +14,14 @@ const COUNTERPARTS: readonly Readonly<Record<Shell, string>>[] = [
 ];
 
 /**
- * The team routes that exist: the team ticket view comes with S1-10, so until then a team member
- * who opens a portal ticket goes to the team's home.
+ * Routes of one side whose path a bracketed route of the table would match, but which have no
+ * counterpart: the full ticket form of the team (S1-10) is not a ticket, so an end user who opens
+ * it goes to the portal root.
  */
-const MISSING_TEAM_ROUTES: ReadonlySet<string> = new Set(['/tickets/[identifier]']);
+const WITHOUT_COUNTERPART: Readonly<Record<Shell, ReadonlySet<string>>> = {
+  team: new Set(['/tickets/new']),
+  portal: new Set(),
+};
 
 /** The root of each side, the target of every route without a counterpart. */
 const ROOTS: Readonly<Record<Shell, string>> = { team: '/', portal: '/portal' };
@@ -51,13 +55,13 @@ function matchRoute(route: string, pathname: string): Record<string, string> | u
 export function counterpartOf(path: string, target: Shell): string {
   const source: Shell = target === 'team' ? 'portal' : 'team';
   const pathname = path.split(/[?#]/, 1)[0] ?? '/';
+  if (WITHOUT_COUNTERPART[source].has(pathname)) {
+    return ROOTS[target];
+  }
   for (const counterpart of COUNTERPARTS) {
     const values = matchRoute(counterpart[source], pathname);
     if (values === undefined) {
       continue;
-    }
-    if (target === 'team' && MISSING_TEAM_ROUTES.has(counterpart.team)) {
-      return ROOTS.team;
     }
     return counterpart[target]
       .split('/')

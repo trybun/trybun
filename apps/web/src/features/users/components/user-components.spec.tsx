@@ -126,6 +126,7 @@ describe('AccountSettingsForm', () => {
       kind: 'team',
       language: 'pl',
       timeZone: 'Europe/Warsaw',
+      hideTimelineEvents: false,
       allowedActions: [],
       ...overrides,
     };

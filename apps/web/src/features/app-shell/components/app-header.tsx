@@ -5,6 +5,8 @@ import { LazyUserMenu } from './lazy-user-menu.js';
 
 /** The slots of the header actions; each draws its icon with `APP_HEADER_ICON_CLASS_NAME` (`app-header-icon.ts`). */
 export interface AppHeaderSlots {
+  /** **New ticket** of the team (S1-10 Q7); the portal passes none. */
+  newTicket?: ReactNode;
   /** The search button that opens the command palette (§8.4, S2-05). */
   search?: ReactNode;
   /** The help menu: the help page of the current view and its product tours (§2.3, §2.4). */
@@ -15,6 +17,7 @@ export interface AppHeaderSlots {
 
 /** The header of the application shell: brand, the slots of the header actions and the user menu. */
 export function AppHeader({
+  newTicket,
   search,
   help,
   notifications,
@@ -32,6 +35,7 @@ export function AppHeader({
         <Brand wordmarkClassName="sr-only md:not-sr-only" />
       </Link>
       <div className="ml-auto flex items-center gap-1">
+        {newTicket}
         {search}
         {help}
         {notifications}

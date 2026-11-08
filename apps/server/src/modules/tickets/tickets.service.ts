@@ -28,7 +28,6 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
 import { reasonCode } from '../../platform/authorization/prisma-record-access.js';
-import { teamRolesFrom } from '../../platform/authorization/project-roles.js';
 import { decodeCursor, toPage } from '../../platform/database/cursor.js';
 import {
   assertVersionMatched,
@@ -46,6 +45,7 @@ import {
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
 import { originalIdsOf, toEndUserEvent } from '../activity-events/domain/end-user-events.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
+import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
 import { OrganizationsService } from '../organizations/organizations.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
@@ -973,12 +973,7 @@ export class TicketsService {
       return false;
     }
     const eligible = await tx.projectMember.count({
-      where: {
-        projectId,
-        userId,
-        role: { in: teamRolesFrom('developer') },
-        user: { kind: 'team', state: 'active' },
-      },
+      where: { projectId, userId, ...ASSIGNABLE_MEMBER },
     });
     return eligible > 0;
   }

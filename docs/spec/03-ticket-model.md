@@ -51,7 +51,11 @@ End users always create tickets **within a specific project**, so the `project` 
 ## 3.3 Forms
 
 - **End user** – simplified form: title, description, optional attachments and a small visibility switch below the description (default `only_me`, [§5.1](05-visibility-and-search.md)). Similar tickets are suggested while typing the title ([§5.6](05-visibility-and-search.md)).
-- **Team** – full form with sensible defaults (current project, priority `normal`, type `task`) and a description template depending on the type ([§3.4](#34-ticket-templates)).
+- **Team** – full form (`/tickets/new`, [§8.6](08-team-views.md#86-team-ticket-view)) with sensible defaults and a description template depending on the type ([§3.4](#34-ticket-templates)):
+  - **project**: the project the form was opened from (`?projectId=`, set by the views of a project's tickets), else the only project in which the person can create tickets, else none – the person chooses one; the form lists the active projects whose `allowedActions` contain `create_ticket`;
+  - **type** `task`;
+  - **priority**: the default of the type's template (`normal` for `task`), which follows the type while the person has not chosen a priority ([§3.4](#34-ticket-templates));
+  - **assignee**: the picker of the eligible members with the project action `assign_tickets`, an **Assign to me** checkbox with only `assign_tickets_self`, no control otherwise ([§7.5](07-users-organizations-permissions.md#75-permission-matrix)); the API still checks the assignee on creation.
 - **Triage** – the team completes missing fields (type, priority, assignee) of tickets from end users ([§8.3](08-team-views.md)).
 
 ## 3.4 Ticket templates
@@ -81,9 +85,11 @@ A template is bound to a **ticket type**. Choosing the type in the full form ins
 
 Rules:
 
-- Changing the type while the description is empty or unchanged replaces the template. If the description has been edited, the template never overwrites it.
-- Templates have language versions ([§13.1](13-non-functional.md)). The placeholder and the inserted structure appear in the language of the person creating the ticket.
-- Changing a template affects new tickets only.
+- Changing the type while the description is empty or unchanged replaces the template. If the description has been edited, the template never overwrites it. **Unchanged** means equal to the template of the previous type after unifying line endings and removing the trailing whitespace of every line and of the text – a comparison without a hidden "touched" state, so a template edited and restored exactly is replaced again. The default priority follows the same rule: it changes with the type only while it equals the default of the previous type; a priority the person chose is kept.
+- Templates apply only when a ticket is created. A change of the type of an existing ticket ([§8.6](08-team-views.md#86-team-ticket-view)) never touches its description.
+- Templates have language versions ([§13.1](13-non-functional.md)). The placeholder and the inserted structure appear in the language of the person creating the ticket: the language of their account ([§7.4](07-users-organizations-permissions.md#74-accounts-and-authentication)), else the language of the request. A language switch while the form is open does not insert the template again; the replacement compares with the templates of the language that was inserted.
+- Changing a template affects new tickets only: a template is copied into the description when it is inserted.
+- Until template management (plan task S1-17) exists, the team templates are catalogue texts of `@trybun/i18n` (`tickets.templates.<type>`, like the end-user placeholder `portal.newTicket.placeholder`) and the default priorities the constant `TICKET_TYPE_DEFAULT_PRIORITY` of `@trybun/contracts/tickets`; S1-17 moves them into its managed model. The API sets priority `normal` when a request omits it ([§3.2](#32-ticket-fields)); the full form always sends the priority it shows.
 
 ## 3.5 Sub-tickets, relations and labels
 

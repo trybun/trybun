@@ -142,3 +142,80 @@ export const AboveDialogOnPhone: Story = {
     await expect(dialog).toBeInTheDocument();
   },
 };
+
+/** A toast added before the toaster mounts, as `LazyToaster` does after the first paint. */
+function ToastBeforeToasterDemo() {
+  const [manager] = useState(createToastManager);
+  const [hasToaster, setHasToaster] = useState(false);
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="outline"
+        onClick={() => manager.add({ type: 'success', title: 'Assigned to Jan', timeout: 0 })}
+      >
+        Assign
+      </Button>
+      <Button variant="outline" onClick={() => setHasToaster(true)}>
+        Mount the toaster
+      </Button>
+      {hasToaster && <Toaster toastManager={manager} />}
+    </div>
+  );
+}
+
+// Base UI passes a toast only to the toasters listening at that moment; the manager keeps it until
+// one does, so an action right after the first paint keeps its confirmation.
+export const AddedBeforeTheToaster: Story = {
+  render: () => <ToastBeforeToasterDemo />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Assign' }));
+    await expect(screen.queryByText('Assigned to Jan')).not.toBeInTheDocument();
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Mount the toaster' }));
+    await expect(await screen.findByText('Assigned to Jan')).toBeVisible();
+  },
+};
+
+/** A toast with an action, counting its presses, like **Undo** of a change. */
+function ToastActionDemo() {
+  const [manager] = useState(createToastManager);
+  const [undone, setUndone] = useState(0);
+  return (
+    <Toaster toastManager={manager}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() =>
+            manager.add({
+              type: 'success',
+              title: 'Priority changed to Critical',
+              timeout: 0,
+              actionProps: { children: 'Undo', onClick: () => setUndone((count) => count + 1) },
+            })
+          }
+        >
+          Change priority
+        </Button>
+        <output>Undone {undone} times</output>
+      </div>
+    </Toaster>
+  );
+}
+
+// Pressing the action closes its toast at once, and a second press – a double click – never
+// repeats it (Material Design snackbar, Sonner).
+export const ActionClosesTheToast: Story = {
+  render: () => <ToastActionDemo />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Change priority' }));
+    const title = await screen.findByText('Priority changed to Critical');
+    await expect(title).toBeVisible();
+
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Undo' }));
+
+    await waitFor(() =>
+      expect(screen.queryByText('Priority changed to Critical')).not.toBeInTheDocument(),
+    );
+    await expect(canvas.getByText('Undone 1 times')).toBeInTheDocument();
+  },
+};

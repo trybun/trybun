@@ -401,6 +401,8 @@ export function buildDemoDataset(): DemoDataset {
     state: 'active',
     language: 'pl',
     timeZone: 'Europe/Warsaw',
+    // Restored on every load, as the tour progress: the E2E test of "Hide events" changes it.
+    hideTimelineEvents: false,
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
   }));

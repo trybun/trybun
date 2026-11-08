@@ -45,7 +45,7 @@ const UI_COMPONENTS = join(SOURCES, '../../../packages/ui/src/components');
 /** The routes whose layouts render the components of a feature (`features/<feature>`). */
 const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   administration: ['administration'],
-  attachments: ['portal'],
+  attachments: ['portal', 'tickets'],
   'app-shell': ['shell'],
   help: ['shell'],
   invitations: ['accounts', 'invitations', 'projects'],
@@ -55,7 +55,7 @@ const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   projects: ['projects'],
   sessions: ['signIn'],
   setup: ['setup'],
-  tickets: ['portal'],
+  tickets: ['portal', 'tickets'],
   users: ['accounts', 'settings'],
 };
 
@@ -93,6 +93,7 @@ describe('CLIENT_NAMESPACES', () => {
     expect(routes.accounts).toEqual(expect.arrayContaining([...routes.administration]));
     expect(routes.settings).toEqual(expect.arrayContaining([...shell]));
     expect(routes.portal).toEqual(expect.arrayContaining([...shell]));
+    expect(routes.tickets).toEqual(expect.arrayContaining([...shell]));
   });
 
   it('provide the namespaces of the components of @trybun/ui on every route', () => {

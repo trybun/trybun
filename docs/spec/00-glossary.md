@@ -31,6 +31,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Invitation state | `pending`, `accepted`, `revoked`, `expired` (derived, not stored) | Pending / Oczekujące, Accepted / Przyjęte, Revoked / Odwołane, Expired / Wygasłe | The state of an invitation, derived from its timestamps ([§7.4](07-users-organizations-permissions.md)) |
 | Accounts page | – | Accounts / Konta | The Administrator's list of every account with deactivation, reactivation and the Administrator role (`/admin/accounts`, [§7.4](07-users-organizations-permissions.md)) |
 | Account settings | – | Account settings / Ustawienia konta | A person's own language and time zone (`/settings`, [§13.1](13-non-functional.md)) |
+| Hide events | `user.hide_timeline_events` | Hide events / Ukryj zdarzenia | A setting of the account that hides the events of the activity timeline from a team member, on every device ([§4.5](04-ticket-lifecycle.md)) |
 | Team group | – | – | Keycloak group `team`, kept in sync by the API; members must use 2FA ([§7.4](07-users-organizations-permissions.md)) |
 | Deleted user | – | Deleted user / Użytkownik usunięty | Tombstone that replaces an anonymized account in history ([§13.2](13-non-functional.md)) |
 | Principal | `principal` | – | The identity a request or job acts as: a user (session or personal access token), an integration token or the system ([§18.3](18-code-patterns.md)) |
@@ -83,6 +84,7 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Uploading | – (client only, not an `attachment.status`) | Uploading… / Przesyłanie… | A file the browser is still sending; afterwards it is `quarantine` ([§13.3](13-non-functional.md)) |
 | Draft attachment | `attachment.ticket_id = null` | Files to attach / Pliki do załączenia | An attachment not linked to a ticket or comment yet, visible only to its uploader and purged after 24 hours ([§13.3](13-non-functional.md)) |
 | Attachment actions | `allowed_actions` of an attachment: `read`, `delete`; ticket action `add_attachment` | – | What a principal may do with an attachment, and whether they may link files to a ticket ([§7.5](07-users-organizations-permissions.md)) |
+| Assignment actions | ticket actions `assign`, `assign_self`; project actions `assign_tickets`, `assign_tickets_self` | Assign to me / Przypisz do mnie, Unassign me / Usuń moje przypisanie | Whether a principal may assign anyone eligible or only themselves – on a ticket, and in the project for the full form before the ticket exists ([§7.5](07-users-organizations-permissions.md), [§18.3](18-code-patterns.md)) |
 
 ## Planning
 

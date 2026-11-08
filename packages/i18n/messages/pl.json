@@ -22,7 +22,8 @@
     "administration": "Administracja",
     "projects": "Projekty",
     "accountSettings": "Ustawienia konta",
-    "myTickets": "Moje zgłoszenia"
+    "myTickets": "Moje zgłoszenia",
+    "newTicket": "Nowe zgłoszenie"
   },
   "languages": {
     "en": "English",
@@ -337,6 +338,149 @@
         "solved": "Tak, rozwiązane",
         "not_solved": "Nie, problem nadal występuje"
       }
+    },
+    "types": {
+      "bug": "Błąd",
+      "feature": "Funkcjonalność",
+      "task": "Zadanie",
+      "question": "Pytanie"
+    },
+    "priorities": {
+      "low": "Niski",
+      "normal": "Normalny",
+      "high": "Wysoki",
+      "critical": "Krytyczny"
+    },
+    "templates": {
+      "bug": "## Problem\n\n## Kroki do odtworzenia\n\n1.\n\n## Oczekiwany wynik\n\n## Faktyczny wynik\n\n## Środowisko",
+      "feature": "## Cel\n\n## Proponowane rozwiązanie\n\n## Kryteria akceptacji\n\n- [ ]",
+      "task": "## Zakres prac\n\n## Kryteria ukończenia\n\n- [ ]",
+      "question": "## Pytanie\n\n## Kontekst"
+    },
+    "sources": {
+      "user": "Użytkownik",
+      "developer": "Developer",
+      "integration": "Integracja"
+    },
+    "deletedUser": "Usunięty użytkownik",
+    "view": {
+      "copyIdentifier": "Kopiuj identyfikator {identifier}",
+      "identifierCopied": "Skopiowano identyfikator {identifier}",
+      "copyFailed": "Nie udało się skopiować identyfikatora.",
+      "opened": "{requester} · utworzono <time>{relativeTime}</time>",
+      "description": "Opis",
+      "noDescription": "Brak opisu.",
+      "archivedBanner": "Ten projekt jest zarchiwizowany i tylko do odczytu.",
+      "details": "Szczegóły",
+      "fields": {
+        "status": "Status",
+        "assignee": "Przypisany",
+        "type": "Typ",
+        "priority": "Priorytet",
+        "project": "Projekt",
+        "requester": "Zgłaszający",
+        "organization": "Organizacja",
+        "created": "Utworzono",
+        "updated": "Zaktualizowano"
+      },
+      "notSet": "Nie ustawiono",
+      "unassigned": "Nieprzypisane",
+      "title": "Tytuł",
+      "editTitle": "Edytuj tytuł",
+      "titleRequired": "Podaj tytuł zgłoszenia",
+      "edit": "Edytuj",
+      "editDescription": "Edytuj opis",
+      "save": "Zapisz",
+      "saving": "Zapisywanie…",
+      "cancel": "Anuluj",
+      "undo": "Cofnij",
+      "changed": {
+        "type": "Zmieniono typ: {type}",
+        "priority": "Zmieniono priorytet: {priority}",
+        "assigned": "Przypisano: {name}",
+        "assignedToMe": "Przypisano do Ciebie",
+        "unassigned": "Usunięto przypisanie"
+      },
+      "discard": {
+        "title": "Odrzucić zmiany?",
+        "description": "Wpisany tekst zostanie utracony.",
+        "confirm": "Odrzuć",
+        "cancel": "Edytuj dalej"
+      },
+      "assignToMe": "Przypisz do mnie",
+      "unassignMe": "Usuń moje przypisanie",
+      "people": "Osoby",
+      "searchPeople": "Szukaj po nazwie lub loginie GitHub",
+      "loadingPeople": "Wczytywanie…",
+      "noPeople": "Nikogo nie znaleziono."
+    },
+    "form": {
+      "heading": "Nowe zgłoszenie",
+      "project": "Projekt",
+      "projectPlaceholder": "Wybierz projekt",
+      "projectRequired": "Wybierz projekt.",
+      "noProjects": "Nie możesz jeszcze tworzyć zgłoszeń w żadnym projekcie.",
+      "type": "Typ",
+      "title": "Tytuł",
+      "titleRequired": "Wpisz tytuł.",
+      "description": "Opis",
+      "priority": "Priorytet",
+      "assignee": "Przypisany",
+      "assignToMe": "Przypisz do mnie",
+      "submit": "Utwórz zgłoszenie",
+      "cancel": "Anuluj",
+      "created": "Utworzono zgłoszenie {identifier}"
+    },
+    "timeline": {
+      "title": "Aktywność",
+      "system": "System",
+      "showMore": "Pokaż więcej",
+      "hideEvents": "Ukryj zdarzenia",
+      "eventsHidden": "Zdarzenia są ukryte. Tutaj pojawią się komentarze.",
+      "opened": "{person} – utworzenie zgłoszenia",
+      "events": {
+        "titleChanged": "{person} – zmiana tytułu: „{from}” → „{to}”",
+        "descriptionEdited": "{person} – edycja opisu",
+        "typeChanged": "{person} – zmiana typu: {from} → {to}",
+        "priorityChanged": "{person} – zmiana priorytetu: {from} → {to}",
+        "assigneeSet": "{person} – przypisanie osoby: {assignee}",
+        "assigneeRemoved": "{person} – usunięcie przypisania: {assignee}",
+        "assigneeChanged": "{person} – zmiana osoby przypisanej: {from} → {to}",
+        "statusChanged": "{person} – zmiana statusu: {from} → {to}",
+        "statusChangedWaiting": "{person} – zmiana statusu: {from} → {to} ({reason})",
+        "reopened": "{person} – ponowne otwarcie zgłoszenia: {from} → {to}",
+        "reopenedWaiting": "{person} – ponowne otwarcie zgłoszenia: {from} → {to} ({reason})",
+        "waitingReasonChanged": "{person} – zmiana powodu oczekiwania: {reason}",
+        "markedDuplicate": "{person} – oznaczenie jako duplikat zgłoszenia {original}",
+        "duplicateOriginalChanged": "{person} – zmiana zgłoszenia oryginalnego: {from} → {to}",
+        "duplicateLinkRemoved": "{person} – usunięcie powiązania z oryginałem {original}",
+        "rejectionReasonChanged": "{person} – zmiana powodu odrzucenia",
+        "attachmentAdded": "{person} – dodanie pliku {file}",
+        "attachmentDeleted": "{person} – usunięcie pliku {file}"
+      }
+    },
+    "status": {
+      "kinds": {
+        "initial": "Początkowe",
+        "active": "Aktywne",
+        "paused": "Wstrzymane",
+        "terminal": "Zamknięte"
+      },
+      "changed": "Zmieniono status: {status}",
+      "confirmationRequested": "Poprosiliśmy zgłaszającego o potwierdzenie rozwiązania problemu. Zgłoszenie zamknie się automatycznie po 7 dniach.",
+      "cancel": "Anuluj",
+      "rejectTitle": "Odrzuć {identifier}",
+      "rejectDescription": "Powód zostanie opublikowany zgłaszającemu.",
+      "reason": "Powód",
+      "reasonRequired": "Podaj powód odrzucenia",
+      "rejectConfirm": "Odrzuć zgłoszenie",
+      "duplicateTitle": "Oznacz {identifier} jako duplikat",
+      "duplicateDescription": "Podaj identyfikator oryginalnego zgłoszenia z tego projektu, np. ERP-7 albo samo 7.",
+      "original": "Oryginalne zgłoszenie",
+      "originalFound": "{identifier} · {title}",
+      "originalNotFound": "W tym projekcie nie ma zgłoszenia {identifier}.",
+      "originalInvalid": "Podaj identyfikator, np. ERP-7.",
+      "duplicateConfirm": "Oznacz jako duplikat"
     }
   },
   "attachments": {

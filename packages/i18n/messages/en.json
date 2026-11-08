@@ -22,7 +22,8 @@
     "administration": "Administration",
     "projects": "Projects",
     "accountSettings": "Account settings",
-    "myTickets": "My tickets"
+    "myTickets": "My tickets",
+    "newTicket": "New ticket"
   },
   "languages": {
     "en": "English",
@@ -337,6 +338,149 @@
         "solved": "Yes, solved",
         "not_solved": "No, still a problem"
       }
+    },
+    "types": {
+      "bug": "Bug",
+      "feature": "Feature",
+      "task": "Task",
+      "question": "Question"
+    },
+    "priorities": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "templates": {
+      "bug": "## Problem\n\n## Steps to reproduce\n\n1.\n\n## Expected result\n\n## Actual result\n\n## Environment",
+      "feature": "## Goal\n\n## Proposed solution\n\n## Acceptance criteria\n\n- [ ]",
+      "task": "## Scope of work\n\n## Completion criteria\n\n- [ ]",
+      "question": "## Question\n\n## Context"
+    },
+    "sources": {
+      "user": "User",
+      "developer": "Developer",
+      "integration": "Integration"
+    },
+    "deletedUser": "Deleted user",
+    "view": {
+      "copyIdentifier": "Copy identifier {identifier}",
+      "identifierCopied": "Identifier {identifier} copied",
+      "copyFailed": "The identifier could not be copied.",
+      "opened": "{requester} opened <time>{relativeTime}</time>",
+      "description": "Description",
+      "noDescription": "No description.",
+      "archivedBanner": "This project is archived and read-only.",
+      "details": "Details",
+      "fields": {
+        "status": "Status",
+        "assignee": "Assignee",
+        "type": "Type",
+        "priority": "Priority",
+        "project": "Project",
+        "requester": "Requester",
+        "organization": "Organization",
+        "created": "Created",
+        "updated": "Updated"
+      },
+      "notSet": "Not set",
+      "unassigned": "Unassigned",
+      "title": "Title",
+      "editTitle": "Edit title",
+      "titleRequired": "Enter the title of the ticket",
+      "edit": "Edit",
+      "editDescription": "Edit description",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "undo": "Undo",
+      "changed": {
+        "type": "Type changed to {type}",
+        "priority": "Priority changed to {priority}",
+        "assigned": "Assigned to {name}",
+        "assignedToMe": "Assigned to you",
+        "unassigned": "Assignee removed"
+      },
+      "discard": {
+        "title": "Discard your changes?",
+        "description": "The text you typed will be lost.",
+        "confirm": "Discard",
+        "cancel": "Keep editing"
+      },
+      "assignToMe": "Assign to me",
+      "unassignMe": "Unassign me",
+      "people": "People",
+      "searchPeople": "Search by name or GitHub login",
+      "loadingPeople": "Loading…",
+      "noPeople": "No one found."
+    },
+    "form": {
+      "heading": "New ticket",
+      "project": "Project",
+      "projectPlaceholder": "Choose a project",
+      "projectRequired": "Choose a project.",
+      "noProjects": "You cannot create tickets in any project yet.",
+      "type": "Type",
+      "title": "Title",
+      "titleRequired": "Enter a title.",
+      "description": "Description",
+      "priority": "Priority",
+      "assignee": "Assignee",
+      "assignToMe": "Assign to me",
+      "submit": "Create ticket",
+      "cancel": "Cancel",
+      "created": "Ticket {identifier} created"
+    },
+    "timeline": {
+      "title": "Activity",
+      "system": "System",
+      "showMore": "Show more",
+      "hideEvents": "Hide events",
+      "eventsHidden": "Events are hidden. Comments appear here.",
+      "opened": "{person} opened the ticket",
+      "events": {
+        "titleChanged": "{person} changed the title: “{from}” → “{to}”",
+        "descriptionEdited": "{person} edited the description",
+        "typeChanged": "{person} changed the type: {from} → {to}",
+        "priorityChanged": "{person} changed the priority: {from} → {to}",
+        "assigneeSet": "{person} assigned {assignee}",
+        "assigneeRemoved": "{person} removed the assignee {assignee}",
+        "assigneeChanged": "{person} changed the assignee: {from} → {to}",
+        "statusChanged": "{person} changed the status: {from} → {to}",
+        "statusChangedWaiting": "{person} changed the status: {from} → {to} ({reason})",
+        "reopened": "{person} reopened the ticket: {from} → {to}",
+        "reopenedWaiting": "{person} reopened the ticket: {from} → {to} ({reason})",
+        "waitingReasonChanged": "{person} changed the waiting reason: {reason}",
+        "markedDuplicate": "{person} marked this as a duplicate of {original}",
+        "duplicateOriginalChanged": "{person} changed the original: {from} → {to}",
+        "duplicateLinkRemoved": "{person} removed the link to the original {original}",
+        "rejectionReasonChanged": "{person} changed the rejection reason",
+        "attachmentAdded": "{person} added the file {file}",
+        "attachmentDeleted": "{person} deleted the file {file}"
+      }
+    },
+    "status": {
+      "kinds": {
+        "initial": "Initial",
+        "active": "Active",
+        "paused": "Paused",
+        "terminal": "Closed"
+      },
+      "changed": "Status changed to {status}",
+      "confirmationRequested": "The requester is asked to confirm that the problem is solved. The ticket closes automatically after 7 days.",
+      "cancel": "Cancel",
+      "rejectTitle": "Reject {identifier}",
+      "rejectDescription": "The reason will be published to the requester.",
+      "reason": "Reason",
+      "reasonRequired": "Enter the reason for the rejection",
+      "rejectConfirm": "Reject ticket",
+      "duplicateTitle": "Mark {identifier} as a duplicate",
+      "duplicateDescription": "Enter the identifier of the original ticket in this project, e.g. ERP-7 or just 7.",
+      "original": "Original ticket",
+      "originalFound": "{identifier} · {title}",
+      "originalNotFound": "There is no ticket {identifier} in this project.",
+      "originalInvalid": "Enter an identifier such as ERP-7.",
+      "duplicateConfirm": "Mark as duplicate"
     }
   },
   "attachments": {

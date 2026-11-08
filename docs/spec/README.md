@@ -12,7 +12,7 @@ Specification of **Trybun**, a ticket / task management system for development t
 | [05-visibility-and-search.md](05-visibility-and-search.md) | What end users see, shared tickets, portal search, similar ticket detection, end-user portal |
 | [06-comments-notifications.md](06-comments-notifications.md) | Public comments, internal notes, GFM editor, e-mail replies, watching, notifications |
 | [07-users-organizations-permissions.md](07-users-organizations-permissions.md) | Roles, organizations, accounts and authentication, permission matrix |
-| [08-team-views.md](08-team-views.md) | List and saved views, Kanban board, triage queue, command palette, global search |
+| [08-team-views.md](08-team-views.md) | List and saved views, Kanban board, triage queue, command palette, global search, team ticket view |
 | [09-sla.md](09-sla.md) | SLA policies, business calendars, time counting, warnings, reports |
 | [10-roadmap-gantt.md](10-roadmap-gantt.md) | Milestones, internal and public roadmap, Gantt chart |
 | [11-github-integration.md](11-github-integration.md) | GitHub App, linking code to tickets, creating issues, issue sync, privacy |

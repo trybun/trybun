@@ -47,6 +47,11 @@ export const CLIENT_NAMESPACES = {
   organizations: [...SHELL, 'administration', 'errors', 'organizations'],
   /** `app/(team)/projects/layout.tsx` */
   projects: [...SHELL, 'errors', 'invitations', 'projects'],
+  /**
+   * `app/(team)/tickets/layout.tsx`: the team ticket views and their toasts. The portal's texts
+   * come along, because the ticket feature holds the portal views too.
+   */
+  tickets: [...PORTAL],
   /** `app/(team)/settings/layout.tsx` and `app/(portal)/portal/settings/layout.tsx` */
   settings: [...SHELL, 'errors', 'users'],
 } as const satisfies Record<string, readonly (keyof WebMessages)[]>;
