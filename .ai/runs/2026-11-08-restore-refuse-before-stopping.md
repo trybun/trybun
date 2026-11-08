@@ -26,11 +26,13 @@ Medium: the restore flow of the `./trybun` CLI is a protected surface. The guara
 
 ## Progress
 
+PR: #255
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Refuse before asking and before stopping
 
-- [ ] 1.1 Add the discard command to the backup service
-- [ ] 1.2 Reorder restore: fetch and check before the questions, discard before the stop, with unit tests
+- [x] 1.1 Add the discard command to the backup service — ca37f3b
+- [x] 1.2 Reorder restore: fetch and check before the questions, discard before the stop, with unit tests — f31f65b
 - [ ] 1.3 Assert the new order in the restore test
-- [ ] 1.4 Update §15.10, INSTALL.md and the user documentation
+- [x] 1.4 Update §15.10, INSTALL.md and the user documentation — 4ee0674
