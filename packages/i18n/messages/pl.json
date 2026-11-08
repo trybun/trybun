@@ -389,14 +389,23 @@
       "undo": "Cofnij",
       "changed": {
         "type": "Zmieniono typ: {type}",
-        "priority": "Zmieniono priorytet: {priority}"
+        "priority": "Zmieniono priorytet: {priority}",
+        "assigned": "Przypisano: {name}",
+        "assignedToMe": "Przypisano do Ciebie",
+        "unassigned": "Usunięto przypisanie"
       },
       "discard": {
         "title": "Odrzucić zmiany?",
         "description": "Wpisany tekst zostanie utracony.",
         "confirm": "Odrzuć",
         "cancel": "Edytuj dalej"
-      }
+      },
+      "assignToMe": "Przypisz do mnie",
+      "unassignMe": "Usuń moje przypisanie",
+      "people": "Osoby",
+      "searchPeople": "Szukaj po nazwie lub loginie GitHub",
+      "loadingPeople": "Wczytywanie…",
+      "noPeople": "Nikogo nie znaleziono."
     },
     "timeline": {
       "title": "Aktywność",

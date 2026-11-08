@@ -40,6 +40,7 @@ import { AppError } from '../../platform/errors/app-error.js';
 import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
+import { ASSIGNABLE_MEMBER } from './assignable-members.js';
 import { CREATE, PROJECT, projectRuleSelect } from './projects.abilities.js';
 import { PROJECT_MEMBER_REMOVED, type ProjectMemberRemovedPayload } from './projects.events.js';
 import {
@@ -166,6 +167,19 @@ function accountsAfter(after: z.infer<typeof accountSortKeySchema> | null): Pris
       { displayName: { gt: displayName } },
       { displayName, id: { gt: id } },
       { displayName: null },
+    ],
+  };
+}
+
+/** The accounts whose display name or GitHub login contains the search text, if there is one. */
+function accountsMatching(search: string | undefined): Prisma.UserWhereInput {
+  if (search === undefined || search === '') {
+    return {};
+  }
+  return {
+    OR: [
+      { displayName: { contains: search, mode: 'insensitive' } },
+      { githubLogin: { contains: search, mode: 'insensitive' } },
     ],
   };
 }
@@ -372,7 +386,11 @@ export class ProjectsService {
     }
   }
 
-  /** The members of a project, sorted by display name; `role` filters them. */
+  /**
+   * The members of a project, sorted by display name; `role` filters them, `assignable` keeps the
+   * members who can be assigned to its tickets (S1-10 Q9), and `query` searches display name and
+   * GitHub login.
+   */
   async listMembers(
     principal: UserPrincipal,
     projectId: string,
@@ -385,6 +403,8 @@ export class ProjectsService {
         AND: [
           { project: accessibleBy(ability, 'read_members').ofType(PROJECT) },
           { projectId, role: query.role, user: accountsAfter(after) },
+          query.assignable === true ? ASSIGNABLE_MEMBER : {},
+          { user: accountsMatching(query.query) },
         ],
       },
       select: MEMBER_SELECT,
@@ -409,19 +429,11 @@ export class ProjectsService {
     const ability = this.abilities.forPrincipal(principal);
     await this.findVisible(this.prisma, ability, principal, projectId, 'manage_members');
     const after = decodeCursor(query.cursor, accountSortKeySchema);
-    const search = query.query === undefined || query.query === '' ? undefined : query.query;
     const rows = await this.prisma.user.findMany({
       where: {
         AND: [
           { kind: 'team', state: 'active', projectMemberships: { none: { projectId } } },
-          search === undefined
-            ? {}
-            : {
-                OR: [
-                  { displayName: { contains: search, mode: 'insensitive' } },
-                  { githubLogin: { contains: search, mode: 'insensitive' } },
-                ],
-              },
+          accountsMatching(query.query),
           accountsAfter(after),
         ],
       },

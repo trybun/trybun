@@ -9,6 +9,10 @@ export class TicketPage {
   readonly activity: Locator;
   readonly hideEvents: Locator;
   readonly eventsHidden: Locator;
+  readonly assignToMe: Locator;
+  readonly unassignMe: Locator;
+  /** The assignee picker: a combobox from the tablet breakpoint, a sheet's button on phones. */
+  readonly assigneePicker: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole('heading', { level: 1 });
@@ -18,6 +22,38 @@ export class TicketPage {
     this.activity = page.getByRole('region', { name: 'Activity' });
     this.hideEvents = this.activity.getByRole('switch', { name: 'Hide events' });
     this.eventsHidden = this.activity.getByText('Events are hidden. Comments appear here.');
+    this.assignToMe = this.details.getByRole('button', { name: 'Assign to me' });
+    this.unassignMe = this.details.getByRole('button', { name: 'Unassign me' });
+    this.assigneePicker = this.details
+      .getByRole('combobox', { name: 'Assignee' })
+      .or(this.details.getByRole('button', { name: /^Assignee: / }));
+  }
+
+  /** A toast with `text`. */
+  toast(text: string): Locator {
+    return this.page.locator('[data-slot="toast"]').filter({ hasText: text });
+  }
+
+  /**
+   * Assigns `name` with the picker – from the list of the combobox, or from the bottom sheet on
+   * phones – and waits until the ticket is saved. The server-rendered picker does nothing before
+   * the hydration, so opening it is repeated until its choices show.
+   */
+  async assign(name: string): Promise<void> {
+    const choice = this.page
+      .getByRole('option', { name, exact: true })
+      .or(this.page.getByRole('dialog', { name: 'Assignee' }).getByRole('radio', { name }));
+    await expect(async () => {
+      await this.assigneePicker.click();
+      await expect(choice).toBeVisible({ timeout: 2_000 });
+    }).toPass();
+    const saved = this.page.waitForResponse(
+      (response) =>
+        /^\/api\/v1\/tickets\/[^/]+$/.test(new URL(response.url()).pathname) &&
+        response.request().method() === 'PATCH',
+    );
+    await choice.click();
+    expect((await saved).status()).toBe(200);
   }
 
   goto(identifier: string) {

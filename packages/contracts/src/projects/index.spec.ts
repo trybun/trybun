@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createProjectSchema,
   listMemberCandidatesQuerySchema,
+  listProjectMembersQuerySchema,
   listProjectsQuerySchema,
   projectActionSchema,
   projectResponseSchema,
@@ -26,6 +27,8 @@ describe('project enums', () => {
         'read_members',
         'manage_members',
         'create_ticket',
+        'assign_tickets',
+        'assign_tickets_self',
       ],
     ],
   ])('lists the codes', (schema, codes) => {
@@ -84,6 +87,25 @@ describe('list queries', () => {
 
   it('trims the search text of the member picker', () => {
     expect(listMemberCandidatesQuerySchema.parse({ query: ' anna ' })).toMatchObject({
+      query: 'anna',
+    });
+  });
+});
+
+describe('listProjectMembersQuerySchema', () => {
+  it.each([
+    ['true', true],
+    ['false', false],
+  ])('reads assignable=%s as %s', (assignable, expected) => {
+    expect(listProjectMembersQuerySchema.parse({ assignable }).assignable).toBe(expected);
+  });
+
+  it('rejects an assignable that is not a boolean', () => {
+    expect(listProjectMembersQuerySchema.safeParse({ assignable: 'maybe' }).success).toBe(false);
+  });
+
+  it('trims the search text of the assignee picker (Q9)', () => {
+    expect(listProjectMembersQuerySchema.parse({ query: ' anna ' })).toMatchObject({
       query: 'anna',
     });
   });

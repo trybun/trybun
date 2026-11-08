@@ -389,14 +389,23 @@
       "undo": "Undo",
       "changed": {
         "type": "Type changed to {type}",
-        "priority": "Priority changed to {priority}"
+        "priority": "Priority changed to {priority}",
+        "assigned": "Assigned to {name}",
+        "assignedToMe": "Assigned to you",
+        "unassigned": "Assignee removed"
       },
       "discard": {
         "title": "Discard your changes?",
         "description": "The text you typed will be lost.",
         "confirm": "Discard",
         "cancel": "Keep editing"
-      }
+      },
+      "assignToMe": "Assign to me",
+      "unassignMe": "Unassign me",
+      "people": "People",
+      "searchPeople": "Search by name or GitHub login",
+      "loadingPeople": "Loading…",
+      "noPeople": "No one found."
     },
     "timeline": {
       "title": "Activity",

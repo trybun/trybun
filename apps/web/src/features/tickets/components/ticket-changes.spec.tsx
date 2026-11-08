@@ -267,3 +267,165 @@ describe('read-only fields', () => {
     expect(screen.queryByRole('button', { name: 'Edit description' })).toBeNull();
   });
 });
+
+describe('assignee', () => {
+  const ANNA = { id: '0199a3f0-0000-7000-8000-000000000031', displayName: 'Anna' };
+  const JAN = { id: '0199a3f0-0000-7000-8000-000000000032', displayName: 'Jan' };
+
+  /** The assignable members of the project: the API decides who they are (Q9). */
+  function members(...people: { id: string; displayName: string }[]) {
+    fake.on('GET /api/v1/projects/{projectId}/members', {
+      data: {
+        items: people.map((user) => ({
+          user: { ...user, githubLogin: null },
+          role: 'developer',
+          createdAt: '2026-11-01T09:00:00.000Z',
+        })),
+        nextCursor: null,
+      },
+    });
+  }
+
+  it('offers Assign to me first and Unassigned last, and Undo assigns the previous person', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: null }));
+    members(ANNA, JAN);
+    fake.on('PATCH /api/v1/tickets/{ticketId}', (init) => {
+      const { assigneeId } = (init as { body: { assigneeId: string | null } }).body;
+      return { data: ticketResponse({ assignee: assigneeId === JAN.id ? JAN : null, version: 4 }) };
+    });
+    renderView();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Assignee' }));
+    const list = await screen.findByRole('listbox', { name: 'People' });
+    await waitFor(() =>
+      expect(
+        within(list)
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['Assign to me', 'Jan', 'Unassigned']),
+    );
+    expect(fake.callsTo('GET /api/v1/projects/{projectId}/members')[0]?.init).toMatchObject({
+      params: { query: { assignable: 'true' } },
+    });
+    await user.click(within(list).getByRole('option', { name: 'Jan' }));
+
+    await waitFor(() => expect(lastToast()?.title).toBe('Assigned to Jan'));
+    expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')[0]?.init).toMatchObject({
+      body: { assigneeId: JAN.id },
+    });
+    lastToast().actionProps?.onClick();
+    await waitFor(() =>
+      expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')[1]?.init).toMatchObject({
+        headers: { 'If-Match': 'W/"4"' },
+        body: { assigneeId: null },
+      }),
+    );
+  });
+
+  it('offers no Assign to me to a person who cannot be assigned in the project', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: null }));
+    members(JAN);
+    renderView();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Assignee' }));
+    const list = await screen.findByRole('listbox', { name: 'People' });
+
+    await waitFor(() =>
+      expect(
+        within(list)
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['Jan', 'Unassigned']),
+    );
+  });
+
+  it('searches the people on the server as the person types (Q9)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: null }));
+    members(JAN);
+    renderView();
+
+    const input = await screen.findByRole('combobox', { name: 'Assignee' });
+    await user.clear(input);
+    await user.type(input, 'ja');
+
+    await waitFor(() =>
+      expect(fake.callsTo('GET /api/v1/projects/{projectId}/members').at(-1)?.init).toMatchObject({
+        params: { query: { assignable: 'true', query: 'ja' } },
+      }),
+    );
+  });
+
+  it('shows the message of an Undo refused with 422 and reads the ticket again, without a retry', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: JAN }));
+    members(ANNA, JAN);
+    fake.on('PATCH /api/v1/tickets/{ticketId}', () =>
+      fake.callsTo('PATCH /api/v1/tickets/{ticketId}').length === 1
+        ? { data: ticketResponse({ assignee: null, version: 4 }) }
+        : { status: 422, error: problem(422, 'ticket.assignee_not_eligible') },
+    );
+    renderView();
+    await user.click(await screen.findByRole('combobox', { name: 'Assignee' }));
+    await user.click(await screen.findByRole('option', { name: 'Unassigned' }));
+    await waitFor(() => expect(lastToast()?.title).toBe('Assignee removed'));
+    const reads = fake.callsTo('GET /api/v1/tickets').length;
+
+    lastToast().actionProps?.onClick();
+
+    await waitFor(() =>
+      expect(lastToast()).toEqual({
+        title: 'Only active team members of the project can be assigned.',
+        type: 'error',
+      }),
+    );
+    await waitFor(() => expect(fake.callsTo('GET /api/v1/tickets').length).toBeGreaterThan(reads));
+    expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')).toHaveLength(2);
+  });
+
+  it('gives a Developer only Assign to me, whose take-over has no Undo (Q10)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: JAN, allowedActions: ['read', 'update', 'assign_self'] }));
+    fake.on('PATCH /api/v1/tickets/{ticketId}', {
+      data: ticketResponse({ assignee: ANNA, allowedActions: ['read', 'update', 'assign_self'] }),
+    });
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: 'Assign to me' }));
+
+    await waitFor(() => expect(lastToast()).toEqual({ title: 'Assigned to you', type: 'success' }));
+    expect(screen.queryByRole('combobox', { name: 'Assignee' })).toBeNull();
+    expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')[0]?.init).toMatchObject({
+      body: { assigneeId: ANNA.id },
+    });
+    expect(await screen.findByRole('button', { name: 'Unassign me' })).toBeDefined();
+  });
+
+  it('lets a Developer unassign themselves with Undo', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: ANNA, allowedActions: ['read', 'assign_self'] }));
+    fake.on('PATCH /api/v1/tickets/{ticketId}', {
+      data: ticketResponse({ assignee: null, version: 4, allowedActions: ['read', 'assign_self'] }),
+    });
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: 'Unassign me' }));
+
+    await waitFor(() => expect(lastToast()?.actionProps?.children).toBe('Undo'));
+    expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')[0]?.init).toMatchObject({
+      body: { assigneeId: null },
+    });
+  });
+
+  it('shows the assignee as text without assign and assign_self', async () => {
+    answer(ticketResponse({ allowedActions: ['read', 'update'] }));
+    renderView();
+
+    const details = await screen.findByRole('region', { name: 'Details' });
+    expect(within(details).getByText('Anna')).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Assign to me' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Assignee' })).toBeNull();
+  });
+});

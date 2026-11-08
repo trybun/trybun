@@ -5,14 +5,12 @@ import {
   type TicketAction,
   ticketPrioritySchema,
   ticketTypeSchema,
-  type UpdateTicketDto,
 } from '@trybun/contracts/tickets';
-import { toast } from '@trybun/ui/components/toast';
 import { useFormatter, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
-import { useUpdateTicket } from '../mutations.js';
+import { AssigneeControl } from './assignee-control.js';
 import { FieldPicker } from './field-picker.js';
+import { useFieldChange } from './use-field-change.js';
 
 /**
  * The fields of a ticket in the team ticket view (§3.2): status with its waiting reason, assignee,
@@ -21,7 +19,8 @@ import { FieldPicker } from './field-picker.js';
  * change in the person's time zone (§13.1). A side panel from the `lg` breakpoint, the **Details**
  * section between the header and the description below it (Rule 9).
  *
- * Type and priority (`update_fields`) save on selection, then a toast offers **Undo**, which sends
+ * The assignee follows `assign` / `assign_self` (`AssigneeControl`). Type and priority
+ * (`update_fields`) save on selection, then a toast offers **Undo**, which sends
  * the inverse change with the version the change returned (Q10) – except for a type that was not
  * set, which cannot be unset again. A field without its action in `allowedActions` is text; in an
  * archived project the API allows only `read`, so every field is.
@@ -51,9 +50,7 @@ export function TicketFieldPanel({ ticket }: { ticket: Ticket }) {
           )}
         </Field>
         <Field label={t('view.fields.assignee')}>
-          {ticket.assignee === null
-            ? t('view.unassigned')
-            : (ticket.assignee.displayName ?? t('deletedUser'))}
+          <AssigneeControl ticket={ticket} />
         </Field>
         <Field label={t('view.fields.type')}>
           {can('update_fields') ? (
@@ -131,43 +128,6 @@ export function TicketFieldPanel({ ticket }: { ticket: Ticket }) {
       </dl>
     </section>
   );
-}
-
-/**
- * A change of a field that saves on selection (Q10): the toast names the change and, with an
- * `inverse`, offers **Undo**, sent with the version the change returned. Undo is a change of its
- * own with its own event; refused (`412`, `403`, `422`) it shows the message and the ticket is read
- * again (`useUpdateTicket`), and it is never retried.
- */
-export function useFieldChange(ticket: Ticket) {
-  const t = useTranslations('tickets');
-  const errorMessage = useErrorMessage();
-  const updateTicket = useUpdateTicket();
-  const showError = (error: unknown) => toast.add({ title: errorMessage(error), type: 'error' });
-  const apply = (input: UpdateTicketDto, inverse: UpdateTicketDto | undefined, title: string) =>
-    updateTicket.mutate(
-      { ticket, input },
-      {
-        onSuccess: (updated) =>
-          toast.add({
-            title,
-            type: 'success',
-            ...(inverse === undefined
-              ? {}
-              : {
-                  actionProps: {
-                    children: t('view.undo'),
-                    onClick: () =>
-                      void updateTicket
-                        .mutateAsync({ ticket: updated, input: inverse })
-                        .catch(showError),
-                  },
-                }),
-          }),
-        onError: showError,
-      },
-    );
-  return { apply, isPending: updateTicket.isPending, variables: updateTicket.variables };
 }
 
 /** A field of the panel: its label and value, one row on phones, stacked in the side panel. */
