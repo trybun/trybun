@@ -45,6 +45,7 @@ This chapter defines **one pattern for every recurring problem in the code** (Ru
 | A UI preference of the browser | A cookie read by the layout, stored by a Server Action | [§18.5](#185-web-application) |
 | A preference of the person that follows them to every device | A typed, non-null column of `users`, read with `GET /users/me` and changed with `PATCH /users/me` | [§7.4](07-users-organizations-permissions.md), [§18.5](#185-web-application) |
 | A form | React Hook Form with the Zod resolver and the contract schema | [§18.5](#185-web-application) |
+| Typed text that would be lost on leaving | `useUnsavedChanges(isDirty)` of `lib/forms`: asks before closing the tab, following an in-app link or going back; never on a save | [§18.5](#185-web-application) |
 | Memoization | React Compiler; no manual `useMemo`, `useCallback` or `memo` in new code | [§18.5](#185-web-application) |
 | Code the first paint does not need | `React.lazy` behind `Suspense` in a `lazy-*.tsx` wrapper; `await import()` for the module of an action | [§18.5](#185-web-application) |
 | A pending server state before live updates exist | `refetchInterval` of the feature's `queryOptions`, one request per list, with a backoff | [§18.5](#185-web-application) |
@@ -189,7 +190,7 @@ apps/web/src/
     queries.ts                  query keys and queryOptions factories of the feature
     mutations.ts                mutation hooks of the feature
     search-params.ts            Zod schema of the feature's URL state, if it has one
-  lib/<concern>/                api-client, auth, bff, i18n, query-client, realtime, commands, errors, env, next
+  lib/<concern>/                api-client, auth, bff, i18n, query-client, realtime, commands, errors, env, forms, next
   proxy.ts                      security headers, the CSP nonce (§13.5) and the path of the opened page
 ```
 
@@ -238,6 +239,7 @@ No global client state library is used.
 - **Required fields** name themselves: an empty required text has the field error code `string.empty` ([§17.2](17-conventions.md)), and its field passes its own message to the translation – `errorMessage(code, { 'string.empty': t('nameRequired') })` – a catalogue key `<field>Required` of the form's namespace, "Enter the name of the project" / "Podaj nazwę projektu" (a sentence of its own, because Polish inflects the label). Other codes keep their common message.
 - A form submits through the feature's mutation hook. Field errors of a Problem Details response (`errors[].pointer`) are applied to the form fields by one helper (`fieldErrorsOf()` of `lib/errors/form-errors.ts`): the field error code of a validation error, the code of a rule (e.g. `setup.email_taken`) otherwise; other errors show the translated message.
 - Watched field values are read with `useWatch({ control, name })`; `watch()` of `useForm()` is not used, because the React Compiler cannot memoize it.
+- **Unsaved text** is never lost without a question: a form or editor with typed text passes its dirty state to `useUnsavedChanges(isDirty)` of `lib/forms/use-unsaved-changes.ts` and shows "Discard your changes?" while the hook `isAsking`, with `leave()` and `stay()`. The hook asks the browser before the tab closes or reloads, holds back a link of the application, and catches the browser's Back button and the back gesture of a phone through one history entry it adds above the page's own while the text is dirty (a copy of the router's state); it takes that entry back when the text is saved or the component unmounts. A component that leaves after saving navigates with the hook's `navigate(href)`, never `router.push`, so the entry goes first and nothing asks.
 
 ### Product tours
 
@@ -338,6 +340,7 @@ No global client state library is used.
 | The Markdown rule set of every renderer with the shared XSS and image tables; the GFM editor; Markdown in e-mails | `packages/markdown/` (`test/markdown-cases.ts`), `packages/ui/src/components/markdown.tsx`, `packages/ui/src/components/markdown-editor.tsx` with `markdown-editor-format.ts`, `apps/server/src/platform/markdown/` | S1-07 |
 | Upload streamed into the object storage and streamed download: the multer storage engine with limits per request, `@UploadedFiles()` without a Zod schema (the lint rule for parameter schemas covers only `@Body`, `@Query`, `@Param` and `@MessageBody`), `StreamableFile` with forced headers and `304`; the object storage adapter; polling a pending state | `apps/server/src/modules/attachments/` (`attachment-files.interceptor.ts`, `quarantine-storage.engine.ts`, `attachments.controller.ts`, `attachment-content.ts`, `domain/content-response.ts`), `apps/server/src/platform/storage/`, `apps/web/src/features/attachments/queries.ts` | S1-08 |
 | A preference of the person on the account; a change saved on selection with **Undo** | `users.hide_timeline_events` (migration `add_user_hide_timeline_events`), `apps/server/src/modules/users/users.service.ts`, `apps/web/src/features/users/mutations.ts` (`useUpdateCurrentUser`), `apps/web/src/features/tickets/components/activity-timeline.tsx`; `apps/web/src/features/tickets/components/use-field-change.ts` | S1-10 |
+| Asking before typed text is lost: tab, link, Back | `apps/web/src/lib/forms/use-unsaved-changes.ts` with `use-unsaved-changes.spec.tsx`, `apps/web/src/features/tickets/components/team-ticket-form.tsx` (`navigate` after a save) | S1-10 |
 | Real-time event and query invalidation | `modules/notifications/`, `lib/realtime/` | S1-15 |
 
 - **Skills**: recurring tasks (a feature module, an endpoint, a background job, a UI component) get project skills in `.ai/skills/` that list the steps and link to the reference implementation instead of copying its code, so they cannot drift from it.
