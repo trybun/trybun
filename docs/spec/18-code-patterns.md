@@ -217,7 +217,7 @@ apps/web/src/
 
 - Every change is a mutation hook in `features/<feature>/mutations.ts` built on `useMutation`. It sends `If-Match` with the version from the query data, invalidates the affected query keys on success and uses the common error handling: the translated error code, and for `412` the standard conflict message ([§17.2](17-conventions.md)).
 - Optimistic updates are used only where Rule 2 needs immediate feedback (drag and drop on the Kanban board, toggles such as watching) and are rolled back on error.
-- Reversible actions show a toast with "Undo" that performs the inverse API call (Rule 2); changes are never delayed on the client to make undo possible.
+- Reversible actions show a toast with "Undo" that performs the inverse API call (Rule 2); changes are never delayed on the client to make undo possible. Pressing a toast's action closes the toast at once and disables the action while it leaves, so it is never performed twice (`Toaster` of `@trybun/ui`).
 
 ### State
 

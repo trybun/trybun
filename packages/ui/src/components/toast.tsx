@@ -249,8 +249,12 @@ function ToastIcon({ type }: { type: string | undefined }) {
   );
 }
 
+// Pressing the action – Undo, as a rule – closes its toast at once (the snackbar convention, like
+// Sonner's default): the action is done, and a second press must not repeat it. Base UI leaves the
+// toast open; while it closes, its button stays in place until the exit motion ends, so it is
+// disabled for that time.
 function ToastList() {
-  const { toasts } = ToastPrimitive.useToastManager();
+  const { toasts, close } = ToastPrimitive.useToastManager();
 
   return toasts.map((toastItem) => (
     <Toast key={toastItem.id} toast={toastItem}>
@@ -260,7 +264,10 @@ function ToastList() {
           <ToastTitle />
           <ToastDescription />
         </div>
-        <ToastAction />
+        <ToastAction
+          disabled={toastItem.transitionStatus === 'ending'}
+          onClick={() => close(toastItem.id)}
+        />
         <ToastClose />
       </ToastContent>
     </Toast>

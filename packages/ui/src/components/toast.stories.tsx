@@ -175,3 +175,47 @@ export const AddedBeforeTheToaster: Story = {
     await expect(await screen.findByText('Assigned to Jan')).toBeVisible();
   },
 };
+
+/** A toast with an action, counting its presses, like **Undo** of a change. */
+function ToastActionDemo() {
+  const [manager] = useState(createToastManager);
+  const [undone, setUndone] = useState(0);
+  return (
+    <Toaster toastManager={manager}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() =>
+            manager.add({
+              type: 'success',
+              title: 'Priority changed to Critical',
+              timeout: 0,
+              actionProps: { children: 'Undo', onClick: () => setUndone((count) => count + 1) },
+            })
+          }
+        >
+          Change priority
+        </Button>
+        <output>Undone {undone} times</output>
+      </div>
+    </Toaster>
+  );
+}
+
+// Pressing the action closes its toast at once, and a second press – a double click – never
+// repeats it (Material Design snackbar, Sonner).
+export const ActionClosesTheToast: Story = {
+  render: () => <ToastActionDemo />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Change priority' }));
+    const title = await screen.findByText('Priority changed to Critical');
+    await expect(title).toBeVisible();
+
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Undo' }));
+
+    await waitFor(() =>
+      expect(screen.queryByText('Priority changed to Critical')).not.toBeInTheDocument(),
+    );
+    await expect(canvas.getByText('Undone 1 times')).toBeInTheDocument();
+  },
+};
