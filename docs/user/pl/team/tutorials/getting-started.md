@@ -18,7 +18,7 @@ Aby chronić dane Twoich klientów, Trybun wylogowuje Cię po 30 minutach bez ak
 
 ## Poznaj układ ekranu
 
-- **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem na **Stronę główną**. Po jego prawej stronie są menu pomocy (znak zapytania) i menu konta z przełącznikiem języka i opcją **Wyloguj się**.
+- **Nagłówek** u góry pokazuje logo Trybuna, które zawsze prowadzi z powrotem na **Stronę główną**. Po jego prawej stronie są przycisk **Nowe zgłoszenie**, który otwiera [formularz nowego zgłoszenia](../how-to/create-a-ticket.md), menu pomocy (znak zapytania) i menu konta z przełącznikiem języka i opcją **Wyloguj się**.
 - **Nawigacja główna** zawiera widoki Trybuna. Na telefonie jest na dole ekranu, na tablecie i komputerze – po lewej stronie. Przycisk na jej górze zwija ją do ikon i rozwija z powrotem; na komputerze Trybun zapamiętuje Twój wybór w tej przeglądarce. Gdy widać same ikony, wskaż ikonę lub przejdź do niej klawiaturą, aby zobaczyć jej nazwę.
 
 ## Skorzystaj z pomocy
