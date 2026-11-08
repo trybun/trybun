@@ -244,6 +244,8 @@ test.describe('assignment in the team ticket view', () => {
             response.request().method() === 'PATCH',
         );
         await toast.getByRole('button', { name: 'Undo' }).click();
+        // Undo closes its toast at once, so it cannot be pressed twice.
+        await expect(toast).toBeHidden();
         expect((await undone).status()).toBe(200);
         expect((await ticketOf(manager, identifier)).assignee).toBeNull();
       } finally {
