@@ -104,14 +104,21 @@ test.describe('the team ticket view', () => {
 });
 
 /**
- * Unassigned tickets of the demo dataset, one per device, so that the three projects running in
- * parallel never change the same ticket; the tests return each to unassigned.
+ * Unassigned tickets of the demo dataset that no other test reads, one per test and device: the
+ * tests and the three device projects run in parallel (`fullyParallel`), so no two of them ever
+ * change the same ticket. The tests return each to unassigned.
  */
-const UNASSIGNED_TICKET_OF_DEVICE: Record<string, string> = {
-  phone: 'ERP-2',
-  tablet: 'ERP-3',
-  desktop: 'CP-12',
+const UNASSIGNED_TICKETS: Record<'developer' | 'manager', Record<string, string>> = {
+  developer: { phone: 'CP-2', tablet: 'CP-5', desktop: 'ERP-2' },
+  manager: { phone: 'ERP-3', tablet: 'CP-12', desktop: 'CP-13' },
 };
+
+/** The unassigned ticket of the test of `role` on the device of the running project. */
+function unassignedTicketOf(role: 'developer' | 'manager', project: string): string {
+  const identifier = UNASSIGNED_TICKETS[role][project];
+  expect(identifier, `an unassigned ticket on ${project}`).toBeDefined();
+  return identifier!;
+}
 
 /** A ticket as the API answers it, with what a change needs. */
 interface TicketReply {
@@ -162,7 +169,7 @@ async function idOf(api: APIRequestContext): Promise<string> {
 // desktop; the full form follows with the form.
 test.describe('assignment in the team ticket view', () => {
   test('a Developer can assign only themselves', async ({ page, baseURL }, testInfo) => {
-    const identifier = UNASSIGNED_TICKET_OF_DEVICE[testInfo.project.name] ?? 'CP-12';
+    const identifier = unassignedTicketOf('developer', testInfo.project.name);
     const manager = await apiAs(MANAGER_STORAGE_STATE, baseURL ?? '');
     // The developer of the device projects, through the same BFF as the page.
     const developer = await apiAs(TEAM_STORAGE_STATE, baseURL ?? '');
@@ -212,7 +219,7 @@ test.describe('assignment in the team ticket view', () => {
       page,
       baseURL,
     }, testInfo) => {
-      const identifier = UNASSIGNED_TICKET_OF_DEVICE[testInfo.project.name] ?? 'CP-12';
+      const identifier = unassignedTicketOf('manager', testInfo.project.name);
       const manager = await apiAs(MANAGER_STORAGE_STATE, baseURL ?? '');
       const ticket = new TicketPage(page);
       try {
