@@ -47,11 +47,11 @@ Make the S1-11 change specification `.ai/specs/2026-10-26-ticket-visibility.md` 
 ### Phase 2: Bring the specification up to date
 
 - [x] 2.1 Merge main into the branch — 72e2f33
-- [ ] 2.2 Align the specification with the implemented S1-02 to S1-09 and the S1-10 specification
+- [x] 2.2 Align the specification with the implemented S1-02 to S1-09 and the S1-10 specification — 2d3b56a
 
 ### Phase 3: Record the maintainer's decisions
 
-- [ ] 3.1 Record the answers to Q1, Q7 and Q8
+- [x] 3.1 Record the answers to Q1, Q7 and Q8 — 2d3b56a
 
 ### Phase 4: Review and finalize
 
