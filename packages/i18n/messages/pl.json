@@ -337,6 +337,73 @@
         "solved": "Tak, rozwiązane",
         "not_solved": "Nie, problem nadal występuje"
       }
+    },
+    "types": {
+      "bug": "Błąd",
+      "feature": "Nowa funkcja",
+      "task": "Zadanie",
+      "question": "Pytanie"
+    },
+    "priorities": {
+      "low": "Niski",
+      "normal": "Normalny",
+      "high": "Wysoki",
+      "critical": "Krytyczny"
+    },
+    "sources": {
+      "user": "Portal",
+      "developer": "Zespół",
+      "integration": "Integracja"
+    },
+    "deletedUser": "Usunięty użytkownik",
+    "view": {
+      "copyIdentifier": "Kopiuj identyfikator {identifier}",
+      "identifierCopied": "Skopiowano identyfikator {identifier}",
+      "copyFailed": "Nie udało się skopiować identyfikatora.",
+      "opened": "{requester} · utworzono <time>{relativeTime}</time>",
+      "description": "Opis",
+      "noDescription": "Brak opisu.",
+      "archivedBanner": "Ten projekt jest zarchiwizowany i tylko do odczytu.",
+      "details": "Szczegóły",
+      "fields": {
+        "status": "Status",
+        "assignee": "Osoba przypisana",
+        "type": "Typ",
+        "priority": "Priorytet",
+        "project": "Projekt",
+        "requester": "Zgłaszający",
+        "organization": "Organizacja",
+        "created": "Utworzono",
+        "updated": "Zaktualizowano"
+      },
+      "notSet": "Nie ustawiono",
+      "unassigned": "Nieprzypisane"
+    },
+    "timeline": {
+      "title": "Aktywność",
+      "system": "System",
+      "showMore": "Pokaż więcej",
+      "opened": "{person} – utworzenie zgłoszenia",
+      "events": {
+        "titleChanged": "{person} – zmiana tytułu: „{from}” → „{to}”",
+        "descriptionEdited": "{person} – edycja opisu",
+        "typeChanged": "{person} – zmiana typu: {from} → {to}",
+        "priorityChanged": "{person} – zmiana priorytetu: {from} → {to}",
+        "assigneeSet": "{person} – przypisanie osoby: {assignee}",
+        "assigneeRemoved": "{person} – usunięcie przypisania: {assignee}",
+        "assigneeChanged": "{person} – zmiana osoby przypisanej: {from} → {to}",
+        "statusChanged": "{person} – zmiana statusu: {from} → {to}",
+        "statusChangedWaiting": "{person} – zmiana statusu: {from} → {to} ({reason})",
+        "reopened": "{person} – ponowne otwarcie zgłoszenia: {from} → {to}",
+        "reopenedWaiting": "{person} – ponowne otwarcie zgłoszenia: {from} → {to} ({reason})",
+        "waitingReasonChanged": "{person} – zmiana powodu oczekiwania: {reason}",
+        "markedDuplicate": "{person} – oznaczenie jako duplikat zgłoszenia {original}",
+        "duplicateOriginalChanged": "{person} – zmiana zgłoszenia oryginalnego: {from} → {to}",
+        "duplicateLinkRemoved": "{person} – usunięcie powiązania z oryginałem {original}",
+        "rejectionReasonChanged": "{person} – zmiana powodu odrzucenia",
+        "attachmentAdded": "{person} – dodanie pliku {file}",
+        "attachmentDeleted": "{person} – usunięcie pliku {file}"
+      }
     }
   },
   "attachments": {

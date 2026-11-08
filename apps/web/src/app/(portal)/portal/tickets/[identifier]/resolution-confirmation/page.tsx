@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation.js';
 import { z } from 'zod';
 import { portalTicketHref } from '../../../../../../features/portal/hrefs.js';
 import { ResolutionConfirmation } from '../../../../../../features/tickets/components/resolution-confirmation.js';
-import { getPortalTicket } from '../../../../../../features/tickets/ticket-page.js';
+import { getTicketPage } from '../../../../../../features/tickets/ticket-page.js';
 import { requireSession } from '../../../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../../../lib/query-client/server-query-client.js';
 
@@ -26,7 +26,7 @@ export default async function ResolutionConfirmationPage({
     searchParams.then((values) => searchParamsSchema.parse(values)),
   ]);
   await requireSession();
-  await getPortalTicket(identifier);
+  await getTicketPage(identifier, 'portal');
   if (answer === undefined) {
     redirect(portalTicketHref(identifier));
   }

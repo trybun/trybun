@@ -337,6 +337,73 @@
         "solved": "Yes, solved",
         "not_solved": "No, still a problem"
       }
+    },
+    "types": {
+      "bug": "Bug",
+      "feature": "Feature",
+      "task": "Task",
+      "question": "Question"
+    },
+    "priorities": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "sources": {
+      "user": "Portal",
+      "developer": "Team",
+      "integration": "Integration"
+    },
+    "deletedUser": "Deleted user",
+    "view": {
+      "copyIdentifier": "Copy identifier {identifier}",
+      "identifierCopied": "Identifier {identifier} copied",
+      "copyFailed": "The identifier could not be copied.",
+      "opened": "{requester} opened <time>{relativeTime}</time>",
+      "description": "Description",
+      "noDescription": "No description.",
+      "archivedBanner": "This project is archived and read-only.",
+      "details": "Details",
+      "fields": {
+        "status": "Status",
+        "assignee": "Assignee",
+        "type": "Type",
+        "priority": "Priority",
+        "project": "Project",
+        "requester": "Requester",
+        "organization": "Organization",
+        "created": "Created",
+        "updated": "Updated"
+      },
+      "notSet": "Not set",
+      "unassigned": "Unassigned"
+    },
+    "timeline": {
+      "title": "Activity",
+      "system": "System",
+      "showMore": "Show more",
+      "opened": "{person} opened the ticket",
+      "events": {
+        "titleChanged": "{person} changed the title: “{from}” → “{to}”",
+        "descriptionEdited": "{person} edited the description",
+        "typeChanged": "{person} changed the type: {from} → {to}",
+        "priorityChanged": "{person} changed the priority: {from} → {to}",
+        "assigneeSet": "{person} assigned {assignee}",
+        "assigneeRemoved": "{person} removed the assignee {assignee}",
+        "assigneeChanged": "{person} changed the assignee: {from} → {to}",
+        "statusChanged": "{person} changed the status: {from} → {to}",
+        "statusChangedWaiting": "{person} changed the status: {from} → {to} ({reason})",
+        "reopened": "{person} reopened the ticket: {from} → {to}",
+        "reopenedWaiting": "{person} reopened the ticket: {from} → {to} ({reason})",
+        "waitingReasonChanged": "{person} changed the waiting reason: {reason}",
+        "markedDuplicate": "{person} marked this as a duplicate of {original}",
+        "duplicateOriginalChanged": "{person} changed the original: {from} → {to}",
+        "duplicateLinkRemoved": "{person} removed the link to the original {original}",
+        "rejectionReasonChanged": "{person} changed the rejection reason",
+        "attachmentAdded": "{person} added the file {file}",
+        "attachmentDeleted": "{person} deleted the file {file}"
+      }
     }
   },
   "attachments": {

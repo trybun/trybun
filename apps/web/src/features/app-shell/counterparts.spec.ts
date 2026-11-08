@@ -21,8 +21,8 @@ describe('counterpartOf', () => {
     ['/portal', '/'],
     ['/portal/projects/0198-a', '/projects/0198-a'],
     ['/portal/projects/0198-a/tickets/new', '/'],
-    // The team ticket view comes with S1-10 (Q1).
-    ['/portal/tickets/ERP-12', '/'],
+    // The team ticket view of S1-10 (its Q8).
+    ['/portal/tickets/ERP-12', '/tickets/ERP-12'],
     ['/portal/tickets', '/'],
     ['/portal/tickets?projectId=0198-a', '/'],
     ['/portal/tickets/ERP-12/resolution-confirmation?answer=solved', '/'],
