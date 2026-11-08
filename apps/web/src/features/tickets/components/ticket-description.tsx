@@ -17,7 +17,7 @@ import { useAddTicketAttachments } from '../../attachments/mutations.js';
 import { LazyAttachmentDrafts } from '../../attachments/components/lazy-attachment-drafts.js';
 import { useAttachmentDrafts } from '../../attachments/use-attachment-drafts.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
-import { useUpdateTicket } from '../mutations.js';
+import { useIsTicketChanging, useUpdateTicket } from '../mutations.js';
 import { useUnsavedChanges } from '../../../lib/forms/use-unsaved-changes.js';
 import { LazyMarkdownEditor } from './lazy-markdown-editor.js';
 
@@ -132,6 +132,8 @@ function DescriptionForm({
   });
   const rootError = form.formState.errors.root;
   const isSaving = form.formState.isSubmitting;
+  // A change of another field sends the version this save would send too (412).
+  const isChanging = useIsTicketChanging(ticket.id);
 
   return (
     <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-3">
@@ -175,7 +177,7 @@ function DescriptionForm({
         <Button
           type="submit"
           className="w-full md:w-fit"
-          disabled={isSaving || attachments.isUploading}
+          disabled={isSaving || isChanging || attachments.isUploading}
         >
           {isSaving ? t('view.saving') : t('view.save')}
         </Button>

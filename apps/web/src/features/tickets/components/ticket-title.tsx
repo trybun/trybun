@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
-import { useUpdateTicket } from '../mutations.js';
+import { useIsTicketChanging, useUpdateTicket } from '../mutations.js';
 
 const titleFormSchema = z.object({ title: ticketTitleSchema });
 type TitleValues = z.infer<typeof titleFormSchema>;
@@ -71,6 +71,8 @@ function TitleForm({ ticket, onClose }: { ticket: Ticket; onClose: () => void })
   const t = useTranslations('tickets');
   const errorMessage = useErrorMessage();
   const updateTicket = useUpdateTicket();
+  // Its own change or one of another field: either sends the version this one would send (412).
+  const isChanging = useIsTicketChanging(ticket.id);
   const input = useRef<HTMLInputElement>(null);
   const form = useForm<TitleValues>({
     resolver: zodResolver(titleFormSchema, FORM_ERROR_MAP),
@@ -149,7 +151,7 @@ function TitleForm({ ticket, onClose }: { ticket: Ticket; onClose: () => void })
         )}
       />
       <div className="flex gap-2">
-        <Button type="submit" className="flex-1 md:flex-none" disabled={updateTicket.isPending}>
+        <Button type="submit" className="flex-1 md:flex-none" disabled={isChanging}>
           {updateTicket.isPending ? t('view.saving') : t('view.save')}
         </Button>
         <Button type="button" variant="outline" className="flex-1 md:flex-none" onClick={onClose}>
