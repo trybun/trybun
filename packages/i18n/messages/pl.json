@@ -341,7 +341,7 @@
     },
     "types": {
       "bug": "Błąd",
-      "feature": "Nowa funkcja",
+      "feature": "Funkcjonalność",
       "task": "Zadanie",
       "question": "Pytanie"
     },
@@ -358,8 +358,8 @@
       "question": "## Pytanie\n\n## Kontekst"
     },
     "sources": {
-      "user": "Portal",
-      "developer": "Zespół",
+      "user": "Użytkownik",
+      "developer": "Developer",
       "integration": "Integracja"
     },
     "deletedUser": "Usunięty użytkownik",
@@ -374,7 +374,7 @@
       "details": "Szczegóły",
       "fields": {
         "status": "Status",
-        "assignee": "Osoba przypisana",
+        "assignee": "Przypisany",
         "type": "Typ",
         "priority": "Priorytet",
         "project": "Projekt",
@@ -425,7 +425,7 @@
       "titleRequired": "Wpisz tytuł.",
       "description": "Opis",
       "priority": "Priorytet",
-      "assignee": "Osoba przypisana",
+      "assignee": "Przypisany",
       "assignToMe": "Przypisz do mnie",
       "submit": "Utwórz zgłoszenie",
       "cancel": "Anuluj",

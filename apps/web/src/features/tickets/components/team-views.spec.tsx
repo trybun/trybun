@@ -144,7 +144,7 @@ describe('TeamTicketView', () => {
     const opened = screen.getByText(
       (_content, element) =>
         element?.tagName === 'P' &&
-        /^Celina Customer opened .+ ago · Portal$/.test(element.textContent ?? ''),
+        /^Celina Customer opened .+ ago · User$/.test(element.textContent ?? ''),
     );
     expect(opened.querySelector('time')?.getAttribute('dateTime')).toBe('2026-11-02T09:00:00.000Z');
     const description = screen.getByRole('region', { name: 'Description' });

@@ -12,7 +12,7 @@ Możesz zmieniać tylko to, na co pozwala Twoja rola; wszystko inne jest wyświe
 
 - **Identyfikator**, na przykład `ERP-12`, z przyciskiem, który go kopiuje.
 - **Tytuł**. Wybierz **Edytuj tytuł**, zmień go i wybierz **Zapisz** albo naciśnij **Enter**; **Anuluj** lub **Esc** zostawia dotychczasowy tytuł.
-- Kto i kiedy utworzył zgłoszenie oraz skąd ono pochodzi: **Portal** (użytkownik), **Zespół** albo **Integracja**.
+- Kto i kiedy utworzył zgłoszenie oraz skąd ono pochodzi: **Użytkownik** (z portalu), **Developer** (zespół) albo **Integracja**.
 
 ## Opis i pliki
 
@@ -23,8 +23,8 @@ Opis jest wyświetlany ze sformatowaniem ([formatowanie tekstu](../../end-user/r
 | Pole | Znaczenie i sposób zmiany |
 |---|---|
 | **Status** | Status wewnętrzny, pogrupowany na **Początkowe**, **Aktywne**, **Wstrzymane** i **Zamknięte**; zgłoszenie oczekujące na zgłaszającego pokazuje też powód – **Oczekuje na informacje** albo **Oczekuje na potwierdzenie**. Zobacz **Statusy** poniżej |
-| **Osoba przypisana** | Kto pracuje nad zgłoszeniem. Zobacz **Przypisywanie** poniżej |
-| **Typ** | **Błąd**, **Nowa funkcja**, **Zadanie** albo **Pytanie**; **Nie ustawiono** dla zgłoszenia z portalu, którego nikt jeszcze nie sklasyfikował. Zmiana typu nigdy nie zmienia opisu |
+| **Przypisany** | Kto pracuje nad zgłoszeniem. Zobacz **Przypisywanie** poniżej |
+| **Typ** | **Błąd**, **Funkcjonalność**, **Zadanie** albo **Pytanie**; **Nie ustawiono** dla zgłoszenia z portalu, którego nikt jeszcze nie sklasyfikował. Zmiana typu nigdy nie zmienia opisu |
 | **Priorytet** | **Niski**, **Normalny**, **Wysoki** albo **Krytyczny** |
 | **Projekt** | Projekt zgłoszenia; nie można go zmienić |
 | **Zgłaszający** | Kto wysłał zgłoszenie |

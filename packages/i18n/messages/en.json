@@ -358,8 +358,8 @@
       "question": "## Question\n\n## Context"
     },
     "sources": {
-      "user": "Portal",
-      "developer": "Team",
+      "user": "User",
+      "developer": "Developer",
       "integration": "Integration"
     },
     "deletedUser": "Deleted user",

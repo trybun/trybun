@@ -12,7 +12,7 @@ You can change only what your role allows; everything else is shown as text. In 
 
 - The **identifier**, for example `ERP-12`, with a button that copies it.
 - The **title**. Select **Edit title**, change it, and select **Save** or press **Enter**; **Cancel** or **Esc** keeps the old title.
-- Who opened the ticket and when, and where it came from: **Portal** (an end user), **Team** or **Integration**.
+- Who opened the ticket and when, and where it came from: **User** (from the portal), **Developer** (the team) or **Integration**.
 
 ## Description and files
 
