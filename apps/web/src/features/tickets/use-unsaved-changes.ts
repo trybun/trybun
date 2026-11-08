@@ -30,7 +30,11 @@ export function useUnsavedChanges(isDirty: boolean) {
     if (!isDirty) {
       return;
     }
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Browsers before the standard `preventDefault()` ask only with a `returnValue`.
+      event.returnValue = '';
+    };
     const onClick = (event: MouseEvent) => {
       const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
       if (!(anchor instanceof HTMLAnchorElement) || isOutsideOfPage(event, anchor)) {
