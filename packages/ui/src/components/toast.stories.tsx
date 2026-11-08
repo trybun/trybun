@@ -142,3 +142,36 @@ export const AboveDialogOnPhone: Story = {
     await expect(dialog).toBeInTheDocument();
   },
 };
+
+/** A toast added before the toaster mounts, as `LazyToaster` does after the first paint. */
+function ToastBeforeToasterDemo() {
+  const [manager] = useState(createToastManager);
+  const [hasToaster, setHasToaster] = useState(false);
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="outline"
+        onClick={() => manager.add({ type: 'success', title: 'Assigned to Jan', timeout: 0 })}
+      >
+        Assign
+      </Button>
+      <Button variant="outline" onClick={() => setHasToaster(true)}>
+        Mount the toaster
+      </Button>
+      {hasToaster && <Toaster toastManager={manager} />}
+    </div>
+  );
+}
+
+// Base UI passes a toast only to the toasters listening at that moment; the manager keeps it until
+// one does, so an action right after the first paint keeps its confirmation.
+export const AddedBeforeTheToaster: Story = {
+  render: () => <ToastBeforeToasterDemo />,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Assign' }));
+    await expect(screen.queryByText('Assigned to Jan')).not.toBeInTheDocument();
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Mount the toaster' }));
+    await expect(await screen.findByText('Assigned to Jan')).toBeVisible();
+  },
+};
