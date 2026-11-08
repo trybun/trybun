@@ -55,5 +55,5 @@ Make the S1-11 change specification `.ai/specs/2026-10-26-ticket-visibility.md` 
 
 ### Phase 4: Review and finalize
 
-- [ ] 4.1 Run the specification review and apply its findings
+- [x] 4.1 Run the specification review and apply its findings — 2de28cd
 - [ ] 4.2 Update the PR body, labels and draft state
