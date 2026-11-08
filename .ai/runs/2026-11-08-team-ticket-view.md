@@ -33,7 +33,7 @@ Build the team ticket view at `/tickets/{identifier}` and the full ticket form a
 
 ### Phase 1: View and timeline
 
-- [ ] 1.1 Team ticket route, read-only view and activity timeline
+- [x] 1.1 Team ticket route, read-only view and activity timeline — b6fe983
 - [ ] 1.2 Hide events setting on the account
 
 ### Phase 2: Changes in the view
