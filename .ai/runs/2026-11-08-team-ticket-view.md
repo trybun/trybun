@@ -49,7 +49,7 @@ Build the team ticket view at `/tickets/{identifier}` and the full ticket form a
 
 ### Phase 4: Documentation and specification
 
-- [ ] 4.1 User documentation and generated help
+- [x] 4.1 User documentation and generated help — 18332c6
 - [ ] 4.2 System specification, plan and spec moved to `implemented/`
 
 ### Phase 5: Validation and review
