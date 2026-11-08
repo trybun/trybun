@@ -39,7 +39,7 @@ Build the team ticket view at `/tickets/{identifier}` and the full ticket form a
 ### Phase 2: Changes in the view
 
 - [x] 2.1 Editing title, description, type and priority with undo — 655eef7
-- [ ] 2.2 Assignable members, project assign actions and the assignee control
+- [x] 2.2 Assignable members, project assign actions and the assignee control — 8dc3abb
 - [ ] 2.3 Status control with the reject and duplicate dialogs
 
 ### Phase 3: Full form
