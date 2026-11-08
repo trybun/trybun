@@ -20,7 +20,8 @@ import { ActivityEventItem } from './activity-event-item.js';
  * returns, internal and public, oldest first, 50 per page with **Show more** at the end.
  *
  * **Hide events** is a setting of the account (Q5), so it follows the person to every device; it
- * changes at once and returns when saving fails. While it is on, the events are not requested.
+ * changes at once and returns when saving fails; it waits for the server's answer before the
+ * next change. While it is on, the events are not requested.
  */
 export function ActivityTimeline({ ticket }: { ticket: Ticket }) {
   const t = useTranslations('tickets');
@@ -38,6 +39,8 @@ export function ActivityTimeline({ ticket }: { ticket: Ticket }) {
           <Field orientation="horizontal" className="w-fit">
             <Switch
               checked={isHidden}
+              // One change at a time: a later answer never overwrites a newer choice.
+              disabled={updateCurrentUser.isPending}
               onCheckedChange={(checked) =>
                 updateCurrentUser.mutate(
                   { hideTimelineEvents: checked },

@@ -311,6 +311,35 @@ describe('Hide events', () => {
     expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/activity-events')).toHaveLength(1);
   });
 
+  it('waits for the answer before the next change, so an older answer never wins', async () => {
+    const user = userEvent.setup();
+    answer(ticket(), { events: [event({})] });
+    let respond: (() => void) | undefined;
+    fake.client.PATCH.mockImplementationOnce((path: string, init?: unknown) => {
+      fake.calls.push({ method: 'PATCH', path, init });
+      return new Promise((resolve) => {
+        respond = () =>
+          resolve({
+            data: currentUser({ hideTimelineEvents: true }),
+            response: new Response(null, { status: 200 }),
+          });
+      });
+    });
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+    const activity = within(await screen.findByRole('region', { name: 'Activity' }));
+    await activity.findByText('Anna edited the description');
+    const toggle = activity.getByRole('switch', { name: 'Hide events' });
+
+    await user.click(toggle);
+    await user.click(toggle);
+
+    expect(toggle.hasAttribute('data-disabled')).toBe(true);
+    expect(fake.callsTo('PATCH /api/v1/users/me')).toHaveLength(1);
+    respond?.();
+    await waitFor(() => expect(toggle.hasAttribute('data-disabled')).toBe(false));
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+  });
+
   it('returns to the previous state and says why when saving fails', async () => {
     const user = userEvent.setup();
     answer(ticket(), { events: [event({})] });
