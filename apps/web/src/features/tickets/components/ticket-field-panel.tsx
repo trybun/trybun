@@ -10,6 +10,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { AssigneeControl } from './assignee-control.js';
 import { FieldPicker } from './field-picker.js';
+import { StatusControl } from './status-control.js';
 import { useFieldChange } from './use-field-change.js';
 
 /**
@@ -19,7 +20,8 @@ import { useFieldChange } from './use-field-change.js';
  * change in the person's time zone (§13.1). A side panel from the `lg` breakpoint, the **Details**
  * section between the header and the description below it (Rule 9).
  *
- * The assignee follows `assign` / `assign_self` (`AssigneeControl`). Type and priority
+ * The status follows `change_status` (`StatusControl`), the assignee `assign` / `assign_self`
+ * (`AssigneeControl`). Type and priority
  * (`update_fields`) save on selection, then a toast offers **Undo**, which sends
  * the inverse change with the version the change returned (Q10) – except for a type that was not
  * set, which cannot be unset again. A field without its action in `allowedActions` is text; in an
@@ -42,12 +44,7 @@ export function TicketFieldPanel({ ticket }: { ticket: Ticket }) {
       </h2>
       <dl className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] items-center gap-x-4 gap-y-3 text-sm lg:grid-cols-1 lg:gap-y-1">
         <Field label={t('view.fields.status')}>
-          {t(`statuses.${ticket.status}`)}
-          {ticket.waitingReason !== null && (
-            <span className="block text-muted-foreground">
-              {t(`waitingReasons.${ticket.waitingReason}`)}
-            </span>
-          )}
+          <StatusControl ticket={ticket} />
         </Field>
         <Field label={t('view.fields.assignee')}>
           <AssigneeControl ticket={ticket} />

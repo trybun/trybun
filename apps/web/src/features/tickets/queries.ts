@@ -103,3 +103,24 @@ export function assignableMembersQueryOptions(
       ),
   });
 }
+
+/**
+ * The ticket of a project with an identifier such as `ERP-7` (§3.2), or `null`: the original a
+ * duplicate is marked with, resolved before it is confirmed (S1-10). Another project's ticket is
+ * not found, as an invisible one.
+ */
+export function projectTicketQueryOptions(
+  client: ApiClient,
+  projectId: string,
+  identifier: string,
+) {
+  return queryOptions({
+    queryKey: ['tickets', 'list', { projectId, identifier }],
+    queryFn: async ({ signal }) => {
+      const page = await dataOf(
+        client.GET('/api/v1/tickets', { params: { query: { projectId, identifier } }, signal }),
+      );
+      return page.items[0] ?? null;
+    },
+  });
+}

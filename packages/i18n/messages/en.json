@@ -434,6 +434,29 @@
         "attachmentAdded": "{person} added the file {file}",
         "attachmentDeleted": "{person} deleted the file {file}"
       }
+    },
+    "status": {
+      "kinds": {
+        "initial": "Initial",
+        "active": "Active",
+        "paused": "Paused",
+        "terminal": "Closed"
+      },
+      "changed": "Status changed to {status}",
+      "confirmationRequested": "The requester is asked to confirm that the problem is solved. The ticket closes automatically after 7 days.",
+      "cancel": "Cancel",
+      "rejectTitle": "Reject {identifier}",
+      "rejectDescription": "The reason will be published to the requester.",
+      "reason": "Reason",
+      "reasonRequired": "Enter the reason for the rejection",
+      "rejectConfirm": "Reject ticket",
+      "duplicateTitle": "Mark {identifier} as a duplicate",
+      "duplicateDescription": "Enter the identifier of the original ticket in this project, e.g. ERP-7 or just 7.",
+      "original": "Original ticket",
+      "originalFound": "{identifier} · {title}",
+      "originalNotFound": "There is no ticket {identifier} in this project.",
+      "originalInvalid": "Enter an identifier such as ERP-7.",
+      "duplicateConfirm": "Mark as duplicate"
     }
   },
   "attachments": {

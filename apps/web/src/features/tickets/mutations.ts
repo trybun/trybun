@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
+  ChangeTicketStatusDto,
   CreateTicketDto,
   ResolutionAnswer,
   Ticket,
@@ -87,6 +88,25 @@ export function useCreateTicket() {
     mutationFn: (input: CreateTicketDto) =>
       dataOf(browserApiClient.POST('/api/v1/tickets', { body: input })),
     onSuccess: () => invalidateTickets(),
+  });
+}
+
+/**
+ * Changes the internal status of a ticket (§4.3) with `If-Match`, with the reason of a rejection
+ * or the original of a duplicate. A requested `done` may come back as a wait for the requester's
+ * confirmation (S1-06); the view reads the status of the response.
+ */
+export function useChangeTicketStatus() {
+  return useMutation({
+    mutationFn: ({ ticket, input }: { ticket: TicketVersion; input: ChangeTicketStatusDto }) =>
+      dataOf(
+        browserApiClient.PUT('/api/v1/tickets/{ticketId}/status', {
+          params: { path: { ticketId: ticket.id } },
+          headers: ifMatch(ticket),
+          body: input,
+        }),
+      ),
+    ...useTicketChangeCallbacks(),
   });
 }
 

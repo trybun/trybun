@@ -434,6 +434,29 @@
         "attachmentAdded": "{person} – dodanie pliku {file}",
         "attachmentDeleted": "{person} – usunięcie pliku {file}"
       }
+    },
+    "status": {
+      "kinds": {
+        "initial": "Początkowe",
+        "active": "Aktywne",
+        "paused": "Wstrzymane",
+        "terminal": "Zamknięte"
+      },
+      "changed": "Zmieniono status: {status}",
+      "confirmationRequested": "Poprosiliśmy zgłaszającego o potwierdzenie rozwiązania problemu. Zgłoszenie zamknie się automatycznie po 7 dniach.",
+      "cancel": "Anuluj",
+      "rejectTitle": "Odrzuć {identifier}",
+      "rejectDescription": "Powód zostanie opublikowany zgłaszającemu.",
+      "reason": "Powód",
+      "reasonRequired": "Podaj powód odrzucenia",
+      "rejectConfirm": "Odrzuć zgłoszenie",
+      "duplicateTitle": "Oznacz {identifier} jako duplikat",
+      "duplicateDescription": "Podaj identyfikator oryginalnego zgłoszenia z tego projektu, np. ERP-7 albo samo 7.",
+      "original": "Oryginalne zgłoszenie",
+      "originalFound": "{identifier} · {title}",
+      "originalNotFound": "W tym projekcie nie ma zgłoszenia {identifier}.",
+      "originalInvalid": "Podaj identyfikator, np. ERP-7.",
+      "duplicateConfirm": "Oznacz jako duplikat"
     }
   },
   "attachments": {
