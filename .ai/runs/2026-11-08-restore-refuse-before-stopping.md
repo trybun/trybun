@@ -34,5 +34,5 @@ PR: #255
 
 - [x] 1.1 Add the discard command to the backup service — ca37f3b
 - [x] 1.2 Reorder restore: fetch and check before the questions, discard before the stop, with unit tests — f31f65b
-- [ ] 1.3 Assert the new order in the restore test
+- [x] 1.3 Assert the new order in the restore test — 6790558, e117b3e
 - [x] 1.4 Update §15.10, INSTALL.md and the user documentation — 4ee0674
