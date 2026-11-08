@@ -1,6 +1,6 @@
 # Execution plan: open attachment images in a new tab
 
-Source doc: .ai/specs/2026-11-07-attachments-new-tab.md (spec PR #252)
+Source doc: .ai/specs/implemented/2026-11-07-attachments-new-tab.md (spec PR #252)
 Issue: #246
 
 ## Goal
@@ -16,7 +16,7 @@ An available raster image in the attachment list opens in a new tab (`target="_b
 ## Non-goals
 
 - Downloads, Markdown images, the content endpoint and the API (spec A1, A3)
-- Moving the spec to `implemented/`: the spec reaches `main` through #252, so the move follows after that merge
+- Moving the spec to `implemented/` waited for #252 to merge; done in the re-review
 
 ## Notes
 

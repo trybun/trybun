@@ -140,7 +140,8 @@ export const AvailableImage: Story = {
   },
 };
 
-// Any other file is a download: a link in the same tab, without the new-tab hint.
+// Any other file is a download: a link in the same tab, without the new-tab hint. Without a media
+// type a file counts as a download too.
 export const AvailableFile: Story = {
   args: {
     items: [
@@ -153,24 +154,15 @@ export const AvailableFile: Story = {
         href: '#contract',
         state: 'available',
       },
+      { id: '7', fileName: 'notes', size: 512, href: '#notes', state: 'available' },
     ],
   },
   play: async ({ canvas }) => {
-    for (const name of ['server-log-2026-11-06.txt', 'contract.pdf']) {
+    for (const name of ['server-log-2026-11-06.txt', 'contract.pdf', 'notes']) {
       const link = canvas.getByRole('link', { name });
       await expect(link).not.toHaveAttribute('target');
       await expect(link).not.toHaveAttribute('rel');
     }
-  },
-};
-
-// Without a media type a file counts as a download.
-export const AvailableWithoutType: Story = {
-  args: {
-    items: [{ id: '7', fileName: 'notes', size: 512, href: '#notes', state: 'available' }],
-  },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: 'notes' })).not.toHaveAttribute('target');
   },
 };
 
