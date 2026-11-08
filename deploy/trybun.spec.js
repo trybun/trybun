@@ -50,9 +50,9 @@ case "$*" in
   "compose run --rm -T --no-deps backup list") echo 'Backups on the local backup volume:' ;;
   "compose stop") ;;
   # As Compose, the commands that run before the questions of restore read stdin.
-  "compose run --rm -T --no-deps backup fetch "*) [ -t 0 ] || cat >/dev/null; exit "$STUB_FETCH_EXIT" ;;
+  "compose run --rm -T --no-deps backup fetch "*) [ -t 0 ] || cat >/dev/null; sleep "$STUB_FETCH_SECONDS"; exit "$STUB_FETCH_EXIT" ;;
   "compose run --rm -T --no-deps backup configuration") cat "$STUB_CONFIGURATION" ;;
-  "compose run --rm -T --no-deps backup discard") [ -t 0 ] || cat >/dev/null; exit "$STUB_DISCARD_EXIT" ;;
+  "compose run --rm -T --no-deps backup discard") [ -t 0 ] || cat >/dev/null; [ "$STUB_DISCARD_EXIT" = 0 ] || echo 'Error: discard failed' >&2; exit "$STUB_DISCARD_EXIT" ;;
   "compose run --rm -T backup storage-owner" | "compose run --rm -T backup storage-owner "*) [ -t 0 ] || cat >/dev/null; echo "$STUB_STORAGE_OWNER"; exit "$STUB_STORAGE_OWNER_EXIT" ;;
   "compose up -d --wait postgres") ;;
   "compose exec -T postgres "*) cat >"$STUB_STDIN" ;;
@@ -135,7 +135,10 @@ function meminfo(kilobytes) {
  * Runs `./trybun` with the stubs. `terminal` runs it in a pseudo-terminal of `script`
  * (util-linux), which merges stderr into stdout.
  */
-function trybun(command, { input = ANSWERS, memory = GIB_16, terminal = false, ...stubs } = {}) {
+function trybun(
+  command,
+  { input = ANSWERS, memory = GIB_16, terminal = false, timeout, ...stubs } = {},
+) {
   meminfo(memory);
   const args = [join(folder, 'package/trybun'), ...(Array.isArray(command) ? command : [command])];
   const [program, programArgs] = terminal
@@ -144,6 +147,7 @@ function trybun(command, { input = ANSWERS, memory = GIB_16, terminal = false, .
   const result = spawnSync(program, programArgs, {
     input,
     encoding: 'utf8',
+    ...(timeout ? { timeout, killSignal: 'SIGTERM' } : {}),
     env: {
       PATH: `${join(folder, 'bin')}:${process.env.PATH}`,
       TRYBUN_MEMINFO: join(folder, 'meminfo'),
@@ -172,6 +176,7 @@ function trybun(command, { input = ANSWERS, memory = GIB_16, terminal = false, .
       STUB_BACKUP_EXIT: '0',
       STUB_FETCH_EXIT: '0',
       STUB_DISCARD_EXIT: '0',
+      STUB_FETCH_SECONDS: '0',
       STUB_RESTORE_EXIT: '0',
       STUB_STORAGE_OWNER: 'own http://seaweedfs:8333/trybun',
       STUB_STORAGE_OWNER_EXIT: '0',
@@ -586,10 +591,30 @@ describe('./trybun restore', () => {
     const result = trybun('restore', { input: 'n\n', STUB_DISCARD_EXIT: '1' });
 
     expectStoppedBeforeTheStop(result, { asked: true });
+    expect(result.stderr).not.toContain('discard failed');
     // The prompt and the error share the last line of stderr.
     expect(result.stderr.trimEnd().split('\n').at(-1)).toMatch(
       /Error: Restore stopped\. Nothing was changed\.$/,
     );
+  });
+
+  it('discards the fetched backup when it is stopped by a signal before Trybun stops', () => {
+    // SIGTERM while the backup is read: the trap turns it into an exit, which runs the discard.
+    const result = trybun('restore', { input: 'y\n', STUB_FETCH_SECONDS: '3', timeout: 1500 });
+
+    expect(result.status).toBe(130);
+    expect(result.log).toContain('backup discard\n');
+    expect(result.log).not.toContain('compose stop');
+    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+  });
+
+  it('keeps the fetched backup when the restore fails after Trybun stopped', () => {
+    const result = trybun('restore', { input: 'y\n', STUB_RESTORE_EXIT: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.log).toContain('compose stop');
+    expect(result.log).not.toContain('backup discard');
+    expect(result.stderr).toContain('Restoring the data failed.');
   });
 
   it('changes nothing when the backup cannot be read', () => {

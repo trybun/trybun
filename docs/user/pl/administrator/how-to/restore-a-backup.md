@@ -19,7 +19,7 @@ Kopia zapasowa zawiera obie bazy danych (także konta logowania), zapisane pliki
    ./trybun restore 1a2b3c4d
    ```
 
-3. Odtwarzanie najpierw odczytuje kopię zapasową, co może chwilę potrwać, i sprawdza, dokąd trafią jej załączone pliki – w tym czasie Trybun działa dalej. Jeśli odtworzenie nie jest możliwe, polecenie podaje powód i na tym się kończy; nic nie zostaje zmienione. W przeciwnym razie potwierdź, wpisując `y`. Trybun zatrzymuje się, odtwarza kopię zapasową i uruchamia ponownie.
+3. Odtwarzanie najpierw odczytuje kopię zapasową, co może chwilę potrwać, i sprawdza, dokąd trafią jej załączone pliki – w tym czasie Trybun działa dalej. Jeśli odtworzenie nie jest możliwe, polecenie podaje powód i na tym się kończy; nic nie zostaje zmienione. W przeciwnym razie potwierdź, wpisując `y`, i odpowiedz na drugie pytanie opisane niżej, jeśli się pojawi. Dopiero wtedy Trybun zatrzymuje się, odtwarza kopię zapasową i uruchamia ponownie; odpowiedź `n` na którekolwiek pytanie pozostawia go uruchomionego.
 
 Po nieudanej aktualizacji sama aktualizacja wypisuje polecenie, które odtwarza kopię zapasową utworzoną tuż przed nią, np. `./trybun restore 1a2b3c4d`.
 
