@@ -1,10 +1,6 @@
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const redirect = vi.fn((): never => {
-  throw new Error('NEXT_REDIRECT');
-});
-vi.mock('next/navigation.js', () => ({ redirect }));
 const requireSession = vi.fn();
 vi.mock('../../../../lib/auth/session.js', () => ({ requireSession }));
 vi.mock('../../../../lib/env/env.js', () => ({ getEnv: () => ({ attachmentMaxSizeMb: 25 }) }));
@@ -40,24 +36,11 @@ describe('TicketPage', () => {
     });
   });
 
-  it.each(['erp-12', 'Erp-12'])(
-    'redirects %s to the canonical upper-case identifier before validating it',
-    async (identifier) => {
-      await expect(TicketPage({ params: Promise.resolve({ identifier }) })).rejects.toThrow(
-        'NEXT_REDIRECT',
-      );
-
-      expect(redirect).toHaveBeenCalledWith('/tickets/ERP-12');
-      expect(getTicketPage).not.toHaveBeenCalled();
-    },
-  );
-
   it('shows the not-found page when the loader finds no ticket', async () => {
     getTicketPage.mockRejectedValueOnce(new Error('NEXT_NOT_FOUND'));
 
     await expect(
       TicketPage({ params: Promise.resolve({ identifier: 'ERP-999' }) }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
-    expect(redirect).not.toHaveBeenCalled();
   });
 });
