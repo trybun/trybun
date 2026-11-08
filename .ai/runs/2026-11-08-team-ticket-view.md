@@ -29,6 +29,8 @@ Build the team ticket view at `/tickets/{identifier}` and the full ticket form a
 
 ## Progress
 
+PR: #256
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: View and timeline
@@ -55,4 +57,4 @@ Build the team ticket view at `/tickets/{identifier}` and the full ticket form a
 ### Phase 5: Validation and review
 
 - [x] 5.1 Full validation gate — 7c8bca4
-- [ ] 5.2 Review pass
+- [x] 5.2 Review pass — 9ed04da
