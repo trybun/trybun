@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { PortalPage } from './pages/portal.page.js';
+import { TicketPage } from './pages/ticket.page.js';
 import { CUSTOMER_STORAGE_STATE, PARTNER_STORAGE_STATE } from './storage-state.js';
 import { waitForToastsToClose } from './toasts.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
@@ -275,10 +276,13 @@ test.describe('the portal of an end user with two projects', () => {
 });
 
 test.describe('the portal and a team member', () => {
-  test('sends a team member back to the team views', async ({ page }) => {
+  test('sends a team member to the team ticket view of a portal ticket', async ({ page }) => {
+    const ticket = new TicketPage(page);
     await page.goto('/portal/tickets/CP-1');
 
-    await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { level: 1, name: 'Home' })).toBeVisible();
+    // The counterpart of the portal ticket is the team ticket view (S1-10).
+    await expect(page).toHaveURL('/tickets/CP-1');
+    await expect(ticket.heading).toBeVisible();
+    await expect(ticket.details).toBeVisible();
   });
 });
