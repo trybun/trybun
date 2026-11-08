@@ -19,7 +19,7 @@ A backup contains both databases (including the sign-in accounts), the stored fi
    ./trybun restore 1a2b3c4d
    ```
 
-3. Confirm with `y`. Trybun stops, restores the backup and starts again.
+3. The restore first reads the backup, which can take a while, and checks where its attached files go – Trybun keeps running meanwhile. If the restore cannot run, it says why and stops there; nothing is changed. Otherwise confirm with `y` – and answer the second question below when the restore asks it. Only then does Trybun stop, restore the backup and start again; `n` to either question leaves it running.
 
 After a failed update, the update itself prints the command that restores the backup taken right before it, e.g. `./trybun restore 1a2b3c4d`.
 

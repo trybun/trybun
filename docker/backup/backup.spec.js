@@ -479,6 +479,20 @@ describe('storage-owner', () => {
   });
 });
 
+describe('discard', () => {
+  it('deletes the fetched backup', () => {
+    fetched('TRYBUN_S3_URL=\n');
+    const result = backupSh(['discard']);
+
+    expect(result.status).toBe(0);
+    expect(existsSync(join(folder, 'data/restored'))).toBe(false);
+  });
+
+  it('succeeds without a fetched backup', () => {
+    expect(backupSh(['discard']).status).toBe(0);
+  });
+});
+
 describe('restore-data', () => {
   const BACKUP_ENV = `TRYBUN_S3_URL=${EXTERNAL}\n`;
 

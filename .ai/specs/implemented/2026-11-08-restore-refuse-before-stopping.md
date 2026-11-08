@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-08 |
 | Plan task | – |
 | System specification sections | §15.10 |
-| Related issues / PRs | #248 (request), #247 (S1-08 phase 4, where the maintainer found it), `.ai/specs/implemented/2026-10-26-attachments.md` (Q13, Q24–Q26) |
+| Related issues / PRs | #248 (request), #254 (specification), #255 (implementation), #247 (S1-08 phase 4, where the maintainer found it), `.ai/specs/implemented/2026-10-26-attachments.md` (Q13, Q24–Q26) |
 
 ## 📝 TLDR
 
@@ -140,3 +140,4 @@ Phase 1 – one pull request, `Closes #248`:
 - 2026-11-08 – Created (autonomous draft from #248).
 - 2026-11-08 – Review: traps for Ctrl-C, the `discard` stub, the restore-test step without `restore_onto`, the disk and wait costs, what `restore-data` re-checks.
 - 2026-11-08 – Specification review (#254), aligned with the implementation in #255: `</dev/null` for the commands before the questions, the tests of the signal and after-stop paths, `README.md`, the wording of §15.10.
+- 2026-11-08 – Approved and merged by the maintainer (#254); implemented in #255.
