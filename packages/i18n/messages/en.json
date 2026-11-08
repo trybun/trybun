@@ -350,6 +350,12 @@
       "high": "High",
       "critical": "Critical"
     },
+    "templates": {
+      "bug": "## Problem\n\n## Steps to reproduce\n\n1.\n\n## Expected result\n\n## Actual result\n\n## Environment",
+      "feature": "## Goal\n\n## Proposed solution\n\n## Acceptance criteria\n\n- [ ]",
+      "task": "## Scope of work\n\n## Completion criteria\n\n- [ ]",
+      "question": "## Question\n\n## Context"
+    },
     "sources": {
       "user": "Portal",
       "developer": "Team",

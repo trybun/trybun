@@ -350,6 +350,12 @@
       "high": "Wysoki",
       "critical": "Krytyczny"
     },
+    "templates": {
+      "bug": "## Problem\n\n## Kroki do odtworzenia\n\n1.\n\n## Oczekiwany wynik\n\n## Faktyczny wynik\n\n## Środowisko",
+      "feature": "## Cel\n\n## Proponowane rozwiązanie\n\n## Kryteria akceptacji\n\n- [ ]",
+      "task": "## Zakres prac\n\n## Kryteria ukończenia\n\n- [ ]",
+      "question": "## Pytanie\n\n## Kontekst"
+    },
     "sources": {
       "user": "Portal",
       "developer": "Zespół",
