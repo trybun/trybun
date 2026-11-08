@@ -467,7 +467,7 @@ valid_storage_url() {
 # $storage_question for ask_storage_folder.
 check_storage_folder() {
   storage_question=
-  owner=$(docker compose run --rm -T backup storage-owner ${test_restore:+--test} ${target_storage_url:+"$target_storage_url"}) ||
+  owner=$(docker compose run --rm -T backup storage-owner ${test_restore:+--test} ${target_storage_url:+"$target_storage_url"} </dev/null) ||
     fail "The storage folder of the backup $backup_id could not be read. See the messages above. Nothing was changed."
   storage_url=${owner#* }
   unchanged='Nothing was changed.'
@@ -511,7 +511,7 @@ ask_storage_folder() {
 # databases and the .env of the backup. A failure – e.g. a backup image without the command – must
 # not hide the reason of the stop; the next fetch empties the folder anyway.
 discard_backup() {
-  docker compose run --rm -T --no-deps backup discard >/dev/null 2>&1 || :
+  docker compose run --rm -T --no-deps backup discard </dev/null >/dev/null 2>&1 || :
 }
 
 # Sets the passwords of the database users to those of .env, also when the database volume was
@@ -577,7 +577,8 @@ restore() {
   trap discard_backup EXIT
   trap 'exit 130' HUP INT TERM
   say "Reading the backup $backup_id."
-  docker compose run --rm -T --no-deps backup fetch "$backup_id" ||
+  # Not from stdin, which holds the answers to the questions that follow: Compose passes it on.
+  docker compose run --rm -T --no-deps backup fetch "$backup_id" </dev/null ||
     fail "The backup $backup_id could not be read. Nothing was changed."
   check_storage_folder
   confirmation=$(ask 'Continue? [y/N]: ' n)

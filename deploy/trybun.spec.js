@@ -49,10 +49,11 @@ case "$*" in
   "compose run --rm -T backup backup "*) printf '%b' "$STUB_BACKUP_OUTPUT"; exit "$STUB_BACKUP_EXIT" ;;
   "compose run --rm -T --no-deps backup list") echo 'Backups on the local backup volume:' ;;
   "compose stop") ;;
-  "compose run --rm -T --no-deps backup fetch "*) exit "$STUB_FETCH_EXIT" ;;
+  # As Compose, the commands that run before the questions of restore read stdin.
+  "compose run --rm -T --no-deps backup fetch "*) [ -t 0 ] || cat >/dev/null; exit "$STUB_FETCH_EXIT" ;;
   "compose run --rm -T --no-deps backup configuration") cat "$STUB_CONFIGURATION" ;;
-  "compose run --rm -T --no-deps backup discard") exit "$STUB_DISCARD_EXIT" ;;
-  "compose run --rm -T backup storage-owner" | "compose run --rm -T backup storage-owner "*) echo "$STUB_STORAGE_OWNER"; exit "$STUB_STORAGE_OWNER_EXIT" ;;
+  "compose run --rm -T --no-deps backup discard") [ -t 0 ] || cat >/dev/null; exit "$STUB_DISCARD_EXIT" ;;
+  "compose run --rm -T backup storage-owner" | "compose run --rm -T backup storage-owner "*) [ -t 0 ] || cat >/dev/null; echo "$STUB_STORAGE_OWNER"; exit "$STUB_STORAGE_OWNER_EXIT" ;;
   "compose up -d --wait postgres") ;;
   "compose exec -T postgres "*) cat >"$STUB_STDIN" ;;
   "compose run --rm -T backup restore-data" | "compose run --rm -T backup restore-data --replace-foreign-objects") exit "$STUB_RESTORE_EXIT" ;;
