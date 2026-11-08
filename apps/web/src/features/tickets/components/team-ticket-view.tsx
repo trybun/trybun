@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import type { Ticket, TicketResponse } from '@trybun/contracts/tickets';
 import { Alert, AlertDescription } from '@trybun/ui/components/alert';
 import { Button } from '@trybun/ui/components/button';
-import { Markdown } from '@trybun/ui/components/markdown';
 import { toast } from '@trybun/ui/components/toast';
 import { ArchiveIcon, CopyIcon } from 'lucide-react';
 import { useFormatter, useNow, useTranslations } from 'next-intl';
@@ -15,7 +14,9 @@ import { useTicketImageIds } from '../../attachments/use-ticket-image-ids.js';
 import { projectQueryOptions } from '../../projects/queries.js';
 import { ticketQueryOptions } from '../queries.js';
 import { ActivityTimeline } from './activity-timeline.js';
+import { TicketDescription } from './ticket-description.js';
 import { TicketFieldPanel } from './ticket-field-panel.js';
+import { TicketTitle } from './ticket-title.js';
 
 /** The team's shape of a ticket response (§3.2); the API sends it to every team account. */
 function isTeamTicket(ticket: TicketResponse): ticket is Ticket {
@@ -25,12 +26,20 @@ function isTeamTicket(ticket: TicketResponse): ticket is Ticket {
 /**
  * A ticket in the team ticket view (§3.2, §4.5): the header with the identifier, the title and who
  * opened it when and through which source, the rendered description with its images, the
- * attachments (S1-08), the field panel and the activity timeline. Two columns from the `lg`
+ * attachments (S1-08), the field panel and the activity timeline. The title, the description and
+ * the fields change as `allowedActions` permit (S1-10 Q10). Two columns from the `lg`
  * breakpoint; below it the field panel is the **Details** section after the header (Rule 9). In
  * an archived project the API allows only reading, and the view says so (S1-01). The data is
  * prefetched on the server.
  */
-export function TeamTicketView({ identifier }: { identifier: string }) {
+export function TeamTicketView({
+  identifier,
+  attachmentMaxSizeMb,
+}: {
+  identifier: string;
+  /** `TRYBUN_ATTACHMENT_MAX_SIZE_MB` of the web server (§13.3). */
+  attachmentMaxSizeMb: number;
+}) {
   const t = useTranslations('tickets');
   const errorMessage = useErrorMessage();
   const ticket = useQuery(ticketQueryOptions(browserApiClient, identifier));
@@ -63,16 +72,11 @@ export function TeamTicketView({ identifier }: { identifier: string }) {
             <AlertDescription>{t('view.archivedBanner')}</AlertDescription>
           </Alert>
         )}
-        <section aria-labelledby="ticket-description" className="flex flex-col gap-2">
-          <h2 id="ticket-description" className="text-lg font-semibold">
-            {t('view.description')}
-          </h2>
-          {data.description === '' ? (
-            <p className="text-sm text-muted-foreground">{t('view.noDescription')}</p>
-          ) : (
-            <Markdown attachmentImageIds={imageIds}>{data.description}</Markdown>
-          )}
-        </section>
+        <TicketDescription
+          ticket={data}
+          imageIds={imageIds}
+          attachmentMaxSizeMb={attachmentMaxSizeMb}
+        />
         <TicketAttachments ticketId={data.id} />
         <ActivityTimeline ticket={data} />
       </div>
@@ -112,7 +116,7 @@ function TicketHeader({ ticket }: { ticket: Ticket }) {
           <CopyIcon aria-hidden />
         </Button>
       </div>
-      <h1 className="text-2xl font-bold break-words">{ticket.title}</h1>
+      <TicketTitle ticket={ticket} />
       <p className="text-sm text-muted-foreground">
         {t.rich('view.opened', {
           requester: ticket.requester.displayName ?? t('deletedUser'),

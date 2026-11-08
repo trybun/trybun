@@ -377,7 +377,26 @@
         "updated": "Zaktualizowano"
       },
       "notSet": "Nie ustawiono",
-      "unassigned": "Nieprzypisane"
+      "unassigned": "Nieprzypisane",
+      "title": "Tytuł",
+      "editTitle": "Edytuj tytuł",
+      "titleRequired": "Podaj tytuł zgłoszenia",
+      "edit": "Edytuj",
+      "editDescription": "Edytuj opis",
+      "save": "Zapisz",
+      "saving": "Zapisywanie…",
+      "cancel": "Anuluj",
+      "undo": "Cofnij",
+      "changed": {
+        "type": "Zmieniono typ: {type}",
+        "priority": "Zmieniono priorytet: {priority}"
+      },
+      "discard": {
+        "title": "Odrzucić zmiany?",
+        "description": "Wpisany tekst zostanie utracony.",
+        "confirm": "Odrzuć",
+        "cancel": "Edytuj dalej"
+      }
     },
     "timeline": {
       "title": "Aktywność",

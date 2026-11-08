@@ -5,6 +5,7 @@ import type { ActivityEvent } from '@trybun/contracts/activity-events';
 import type { Ticket } from '@trybun/contracts/tickets';
 import type { CurrentUser } from '@trybun/contracts/users';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { TABLET_MEDIA_QUERY } from '@trybun/ui/hooks/use-media-query';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
@@ -18,6 +19,14 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
+vi.mock('next/navigation.js', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+// The fields adapt to the width (jsdom has no `matchMedia`): a tablet, with selects.
+vi.stubGlobal('matchMedia', (query: string) => ({
+  matches: query === TABLET_MEDIA_QUERY,
+  media: query,
+  addEventListener: () => undefined,
+  removeEventListener: () => undefined,
+}));
 
 const { TeamTicketView } = await import('./team-ticket-view.js');
 const { ActivityEventItem } = await import('./activity-event-item.js');
@@ -123,8 +132,9 @@ afterEach(() => {
 
 describe('TeamTicketView', () => {
   it('shows the header, the rendered description and the fields of the ticket (§3.2)', async () => {
-    answer(ticket());
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    // Without the actions that change them, the fields are text.
+    answer(ticket({ allowedActions: ['read'] }));
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
@@ -160,9 +170,10 @@ describe('TeamTicketView', () => {
         status: 'waiting_for_requester',
         waitingReason: 'information',
         organization: { id: '0199a3f0-0000-7000-8000-000000000050', name: 'Customer Ltd' },
+        allowedActions: ['read'],
       }),
     );
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
 
     const fields = fieldsOf(await screen.findByRole('region', { name: 'Details' }));
     expect(fields).toMatchObject({
@@ -175,7 +186,7 @@ describe('TeamTicketView', () => {
 
   it('says that the project is archived and read-only (S1-01)', async () => {
     answer(ticket({ allowedActions: ['read'] }), { projectState: 'archived' });
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
 
     expect(await screen.findByText('This project is archived and read-only.')).toBeDefined();
   });
@@ -184,7 +195,7 @@ describe('TeamTicketView', () => {
     const user = userEvent.setup();
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
     answer(ticket());
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
 
     await user.click(await screen.findByRole('button', { name: 'Copy identifier ERP-12' }));
 
@@ -221,7 +232,7 @@ describe('TeamTicketView', () => {
             },
           };
     });
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
 
     const activity = within(await screen.findByRole('region', { name: 'Activity' }));
     await activity.findByText('Anna edited the description');
@@ -248,7 +259,7 @@ describe('TeamTicketView', () => {
 describe('Hide events', () => {
   it('shows no events and requests none while the setting is on (Q5)', async () => {
     answer(ticket(), { hideTimelineEvents: true, events: [event({})] });
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
 
     const activity = within(await screen.findByRole('region', { name: 'Activity' }));
     expect(await activity.findByText('Events are hidden. Comments appear here.')).toBeDefined();
@@ -268,7 +279,7 @@ describe('Hide events', () => {
       fake.calls.push({ method: 'PATCH', path, init });
       return new Promise(() => undefined);
     });
-    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" />);
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
     const activity = within(await screen.findByRole('region', { name: 'Activity' }));
     await activity.findByText('Anna edited the description');
 
@@ -290,7 +301,7 @@ describe('Hide events', () => {
     const user = userEvent.setup();
     answer(ticket(), { hideTimelineEvents: true, events: [event({})] });
     fake.on('PATCH /api/v1/users/me', { data: currentUser({ hideTimelineEvents: false }) });
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
     const activity = within(await screen.findByRole('region', { name: 'Activity' }));
 
     await user.click(await activity.findByRole('switch', { name: 'Hide events' }));
@@ -307,7 +318,7 @@ describe('Hide events', () => {
       status: 503,
       error: { type: 'about:blank', title: 'Unavailable', status: 503, code: 'server.unavailable' },
     });
-    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
     const activity = within(await screen.findByRole('region', { name: 'Activity' }));
     await activity.findByText('Anna edited the description');
 

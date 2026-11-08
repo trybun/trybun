@@ -377,7 +377,26 @@
         "updated": "Updated"
       },
       "notSet": "Not set",
-      "unassigned": "Unassigned"
+      "unassigned": "Unassigned",
+      "title": "Title",
+      "editTitle": "Edit title",
+      "titleRequired": "Enter the title of the ticket",
+      "edit": "Edit",
+      "editDescription": "Edit description",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "undo": "Undo",
+      "changed": {
+        "type": "Type changed to {type}",
+        "priority": "Priority changed to {priority}"
+      },
+      "discard": {
+        "title": "Discard your changes?",
+        "description": "The text you typed will be lost.",
+        "confirm": "Discard",
+        "cancel": "Keep editing"
+      }
     },
     "timeline": {
       "title": "Activity",

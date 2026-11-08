@@ -7,6 +7,7 @@ const redirect = vi.fn((): never => {
 vi.mock('next/navigation.js', () => ({ redirect }));
 const requireSession = vi.fn();
 vi.mock('../../../../lib/auth/session.js', () => ({ requireSession }));
+vi.mock('../../../../lib/env/env.js', () => ({ getEnv: () => ({ attachmentMaxSizeMb: 25 }) }));
 const getTicketPage = vi.fn();
 vi.mock('../../../../features/tickets/ticket-page.js', () => ({ getTicketPage }));
 vi.mock('../../../../lib/query-client/server-query-client.js', async () => {
@@ -27,13 +28,15 @@ describe('TicketPage', () => {
   it('loads the ticket through the shared loader and renders the team ticket view', async () => {
     const element = (await TicketPage({
       params: Promise.resolve({ identifier: 'ERP-12' }),
-    })) as ReactElement<{ children: ReactElement<{ identifier: string }> }>;
+    })) as ReactElement<{
+      children: ReactElement<{ identifier: string; attachmentMaxSizeMb: number }>;
+    }>;
 
     expect(requireSession).toHaveBeenCalledOnce();
     expect(getTicketPage).toHaveBeenCalledWith('ERP-12', 'team');
     expect(element.props.children).toMatchObject({
       type: TeamTicketView,
-      props: { identifier: 'ERP-12' },
+      props: { identifier: 'ERP-12', attachmentMaxSizeMb: 25 },
     });
   });
 

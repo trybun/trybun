@@ -5,6 +5,7 @@ import { TeamTicketView } from '../../../../features/tickets/components/team-tic
 import { ticketHref } from '../../../../features/tickets/hrefs.js';
 import { getTicketPage } from '../../../../features/tickets/ticket-page.js';
 import { requireSession } from '../../../../lib/auth/session.js';
+import { getEnv } from '../../../../lib/env/env.js';
 import { getServerQueryClient } from '../../../../lib/query-client/server-query-client.js';
 
 const paramsSchema = z.object({ identifier: z.string() });
@@ -24,7 +25,7 @@ export default async function TicketPage({ params }: { params: Promise<{ identif
   await getTicketPage(identifier, 'team');
   return (
     <HydrationBoundary state={dehydrate(getServerQueryClient())}>
-      <TeamTicketView identifier={identifier} />
+      <TeamTicketView identifier={identifier} attachmentMaxSizeMb={getEnv().attachmentMaxSizeMb} />
     </HydrationBoundary>
   );
 }
