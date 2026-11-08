@@ -1,6 +1,6 @@
 # Execution plan — implement the team ticket view and full form (S1-10)
 
-Source doc: .ai/specs/2026-10-26-team-ticket-view.md
+Source doc: .ai/specs/implemented/2026-10-26-team-ticket-view.md
 Spec PR: #120 (merged, design only)
 Plan task: `S1-10`
 

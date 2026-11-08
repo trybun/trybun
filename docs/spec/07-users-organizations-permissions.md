@@ -101,6 +101,7 @@ Keycloak stores only credentials and sign-in factors. Everything else about a pe
 | E-mail | Unique; stored normalized – trimmed and lower-cased, kept so by a check constraint – so addresses differing only in letter case are one account; used for invitations, notifications and organization domains |
 | Display name | Shown in the UI |
 | Language, time zone | Account settings ([§13.1](13-non-functional.md)) |
+| Hide events (`user.hide_timeline_events`) | Whether the person hides the events of the activity timeline ([§4.5](04-ticket-lifecycle.md#45-activity-timeline)); `false` by default |
 | Kind (`user.kind`) | `team` or `end_user` ([§7.1](#71-role-principles)) |
 | Administrator (`user.is_admin`) | Global Administrator role; only for `team` accounts |
 | State (`user.state`) | `invited` (account created by an invitation or import, not yet signed in), `active`, `deactivated`, `anonymized` ([§13.2](13-non-functional.md)); an `invited` account whose invitations all expired or were revoked stays `invited`, and a new invitation of its address reuses it |
@@ -109,8 +110,8 @@ Keycloak stores only credentials and sign-in factors. Everything else about a pe
 - Per-project team roles are stored as **project memberships** (`project_member`: user, project, role `developer` or `project_manager`). The Administrator and the project's Project managers add existing active team accounts to a project directly, choose their role, change it and remove them; the member picker lists the active team accounts that are not members of the project – display name and GitHub login, never the e-mail address – to whoever may manage the members of that project. Invitations by e-mail add existing accounts through the same membership change. Personal access of end users to a project is stored as a project membership with role `end_user`; access through an organization is derived from the organization's projects.
 - The API keeps the Keycloak group `team` in sync through the Keycloak Admin API whenever an account becomes or stops being a `team` account.
 - Imported people without an account ([§12.5](12-api-webhooks-import.md)) get accounts in state `invited` without a Keycloak user; the Keycloak user is created when they accept an invitation.
-- The Administrator lists every account – filtered by kind and state, searchable by name and address – with `GET /api/v1/users` on the **Accounts** page (`/admin/accounts`) – each account with the number of its pending invitations, so the page asks for the invitations (`GET /api/v1/invitations?userId=…`) only of the accounts that have some – and acts on it with `POST /users/{id}/deactivation`, `POST /users/{id}/reactivation` and `PUT` / `DELETE /users/{id}/administrator-role`. Each person changes their own language and time zone with `PATCH /api/v1/users/me`.
-- The signed-in account reads its own identifier, display name, e-mail, kind, language and time zone with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel and `create_project` for creating projects, [§18.3](18-code-patterns.md)).
+- The Administrator lists every account – filtered by kind and state, searchable by name and address – with `GET /api/v1/users` on the **Accounts** page (`/admin/accounts`) – each account with the number of its pending invitations, so the page asks for the invitations (`GET /api/v1/invitations?userId=…`) only of the accounts that have some – and acts on it with `POST /users/{id}/deactivation`, `POST /users/{id}/reactivation` and `PUT` / `DELETE /users/{id}/administrator-role`. Each person changes their own language, time zone and **Hide events** with `PATCH /api/v1/users/me`.
+- The signed-in account reads its own identifier, display name, e-mail, kind, language, time zone and `hideTimelineEvents` with `GET /api/v1/users/me`, e.g. for the user menu of the application shell ([§18.5](18-code-patterns.md)); it never carries roles, only the codes of the global actions the account may perform (`allowedActions`, e.g. `open_administration` for the Administrator panel and `create_project` for creating projects, [§18.3](18-code-patterns.md)).
 
 ### Invitations
 
@@ -177,7 +178,7 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Add internal notes, view internal statuses | – | ✅ | ✅ | ✅ |
 | Change status | – | ✅ | ✅ | ✅ |
 | Edit ticket fields (type, priority) | – | ✅ | ✅ | ✅ |
-| Assign tickets (only to active team members of the project) | – | to self only (incl. taking over and unassigning self) | ✅ | ✅ |
+| Assign tickets (only to active team members of the project) | – | to self only (incl. taking over and unassigning self: **Assign to me** / **Unassign me**) | ✅ | ✅ |
 | Create sub-tickets and relations, assign labels | – | ✅ | ✅ | ✅ |
 | Edit, merge and delete project labels | – | – | ✅ | ✅ |
 | Narrow visibility of own ticket that is not shared ([§5.3](05-visibility-and-search.md)) | ✅ | ✅ | ✅ | ✅ |
@@ -209,3 +210,5 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | GitHub integration configuration | – | – | – | ✅ |
 | Integration tokens, outgoing webhooks, data import | – | – | – | ✅ |
 | Administrative audit log ([§13.5](13-non-functional.md)) | – | – | – | ✅ |
+
+The row "Assign tickets" is expressed by the ticket actions `assign` (anyone eligible) and `assign_self` (only the principal) and, for a ticket that does not exist yet (the full form, [§3.3](03-ticket-model.md#33-forms)), by the project actions `assign_tickets` and `assign_tickets_self`, defined in the same abilities ([§18.3](18-code-patterns.md#183-server-application)).
