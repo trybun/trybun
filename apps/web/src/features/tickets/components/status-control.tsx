@@ -11,7 +11,7 @@ import { toast } from '@trybun/ui/components/toast';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
-import { useChangeTicketStatus } from '../mutations.js';
+import { useChangeTicketStatus, useIsTicketChanging } from '../mutations.js';
 import type { PickerGroup } from './field-sheet.js';
 import { FieldPicker } from './field-picker.js';
 import { LazyDuplicateDialog } from './lazy-duplicate-dialog.js';
@@ -64,6 +64,7 @@ export function StatusControl({ ticket }: { ticket: Ticket }) {
   const t = useTranslations('tickets');
   const errorMessage = useErrorMessage();
   const changeStatus = useChangeTicketStatus();
+  const isChanging = useIsTicketChanging(ticket.id);
   const [dialog, setDialog] = useState<DialogStatus | null>(null);
   const showError = (error: unknown) => toast.add({ title: errorMessage(error), type: 'error' });
   const waitingReason = ticket.waitingReason !== null && (
@@ -148,7 +149,7 @@ export function StatusControl({ ticket }: { ticket: Ticket }) {
         value={shown}
         placeholder={t(`statuses.${ticket.status}`)}
         groups={groups}
-        disabled={changeStatus.isPending}
+        disabled={isChanging}
         onValueChange={choose}
       />
       {waitingReason}

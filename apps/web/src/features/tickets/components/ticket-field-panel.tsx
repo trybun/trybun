@@ -8,6 +8,7 @@ import {
 } from '@trybun/contracts/tickets';
 import { useFormatter, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
+import { useIsTicketChanging } from '../mutations.js';
 import { AssigneeControl } from './assignee-control.js';
 import { FieldPicker } from './field-picker.js';
 import { StatusControl } from './status-control.js';
@@ -25,12 +26,15 @@ import { useFieldChange } from './use-field-change.js';
  * (`update_fields`) save on selection, then a toast offers **Undo**, which sends
  * the inverse change with the version the change returned (Q10) – except for a type that was not
  * set, which cannot be unset again. A field without its action in `allowedActions` is text; in an
- * archived project the API allows only `read`, so every field is.
+ * archived project the API allows only `read`, so every field is. While a change of the ticket is
+ * pending, every field waits for it (`useIsTicketChanging`): the next change needs its version.
  */
 export function TicketFieldPanel({ ticket }: { ticket: Ticket }) {
   const t = useTranslations('tickets');
   const format = useFormatter();
   const change = useFieldChange(ticket);
+  // Any change of the ticket – also of the status or the assignee – holds every field (412).
+  const isChanging = useIsTicketChanging(ticket.id);
   const can = (action: TicketAction) => ticket.allowedActions.includes(action);
   const time = (value: string) =>
     format.dateTime(new Date(value), { dateStyle: 'medium', timeStyle: 'short' });
@@ -64,7 +68,7 @@ export function TicketFieldPanel({ ticket }: { ticket: Ticket }) {
                   })),
                 },
               ]}
-              disabled={change.isPending}
+              disabled={isChanging}
               onValueChange={(value) => {
                 const next = ticketTypeSchema.parse(value);
                 change.apply(
@@ -95,7 +99,7 @@ export function TicketFieldPanel({ ticket }: { ticket: Ticket }) {
                   })),
                 },
               ]}
-              disabled={change.isPending}
+              disabled={isChanging}
               onValueChange={(value) => {
                 const next = ticketPrioritySchema.parse(value);
                 change.apply(

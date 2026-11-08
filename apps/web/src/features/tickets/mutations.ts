@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
   ChangeTicketStatusDto,
   CreateTicketDto,
@@ -26,6 +26,24 @@ function ifMatch(ticket: Pick<Ticket, 'version'>) {
 
 /** A ticket as a change addresses it: its ID, its identifier and the version the person has seen. */
 export type TicketVersion = Pick<Ticket, 'id' | 'identifier' | 'version'>;
+
+/** The mutation key of every change of a ticket with `If-Match`: its fields and its status. */
+const TICKET_CHANGE_KEY = ['tickets', 'change'] as const;
+
+/**
+ * Whether a change of the ticket is pending. Each change sends the version the person has seen, so
+ * a second one sent before the first returns would be refused with `412` against the person's own
+ * change: the controls of the ticket wait for it.
+ */
+export function useIsTicketChanging(ticketId: string): boolean {
+  return (
+    useIsMutating({
+      mutationKey: TICKET_CHANGE_KEY,
+      predicate: ({ state }) =>
+        (state.variables as { ticket: TicketVersion } | undefined)?.ticket.id === ticketId,
+    }) > 0
+  );
+}
 
 /**
  * What a change of a ticket in the view does to the cache (§18.5): the ticket the API returns
@@ -66,6 +84,7 @@ function useTicketChangeCallbacks() {
  */
 export function useUpdateTicket() {
   return useMutation({
+    mutationKey: TICKET_CHANGE_KEY,
     mutationFn: ({ ticket, input }: { ticket: TicketVersion; input: UpdateTicketDto }) =>
       dataOf(
         browserApiClient.PATCH('/api/v1/tickets/{ticketId}', {
@@ -98,6 +117,7 @@ export function useCreateTicket() {
  */
 export function useChangeTicketStatus() {
   return useMutation({
+    mutationKey: TICKET_CHANGE_KEY,
     mutationFn: ({ ticket, input }: { ticket: TicketVersion; input: ChangeTicketStatusDto }) =>
       dataOf(
         browserApiClient.PUT('/api/v1/tickets/{ticketId}/status', {

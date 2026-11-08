@@ -175,6 +175,44 @@ describe('type and priority', () => {
   });
 });
 
+describe('one change at a time', () => {
+  /** Whether the control has the `disabled` attribute or state of its primitive. */
+  function isDisabled(control: HTMLElement) {
+    return control.hasAttribute('disabled') || control.hasAttribute('data-disabled');
+  }
+
+  it('holds every field while a change of the ticket is pending, so the next one has its version (412)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse());
+    let respond: (() => void) | undefined;
+    fake.client.PATCH.mockImplementationOnce((path: string, init?: unknown) => {
+      fake.calls.push({ method: 'PATCH', path, init });
+      return new Promise((resolve) => {
+        respond = () =>
+          resolve({
+            data: ticketResponse({ priority: 'critical', version: 4 }),
+            response: new Response(null, { status: 200 }),
+          });
+      });
+    });
+    renderView();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Priority' }));
+    await user.click(await screen.findByRole('option', { name: 'Critical' }));
+
+    const fields = () =>
+      ['Status', 'Assignee', 'Type', 'Priority'].map((name) =>
+        screen.getByRole('combobox', { name }),
+      );
+    await waitFor(() => expect(fields().map(isDisabled)).toEqual([true, true, true, true]));
+
+    respond?.();
+
+    await waitFor(() => expect(fields().map(isDisabled)).toEqual([false, false, false, false]));
+    expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')).toHaveLength(1);
+  });
+});
+
 describe('title and description', () => {
   it('saves the title with Enter and cancels it with Escape', async () => {
     const user = userEvent.setup();

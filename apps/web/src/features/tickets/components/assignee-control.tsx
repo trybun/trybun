@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useDeferredValue, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
+import { useIsTicketChanging } from '../mutations.js';
 import { assignableMembersQueryOptions } from '../queries.js';
 import type { PickerOption } from './field-sheet.js';
 import { LazyFieldSheet } from './lazy-field-sheet.js';
@@ -38,6 +39,7 @@ export function AssigneeControl({ ticket }: { ticket: Ticket }) {
   const t = useTranslations('tickets');
   const user = useQuery(currentUserQueryOptions(browserApiClient));
   const change = useFieldChange(ticket);
+  const isChanging = useIsTicketChanging(ticket.id);
   const me = user.data?.id;
   const current = ticket.assignee;
   const name = (person: { displayName: string | null }) => person.displayName ?? t('deletedUser');
@@ -60,7 +62,7 @@ export function AssigneeControl({ ticket }: { ticket: Ticket }) {
         projectId={ticket.projectId}
         me={me}
         selected={{ value: current?.id ?? null, label: currentName }}
-        disabled={change.isPending}
+        disabled={isChanging}
         onAssign={(assigneeId, label) => assign(assigneeId, label)}
       />
     );
@@ -74,7 +76,7 @@ export function AssigneeControl({ ticket }: { ticket: Ticket }) {
           type="button"
           variant="outline"
           className="w-full lg:w-fit"
-          disabled={change.isPending}
+          disabled={isChanging}
           onClick={() =>
             isMine
               ? assign(null, '')
