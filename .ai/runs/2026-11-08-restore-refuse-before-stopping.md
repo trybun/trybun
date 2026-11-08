@@ -1,6 +1,6 @@
 # Execution plan: refuse an impossible restore before it asks and before Trybun stops
 
-Source doc: .ai/specs/2026-11-08-restore-refuse-before-stopping.md (spec PR #254)
+Source doc: .ai/specs/implemented/2026-11-08-restore-refuse-before-stopping.md (spec PR #254)
 Issue: #248
 
 ## Goal
@@ -18,7 +18,7 @@ Issue: #248
 
 - Arguments, questions, problem texts, exit status, the checks themselves, `restore-data`, `update` (spec Non-goals)
 - A configuration-only fetch (spec A1); a host-side lock against two restores at once
-- Moving the spec to `implemented/` waits for #254 to merge
+- Moving the spec to `implemented/` waited for #254 to merge; done after its merge
 
 ## Risks
 
