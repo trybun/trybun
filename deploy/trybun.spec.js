@@ -51,6 +51,7 @@ case "$*" in
   "compose stop") ;;
   "compose run --rm -T --no-deps backup fetch "*) exit "$STUB_FETCH_EXIT" ;;
   "compose run --rm -T --no-deps backup configuration") cat "$STUB_CONFIGURATION" ;;
+  "compose run --rm -T --no-deps backup discard") exit "$STUB_DISCARD_EXIT" ;;
   "compose run --rm -T backup storage-owner" | "compose run --rm -T backup storage-owner "*) echo "$STUB_STORAGE_OWNER"; exit "$STUB_STORAGE_OWNER_EXIT" ;;
   "compose up -d --wait postgres") ;;
   "compose exec -T postgres "*) cat >"$STUB_STDIN" ;;
@@ -169,6 +170,7 @@ function trybun(command, { input = ANSWERS, memory = GIB_16, terminal = false, .
       STUB_BACKUP_OUTPUT: 'local 1a2b3c4d\\ns3 5e6f7a8b\\n',
       STUB_BACKUP_EXIT: '0',
       STUB_FETCH_EXIT: '0',
+      STUB_DISCARD_EXIT: '0',
       STUB_RESTORE_EXIT: '0',
       STUB_STORAGE_OWNER: 'own http://seaweedfs:8333/trybun',
       STUB_STORAGE_OWNER_EXIT: '0',
@@ -502,6 +504,27 @@ describe('./trybun restore', () => {
     execFileSync('tar', ['-cf', join(folder, 'configuration.tar'), '-C', backup, '.']);
   });
 
+  /**
+   * A restore that stopped while Trybun still ran (#248): Trybun was not stopped, nothing was
+   * changed, and the fetched backup was discarded. `asked`: the first question was answered.
+   */
+  function expectStoppedBeforeTheStop(result, { asked = false } = {}) {
+    const output = result.stdout + result.stderr;
+    expect(result.status).toBe(1);
+    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+    expect(result.log).not.toContain('compose stop');
+    expect(result.log).not.toMatch(/backup configuration|restore-data/);
+    expect(result.log).toContain('backup discard\n');
+    expect(output).not.toContain('Stopping Trybun.');
+    expect(output).not.toContain('start Trybun again');
+    expect(output).not.toContain('unexpected:');
+    if (asked) {
+      expect(output).toContain('Continue? [y/N]: ');
+    } else {
+      expect(output).not.toContain('Continue? [y/N]');
+    }
+  }
+
   it('restores the configuration and the data of the backup and starts its version', () => {
     const result = trybun(['restore', '1a2b3c4d'], { input: 'y\n' });
 
@@ -511,11 +534,13 @@ describe('./trybun restore', () => {
     expect(readFileSync(join(folder, 'package/compose.yaml'), 'utf8')).toBe(composeOf('0.1.0'));
     expect(readFileSync(join(folder, 'package/docker/caddy/Caddyfile'), 'utf8')).toBe('restored');
     expect(existsSync(join(folder, 'package/docker/obsolete.txt'))).toBe(false);
+    // The backup is fetched and checked before the stop (#248).
     const steps = order(
       result.log,
-      'compose stop',
       'backup fetch 1a2b3c4d',
       'backup storage-owner',
+      'compose stop',
+      'backup configuration',
       'compose up -d --wait postgres',
       'compose exec -T postgres',
       'backup restore-data',
@@ -530,6 +555,8 @@ describe('./trybun restore', () => {
     expect(result.log).not.toContain('old');
     // The folder of the backup's .env: storage-owner without a URL.
     expect(result.log).toContain('backup storage-owner\n');
+    expect(result.log).not.toContain('backup discard');
+    expect(result.stdout).toContain('Reading the backup 1a2b3c4d.');
     expect(result.stdout).toContain('Restored the backup 1a2b3c4d.');
   });
 
@@ -543,19 +570,42 @@ describe('./trybun restore', () => {
   it('changes nothing without confirmation', () => {
     const result = trybun('restore', { input: 'n\n' });
 
-    expect(result.status).toBe(1);
+    expectStoppedBeforeTheStop(result, { asked: true });
     expect(result.stderr).toContain('Restore stopped. Nothing was changed.');
-    expect(result.log).not.toContain('compose stop');
-    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
+  });
+
+  it('changes nothing without an answer', () => {
+    const result = trybun('restore', { input: '' });
+
+    expectStoppedBeforeTheStop(result, { asked: true });
+    expect(result.stderr).toContain('No answer to "Continue? [y/N]: "');
+  });
+
+  it('keeps the reason of the stop when the fetched backup cannot be discarded', () => {
+    const result = trybun('restore', { input: 'n\n', STUB_DISCARD_EXIT: '1' });
+
+    expectStoppedBeforeTheStop(result, { asked: true });
+    // The prompt and the error share the last line of stderr.
+    expect(result.stderr.trimEnd().split('\n').at(-1)).toMatch(
+      /Error: Restore stopped\. Nothing was changed\.$/,
+    );
   });
 
   it('changes nothing when the backup cannot be read', () => {
     const result = trybun('restore', { input: 'y\n', STUB_FETCH_EXIT: '1' });
 
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('The backup latest could not be read. Nothing was changed');
-    expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-    expect(result.log).not.toContain('restore-data');
+    expectStoppedBeforeTheStop(result);
+    expect(result.stderr).toContain('The backup latest could not be read. Nothing was changed.');
+    expect(result.log).not.toContain('storage-owner');
+  });
+
+  it('changes nothing when the storage folder cannot be read', () => {
+    const result = trybun('restore', { input: 'y\n', STUB_STORAGE_OWNER_EXIT: '1' });
+
+    expectStoppedBeforeTheStop(result);
+    expect(result.stderr).toContain(
+      'The storage folder of the backup latest could not be read. See the messages above. Nothing was changed.',
+    );
   });
 
   it('refuses an argument that is not a backup ID', () => {
@@ -609,8 +659,7 @@ describe('./trybun restore', () => {
         '--replace-foreign-objects. To test a restore while that server runs, add --test (and --storage-url <url> for an external storage). Nothing was changed',
       );
       expect(result.stderr).not.toContain(QUESTION);
-      expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-      expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      expectStoppedBeforeTheStop(result);
     });
 
     // A successful restore replaces ./trybun with the one of the backup, so one run per case.
@@ -630,11 +679,8 @@ describe('./trybun restore', () => {
     it('still needs the first confirmation with --replace-foreign-objects', () => {
       const result = trybun(['restore', '--replace-foreign-objects'], { input: 'n\n', ...FOREIGN });
 
-      expect(result.status).toBe(1);
+      expectStoppedBeforeTheStop(result, { asked: true });
       expect(result.stderr).toContain('Restore stopped. Nothing was changed.');
-      expect(result.log).toBe(
-        'docker version --format {{.Server.Version}}\ndocker compose version --short\n',
-      );
     });
 
     it('is replaced in a terminal after the second question', () => {
@@ -642,6 +688,13 @@ describe('./trybun restore', () => {
 
       expect(result.status).toBe(0);
       expect(result.stdout).toContain(QUESTION);
+      // Both questions come before the stop, in their order of today.
+      const continued = result.stdout.indexOf('Continue? [y/N]: ');
+      expect(continued).toBeGreaterThanOrEqual(0);
+      expect(result.stdout.indexOf(QUESTION)).toBeGreaterThan(continued);
+      expect(result.stdout.indexOf('Stopping Trybun.')).toBeGreaterThan(
+        result.stdout.indexOf(QUESTION),
+      );
       expect(result.log).toContain('backup restore-data --replace-foreign-objects\n');
       expect(readFileSync(envPath(), 'utf8')).toBe(RESTORED_ENV);
     });
@@ -650,11 +703,9 @@ describe('./trybun restore', () => {
       for (const input of ['y\nn\n', 'y\n\n']) {
         const result = trybun('restore', { input, terminal: true, ...FOREIGN });
 
-        expect(result.status).toBe(1);
         expect(result.stdout).toContain(QUESTION);
-        expect(result.stdout).toContain('Restore stopped. Nothing was changed');
-        expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-        expect(result.log).not.toMatch(/backup configuration|restore-data/);
+        expect(result.stdout).toContain('Restore stopped. Nothing was changed.');
+        expectStoppedBeforeTheStop(result, { asked: true });
       }
     });
   });
@@ -669,8 +720,7 @@ describe('./trybun restore', () => {
       expect(result.stderr).toContain(
         'The storage folder https://s3.example.com/bucket/trybun holds objects but no Trybun marker, so it may belong to another application or server; the restore would replace its content. Run ./trybun restore latest in a terminal to confirm, or add --replace-foreign-objects.',
       );
-      expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-      expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      expectStoppedBeforeTheStop(result);
     });
 
     it('is replaced in a terminal after the second question', () => {
@@ -831,10 +881,9 @@ describe('./trybun restore', () => {
 
       expect(result.status).toBe(1);
       expect(result.stderr).toContain(
-        `The attachments of the backup are on the external storage ${BACKUP_FOLDER}, which the backed-up installation may still use. Restore them into an empty folder for the test with --storage-url <url>, e.g. ./trybun restore latest --test --storage-url https://s3.example.com/bucket-restore-test. Nothing was changed`,
+        `The attachments of the backup are on the external storage ${BACKUP_FOLDER}, which the backed-up installation may still use. Restore them into an empty folder for the test with --storage-url <url>, e.g. ./trybun restore latest --test --storage-url https://s3.example.com/bucket-restore-test. Nothing was changed.`,
       );
-      expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-      expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      expectStoppedBeforeTheStop(result);
     });
 
     it('refuses a folder that overlaps a backup repository before anything is changed', () => {
@@ -848,8 +897,7 @@ describe('./trybun restore', () => {
       expect(result.stderr).toContain(
         `The storage folder ${TEST_FOLDER} overlaps the backup repository s3.example.com/bucket/trybun-test/backups (TRYBUN_BACKUP_S3_URL), so the restore would delete backups.`,
       );
-      expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-      expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      expectStoppedBeforeTheStop(result);
     });
 
     it('accepts the scheme in any case, as the server', () => {
@@ -903,8 +951,7 @@ describe('./trybun restore', () => {
         `The storage folder ${TEST_FOLDER} belongs to another Trybun server; the restore would replace its content.`,
       );
       expect(result.stderr).not.toContain('restore the attachments into another folder');
-      expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-      expect(result.log).not.toMatch(/backup configuration|restore-data/);
+      expectStoppedBeforeTheStop(result);
     });
 
     it('replaces a new folder of another Trybun server with --replace-foreign-objects', () => {
@@ -930,10 +977,9 @@ describe('./trybun restore', () => {
 
         expect(result.status).toBe(1);
         expect(result.stderr).toContain(
-          `The folder ${url} of --storage-url overlaps the storage folder ${BACKUP_FOLDER} of the backup, which the restore leaves untouched. Name a folder outside it, e.g. another bucket. Nothing was changed`,
+          `The folder ${url} of --storage-url overlaps the storage folder ${BACKUP_FOLDER} of the backup, which the restore leaves untouched. Name a folder outside it, e.g. another bucket. Nothing was changed.`,
         );
-        expect(readFileSync(envPath(), 'utf8')).toBe(INSTALLED_ENV);
-        expect(result.log).not.toMatch(/backup configuration|restore-data/);
+        expectStoppedBeforeTheStop(result);
       },
     );
 

@@ -460,14 +460,17 @@ valid_storage_url() {
 # of the folder of --storage-url, which must lie outside the backup's one; neither may overlap a
 # backup repository. When the folder's marker names another Trybun server – e.g. production, when
 # its backup is restored onto a test server with its .env – or the folder holds objects without a
-# marker (Q26), it asks a second question, or refuses without a terminal, unless
+# marker (Q26), the restore needs a second question, or refuses without a terminal, unless
 # --replace-foreign-objects was given. A test restore of a backup on an external storage needs
-# --storage-url (Q25). Sets $replace_objects for restore-data.
+# --storage-url (Q25). Runs on the fetched backup while Trybun still runs, so every refusal comes
+# before the first question and before the stop (#248). Sets $replace_objects for restore-data and
+# $storage_question for ask_storage_folder.
 check_storage_folder() {
+  storage_question=
   owner=$(docker compose run --rm -T backup storage-owner ${test_restore:+--test} ${target_storage_url:+"$target_storage_url"}) ||
-    fail "The storage folder of the backup $backup_id could not be read. See the messages above. Nothing was changed; start Trybun again with docker compose up -d --wait."
+    fail "The storage folder of the backup $backup_id could not be read. See the messages above. Nothing was changed."
   storage_url=${owner#* }
-  unchanged='Nothing was changed; start Trybun again with docker compose up -d --wait.'
+  unchanged='Nothing was changed.'
   case ${owner%% *} in
     own | none) return 0 ;;
     foreign)
@@ -491,11 +494,24 @@ check_storage_folder() {
       hint=' To test a restore while that server runs, add --test (and --storage-url <url> for an external storage).'
     fail "$problem; the restore would replace its content. Run ./trybun restore $backup_id in a terminal to confirm, or add --replace-foreign-objects.$hint $unchanged"
   fi
-  confirmation=$(ask "$question" n)
+  storage_question=$question
+}
+
+# The second question of check_storage_folder, after the first one and before the stop.
+ask_storage_folder() {
+  [ -n "$storage_question" ] || return 0
+  confirmation=$(ask "$storage_question" n)
   case $confirmation in
     y | Y | yes | YES) ;;
-    *) fail "Restore stopped. $unchanged" ;;
+    *) fail 'Restore stopped. Nothing was changed.' ;;
   esac
+}
+
+# Deletes the fetched backup when the restore stops before Trybun is stopped: it holds the
+# databases and the .env of the backup. A failure – e.g. a backup image without the command – must
+# not hide the reason of the stop; the next fetch empties the folder anyway.
+discard_backup() {
+  docker compose run --rm -T --no-deps backup discard >/dev/null 2>&1 || :
 }
 
 # Sets the passwords of the database users to those of .env, also when the database volume was
@@ -555,16 +571,24 @@ restore() {
     say 'A test restore: the restored .env gets no TRYBUN_BACKUP_S3_URL, so the backups of the backed-up server stay untouched.'
   [ -z "$target_storage_url" ] ||
     say "The attachments are restored into $target_storage_url, which replaces TRYBUN_S3_URL of the backup's .env; the storage folder of the backup stays unchanged."
+  # The backup is fetched and its storage folder checked while Trybun runs, so a restore that cannot
+  # run stops before the questions and leaves Trybun running (#248). Until the stop, every exit –
+  # also Ctrl-C, whose untrapped signal would skip the EXIT trap – discards the fetched backup.
+  trap discard_backup EXIT
+  trap 'exit 130' HUP INT TERM
+  say "Reading the backup $backup_id."
+  docker compose run --rm -T --no-deps backup fetch "$backup_id" ||
+    fail "The backup $backup_id could not be read. Nothing was changed."
+  check_storage_folder
   confirmation=$(ask 'Continue? [y/N]: ' n)
   case $confirmation in
     y | Y | yes | YES) ;;
     *) fail 'Restore stopped. Nothing was changed.' ;;
   esac
+  ask_storage_folder
+  trap - EXIT HUP INT TERM
   say 'Stopping Trybun.'
   docker compose stop
-  docker compose run --rm -T --no-deps backup fetch "$backup_id" ||
-    fail "The backup $backup_id could not be read. Nothing was changed; start Trybun again with docker compose up -d --wait."
-  check_storage_folder
   restore_configuration
   say 'Restoring both databases and the objects.'
   { docker compose up -d --wait postgres && set_database_passwords &&
