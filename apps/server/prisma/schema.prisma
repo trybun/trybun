@@ -44,22 +44,24 @@ enum UserState {
 /// An account (§7.4). Keycloak stores only credentials and sign-in factors; roles live here.
 /// Anonymization (§13.2) removes the personal fields, so they are optional.
 model User {
-  id             String    @id @default(uuid(7)) @db.Uuid
+  id                 String    @id @default(uuid(7)) @db.Uuid
   /// The `sub` of the Keycloak user; missing until an invited person signs in for the first time.
-  keycloakUserId String?   @unique @map("keycloak_user_id")
+  keycloakUserId     String?   @unique @map("keycloak_user_id")
   /// Normalized – trimmed and lower-cased (§7.4); a check constraint of the migrations keeps it so.
-  email          String?   @unique
-  displayName    String?   @map("display_name")
+  email              String?   @unique
+  displayName        String?   @map("display_name")
   /// Set on the first sign-in (§13.1).
-  language       String?
+  language           String?
   /// IANA time-zone name (§13.1).
-  timeZone       String?   @map("time_zone")
-  kind           UserKind
-  isAdmin        Boolean   @default(false) @map("is_admin")
-  state          UserState @default(invited)
-  githubLogin    String?   @unique @map("github_login")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  timeZone           String?   @map("time_zone")
+  kind               UserKind
+  isAdmin            Boolean   @default(false) @map("is_admin")
+  state              UserState @default(invited)
+  githubLogin        String?   @unique @map("github_login")
+  /// "Hide events" of the activity timeline (§4.5): a preference of the person on every device.
+  hideTimelineEvents Boolean   @default(false) @map("hide_timeline_events")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   productTourProgress ProductTourProgress[]
   projectMemberships  ProjectMember[]

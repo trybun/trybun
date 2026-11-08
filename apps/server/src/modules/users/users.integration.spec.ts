@@ -124,6 +124,7 @@ describe('users endpoints', () => {
       kind: 'end_user',
       language: user.language,
       timeZone: 'Europe/Warsaw',
+      hideTimelineEvents: false,
       allowedActions: [],
     });
   });
@@ -278,9 +279,41 @@ describe('users endpoints', () => {
       expect(res.body).toMatchObject({ language: 'pl', timeZone: null });
     });
 
+    it('stores "Hide events" per account and returns it to a later session of the account (§4.5)', async () => {
+      const { user, authorization } = await signIn({ kind: 'team' });
+      const other = await signIn({ kind: 'team' });
+
+      const res = await patch(authorization, { hideTimelineEvents: true });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id: user.id, hideTimelineEvents: true });
+      // A second session of the same account – another device – reads the setting.
+      const secondSession = await signAccessToken(config, {
+        sub: user.keycloakUserId ?? '',
+        amr: ['pwd', 'otp'],
+      });
+      const later = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${secondSession}`);
+      expect(later.body).toMatchObject({ id: user.id, hideTimelineEvents: true });
+      // Another account keeps its own setting, and a later change of another setting keeps it.
+      const otherRes = await request(app.getHttpServer())
+        .get('/api/v1/users/me')
+        .set('Authorization', other.authorization);
+      expect(otherRes.body).toMatchObject({ hideTimelineEvents: false });
+      expect((await patch(authorization, { language: 'pl' })).body).toMatchObject({
+        language: 'pl',
+        hideTimelineEvents: true,
+      });
+      expect((await patch(authorization, { hideTimelineEvents: false })).body).toMatchObject({
+        hideTimelineEvents: false,
+      });
+    });
+
     it.each([
       ['an unknown time zone', { timeZone: 'Mars/Olympus_Mons' }, '/timeZone'],
       ['an unsupported language', { language: 'de' }, '/language'],
+      ['a setting that is not a boolean', { hideTimelineEvents: 'yes' }, '/hideTimelineEvents'],
     ])('rejects %s with 422', async (_case, body, pointer) => {
       const { authorization } = await signIn();
 

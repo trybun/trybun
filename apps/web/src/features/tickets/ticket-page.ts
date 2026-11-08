@@ -15,9 +15,9 @@ import { activityEventsQueryOptions, ticketQueryOptions } from './queries.js';
  * The ticket of a ticket page – the team ticket view or the portal's – by the identifier in its
  * address, prefetched for the browser with its timeline, its attachments, the images its
  * description references and the state of its project (§18.5), so the first paint has the content
- * and its images (§2.9). The team view also gets the current account, whose settings shape the
- * view. A ticket the reader cannot see is answered like a missing one, and the page is not found
- * (§5.3).
+ * and its images (§2.9). The team view also gets the current account, whose **Hide events** leaves
+ * the timeline out (§4.5). A ticket the reader cannot see is answered like a missing one, and the
+ * page is not found (§5.3).
  */
 export async function getTicketPage(identifier: string, shell: Shell) {
   if (!ticketIdentifierSchema.safeParse(identifier).success) {
@@ -26,7 +26,11 @@ export async function getTicketPage(identifier: string, shell: Shell) {
   const client = await getServerApiClient();
   const queryClient = getServerQueryClient();
   const options = ticketQueryOptions(client, identifier);
-  await queryClient.prefetchQuery(options);
+  const userOptions = currentUserQueryOptions(client);
+  await Promise.all([
+    queryClient.prefetchQuery(options),
+    shell === 'team' ? queryClient.prefetchQuery(userOptions) : undefined,
+  ]);
   const error = queryClient.getQueryState(options.queryKey)?.error;
   if (error instanceof ApiError && error.status === 404) {
     notFound();
@@ -36,8 +40,13 @@ export async function getTicketPage(identifier: string, shell: Shell) {
     throw error ?? new Error('The ticket could not be read');
   }
   const imageIds = referencedAttachmentIds(ticket.description);
+  // A team member who hides the events gets none (Q5).
+  const isTimelineHidden =
+    shell === 'team' && queryClient.getQueryData(userOptions.queryKey)?.hideTimelineEvents === true;
   await Promise.all([
-    queryClient.prefetchInfiniteQuery(activityEventsQueryOptions(client, ticket.id)),
+    isTimelineHidden
+      ? undefined
+      : queryClient.prefetchInfiniteQuery(activityEventsQueryOptions(client, ticket.id)),
     queryClient.prefetchInfiniteQuery(ticketAttachmentsQueryOptions(client, ticket.id)),
     imageIds.length === 0
       ? undefined
@@ -45,7 +54,6 @@ export async function getTicketPage(identifier: string, shell: Shell) {
     // The state of the project for the read-only banner; `404` when the requester lost access to
     // the project, which keeps the ticket readable (§7.3) and shows no banner.
     queryClient.prefetchQuery(projectQueryOptions(client, ticket.projectId)),
-    shell === 'team' ? queryClient.prefetchQuery(currentUserQueryOptions(client)) : undefined,
   ]);
   return ticket;
 }

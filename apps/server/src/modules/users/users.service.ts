@@ -176,6 +176,7 @@ export class UsersService {
         kind: true,
         language: true,
         timeZone: true,
+        hideTimelineEvents: true,
       },
     });
     const ability = this.abilities.forPrincipal(principal);
@@ -226,13 +227,17 @@ export class UsersService {
     return toProductTourProgressResponse(row);
   }
   /**
-   * Changes the settings of the principal's own account (§13.1): the language and the time zone;
-   * `timeZone: null` returns to the system default.
+   * Changes the settings of the principal's own account: the language and the time zone (§13.1)
+   * – `timeZone: null` returns to the system default – and "Hide events" of the timeline (§4.5).
    */
   async updateCurrent(principal: UserPrincipal, input: UpdateCurrentUserDto): Promise<CurrentUser> {
     await this.prisma.user.update({
       where: { id: principal.userId },
-      data: { language: input.language, timeZone: input.timeZone },
+      data: {
+        language: input.language,
+        timeZone: input.timeZone,
+        hideTimelineEvents: input.hideTimelineEvents,
+      },
       select: { id: true },
     });
     return this.findCurrent(principal);

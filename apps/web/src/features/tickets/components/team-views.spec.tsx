@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import { userEvent } from '@testing-library/user-event';
 import type { ActivityEvent } from '@trybun/contracts/activity-events';
 import type { Ticket } from '@trybun/contracts/tickets';
+import type { CurrentUser } from '@trybun/contracts/users';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -72,8 +73,26 @@ function event(overrides: Partial<ActivityEvent>): ActivityEvent {
   };
 }
 
-function answer(value: Ticket, { events = [] as ActivityEvent[], projectState = 'active' } = {}) {
+function currentUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
+  return {
+    id: ANNA.id,
+    displayName: ANNA.displayName,
+    email: 'anna@example.com',
+    kind: 'team',
+    language: 'en',
+    timeZone: null,
+    hideTimelineEvents: false,
+    allowedActions: [],
+    ...overrides,
+  };
+}
+
+function answer(
+  value: Ticket,
+  { events = [] as ActivityEvent[], projectState = 'active', hideTimelineEvents = false } = {},
+) {
   fake.on('GET /api/v1/tickets', { data: { items: [value], nextCursor: null } });
+  fake.on('GET /api/v1/users/me', { data: currentUser({ hideTimelineEvents }) });
   fake.on('GET /api/v1/projects/{projectId}', {
     data: {
       ...PROJECT,
@@ -223,6 +242,84 @@ describe('TeamTicketView', () => {
     expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/activity-events')[1]?.init).toMatchObject({
       params: { path: { ticketId: value.id }, query: { cursor: 'next' } },
     });
+  });
+});
+
+describe('Hide events', () => {
+  it('shows no events and requests none while the setting is on (Q5)', async () => {
+    answer(ticket(), { hideTimelineEvents: true, events: [event({})] });
+    renderInApp(<TeamTicketView identifier="ERP-12" />);
+
+    const activity = within(await screen.findByRole('region', { name: 'Activity' }));
+    expect(await activity.findByText('Events are hidden. Comments appear here.')).toBeDefined();
+    expect(activity.getByRole('switch', { name: 'Hide events' }).getAttribute('aria-checked')).toBe(
+      'true',
+    );
+    expect(activity.queryByRole('listitem')).toBeNull();
+    expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/activity-events')).toHaveLength(0);
+  });
+
+  it('hides the events at once and stores the setting on the account', async () => {
+    const user = userEvent.setup();
+    answer(ticket(), { events: [event({})] });
+    // The server has not answered yet: the switch already shows the new state (§18.5).
+    const patch = fake.client.PATCH.getMockImplementation();
+    fake.client.PATCH.mockImplementationOnce((path: string, init?: unknown) => {
+      fake.calls.push({ method: 'PATCH', path, init });
+      return new Promise(() => undefined);
+    });
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" />);
+    const activity = within(await screen.findByRole('region', { name: 'Activity' }));
+    await activity.findByText('Anna edited the description');
+
+    try {
+      await user.click(activity.getByRole('switch', { name: 'Hide events' }));
+
+      expect(await activity.findByText('Events are hidden. Comments appear here.')).toBeDefined();
+      expect(activity.queryByText('Anna edited the description')).toBeNull();
+      expect(fake.callsTo('PATCH /api/v1/users/me')[0]?.init).toEqual({
+        body: { hideTimelineEvents: true },
+      });
+      expect(client.getQueryData<CurrentUser>(['users', 'me'])?.hideTimelineEvents).toBe(true);
+    } finally {
+      fake.client.PATCH.mockImplementation(patch!);
+    }
+  });
+
+  it('shows the events again and requests them when the setting is turned off', async () => {
+    const user = userEvent.setup();
+    answer(ticket(), { hideTimelineEvents: true, events: [event({})] });
+    fake.on('PATCH /api/v1/users/me', { data: currentUser({ hideTimelineEvents: false }) });
+    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    const activity = within(await screen.findByRole('region', { name: 'Activity' }));
+
+    await user.click(await activity.findByRole('switch', { name: 'Hide events' }));
+
+    expect(await activity.findByText('Anna edited the description')).toBeDefined();
+    expect(activity.queryByText('Events are hidden. Comments appear here.')).toBeNull();
+    expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/activity-events')).toHaveLength(1);
+  });
+
+  it('returns to the previous state and says why when saving fails', async () => {
+    const user = userEvent.setup();
+    answer(ticket(), { events: [event({})] });
+    fake.on('PATCH /api/v1/users/me', {
+      status: 503,
+      error: { type: 'about:blank', title: 'Unavailable', status: 503, code: 'server.unavailable' },
+    });
+    renderInApp(<TeamTicketView identifier="ERP-12" />);
+    const activity = within(await screen.findByRole('region', { name: 'Activity' }));
+    await activity.findByText('Anna edited the description');
+
+    await user.click(activity.getByRole('switch', { name: 'Hide events' }));
+
+    await waitFor(() =>
+      expect(toastAdd).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' })),
+    );
+    expect(activity.getByRole('switch', { name: 'Hide events' }).getAttribute('aria-checked')).toBe(
+      'false',
+    );
+    expect(await activity.findByText('Anna edited the description')).toBeDefined();
   });
 });
 

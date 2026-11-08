@@ -383,6 +383,8 @@
       "title": "Activity",
       "system": "System",
       "showMore": "Show more",
+      "hideEvents": "Hide events",
+      "eventsHidden": "Events are hidden. Comments appear here.",
       "opened": "{person} opened the ticket",
       "events": {
         "titleChanged": "{person} changed the title: “{from}” → “{to}”",

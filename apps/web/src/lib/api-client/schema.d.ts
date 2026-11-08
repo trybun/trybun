@@ -691,6 +691,7 @@ export interface operations {
                         /** @enum {string|null} */
                         language: "en" | "pl" | null;
                         timeZone: string | null;
+                        hideTimelineEvents: boolean;
                         allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };
@@ -710,6 +711,7 @@ export interface operations {
                     /** @enum {string} */
                     language?: "en" | "pl";
                     timeZone?: string | null;
+                    hideTimelineEvents?: boolean;
                 };
             };
         };
@@ -729,6 +731,7 @@ export interface operations {
                         /** @enum {string|null} */
                         language: "en" | "pl" | null;
                         timeZone: string | null;
+                        hideTimelineEvents: boolean;
                         allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };

@@ -383,6 +383,8 @@
       "title": "Aktywność",
       "system": "System",
       "showMore": "Pokaż więcej",
+      "hideEvents": "Ukryj zdarzenia",
+      "eventsHidden": "Zdarzenia są ukryte. Tutaj pojawią się komentarze.",
       "opened": "{person} – utworzenie zgłoszenia",
       "events": {
         "titleChanged": "{person} – zmiana tytułu: „{from}” → „{to}”",

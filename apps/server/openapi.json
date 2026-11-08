@@ -213,6 +213,9 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "hideTimelineEvents": {
+                      "type": "boolean"
+                    },
                     "allowedActions": {
                       "type": "array",
                       "items": {
@@ -232,6 +235,7 @@
                     "kind",
                     "language",
                     "timeZone",
+                    "hideTimelineEvents",
                     "allowedActions"
                   ],
                   "additionalProperties": false
@@ -265,6 +269,9 @@
                     "nullable": true,
                     "type": "string",
                     "maxLength": 64
+                  },
+                  "hideTimelineEvents": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -311,6 +318,9 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "hideTimelineEvents": {
+                      "type": "boolean"
+                    },
                     "allowedActions": {
                       "type": "array",
                       "items": {
@@ -330,6 +340,7 @@
                     "kind",
                     "language",
                     "timeZone",
+                    "hideTimelineEvents",
                     "allowedActions"
                   ],
                   "additionalProperties": false
