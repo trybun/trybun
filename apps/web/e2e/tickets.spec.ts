@@ -15,6 +15,13 @@ const TITLE = 'Sign-in page crashes on Safari';
 
 const DESKTOP = { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } };
 
+/**
+ * `TABLET_MEDIA_QUERY` of `@trybun/ui` (48rem): the field pickers are bottom sheets below it. The
+ * tablet project (656 px in portrait) is below it too, so tests branch on the width, never on the
+ * project name.
+ */
+const TABLET_BREAKPOINT_PX = 768;
+
 // The team ticket view of S1-10 on phone, tablet and desktop, with axe (§13.4).
 test.describe('the team ticket view', () => {
   test('shows a ticket with its fields and its timeline, also from a lower-case address', async ({
@@ -208,8 +215,9 @@ test.describe('assignment in the team ticket view', () => {
 
         await ticket.assign('Dorota Developer');
 
-        // The phone's picker is a button that names the assignee, the combobox shows the name.
-        await (testInfo.project.name === 'phone'
+        // Below the tablet breakpoint (48rem, also the tablet project in portrait) the picker is a
+        // sheet's button that names the assignee; from it on, the combobox shows the name.
+        await ((page.viewportSize()?.width ?? 0) < TABLET_BREAKPOINT_PX
           ? expect(ticket.assigneePicker).toHaveAccessibleName('Assignee: Dorota Developer')
           : expect(ticket.assigneePicker).toHaveValue('Dorota Developer'));
         const toast = ticket.toast('Assigned to Dorota Developer');
