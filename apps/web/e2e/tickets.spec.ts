@@ -312,6 +312,35 @@ test.describe('the full ticket form', () => {
     await expect(form.description).toHaveValue(edited);
   });
 
+  test('Back with a typed description asks first; Keep editing keeps the text (Q10)', async ({
+    page,
+  }, testInfo) => {
+    const form = new TicketFormPage(page);
+    // The page Back returns to.
+    await page.goto('/');
+    await form.goto();
+    const templates = TEMPLATES[await form.insertedLanguage()];
+    const text = `${templates.task}\nBack on ${testInfo.project.name}`;
+    await form.description.fill(text);
+    await expect(form.description).toHaveValue(text);
+    // The guard's history entry, above the form's own, is in place before Back is pressed.
+    await page.waitForFunction(
+      () => (window.history.state as Record<string, unknown> | null)?.__trybunUnsavedChanges,
+    );
+    const question = page.getByRole('dialog', { name: 'Discard your changes?' });
+
+    await page.goBack();
+    await expect(question).toBeVisible();
+    await expect(page).toHaveURL(/\/tickets\/new$/);
+    await question.getByRole('button', { name: 'Keep editing' }).click();
+    await expect(question).toHaveCount(0);
+    await expect(form.description).toHaveValue(text);
+
+    await page.goBack();
+    await question.getByRole('button', { name: 'Discard' }).click();
+    await expect(page).toHaveURL(/\/$/);
+  });
+
   test('a Developer sees only the Assign to me checkbox, and the new ticket opens in its view', async ({
     page,
     baseURL,

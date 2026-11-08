@@ -18,7 +18,7 @@ import { LazyAttachmentDrafts } from '../../attachments/components/lazy-attachme
 import { useAttachmentDrafts } from '../../attachments/use-attachment-drafts.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { useUpdateTicket } from '../mutations.js';
-import { useUnsavedChanges } from '../use-unsaved-changes.js';
+import { useUnsavedChanges } from '../../../lib/forms/use-unsaved-changes.js';
 import { LazyMarkdownEditor } from './lazy-markdown-editor.js';
 
 const descriptionFormSchema = z.object({
@@ -180,7 +180,7 @@ function DescriptionForm({
           {isSaving ? t('view.saving') : t('view.save')}
         </Button>
       </div>
-      {(isDiscarding || leaving.pendingHref !== null) && (
+      {(isDiscarding || leaving.isAsking) && (
         <LazyConfirmDialog
           title={t('view.discard.title')}
           description={t('view.discard.description')}

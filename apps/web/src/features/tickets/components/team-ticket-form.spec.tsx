@@ -247,6 +247,9 @@ describe('TeamTicketForm', () => {
     await events.click(screen.getByRole('button', { name: 'Create ticket' }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/tickets/ERP-12'));
+    // The typed text is saved: no question, and the entry for Back is taken back first.
+    expect(screen.queryByText('Discard your changes?')).toBeNull();
+    expect(window.history.state).toBeNull();
     expect(fake.callsTo('POST /api/v1/tickets')[0]?.init).toMatchObject({
       body: {
         projectId: ERP.id,
@@ -326,5 +329,29 @@ describe('TeamTicketForm', () => {
     expect(await screen.findByText('Discard your changes?', {}, { timeout: 5_000 })).toBeDefined();
     await events.click(screen.getByRole('button', { name: 'Discard' }));
     expect(push).toHaveBeenCalledWith('/');
+  });
+
+  it('asks when Back is pressed after typing a title, and keeps the text on Keep editing', async () => {
+    const events = userEvent.setup();
+    window.history.pushState(null, '', '/tickets');
+    window.history.pushState(null, '', '/tickets/new');
+    renderForm();
+    await description();
+
+    await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Export the invoices');
+    window.history.back();
+
+    expect(await screen.findByText('Discard your changes?', {}, { timeout: 5_000 })).toBeDefined();
+    expect(window.location.pathname).toBe('/tickets/new');
+    await events.click(screen.getByRole('button', { name: 'Keep editing' }));
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveProperty(
+      'value',
+      'Export the invoices',
+    );
+
+    window.history.back();
+    await events.click(await screen.findByRole('button', { name: 'Discard' }));
+    await waitFor(() => expect(window.location.pathname).toBe('/tickets'));
+    expect(push).not.toHaveBeenCalled();
   });
 });

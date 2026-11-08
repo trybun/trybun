@@ -290,6 +290,27 @@ describe('title and description', () => {
     await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull());
     expect(fake.callsTo('PATCH /api/v1/tickets/{ticketId}')).toHaveLength(0);
   });
+
+  it('asks when Back is pressed with a typed description (Q10)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse());
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: 'Edit description' }));
+    const editor = await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    await user.type(editor, ' More.');
+    window.history.back();
+    await user.click(await screen.findByRole('button', { name: 'Keep editing' }));
+
+    expect(screen.getByRole('textbox', { name: 'Description' })).toHaveProperty(
+      'value',
+      'The total shows **23%**. More.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(await screen.findByRole('button', { name: 'Discard' }));
+    // The closed editor takes back its entry for Back.
+    await waitFor(() => expect(window.history.state).toBeNull());
+  });
 });
 
 describe('read-only fields', () => {
@@ -359,6 +380,22 @@ describe('assignee', () => {
         body: { assigneeId: null },
       }),
     );
+  });
+
+  it('confirms a choice of the bottom sheet on phones with Undo (§18.6)', async () => {
+    viewport.isTablet = false;
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: null }));
+    members(ANNA, JAN);
+    fake.on('PATCH /api/v1/tickets/{ticketId}', { data: ticketResponse({ assignee: JAN }) });
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: 'Assignee: Unassigned' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Assignee' });
+    await user.click(await within(sheet).findByRole('radio', { name: 'Jan' }));
+
+    await waitFor(() => expect(lastToast()?.title).toBe('Assigned to Jan'));
+    expect(lastToast().actionProps?.children).toBe('Undo');
   });
 
   it('offers no Assign to me to a person who cannot be assigned in the project', async () => {

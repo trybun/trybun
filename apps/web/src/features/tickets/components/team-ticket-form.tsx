@@ -34,7 +34,6 @@ import {
 import { toast } from '@trybun/ui/components/toast';
 import { cn } from '@trybun/ui/lib/utils';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
@@ -54,7 +53,7 @@ import {
   nextPriority,
   type TicketTemplates,
 } from '../ticket-form-templates.js';
-import { useUnsavedChanges } from '../use-unsaved-changes.js';
+import { useUnsavedChanges } from '../../../lib/forms/use-unsaved-changes.js';
 import { AssigneePicker } from './assignee-control.js';
 import { LazyMarkdownEditor } from './lazy-markdown-editor.js';
 
@@ -106,7 +105,6 @@ export function TeamTicketForm({
 }) {
   const t = useTranslations('tickets');
   const errorMessage = useErrorMessage();
-  const router = useRouter();
   const createTicket = useCreateTicket();
   // A language switch renders the page again with the other language's templates; the form keeps
   // comparing with the ones it inserted (Q4).
@@ -158,7 +156,7 @@ export function TeamTicketForm({
           title: t('form.created', { identifier: ticket.identifier }),
           type: 'success',
         });
-        router.push(ticketHref(ticket.identifier));
+        leaving.navigate(ticketHref(ticket.identifier));
       })
       .catch((error: unknown) => {
         // The messages of the form hold error codes, translated where they are shown.
@@ -344,7 +342,7 @@ export function TeamTicketForm({
           {t('form.submit')}
         </Button>
       </div>
-      {leaving.pendingHref !== null && (
+      {leaving.isAsking && (
         <LazyConfirmDialog
           title={t('view.discard.title')}
           description={t('view.discard.description')}
