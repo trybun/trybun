@@ -9,7 +9,8 @@
 # keeps its attachments on that S3 storage instead of SeaweedFS (§15.10): the restore refuses the
 # folder of the lost server without a terminal, a test restore without --storage-url, folders that
 # overlap the folder or the repository of the backup and a folder with objects but no marker;
-# it restores a test copy into another folder with --test --storage-url while the folder of the
+# all of them before the first question and before it stops Trybun, which keeps running when it
+# ran; it restores a test copy into another folder with --test --storage-url while the folder of the
 # backup stays unchanged and the copy backs up nowhere off-site, and replaces the folder of the
 # lost server with --replace-foreign-objects, bringing back an object deleted after the backup.
 # Usage: scripts/restore-test.sh <deployment package archive>
@@ -172,6 +173,13 @@ restore_onto() {
   printf 'y\n' | ./trybun restore "$@"
 }
 
+# Fails unless the restore with the output $1 stopped before its first question and before it
+# stopped Trybun (#248): it fetched the backup and checked the storage folder while Trybun ran.
+refused_before_asking() {
+  ! grep -qF 'Continue? [y/N]' "$1" || fail 'the restore asked before it refused.'
+  ! grep -qF 'Stopping Trybun.' "$1" || fail 'the restore stopped Trybun before it refused.'
+}
+
 # Records of the system database: the setup tokens of the installation.
 records() {
   docker compose exec -T postgres psql --username=trybun --dbname=trybun --tuples-only --no-align \
@@ -282,27 +290,30 @@ step 'Destroying the server; its storage folder stays'
 destroy "$work/kept-external.env"
 
 step 'Refusing to replace the folder of the lost server without a terminal'
-if restore_onto server-d "$work/kept-external.env" 2>"$work/refused.log"; then
+if restore_onto server-d "$work/kept-external.env" >"$work/refused.log" 2>&1; then
   fail 'the restore replaced the storage folder of another server without --replace-foreign-objects.'
 fi
 cat "$work/refused.log" >&2
+refused_before_asking "$work/refused.log"
 grep -qF "The storage folder $external belongs to another Trybun server" "$work/refused.log" ||
   fail 'the restore did not say why it refused.'
 [ "$(objects "$folder")" = "$objects_after" ] || fail 'the refused restore changed the storage folder.'
 
 step 'Refusing a test restore of the external storage without --storage-url'
-if restore_onto server-d "$work/kept-external.env" --test 2>"$work/external.log"; then
+if restore_onto server-d "$work/kept-external.env" --test >"$work/external.log" 2>&1; then
   fail 'the test restore accepted the folder of the backup on the external storage.'
 fi
 cat "$work/external.log" >&2
+refused_before_asking "$work/external.log"
 grep -qF "The attachments of the backup are on the external storage $external" "$work/external.log" ||
   fail 'the test restore did not ask for --storage-url.'
 
 step 'Refusing a --storage-url folder that contains the folder of the backup'
-if restore_onto server-d "$work/kept-external.env" --test --storage-url "http://$gateway:8334/trybun-attachments" 2>"$work/overlap.log"; then
+if restore_onto server-d "$work/kept-external.env" --test --storage-url "http://$gateway:8334/trybun-attachments" >"$work/overlap.log" 2>&1; then
   fail 'the restore accepted a --storage-url folder that contains the folder of the backup.'
 fi
 cat "$work/overlap.log" >&2
+refused_before_asking "$work/overlap.log"
 grep -qF "overlaps the storage folder $external of the backup" "$work/overlap.log" ||
   fail 'the restore did not say why it refused the overlapping folder.'
 [ "$(objects "$folder")" = "$objects_after" ] || fail 'the refused restore changed the storage folder.'
@@ -311,20 +322,22 @@ step 'Refusing a --storage-url folder inside the backup repository'
 production_backups=$(sed -n 's/^TRYBUN_BACKUP_S3_URL=//p' "$work/kept-external.env")
 backups_before=$(off_site_backups "$production_backups")
 [ -n "$backups_before" ] || fail 'the backups of the lost server on the S3 storage could not be listed.'
-if restore_onto server-d "$work/kept-external.env" --test --storage-url "$production_backups/test" 2>"$work/repository.log"; then
+if restore_onto server-d "$work/kept-external.env" --test --storage-url "$production_backups/test" >"$work/repository.log" 2>&1; then
   fail 'the restore accepted a --storage-url folder inside the backup repository.'
 fi
 cat "$work/repository.log" >&2
+refused_before_asking "$work/repository.log"
 grep -qF 'overlaps the backup repository' "$work/repository.log" ||
   fail 'the restore did not say why it refused the folder inside the backup repository.'
 
 step 'Refusing a --storage-url folder with objects but without a marker'
 unmarked=objects:trybun-attachments/restore-test-unmarked
 printf 'other' | storage rcat "$unmarked/other-application"
-if restore_onto server-d "$work/kept-external.env" --test --storage-url "http://$gateway:8334/trybun-attachments/restore-test-unmarked" 2>"$work/unmarked.log"; then
+if restore_onto server-d "$work/kept-external.env" --test --storage-url "http://$gateway:8334/trybun-attachments/restore-test-unmarked" >"$work/unmarked.log" 2>&1; then
   fail 'the restore replaced a folder with objects but without a marker without --replace-foreign-objects.'
 fi
 cat "$work/unmarked.log" >&2
+refused_before_asking "$work/unmarked.log"
 grep -qF 'holds objects but no Trybun marker' "$work/unmarked.log" ||
   fail 'the restore did not say why it refused the folder without a marker.'
 [ "$(storage cat "$unmarked/other-application")" = other ] || fail 'the refused restore changed the folder without a marker.'
@@ -352,6 +365,21 @@ cat "$work/copy-backup.log"
 ! grep -q 'external S3 storage' "$work/copy-backup.log" || fail 'the test copy backed up off-site.'
 [ "$(off_site_backups "$production_backups")" = "$backups_before" ] ||
   fail 'the backup of the test copy changed the repository of the backup.'
+
+step 'Refusing a test restore without --storage-url while the test copy runs'
+# The newest backup is the test copy's, whose attachments are on the external storage. Not with
+# restore_onto, which would replace the .env of the running server.
+running_before=$(docker compose ps --status running --services | sort)
+[ -n "$running_before" ] || fail 'the test copy does not run.'
+if printf 'y\n' | ./trybun restore --test >"$work/running.log" 2>&1; then
+  fail 'the test restore accepted the folder of the backup on the external storage.'
+fi
+cat "$work/running.log" >&2
+grep -qF "The attachments of the backup are on the external storage $copy" "$work/running.log" ||
+  fail 'the test restore did not ask for --storage-url.'
+refused_before_asking "$work/running.log"
+[ "$(docker compose ps --status running --services | sort)" = "$running_before" ] ||
+  fail 'the refused restore did not leave Trybun running.'
 # The newest backup of this server is now the test copy's; the next restore starts as a new server.
 docker compose down --volumes --remove-orphans
 
