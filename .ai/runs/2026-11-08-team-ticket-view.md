@@ -54,5 +54,5 @@ Build the team ticket view at `/tickets/{identifier}` and the full ticket form a
 
 ### Phase 5: Validation and review
 
-- [ ] 5.1 Full validation gate
+- [x] 5.1 Full validation gate — 7c8bca4
 - [ ] 5.2 Review pass
