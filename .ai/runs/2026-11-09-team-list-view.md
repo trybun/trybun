@@ -43,7 +43,7 @@ Everything the spec lists under Non-goals: label, milestone and SLA filters and 
 
 ### Phase 3: Bulk changes
 
-- [ ] 3.1 Add POST /tickets/bulk-changes with per-ticket results
+- [x] 3.1 Add POST /tickets/bulk-changes with per-ticket results — db91d90
 
 ### Phase 4: Web
 
