@@ -47,7 +47,7 @@ Make the S1-13 change specification `.ai/specs/2026-10-26-team-list-view.md` mer
 ### Phase 2: Bring the specification up to date
 
 - [x] 2.1 Merge main into the branch — adf1870
-- [ ] 2.2 Align the specification with the implemented S1-01 to S1-12
+- [x] 2.2 Align the specification with the implemented S1-01 to S1-12 — b774b80
 
 ### Phase 3: Record the maintainer's decisions
 
