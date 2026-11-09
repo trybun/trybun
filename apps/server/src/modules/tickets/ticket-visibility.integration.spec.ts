@@ -202,6 +202,297 @@ describe('ticket visibility', () => {
   });
 });
 
+describe('changing the visibility and deciding sharing requests (§5.2, §5.3)', () => {
+  const config = integrationConfig();
+  let app: INestApplication<Server>;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    app = await startApi(config);
+    prisma = app.get(PrismaService);
+  });
+
+  beforeEach(() => {
+    mswServer.use(keycloakJwksHandler(config));
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  const http = () => request(app.getHttpServer());
+
+  /** A project of an organization, its requester and a Developer, and a ticket of the requester. */
+  async function setUp(ticket: Partial<Parameters<typeof createTicket>[1]> = {}) {
+    const project = await createProject(prisma);
+    const organization = await createOrganization(prisma);
+    await prisma.organizationProject.create({
+      data: { organizationId: organization.id, projectId: project.id },
+    });
+    const requester = await createUser(prisma, { keycloakUserId: randomUUID() });
+    await prisma.organizationMember.create({
+      data: { organizationId: organization.id, userId: requester.id },
+    });
+    const developer = await createUser(prisma, { keycloakUserId: randomUUID(), kind: 'team' });
+    await createProjectMember(prisma, {
+      projectId: project.id,
+      userId: developer.id,
+      role: 'developer',
+    });
+    const row = await createTicket(prisma, {
+      projectId: project.id,
+      requesterId: requester.id,
+      organizationId: organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+      ...ticket,
+    });
+    return { project, organization, requester, developer, ticket: row };
+  }
+
+  async function send(
+    user: User,
+    ticket: { id: string; version: number },
+    path: 'visibility' | 'sharing/approve' | 'sharing/reject',
+    body?: object,
+  ) {
+    const req =
+      path === 'visibility'
+        ? http().put(`/api/v1/tickets/${ticket.id}/visibility`)
+        : http().post(`/api/v1/tickets/${ticket.id}/${path}`);
+    return req
+      .set('Authorization', await authorizationOf(config, user))
+      .set('If-Match', `W/"${ticket.version}"`)
+      .send(body);
+  }
+
+  const stored = (id: string) =>
+    prisma.ticket.findUniqueOrThrow({
+      where: { id },
+      select: { visibility: true, sharingRequest: true, sharingRefusalReason: true, version: true },
+    });
+  const eventsOf = (ticketId: string) =>
+    prisma.activityEvent.findMany({
+      where: { ticketId },
+      select: { type: true, data: true, isPublic: true, actorId: true },
+      orderBy: { id: 'asc' },
+    });
+  const auditOf = (ticketId: string) =>
+    prisma.auditLogEntry.findMany({
+      where: { targetType: 'Ticket', targetId: ticketId },
+      select: { action: true, details: true, actorId: true },
+      orderBy: { id: 'asc' },
+    });
+
+  it('widens a request of a person in the organization to my_organization while pending (Q4)', async () => {
+    const { requester, ticket } = await setUp();
+
+    const res = await send(requester, ticket, 'visibility', { visibility: 'all_customers' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ visibility: 'my_organization', sharingRequest: 'pending' });
+    expect(await eventsOf(ticket.id)).toEqual([
+      {
+        type: 'sharing_requested',
+        data: { from: 'only_me', to: 'my_organization' },
+        isPublic: false,
+        actorId: requester.id,
+      },
+    ]);
+    // Changes by the author are not administrative actions (Q17).
+    expect(await auditOf(ticket.id)).toEqual([]);
+  });
+
+  it('keeps only_me while pending for a person without an organization', async () => {
+    const { project } = await setUp();
+    const loner = await createUser(prisma, { keycloakUserId: randomUUID() });
+    await createProjectMember(prisma, {
+      projectId: project.id,
+      userId: loner.id,
+      role: 'end_user',
+    });
+    const ticket = await createTicket(prisma, {
+      projectId: project.id,
+      requesterId: loner.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+    });
+
+    const res = await send(loner, ticket, 'visibility', { visibility: 'all_customers' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ visibility: 'only_me', sharingRequest: 'pending' });
+  });
+
+  it('lets the requester withdraw a pending request (Q5)', async () => {
+    const { requester, ticket } = await setUp({
+      visibility: 'my_organization',
+      sharingRequest: 'pending',
+    });
+
+    const res = await send(requester, ticket, 'visibility', { visibility: 'my_organization' });
+
+    expect(res.status).toBe(200);
+    expect(await stored(ticket.id)).toMatchObject({
+      visibility: 'my_organization',
+      sharingRequest: 'none',
+      version: ticket.version + 1,
+    });
+    expect((await eventsOf(ticket.id)).map(({ type }) => type)).toEqual([
+      'sharing_request_withdrawn',
+    ]);
+  });
+
+  it('shares an approved request with one public event and an audit entry', async () => {
+    const { developer, ticket } = await setUp({
+      visibility: 'my_organization',
+      sharingRequest: 'pending',
+    });
+
+    const res = await send(developer, ticket, 'sharing/approve');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ visibility: 'all_customers', sharingRequest: 'none' });
+    expect(await eventsOf(ticket.id)).toEqual([
+      {
+        type: 'sharing_approved',
+        data: { from: 'my_organization', to: 'all_customers' },
+        isPublic: true,
+        actorId: developer.id,
+      },
+    ]);
+    expect(await auditOf(ticket.id)).toEqual([
+      { action: 'ticket.sharing_approved', details: null, actorId: developer.id },
+    ]);
+  });
+
+  it('refuses a request, keeps the visibility and stores the reason outside the event', async () => {
+    const { developer, ticket } = await setUp({
+      visibility: 'my_organization',
+      sharingRequest: 'pending',
+    });
+
+    expect((await send(developer, ticket, 'sharing/reject', { reason: ' ' })).status).toBe(422);
+    const res = await send(developer, ticket, 'sharing/reject', {
+      reason: 'The description names a customer.',
+    });
+
+    expect(res.status).toBe(200);
+    expect(await stored(ticket.id)).toMatchObject({
+      visibility: 'my_organization',
+      sharingRequest: 'rejected',
+      sharingRefusalReason: 'The description names a customer.',
+    });
+    expect(res.body).toMatchObject({ sharingRefusalReason: 'The description names a customer.' });
+    expect(await eventsOf(ticket.id)).toEqual([
+      { type: 'sharing_rejected', data: null, isPublic: false, actorId: developer.id },
+    ]);
+    expect((await auditOf(ticket.id)).map(({ action }) => action)).toEqual([
+      'ticket.sharing_rejected',
+    ]);
+  });
+
+  it('records the team’s visibility change in the audit log', async () => {
+    const { developer, ticket } = await setUp({ visibility: 'all_customers' });
+
+    const res = await send(developer, ticket, 'visibility', { visibility: 'only_me' });
+
+    expect(res.status).toBe(200);
+    expect(await auditOf(ticket.id)).toEqual([
+      {
+        action: 'ticket.visibility_changed',
+        details: { from: 'all_customers', to: 'only_me' },
+        actorId: developer.id,
+      },
+    ]);
+  });
+
+  it.each([
+    [
+      'shares an only_me ticket',
+      {},
+      'visibility',
+      { visibility: 'all_customers' },
+      'ticket.author_consent_required',
+    ],
+    [
+      'changes a ticket with a pending request',
+      { visibility: 'my_organization' as const, sharingRequest: 'pending' as const },
+      'visibility',
+      { visibility: 'only_me' },
+      'ticket.sharing_pending',
+    ],
+    ['approves without a request', {}, 'sharing/approve', undefined, 'ticket.sharing_not_pending'],
+  ] as const)(
+    'answers the team that %s with 409',
+    async (_case, ticketFields, path, body, code) => {
+      const { developer, ticket } = await setUp(ticketFields);
+
+      const res = await send(developer, ticket, path, body);
+
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code });
+    },
+  );
+
+  it('refuses my_organization by the team after the requester left the organization (Q4)', async () => {
+    const { developer, requester, ticket } = await setUp();
+    await prisma.organizationMember.delete({ where: { userId: requester.id } });
+
+    const res = await send(developer, ticket, 'visibility', { visibility: 'my_organization' });
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'ticket.organization_changed' });
+  });
+
+  it('refuses an end user narrowing a shared ticket (§5.3)', async () => {
+    const { requester, ticket } = await setUp({ visibility: 'all_customers' });
+
+    const res = await send(requester, ticket, 'visibility', { visibility: 'only_me' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('changes nothing for the current value, after checking the version (Q12)', async () => {
+    const { developer, ticket } = await setUp({ visibility: 'my_organization' });
+
+    const stale = await send(developer, { ...ticket, version: ticket.version + 5 }, 'visibility', {
+      visibility: 'my_organization',
+    });
+    const res = await send(developer, ticket, 'visibility', { visibility: 'my_organization' });
+
+    expect(stale.status).toBe(412);
+    expect(res.status).toBe(200);
+    expect(await stored(ticket.id)).toMatchObject({ version: ticket.version });
+    expect(await eventsOf(ticket.id)).toEqual([]);
+  });
+
+  it('lets only the first of two concurrent decisions apply', async () => {
+    const { project, developer, ticket } = await setUp({
+      visibility: 'my_organization',
+      sharingRequest: 'pending',
+    });
+    const colleague = await createUser(prisma, { keycloakUserId: randomUUID(), kind: 'team' });
+    await createProjectMember(prisma, {
+      projectId: project.id,
+      userId: colleague.id,
+      role: 'developer',
+    });
+
+    const results = await Promise.all([
+      send(developer, ticket, 'sharing/approve'),
+      send(colleague, ticket, 'sharing/reject', { reason: 'No.' }),
+    ]);
+
+    expect(results.map(({ status }) => status).sort()).toEqual([200, 409]);
+    const loser = results.find(({ status }) => status === 409);
+    expect(loser?.body).toMatchObject({ code: 'ticket.sharing_not_pending' });
+    expect(await eventsOf(ticket.id)).toHaveLength(1);
+  });
+});
+
 describe('lists equal details over the demo dataset (S1-11 Q13)', () => {
   let config: TrybunConfig;
   let app: INestApplication<Server>;

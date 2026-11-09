@@ -19,6 +19,8 @@ export function ticketResponse(overrides: Partial<Ticket> = {}): Ticket {
     publicStatus: 'in_progress',
     waitingReason: null,
     duplicateOf: null,
+    visibility: 'only_me',
+    sharingRequest: 'none',
     type: 'bug',
     source: 'user',
     priority: 'high',
@@ -27,6 +29,7 @@ export function ticketResponse(overrides: Partial<Ticket> = {}): Ticket {
     assignee: { id: '0199a3f0-0000-7000-8000-000000000031', displayName: 'Anna' },
     closedAt: null,
     rejectionReason: null,
+    sharingRefusalReason: null,
     ...overrides,
   };
 }

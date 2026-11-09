@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { OutboxModule } from '../../platform/outbox/outbox.module.js';
 import { ActivityEventsModule } from '../activity-events/activity-events.module.js';
+import { AuditLogEntriesModule } from '../audit-log-entries/audit-log-entries.module.js';
 import { AttachmentLinksModule } from '../attachments/attachment-links.module.js';
 import { OrganizationsModule } from '../organizations/organizations.module.js';
 import { ProjectsModule } from '../projects/projects.module.js';
@@ -31,6 +32,7 @@ import { TicketsService } from './tickets.service.js';
 @Module({
   imports: [
     ActivityEventsModule,
+    AuditLogEntriesModule,
     AttachmentLinksModule,
     OrganizationsModule,
     OutboxModule,

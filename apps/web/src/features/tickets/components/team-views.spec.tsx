@@ -58,6 +58,8 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     publicStatus: 'in_progress',
     waitingReason: null,
     duplicateOf: null,
+    visibility: 'only_me',
+    sharingRequest: 'none',
     type: 'bug',
     source: 'user',
     priority: 'high',
@@ -66,6 +68,7 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     assignee: ANNA,
     closedAt: null,
     rejectionReason: null,
+    sharingRefusalReason: null,
     ...overrides,
   };
 }

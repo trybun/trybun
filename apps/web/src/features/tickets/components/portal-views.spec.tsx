@@ -52,6 +52,8 @@ function ticket(overrides: Partial<EndUserTicket> = {}): EndUserTicket {
     publicStatus: 'in_progress',
     waitingReason: null,
     duplicateOf: null,
+    visibility: 'only_me',
+    sharingRequest: 'none',
     publicStatusDescription: 'testing',
     ...overrides,
   };

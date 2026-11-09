@@ -446,22 +446,39 @@ describe('permission layer', () => {
   });
 
   describe('the actions of the ticket response (§7.5, §18.3)', () => {
+    const TEAM_TICKET_ACTIONS = ticketActionSchema.options.filter(
+      (action) =>
+        action !== 'confirm_resolution' &&
+        !action.startsWith('set_visibility_') &&
+        !action.endsWith('_sharing'),
+    );
     it.each([
       // Answering the resolution confirmation belongs to the requester only (S1-04 Q3).
-      ['admin', 'teamTicket', ticketActionSchema.options.filter((a) => a !== 'confirm_resolution')],
-      [
-        'project_manager',
-        'teamTicket',
-        ticketActionSchema.options.filter((a) => a !== 'confirm_resolution'),
-      ],
+      // A team ticket has no visibility actions: it is visible to the team only (S1-11 Q6).
+      ['admin', 'teamTicket', TEAM_TICKET_ACTIONS],
+      ['project_manager', 'teamTicket', TEAM_TICKET_ACTIONS],
       [
         'developer',
         'teamTicket',
         ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
       ],
       ['admin', 'archivedTicket', ['read']],
-      ['end_user_personal', 'personalTicket', ['read', 'update', 'add_attachment']],
-      ['end_user_organization', 'organizationTicket', ['read', 'update', 'add_attachment']],
+      [
+        'end_user_personal',
+        'personalTicket',
+        ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+      ],
+      [
+        'end_user_organization',
+        'organizationTicket',
+        [
+          'read',
+          'update',
+          'add_attachment',
+          'set_visibility_my_organization',
+          'set_visibility_all_customers',
+        ],
+      ],
       ['end_user_personal', 'archivedTicket', ['read']],
       // A requester keeps reading a ticket after losing access to its project (§7.3).
       ['end_user_archived_organization', 'ticketB', ['read']],

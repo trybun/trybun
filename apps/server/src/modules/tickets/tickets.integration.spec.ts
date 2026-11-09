@@ -246,11 +246,20 @@ describe('tickets endpoints', () => {
         version: 1,
         createdAt: expect.any(String) as string,
         updatedAt: expect.any(String) as string,
-        allowedActions: ['read', 'update', 'add_attachment'],
+        // The person's active organization has access to the project (S1-11 Q19).
+        allowedActions: [
+          'read',
+          'update',
+          'add_attachment',
+          'set_visibility_my_organization',
+          'set_visibility_all_customers',
+        ],
         publicStatus: 'received',
         publicStatusDescription: 'received',
         waitingReason: null,
         duplicateOf: null,
+        visibility: 'only_me',
+        sharingRequest: 'none',
       });
       expect(
         await prisma.ticket.findUniqueOrThrow({

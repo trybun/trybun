@@ -10,6 +10,8 @@ import {
   type ChangeTicketStatusDto,
   type ConfirmResolutionDto,
   type CreateTicketDto,
+  type RejectTicketSharingDto,
+  type SetTicketVisibilityDto,
   type EndUserTicket,
   type ListTicketsQuery,
   type Ticket,
@@ -43,6 +45,7 @@ import {
   ActivityEventsService,
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
+import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { originalIdsOf, toEndUserEvent } from '../activity-events/domain/end-user-events.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
@@ -59,6 +62,13 @@ import {
   statusFieldsOf,
   waitsForConfirmation,
 } from './domain/status-transitions.js';
+import {
+  approveSharing,
+  changeVisibility,
+  rejectSharing,
+  type VisibilityChange,
+  type VisibilityFields,
+} from './domain/visibility.js';
 import { CREATE_TICKET, TICKET, ticketRuleSelect } from './tickets.abilities.js';
 import { TICKET_STATUS_CHANGED, type TicketStatusChangedPayload } from './tickets.events.js';
 import {
@@ -97,6 +107,7 @@ function ticketSelect(principal: UserPrincipal) {
     waitingSince: true,
     closedAt: true,
     rejectionReason: true,
+    sharingRefusalReason: true,
     version: true,
     createdAt: true,
     updatedAt: true,
@@ -198,6 +209,8 @@ function toTicketResponse(
     publicStatus: publicStatusOf(row.status),
     waitingReason: row.waitingReason,
     duplicateOf: duplicateOfResponse(row, ability),
+    visibility: row.visibility,
+    sharingRequest: row.sharingRequest,
   };
   if (principal.userKind === 'end_user') {
     return {
@@ -216,6 +229,7 @@ function toTicketResponse(
     assignee: row.assignee,
     closedAt: row.closedAt?.toISOString() ?? null,
     rejectionReason: row.rejectionReason,
+    sharingRefusalReason: row.sharingRefusalReason,
   } satisfies Ticket;
 }
 
@@ -227,6 +241,15 @@ function trackedFields(row: TicketRow): TrackedTicketFields {
     type: row.type,
     priority: row.priority,
     assignee: row.assignee,
+  };
+}
+
+/** The visibility fields of a ticket (S1-11). */
+function visibilityFieldsOf(row: TicketRow): VisibilityFields {
+  return {
+    visibility: row.visibility,
+    sharingRequest: row.sharingRequest,
+    sharingRefusalReason: row.sharingRefusalReason,
   };
 }
 
@@ -257,6 +280,7 @@ export class TicketsService {
     private readonly users: UsersService,
     private readonly organizations: OrganizationsService,
     private readonly activityEvents: ActivityEventsService,
+    private readonly auditLog: AuditLogEntriesService,
     private readonly attachmentLinks: AttachmentLinksService,
     private readonly outbox: OutboxService,
     private readonly clock: Clock,
@@ -546,6 +570,144 @@ export class TicketsService {
         principal,
       );
     });
+  }
+
+  /**
+   * Changes the visibility of a ticket (§5.3, S1-11): for the requester, `all_customers` requests
+   * sharing and `only_me` or `my_organization` withdraws a pending request; `visibility.ts`
+   * decides the fields and the one event. The ticket row is locked, and the action is checked on
+   * the locked row, so a withdrawal and a team decision never both apply. A request for the
+   * current value changes nothing and needs the rights of editing the ticket (Q12).
+   */
+  async setVisibility(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    input: SetTicketVisibilityDto,
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockAndFindTicket(tx, ability, principal, target.id);
+      const byRequester =
+        principal.userKind === 'end_user' && before.requesterId === principal.userId;
+      const change = changeVisibility(visibilityFieldsOf(before), {
+        target: input.visibility,
+        byRequester,
+        // Whether the requester may choose `my_organization` on this ticket now (Q4, Q19).
+        mayChooseOrganization:
+          byRequester &&
+          ability.can(
+            'set_visibility_my_organization',
+            subject(TICKET, { ...before, visibility: 'only_me', sharingRequest: 'none' }),
+          ),
+      });
+      if (change.fields === null) {
+        this.assertCan(ability, 'update', before);
+        assertVersionMatched({ count: before.version === target.version ? 1 : 0 });
+        return toTicketResponse(before, ability, principal);
+      }
+      this.assertCan(ability, `set_visibility_${input.visibility}`, before);
+      if (!byRequester && input.visibility === 'my_organization') {
+        await this.assertRequesterInOrganization(tx, before);
+      }
+      return this.applyVisibilityChange(tx, ability, principal, target, before, change);
+    });
+  }
+
+  /**
+   * Decides a pending sharing request (§5.2): one approval by any team member shares the ticket
+   * with all customers, a refusal keeps the visibility and stores the reason (Q8). The first
+   * decision wins: the second meets `409 ticket.sharing_not_pending` – from the target record
+   * guard once the first is committed, from the check on the locked row otherwise.
+   */
+  async decideSharing(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    decision: { approve: true } | ({ approve: false } & RejectTicketSharingDto),
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockAndFindTicket(tx, ability, principal, target.id);
+      this.assertCan(ability, decision.approve ? 'approve_sharing' : 'reject_sharing', before);
+      const fields = visibilityFieldsOf(before);
+      const change = decision.approve
+        ? approveSharing(fields)
+        : rejectSharing(fields, decision.reason);
+      return this.applyVisibilityChange(tx, ability, principal, target, before, change);
+    });
+  }
+
+  /**
+   * A ticket the principal can see, read again after locking its row (§18.3): the share lock of its
+   * project first, then the row lock, so the rules decide on the state no concurrent change can
+   * alter before the commit.
+   */
+  private async lockAndFindTicket(
+    tx: Transaction,
+    ability: AppAbility,
+    principal: UserPrincipal,
+    ticketId: string,
+  ): Promise<TicketRow> {
+    await this.lockProjectAndFind(tx, ability, principal, ticketId);
+    await lockTicketsForUpdate(tx, [ticketId]);
+    return this.findVisible(tx, ability, principal, ticketId);
+  }
+
+  /**
+   * `my_organization` set by the team (Q4, Q19): only while the requester still belongs to the
+   * ticket's organization, which is active and has access to the project – otherwise the ticket
+   * would be shown to people the author left and hidden from the author.
+   */
+  private async assertRequesterInOrganization(tx: Transaction, before: TicketRow): Promise<void> {
+    const memberships = await tx.organizationMember.count({
+      where: {
+        userId: before.requesterId,
+        organizationId: before.organizationId ?? undefined,
+        organization: { state: 'active', projects: { some: { projectId: before.projectId } } },
+      },
+    });
+    if (before.organizationId === null || memberships === 0) {
+      throw new AppError('ticket.organization_changed');
+    }
+  }
+
+  /**
+   * Writes a change of the visibility fields with its version check, its activity event and – for
+   * the team's changes and decisions – its audit log entry, in one transaction (§13.5).
+   */
+  private async applyVisibilityChange(
+    tx: Transaction,
+    ability: AppAbility,
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    before: TicketRow,
+    change: VisibilityChange,
+  ): Promise<TicketResponse> {
+    if (change.fields !== null) {
+      assertVersionMatched(await tx.ticket.updateMany(versionedUpdate(target, change.fields)));
+    }
+    if (change.event !== null) {
+      await this.activityEvents.record(tx, { userId: principal.userId }, target.id, [change.event]);
+    }
+    const ticketTarget = { type: TICKET, id: target.id };
+    if (change.audit === 'ticket.visibility_changed' && change.fields !== null) {
+      await this.auditLog.record(tx, {
+        action: change.audit,
+        actorId: principal.userId,
+        target: ticketTarget,
+        details: { from: before.visibility, to: change.fields.visibility },
+      });
+    } else if (change.audit !== null && change.audit !== 'ticket.visibility_changed') {
+      await this.auditLog.record(tx, {
+        action: change.audit,
+        actorId: principal.userId,
+        target: ticketTarget,
+      });
+    }
+    return toTicketResponse(
+      await this.findVisible(tx, ability, principal, target.id),
+      ability,
+      principal,
+    );
   }
 
   /**

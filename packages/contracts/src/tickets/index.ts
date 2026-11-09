@@ -321,6 +321,9 @@ const commonTicketFields = {
   waitingReason: ticketWaitingReasonSchema.nullable(),
   /** The original of a duplicate; for an end user only when they may read it (§3.5). */
   duplicateOf: ticketReferenceSchema.nullable(),
+  /** The effective visibility and the sharing request (§5.1, §5.2). */
+  visibility: ticketVisibilitySchema,
+  sharingRequest: ticketSharingRequestSchema,
 };
 
 /** A ticket as the team sees it (§3.2). */
@@ -336,6 +339,8 @@ export const ticketSchema = z.object({
   closedAt: z.iso.datetime().nullable(),
   /** The reason of a rejection, for the team only until S1-12 publishes it as a comment. */
   rejectionReason: z.string().nullable(),
+  /** The reason of a sharing refusal, for the team only until S1-12 (S1-11 Q8). */
+  sharingRefusalReason: z.string().nullable(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 
