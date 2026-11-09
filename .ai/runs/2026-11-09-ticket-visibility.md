@@ -29,7 +29,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 
 ### Phase 1: Data model
 
-- [ ] 1.1 Add the visibility migration, Prisma fields and contract enums
+- [x] 1.1 Add the visibility migration, Prisma fields and contract enums — 7f8a99f
 
 ### Phase 2: Read rules
 
