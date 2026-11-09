@@ -897,7 +897,13 @@
       "attachFiles": "Attach files",
       "moreFormatting": "More formatting",
       "nothingToPreview": "Nothing to preview",
-      "uploading": "Uploading {name}…"
+      "uploading": "Uploading {name}…",
+      "mentionList": "People to mention",
+      "mentionSearching": "Searching people…",
+      "mentionNone": "No people found",
+      "mentionCount": "{count, plural, one {# person found} other {# people found}}",
+      "mentionTeam": "Team",
+      "mentionEndUser": "End user"
     },
     "attachmentList": {
       "uploading": "Uploading…",

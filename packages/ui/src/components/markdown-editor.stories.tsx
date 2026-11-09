@@ -3,7 +3,7 @@ import { expect, fn, screen, waitFor, within } from 'storybook/test';
 import { viewport } from '../../.storybook/viewports.js';
 import { Field, FieldDescription, FieldError, FieldLabel } from './field.js';
 import { Input } from './input.js';
-import { type AddedFile, MarkdownEditor } from './markdown-editor.js';
+import { type AddedFile, MarkdownEditor, type MentionCandidate } from './markdown-editor.js';
 
 const IMAGE_ID = '0b9c3f6e-2d1a-4e8b-9c7d-5a6f1e2d3c4b';
 
@@ -370,3 +370,279 @@ export const Tablet: Story = {
 };
 
 export const Desktop: Story = { globals: viewport('desktop'), args: { onFilesAdd: upload } };
+
+const ANNA_ID = '3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b';
+const ADAM_ID = '5c4b3a29-1807-4f6e-9d5c-4b3a29180716';
+const EWA_ID = '8e7d6c5b-4a39-4281-9706-f5e4d3c2b1a0';
+
+const PEOPLE: MentionCandidate[] = [
+  { id: ANNA_ID, displayName: 'Anna Nowak', userKind: 'team' },
+  { id: ADAM_ID, displayName: 'Adam Kowalski', userKind: 'team' },
+  { id: EWA_ID, displayName: 'Ewa Wiśniewska', userKind: 'end_user' },
+];
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** The people whose name contains the query, after a short delay like the API's. */
+async function searchPeople(query: string): Promise<MentionCandidate[]> {
+  await delay(50);
+  return PEOPLE.filter(({ displayName }) =>
+    displayName.toLowerCase().includes(query.toLowerCase()),
+  );
+}
+
+/** Types like the browser: `insertText` at the caret, with an `input` event (see the memory). */
+async function typeInto(textarea: HTMLTextAreaElement, text: string) {
+  textarea.focus();
+  document.execCommand('insertText', false, text);
+  await delay(0);
+}
+
+function findSuggestions() {
+  return screen.findByRole('listbox', { name: 'People to mention' });
+}
+
+function optionNames() {
+  return screen
+    .getAllByRole('option')
+    .map((option) => option.querySelector('span')?.textContent ?? '');
+}
+
+/** Typing `@` opens the suggestions; the textarea keeps the focus and points to the active one. */
+export const MentionSuggestions: Story = {
+  args: { onMentionSearch: searchPeople },
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await expect(textarea).toHaveAttribute('aria-autocomplete', 'list');
+    await typeInto(textarea, 'Hi @');
+    const list = await findSuggestions();
+    await waitFor(() => expect(optionNames()).toEqual(PEOPLE.map((p) => p.displayName)));
+    await expect(textarea).toHaveFocus();
+    await expect(textarea).toHaveAttribute('aria-controls', list.id);
+    const [first] = screen.getAllByRole('option');
+    await expect(first).toHaveAttribute('aria-selected', 'true');
+    await expect(textarea).toHaveAttribute('aria-activedescendant', first!.id);
+    await expect(within(first!).getByText('Team')).toBeInTheDocument();
+    await expect(canvas.getByRole('status')).toHaveTextContent('3 people found');
+  },
+};
+
+/** The text after `@` filters the people; a space after it closes the list. */
+export const MentionFilter: Story = {
+  args: { onMentionSearch: searchPeople },
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await typeInto(textarea, '@an');
+    await findSuggestions();
+    await waitFor(() => expect(optionNames()).toEqual(['Anna Nowak']));
+    await typeInto(textarea, ' ');
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    await expect(textarea).not.toHaveAttribute('aria-controls');
+    // An e-mail address is no mention.
+    await typeInto(textarea, 'mail@example');
+    await delay(300);
+    await expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  },
+};
+
+/** Arrow keys move through the list, Enter writes the token and Ctrl+Z undoes it (§6.2). */
+export const MentionKeyboard: Story = {
+  args: { onMentionSearch: searchPeople },
+  play: async ({ canvas, userEvent }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await typeInto(textarea, 'Hi @a');
+    await findSuggestions();
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(3));
+    await userEvent.keyboard('{ArrowDown}');
+    const options = screen.getAllByRole('option');
+    await expect(options[1]).toHaveAttribute('aria-selected', 'true');
+    await expect(textarea).toHaveAttribute('aria-activedescendant', options[1]!.id);
+    // The list wraps around.
+    await userEvent.keyboard('{ArrowUp}{ArrowUp}');
+    await expect(options[2]).toHaveAttribute('aria-selected', 'true');
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    await expect(textarea).toHaveValue(`Hi @{${ADAM_ID}} `);
+    await expect(textarea.selectionStart).toBe(textarea.value.length);
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    document.execCommand('undo');
+    await expect(textarea).toHaveValue('Hi @a');
+  },
+};
+
+/** A tap or click on a person writes the token; the textarea keeps the focus (Rule 9). */
+export const MentionPointer: Story = {
+  args: { onMentionSearch: searchPeople, defaultValue: 'Thanks' },
+  play: async ({ canvas, userEvent }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    textarea.focus();
+    textarea.setSelectionRange(6, 6);
+    await typeInto(textarea, ' @');
+    await findSuggestions();
+    await userEvent.click(await screen.findByRole('option', { name: /Ewa Wiśniewska/ }));
+    await expect(textarea).toHaveValue(`Thanks @{${EWA_ID}} `);
+    await expect(textarea).toHaveFocus();
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+  },
+};
+
+/** Escape closes the list and keeps it closed for this `@`; a dialog around it stays open. */
+export const MentionEscape: Story = {
+  args: { onMentionSearch: searchPeople },
+  play: async ({ canvas, userEvent }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    const onDocumentKeyDown = fn();
+    document.addEventListener('keydown', onDocumentKeyDown);
+    try {
+      await typeInto(textarea, '@');
+      await findSuggestions();
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+      await expect(onDocumentKeyDown).not.toHaveBeenCalled();
+      await typeInto(textarea, 'an');
+      await delay(300);
+      await expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      // A new `@` opens it again.
+      await typeInto(textarea, ' @');
+      await findSuggestions();
+    } finally {
+      document.removeEventListener('keydown', onDocumentKeyDown);
+    }
+  },
+};
+
+/** Nobody matches: the list says so, and Enter writes a line break as usual. */
+export const MentionEmpty: Story = {
+  args: { onMentionSearch: searchPeople },
+  play: async ({ canvas, userEvent }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await typeInto(textarea, '@zz');
+    await expect(
+      await screen.findByText('No people found', { selector: '[data-slot=mention-suggestions] p' }),
+    ).toBeVisible();
+    await expect(canvas.getByRole('status')).toHaveTextContent('No people found');
+    await expect(textarea).not.toHaveAttribute('aria-activedescendant');
+    await userEvent.keyboard('{Enter}');
+    await expect(textarea).toHaveValue('@zz\n');
+  },
+};
+
+/** While the search runs, the list shows that it is searching. */
+export const MentionLoading: Story = {
+  args: { onMentionSearch: () => new Promise<MentionCandidate[]>(() => undefined) },
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await typeInto(textarea, '@');
+    await expect(await screen.findByText('Searching people…', { selector: 'p' })).toBeVisible();
+  },
+};
+
+/** A response that arrives after a newer one is ignored. */
+export const MentionStaleResponse: Story = {
+  args: {
+    onMentionSearch: fn(async (query: string) => {
+      // The search for everyone answers last.
+      await delay(query === '' ? 600 : 50);
+      return searchPeople(query);
+    }),
+  },
+  play: async ({ args, canvas }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await typeInto(textarea, '@');
+    await waitFor(() => expect(args.onMentionSearch).toHaveBeenCalledWith(''));
+    await typeInto(textarea, 'ad');
+    await findSuggestions();
+    await waitFor(() => expect(optionNames()).toEqual(['Adam Kowalski']));
+    await delay(700);
+    await expect(optionNames()).toEqual(['Adam Kowalski']);
+  },
+};
+
+/** Without `onMentionSearch`, `@` is a character like any other. */
+export const WithoutMentionSearch: Story = {
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await expect(textarea).not.toHaveAttribute('aria-autocomplete');
+    await typeInto(textarea, '@');
+    await delay(300);
+    await expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  },
+};
+
+/** The preview shows the tokens of known people as their names; others stay as written. */
+export const PreviewWithMentions: Story = {
+  args: {
+    mentions: [
+      { id: ANNA_ID, displayName: 'Anna Nowak' },
+      { id: 'customer', displayName: 'Customer' },
+    ],
+    defaultValue: `Thanks @{${ANNA_ID}}, please ask @{customer}. \`@{${ANNA_ID}}\` @{${EWA_ID}}`,
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('tab', { name: 'Preview' }));
+    const panel = await canvas.findByRole('tabpanel');
+    const mentions = [...panel.querySelectorAll('.mention')].map((node) => node.textContent);
+    await expect(mentions).toEqual(['@Anna Nowak', '@Customer']);
+    await expect(panel).toHaveTextContent(`@{${ANNA_ID}}`);
+    await expect(panel).toHaveTextContent(`@{${EWA_ID}}`);
+  },
+};
+
+export const MentionPolish: Story = {
+  args: { onMentionSearch: searchPeople },
+  globals: { locale: 'pl' },
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    await typeInto(textarea, '@a');
+    await screen.findByRole('listbox', { name: 'Osoby do oznaczenia' });
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Znaleziono 3 osoby'));
+    await expect(screen.getAllByText('Zespół')).toHaveLength(2);
+    await expect(screen.getByText('Użytkownik')).toBeInTheDocument();
+  },
+};
+
+/** Every row is a 44 px target (Rule 9); on phones the list opens above the line of the `@`. */
+async function checkMentionTargets(textarea: HTMLTextAreaElement, side: 'top' | 'bottom') {
+  await typeInto(textarea, 'Hi @');
+  await findSuggestions();
+  await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(3));
+  for (const option of screen.getAllByRole('option')) {
+    await expect(option.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+  }
+  const popup = document.querySelector<HTMLElement>('[data-slot=mention-suggestions]')!;
+  await waitFor(() => expect(popup).toHaveAttribute('data-side', side));
+  const popupBox = popup.getBoundingClientRect();
+  const textareaBox = textarea.getBoundingClientRect();
+  await expect(popupBox.right).toBeLessThanOrEqual(window.innerWidth);
+  if (side === 'bottom') {
+    await expect(popupBox.top).toBeGreaterThan(textareaBox.top);
+  }
+}
+
+export const MentionPhone: Story = {
+  globals: viewport('phone'),
+  args: { onMentionSearch: searchPeople, defaultValue: 'First line\nSecond line\n' },
+  play: async ({ canvas }) => {
+    const textarea = canvas.getByRole<HTMLTextAreaElement>('textbox', { name: 'Description' });
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    await checkMentionTargets(textarea, 'top');
+  },
+};
+
+export const MentionTablet: Story = {
+  globals: viewport('tablet'),
+  args: { onMentionSearch: searchPeople },
+  play: async ({ canvas }) => {
+    await checkMentionTargets(canvas.getByRole('textbox', { name: 'Description' }), 'bottom');
+  },
+};
+
+export const MentionDesktop: Story = {
+  globals: viewport('desktop'),
+  args: { onMentionSearch: searchPeople },
+  play: async ({ canvas }) => {
+    await checkMentionTargets(canvas.getByRole('textbox', { name: 'Description' }), 'bottom');
+  },
+};
