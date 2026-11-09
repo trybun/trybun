@@ -40,7 +40,12 @@ describe('AdministratorForm', () => {
     ['pl', ['Imię', 'Nazwisko', 'Adres e-mail', 'Hasło', 'Utwórz konto Administratora']],
   ] as const)('labels its fields (%s)', (locale, texts) => {
     const html = render(
-      <AdministratorForm token="token" setup={setup} onTokenRejected={vi.fn()} />,
+      <AdministratorForm
+        token="token"
+        setup={setup}
+        onCreated={vi.fn()}
+        onTokenRejected={vi.fn()}
+      />,
       locale,
     );
 
@@ -51,7 +56,12 @@ describe('AdministratorForm', () => {
 
   it('prefills the language and time zone with the system defaults it shows', () => {
     const html = render(
-      <AdministratorForm token="token" setup={setup} onTokenRejected={vi.fn()} />,
+      <AdministratorForm
+        token="token"
+        setup={setup}
+        onCreated={vi.fn()}
+        onTokenRejected={vi.fn()}
+      />,
     );
 
     expect(html).toContain(

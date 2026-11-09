@@ -19,6 +19,45 @@ export const errorCodeSchema = z.enum([
   'setup.completed',
   'setup.password_rejected',
   'setup.email_taken',
+  'project.archived',
+  'project.key_taken',
+  'project.key_immutable',
+  'project.has_tickets',
+  'project_member.exists',
+  'project_member.user_not_eligible',
+  'organization.name_taken',
+  'organization.domain_public',
+  'organization.domain_taken',
+  'organization.archived',
+  'organization.not_empty',
+  'organization.member_not_found',
+  'organization.member_not_end_user',
+  'organization.member_of_other_organization',
+  'ticket.project_immutable',
+  'ticket.assignee_not_eligible',
+  'ticket.duplicate_of_self',
+  'ticket.duplicate_other_project',
+  'ticket.resolution_confirmation_not_pending',
+  'ticket.sharing_not_pending',
+  'ticket.sharing_pending',
+  'ticket.author_consent_required',
+  'ticket.organization_changed',
+  'attachment.type_not_allowed',
+  'attachment.already_linked',
+  'attachment.draft_limit_reached',
+  'attachment.not_available',
+  'attachment.removed',
+  'invitation.account_kind_mismatch',
+  'invitation.account_deactivated',
+  'invitation.access_exists',
+  'invitation.organization_conflict',
+  'invitation.github_sign_in_missing',
+  'invitation.not_pending',
+  'invitation.account_mismatch',
+  'invitation.token_invalid',
+  'invitation.password_rejected',
+  'invitation.email_taken',
+  'user.last_administrator',
   'server.internal_error',
   'server.unavailable',
 ]);
@@ -52,6 +91,84 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'setup.password_rejected': 422,
   // An e-mail address that already has a Keycloak account.
   'setup.email_taken': 422,
+  // A change of an archived project, which is read-only until it is unarchived (§7.3).
+  'project.archived': 409,
+  // A key that another active or archived project has (§3.1).
+  'project.key_taken': 422,
+  // A change of the key of a project that has had a ticket: the key is part of its identifiers (§3.1).
+  'project.key_immutable': 409,
+  // Deleting a project that has had a ticket; it is archived instead (§7.3).
+  'project.has_tickets': 409,
+  // The account is already a member of the project (§7.4).
+  'project_member.exists': 409,
+  // A member must be an active team account (§7.4).
+  'project_member.user_not_eligible': 422,
+  // The name is used by another active or archived organization (§7.3).
+  'organization.name_taken': 409,
+  // A domain on the blocklist of public mail domains, e.g. `gmail.com` (§7.3).
+  'organization.domain_public': 422,
+  // A domain of another active or archived organization (§7.3).
+  'organization.domain_taken': 409,
+  // A change of an archived organization, which is read-only until it is unarchived (§7.3).
+  'organization.archived': 409,
+  // Deleting an organization that has tickets (§7.3).
+  'organization.not_empty': 409,
+  // No account with the e-mail address (§7.3).
+  'organization.member_not_found': 422,
+  // Only end users belong to organizations (§7.3).
+  'organization.member_not_end_user': 422,
+  // The account belongs to another organization and the move was not confirmed (§7.3).
+  'organization.member_of_other_organization': 409,
+  // A ticket never moves to another project (§3.2).
+  'ticket.project_immutable': 422,
+  // The assignee must be an active team member of the ticket's project (§3.2).
+  'ticket.assignee_not_eligible': 422,
+  'ticket.duplicate_of_self': 422,
+  'ticket.duplicate_other_project': 422,
+  'ticket.resolution_confirmation_not_pending': 409,
+  // Approving or refusing a sharing request that is no longer pending, e.g. decided by a colleague
+  // first (§5.2).
+  'ticket.sharing_not_pending': 409,
+  // The team changes the visibility of a ticket whose sharing request it has not decided (§5.2).
+  'ticket.sharing_pending': 409,
+  // The team shares an `only_me` ticket, which needs its author's request (§5.2).
+  'ticket.author_consent_required': 409,
+  // `my_organization` for a requester who no longer belongs to the ticket's active organization
+  // with access to the project (S1-11 Q4, Q19).
+  'ticket.organization_changed': 409,
+  // A file whose content does not match its extension, an extension outside the allowlist, or an
+  // encrypted ZIP archive or PDF file (§13.3).
+  'attachment.type_not_allowed': 422,
+  // Linking an own attachment that is already linked to a ticket (§13.3).
+  'attachment.already_linked': 422,
+  // More than 50 drafts or 250 MB of drafts of one user at a time (§13.3).
+  'attachment.draft_limit_reached': 422,
+  // The content of an attachment that is still in quarantine (§13.3).
+  'attachment.not_available': 409,
+  // The content of an attachment removed as infected or not completely scannable (§13.3).
+  'attachment.removed': 410,
+  // The address has an account of the other kind; a kind change is an Administrator action (§7.4).
+  'invitation.account_kind_mismatch': 422,
+  // The address has a deactivated account, which the Administrator reactivates first (§7.4).
+  'invitation.account_deactivated': 422,
+  // The account already has the access the invitation would grant (§7.4).
+  'invitation.access_exists': 409,
+  // An end user of another organization invited to an organization; moving is an Administrator action (§7.3).
+  'invitation.organization_conflict': 422,
+  // A team invitation while GitHub sign-in is not configured (§15.6).
+  'invitation.github_sign_in_missing': 422,
+  // Resending or revoking an invitation that was used or revoked (§7.4).
+  'invitation.not_pending': 409,
+  // A further link of an active account accepted by the session of another account (§7.4).
+  'invitation.account_mismatch': 403,
+  // An unknown, expired, used, revoked or replaced invitation token, all with the same response (ADR 0009).
+  'invitation.token_invalid': 404,
+  // A password the password policy of Keycloak refuses on the acceptance page (§7.4).
+  'invitation.password_rejected': 422,
+  // The invited address belongs to another Keycloak user, which the Administrator resolves (ADR 0009).
+  'invitation.email_taken': 409,
+  // Deactivating or demoting the last active Administrator (§7.4).
+  'user.last_administrator': 409,
   // An unexpected error; the response carries no details (§18.3).
   'server.internal_error': 500,
   // PostgreSQL is unavailable (§17.2).

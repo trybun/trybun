@@ -12,9 +12,15 @@ import { HttpModule } from './platform/http/http.module.js';
 import { LoggingModule } from './platform/logging/logging.module.js';
 import { KeycloakAdminModule } from './platform/keycloak-admin/keycloak-admin.module.js';
 import { RateLimitingModule } from './platform/rate-limiting/rate-limiting.module.js';
-import { administrationAbilities } from './modules/administration/administration.abilities.js';
+import { StorageModule } from './platform/storage/storage.module.js';
+import { ABILITY_DEFINITIONS } from './ability-definitions.js';
 import { AdministrationModule } from './modules/administration/administration.module.js';
+import { AttachmentsModule } from './modules/attachments/attachments.module.js';
+import { OrganizationsModule } from './modules/organizations/organizations.module.js';
+import { InvitationsModule } from './modules/invitations/invitations.module.js';
+import { ProjectsModule } from './modules/projects/projects.module.js';
 import { SetupModule } from './modules/setup/setup.module.js';
+import { TicketsModule } from './modules/tickets/tickets.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 /** Root module of the API process (§14.6). */
@@ -34,12 +40,18 @@ export class ApiModule {
         AuthenticationModule,
         // After the authentication guard: the rate limit is keyed by the principal (§14.4).
         RateLimitingModule,
-        AuthorizationModule.forRoot([administrationAbilities]),
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         KeycloakAdminModule,
+        StorageModule,
         HealthModule,
         UsersModule,
         SetupModule,
         AdministrationModule,
+        ProjectsModule,
+        OrganizationsModule,
+        InvitationsModule,
+        TicketsModule,
+        AttachmentsModule,
       ],
     };
   }

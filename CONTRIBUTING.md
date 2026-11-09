@@ -12,11 +12,11 @@ Prerequisites, the one-command start (`pnpm install`, `pnpm dev`) and the other 
 
 ## Proposing changes
 
-1. Fork the repository and create a branch from `main`: `KEY-123-short-description` for issues, `S0-01-short-description` for plan tasks.
+1. Fork the repository and create a branch from `main`: `<type>/<short-description>` (e.g. `fix/issue-123-short-description`, `feat/short-description`), `S0-01-short-description` for plan tasks.
 2. **Larger contributions** (new functionality, changes of behaviour or requirements) start with a **change specification** in `.ai/specs/`, proposed as its own pull request so the idea can be discussed before any code is written ([§2.8](docs/spec/02-agent-rules.md), [§16.3](docs/spec/16-open-source.md)). Bug fixes, dependency updates and documentation-only changes do not need one.
 3. Keep one pull request to one focused task, update the specification, documentation and README in the same pull request, and rebase on `main` before opening it.
 4. A gap or contradiction in the specification is not decided in code: propose the change in the pull request and list it under "Specification changes" of the template.
-5. Every pull request must pass all CI quality gates and be approved by a **code owner** ([`.github/CODEOWNERS`](.github/CODEOWNERS)). It is merged with a squash.
+5. Every pull request must pass all CI quality gates. It is reviewed by a **code owner** ([`.github/CODEOWNERS`](.github/CODEOWNERS)) and merged with a squash by a maintainer or collaborator; contributors do not merge their own pull requests.
 
 ## Commits and branches
 
@@ -37,13 +37,13 @@ Signed-off-by: Your Name <your.email@example.com>
 ```
 
 - **Contributors** sign off with their own identity. CI checks every commit of the pull request (job `DCO sign-off`); the sign-off must match the commit's author name and e-mail address. To add a missing sign-off, run `git rebase --signoff origin/main` and push with `--force-with-lease`. No Contributor License Agreement is required.
-- **The project's own agents** (run by the maintainer through Cezar) commit with the maintainer's identity and add the maintainer's sign-off; the maintainer's approval of the pull request confirms it ([ADR 0005](docs/adr/0005-github-app-as-agent-identity.md), [§16.3](docs/spec/16-open-source.md)). Agents of external contributors act from the contributor's own account and fork and sign off with the contributor's identity.
+- **The project's own agents** (run by the maintainer through Cezar) act with the maintainer's account: they commit with the maintainer's identity and add the maintainer's sign-off, and the maintainer is responsible for them ([ADR 0011](docs/adr/0011-maintainer-account-and-workflow-approval.md), [§16.3](docs/spec/16-open-source.md)). Agents of external contributors act from the contributor's own account and fork and sign off with the contributor's identity.
 
 ## AI-assisted contributions
 
 You may use AI agents ([§16.4](docs/spec/16-open-source.md)). The project is built that way itself.
 
-- The author of a pull request is responsible for every line of it and must understand it. If the author is the project's GitHub App, its human operator is responsible.
+- The author of a pull request is responsible for every line of it and must understand it. Pull requests of the project's own agents are the maintainer's responsibility.
 - AI agents must follow [`AGENTS.md`](AGENTS.md), the [rules](docs/spec/02-agent-rules.md) and the Definition of Done, like any other contributor.
 - Pull requests that ignore the specification or the Definition of Done are closed without detailed review.
 

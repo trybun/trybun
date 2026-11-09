@@ -31,4 +31,8 @@ describe('HelpMenu', () => {
       );
     },
   );
+
+  it('draws its icon in the size of the header icons, balanced with the avatar (#178)', () => {
+    expect(renderMenu()).toMatch(/<svg[^>]*class="[^"]*\bsize-6\b[^"]*"/);
+  });
 });

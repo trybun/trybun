@@ -5,6 +5,7 @@ import { errorCodeSchema } from '../errors/index.js';
 export const fieldErrorCodeSchema = z.enum([
   'string.too_long',
   'string.too_short',
+  'string.empty',
   'string.invalid_format',
   'array.too_long',
   'array.too_short',
@@ -20,7 +21,7 @@ export const fieldErrorCodeSchema = z.enum([
 export type FieldErrorCode = z.infer<typeof fieldErrorCodeSchema>;
 
 /** A schema issue: Zod issues carry `code` and, for sizes, `origin` besides the Standard Schema message. */
-type IssueDetails = { message?: string; code?: string; origin?: string };
+type IssueDetails = { message?: string; code?: string; origin?: string; minimum?: unknown };
 
 type SizeCodes = { tooBig: FieldErrorCode; tooSmall: FieldErrorCode };
 
@@ -44,13 +45,16 @@ const SIZE_CODES: Record<string, SizeCodes> = {
  * the API and for the forms of the web application (§18.5).
  */
 export function toFieldErrorCode(issue: IssueDetails): FieldErrorCode {
-  const { code, origin } = issue;
+  const { code, origin, minimum } = issue;
   const size = origin === undefined ? undefined : SIZE_CODES[origin];
   switch (code) {
     case 'too_big':
       return size?.tooBig ?? 'field.invalid';
     case 'too_small':
-      return size?.tooSmall ?? 'field.invalid';
+      // A required text (`min(1)`, after `trim()`) that is empty: the form asks for it by name.
+      return origin === 'string' && minimum === 1
+        ? 'string.empty'
+        : (size?.tooSmall ?? 'field.invalid');
     case 'invalid_type':
       return 'field.invalid_type';
     case 'invalid_format':

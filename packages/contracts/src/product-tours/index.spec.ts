@@ -7,7 +7,7 @@ import {
 
 describe('product tour enums', () => {
   it.each([
-    [productTourIdSchema, ['first_login']],
+    [productTourIdSchema, ['first_login', 'organization_detail']],
     [productTourStatusSchema, ['completed', 'skipped']],
   ])('lists the glossary codes', (schema, codes) => {
     expect(schema.options).toEqual(codes);

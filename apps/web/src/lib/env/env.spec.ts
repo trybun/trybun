@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { TEST_ENV } from '../../../test/env.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { OPTIONAL_ENV_KEYS, TEST_ENV } from '../../../test/env.js';
+import { stubIntegrationEnv } from '../../../test/setup/environment.js';
 
 vi.mock('server-only', () => ({}));
 
@@ -16,7 +17,9 @@ describe('parseEnv', () => {
       shouldUseSecureCookies: true,
       defaultLanguage: 'en',
       defaultTimeZone: 'UTC',
+      attachmentMaxSizeMb: 25,
       isDevelopment: false,
+      endUserIdentityProviders: [],
       keycloak: {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
         internalRealmUrl: 'http://keycloak:8080/auth/realms/trybun',
@@ -24,6 +27,17 @@ describe('parseEnv', () => {
         clientSecret: 'web-client-secret',
       },
     });
+  });
+
+  it('lists the configured sign-in providers of end users', () => {
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_MICROSOFT_CLIENT_ID: 'id', TRYBUN_GOOGLE_CLIENT_ID: 'id' })
+        .endUserIdentityProviders,
+    ).toEqual(['microsoft', 'google']);
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_MICROSOFT_CLIENT_ID: '', TRYBUN_GOOGLE_CLIENT_ID: 'id' })
+        .endUserIdentityProviders,
+    ).toEqual(['google']);
   });
 
   it('recognizes `next dev`', () => {
@@ -52,6 +66,12 @@ describe('parseEnv', () => {
     });
   });
 
+  it('takes the maximum attachment size', () => {
+    expect(
+      parseEnv({ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '100' }).attachmentMaxSizeMb,
+    ).toBe(100);
+  });
+
   it.each([
     [{ ...TEST_ENV, TRYBUN_DOMAIN: undefined }, 'TRYBUN_DOMAIN'],
     [{ ...TEST_ENV, TRYBUN_API_URL: undefined }, 'TRYBUN_API_URL'],
@@ -63,8 +83,31 @@ describe('parseEnv', () => {
     [{ ...TEST_ENV, TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET: '' }, 'TRYBUN_KEYCLOAK_WEB_CLIENT_SECRET'],
     [{ ...TEST_ENV, TRYBUN_DEFAULT_LANGUAGE: 'de' }, 'TRYBUN_DEFAULT_LANGUAGE'],
     [{ ...TEST_ENV, TRYBUN_DEFAULT_TIME_ZONE: 'Europe/Nowhere' }, 'TRYBUN_DEFAULT_TIME_ZONE'],
+    [{ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '0' }, 'TRYBUN_ATTACHMENT_MAX_SIZE_MB'],
+    [{ ...TEST_ENV, TRYBUN_ATTACHMENT_MAX_SIZE_MB: '101' }, 'TRYBUN_ATTACHMENT_MAX_SIZE_MB'],
   ])('rejects %j naming %s', (env, variable) => {
     expect(() => parseEnv(env)).toThrow(InvalidEnvError);
     expect(() => parseEnv(env)).toThrow(new RegExp(`^Invalid configuration[^]*  ${variable}: `));
+  });
+});
+
+describe('stubIntegrationEnv', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('unsets the optional variables of the process, e.g. from a root .env', () => {
+    for (const name of OPTIONAL_ENV_KEYS) {
+      vi.stubEnv(name, name === 'TRYBUN_KEYCLOAK_PUBLIC_URL' ? 'http://localhost:8080/auth' : 'x');
+    }
+
+    stubIntegrationEnv();
+
+    for (const name of OPTIONAL_ENV_KEYS) {
+      expect(process.env[name]).toBeUndefined();
+    }
+    expect(parseEnv({ ...process.env, DATABASE_URL: TEST_ENV.DATABASE_URL }).keycloak.issuer).toBe(
+      'https://trybun.example.com/auth/realms/trybun',
+    );
   });
 });

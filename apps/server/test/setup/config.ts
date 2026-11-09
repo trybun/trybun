@@ -9,5 +9,6 @@ export function integrationConfig(): TrybunConfig {
     ...TEST_ENV,
     DATABASE_URL: inject('databaseUrl'),
     TRYBUN_VALKEY_URL: inject('valkeyUrl'),
+    TRYBUN_S3_URL: `${inject('storageEndpoint')}/trybun`,
   });
 }

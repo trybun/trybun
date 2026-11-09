@@ -1,0 +1,257 @@
+import type { DehydratedState } from '@tanstack/react-query';
+import { CATALOGUES } from '@trybun/i18n/catalogues';
+import type { ReactElement } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('server-only', () => ({}));
+const requireSession = vi.fn();
+vi.mock('../../../lib/auth/session.js', () => ({ requireSession }));
+const developer = {
+  id: '0199a3f0-0000-7000-8000-000000000003',
+  displayName: 'Dorota Developer',
+  email: 'developer@example.com',
+  kind: 'team',
+  allowedActions: [],
+};
+const customer = { ...developer, displayName: 'Celina Customer', kind: 'end_user' };
+let user: typeof developer = developer;
+const project = (id: string) => ({
+  id,
+  name: `Project ${id}`,
+  key: 'P',
+  state: 'active',
+  allowedActions: [],
+});
+let activeProjects = [project('a')];
+const progress = [
+  {
+    tourId: 'first_login',
+    tourVersion: 1,
+    status: 'completed',
+    updatedAt: '2026-11-03T09:15:00.000Z',
+  },
+];
+// The API of the internal network answers the prefetches of the signed-in account, its tours and
+// its active projects.
+const answer = (path: string) =>
+  Promise.resolve({
+    data:
+      path === '/api/v1/users/me'
+        ? user
+        : path === '/api/v1/projects'
+          ? { items: activeProjects, nextCursor: null }
+          : { items: progress, nextCursor: null },
+    response: new Response(),
+  });
+const get = vi.fn(answer);
+vi.mock('../../../lib/api-client/server-api-client.js', () => ({
+  getServerApiClient: () => Promise.resolve({ GET: get }),
+}));
+
+// The cookies of the browser: the desktop choice of the side navigation (§2.9); the path of the
+// opened page, passed on by `proxy.ts`.
+const browserCookies = new Map<string, { value: string }>();
+let requestPath = '/';
+vi.mock('next/headers.js', () => ({
+  cookies: () => Promise.resolve({ get: (name: string) => browserCookies.get(name) }),
+  headers: () =>
+    Promise.resolve({
+      get: (name: string) => (name === 'x-trybun-request-path' ? requestPath : null),
+    }),
+}));
+const redirect = vi.fn((url: string) => {
+  throw new Error(`NEXT_REDIRECT ${url}`);
+});
+vi.mock('next/navigation.js', () => ({ redirect }));
+
+vi.mock('next-intl/server', () => ({ getMessages: () => Promise.resolve(CATALOGUES.en) }));
+
+const { AccountShell } = await import('./account-shell.js');
+const { NewTicketButton } = await import('../../tickets/components/new-ticket-button.js');
+
+function TeamLayout({ children }: { children: ReactElement }) {
+  return AccountShell({ shell: 'team', children });
+}
+
+type Parent<Child> = ReactElement<{ children: Child }>;
+
+/** The texts provider inside the hydration boundary. */
+function messagesProviderOf(element: ReactElement) {
+  return (element as Parent<ReactElement<{ messages: object; children: ReactElement }>>).props
+    .children;
+}
+
+/** The application shell inside the texts provider and the product tour provider. */
+function shellOf(element: ReactElement) {
+  return (
+    messagesProviderOf(element).props.children as Parent<
+      ReactElement<{
+        help: ReactElement;
+        newTicket?: ReactElement;
+        isDesktopNavigationCollapsed: boolean;
+        navigation: object;
+      }>
+    >
+  ).props.children;
+}
+
+describe('AccountShell', () => {
+  beforeEach(() => {
+    user = developer;
+    activeProjects = [project('a')];
+    requestPath = '/';
+    get.mockReset();
+    get.mockImplementation(answer);
+    redirect.mockClear();
+  });
+
+  it('prefetches the signed-in account and its tour progress and passes them to the browser', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    expect(requireSession).toHaveBeenCalledOnce();
+    expect(get).toHaveBeenCalledWith('/api/v1/users/me', expect.anything());
+    expect(get).toHaveBeenCalledWith('/api/v1/users/me/product-tours', expect.anything());
+    const { queries } = (element.props as { state: DehydratedState }).state;
+    expect(queries).toMatchObject([
+      { queryKey: ['users', 'me'], state: { data: developer } },
+      { queryKey: ['product-tours', 'progress'], state: { data: progress } },
+    ]);
+  });
+
+  it('passes the texts of the shell to the browser, without those of a feature', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const { messages } = messagesProviderOf(element).props;
+    expect(Object.keys(messages)).toEqual(expect.arrayContaining(['appShell', 'productTours']));
+    expect(Object.keys(messages)).not.toContain('projects');
+  });
+
+  it('gives the help menu the help pages of the account kind', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const shell = shellOf(element);
+    expect(shell.props.help.props).toMatchObject({
+      views: { '/': 'team/tutorials/getting-started' },
+    });
+  });
+
+  it('renders the side navigation as this browser left it on desktop', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
+      isDesktopNavigationCollapsed: false,
+    });
+    browserCookies.set('TRYBUN_NAVIGATION_COLLAPSED', { value: '1' });
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props).toMatchObject({
+      isDesktopNavigationCollapsed: true,
+    });
+    browserCookies.clear();
+  });
+
+  it('gives only the end-user help pages when the account cannot be read', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockRejectedValue(new Error('The API is unavailable'));
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const shell = shellOf(element);
+    expect(shell.props.help.props).toMatchObject({
+      views: { '/portal': 'end-user/tutorials/getting-started' },
+    });
+  });
+
+  it('shows only the deactivation notice when the API refuses the account', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockResolvedValue({
+      data: undefined,
+      error: {
+        type: 'about:blank',
+        title: 'Unauthorized',
+        status: 401,
+        code: 'authentication.required',
+      },
+      response: new Response(null, { status: 401 }),
+    } as never);
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    expect((element.type as { name: string }).name).toBe('AccountDeactivatedNotice');
+  });
+
+  it('sends an end user who opens a team route to its portal counterpart (Q1, Q15)', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockClear();
+    user = customer;
+    requestPath = '/projects/0198-a';
+
+    await expect(TeamLayout({ children: <h1>Page</h1> })).rejects.toThrow(
+      'NEXT_REDIRECT /portal/projects/0198-a',
+    );
+    user = developer;
+    requestPath = '/';
+  });
+
+  it('sends a team member who opens a portal route to its team counterpart', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    requestPath = '/portal/settings';
+
+    await expect(AccountShell({ shell: 'portal', children: <h1>Page</h1> })).rejects.toThrow(
+      'NEXT_REDIRECT /settings',
+    );
+    requestPath = '/';
+  });
+
+  it.each([
+    [[project('a')], false],
+    [[project('a'), project('b')], true],
+  ])('offers Projects in the portal with %j: %s (Q3)', async (projects, hasProjectChoice) => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    user = customer;
+    activeProjects = projects;
+
+    const element = await AccountShell({ shell: 'portal', children: <h1>Page</h1> });
+
+    expect(shellOf(element).props.navigation).toEqual({ shell: 'portal', hasProjectChoice });
+    expect(shellOf(element).props.help.props).toMatchObject({
+      views: { '/portal': 'end-user/tutorials/getting-started' },
+    });
+    user = developer;
+    activeProjects = [project('a')];
+  });
+
+  it('renders the shell of the reader for the help pages (Q2)', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    expect(
+      shellOf(await AccountShell({ shell: 'reader', children: <h1>Help</h1> })).props.navigation,
+    ).toEqual({ shell: 'team', allowedActions: [] });
+    user = customer;
+    expect(
+      shellOf(await AccountShell({ shell: 'reader', children: <h1>Help</h1> })).props.navigation,
+    ).toEqual({ shell: 'portal', hasProjectChoice: false });
+    expect(redirect).not.toHaveBeenCalled();
+    user = developer;
+  });
+
+  it('gives the header New ticket for every team account, and none to the portal (S1-10 Q7)', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+
+    expect(shellOf(await TeamLayout({ children: <h1>Page</h1> })).props.newTicket).toMatchObject({
+      type: NewTicketButton,
+    });
+    user = customer;
+    expect(
+      shellOf(await AccountShell({ shell: 'portal', children: <h1>Portal</h1> })).props.newTicket,
+    ).toBeUndefined();
+    expect(
+      shellOf(await AccountShell({ shell: 'reader', children: <h1>Help</h1> })).props.newTicket,
+    ).toBeUndefined();
+    user = developer;
+  });
+});

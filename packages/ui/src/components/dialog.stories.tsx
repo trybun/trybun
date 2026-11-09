@@ -85,4 +85,30 @@ export const Tablet: Story = {
   },
 };
 
+// A title with a long word, e.g. an e-mail address, wraps within the bottom sheet of a phone.
+export const LongTitle: Story = {
+  args: { defaultOpen: true },
+  globals: viewport('phone'),
+  render: (args: ComponentProps<typeof Dialog>) => (
+    <Dialog {...args}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Move anna.kowalska-nowakowska@customer.example.com to this organization?
+          </DialogTitle>
+          <DialogDescription>
+            This person already belongs to another organization.
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  ),
+  play: async () => {
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(async () => {
+      await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth);
+    });
+  },
+};
+
 export const Desktop: Story = { args: { defaultOpen: true }, globals: viewport('desktop') };

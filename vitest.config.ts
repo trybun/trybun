@@ -22,7 +22,12 @@ export default defineConfig({
       '{apps,packages}/*/vitest.config.{ts,js}',
       '{apps,packages}/*/vitest.integration.config.{ts,js}',
       // Repository tooling run by CI.
-      { test: { name: 'scripts', include: ['scripts/**/*.spec.js', 'deploy/**/*.spec.js'] } },
+      {
+        test: {
+          name: 'scripts',
+          include: ['scripts/**/*.spec.js', 'deploy/**/*.spec.js', 'docker/**/*.spec.js'],
+        },
+      },
     ],
     coverage: {
       provider: 'v8',

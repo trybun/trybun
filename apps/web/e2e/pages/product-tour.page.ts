@@ -25,4 +25,9 @@ export class ProductTourPage {
   highlighted(): Locator {
     return this.page.locator('[data-tour-highlighted]');
   }
+
+  /** The outline offset of the highlighted target: positive outside it, negative inside (#196). */
+  highlightedOutlineOffset(): Promise<number> {
+    return this.highlighted().evaluate((el) => parseFloat(getComputedStyle(el).outlineOffset));
+  }
 }

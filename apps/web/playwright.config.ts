@@ -50,9 +50,13 @@ export default defineConfig({
     },
     {
       // The performance budget of the key pages, measured with the mobile profile of Lighthouse.
+      // It runs after the other projects and one page at a time: the simulated TBT multiplies
+      // the observed main-thread tasks by the CPU slowdown, so a parallel test on the same
+      // runner moves the measurement (#146).
       name: 'lighthouse',
       testMatch: /lighthouse\.spec\.ts$/,
-      dependencies: ['setup'],
+      dependencies: ['setup', 'phone', 'tablet', 'desktop'],
+      workers: 1,
     },
   ],
   webServer: [
@@ -63,6 +67,11 @@ export default defineConfig({
       // The parallel tests share the seeded accounts and the client IP, so the API they start
       // allows more than the default rate limits; the integration tests check the defaults.
       env: { TRYBUN_RATE_LIMIT_PER_USER: '10000', TRYBUN_RATE_LIMIT_PER_IP: '10000' },
+    },
+    {
+      // The Worker checks, strips and releases the uploaded attachments (§13.3). It serves no HTTP,
+      // so nothing is awaited; next to a running `pnpm dev` it is a second consumer of the queues.
+      command: 'pnpm --filter @trybun/server start:worker',
     },
     {
       command: 'pnpm exec next start --port 3000',

@@ -44,30 +44,34 @@ test('compiles the components of @trybun/ui with the React Compiler', async ({ p
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
 
-  const components = await page.evaluate(() => {
-    const found: RenderedComponent[] = [];
-    for (const root of window.reactRoots ?? []) {
-      const fibers: (Fiber | null)[] = [root.current];
-      for (let fiber = fibers.pop(); fiber !== undefined; fiber = fibers.pop()) {
-        if (fiber === null) {
-          continue;
+  // The server's HTML shows the button before React has hydrated it, and the DevTools hook learns
+  // of a root only when it commits: read the fibers until a committed root holds the button.
+  const readComponents = () =>
+    page.evaluate(() => {
+      const found: RenderedComponent[] = [];
+      for (const root of window.reactRoots ?? []) {
+        const fibers: (Fiber | null)[] = [root.current];
+        for (let fiber = fibers.pop(); fiber !== undefined; fiber = fibers.pop()) {
+          if (fiber === null) {
+            continue;
+          }
+          // A component of @trybun/ui renders its primitive with its `data-slot` (§18.6); a
+          // primitive that passes the `data-slot` it received on to its own child is not one.
+          const slot = fiber.child?.memoizedProps?.['data-slot'];
+          const isUiComponent =
+            typeof fiber.type === 'function' &&
+            typeof slot === 'string' &&
+            fiber.memoizedProps?.['data-slot'] !== slot;
+          if (isUiComponent) {
+            found.push({ slot, isCompiled: fiber.updateQueue?.memoCache != null });
+          }
+          fibers.push(fiber.child, fiber.sibling);
         }
-        // A component of @trybun/ui renders its primitive with its `data-slot` (§18.6); a
-        // primitive that passes the `data-slot` it received on to its own child is not one.
-        const slot = fiber.child?.memoizedProps?.['data-slot'];
-        const isUiComponent =
-          typeof fiber.type === 'function' &&
-          typeof slot === 'string' &&
-          fiber.memoizedProps?.['data-slot'] !== slot;
-        if (isUiComponent) {
-          found.push({ slot, isCompiled: fiber.updateQueue?.memoCache != null });
-        }
-        fibers.push(fiber.child, fiber.sibling);
       }
-    }
-    return found;
-  });
+      return found;
+    });
 
-  expect(components).toContainEqual({ slot: 'button', isCompiled: true });
+  await expect.poll(readComponents).toContainEqual({ slot: 'button', isCompiled: true });
+  const components = await readComponents();
   expect(components.filter((component) => !component.isCompiled)).toEqual([]);
 });

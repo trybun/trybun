@@ -75,6 +75,7 @@ describe('buildDeploymentPackage', () => {
         'trybun-0.1.0/trybun',
         'trybun-0.1.0/LICENSE',
         'trybun-0.1.0/docker/caddy/Caddyfile',
+        'trybun-0.1.0/docker/clamav/clamd.conf',
         'trybun-0.1.0/docker/keycloak/apply-config.sh',
         'trybun-0.1.0/docker/keycloak/realm/trybun.yaml',
         'trybun-0.1.0/docker/keycloak/themes/trybun/login/theme.properties',
