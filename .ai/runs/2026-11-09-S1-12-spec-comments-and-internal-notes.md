@@ -6,7 +6,7 @@
 
 ## 🎯 Goal
 
-Make the S1-12 change specification `.ai/specs/2026-10-26-comments-and-internal-notes.md` mergeable: current with `main`, consistent with the implemented S1-04 to S1-11, and with the ⚠ questions Q2 and Q3 decided by the maintainer.
+Make the S1-12 change specification `.ai/specs/2026-10-26-comments-and-internal-notes.md` mergeable: current with `main`, consistent with the implemented S1-04 to S1-11, and with its open questions decided by the maintainer.
 
 ## Scope
 
@@ -29,7 +29,7 @@ Make the S1-12 change specification `.ai/specs/2026-10-26-comments-and-internal-
 
 ## Assumptions
 
-- The maintainer answers Q2 and Q3 in this session; the other 18 answers stay reversible proposals.
+- The maintainer answers Q2 and Q3 in this session; the maintainer decides every open question in this session (Q1–Q21, Q21 added by the alignment).
 - The specification review runs through `om-auto-review-pr 122 --autofix`, as for PR #120 and #121.
 
 ## Risks
@@ -46,8 +46,8 @@ Make the S1-12 change specification `.ai/specs/2026-10-26-comments-and-internal-
 
 ### Phase 2: Bring the specification up to date
 
-- [x] 2.1 Merge main into the branch — eb9110e
-- [ ] 2.2 Align the specification with the implemented S1-04 to S1-11
+- [x] 2.1 Merge main into the branch — 327aaa8
+- [x] 2.2 Align the specification with the implemented S1-04 to S1-11 — bee4f5c
 
 ### Phase 3: Record the maintainer's decisions
 
