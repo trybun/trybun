@@ -45,7 +45,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 ### Phase 4: Sharing decisions and creation
 
 - [x] 4.1 Add the sharing approval and refusal endpoints — dd4ec74
-- [ ] 4.2 Create tickets with a visibility through the project actions
+- [x] 4.2 Create tickets with a visibility through the project actions — 2ac1bee
 
 ### Phase 5: Identities
 
