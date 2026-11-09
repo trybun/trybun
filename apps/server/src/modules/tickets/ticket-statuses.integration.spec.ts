@@ -331,7 +331,7 @@ describe('ticket status endpoints', () => {
       expect((await read(ticket.id)).status).toBe('todo');
     });
 
-    it('stores the reason for the team only and keeps it out of every event and payload', async () => {
+    it('publishes the reason as a public comment and keeps it out of every event and payload (S1-12)', async () => {
       const project = await createProject(prisma);
       const developer = await signIn('developer', project);
       const requester = await signIn('end_user', project);
@@ -356,20 +356,31 @@ describe('ticket status endpoints', () => {
         .get(`/api/v1/tickets/${ticket.id}`)
         .set('Authorization', requester.authorization);
 
+      const comments = await http()
+        .get(`/api/v1/tickets/${ticket.id}/comments`)
+        .set('Authorization', requester.authorization);
+
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
         status: 'rejected',
         publicStatus: 'closed',
-        rejectionReason: reason,
         closedAt: expect.any(String) as string,
       });
-      expect(again.body).toMatchObject({ rejectionReason: `${reason} – duplicate effort` });
+      expect(res.body).not.toHaveProperty('rejectionReason');
+      // A new reason on a rejected ticket adds another comment and changes no field (Q13).
+      expect(again.status).toBe(200);
+      expect(again.body).toMatchObject({ version: 2 });
       expect(endUserView.body).toMatchObject({ publicStatus: 'closed' });
-      expect(endUserView.body).not.toHaveProperty('rejectionReason');
       expect(endUserView.body).not.toHaveProperty('status');
+      // The reasons reach the requester as public comments of the team member (§4.3).
+      expect(comments.body).toMatchObject({
+        items: [
+          { body: reason, author: { id: developer.user.id } },
+          { body: `${reason} – duplicate effort`, author: { id: developer.user.id } },
+        ],
+      });
       expect((await events(ticket.id)).map(({ type, isPublic }) => [type, isPublic])).toEqual([
         ['status_changed', true],
-        ['rejection_reason_changed', false],
       ]);
       const stored = JSON.stringify([await events(ticket.id), await outboxPayloads(ticket.id)]);
       expect(stored).not.toContain('Out of scope');
@@ -692,7 +703,6 @@ describe('ticket status endpoints', () => {
 
       expect(res.body).toMatchObject({
         assignee: { id: developer.user.id },
-        rejectionReason: null,
       });
     });
 
@@ -775,6 +785,8 @@ describe('ticket status endpoints', () => {
           'confirm_resolution',
           'add_attachment',
           'set_visibility_all_customers',
+          'add_comment',
+          'read_description_revisions',
         ],
       });
       expect(await read(ticket.id)).toMatchObject({ statusBeforeWaiting: 'in_verification' });
@@ -819,7 +831,14 @@ describe('ticket status endpoints', () => {
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
         publicStatus,
-        allowedActions: ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+        allowedActions: [
+          'read',
+          'update',
+          'add_attachment',
+          'set_visibility_all_customers',
+          'add_comment',
+          'read_description_revisions',
+        ],
       });
       expect((await read(ticket.id)).status).toBe(status);
       const [, answered] = await events(ticket.id);
@@ -912,11 +931,6 @@ describe('ticket status endpoints', () => {
       ['a reason without waiting', { waitingReason: 'information' as const }],
       ['a terminal ticket without its closing time', { status: 'done' as const }],
       ['a closing time of an open ticket', { closedAt: new Date() }],
-      [
-        'a rejected ticket without its reason',
-        { status: 'rejected' as const, closedAt: new Date() },
-      ],
-      ['a reason of a ticket that is not rejected', { rejectionReason: 'No' }],
     ])('refuses %s', async (_case, data) => {
       const { ticket } = await setUp();
 

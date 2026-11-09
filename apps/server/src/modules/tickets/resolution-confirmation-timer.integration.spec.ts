@@ -42,6 +42,8 @@ import {
   UnassignRemovedMemberProcessor,
 } from './tickets.processor.js';
 import { ARCHIVED_PROJECT_RECHECK_MS, TicketsService } from './tickets.service.js';
+import { CommentsCoreModule } from '../comments/comments-core.module.js';
+import { ContentRevisionsModule } from '../content-revisions/content-revisions.module.js';
 
 const NOW = new Date('2026-11-05T10:00:00.000Z');
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -76,6 +78,8 @@ describe('the automatic close of an unconfirmed resolution', () => {
         ActivityEventsModule,
         AuditLogEntriesModule,
         AttachmentLinksModule,
+        CommentsCoreModule,
+        ContentRevisionsModule,
         OrganizationsModule,
         OutboxModule,
         ProjectsModule,

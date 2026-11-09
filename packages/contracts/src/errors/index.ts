@@ -42,6 +42,9 @@ export const errorCodeSchema = z.enum([
   'ticket.sharing_pending',
   'ticket.author_consent_required',
   'ticket.organization_changed',
+  'ticket.comments_closed',
+  'comment.mention_not_allowed',
+  'comment.too_many_mentions',
   'attachment.type_not_allowed',
   'attachment.already_linked',
   'attachment.draft_limit_reached',
@@ -136,6 +139,13 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   // `my_organization` for a requester who no longer belongs to the ticket's active organization
   // with access to the project (S1-11 Q4, Q19).
   'ticket.organization_changed': 409,
+  // An end user comments on a `rejected` or `duplicate` ticket, or on a `done` one 14 days or more
+  // after it was closed; they create a new ticket instead (§4.3, S1-12).
+  'ticket.comments_closed': 409,
+  // A new mention of a person outside the mention scope, or of an unknown ID (§7.3, S1-12 Q4).
+  'comment.mention_not_allowed': 422,
+  // More than 50 distinct mentions in one text (S1-12 Q19).
+  'comment.too_many_mentions': 422,
   // A file whose content does not match its extension, an extension outside the allowlist, or an
   // encrypted ZIP archive or PDF file (§13.3).
   'attachment.type_not_allowed': 422,

@@ -127,6 +127,7 @@ describe('AccountSettingsForm', () => {
       language: 'pl',
       timeZone: 'Europe/Warsaw',
       hideTimelineEvents: false,
+      organizationsExist: false,
       allowedActions: [],
       ...overrides,
     };

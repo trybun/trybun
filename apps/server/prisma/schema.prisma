@@ -72,6 +72,11 @@ model User {
   assignedTickets     Ticket[]              @relation("TicketAssignee")
   activityEvents      ActivityEvent[]
   attachments         Attachment[]
+  comments            Comment[]             @relation("CommentAuthor")
+  editedComments      Comment[]             @relation("CommentEditor")
+  commentMentions     CommentMention[]
+  contentRevisions    ContentRevision[]
+  editedDescriptions  Ticket[]              @relation("TicketDescriptionEditor")
 
   @@map("users")
 }
@@ -270,6 +275,7 @@ model Organization {
   members     OrganizationMember[]
   invitations Invitation[]
   tickets     Ticket[]
+  comments    Comment[]
 
   @@index([name, id])
   @@map("organizations")
@@ -443,57 +449,58 @@ enum TicketRelationKind {
 /// Tickets are deleted only by undoing an import (§12.5); the restricting foreign keys keep a
 /// project, an organization or an account with tickets from being deleted.
 model Ticket {
-  id                   String               @id @default(uuid(7)) @db.Uuid
-  projectId            String               @map("project_id") @db.Uuid
-  project              Project              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  id                    String               @id @default(uuid(7)) @db.Uuid
+  projectId             String               @map("project_id") @db.Uuid
+  project               Project              @relation(fields: [projectId], references: [id], onDelete: Restrict)
   /// The per-project number from `ticket_number_counters`, unique in the project and never reused;
   /// a check constraint of the migrations keeps it at least 1.
-  number               Int
+  number                Int
   /// Trimmed, 1–255 characters.
-  title                String
+  title                 String
   /// GFM Markdown, at most 65,536 characters; empty when none.
-  description          String               @default("")
+  description           String               @default("")
   /// Empty until triage for tickets of end users.
-  type                 TicketType?
-  source               TicketSource
-  priority             TicketPriority       @default(normal)
-  status               TicketStatus
+  type                  TicketType?
+  source                TicketSource
+  priority              TicketPriority       @default(normal)
+  status                TicketStatus
   /// Set exactly while the status is `waiting_for_requester`, with `statusBeforeWaiting` and
   /// `waitingSince` – check constraints of the migrations keep the three together (§4.3).
-  waitingReason        TicketWaitingReason? @map("waiting_reason")
+  waitingReason         TicketWaitingReason? @map("waiting_reason")
   /// The status the ticket had before it started waiting; `triage` after a reopen into waiting.
-  statusBeforeWaiting  TicketStatus?        @map("status_before_waiting")
-  waitingSince         DateTime?            @map("waiting_since") @db.Timestamptz(3)
+  statusBeforeWaiting   TicketStatus?        @map("status_before_waiting")
+  waitingSince          DateTime?            @map("waiting_since") @db.Timestamptz(3)
   /// The time of the latest transition into a terminal status; set exactly while terminal.
-  closedAt             DateTime?            @map("closed_at") @db.Timestamptz(3)
-  /// The reason of a rejection, set exactly while `rejected`; team only. Personal data: S1-16
-  /// covers it like a description until S1-12 publishes the reasons as comments and drops it.
-  rejectionReason      String?              @map("rejection_reason")
+  closedAt              DateTime?            @map("closed_at") @db.Timestamptz(3)
   /// The effective visibility (§5.1); a pending request keeps it until the team approves.
   /// Check constraints of the migrations keep it consistent with the sharing request, the
   /// organization snapshot and the source (S1-11).
-  visibility           TicketVisibility     @default(only_me)
-  sharingRequest       TicketSharingRequest @default(none) @map("sharing_request")
-  /// The reason of a sharing refusal, set exactly while the request is `rejected`; team only.
-  /// Personal data: S1-16 covers it until S1-12 publishes it as a comment and drops it (Q8).
-  sharingRefusalReason String?              @map("sharing_refusal_reason")
+  visibility            TicketVisibility     @default(only_me)
+  sharingRequest        TicketSharingRequest @default(none) @map("sharing_request")
+  /// The last edit or redaction of the description (§6.1), set together; none before the first.
+  descriptionEditedAt   DateTime?            @map("description_edited_at") @db.Timestamptz(3)
+  descriptionEditedById String?              @map("description_edited_by_id") @db.Uuid
+  descriptionEditedBy   User?                @relation("TicketDescriptionEditor", fields: [descriptionEditedById], references: [id], onDelete: Restrict)
   /// The requester's organization at creation, never changed (§3.2).
-  organizationId       String?              @map("organization_id") @db.Uuid
-  organization         Organization?        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  requesterId          String               @map("requester_id") @db.Uuid
-  requester            User                 @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
-  assigneeId           String?              @map("assignee_id") @db.Uuid
-  assignee             User?                @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
-  version              Int                  @default(1)
-  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  organizationId        String?              @map("organization_id") @db.Uuid
+  organization          Organization?        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  requesterId           String               @map("requester_id") @db.Uuid
+  requester             User                 @relation("TicketRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assigneeId            String?              @map("assignee_id") @db.Uuid
+  assignee              User?                @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
+  version               Int                  @default(1)
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  activityEvents    ActivityEvent[]
+  activityEvents       ActivityEvent[]
   /// The relations of which the ticket is the source, e.g. its `duplicate_of`.
-  outgoingRelations TicketRelation[] @relation("TicketRelationSource")
+  outgoingRelations    TicketRelation[]  @relation("TicketRelationSource")
   /// The relations that point to the ticket, e.g. its duplicates.
-  incomingRelations TicketRelation[] @relation("TicketRelationTarget")
-  attachments       Attachment[]
+  incomingRelations    TicketRelation[]  @relation("TicketRelationTarget")
+  attachments          Attachment[]
+  comments             Comment[]
+  /// The earlier versions of the description (§6.1).
+  descriptionRevisions ContentRevision[]
 
   @@unique([projectId, number])
   @@index([assigneeId])
@@ -501,6 +508,12 @@ model Ticket {
   @@index([organizationId])
   @@index([projectId, visibility])
   @@index([createdAt, id])
+  /// The default sort of the list and the views by priority (S1-13 Q8), read backwards.
+  @@index([priority, updatedAt, id])
+  /// The views of open tickets and of the triage, by status (S1-13 Q20).
+  @@index([status, createdAt])
+  /// The sort by the last update (S1-13).
+  @@index([updatedAt, id])
   @@map("tickets")
 }
 
@@ -593,13 +606,103 @@ model Attachment {
   status       AttachmentStatus @default(quarantine)
   uploadedById String           @map("uploaded_by_id") @db.Uuid
   uploadedBy   User             @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
-  /// None while a draft.
+  /// The parent: a ticket or a comment, never both (a check constraint of the migrations); none
+  /// while a draft (S1-12 Q16).
   ticketId     String?          @map("ticket_id") @db.Uuid
   ticket       Ticket?          @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  commentId    String?          @map("comment_id") @db.Uuid
+  comment      Comment?         @relation(fields: [commentId], references: [id], onDelete: Restrict)
   createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([ticketId, createdAt, id])
+  @@index([commentId, createdAt, id])
   @@index([uploadedById])
   @@map("attachments")
+}
+
+/// `comment.kind` (§6.1)
+enum CommentKind {
+  public
+  internal
+
+  @@map("comment_kind")
+}
+
+/// A comment or an internal note of a ticket (§6.1, S1-12). A public comment keeps its audience –
+/// the effective visibility of the ticket when it was written, with the ticket's organization for
+/// `my_organization` (§5.2); check constraints of the migrations keep the kind, the audience and its
+/// organization consistent, and the edit fields together. A child record: it does not change the
+/// ticket's version (§17.2). Deleted physically with its mentions, revisions and attachments.
+model Comment {
+  id                     String            @id @default(uuid(7)) @db.Uuid
+  ticketId               String            @map("ticket_id") @db.Uuid
+  ticket                 Ticket            @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId               String            @map("author_id") @db.Uuid
+  author                 User              @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  kind                   CommentKind
+  /// Set exactly for a public comment; never changed by a later visibility change (§5.3).
+  audience               TicketVisibility?
+  /// Set exactly for the audience `my_organization`.
+  audienceOrganizationId String?           @map("audience_organization_id") @db.Uuid
+  audienceOrganization   Organization?     @relation(fields: [audienceOrganizationId], references: [id], onDelete: Restrict)
+  /// GFM Markdown, trimmed, 1–65,536 characters. Personal data, never logged.
+  body                   String
+  /// The last edit or redaction, set together; none before the first.
+  editedAt               DateTime?         @map("edited_at") @db.Timestamptz(3)
+  editedById             String?           @map("edited_by_id") @db.Uuid
+  editedBy               User?             @relation("CommentEditor", fields: [editedById], references: [id], onDelete: Restrict)
+  version                Int               @default(1)
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  mentions    CommentMention[]
+  revisions   ContentRevision[]
+  attachments Attachment[]
+
+  @@index([ticketId, id])
+  @@index([authorId])
+  @@index([audienceOrganizationId])
+  @@map("comments")
+}
+
+/// A person mentioned in a comment (§6.1): the source of notifications (S1-15) and of the
+/// reader's `mentions` map. A mention never grants access to the ticket.
+model CommentMention {
+  commentId String   @map("comment_id") @db.Uuid
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([commentId, userId])
+  @@index([userId])
+  @@map("comment_mentions")
+}
+
+/// An earlier version of a comment or of a ticket's description (§6.1): exactly one of the two
+/// parents (a check constraint of the migrations). Never updated; deleted by a redaction, with its
+/// comment, by the anonymization of its author (S1-16) or with its ticket. Personal data.
+model ContentRevision {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  /// Set for a revision of the description.
+  ticketId  String?  @map("ticket_id") @db.Uuid
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  /// Set for a revision of a comment.
+  commentId String?  @map("comment_id") @db.Uuid
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  /// The replaced text.
+  body      String
+  /// Who wrote this version.
+  authorId  String   @map("author_id") @db.Uuid
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  /// When this version was written: the creation, or the edit that produced it.
+  writtenAt DateTime @map("written_at") @db.Timestamptz(3)
+  /// When it was replaced.
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([ticketId, id])
+  @@index([commentId, id])
+  @@index([authorId])
+  @@map("content_revisions")
 }

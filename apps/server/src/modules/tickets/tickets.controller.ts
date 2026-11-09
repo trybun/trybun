@@ -18,6 +18,10 @@ import {
   listActivityEventsQuerySchema,
 } from '@trybun/contracts/activity-events';
 import {
+  type BulkChangeTicketsDto,
+  bulkChangeTicketsSchema,
+  type BulkChangeTicketsResponse,
+  bulkChangeTicketsResponseSchema,
   type ChangeTicketStatusDto,
   changeTicketStatusSchema,
   type ConfirmResolutionDto,
@@ -39,6 +43,20 @@ import {
   type UpdateTicketDto,
   updateTicketSchema,
 } from '@trybun/contracts/tickets';
+import {
+  type CommentResponse,
+  commentResponseSchema,
+  type CreateCommentDto,
+  createCommentSchema,
+} from '@trybun/contracts/comments';
+import {
+  type ContentRevisionPage,
+  contentRevisionPageSchema,
+  type ListContentRevisionsQuery,
+  listContentRevisionsQuerySchema,
+  type RedactDescriptionDto,
+  redactDescriptionSchema,
+} from '@trybun/contracts/content-revisions';
 import type { Response } from 'express';
 import { CurrentPrincipal } from '../../platform/authentication/current-principal.decorator.js';
 import type { Principal } from '../../platform/authentication/principal.js';
@@ -47,11 +65,15 @@ import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { ExpectedVersion } from '../../platform/http/expected-version.decorator.js';
 import { ResponseSchema } from '../../platform/http/response-schema.decorator.js';
 import { TICKET } from './tickets.abilities.js';
+import { TicketBulkChangesService } from './ticket-bulk-changes.service.js';
 import { TicketsService } from './tickets.service.js';
 
 @Controller('tickets')
 export class TicketsController {
-  constructor(private readonly tickets: TicketsService) {}
+  constructor(
+    private readonly tickets: TicketsService,
+    private readonly bulkChanges: TicketBulkChangesService,
+  ) {}
 
   /** The tickets the principal can see, newest first (§3.2). */
   @Get()
@@ -61,6 +83,21 @@ export class TicketsController {
     @Query({ schema: listTicketsQuerySchema }) query: ListTicketsQuery,
   ): Promise<TicketPage> {
     return this.tickets.list(principal, query);
+  }
+
+  /**
+   * One change for up to 100 tickets (§8.1, §17.2): each ticket is checked and changed on its own,
+   * and the response lists a result per ticket in request order (S1-13 Q1, Q2). A static route,
+   * registered before the routes of one ticket.
+   */
+  @Post('bulk-changes')
+  @HttpCode(HttpStatus.OK)
+  @ResponseSchema(bulkChangeTicketsResponseSchema)
+  bulkChange(
+    @CurrentPrincipal() principal: Principal,
+    @Body({ schema: bulkChangeTicketsSchema }) input: BulkChangeTicketsDto,
+  ): Promise<BulkChangeTicketsResponse> {
+    return this.bulkChanges.change(principal, input);
   }
 
   /** Creates a ticket in a project (§3.2) with the next number of the project. */
@@ -180,6 +217,50 @@ export class TicketsController {
     @Body({ schema: confirmResolutionSchema }) input: ConfirmResolutionDto,
   ): Promise<TicketResponse> {
     return this.tickets.confirmResolution(principal, ticketId, input);
+  }
+
+  /**
+   * Adds a comment or an internal note to a ticket (§6.1, S1-12). The guard checks `add_comment`
+   * before validation; the service checks `add_internal_note` for a note.
+   */
+  @Post(':ticketId/comments')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'add_comment' })
+  @ResponseSchema(commentResponseSchema, HttpStatus.CREATED)
+  async addComment(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: createCommentSchema }) input: CreateCommentDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<CommentResponse> {
+    const comment = await this.tickets.addComment(principal, ticketId, input);
+    response.location(`/${API_PREFIX}/comments/${comment.id}`);
+    return comment;
+  }
+
+  /** Redacts the description: the current text is never kept, the listed revisions are deleted. */
+  @Post(':ticketId/description-redaction')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'redact_description' })
+  @HttpCode(HttpStatus.OK)
+  @ResponseSchema(ticketResponseSchema)
+  redactDescription(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: redactDescriptionSchema }) input: RedactDescriptionDto,
+    @ExpectedVersion() version: number,
+  ): Promise<TicketResponse> {
+    return this.tickets.redactDescription(principal, { id: ticketId, version }, input);
+  }
+
+  /** The earlier versions of the description, newest first (§6.1, S1-12 Q3). */
+  @Get(':ticketId/description-revisions')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'read_description_revisions' })
+  @ResponseSchema(contentRevisionPageSchema)
+  listDescriptionRevisions(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Query({ schema: listContentRevisionsQuerySchema }) query: ListContentRevisionsQuery,
+  ): Promise<ContentRevisionPage> {
+    return this.tickets.listDescriptionRevisions(principal, ticketId, query);
   }
 
   /** The activity history of a ticket, oldest first (§4.5). */

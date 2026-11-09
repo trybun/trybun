@@ -15,9 +15,9 @@ describe('isCurrent', () => {
 
 describe('navigationItemsFor', () => {
   it.each([
-    [['open_administration'] as const, 'wide', ['/', '/projects', '/admin']],
-    [['open_administration'] as const, 'phone', ['/', '/projects']],
-    [[] as const, 'wide', ['/', '/projects']],
+    [['open_administration'] as const, 'wide', ['/', '/tickets', '/projects', '/admin']],
+    [['open_administration'] as const, 'phone', ['/', '/tickets', '/projects']],
+    [[] as const, 'wide', ['/', '/tickets', '/projects']],
   ] as const)('a team account with %j on %s sees %j', (allowedActions, device, hrefs) => {
     expect(
       navigationItemsFor({ shell: 'team', allowedActions }, device).map((item) => item.href),

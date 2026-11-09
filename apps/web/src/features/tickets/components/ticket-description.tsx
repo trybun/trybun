@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Ticket, ticketDescriptionSchema } from '@trybun/contracts/tickets';
+import { type TicketResponse, ticketDescriptionSchema } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import { Field, FieldError, FieldLabel } from '@trybun/ui/components/field';
 import { Markdown } from '@trybun/ui/components/markdown';
@@ -20,6 +20,8 @@ import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog
 import { useIsTicketChanging, useUpdateTicket } from '../mutations.js';
 import { useUnsavedChanges } from '../../../lib/forms/use-unsaved-changes.js';
 import { LazyMarkdownEditor } from './lazy-markdown-editor.js';
+import { LazyRedactionDialog } from '../../comments/components/lazy-redaction-dialog.js';
+import { LazyRevisionsDialog } from '../../comments/components/lazy-revisions-dialog.js';
 
 const descriptionFormSchema = z.object({
   description: ticketDescriptionSchema,
@@ -29,39 +31,82 @@ type DescriptionValues = z.infer<typeof descriptionFormSchema>;
 
 /**
  * The description of a ticket (§3.2): the rendered GFM with the ticket's images; with `update`,
- * **Edit** replaces it with the GFM editor and **Save** / **Cancel**.
+ * **Edit** replaces it with the GFM editor and **Save** / **Cancel** – in the team view and, for
+ * the requester, in the portal (S1-12 Q17). After an edit it shows "edited", which opens the
+ * history for those who may read it (§6.1, Q3); the team redacts it with **Redact** (Q9).
  */
 export function TicketDescription({
   ticket,
   imageIds,
   attachmentMaxSizeMb,
 }: {
-  ticket: Ticket;
+  ticket: TicketResponse;
   /** The available images of the ticket (`useTicketImageIds`). */
   imageIds: string[];
   /** `TRYBUN_ATTACHMENT_MAX_SIZE_MB` of the web server (§13.3). */
   attachmentMaxSizeMb: number;
 }) {
   const t = useTranslations('tickets');
+  const tComments = useTranslations('comments');
   const [isEditing, setIsEditing] = useState(false);
+  const [dialog, setDialog] = useState<'history' | 'redact' | null>(null);
+  const canReadHistory = ticket.allowedActions.includes('read_description_revisions');
   return (
     <section aria-labelledby="ticket-description" className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <h2 id="ticket-description" className="text-lg font-semibold">
-          {t('view.description')}
-        </h2>
-        {!isEditing && ticket.allowedActions.includes('update') && (
-          <Button
-            type="button"
-            variant="outline"
-            aria-label={t('view.editDescription')}
-            onClick={() => setIsEditing(true)}
-          >
-            <PencilIcon aria-hidden />
-            {t('view.edit')}
-          </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h2 id="ticket-description" className="text-lg font-semibold">
+            {t('view.description')}
+          </h2>
+          {ticket.descriptionEditedAt !== null &&
+            (canReadHistory ? (
+              <button
+                type="button"
+                className="min-h-11 text-sm text-muted-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-0"
+                aria-label={tComments('showHistory')}
+                onClick={() => setDialog('history')}
+              >
+                {tComments('edited')}
+              </button>
+            ) : (
+              <span className="text-sm text-muted-foreground">{tComments('edited')}</span>
+            ))}
+        </div>
+        {!isEditing && (
+          <div className="flex gap-2">
+            {ticket.allowedActions.includes('redact_description') && (
+              <Button type="button" variant="outline" onClick={() => setDialog('redact')}>
+                {tComments('redact')}
+              </Button>
+            )}
+            {ticket.allowedActions.includes('update') && (
+              <Button
+                type="button"
+                variant="outline"
+                aria-label={t('view.editDescription')}
+                onClick={() => setIsEditing(true)}
+              >
+                <PencilIcon aria-hidden />
+                {t('view.edit')}
+              </Button>
+            )}
+          </div>
         )}
       </div>
+      {dialog === 'history' && (
+        <LazyRevisionsDialog
+          text={{ ticketId: ticket.id }}
+          imageIds={imageIds}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'redact' && (
+        <LazyRedactionDialog
+          text={{ ticket }}
+          imageIds={imageIds}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {isEditing ? (
         <DescriptionForm
           ticket={ticket}
@@ -92,7 +137,7 @@ function DescriptionForm({
   attachmentMaxSizeMb,
   onClose,
 }: {
-  ticket: Ticket;
+  ticket: TicketResponse;
   imageIds: string[];
   attachmentMaxSizeMb: number;
   onClose: () => void;

@@ -19,7 +19,6 @@ export interface StatusFields {
   statusBeforeWaiting: TicketStatus | null;
   waitingSince: Date | null;
   closedAt: Date | null;
-  rejectionReason: string | null;
 }
 
 /** A ticket as the status rules see it: its status fields and its source. */
@@ -30,8 +29,6 @@ export interface StatusTicket extends StatusFields {
 /** One requested change of the status (§4.3) with what the service has resolved for it. */
 export interface StatusChangeRequest {
   target: TicketStatus;
-  /** The reason of a rejection, for `rejected`. */
-  rejectionReason?: string;
   /** The original of a duplicate, already flattened to the original of a duplicate (§3.5). */
   original?: ActivityEventTicketSnapshot;
   /** The current original of the ticket, when it is a duplicate. */
@@ -80,7 +77,6 @@ export function statusFieldsOf(ticket: StatusFields): StatusFields {
     statusBeforeWaiting: ticket.statusBeforeWaiting,
     waitingSince: ticket.waitingSince,
     closedAt: ticket.closedAt,
-    rejectionReason: ticket.rejectionReason,
   };
 }
 
@@ -159,18 +155,6 @@ function sameStatusChange(
     };
   }
   if (
-    ticket.status === 'rejected' &&
-    request.rejectionReason !== undefined &&
-    request.rejectionReason !== ticket.rejectionReason
-  ) {
-    // The text stays out of the event, so redacting it leaves no copy behind (§4.5).
-    return {
-      ...NO_CHANGE,
-      fields: { ...statusFieldsOf(ticket), rejectionReason: request.rejectionReason },
-      events: [{ type: 'rejection_reason_changed', data: null, isPublic: false }],
-    };
-  }
-  if (
     ticket.status === 'duplicate' &&
     request.original !== undefined &&
     request.original.id !== request.currentOriginal?.id
@@ -212,7 +196,6 @@ export function changeStatus(ticket: StatusTicket, request: StatusChangeRequest)
     waitingSince: isWaiting ? request.now : null,
     // The latest transition into a terminal status, also from another terminal one (Q6, Q12).
     closedAt: isTerminalStatus(to) ? request.now : null,
-    rejectionReason: to === 'rejected' ? (request.rejectionReason ?? null) : null,
   };
   const duplicateOf = to === 'duplicate' ? (request.original ?? null) : null;
   const events: StatusEvent[] = [

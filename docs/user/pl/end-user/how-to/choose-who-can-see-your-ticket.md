@@ -27,7 +27,7 @@ Zgłoszenie pokazuje „Czeka na udostępnienie wszystkim klientom przez zespó�
 
 Aby wycofać prośbę, która jeszcze czeka, wybierz **Tylko dla mnie** albo **Moja organizacja**.
 
-Jeśli zespół nie udostępni zgłoszenia, zobaczysz „Zespół nie udostępnił tego zgłoszenia wszystkim klientom.”. Zgłoszenie zachowuje swoją widoczność i możesz poprosić ponownie.
+Jeśli zespół nie udostępni zgłoszenia, zobaczysz „Zespół nie udostępnił tego zgłoszenia wszystkim klientom.”. Powód zespołu jest komentarzem w historii zgłoszenia. Zgłoszenie zachowuje swoją widoczność i możesz poprosić ponownie.
 
 ## Czego nie możesz zmienić
 

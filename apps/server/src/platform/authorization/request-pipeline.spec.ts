@@ -17,6 +17,7 @@ import { ExpectedVersion } from '../http/expected-version.decorator.js';
 import { HttpModule } from '../http/http.module.js';
 import { ResponseSchema } from '../http/response-schema.decorator.js';
 import { LoggingModule } from '../logging/logging.module.js';
+import { ClockModule } from '../clock/clock.module.js';
 import { AuthorizationModule } from './authorization.module.js';
 import {
   RecordAccess,
@@ -79,6 +80,7 @@ describe('request pipeline', () => {
         LoggingModule.forRoot(),
         ErrorsModule,
         HttpModule,
+        ClockModule,
         AuthorizationModule.forRoot({ rules: [], restrictions: [], records: [] }),
       ],
       controllers: [NotesController],

@@ -7,7 +7,9 @@ import { ticketPublicStatusSchema } from '../tickets/index.js';
  * status (S1-06) – a status change, the re-pointing and the removal of a duplicate's link, and a
  * new rejection reason (without its text) – a file added to or deleted from an existing ticket
  * (S1-08), and the visibility changes and sharing decisions (S1-11): only `sharing_approved` is
- * public, and no event holds the refusal reason. Later tasks add theirs.
+ * public, and no event holds the refusal reason. The edit, deletion and redaction of a comment
+ * and the redaction of a description are internal and hold no content (S1-12 Q6, Q7). Later tasks
+ * add theirs.
  */
 export const activityEventTypeSchema = z.enum([
   'title_changed',
@@ -26,6 +28,10 @@ export const activityEventTypeSchema = z.enum([
   'sharing_request_withdrawn',
   'sharing_approved',
   'sharing_rejected',
+  'comment_edited',
+  'comment_deleted',
+  'comment_redacted',
+  'description_redacted',
 ]);
 export type ActivityEventType = z.infer<typeof activityEventTypeSchema>;
 
@@ -74,13 +80,30 @@ export type ActivityEventValue = z.infer<typeof activityEventValueSchema>;
  * `rejection_reason_changed`. A `status_changed` event adds whether it reopened the ticket, the
  * waiting reason of the new status and the original of a new duplicate.
  */
-export const activityEventDataSchema = z.object({
+export const activityEventChangeDataSchema = z.object({
   from: activityEventValueSchema,
   to: activityEventValueSchema,
   reopen: z.boolean().optional(),
   waitingReason: z.string().nullable().optional(),
   duplicateOf: activityEventTicketSnapshotSchema.nullable().optional(),
 });
+export type ActivityEventChangeData = z.infer<typeof activityEventChangeDataSchema>;
+
+/**
+ * The data of an event about a comment (`comment_edited`, `comment_deleted`, `comment_redacted`,
+ * S1-12): only the comment's ID and, for a deletion, its kind – never its text or author (Q7).
+ */
+export const activityEventCommentDataSchema = z.object({
+  commentId: z.uuid(),
+  kind: z.enum(['public', 'internal']).optional(),
+});
+export type ActivityEventCommentData = z.infer<typeof activityEventCommentDataSchema>;
+
+/** The data of an event: a change of a value, or a reference to a comment. */
+export const activityEventDataSchema = z.union([
+  activityEventChangeDataSchema,
+  activityEventCommentDataSchema,
+]);
 export type ActivityEventData = z.infer<typeof activityEventDataSchema>;
 
 /**

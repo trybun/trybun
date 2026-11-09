@@ -1,6 +1,10 @@
 import { cn } from 'cn';
-import type { ComponentProps } from 'react';
-import { markdownRehypePlugins } from '@trybun/markdown';
+import { useId, type ComponentProps } from 'react';
+import {
+  markdownRehypePlugins,
+  markdownRemarkRehypeOptions,
+  type MentionedPerson,
+} from '@trybun/markdown';
 import ReactMarkdown, { defaultUrlTransform, type UrlTransform } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
@@ -22,6 +26,7 @@ const ELEMENT_STYLES = [
   '[&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold',
   '[&_hr]:border-border',
   '[&_img]:max-w-full [&_img]:rounded-lg',
+  '[&_.mention]:rounded-sm [&_.mention]:bg-muted [&_.mention]:px-1 [&_.mention]:font-medium',
   '[&_input]:mr-1.5 [&_input]:align-middle [&_.contains-task-list]:list-none [&_.contains-task-list]:pl-0',
 ];
 
@@ -35,6 +40,11 @@ interface MarkdownProps extends Omit<ComponentProps<'div'>, 'children'> {
    * a link. Default: none.
    */
   attachmentImageIds?: readonly string[];
+  /**
+   * The people whose tokens `@{<id>}` render as `@Name` (S1-12), e.g. those of the API's response;
+   * any other token stays text. Default: none.
+   */
+  mentions?: ReadonlyArray<MentionedPerson>;
 }
 
 /**
@@ -46,8 +56,11 @@ function Markdown({
   className,
   urlTransform,
   attachmentImageIds = [],
+  mentions,
   ...props
 }: MarkdownProps) {
+  // Footnote IDs unique per text, so several comments with footnotes on one page do not repeat them.
+  const idPrefix = useId();
   return (
     <div
       data-slot="markdown"
@@ -56,8 +69,9 @@ function Markdown({
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        remarkRehypeOptions={markdownRemarkRehypeOptions({ idPrefix })}
         rehypePlugins={[
-          ...markdownRehypePlugins({ allowedIds: attachmentImageIds }),
+          ...markdownRehypePlugins({ allowedIds: attachmentImageIds, mentions, idPrefix }),
           rehypeHighlight,
         ]}
         // The project's transform runs after the default one, which removes unsafe protocols.

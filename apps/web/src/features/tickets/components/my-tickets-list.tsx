@@ -1,7 +1,7 @@
 'use client';
 
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { TicketResponse } from '@trybun/contracts/tickets';
+import type { TicketListItemResponse } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
 import { ChevronRightIcon } from 'lucide-react';
@@ -95,7 +95,7 @@ function TicketGroup({
   isHighlighted = false,
 }: {
   heading: string | undefined;
-  tickets: TicketResponse[];
+  tickets: TicketListItemResponse[];
   showsProject: boolean;
   headingLevel: 2 | 3;
   isHighlighted?: boolean;

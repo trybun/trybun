@@ -11,14 +11,15 @@ import { attachmentsQueryOptions, ticketAttachmentsQueryOptions } from '../attac
 import { projectQueryOptions } from '../projects/queries.js';
 import { currentUserQueryOptions } from '../users/queries.js';
 import { ticketHref } from './hrefs.js';
-import { activityEventsQueryOptions, ticketQueryOptions } from './queries.js';
+import { timelineQueryOptions } from '../comments/queries.js';
+import { ticketQueryOptions } from './queries.js';
 
 /**
  * The ticket of a ticket page – the team ticket view or the portal's – by the identifier in its
  * address, prefetched for the browser with its timeline, its attachments, the images its
  * description references and the state of its project (§18.5), so the first paint has the content
- * and its images (§2.9). The team view also gets the current account, whose **Hide events** leaves
- * the timeline out (§4.5). A lower-case identifier – typed, or forwarded from the counterpart of
+ * and its images (§2.9). The team view also gets the current account, whose **Hide events** keeps
+ * only the comments in the timeline (§4.5). A lower-case identifier – typed, or forwarded from the counterpart of
  * the other shell – goes to its canonical upper-case form first, at `canonicalHref` (by default the
  * ticket page of the shell), because the identifier schema accepts only upper case. A ticket the
  * reader cannot see is answered like a missing one, and the page is not found (§5.3).
@@ -52,13 +53,9 @@ export async function getTicketPage(
     throw error ?? new Error('The ticket could not be read');
   }
   const imageIds = referencedAttachmentIds(ticket.description);
-  // A team member who hides the events gets none (Q5).
-  const isTimelineHidden =
-    shell === 'team' && queryClient.getQueryData(userOptions.queryKey)?.hideTimelineEvents === true;
   await Promise.all([
-    isTimelineHidden
-      ? undefined
-      : queryClient.prefetchInfiniteQuery(activityEventsQueryOptions(client, ticket.id)),
+    // Comments and events in one list; with **Hide events** the API returns the comments only.
+    queryClient.prefetchInfiniteQuery(timelineQueryOptions(client, ticket.id)),
     queryClient.prefetchInfiniteQuery(ticketAttachmentsQueryOptions(client, ticket.id)),
     imageIds.length === 0
       ? undefined

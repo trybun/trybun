@@ -24,7 +24,8 @@ export const MAX_ATTACHMENT_IDS_PER_REQUEST = 50;
 
 /**
  * An attachment (§13.3): its file name, the type of its allowlist entry and its stored size;
- * `isImage` for a raster image, which is shown inline; `ticketId` is `null` for a draft.
+ * `isImage` for a raster image, which is shown inline. An attachment has one parent, a ticket or a
+ * comment (S1-12 Q16): `ticketId` and `commentId` are both `null` for a draft.
  */
 export const attachmentSchema = z.object({
   id: z.uuid(),
@@ -34,6 +35,7 @@ export const attachmentSchema = z.object({
   isImage: z.boolean(),
   status: attachmentStatusSchema,
   ticketId: z.uuid().nullable(),
+  commentId: z.uuid().nullable(),
   /**
    * The uploader; `null` when the reader may not see their name – a customer of another
    * organization, shown as "Customer" (§5.4, S1-11 Q9).
