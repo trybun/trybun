@@ -116,11 +116,8 @@ export function VisibilityControl({ ticket }: { ticket: Ticket }) {
       {ticket.sharingRequest === 'rejected' && (
         <>
           <Badge variant="outline">{t('visibility.sharingRefused')}</Badge>
-          {ticket.sharingRefusalReason !== null && (
-            <span className="text-muted-foreground">
-              {t('visibility.refusalReason', { reason: ticket.sharingRefusalReason })}
-            </span>
-          )}
+          {/* The reason is a public comment of the timeline (S1-12 Q14). */}
+          <span className="text-muted-foreground">{t('visibility.refusalReasonInTimeline')}</span>
         </>
       )}
       {(dialog === 'share' || dialog === 'approve') && (

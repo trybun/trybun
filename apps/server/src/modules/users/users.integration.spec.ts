@@ -125,6 +125,7 @@ describe('users endpoints', () => {
       language: user.language,
       timeZone: 'Europe/Warsaw',
       hideTimelineEvents: false,
+      organizationsExist: false,
       allowedActions: [],
     });
   });

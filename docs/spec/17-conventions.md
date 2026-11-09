@@ -62,7 +62,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 - Tickets are never deleted; they are closed as `rejected` or `duplicate` ([§4.3](04-ticket-lifecycle.md)). Personal data is removed only through anonymization ([§13.2](13-non-functional.md)).
 - **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)), possible only while no ticket of the batch has activity events other than "Imported": the tickets of the batch are deleted physically with their activity events, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused: the ticket number counter is never lowered. The undo is recorded in the administrative audit log.
-- Other records (e.g. labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log.
+- Other records (e.g. comments, labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log. A comment is deleted with its revisions, mentions and attachments ([§6.1](06-comments-notifications.md)).
 - Activity events never reference deletable records by foreign key; they store the values they show (ID and display name, e.g. of a label or milestone) in their own data, so deleting a record never changes or breaks the history ([§4.5](04-ticket-lifecycle.md)).
 - There is no generic soft-delete (`deleted_at`) mechanism.
 
@@ -97,7 +97,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
   - The API returns the version as a weak `ETag` (`W/"<version>"`). `PATCH`, `PUT` and `DELETE` of a versioned record must send `If-Match`; a missing header (or `*`, which would match any version) returns `428 Precondition Required` (code `request.precondition_required`), a stale one – or a value that is not the ETag of a version – `412 Precondition Failed` (code `request.precondition_failed`), and the UI shows "This item was changed by someone else – reload to see the latest version" (PL: „Ten element został zmieniony przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję”).
   - The ticket's `version` covers only the ticket's own fields (title, description, type, priority, status, assignee, milestone, dates, visibility, parent). Child records – comments, attachments, labels assigned, watchers, relations, "I have the same problem" – are separate resources and do not change the ticket's `version`.
   - Automatic changes by the system (e.g. GitHub, the requester-reply status return, SLA, occurrence counts, automatic closing) do not send `If-Match` but do increase `version`, so a person editing at the same time gets a conflict instead of overwriting them.
-  - **Bulk actions** ([§8.1](08-team-views.md)) send `[{id, version}]` for at most 100 records. Each record is changed in its own transaction, and the response lists the result per record (`200`, `404`, `412`), so the UI can report the records that were not changed.
+  - **Bulk actions** ([§8.1](08-team-views.md)) send `[{id, version}]` for at most 100 records, with unique IDs; the version in the body takes the place of `If-Match`. Each record is changed in its own transaction, in request order, through the same checks and rules as a single change, so an invisible record is always `404`. The response is `200` with the result per record in request order: its HTTP status and, when it was not changed, the error code a single change would return – `200`, `403`, `404`, `409` (e.g. `project.archived`), `412` or `422` (a rule's code), and `500` with `server.internal_error` for an unexpected error of that record, which does not stop the others – so the UI can report the records that were not changed. Only request-level errors (`401`, `413`, `422` of the body, `429`) fail the whole request. A bulk change creates nothing and takes no `Idempotency-Key`; a repeated request reports `412` for the records the first one changed.
   - Kanban columns have no manual card order ([§8.2](08-team-views.md)); moving a card changes only its status.
 
 ### Errors
@@ -121,6 +121,14 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 | `request.rate_limited` | 429 | More requests than the rate limit of the principal or the client IP allows ([§14.4](14-architecture.md)) |
 | `server.internal_error` | 500 | An unexpected error; the response carries no details and the error is logged with the request ID |
 | `server.unavailable` | 503 | PostgreSQL is unavailable (see "Dependency failures") |
+
+- The codes of a feature are described with its rules; the comment codes are:
+
+| Code | Status | Meaning |
+|---|---|---|
+| `ticket.comments_closed` | 409 | An end user comments on a `rejected` or `duplicate` ticket or 14 days or more after `done` – the reason of the restriction of `add_comment` ([§4.3](04-ticket-lifecycle.md)) |
+| `comment.mention_not_allowed` | 422 | A new mention outside the mention scope, or of an unknown ID; field code `field.invalid` at `/body` ([§6.1](06-comments-notifications.md)) |
+| `comment.too_many_mentions` | 422 | More than 50 distinct mentions in one text; field code `field.invalid` at `/body` ([§6.1](06-comments-notifications.md)) |
 - The web application translates error codes into messages in the user's language (translation key `errors.<code>`, [§17.1](#171-code-naming-conventions)); raw server messages are never shown to users.
 - Validation errors return `422` with the code `request.validation_failed` and list the invalid fields in an `errors` member (`[{ "pointer": "/title", "code": "string.too_long" }]`, JSON Pointer to the field), so forms can show them next to the fields. Field error codes are `<kind>.<reason>` from a closed list, chosen by the failing schema rule; a new code is added to this list and to `@trybun/contracts/problem-details`:
 

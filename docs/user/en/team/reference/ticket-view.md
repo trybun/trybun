@@ -4,7 +4,7 @@ description: The parts of a ticket for the team – title, description, files, f
 views: ['/tickets/[identifier]']
 ---
 
-A ticket opens at its identifier, for example `/tickets/ERP-12`. On a computer its fields are in a panel on the right; on a phone or a tablet they are in the **Details** section below the title, and on a phone each field opens its choices at the bottom of the screen.
+A ticket opens at its identifier, for example `/tickets/ERP-12`, also from the [ticket list](ticket-list.md). On a computer its fields are in a panel on the right; on a phone or a tablet they are in the **Details** section below the title, and on a phone each field opens its choices at the bottom of the screen.
 
 You can change only what your role allows; everything else is shown as text. In an archived project the whole ticket is read-only, and a note says so.
 
@@ -32,6 +32,8 @@ The description is shown formatted ([format text](../../end-user/reference/forma
 | **Visibility** | Who among the customers sees a ticket from the portal: **Only me**, **My organization** or **All customers**, with a waiting or refused sharing request. See [Share a ticket with all customers](../how-to/share-a-ticket-with-all-customers.md) |
 | **Created**, **Updated** | When the ticket was created and last changed, in your time zone |
 
+To change many tickets in one step, use the list: see [Change many tickets at once](../how-to/change-many-tickets-at-once.md).
+
 ## Saving and Undo
 
 Type, priority and assignee are saved as soon as you choose a value. A message confirms the change and offers **Undo**, which changes the field back – this is a change of its own and appears in the activity too. There is no **Undo** after setting the type of a ticket whose type was **Not set**.
@@ -49,7 +51,7 @@ If someone else changed the ticket in the meantime, Trybun says so and shows the
 
 Choose the new status in **Status**:
 
-- **Rejected** asks for the reason, which is required.
+- **Rejected** asks for the reason, which is required. The reason is added to the timeline as your public comment ([comments and internal notes](comments-and-internal-notes.md)).
 - **Duplicate** asks for the **Original ticket** of the same project – enter its identifier, for example `ERP-7` or just `7`, check its title and select **Mark as duplicate**.
 - **Done** in a project that asks requesters to confirm the solution ([project settings](project-settings.md)) moves the ticket to **Waiting for requester** instead, with the message "The requester is asked to confirm that the problem is solved. The ticket closes automatically after 7 days."
 
@@ -59,4 +61,6 @@ A change between statuses that are not closed offers **Undo**. Closing or reopen
 
 **Activity** lists everything that happened to the ticket, oldest first: who opened it, and every change of its title, description, type, priority, assignee, status, visibility and files, with the old and the new value. Changes made automatically show **System** instead of a person; a person whose account was deleted shows as **Deleted user**. **Show more** at the end loads the later entries.
 
-Switch on **Hide events** to hide these entries. Trybun remembers the choice for your account, so it applies on every device.
+Comments and internal notes appear between these entries, and the form to write one is at the end: see [Comments and internal notes](comments-and-internal-notes.md).
+
+Switch on **Hide events** to hide these entries and show only the comments and notes. Trybun remembers the choice for your account, so it applies on every device.

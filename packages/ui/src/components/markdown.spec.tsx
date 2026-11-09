@@ -1,6 +1,8 @@
 import {
   ALLOWED_ATTACHMENT_ID,
   IMAGE_CASES,
+  MENTION_CASES,
+  MENTIONED_PEOPLE,
   unsafeHtmlFindings,
   XSS_CASES,
 } from '@trybun/markdown/testing';
@@ -54,6 +56,37 @@ describe('Markdown', () => {
       '<a href="https://example.com" rel="nofollow ugc noopener noreferrer">a</a>',
     );
     expect(html).toContain('<a href="/projects">b</a>');
+  });
+
+  it.each(MENTION_CASES)('renders mentions: $name', async ({ source, mentions, text }) => {
+    const html = await render(source, { mentions: MENTIONED_PEOPLE });
+    expect([...html.matchAll(/<span class="mention">@([^<]*)<\/span>/g)].map(([, n]) => n)).toEqual(
+      mentions,
+    );
+    if (text !== undefined) {
+      expect(html).toContain(text);
+    }
+  });
+
+  it('gives two texts with footnotes on one page unique IDs', async () => {
+    const source = 'Note[^1]\n\n[^1]: Footnote.';
+    const { prelude } = await prerender(
+      <>
+        <Markdown>{source}</Markdown>
+        <Markdown>{source}</Markdown>
+      </>,
+    );
+    const html = await new Response(prelude).text();
+    const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(([, id]) => id!);
+    expect(ids).toHaveLength(6);
+    expect(new Set(ids).size).toBe(6);
+    // Every reference points to an ID of the page.
+    const targets = [
+      ...[...html.matchAll(/href="#([^"]+)"/g)].map(([, id]) => id!),
+      ...[...html.matchAll(/aria-describedby="([^"]+)"/g)].map(([, id]) => id!),
+    ];
+    expect(targets.length).toBeGreaterThan(0);
+    expect(targets.filter((id) => !ids.includes(id))).toEqual([]);
   });
 
   it('applies the transform of the application after the rules', async () => {

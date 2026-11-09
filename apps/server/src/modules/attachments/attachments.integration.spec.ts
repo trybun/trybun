@@ -388,6 +388,7 @@ describe('attachments', () => {
         isImage: true,
         status: 'available',
         ticketId: ticket.id,
+        commentId: null,
         uploadedBy: { id: requester.user.id, displayName: requester.user.displayName },
         createdAt: row.createdAt.toISOString(),
         allowedActions: ['read', 'delete'],

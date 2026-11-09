@@ -55,6 +55,13 @@ interface AuditDetailsByAction {
   /** The decisions of a sharing request; the refusal reason is ticket content, never a detail. */
   'ticket.sharing_approved': null;
   'ticket.sharing_rejected': null;
+  /**
+   * The deletion and the redaction of comments by the team, and the redaction of a description
+   * (§13.5, S1-12): the comment's ticket and kind, never its content.
+   */
+  'comment.deleted': { ticketId: string; kind: 'public' | 'internal' };
+  'comment.redacted': { ticketId: string };
+  'ticket.description_redacted': null;
 }
 
 export type AuditAction = keyof AuditDetailsByAction;

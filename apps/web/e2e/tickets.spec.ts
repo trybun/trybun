@@ -74,24 +74,20 @@ test.describe('the team ticket view', () => {
     await expect(firstTicket.timelineItems.first()).toBeVisible();
     await firstTicket.setEventsHidden(true);
     await expect(firstTicket.eventsHidden).toBeVisible();
-    await expect(firstTicket.timelineItems).toHaveCount(0);
+    // Only the opening item stays: the ticket has no comments (S1-12).
+    await expect(firstTicket.timelineItems).toHaveCount(1);
     await first.close();
 
     const second = await browser.newContext({ ...DESKTOP, storageState: ADMIN_STORAGE_STATE });
     const page = await second.newPage();
-    const eventRequests: string[] = [];
-    page.on('request', (request) => {
-      if (new URL(request.url()).pathname.endsWith('/activity-events')) {
-        eventRequests.push(request.url());
-      }
-    });
     const secondTicket = new TicketPage(page);
     try {
       await secondTicket.goto(IDENTIFIER);
 
       await expect(secondTicket.eventsHidden).toBeVisible();
       await expect(secondTicket.hideEvents).toHaveAttribute('aria-checked', 'true');
-      expect(eventRequests).toEqual([]);
+      // The timeline of the API holds no events while the setting is on (S1-12 Q11).
+      await expect(secondTicket.timelineItems).toHaveCount(1);
     } finally {
       // The setting is the Administrator's on every device: it is turned off again.
       await secondTicket.setEventsHidden(false);

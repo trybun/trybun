@@ -4,7 +4,7 @@ description: Części zgłoszenia dla zespołu – tytuł, opis, pliki, pola i a
 views: ['/tickets/[identifier]']
 ---
 
-Zgłoszenie otwiera się pod swoim identyfikatorem, na przykład `/tickets/ERP-12`. Na komputerze jego pola są w panelu po prawej stronie; na telefonie i tablecie – w sekcji **Szczegóły** pod tytułem, a na telefonie każde pole otwiera swoje opcje na dole ekranu.
+Zgłoszenie otwiera się pod swoim identyfikatorem, na przykład `/tickets/ERP-12`, także z [listy zgłoszeń](ticket-list.md). Na komputerze jego pola są w panelu po prawej stronie; na telefonie i tablecie – w sekcji **Szczegóły** pod tytułem, a na telefonie każde pole otwiera swoje opcje na dole ekranu.
 
 Możesz zmieniać tylko to, na co pozwala Twoja rola; wszystko inne jest wyświetlane jako tekst. W zarchiwizowanym projekcie całe zgłoszenie jest tylko do odczytu, o czym informuje komunikat.
 
@@ -32,6 +32,8 @@ Opis jest wyświetlany ze sformatowaniem ([formatowanie tekstu](../../end-user/r
 | **Widoczność** | Kto z klientów widzi zgłoszenie z portalu: **Tylko dla mnie**, **Moja organizacja** albo **Wszyscy klienci**, z czekającą albo odrzuconą prośbą o udostępnienie. Zobacz [Udostępnij zgłoszenie wszystkim klientom](../how-to/share-a-ticket-with-all-customers.md) |
 | **Utworzono**, **Zaktualizowano** | Kiedy zgłoszenie utworzono i kiedy ostatnio zmieniono, w Twojej strefie czasowej |
 
+Aby zmienić wiele zgłoszeń w jednym kroku, użyj listy: zobacz [Zmień wiele zgłoszeń naraz](../how-to/change-many-tickets-at-once.md).
+
 ## Zapisywanie i cofanie
 
 Typ, priorytet i osoba przypisana zapisują się od razu po wybraniu wartości. Komunikat potwierdza zmianę i oferuje **Cofnij**, które przywraca poprzednią wartość – to osobna zmiana, która także pojawia się w aktywności. Po ustawieniu typu zgłoszenia, które miało typ **Nie ustawiono**, nie ma opcji **Cofnij**.
@@ -49,7 +51,7 @@ Jeśli w międzyczasie ktoś inny zmienił zgłoszenie, Trybun o tym informuje i
 
 Nowy status wybierz w polu **Status**:
 
-- **Odrzucone** wymaga podania powodu.
+- **Odrzucone** wymaga podania powodu. Powód trafia na oś czasu jako Twój komentarz publiczny ([komentarze i notatki wewnętrzne](comments-and-internal-notes.md)).
 - **Duplikat** wymaga podania **Oryginalnego zgłoszenia** z tego samego projektu – wpisz jego identyfikator, na przykład `ERP-7` albo samo `7`, sprawdź jego tytuł i wybierz **Oznacz jako duplikat**.
 - **Zakończone** w projekcie, który prosi zgłaszających o potwierdzenie rozwiązania ([ustawienia projektu](project-settings.md)), przenosi zgłoszenie do statusu **Oczekuje na zgłaszającego** z komunikatem „Poprosiliśmy zgłaszającego o potwierdzenie rozwiązania problemu. Zgłoszenie zamknie się automatycznie po 7 dniach.”
 
@@ -59,4 +61,6 @@ Zmiana między statusami, które nie są zamknięte, oferuje **Cofnij**. Zamkni�
 
 **Aktywność** pokazuje wszystko, co działo się ze zgłoszeniem, od najstarszych wpisów: kto je utworzył oraz każdą zmianę tytułu, opisu, typu, priorytetu, osoby przypisanej, statusu, widoczności i plików, z poprzednią i nową wartością. Zmiany automatyczne zamiast osoby pokazują **System**; osoba, której konto usunięto, jest wyświetlana jako **Usunięty użytkownik**. **Pokaż więcej** na końcu wczytuje kolejne wpisy.
 
-Włącz **Ukryj zdarzenia**, aby ukryć te wpisy. Trybun zapamiętuje ten wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu.
+Między tymi wpisami pojawiają się komentarze i notatki wewnętrzne, a formularz do ich pisania jest na końcu: zobacz [Komentarze i notatki wewnętrzne](comments-and-internal-notes.md).
+
+Włącz **Ukryj zdarzenia**, aby ukryć te wpisy i pokazać tylko komentarze i notatki. Trybun zapamiętuje ten wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu.

@@ -36,6 +36,7 @@ api.current = fake.client;
 /** Answers the reads of the view with `ticket`. */
 function answer(ticket: Ticket) {
   fake.on('GET /api/v1/tickets', { data: { items: [ticket], nextCursor: null } });
+  fake.on('GET /api/v1/tickets/{ticketId}', { data: ticket });
   fake.on('GET /api/v1/users/me', {
     data: {
       id: '0199a3f0-0000-7000-8000-000000000031',
@@ -107,7 +108,6 @@ describe('VisibilityControl', () => {
       data: {
         ...PENDING,
         sharingRequest: 'rejected',
-        sharingRefusalReason: 'Names a customer.',
         version: 4,
       },
     });
@@ -183,18 +183,12 @@ describe('VisibilityControl', () => {
     });
   });
 
-  it('shows the refusal and its reason to the team', async () => {
-    answer(
-      ticketResponse({
-        visibility: 'my_organization',
-        sharingRequest: 'rejected',
-        sharingRefusalReason: 'Names a customer.',
-      }),
-    );
+  it('shows the refusal and points to its reason in the timeline (S1-12)', async () => {
+    answer(ticketResponse({ visibility: 'my_organization', sharingRequest: 'rejected' }));
     renderView();
 
     expect(await screen.findByText('Sharing refused')).toBeDefined();
-    expect(screen.getByText('Reason of the refusal: Names a customer.')).toBeDefined();
+    expect(screen.getByText('The reason is in the timeline.')).toBeDefined();
   });
 
   it('leaves the visibility out for a ticket of the team (Q6)', async () => {
