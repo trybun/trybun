@@ -1,6 +1,6 @@
 # Execution plan — implement ticket visibility and sharing requests (S1-11)
 
-Source doc: .ai/specs/2026-10-26-ticket-visibility.md
+Source doc: .ai/specs/implemented/2026-10-26-ticket-visibility.md
 Spec PR: #121 (merged)
 
 ## 🎯 Goal
@@ -61,4 +61,4 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 
 ### Phase 7: Specification
 
-- [ ] 7.1 Apply the specification changes and move the spec to implemented
+- [x] 7.1 Apply the specification changes and move the spec to implemented — 5e29561
