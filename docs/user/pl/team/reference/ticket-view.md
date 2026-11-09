@@ -29,6 +29,7 @@ Opis jest wyświetlany ze sformatowaniem ([formatowanie tekstu](../../end-user/r
 | **Projekt** | Projekt zgłoszenia; nie można go zmienić |
 | **Zgłaszający** | Kto wysłał zgłoszenie |
 | **Organizacja** | Organizacja zgłaszającego, wyświetlana tylko wtedy, gdy istnieje |
+| **Widoczność** | Kto z klientów widzi zgłoszenie z portalu: **Tylko dla mnie**, **Moja organizacja** albo **Wszyscy klienci**, z czekającą albo odrzuconą prośbą o udostępnienie. Zobacz [Udostępnij zgłoszenie wszystkim klientom](../how-to/share-a-ticket-with-all-customers.md) |
 | **Utworzono**, **Zaktualizowano** | Kiedy zgłoszenie utworzono i kiedy ostatnio zmieniono, w Twojej strefie czasowej |
 
 ## Zapisywanie i cofanie
@@ -56,6 +57,6 @@ Zmiana między statusami, które nie są zamknięte, oferuje **Cofnij**. Zamkni�
 
 ## Aktywność
 
-**Aktywność** pokazuje wszystko, co działo się ze zgłoszeniem, od najstarszych wpisów: kto je utworzył oraz każdą zmianę tytułu, opisu, typu, priorytetu, osoby przypisanej, statusu i plików, z poprzednią i nową wartością. Zmiany automatyczne zamiast osoby pokazują **System**; osoba, której konto usunięto, jest wyświetlana jako **Usunięty użytkownik**. **Pokaż więcej** na końcu wczytuje kolejne wpisy.
+**Aktywność** pokazuje wszystko, co działo się ze zgłoszeniem, od najstarszych wpisów: kto je utworzył oraz każdą zmianę tytułu, opisu, typu, priorytetu, osoby przypisanej, statusu, widoczności i plików, z poprzednią i nową wartością. Zmiany automatyczne zamiast osoby pokazują **System**; osoba, której konto usunięto, jest wyświetlana jako **Usunięty użytkownik**. **Pokaż więcej** na końcu wczytuje kolejne wpisy.
 
 Włącz **Ukryj zdarzenia**, aby ukryć te wpisy. Trybun zapamiętuje ten wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu.
