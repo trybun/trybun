@@ -508,6 +508,12 @@ model Ticket {
   @@index([organizationId])
   @@index([projectId, visibility])
   @@index([createdAt, id])
+  /// The default sort of the list and the views by priority (S1-13 Q8), read backwards.
+  @@index([priority, updatedAt, id])
+  /// The views of open tickets and of the triage, by status (S1-13 Q20).
+  @@index([status, createdAt])
+  /// The sort by the last update (S1-13).
+  @@index([updatedAt, id])
   @@map("tickets")
 }
 
