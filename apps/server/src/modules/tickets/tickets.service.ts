@@ -122,7 +122,6 @@ function ticketSelect(principal: UserPrincipal) {
     statusBeforeWaiting: true,
     waitingSince: true,
     closedAt: true,
-    sharingRefusalReason: true,
     descriptionEditedAt: true,
     descriptionEditedById: true,
     version: true,
@@ -246,7 +245,6 @@ function toTicketResponse(
       row.organization === null ? null : { id: row.organization.id, name: row.organization.name },
     assignee: row.assignee,
     closedAt: row.closedAt?.toISOString() ?? null,
-    sharingRefusalReason: row.sharingRefusalReason,
   } satisfies Ticket;
 }
 
@@ -266,7 +264,6 @@ function visibilityFieldsOf(row: TicketRow): VisibilityFields {
   return {
     visibility: row.visibility,
     sharingRequest: row.sharingRequest,
-    sharingRefusalReason: row.sharingRefusalReason,
   };
 }
 
@@ -828,9 +825,18 @@ export class TicketsService {
       const before = await this.lockAndFindTicket(tx, ability, principal, target.id);
       this.assertCan(ability, decision.approve ? 'approve_sharing' : 'reject_sharing', before);
       const fields = visibilityFieldsOf(before);
-      const change = decision.approve
-        ? approveSharing(fields)
-        : rejectSharing(fields, decision.reason);
+      const change = decision.approve ? approveSharing(fields) : rejectSharing(fields);
+      if (!decision.approve) {
+        // The reason reaches the author as a public comment of the refusing team member, with the
+        // unchanged visibility as its audience (§5.2, S1-12 Q14).
+        await this.comments.add(
+          tx,
+          principal,
+          ability,
+          { ...before, assigneeId: before.assignee?.id ?? null },
+          { kind: 'public', body: decision.reason },
+        );
+      }
       return this.applyVisibilityChange(tx, ability, principal, target, before, change);
     });
   }

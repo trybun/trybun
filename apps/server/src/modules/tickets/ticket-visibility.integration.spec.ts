@@ -400,7 +400,7 @@ describe('changing the visibility and deciding sharing requests (§5.2, §5.3)',
   const stored = (id: string) =>
     prisma.ticket.findUniqueOrThrow({
       where: { id },
-      select: { visibility: true, sharingRequest: true, sharingRefusalReason: true, version: true },
+      select: { visibility: true, sharingRequest: true, version: true },
     });
   const eventsOf = (ticketId: string) =>
     prisma.activityEvent.findMany({
@@ -498,8 +498,8 @@ describe('changing the visibility and deciding sharing requests (§5.2, §5.3)',
     ]);
   });
 
-  it('refuses a request, keeps the visibility and stores the reason outside the event', async () => {
-    const { developer, ticket } = await setUp({
+  it('refuses a request, keeps the visibility and publishes the reason as a comment (S1-12)', async () => {
+    const { developer, requester, organization, ticket } = await setUp({
       visibility: 'my_organization',
       sharingRequest: 'pending',
     });
@@ -513,9 +513,18 @@ describe('changing the visibility and deciding sharing requests (§5.2, §5.3)',
     expect(await stored(ticket.id)).toMatchObject({
       visibility: 'my_organization',
       sharingRequest: 'rejected',
-      sharingRefusalReason: 'The description names a customer.',
     });
-    expect(res.body).toMatchObject({ sharingRefusalReason: 'The description names a customer.' });
+    expect(res.body).not.toHaveProperty('sharingRefusalReason');
+    // The author sees the reason as a public comment of the refusing team member (Q14).
+    const comments = await http()
+      .get(`/api/v1/tickets/${ticket.id}/comments`)
+      .set('Authorization', await authorizationOf(config, requester));
+    expect(comments.body).toMatchObject({
+      items: [{ body: 'The description names a customer.', author: { id: developer.id } }],
+    });
+    expect(await prisma.comment.findFirstOrThrow({ where: { ticketId: ticket.id } })).toMatchObject(
+      { audience: 'my_organization', audienceOrganizationId: organization.id },
+    );
     expect(await eventsOf(ticket.id)).toEqual([
       { type: 'sharing_rejected', data: null, isPublic: false, actorId: developer.id },
     ]);

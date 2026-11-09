@@ -98,4 +98,61 @@ describe('the copy migrations of the reasons (S1-12)', () => {
       ]);
     });
   });
+
+  describe('sharing refusal reasons (Q14)', () => {
+    beforeAll(async () => {
+      await prisma.$executeRawUnsafe(
+        'ALTER TABLE "tickets" ADD COLUMN "sharing_refusal_reason" TEXT',
+      );
+    });
+
+    afterEach(async () => {
+      await prisma.$executeRawUnsafe('UPDATE "tickets" SET "sharing_refusal_reason" = NULL');
+    });
+
+    afterAll(async () => {
+      await prisma.$executeRawUnsafe('ALTER TABLE "tickets" DROP COLUMN "sharing_refusal_reason"');
+    });
+
+    it('copies the reason with the refusing team member and the unchanged visibility', async () => {
+      const project = await createProject(prisma);
+      const organization = await prisma.organization.create({
+        data: { name: `Acme ${Date.now()}` },
+      });
+      const requester = await createUser(prisma, { kind: 'end_user' });
+      const manager = await createUser(prisma, { kind: 'team' });
+      const ticket = await createTicket(prisma, {
+        projectId: project.id,
+        requesterId: requester.id,
+        organizationId: organization.id,
+        source: 'user',
+        status: 'new',
+        type: null,
+        visibility: 'my_organization',
+        sharingRequest: 'rejected',
+      });
+      await prisma.$executeRaw`UPDATE "tickets" SET "sharing_refusal_reason" = ${'Names a customer.'} WHERE "id" = ${ticket.id}::uuid`;
+      const event = await createActivityEvent(prisma, {
+        ticketId: ticket.id,
+        actorId: manager.id,
+        type: 'sharing_rejected',
+        data: undefined,
+      });
+
+      await prisma.$executeRawUnsafe(
+        await copySql('20261110000300_copy_sharing_refusal_reasons_into_comments'),
+      );
+
+      expect(await prisma.comment.findMany({ where: { ticketId: ticket.id } })).toMatchObject([
+        {
+          authorId: manager.id,
+          kind: 'public',
+          audience: 'my_organization',
+          audienceOrganizationId: organization.id,
+          body: 'Names a customer.',
+          createdAt: event.createdAt,
+        },
+      ]);
+    });
+  });
 });

@@ -5,7 +5,6 @@ import type { TicketSharingRequest, TicketVisibility } from '@trybun/contracts/t
 export interface VisibilityFields {
   visibility: TicketVisibility;
   sharingRequest: TicketSharingRequest;
-  sharingRefusalReason: string | null;
 }
 
 /** The activity event of a use case, written by the service with the actor (§4.5). */
@@ -76,7 +75,7 @@ export function changeVisibility(
         ? 'my_organization'
         : before.visibility;
     return {
-      fields: { visibility: effective, sharingRequest: 'pending', sharingRefusalReason: null },
+      fields: { visibility: effective, sharingRequest: 'pending' },
       event: event('sharing_requested', before.visibility, effective),
       audit: null,
     };
@@ -86,7 +85,7 @@ export function changeVisibility(
   }
   const fields: VisibilityFields =
     target === 'all_customers'
-      ? { visibility: target, sharingRequest: 'none', sharingRefusalReason: null }
+      ? { visibility: target, sharingRequest: 'none' }
       : { ...before, visibility: target };
   return {
     fields,
@@ -101,7 +100,7 @@ export function changeVisibility(
  */
 export function approveSharing(before: VisibilityFields): VisibilityChange {
   return {
-    fields: { visibility: 'all_customers', sharingRequest: 'none', sharingRefusalReason: null },
+    fields: { visibility: 'all_customers', sharingRequest: 'none' },
     event: {
       type: 'sharing_approved',
       data: { from: before.visibility, to: 'all_customers' },
@@ -112,12 +111,12 @@ export function approveSharing(before: VisibilityFields): VisibilityChange {
 }
 
 /**
- * A refusal of a pending request with its reason (§5.2): the visibility stays, the request becomes
- * `rejected`; the reason never enters the event (Q8, Q11).
+ * A refusal of a pending request (§5.2): the visibility stays, the request becomes `rejected`. Its
+ * reason is a public comment of the service (S1-12 Q14) and never enters the event (Q8, Q11).
  */
-export function rejectSharing(before: VisibilityFields, reason: string): VisibilityChange {
+export function rejectSharing(before: VisibilityFields): VisibilityChange {
   return {
-    fields: { ...before, sharingRequest: 'rejected', sharingRefusalReason: reason },
+    fields: { ...before, sharingRequest: 'rejected' },
     event: { type: 'sharing_rejected', data: null, isPublic: false },
     audit: 'ticket.sharing_rejected',
   };
@@ -135,7 +134,6 @@ export function initialVisibility(
   const onlyMe: VisibilityFields = {
     visibility: 'only_me',
     sharingRequest: 'none',
-    sharingRefusalReason: null,
   };
   return (
     changeVisibility(onlyMe, { target: requested, isByRequester: true, canChooseOrganization })

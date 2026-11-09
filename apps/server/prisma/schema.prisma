@@ -477,9 +477,6 @@ model Ticket {
   /// organization snapshot and the source (S1-11).
   visibility            TicketVisibility     @default(only_me)
   sharingRequest        TicketSharingRequest @default(none) @map("sharing_request")
-  /// The reason of a sharing refusal, set exactly while the request is `rejected`; team only.
-  /// Personal data: S1-16 covers it until S1-12 publishes it as a comment and drops it (Q8).
-  sharingRefusalReason  String?              @map("sharing_refusal_reason")
   /// The last edit or redaction of the description (§6.1), set together; none before the first.
   descriptionEditedAt   DateTime?            @map("description_edited_at") @db.Timestamptz(3)
   descriptionEditedById String?              @map("description_edited_by_id") @db.Uuid

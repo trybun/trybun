@@ -29,7 +29,6 @@ export function ticketResponse(overrides: Partial<Ticket> = {}): Ticket {
     organization: null,
     assignee: { id: '0199a3f0-0000-7000-8000-000000000031', displayName: 'Anna' },
     closedAt: null,
-    sharingRefusalReason: null,
     ...overrides,
   };
 }

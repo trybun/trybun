@@ -368,7 +368,7 @@
       "withdrawn": "Request to share withdrawn",
       "sharingRequested": "Sharing requested",
       "sharingRefused": "Sharing refused",
-      "refusalReason": "Reason of the refusal: {reason}",
+      "refusalReasonInTimeline": "The reason is in the timeline.",
       "share": "Share with all customers",
       "shareTitle": "Share {identifier} with all customers?",
       "shareDescription": "Check that the description and attachments contain no data identifying the customer.",

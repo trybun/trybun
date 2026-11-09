@@ -146,10 +146,11 @@ describe('redaction', () => {
       descriptionEditedAt: expect.any(String) as string,
     });
     expect(await rowsWith(SECRET)).toEqual([]);
+    // Two requests within one millisecond may get UUIDv7s out of order: compare the set.
     expect(
-      (await prisma.activityEvent.findMany({ where: { ticketId: ticket.id } })).map(
-        ({ type }) => type,
-      ),
+      (await prisma.activityEvent.findMany({ where: { ticketId: ticket.id } }))
+        .map(({ type }) => type)
+        .sort(),
     ).toEqual(['description_edited', 'description_redacted']);
   });
 

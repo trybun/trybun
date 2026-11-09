@@ -368,7 +368,7 @@
       "withdrawn": "Wycofano prośbę o udostępnienie",
       "sharingRequested": "Prośba o udostępnienie",
       "sharingRefused": "Odmowa udostępnienia",
-      "refusalReason": "Powód odmowy: {reason}",
+      "refusalReasonInTimeline": "Powód jest na osi czasu.",
       "share": "Udostępnij wszystkim klientom",
       "shareTitle": "Udostępnić {identifier} wszystkim klientom?",
       "shareDescription": "Sprawdź, czy opis i załączniki nie zawierają danych identyfikujących klienta.",

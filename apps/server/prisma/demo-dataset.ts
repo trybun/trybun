@@ -747,12 +747,13 @@ export function buildDemoDataset(): DemoDataset {
           ],
     ),
   ];
-  const { tickets, ticketRelations, ticketNumberCounters, activityEvents, comments } = buildDemoTickets(
-    [...team, ...endUsers, ...portalUsers, ...visibilityUsers],
-    projects,
-    organizationIds,
-    organizationMembers,
-  );
+  const { tickets, ticketRelations, ticketNumberCounters, activityEvents, comments } =
+    buildDemoTickets(
+      [...team, ...endUsers, ...portalUsers, ...visibilityUsers],
+      projects,
+      organizationIds,
+      organizationMembers,
+    );
   return {
     users: [...team, ...endUsers, ...portalUsers, ...visibilityUsers, ...invitedAndDeactivated],
     productTourProgress,
@@ -856,13 +857,38 @@ function buildDemoTickets(
           : (organizationOf.get(requesterId) ?? null),
       visibility: 'visibility' in ticket ? ticket.visibility : 'only_me',
       sharingRequest: 'sharingRequest' in ticket ? ticket.sharingRequest : 'none',
-      sharingRefusalReason: 'sharingRefusalReason' in ticket ? ticket.sharingRefusalReason : null,
       requesterId,
       assigneeId: ticket.assignee === null ? null : (accountIds[ticket.assignee] ?? null),
       version: 1 + ticket.events.length,
       createdAt,
       updatedAt: createdAt,
     });
+    if ('sharingRefusalReason' in ticket) {
+      // A refused request (S1-11): the refusal event of the manager and the reason as a public
+      // comment with the unchanged visibility as its audience (S1-12 Q14).
+      const refusedAt = new Date(createdAt.getTime() + 6 * 60 * 60 * 1000);
+      activityEvents.push({
+        id: demoId(1100 + index),
+        ticketId: id,
+        type: 'sharing_rejected',
+        actorId: accountIds.manager ?? null,
+        createdAt: refusedAt,
+      });
+      comments.push({
+        id: demoId(1200 + index),
+        ticketId: id,
+        authorId: accountIds.manager ?? '',
+        kind: 'public',
+        audience: 'visibility' in ticket ? ticket.visibility : 'only_me',
+        audienceOrganizationId:
+          'visibility' in ticket && ticket.visibility === 'my_organization'
+            ? (organizationOf.get(requesterId) ?? null)
+            : null,
+        body: ticket.sharingRefusalReason,
+        createdAt: refusedAt,
+        updatedAt: refusedAt,
+      });
+    }
     ticket.events.forEach((event, eventIndex) => {
       const isReference = event.field === 'assignee';
       activityEvents.push({
@@ -910,7 +936,7 @@ function buildDemoTickets(
     if ('rejectionReason' in change) {
       // The reason of a rejection is a public comment of the rejecting team member (S1-12 Q13).
       comments.push({
-        id: demoId(950 + index),
+        id: demoId(1300 + index),
         ticketId: ticket.id ?? '',
         authorId: accountIds[change.by] ?? '',
         kind: 'public',
@@ -997,10 +1023,7 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     // Worker's `attachment.deleted` job, as for every deleted attachment (S1-08).
     const attachments = await tx.attachment.findMany({
       where: {
-        OR: [
-          { ticket: { is: demoTickets } },
-          { comment: { is: { ticket: { is: demoTickets } } } },
-        ],
+        OR: [{ ticket: { is: demoTickets } }, { comment: { is: { ticket: { is: demoTickets } } } }],
       },
       select: { id: true },
     });

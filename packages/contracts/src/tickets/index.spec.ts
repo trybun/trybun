@@ -343,8 +343,6 @@ describe('ticketResponseSchema', () => {
       organization: null,
       assignee: null,
       closedAt: null,
-      rejectionReason: null,
-      sharingRefusalReason: null,
     };
 
     expect(ticketResponseSchema.parse(ticket)).toEqual(ticket);
@@ -359,8 +357,7 @@ describe('ticketResponseSchema', () => {
         source: 'user',
         priority: 'high',
         status: 'in_verification',
-        rejectionReason: 'Internal',
-        sharingRefusalReason: 'Internal',
+        closedAt: null,
       }),
     ).toEqual(endUserTicket);
   });
