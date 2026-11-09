@@ -20,7 +20,17 @@ import { createTicket } from '../../../test/factories/ticket.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
 import { mswServer } from '../../../test/msw/server.js';
 import { integrationConfig } from '../../../test/setup/config.js';
+import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import { ApiModule } from '../../api.module.js';
+import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
+import { ClockModule } from '../../platform/clock/clock.module.js';
+import { ConfigModule } from '../../platform/config/config.module.js';
+import { DatabaseModule } from '../../platform/database/database.module.js';
+import { LoggingModule } from '../../platform/logging/logging.module.js';
+import { ActivityEventsModule } from '../activity-events/activity-events.module.js';
+import { ProjectsModule } from '../projects/projects.module.js';
+import { UsersModule } from '../users/users.module.js';
+import { TicketUnassignmentService } from './ticket-unassignment.service.js';
 import type { Project } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../platform/database/prisma.service.js';
 import { API_PREFIX } from '../../platform/http/api-prefix.js';
@@ -320,6 +330,44 @@ describe('ticket list (S1-13)', () => {
         false,
       );
     });
+  });
+
+  it('lists a ticket whose assignee was deactivated in Unassigned (S1-13 Q16)', async () => {
+    // The Worker's job of S1-05 (§7.4), in a module of its own as the Worker runs it.
+    const worker = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot(config),
+        LoggingModule.forRoot(),
+        ClockModule,
+        DatabaseModule,
+        AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
+        ActivityEventsModule,
+        ProjectsModule,
+        UsersModule,
+      ],
+      providers: [TicketUnassignmentService],
+    }).compile();
+    await worker.init();
+    try {
+      const { project, colleague, authorization, tickets } = await seed();
+      const unassigned = { assigneeId: 'none', status: ['new', 'triage', 'todo', 'in_progress'] };
+      expect(
+        ids(
+          await listAll(authorization, { projectId: project.id, sort: 'priority', ...unassigned }),
+        ),
+      ).toEqual([tickets.b.id]);
+
+      await prisma.user.update({ where: { id: colleague.id }, data: { state: 'deactivated' } });
+      await worker.get(TicketUnassignmentService).unassignDeactivatedUser(colleague.id);
+
+      expect(
+        ids(
+          await listAll(authorization, { projectId: project.id, sort: 'priority', ...unassigned }),
+        ),
+      ).toEqual(ids([tickets.b, tickets.c]));
+    } finally {
+      await worker.close();
+    }
   });
 
   it('keeps a user who is not a member out of the list', async () => {
