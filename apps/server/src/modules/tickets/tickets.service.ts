@@ -18,6 +18,7 @@ import {
   type TicketAction,
   ticketActionSchema,
   ticketIdentifier,
+  type TicketListItemResponse,
   type TicketPage,
   type TicketReference,
   type TicketResponse,
@@ -93,6 +94,11 @@ import {
   lockTicketsForUpdate,
 } from './tickets.sql.js';
 import { identitySelect, visiblePerson } from '../users/visible-person.js';
+import {
+  assertNoTeamListParameters,
+  ticketListConditions,
+  ticketListOrder,
+} from './ticket-list-query.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
 
@@ -247,6 +253,17 @@ function toTicketResponse(
     assignee: row.assignee,
     closedAt: row.closedAt?.toISOString() ?? null,
   } satisfies Ticket;
+}
+
+/** A ticket in a list (S1-13 Q10): its response without the description. */
+function toTicketListItem(
+  row: TicketRow,
+  ability: AppAbility,
+  principal: UserPrincipal,
+): TicketListItemResponse {
+  const { description, ...item } = toTicketResponse(row, ability, principal);
+  void description;
+  return item;
 }
 
 /** The fields of a ticket the activity history records (§4.5). */
@@ -514,19 +531,24 @@ export class TicketsService {
   }
 
   /**
-   * The tickets the principal can see, newest first: by number within a project. `identifier`
-   * finds the one ticket with it, or none when it is invisible; `involvement=mine` lists the
-   * tickets the principal requested in the order of "My tickets".
+   * The tickets the principal can see (§3.2, §8.1). Without `sort`: newest first – by number
+   * within one project. `identifier` finds the one ticket with it, or none when it is invisible;
+   * `involvement=mine` lists the tickets the principal requested in the order of "My tickets".
+   * The filters and `sort` of the team (S1-13) only narrow the `read` filter of the ability, so
+   * the list never returns a ticket whose detail is `404`.
    */
   async list(principal: UserPrincipal, query: ListTicketsQuery): Promise<TicketPage> {
+    if (principal.userKind === 'end_user') {
+      assertNoTeamListParameters(query);
+    }
     const ability = this.abilities.forPrincipal(principal);
     if (query.involvement === 'mine') {
       return this.listRequested(principal, ability, query);
     }
-    const filters: Prisma.TicketWhereInput[] = [accessibleBy(ability, 'read').ofType(TICKET)];
-    if (query.projectId !== undefined) {
-      filters.push({ projectId: query.projectId });
-    }
+    const filters: Prisma.TicketWhereInput[] = [
+      accessibleBy(ability, 'read').ofType(TICKET),
+      ...ticketListConditions(query, principal.userId),
+    ];
     if (query.identifier !== undefined) {
       const separator = query.identifier.lastIndexOf('-');
       filters.push({
@@ -535,8 +557,19 @@ export class TicketsService {
       });
     }
     const select = ticketSelect(principal);
-    const toItem = (row: TicketRow) => toTicketResponse(row, ability, principal);
-    if (query.projectId !== undefined) {
+    const toItem = (row: TicketRow) => toTicketListItem(row, ability, principal);
+    if (query.sort !== undefined) {
+      const order = ticketListOrder(query.sort, query.order ?? 'desc');
+      const after = decodeCursor(query.cursor, order.cursorSchema);
+      const rows = await this.prisma.ticket.findMany({
+        where: { AND: [...filters, after === null ? {} : order.after(after)] },
+        select,
+        orderBy: order.orderBy,
+        take: query.limit + 1,
+      });
+      return toPage(rows, query.limit, toItem, (row) => order.cursorOf(row));
+    }
+    if (query.projectId?.length === 1) {
       const after = decodeCursor(query.cursor, numberSortKeySchema);
       const rows = await this.prisma.ticket.findMany({
         where: { AND: [...filters, after === null ? {} : { number: { lt: after[0] } }] },
@@ -582,7 +615,7 @@ export class TicketsService {
   ): Promise<TicketPage> {
     const after = decodeCursor(query.cursor, requestedSortKeySchema);
     const keys = await listRequestedTicketKeys(this.prisma, principal.userId, {
-      projectId: query.projectId ?? null,
+      projectIds: query.projectId ?? null,
       after:
         after === null
           ? null
@@ -603,7 +636,7 @@ export class TicketsService {
     return {
       items: page.items.flatMap((id) => {
         const row = rowsById.get(id);
-        return row === undefined ? [] : [toTicketResponse(row, ability, principal)];
+        return row === undefined ? [] : [toTicketListItem(row, ability, principal)];
       }),
       nextCursor: page.nextCursor,
     };

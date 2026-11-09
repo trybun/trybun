@@ -486,8 +486,10 @@ describe('ticketResponseSchema', () => {
       closedAt: null,
     };
     const endUser = { ...common, publicStatusDescription: 'testing' };
-    const { description: _team, ...teamItem } = team;
-    const { description: _endUser, ...endUserItem } = endUser;
+    const withoutDescription = (ticket: Record<string, unknown>) =>
+      Object.fromEntries(Object.entries(ticket).filter(([key]) => key !== 'description'));
+    const teamItem = withoutDescription(team);
+    const endUserItem = withoutDescription(endUser);
 
     expect(ticketPageSchema.parse({ items: [team, endUser], nextCursor: null })).toEqual({
       items: [teamItem, endUserItem],

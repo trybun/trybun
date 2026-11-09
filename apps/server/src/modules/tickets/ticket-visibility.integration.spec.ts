@@ -866,6 +866,53 @@ describe('lists equal details over the demo dataset (S1-11 Q13)', () => {
     }
   }, 120_000);
 
+  // S1-13: the filters and sorts of the team narrow the same `read` filter – a sorted list holds
+  // exactly the tickets of the unsorted one, and a filtered list only tickets whose detail is 200.
+  it('keeps every sorted and filtered list of the team within the readable tickets (S1-13)', async () => {
+    const principals = await prisma.user.findMany({
+      where: {
+        state: 'active',
+        email: { in: ['admin@example.com', 'manager@example.com', 'developer@example.com'] },
+      },
+    });
+    const http = request(app.getHttpServer());
+    const listAll = async (authorization: string, query: Record<string, unknown>) => {
+      const listed: string[] = [];
+      let cursor: string | null = null;
+      do {
+        const res = await http
+          .get('/api/v1/tickets')
+          .query({ limit: 7, ...query, ...(cursor === null ? {} : { cursor }) })
+          .set('Authorization', authorization);
+        expect(res.status, JSON.stringify(query)).toBe(200);
+        const page = res.body as TicketPage;
+        listed.push(...page.items.map(({ id }) => id));
+        cursor = page.nextCursor;
+      } while (cursor !== null);
+      return listed;
+    };
+    for (const principal of principals) {
+      const authorization = await authorizationOf(config, principal);
+      const all = new Set(await listAll(authorization, {}));
+      for (const sort of ['priority', 'status', 'identifier', 'createdAt', 'updatedAt']) {
+        for (const order of ['asc', 'desc']) {
+          const sorted = await listAll(authorization, { sort, order });
+          expect(new Set(sorted).size, `${sort} ${order}`).toBe(sorted.length);
+          expect(new Set(sorted), `${principal.email} ${sort} ${order}`).toEqual(all);
+        }
+      }
+      for (const filters of [
+        { assigneeId: 'none', status: ['new', 'triage', 'todo'] },
+        { sharingRequest: 'pending' },
+        { priority: 'critical', organizationId: 'none' },
+      ]) {
+        for (const id of await listAll(authorization, { ...filters, sort: 'priority' })) {
+          expect(all.has(id), `${principal.email} ${JSON.stringify(filters)}`).toBe(true);
+        }
+      }
+    }
+  }, 120_000);
+
   // S1-12: no end-user list of comments or timeline returns a comment whose detail is `404`, and
   // every comment a detail returns is in the list of its ticket.
   it('lists a comment for every principal exactly when its detail is 200, else 404', async () => {
