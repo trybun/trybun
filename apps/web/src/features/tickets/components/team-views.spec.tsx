@@ -31,6 +31,11 @@ vi.stubGlobal('matchMedia', (query: string) => ({
 const { TeamTicketView } = await import('./team-ticket-view.js');
 const { ActivityEventItem } = await import('./activity-event-item.js');
 
+/** Events as the items of a ticket's timeline (S1-12 Q11). */
+function asTimeline(events: readonly object[]) {
+  return events.map((event) => ({ type: 'event' as const, event }));
+}
+
 const fake = createFakeApiClient();
 api.current = fake.client;
 
@@ -111,8 +116,8 @@ function answer(
       allowedActions: projectState === 'active' ? ['read', 'create_ticket'] : ['read'],
     },
   });
-  fake.on('GET /api/v1/tickets/{ticketId}/activity-events', {
-    data: { items: events, nextCursor: null },
+  fake.on('GET /api/v1/tickets/{ticketId}/timeline', {
+    data: { items: asTimeline(events), nextCursor: null },
   });
   fake.on('GET /api/v1/tickets/{ticketId}/attachments', { data: { items: [], nextCursor: null } });
 }
@@ -213,25 +218,25 @@ describe('TeamTicketView', () => {
     const user = userEvent.setup();
     const value = ticket();
     answer(value);
-    fake.on('GET /api/v1/tickets/{ticketId}/activity-events', (init) => {
+    fake.on('GET /api/v1/tickets/{ticketId}/timeline', (init) => {
       const cursor = (init as { params: { query: { cursor?: string } } }).params.query.cursor;
       return cursor === undefined
         ? {
             data: {
-              items: [event({ id: '0199a3f0-0000-7000-8000-000000000041' })],
+              items: asTimeline([event({ id: '0199a3f0-0000-7000-8000-000000000041' })]),
               nextCursor: 'next',
             },
           }
         : {
             data: {
-              items: [
+              items: asTimeline([
                 event({
                   id: '0199a3f0-0000-7000-8000-000000000042',
                   type: 'priority_changed',
                   data: { from: 'normal', to: 'high' },
                   actor: JAN,
                 }),
-              ],
+              ]),
               nextCursor: null,
             },
           };
@@ -254,14 +259,14 @@ describe('TeamTicketView', () => {
       'Jan changed the priority: Normal → High',
     ]);
     expect(activity.queryByRole('button', { name: 'Show more' })).toBeNull();
-    expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/activity-events')[1]?.init).toMatchObject({
+    expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/timeline')[1]?.init).toMatchObject({
       params: { path: { ticketId: value.id }, query: { cursor: 'next' } },
     });
   });
 });
 
 describe('Hide events', () => {
-  it('shows no events and requests none while the setting is on (Q5)', async () => {
+  it('shows no events while the setting is on (Q5)', async () => {
     answer(ticket(), { hideTimelineEvents: true, events: [event({})] });
     renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
 
@@ -270,8 +275,7 @@ describe('Hide events', () => {
     expect(activity.getByRole('switch', { name: 'Hide events' }).getAttribute('aria-checked')).toBe(
       'true',
     );
-    expect(activity.queryByRole('listitem')).toBeNull();
-    expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/activity-events')).toHaveLength(0);
+    expect(activity.queryByText('Anna edited the description')).toBeNull();
   });
 
   it('hides the events at once and stores the setting on the account', async () => {
@@ -301,7 +305,7 @@ describe('Hide events', () => {
     }
   });
 
-  it('shows the events again and requests them when the setting is turned off', async () => {
+  it('shows the events again and reads the timeline again when the setting is turned off', async () => {
     const user = userEvent.setup();
     answer(ticket(), { hideTimelineEvents: true, events: [event({})] });
     fake.on('PATCH /api/v1/users/me', { data: currentUser({ hideTimelineEvents: false }) });
@@ -312,7 +316,7 @@ describe('Hide events', () => {
 
     expect(await activity.findByText('Anna edited the description')).toBeDefined();
     expect(activity.queryByText('Events are hidden. Comments appear here.')).toBeNull();
-    expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/activity-events')).toHaveLength(1);
+    expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/timeline')).toHaveLength(2);
   });
 
   it('waits for the answer before the next change, so an older answer never wins', async () => {

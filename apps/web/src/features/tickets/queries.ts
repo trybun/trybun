@@ -53,25 +53,6 @@ export function ticketQueryOptions(client: ApiClient, identifier: string) {
   });
 }
 
-/** The activity events of a ticket the person may see, oldest first, page by page (§4.5). */
-export function activityEventsQueryOptions(client: ApiClient, ticketId: string) {
-  return infiniteQueryOptions({
-    queryKey: ['activity-events', 'list', ticketId],
-    queryFn: ({ pageParam, signal }) =>
-      dataOf(
-        client.GET('/api/v1/tickets/{ticketId}/activity-events', {
-          params: {
-            path: { ticketId },
-            query: pageParam === null ? {} : { cursor: pageParam },
-          },
-          signal,
-        }),
-      ),
-    initialPageParam: null as string | null,
-    getNextPageParam: (page) => page.nextCursor,
-  });
-}
-
 /** How many people the assignee picker shows for one search. */
 const ASSIGNABLE_MEMBERS_LIMIT = 50;
 

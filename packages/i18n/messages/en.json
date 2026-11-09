@@ -536,6 +536,66 @@
     "deleted": "File {name} deleted",
     "unavailable": "File {name} is no longer available"
   },
+  "comments": {
+    "kindLabel": "Kind of the comment",
+    "kinds": {
+      "internal": "Internal note",
+      "public": "Public comment"
+    },
+    "audience": {
+      "only_me": "Visible to the requester",
+      "my_organization": "Visible to organization {organization}",
+      "all_customers": "Visible to all customers of the project"
+    },
+    "commentLabel": "Comment",
+    "bodyRequired": "Write the comment",
+    "editLabel": "Edit the comment",
+    "submit": "Comment",
+    "submitInternal": "Add internal note",
+    "submitPublic": "Comment publicly",
+    "closed": "This ticket is closed for comments.",
+    "createNewTicket": "Create a new ticket",
+    "internalNote": "Internal note",
+    "edited": "edited",
+    "showHistory": "edited – show the edit history",
+    "actions": "Actions of the comment",
+    "edit": "Edit",
+    "delete": "Delete",
+    "redact": "Redact",
+    "save": "Save",
+    "cancel": "Cancel",
+    "customer": "Customer",
+    "unknownPerson": "Unknown person",
+    "deleteDialog": {
+      "title": "Delete this comment?",
+      "description": "The comment, its earlier versions and its files are deleted. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "discard": {
+      "title": "Discard your changes?",
+      "description": "The text you typed will be lost.",
+      "confirm": "Discard",
+      "cancel": "Keep editing"
+    },
+    "history": {
+      "title": "Edit history",
+      "description": "The earlier versions, newest first.",
+      "writtenBy": "{person}, {time}",
+      "empty": "There are no earlier versions.",
+      "showMore": "Show more"
+    },
+    "redaction": {
+      "commentTitle": "Redact the comment",
+      "descriptionTitle": "Redact the description",
+      "description": "Replace the text to remove personal data.",
+      "warning": "The current text is replaced and the selected earlier versions are deleted. This cannot be undone. E-mails already sent and backups keep the earlier text.",
+      "text": "New text",
+      "versions": "Earlier versions to delete",
+      "confirm": "Redact"
+    },
+    "descriptionHistory": "Description history",
+    "redactDescription": "Redact the description"
+  },
   "users": {
     "accounts": {
       "title": "Accounts",

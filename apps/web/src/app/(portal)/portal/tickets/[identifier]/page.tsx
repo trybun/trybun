@@ -2,9 +2,13 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { TicketView } from '../../../../../features/tickets/components/ticket-view.js';
 import { getTicketPage } from '../../../../../features/tickets/ticket-page.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
+import { getEnv } from '../../../../../lib/env/env.js';
 import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
 
-/** A ticket in the portal (§5.7): its public status, description and public timeline. */
+/**
+ * A ticket in the portal (§5.7): its public status, description, public timeline and comments
+ * (S1-12).
+ */
 export default async function PortalTicketPage({
   params,
 }: {
@@ -15,7 +19,7 @@ export default async function PortalTicketPage({
   await getTicketPage(identifier, 'portal');
   return (
     <HydrationBoundary state={dehydrate(getServerQueryClient())}>
-      <TicketView identifier={identifier} />
+      <TicketView identifier={identifier} attachmentMaxSizeMb={getEnv().attachmentMaxSizeMb} />
     </HydrationBoundary>
   );
 }

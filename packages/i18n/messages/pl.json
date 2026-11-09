@@ -536,6 +536,66 @@
     "deleted": "Usunięto plik {name}",
     "unavailable": "Plik {name} nie jest już dostępny"
   },
+  "comments": {
+    "kindLabel": "Rodzaj komentarza",
+    "kinds": {
+      "internal": "Notatka wewnętrzna",
+      "public": "Komentarz publiczny"
+    },
+    "audience": {
+      "only_me": "Widoczny dla zgłaszającego",
+      "my_organization": "Widoczny dla organizacji {organization}",
+      "all_customers": "Widoczny dla wszystkich klientów projektu"
+    },
+    "commentLabel": "Komentarz",
+    "bodyRequired": "Wpisz komentarz",
+    "editLabel": "Edycja komentarza",
+    "submit": "Skomentuj",
+    "submitInternal": "Dodaj notatkę wewnętrzną",
+    "submitPublic": "Skomentuj publicznie",
+    "closed": "To zgłoszenie jest zamknięte dla komentarzy.",
+    "createNewTicket": "Utwórz nowe zgłoszenie",
+    "internalNote": "Notatka wewnętrzna",
+    "edited": "edytowano",
+    "showHistory": "edytowano – pokaż historię edycji",
+    "actions": "Akcje komentarza",
+    "edit": "Edytuj",
+    "delete": "Usuń",
+    "redact": "Zredaguj",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "customer": "Klient",
+    "unknownPerson": "Nieznana osoba",
+    "deleteDialog": {
+      "title": "Usunąć ten komentarz?",
+      "description": "Komentarz, jego wcześniejsze wersje i pliki zostaną usunięte. Tego nie można cofnąć.",
+      "confirm": "Usuń"
+    },
+    "discard": {
+      "title": "Odrzucić zmiany?",
+      "description": "Wpisany tekst zostanie utracony.",
+      "confirm": "Odrzuć",
+      "cancel": "Edytuj dalej"
+    },
+    "history": {
+      "title": "Historia edycji",
+      "description": "Wcześniejsze wersje, od najnowszej.",
+      "writtenBy": "{person}, {time}",
+      "empty": "Brak wcześniejszych wersji.",
+      "showMore": "Pokaż więcej"
+    },
+    "redaction": {
+      "commentTitle": "Zredaguj komentarz",
+      "descriptionTitle": "Zredaguj opis",
+      "description": "Zastąp treść, aby usunąć dane osobowe.",
+      "warning": "Bieżąca treść zostanie zastąpiona, a zaznaczone wcześniejsze wersje usunięte. Tego nie można cofnąć. Wysłane już e-maile i kopie zapasowe zachowują wcześniejszą treść.",
+      "text": "Nowa treść",
+      "versions": "Wcześniejsze wersje do usunięcia",
+      "confirm": "Zredaguj"
+    },
+    "descriptionHistory": "Historia opisu",
+    "redactDescription": "Zredaguj opis"
+  },
   "users": {
     "accounts": {
       "title": "Konta",

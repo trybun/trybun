@@ -29,6 +29,11 @@ const { MyTicketsList } = await import('./my-tickets-list.js');
 const { TicketView } = await import('./ticket-view.js');
 const { ResolutionConfirmation } = await import('./resolution-confirmation.js');
 
+/** Events as the items of a ticket's timeline (S1-12 Q11). */
+function asTimeline(events: readonly object[]) {
+  return events.map((event) => ({ type: 'event' as const, event }));
+}
+
 const fake = createFakeApiClient();
 api.current = fake.client;
 
@@ -114,9 +119,9 @@ describe('TicketView', () => {
     fake.on('GET /api/v1/projects/{projectId}', {
       data: { ...PROJECT, state: 'active', allowedActions: ['read', 'create_ticket'] },
     });
-    fake.on('GET /api/v1/tickets/{ticketId}/activity-events', {
+    fake.on('GET /api/v1/tickets/{ticketId}/timeline', {
       data: {
-        items: [
+        items: asTimeline([
           {
             id: '0199a3f0-0000-7000-8000-000000000040',
             type: 'status_changed',
@@ -125,7 +130,7 @@ describe('TicketView', () => {
             automaticSource: null,
             createdAt: '2026-11-02T12:00:00.000Z',
           },
-        ],
+        ]),
         nextCursor: null,
       },
     });
@@ -153,9 +158,9 @@ describe('TicketView', () => {
     });
     fake.on('GET /api/v1/attachments', { data: { items: [image], nextCursor: null } });
     const anna = { id: '0199a3f0-0000-7000-8000-000000000042', displayName: 'Anna' };
-    fake.on('GET /api/v1/tickets/{ticketId}/activity-events', {
+    fake.on('GET /api/v1/tickets/{ticketId}/timeline', {
       data: {
-        items: [
+        items: asTimeline([
           {
             id: '0199a3f0-0000-7000-8000-000000000043',
             type: 'attachment_added',
@@ -172,11 +177,11 @@ describe('TicketView', () => {
             automaticSource: null,
             createdAt: '2026-11-02T13:00:00.000Z',
           },
-        ],
+        ]),
         nextCursor: null,
       },
     });
-    renderInApp(<TicketView identifier="CP-7" />);
+    renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
 
     const attachments = await screen.findByRole('region', { name: 'Attachments' });
     expect(
@@ -199,7 +204,7 @@ describe('TicketView', () => {
 
   it('shows the public status with its description and the public timeline (§4.2, §4.5)', async () => {
     answerTicket(ticket());
-    renderInApp(<TicketView identifier="CP-7" />);
+    renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
     expect(screen.getByText('We are testing the solution')).toBeDefined();
@@ -226,7 +231,7 @@ describe('TicketView', () => {
     fake.on('PUT /api/v1/tickets/{ticketId}/visibility', {
       data: { ...pending, sharingRequest: 'none', version: 4 },
     });
-    renderInApp(<TicketView identifier="CP-7" />);
+    renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
 
     expect(await screen.findByText('Visible to: My organization')).toBeDefined();
     expect(
@@ -257,7 +262,7 @@ describe('TicketView', () => {
         allowedActions: ['read'],
       }),
     );
-    renderInApp(<TicketView identifier="CP-7" />);
+    renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
 
     expect(
       await screen.findByText(
@@ -271,9 +276,9 @@ describe('TicketView', () => {
     answerTicket(
       ticket({ visibility: 'all_customers', requester: null, allowedActions: ['read'] }),
     );
-    fake.on('GET /api/v1/tickets/{ticketId}/activity-events', {
+    fake.on('GET /api/v1/tickets/{ticketId}/timeline', {
       data: {
-        items: [
+        items: asTimeline([
           {
             id: '0199a3f0-0000-7000-8000-000000000042',
             type: 'attachment_added',
@@ -290,11 +295,11 @@ describe('TicketView', () => {
             automaticSource: null,
             createdAt: '2026-11-02T13:00:00.000Z',
           },
-        ],
+        ]),
         nextCursor: null,
       },
     });
-    renderInApp(<TicketView identifier="CP-7" />);
+    renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
 
     expect(await screen.findByText('Shared with everyone')).toBeDefined();
     expect(screen.getByText(/^Customer added the file log\.txt/)).toBeDefined();
@@ -324,7 +329,7 @@ describe('TicketView', () => {
         fake.client.GET.mockImplementation(() => new Promise(() => undefined));
         return { data: ticket() };
       });
-      renderInApp(<TicketView identifier="CP-7" />);
+      renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
 
       try {
         await events.click(await screen.findByRole('button', { name: button }));
@@ -361,7 +366,7 @@ describe('TicketView', () => {
         },
       };
     });
-    renderInApp(<TicketView identifier="CP-7" />);
+    renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
 
     await events.click(await screen.findByRole('button', { name: 'Yes, solved' }));
 

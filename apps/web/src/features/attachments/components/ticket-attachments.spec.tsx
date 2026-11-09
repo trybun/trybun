@@ -118,7 +118,7 @@ describe('TicketAttachments', () => {
       params: { path: { attachmentId: OWN_ID } },
     });
     // The timeline of the ticket records the deletion.
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['activity-events', 'list', TICKET_ID] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['comments'] });
     await waitFor(() =>
       expect(
         screen.queryByRole('link', { name: 'screenshot.png (opens in a new tab)' }),

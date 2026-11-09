@@ -55,6 +55,7 @@ function answer(ticket: Ticket) {
     data: { ...ticket.project, state: 'active', allowedActions: ['read', 'create_ticket'] },
   });
   fake.on('GET /api/v1/tickets/{ticketId}/attachments', { data: { items: [], nextCursor: null } });
+  fake.on('GET /api/v1/tickets/{ticketId}/timeline', { data: { items: [], nextCursor: null } });
 }
 
 function renderView() {

@@ -50,11 +50,8 @@ export function useDeleteAttachment() {
     onSettled: (_data, _error, attachment) =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['attachments'] }),
-        attachment.ticketId === null
-          ? undefined
-          : queryClient.invalidateQueries({
-              queryKey: ['activity-events', 'list', attachment.ticketId],
-            }),
+        // The timeline shows the event of a ticket's file and the files of its comments.
+        queryClient.invalidateQueries({ queryKey: ['comments'] }),
       ]),
   });
 }
@@ -76,7 +73,7 @@ export function useAddTicketAttachments() {
     onSettled: (_data, _error, { ticketId }) =>
       Promise.all([
         queryClient.resetQueries({ queryKey: ['attachments', 'list', { ticketId }] }),
-        queryClient.invalidateQueries({ queryKey: ['activity-events', 'list', ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ['comments', 'timeline', ticketId] }),
       ]),
   });
 }
