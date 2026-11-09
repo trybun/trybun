@@ -55,9 +55,9 @@ Everything the spec lists under Non-goals: label, milestone and SLA filters and 
 
 ### Phase 5: Documentation and dataset
 
-- [ ] 5.1 Extend the demo dataset and the E2E tests
+- [x] 5.1 Extend the demo dataset and the E2E tests — e790cc8
 - [x] 5.2 Write the user documentation — ae28c5b
-- [ ] 5.3 Apply the specification changes and move the spec to implemented
+- [x] 5.3 Apply the specification changes and move the spec to implemented — c613190, 83e81ab
 
 ### Phase 6: Review
 
