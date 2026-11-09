@@ -97,9 +97,12 @@ export function BulkChangeResultDialog({
       <Button type="button" variant="outline" onClick={onClose}>
         {t('close')}
       </Button>
-      <Button type="button" disabled={isRetrying} onClick={onRetry}>
-        {t('retry')}
-      </Button>
+      {/* Nothing is left to retry once every unchanged ticket left the list. */}
+      {unchanged.length > 0 && (
+        <Button type="button" disabled={isRetrying} onClick={onRetry}>
+          {t('retry')}
+        </Button>
+      )}
     </>
   );
   if (isSheet) {
