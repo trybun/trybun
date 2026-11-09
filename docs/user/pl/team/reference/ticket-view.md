@@ -4,7 +4,7 @@ description: Części zgłoszenia dla zespołu – tytuł, opis, pliki, pola i a
 views: ['/tickets/[identifier]']
 ---
 
-Zgłoszenie otwiera się pod swoim identyfikatorem, na przykład `/tickets/ERP-12`. Na komputerze jego pola są w panelu po prawej stronie; na telefonie i tablecie – w sekcji **Szczegóły** pod tytułem, a na telefonie każde pole otwiera swoje opcje na dole ekranu.
+Zgłoszenie otwiera się pod swoim identyfikatorem, na przykład `/tickets/ERP-12`, także z [listy zgłoszeń](ticket-list.md). Na komputerze jego pola są w panelu po prawej stronie; na telefonie i tablecie – w sekcji **Szczegóły** pod tytułem, a na telefonie każde pole otwiera swoje opcje na dole ekranu.
 
 Możesz zmieniać tylko to, na co pozwala Twoja rola; wszystko inne jest wyświetlane jako tekst. W zarchiwizowanym projekcie całe zgłoszenie jest tylko do odczytu, o czym informuje komunikat.
 
@@ -31,6 +31,8 @@ Opis jest wyświetlany ze sformatowaniem ([formatowanie tekstu](../../end-user/r
 | **Organizacja** | Organizacja zgłaszającego, wyświetlana tylko wtedy, gdy istnieje |
 | **Widoczność** | Kto z klientów widzi zgłoszenie z portalu: **Tylko dla mnie**, **Moja organizacja** albo **Wszyscy klienci**, z czekającą albo odrzuconą prośbą o udostępnienie. Zobacz [Udostępnij zgłoszenie wszystkim klientom](../how-to/share-a-ticket-with-all-customers.md) |
 | **Utworzono**, **Zaktualizowano** | Kiedy zgłoszenie utworzono i kiedy ostatnio zmieniono, w Twojej strefie czasowej |
+
+Aby zmienić wiele zgłoszeń w jednym kroku, użyj listy: zobacz [Zmień wiele zgłoszeń naraz](../how-to/change-many-tickets-at-once.md).
 
 ## Zapisywanie i cofanie
 

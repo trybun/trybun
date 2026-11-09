@@ -7,7 +7,7 @@ Klienci wybierają, kto widzi ich zgłoszenia: **Tylko dla mnie**, **Moja organi
 
 ## Rozpatrz prośbę o udostępnienie
 
-Zgłoszenie, którego autor prosi o udostępnienie, pokazuje **Prośba o udostępnienie** pod polem **Widoczność** w swoich polach.
+Zgłoszenie, którego autor prosi o udostępnienie, pokazuje **Prośba o udostępnienie** pod polem **Widoczność** w swoich polach. Wszystkie takie zgłoszenia Twoich projektów są w widoku **Oczekujące udostępnienia** [listy zgłoszeń](../reference/ticket-list.md), gdzie przyciski **Zatwierdź udostępnienie** i **Odmów udostępnienia** pozwalają je rozpatrzyć bez otwierania każdego zgłoszenia.
 
 1. Otwórz zgłoszenie i przeczytaj opis, pliki i tytuł: po udostępnieniu zobaczy je każdy klient projektu.
 2. Aby je udostępnić, wybierz **Udostępnij wszystkim klientom** i potwierdź przyciskiem **Udostępnij wszystkim klientom**, gdy sprawdzisz, że nic nie identyfikuje klienta.

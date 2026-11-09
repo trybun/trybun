@@ -4,7 +4,7 @@ description: The parts of a ticket for the team – title, description, files, f
 views: ['/tickets/[identifier]']
 ---
 
-A ticket opens at its identifier, for example `/tickets/ERP-12`. On a computer its fields are in a panel on the right; on a phone or a tablet they are in the **Details** section below the title, and on a phone each field opens its choices at the bottom of the screen.
+A ticket opens at its identifier, for example `/tickets/ERP-12`, also from the [ticket list](ticket-list.md). On a computer its fields are in a panel on the right; on a phone or a tablet they are in the **Details** section below the title, and on a phone each field opens its choices at the bottom of the screen.
 
 You can change only what your role allows; everything else is shown as text. In an archived project the whole ticket is read-only, and a note says so.
 
@@ -31,6 +31,8 @@ The description is shown formatted ([format text](../../end-user/reference/forma
 | **Organization** | The organization of the requester, shown only when there is one |
 | **Visibility** | Who among the customers sees a ticket from the portal: **Only me**, **My organization** or **All customers**, with a waiting or refused sharing request. See [Share a ticket with all customers](../how-to/share-a-ticket-with-all-customers.md) |
 | **Created**, **Updated** | When the ticket was created and last changed, in your time zone |
+
+To change many tickets in one step, use the list: see [Change many tickets at once](../how-to/change-many-tickets-at-once.md).
 
 ## Saving and Undo
 
