@@ -23,7 +23,8 @@
     "projects": "Projects",
     "accountSettings": "Account settings",
     "myTickets": "My tickets",
-    "newTicket": "New ticket"
+    "newTicket": "New ticket",
+    "tickets": "Tickets"
   },
   "languages": {
     "en": "English",
@@ -379,7 +380,8 @@
       "reason": "Reason",
       "reasonRequired": "Enter a reason.",
       "refused": "Sharing refused",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "openTicketToCheck": "Open {identifier} to check the description and attachments"
     },
     "templates": {
       "bug": "## Problem\n\n## Steps to reproduce\n\n1.\n\n## Expected result\n\n## Actual result\n\n## Environment",
@@ -521,6 +523,124 @@
       "originalNotFound": "There is no ticket {identifier} in this project.",
       "originalInvalid": "Enter an identifier such as ERP-7.",
       "duplicateConfirm": "Mark as duplicate"
+    },
+    "list": {
+      "title": "Tickets",
+      "views": {
+        "label": "Views",
+        "my_open_tickets": "My open tickets",
+        "triage": "Triage",
+        "critical": "Critical",
+        "unassigned": "Unassigned",
+        "pending_sharing_approvals": "Pending sharing approvals",
+        "custom": "Custom filter"
+      },
+      "empty": {
+        "my_open_tickets": "No open tickets are assigned to you.",
+        "triage": "No tickets are waiting for triage.",
+        "critical": "No open tickets are critical.",
+        "unassigned": "No open tickets are unassigned.",
+        "pending_sharing_approvals": "No sharing requests are waiting for approval.",
+        "custom": "No tickets match these filters."
+      },
+      "loadFailed": "The tickets could not be loaded.",
+      "showMore": "Show more",
+      "loadingMore": "Loading…",
+      "columns": {
+        "select": "Select",
+        "identifier": "ID",
+        "title": "Title",
+        "status": "Status",
+        "priority": "Priority",
+        "type": "Type",
+        "assignee": "Assignee",
+        "project": "Project",
+        "organization": "Organization",
+        "updated": "Updated"
+      },
+      "sort": {
+        "label": "Sort",
+        "options": {
+          "priority-desc": "Priority, highest first",
+          "priority-asc": "Priority, lowest first",
+          "status-asc": "Status, first step first",
+          "status-desc": "Status, last step first",
+          "identifier-asc": "Identifier, A–Z",
+          "identifier-desc": "Identifier, Z–A",
+          "createdAt-desc": "Created, newest first",
+          "createdAt-asc": "Created, oldest first",
+          "updatedAt-desc": "Updated, newest first",
+          "updatedAt-asc": "Updated, oldest first"
+        }
+      },
+      "filters": {
+        "filter": "Filter",
+        "title": "Filter tickets",
+        "clear": "Clear filters",
+        "apply": "Show tickets",
+        "remove": "Remove filter {filter}: {values}",
+        "chip": "{filter}: {values}",
+        "unknown": "Unknown",
+        "open": "Open",
+        "me": "Me",
+        "unassigned": "Unassigned",
+        "none": "Not set",
+        "noOrganization": "No organization",
+        "chooseProjects": "Choose projects to filter by their people.",
+        "names": {
+          "projectId": "Project",
+          "organizationId": "Organization",
+          "type": "Type",
+          "status": "Status",
+          "priority": "Priority",
+          "assigneeId": "Assignee",
+          "source": "Source",
+          "sharingRequest": "Sharing request"
+        },
+        "sharingRequests": {
+          "pending": "Pending",
+          "rejected": "Refused"
+        }
+      },
+      "selection": {
+        "selectTicket": "Select {identifier}",
+        "selectAll": "Select the loaded tickets",
+        "selected": "{count, plural, one {# selected} other {# selected}}",
+        "clear": "Clear selection",
+        "limit": "You can change at most 100 tickets at once.",
+        "bar": "Bulk actions"
+      },
+      "bulk": {
+        "status": "Status",
+        "priority": "Priority",
+        "assignee": "Assignee",
+        "assignToMe": "Assign to me",
+        "unassigned": "Unassigned",
+        "people": "People",
+        "updated": "{count, plural, one {# ticket updated} other {# tickets updated}}",
+        "waiting": "{count, plural, one {# is waiting for the requester's confirmation} other {# are waiting for the requester's confirmation}}",
+        "resultTitle": "{changed} of {total} tickets updated",
+        "resultDescription": "These tickets were not changed:",
+        "left": "{count, plural, one {# ticket no longer matches the list and left the selection.} other {# tickets no longer match the list and left the selection.}}",
+        "retry": "Reload and retry",
+        "close": "Close",
+        "failed": "The tickets could not be changed.",
+        "reasons": {
+          "412": "Changed by someone else – reload to see the latest version",
+          "403": "You are not allowed to do this",
+          "404": "No longer available",
+          "archived": "The project is archived"
+        },
+        "rejectTitle": "Reject {count, plural, one {# ticket} other {# tickets}}",
+        "rejectDescription": "The reason will be published to the requester of each ticket.",
+        "rejectConfirm": "Reject tickets"
+      },
+      "sharing": {
+        "approve": "Approve sharing",
+        "refuse": "Refuse sharing",
+        "approved": "{identifier} shared with all customers",
+        "refused": "Sharing of {identifier} refused"
+      }
     }
   },
   "attachments": {

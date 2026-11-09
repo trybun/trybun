@@ -23,7 +23,8 @@
     "projects": "Projekty",
     "accountSettings": "Ustawienia konta",
     "myTickets": "Moje zgłoszenia",
-    "newTicket": "Nowe zgłoszenie"
+    "newTicket": "Nowe zgłoszenie",
+    "tickets": "Zgłoszenia"
   },
   "languages": {
     "en": "English",
@@ -379,7 +380,8 @@
       "reason": "Powód",
       "reasonRequired": "Podaj powód.",
       "refused": "Odmówiono udostępnienia",
-      "cancel": "Anuluj"
+      "cancel": "Anuluj",
+      "openTicketToCheck": "Otwórz {identifier}, aby sprawdzić opis i załączniki"
     },
     "templates": {
       "bug": "## Problem\n\n## Kroki do odtworzenia\n\n1.\n\n## Oczekiwany wynik\n\n## Faktyczny wynik\n\n## Środowisko",
@@ -521,6 +523,124 @@
       "originalNotFound": "W tym projekcie nie ma zgłoszenia {identifier}.",
       "originalInvalid": "Podaj identyfikator, np. ERP-7.",
       "duplicateConfirm": "Oznacz jako duplikat"
+    },
+    "list": {
+      "title": "Zgłoszenia",
+      "views": {
+        "label": "Widoki",
+        "my_open_tickets": "Moje otwarte zgłoszenia",
+        "triage": "Triage",
+        "critical": "Krytyczne",
+        "unassigned": "Nieprzypisane",
+        "pending_sharing_approvals": "Oczekujące udostępnienia",
+        "custom": "Filtr niestandardowy"
+      },
+      "empty": {
+        "my_open_tickets": "Nie masz przypisanych otwartych zgłoszeń.",
+        "triage": "Żadne zgłoszenie nie czeka na triage.",
+        "critical": "Żadne otwarte zgłoszenie nie jest krytyczne.",
+        "unassigned": "Wszystkie otwarte zgłoszenia są przypisane.",
+        "pending_sharing_approvals": "Żadna prośba o udostępnienie nie czeka na zatwierdzenie.",
+        "custom": "Żadne zgłoszenie nie pasuje do tych filtrów."
+      },
+      "loadFailed": "Nie udało się wczytać zgłoszeń.",
+      "showMore": "Pokaż więcej",
+      "loadingMore": "Wczytywanie…",
+      "columns": {
+        "select": "Zaznacz",
+        "identifier": "ID",
+        "title": "Tytuł",
+        "status": "Status",
+        "priority": "Priorytet",
+        "type": "Typ",
+        "assignee": "Przypisany",
+        "project": "Projekt",
+        "organization": "Organizacja",
+        "updated": "Zaktualizowano"
+      },
+      "sort": {
+        "label": "Sortuj",
+        "options": {
+          "priority-desc": "Priorytet, od najwyższego",
+          "priority-asc": "Priorytet, od najniższego",
+          "status-asc": "Status, od pierwszego etapu",
+          "status-desc": "Status, od ostatniego etapu",
+          "identifier-asc": "Identyfikator, A–Z",
+          "identifier-desc": "Identyfikator, Z–A",
+          "createdAt-desc": "Utworzono, od najnowszych",
+          "createdAt-asc": "Utworzono, od najstarszych",
+          "updatedAt-desc": "Zaktualizowano, od najnowszych",
+          "updatedAt-asc": "Zaktualizowano, od najstarszych"
+        }
+      },
+      "filters": {
+        "filter": "Filtruj",
+        "title": "Filtruj zgłoszenia",
+        "clear": "Wyczyść filtry",
+        "apply": "Pokaż zgłoszenia",
+        "remove": "Usuń filtr {filter}: {values}",
+        "chip": "{filter}: {values}",
+        "unknown": "Nieznany",
+        "open": "Otwarte",
+        "me": "Ja",
+        "unassigned": "Nieprzypisane",
+        "none": "Nie ustawiono",
+        "noOrganization": "Bez organizacji",
+        "chooseProjects": "Wybierz projekty, aby filtrować według ich osób.",
+        "names": {
+          "projectId": "Projekt",
+          "organizationId": "Organizacja",
+          "type": "Typ",
+          "status": "Status",
+          "priority": "Priorytet",
+          "assigneeId": "Przypisany",
+          "source": "Źródło",
+          "sharingRequest": "Prośba o udostępnienie"
+        },
+        "sharingRequests": {
+          "pending": "Oczekująca",
+          "rejected": "Odmówiona"
+        }
+      },
+      "selection": {
+        "selectTicket": "Zaznacz {identifier}",
+        "selectAll": "Zaznacz wczytane zgłoszenia",
+        "selected": "{count, plural, one {Zaznaczono #} few {Zaznaczono #} many {Zaznaczono #} other {Zaznaczono #}}",
+        "clear": "Wyczyść zaznaczenie",
+        "limit": "Jednorazowo możesz zmienić najwyżej 100 zgłoszeń.",
+        "bar": "Akcje zbiorcze"
+      },
+      "bulk": {
+        "status": "Status",
+        "priority": "Priorytet",
+        "assignee": "Przypisany",
+        "assignToMe": "Przypisz do mnie",
+        "unassigned": "Nieprzypisane",
+        "people": "Osoby",
+        "updated": "{count, plural, one {Zaktualizowano # zgłoszenie} few {Zaktualizowano # zgłoszenia} many {Zaktualizowano # zgłoszeń} other {Zaktualizowano # zgłoszenia}}",
+        "waiting": "{count, plural, one {# czeka na potwierdzenie zgłaszającego} few {# czekają na potwierdzenie zgłaszającego} many {# czeka na potwierdzenie zgłaszającego} other {# czeka na potwierdzenie zgłaszającego}}",
+        "resultTitle": "Zaktualizowano {changed} z {total} zgłoszeń",
+        "resultDescription": "Tych zgłoszeń nie zmieniono:",
+        "left": "{count, plural, one {# zgłoszenie nie pasuje już do listy i zostało odznaczone.} few {# zgłoszenia nie pasują już do listy i zostały odznaczone.} many {# zgłoszeń nie pasuje już do listy i zostało odznaczonych.} other {# zgłoszenia nie pasuje już do listy i zostało odznaczonych.}}",
+        "retry": "Odśwież i ponów",
+        "close": "Zamknij",
+        "failed": "Nie udało się zmienić zgłoszeń.",
+        "reasons": {
+          "412": "Zmienione przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję",
+          "403": "Nie masz uprawnień do wykonania tej czynności",
+          "404": "Już niedostępne",
+          "archived": "Projekt jest zarchiwizowany"
+        },
+        "rejectTitle": "Odrzuć {count, plural, one {# zgłoszenie} few {# zgłoszenia} many {# zgłoszeń} other {# zgłoszenia}}",
+        "rejectDescription": "Powód zostanie opublikowany zgłaszającemu każdego zgłoszenia.",
+        "rejectConfirm": "Odrzuć zgłoszenia"
+      },
+      "sharing": {
+        "approve": "Zatwierdź udostępnienie",
+        "refuse": "Odmów udostępnienia",
+        "approved": "Udostępniono {identifier} wszystkim klientom",
+        "refused": "Odmówiono udostępnienia {identifier}"
+      }
     }
   },
   "attachments": {

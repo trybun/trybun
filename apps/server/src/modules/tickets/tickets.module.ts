@@ -9,6 +9,7 @@ import { OrganizationsModule } from '../organizations/organizations.module.js';
 import { ProjectsModule } from '../projects/projects.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { TicketsController } from './tickets.controller.js';
+import { TicketBulkChangesService } from './ticket-bulk-changes.service.js';
 import { TicketsService } from './tickets.service.js';
 
 /**
@@ -32,6 +33,6 @@ import { TicketsService } from './tickets.service.js';
     UsersModule,
   ],
   controllers: [TicketsController],
-  providers: [TicketsService],
+  providers: [TicketsService, TicketBulkChangesService],
 })
 export class TicketsModule {}

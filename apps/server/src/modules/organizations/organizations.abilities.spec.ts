@@ -4,6 +4,7 @@ import { type OrganizationAction, organizationActionSchema } from '@trybun/contr
 import { describe, expect, it } from 'vitest';
 import {
   buildPrincipal,
+  PRINCIPAL_ID,
   type PrincipalFixture,
 } from '../../../test/factories/principal.factory.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
@@ -13,6 +14,7 @@ import {
   CREATE,
   ORGANIZATION,
   organizationsAbilities,
+  READ_NAME,
 } from './organizations.abilities.js';
 import { FixedClock } from '../../../test/fixed-clock.js';
 
@@ -92,6 +94,37 @@ describe('organization abilities', () => {
           'organization.archived',
         );
       }
+    });
+  });
+
+  describe('the names of organizations for the filters of the team (S1-13 Q6)', () => {
+    function withProjectMember(userId: string, role: 'developer' | 'project_manager' | 'end_user') {
+      return subject(ORGANIZATION, {
+        id: 'organization',
+        state: 'archived',
+        projects: [{ project: { members: [{ userId, role }] } }],
+      });
+    }
+
+    it.each([
+      ['team_member', 'developer', true],
+      ['project_manager', 'project_manager', true],
+      ['team_member', 'end_user', false],
+      ['end_user_organization', 'end_user', false],
+    ] as const)('%s with a %s membership: %s', (who, role, isAllowed) => {
+      const ability = abilities.forPrincipal(buildPrincipal(who));
+      expect(ability.can(READ_NAME, withProjectMember(PRINCIPAL_ID, role))).toBe(isAllowed);
+    });
+
+    it("refuses the name of an organization of another person's project", () => {
+      const ability = abilities.forPrincipal(buildPrincipal('team_member'));
+      expect(ability.can(READ_NAME, withProjectMember('someone-else', 'developer'))).toBe(false);
+    });
+
+    it('grants every name to the Administrator', () => {
+      expect(abilities.forPrincipal(buildPrincipal('admin')).can(READ_NAME, organization())).toBe(
+        true,
+      );
     });
   });
 });

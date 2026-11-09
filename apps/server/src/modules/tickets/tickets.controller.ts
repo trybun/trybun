@@ -18,6 +18,10 @@ import {
   listActivityEventsQuerySchema,
 } from '@trybun/contracts/activity-events';
 import {
+  type BulkChangeTicketsDto,
+  bulkChangeTicketsSchema,
+  type BulkChangeTicketsResponse,
+  bulkChangeTicketsResponseSchema,
   type ChangeTicketStatusDto,
   changeTicketStatusSchema,
   type ConfirmResolutionDto,
@@ -61,11 +65,15 @@ import { API_PREFIX } from '../../platform/http/api-prefix.js';
 import { ExpectedVersion } from '../../platform/http/expected-version.decorator.js';
 import { ResponseSchema } from '../../platform/http/response-schema.decorator.js';
 import { TICKET } from './tickets.abilities.js';
+import { TicketBulkChangesService } from './ticket-bulk-changes.service.js';
 import { TicketsService } from './tickets.service.js';
 
 @Controller('tickets')
 export class TicketsController {
-  constructor(private readonly tickets: TicketsService) {}
+  constructor(
+    private readonly tickets: TicketsService,
+    private readonly bulkChanges: TicketBulkChangesService,
+  ) {}
 
   /** The tickets the principal can see, newest first (§3.2). */
   @Get()
@@ -75,6 +83,21 @@ export class TicketsController {
     @Query({ schema: listTicketsQuerySchema }) query: ListTicketsQuery,
   ): Promise<TicketPage> {
     return this.tickets.list(principal, query);
+  }
+
+  /**
+   * One change for up to 100 tickets (§8.1, §17.2): each ticket is checked and changed on its own,
+   * and the response lists a result per ticket in request order (S1-13 Q1, Q2). A static route,
+   * registered before the routes of one ticket.
+   */
+  @Post('bulk-changes')
+  @HttpCode(HttpStatus.OK)
+  @ResponseSchema(bulkChangeTicketsResponseSchema)
+  bulkChange(
+    @CurrentPrincipal() principal: Principal,
+    @Body({ schema: bulkChangeTicketsSchema }) input: BulkChangeTicketsDto,
+  ): Promise<BulkChangeTicketsResponse> {
+    return this.bulkChanges.change(principal, input);
   }
 
   /** Creates a ticket in a project (§3.2) with the next number of the project. */

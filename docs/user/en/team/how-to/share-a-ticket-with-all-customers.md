@@ -7,7 +7,7 @@ Customers choose who sees their tickets: **Only me**, **My organization** or **A
 
 ## Decide a sharing request
 
-A ticket whose author asks to share it shows **Sharing requested** under **Visibility** in its fields.
+A ticket whose author asks to share it shows **Sharing requested** under **Visibility** in its fields. All such tickets of your projects are listed in the view **Pending sharing approvals** of the [ticket list](../reference/ticket-list.md), where **Approve sharing** and **Refuse sharing** decide them without opening each ticket.
 
 1. Open the ticket and read the description, the files and the title: once shared, every customer of the project sees them.
 2. To share it, select **Share with all customers** and confirm with **Share with all customers** after checking that nothing identifies the customer.

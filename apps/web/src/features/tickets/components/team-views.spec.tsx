@@ -98,6 +98,7 @@ function currentUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
     language: 'en',
     timeZone: null,
     hideTimelineEvents: false,
+    organizationsExist: false,
     allowedActions: [],
     ...overrides,
   };
@@ -108,6 +109,7 @@ function answer(
   { events = [] as ActivityEvent[], projectState = 'active', hideTimelineEvents = false } = {},
 ) {
   fake.on('GET /api/v1/tickets', { data: { items: [value], nextCursor: null } });
+  fake.on('GET /api/v1/tickets/{ticketId}', { data: value });
   fake.on('GET /api/v1/users/me', { data: currentUser({ hideTimelineEvents }) });
   fake.on('GET /api/v1/projects/{projectId}', {
     data: {

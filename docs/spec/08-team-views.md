@@ -6,24 +6,32 @@ Filters, columns, badges and views that depend on features of later stages of th
 
 ## 8.1 List
 
-- Filtering by any ticket field (project, organization, type, status, priority, assignee, source, labels, milestone, SLA state).
-- Sorting by columns (including SLA deadline, [§9.5](09-sla.md), and occurrence count, [§12.3](12-api-webhooks-import.md)).
-- **Saved views**: stored filter sets. Users can create their own. Predefined views cover all projects of the user:
+The list (`/tickets`, **Tickets** – PL: „Zgłoszenia” – in the main navigation) shows the tickets of all projects of the user. On tablets and desktops it is a table; on phones every ticket is a card with its identifier, title, status, priority, assignee and a checkbox. Both are rendered from the same data and switched by CSS, so the server-rendered page is right on every device ([§2.9](02-agent-rules.md)). The table hides the type, project and organization columns on tablets, and the organization column while no organization exists ([§7.3](07-users-organizations-permissions.md)). **Show more** at the end loads the next 50 tickets. List items carry no description; it is read with the ticket ([§8.6](#86-team-ticket-view)).
 
-| View | Filter |
-|---|---|
-| "My open tickets" | assignee = me, status not terminal |
-| "Triage" | status `new` or `triage` |
-| "Critical" | priority `critical`, status not terminal |
-| "Unassigned" | no assignee, status not terminal (includes tickets whose assignee was deactivated or removed from the project, [§7.4](07-users-organizations-permissions.md)) |
-| "Pending sharing approvals" | sharing requested and not yet decided ([§5.2](05-visibility-and-search.md)) |
-| "SLA at risk" | SLA state `at_risk` or `breached` ([§9.5](09-sla.md)) |
+- Filtering by any ticket field (project, organization, type, status, priority, assignee, source, labels, milestone, SLA state). Stage 1 offers the fields that exist in it plus the sharing request ([§5.2](05-visibility-and-search.md)): values of one filter are combined with OR, filters with AND, and all of them are kept in the URL. A value of a record the user cannot see (e.g. a project they left, in a shared link) matches no ticket, never widens the list and never fails the request; its chip shows "Unknown" (PL: „Nieznany”). The filters and the sort parameters of `GET /api/v1/tickets` are accepted for team accounts only; an end user sending them gets `422 field.unrecognized`, so the portal never filters by a value its response hides.
+- Sorting by columns (including SLA deadline, [§9.5](09-sla.md), and occurrence count, [§12.3](12-api-webhooks-import.md)). Stage 1 sorts by priority, status, identifier, creation and last update, then by the last update and the ID, so pages are stable; priority and status sort in the order of [§4.1](04-ticket-lifecycle.md). Title and assignee are not sortable.
+- **Saved views**: stored filter sets. Users can create their own. **Predefined views** are filter sets with a default sort, shipped as constants of the system and selected with `?view=<code>`; they cover all projects of the user, and `/tickets` without parameters opens "My open tickets". Changing a filter leaves the view ("Custom filter", PL: „Filtr niestandardowy”); a custom filter with every filter removed is kept as `?view=custom` and lists every ticket the user can see. The sort is kept in the URL only when it differs from the view's default and does not leave the view.
 
-- **Bulk actions** on selected tickets (status, priority, assignee, milestone, labels), within the user's permissions:
-  - every ticket is processed separately; the result lists, per ticket, whether it was changed, changed by someone else in the meantime (conflict, [§17.2](17-conventions.md)) or not permitted, and the UI shows the tickets that were not changed;
-  - at most 100 tickets per bulk action;
+| View (code) | Filter | Default sort |
+|---|---|---|
+| "My open tickets" (`my_open_tickets`) | assignee = me, status not terminal | priority |
+| "Triage" (`triage`) | status `new` or `triage` | created, oldest first |
+| "Critical" (`critical`) | priority `critical`, status not terminal | last update |
+| "Unassigned" (`unassigned`) | no assignee, status not terminal (includes tickets whose assignee was deactivated or removed from the project, [§7.4](07-users-organizations-permissions.md)) | priority |
+| "Pending sharing approvals" (`pending_sharing_approvals`) | sharing requested and not yet decided ([§5.2](05-visibility-and-search.md)), any status | created, oldest first |
+| "SLA at risk" | SLA state `at_risk` or `breached` ([§9.5](09-sla.md)) | – |
+
+- In "Pending sharing approvals" every ticket offers **Approve sharing** and **Refuse sharing** (PL: „Zatwierdź udostępnienie”, „Odmów udostępnienia”) according to its `allowedActions`, with the confirmation and the reason dialog of the ticket view ([§5.2](05-visibility-and-search.md)). The confirmation links to the ticket, so its description and attachments can be checked and redacted first. There is no bulk approval, because each ticket may need redaction; after either decision the ticket leaves the view.
+- **Bulk actions** on selected tickets (status, priority, assignee, milestone, labels), within the user's permissions; Stage 1 offers status, priority and assignee:
+  - every ticket is processed separately, in its own transaction, through the same rules as a single change; the result lists, per ticket, whether it was changed, changed by someone else in the meantime (conflict, [§17.2](17-conventions.md)), not permitted, no longer visible, in an archived project or refused by a rule (e.g. an assignee who cannot be assigned in its project), and the UI shows the tickets that were not changed;
+  - tickets that were not changed stay selected, and the UI offers to reload the list and repeat the change on them with their new versions; a selected ticket that is no longer in the list leaves the selection;
+  - at most 100 tickets per bulk action; the selection spans the loaded pages and is cleared when the view, the filters or the sort change;
+  - an action is offered when at least one selected ticket allows it; tickets that do not allow it are sent anyway and reported as not permitted;
   - bulk change to `rejected` asks for one reason, used for all selected tickets ([§4.3](04-ticket-lifecycle.md));
-  - bulk change to `duplicate` is not offered, because each ticket needs its own original.
+  - bulk change to `duplicate` is not offered, because each ticket needs its own original;
+  - the assignee offers "Assign to me" and "Unassigned", and the assignable members of the project only when every selected ticket belongs to one project;
+  - a ticket that resolution confirmation moves to `waiting_for_requester` ([§4.3](04-ticket-lifecycle.md)) counts as changed, and the result says how many did;
+  - bulk changes have no **Undo**: each ticket had its own previous value.
 - Tickets with an open "blocked by" relation are marked ([§3.5](03-ticket-model.md)).
 
 ## 8.2 Kanban board
@@ -80,7 +88,7 @@ Rules:
 
 One ticket for the team, with every Stage 1 field of [§3.2](03-ticket-model.md#32-ticket-fields) that exists (pattern: the issue view of GitHub, the properties of Linear).
 
-- **Routes** (route group `(team)`): `/tickets/{identifier}`, e.g. `/tickets/ERP-12`, resolved with `GET /api/v1/tickets?identifier=`; a lower-case identifier redirects to the upper-case form, and a ticket the person cannot see shows the not-found page. The full form is `/tickets/new?projectId=…` ([§3.3](03-ticket-model.md#33-forms)), opened by **New ticket** (PL: „Nowe zgłoszenie”) in the header of the team application shell for every team account – an icon with that name on phones – and later by the views of a project's tickets with their project; it lists the projects that allow `create_ticket` and says so when there is none. A new ticket opens in the view with the toast "Ticket ERP-12 created". An end user who opens a team route is sent to its portal counterpart ([§5.7](05-visibility-and-search.md)), `/tickets/new` to `/portal`; a team member who opens a portal ticket lands in this view.
+- **Routes** (route group `(team)`): `/tickets/{identifier}`, e.g. `/tickets/ERP-12`, resolved with `GET /api/v1/tickets?identifier=`, whose list item has no description, and then read with `GET /api/v1/tickets/{ticketId}` (the portal's ticket pages resolve their identifier the same way); a lower-case identifier redirects to the upper-case form, and a ticket the person cannot see shows the not-found page. The full form is `/tickets/new?projectId=…` ([§3.3](03-ticket-model.md#33-forms)), opened by **New ticket** (PL: „Nowe zgłoszenie”) in the header of the team application shell for every team account – an icon with that name on phones – and later by the views of a project's tickets with their project; it lists the projects that allow `create_ticket` and says so when there is none. A new ticket opens in the view with the toast "Ticket ERP-12 created". An end user who opens a team route is sent to its portal counterpart ([§5.7](05-visibility-and-search.md)), `/tickets/new` to `/portal`; a team member who opens a portal ticket lands in this view.
 - **Layout** (Rule 9): the header with the identifier (copy button), the title and "{requester} opened {relative time}" with the source; the description, its attachments ([§13.3](13-non-functional.md)) and the activity timeline ([§4.5](04-ticket-lifecycle.md#45-activity-timeline)); the **field panel** in a second column from the `lg` breakpoint, below it the **Details** section between the header and the description, where each field opens a bottom sheet on phones.
 - **Field panel**: status with its waiting reason ([§4.1](04-ticket-lifecycle.md#41-statuses)), assignee, type ("Not set" for an end-user ticket before triage), priority, project (read-only), requester, organization (only when the ticket has one) and the times of creation and of the latest change in the person's time zone. Each control follows the ticket's `allowedActions` – `update` (title, description), `update_fields` (type, priority), `assign` / `assign_self`, `change_status`, `add_attachment`, `add_comment`, `add_internal_note`, `redact_description`, `read_description_revisions` – and is plain text without its action; in an archived project the whole view is read-only with the archived notice.
 - **Assignment** ([§7.5](07-users-organizations-permissions.md#75-permission-matrix)): with `assign` a picker searched on the server among the eligible members (`GET /projects/{projectId}/members?assignable=true&query=…`), with **Assign to me** first while the person is among them and **Unassigned** last; with only `assign_self` **Assign to me** (also taking over from someone else) or **Unassign me**, no picker.

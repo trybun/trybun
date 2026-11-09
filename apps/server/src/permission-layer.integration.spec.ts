@@ -1014,9 +1014,10 @@ describe('permission layer', () => {
     });
 
     // Organizations, accounts and the Administrator panel are invisible to non-Administrators as
-    // a whole: their lists and the creation answer `404` like their records (§7.5, §17.2).
+    // a whole: their lists and the creation answer `404` like their records (§7.5, §17.2). The one
+    // exception is the list of organizations, which gives a team member the names of the
+    // organizations of their projects (S1-13 Q6) and is checked below.
     it.each([
-      ['GET', '/api/v1/organizations', undefined],
       ['POST', '/api/v1/organizations', { name: 'Customer' }],
       ['GET', '/api/v1/users', undefined],
       ['GET', '/api/v1/administration/getting-started', undefined],
@@ -1028,6 +1029,18 @@ describe('permission layer', () => {
         .send(body);
 
       expect(res.status).toBe(404);
+    });
+
+    it('lists for a Developer only the ID and name of the organizations of their projects (S1-13 Q6)', async () => {
+      const res = await http()
+        .get('/api/v1/organizations')
+        .query({ limit: 100 })
+        .set('Authorization', await authorizationOf('developer'));
+
+      expect(res.status).toBe(200);
+      for (const item of (res.body as { items: object[] }).items) {
+        expect(Object.keys(item).sort()).toEqual(['id', 'name']);
+      }
     });
   });
 });

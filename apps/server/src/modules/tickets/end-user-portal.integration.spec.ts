@@ -13,6 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   strictEndUserActivityEventSchema,
   strictEndUserProjectSchema,
+  strictEndUserTicketListItemSchema,
   strictEndUserTicketSchema,
   strictPageSchema,
 } from '../../../test/end-user-schemas.js';
@@ -33,7 +34,7 @@ import { API_PREFIX } from '../../platform/http/api-prefix.js';
 
 type Who = 'developer' | 'end_user';
 
-const strictTicketPageSchema = strictPageSchema(strictEndUserTicketSchema);
+const strictTicketPageSchema = strictPageSchema(strictEndUserTicketListItemSchema);
 const strictEventPageSchema = strictPageSchema(strictEndUserActivityEventSchema);
 
 describe('the API of the end-user portal', () => {

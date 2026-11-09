@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import type { OrganizationState } from '@trybun/contracts/organizations';
+import { isOrganizationSummary, type OrganizationState } from '@trybun/contracts/organizations';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
 import { ApiError } from '../../lib/errors/api-error.js';
 
@@ -14,8 +14,9 @@ export function organizationsQueryOptions(
 ) {
   return infiniteQueryOptions({
     queryKey: ['organizations', 'list', state, ...(projectId === undefined ? [] : [projectId])],
-    queryFn: ({ pageParam, signal }) =>
-      dataOf(
+    // The Administrator's pages hold summaries; other team members read names only (S1-13 Q6).
+    queryFn: async ({ pageParam, signal }) => {
+      const page = await dataOf(
         client.GET('/api/v1/organizations', {
           params: {
             query: {
@@ -26,7 +27,9 @@ export function organizationsQueryOptions(
           },
           signal,
         }),
-      ),
+      );
+      return { ...page, items: page.items.filter(isOrganizationSummary) };
+    },
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor,
   });

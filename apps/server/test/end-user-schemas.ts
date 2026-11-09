@@ -27,6 +27,11 @@ export const strictEndUserTicketSchema = z.strictObject({
   duplicateOf: z.strictObject(ticketReferenceSchema.shape).nullable(),
 });
 
+/** The strict end-user ticket of a list (S1-13 Q10): without the description. */
+export const strictEndUserTicketListItemSchema = strictEndUserTicketSchema.omit({
+  description: true,
+});
+
 export const strictEndUserActivityEventSchema = z.strictObject({
   ...endUserActivityEventSchema.shape,
   data: z
