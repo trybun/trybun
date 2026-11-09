@@ -10,6 +10,8 @@ import {
   publicStatusOf,
   resolutionAnswerSchema,
   listTicketsQuerySchema,
+  bulkChangeTicketsSchema,
+  ticketPageSchema,
   TICKET_TYPE_DEFAULT_PRIORITY,
   ticketActionSchema,
   ticketIdentifier,
@@ -293,7 +295,32 @@ describe('listTicketsQuerySchema', () => {
   it('lists the tickets the principal requested with involvement=mine', () => {
     expect(listTicketsQuerySchema.parse({ involvement: 'mine', projectId: PROJECT_ID })).toEqual({
       involvement: 'mine',
-      projectId: PROJECT_ID,
+      projectId: [PROJECT_ID],
+      limit: 50,
+    });
+  });
+
+  it('reads one value and repeated values of a filter as a list', () => {
+    expect(
+      listTicketsQuerySchema.parse({
+        status: 'new',
+        priority: ['high', 'critical'],
+        assigneeId: ['me', 'none', PROJECT_ID],
+        organizationId: 'none',
+        type: ['bug', 'none'],
+        sharingRequest: 'pending',
+        sort: 'priority',
+        order: 'asc',
+      }),
+    ).toEqual({
+      status: ['new'],
+      priority: ['high', 'critical'],
+      assigneeId: ['me', 'none', PROJECT_ID],
+      organizationId: ['none'],
+      type: ['bug', 'none'],
+      sharingRequest: ['pending'],
+      sort: 'priority',
+      order: 'asc',
       limit: 50,
     });
   });
@@ -301,8 +328,93 @@ describe('listTicketsQuerySchema', () => {
   it.each([
     [{ involvement: 'watched' }, '/involvement', 'field.invalid_value'],
     [{ involvement: 'mine', identifier: 'ERP-1' }, '/identifier', 'field.invalid'],
+    [{ involvement: 'mine', status: 'new' }, '/status', 'field.invalid'],
+    [{ involvement: 'mine', sort: 'priority' }, '/sort', 'field.invalid'],
+    [{ order: 'asc' }, '/order', 'field.invalid'],
+    [{ sort: 'title' }, '/sort', 'field.invalid_value'],
+    [{ status: ['new', 'closed'] }, '/status', 'field.invalid'],
+    [{ assigneeId: 'someone' }, '/assigneeId', 'string.invalid_format'],
+    [{ sharingRequest: 'none' }, '/sharingRequest', 'field.invalid'],
+    [{ status: Array(51).fill('new') }, '/status', 'field.invalid'],
   ])('rejects %j at %s with %s', (query, pointer, code) => {
     const result = listTicketsQuerySchema.safeParse(query);
+
+    expect(result.success).toBe(false);
+    const issue = result.error?.issues[0];
+    expect((issue?.path ?? []).map((key) => `/${String(key)}`).join('')).toBe(pointer);
+    expect(issue === undefined ? undefined : toFieldErrorCode(issue)).toBe(code);
+  });
+});
+
+describe('bulkChangeTicketsSchema', () => {
+  const TICKET_ID = '0190f2f4-7c1e-7000-8000-000000000003';
+  const tickets = [{ id: TICKET_ID, version: 3 }];
+
+  it.each([
+    { tickets, change: { field: 'status', status: 'done' } },
+    { tickets, change: { field: 'status', status: 'rejected', rejectionReason: 'Out of scope' } },
+    { tickets, change: { field: 'priority', priority: 'critical' } },
+    { tickets, change: { field: 'assignee', assigneeId: null } },
+    { tickets, change: { field: 'assignee', assigneeId: TICKET_ID } },
+    {
+      tickets: Array.from({ length: 100 }, (_, index) => ({
+        id: `0190f2f4-7c1e-7000-8000-${String(index).padStart(12, '0')}`,
+        version: 1,
+      })),
+      change: { field: 'priority', priority: 'low' },
+    },
+  ])('accepts %j', (body) => {
+    expect(bulkChangeTicketsSchema.safeParse(body).success).toBe(true);
+  });
+
+  it.each([
+    [
+      { tickets: [], change: { field: 'priority', priority: 'low' } },
+      '/tickets',
+      'array.too_short',
+    ],
+    [
+      {
+        tickets: Array.from({ length: 101 }, (_, index) => ({
+          id: `0190f2f4-7c1e-7000-8000-${String(index).padStart(12, '0')}`,
+          version: 1,
+        })),
+        change: { field: 'priority', priority: 'low' },
+      },
+      '/tickets',
+      'array.too_long',
+    ],
+    [
+      {
+        tickets: [...tickets, { id: TICKET_ID, version: 4 }],
+        change: { field: 'priority', priority: 'low' },
+      },
+      '/tickets/1/id',
+      'field.invalid',
+    ],
+    [
+      { tickets, change: { field: 'status', status: 'duplicate' } },
+      '/change/status',
+      'field.invalid_value',
+    ],
+    [
+      { tickets, change: { field: 'status', status: 'rejected' } },
+      '/change/rejectionReason',
+      'field.invalid',
+    ],
+    [
+      { tickets, change: { field: 'status', status: 'done', rejectionReason: 'No' } },
+      '/change',
+      'field.unrecognized',
+    ],
+    [{ tickets, change: { field: 'title', title: 'New' } }, '/change/field', 'field.invalid'],
+    [
+      { tickets, change: { field: 'priority', priority: 'low', status: 'done' } },
+      '/change',
+      'field.unrecognized',
+    ],
+  ])('rejects %j at %s with %s', (body, pointer, code) => {
+    const result = bulkChangeTicketsSchema.safeParse(body);
 
     expect(result.success).toBe(false);
     const issue = result.error?.issues[0];
@@ -360,5 +472,26 @@ describe('ticketResponseSchema', () => {
         closedAt: null,
       }),
     ).toEqual(endUserTicket);
+  });
+
+  it('lists tickets without the description in both shapes (S1-13 Q10)', () => {
+    const team = {
+      ...common,
+      type: 'bug',
+      source: 'developer',
+      priority: 'normal',
+      status: 'todo',
+      organization: null,
+      assignee: null,
+      closedAt: null,
+    };
+    const endUser = { ...common, publicStatusDescription: 'testing' };
+    const { description: _team, ...teamItem } = team;
+    const { description: _endUser, ...endUserItem } = endUser;
+
+    expect(ticketPageSchema.parse({ items: [team, endUser], nextCursor: null })).toEqual({
+      items: [teamItem, endUserItem],
+      nextCursor: null,
+    });
   });
 });
