@@ -53,7 +53,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 
 ### Phase 6: Web
 
-- [ ] 6.1 Add the visibility control to the portal form
+- [x] 6.1 Add the visibility control to the portal form — 2b8cda8
 - [ ] 6.2 Show and change the visibility in the portal ticket view
 - [ ] 6.3 Add the visibility field and the sharing decisions to the team field panel
 - [ ] 6.4 Write the user documentation
