@@ -1,6 +1,6 @@
 # Execution plan — implement the team list view (S1-13)
 
-Source doc: .ai/specs/2026-10-26-team-list-view.md
+Source doc: .ai/specs/implemented/2026-10-26-team-list-view.md
 Spec PR: #123 (merged)
 
 ## 🎯 Goal
