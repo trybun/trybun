@@ -2,6 +2,7 @@ import { subject } from '@casl/ability';
 import { type OrganizationAction, organizationActionSchema } from '@trybun/contracts/organizations';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { AbilityRules } from '../../platform/authorization/ability-factory.js';
+import { teamRolesFrom } from '../../platform/authorization/project-roles.js';
 import type { RecordDescriptor } from '../../platform/authorization/record-descriptor.js';
 
 /** The subject of the organizations (§18.3). */
@@ -9,6 +10,12 @@ export const ORGANIZATION = 'Organization';
 
 /** Creating an organization, a global action of the account (`create_organization`, §18.3). */
 export const CREATE = 'create';
+
+/**
+ * Reading the ID and the name of an organization for the filters of the team views (S1-13 Q6), an
+ * action outside the contract's list: it is never sent in `allowedActions`.
+ */
+export const READ_NAME = 'read_name';
 
 /** The contract's closed list (§18.3): an action added to it is restricted by default. */
 const ALL_ACTIONS = organizationActionSchema.options;
@@ -25,13 +32,32 @@ const ACTIONS_OF_ARCHIVED_ORGANIZATIONS: readonly OrganizationAction[] = [
 
 /**
  * The rules of organizations (§7.5): only the Administrator sees, creates and manages them, their
- * e-mail domains, their projects and their members; for everyone else they are invisible. The
- * permission layer (S1-04) takes them over and adds read access where other features need it.
+ * e-mail domains, their projects and their members. A team member reads only the names of the
+ * organizations with access to one of their projects (S1-13 Q6) – names their tickets already
+ * show; for end users organizations are invisible.
  */
 export const organizationsAbilities: AbilityRules = ({ can }, principal) => {
-  if (principal.userKind !== 'team' || !principal.isAdmin) {
+  if (principal.userKind !== 'team') {
     return;
   }
+  if (!principal.isAdmin) {
+    // Only team roles count: a membership that contradicts the account kind grants nothing (§7.1).
+    can(READ_NAME, ORGANIZATION, {
+      projects: {
+        some: {
+          project: {
+            is: {
+              members: {
+                some: { userId: principal.userId, role: { in: teamRolesFrom('developer') } },
+              },
+            },
+          },
+        },
+      },
+    });
+    return;
+  }
+  can(READ_NAME, ORGANIZATION);
   can(CREATE, ORGANIZATION);
   can([...ALL_ACTIONS], ORGANIZATION);
 };
