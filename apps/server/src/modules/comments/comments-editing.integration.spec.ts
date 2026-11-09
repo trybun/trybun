@@ -123,6 +123,7 @@ describe('editing comments and descriptions', () => {
         {
           id: expect.any(String) as string,
           body: 'My phone number is 555-0100',
+          mentions: [],
           author: { id: requester.id, displayName: requester.displayName },
           writtenAt: comment.createdAt.toISOString(),
         },

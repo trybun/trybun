@@ -51,6 +51,7 @@ import {
   ActivityEventsService,
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
+import { revisionsForReader } from '../comments/comment-responses.js';
 import { CommentsService } from '../comments/comments.service.js';
 import { ContentRevisionsService } from '../content-revisions/content-revisions.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
@@ -347,12 +348,16 @@ export class TicketsService {
    * The earlier versions of a ticket's description, newest first (§6.1, S1-12 Q3): the target
    * record guard has checked `read_description_revisions` – the team, and the requester.
    */
-  listDescriptionRevisions(
+  async listDescriptionRevisions(
     principal: UserPrincipal,
     ticketId: string,
     query: ListContentRevisionsQuery,
   ): Promise<ContentRevisionPage> {
-    return this.revisions.list(this.prisma, principal, { ticketId }, query);
+    return revisionsForReader(
+      this.prisma,
+      principal,
+      await this.revisions.list(this.prisma, principal, { ticketId }, query),
+    );
   }
 
   /**
@@ -758,6 +763,7 @@ export class TicketsService {
           ability,
           { ...before, assigneeId: before.assignee?.id ?? null },
           { kind: 'public', body: input.rejectionReason },
+          '/rejectionReason',
         );
       }
       return toTicketResponse(
@@ -835,6 +841,7 @@ export class TicketsService {
           ability,
           { ...before, assigneeId: before.assignee?.id ?? null },
           { kind: 'public', body: decision.reason },
+          '/reason',
         );
       }
       return this.applyVisibilityChange(tx, ability, principal, target, before, change);

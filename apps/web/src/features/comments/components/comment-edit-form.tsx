@@ -10,7 +10,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
-import { FORM_ERROR_MAP } from '../../../lib/errors/form-errors.js';
+import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
 import { useUnsavedChanges } from '../../../lib/forms/use-unsaved-changes.js';
 import { LazyAttachmentDrafts } from '../../attachments/components/lazy-attachment-drafts.js';
 import { useAttachmentDrafts } from '../../attachments/use-attachment-drafts.js';
@@ -64,7 +64,15 @@ export function CommentEditForm({
       await updateComment.mutateAsync({ comment, input: values });
       onClose();
     } catch (error) {
-      form.setError('root', { message: error instanceof ApiError ? error.code : undefined });
+      // A refused mention points at the text (§17.2): shown under the field.
+      const bodyError = (error instanceof ApiError ? fieldErrorsOf(error) : []).find(
+        ({ field }) => field === 'body',
+      );
+      if (bodyError === undefined) {
+        form.setError('root', { message: error instanceof ApiError ? error.code : undefined });
+      } else {
+        form.setError('body', { message: bodyError.code });
+      }
     }
   });
   const rootError = form.formState.errors.root;

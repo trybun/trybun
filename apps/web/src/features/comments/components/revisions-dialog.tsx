@@ -9,11 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trybun/ui/components/dialog';
-import { Markdown, type MarkdownProps } from '@trybun/ui/components/markdown';
+import type { CommentMention } from '@trybun/contracts/comments';
+import { Markdown } from '@trybun/ui/components/markdown';
 import { useFormatter, useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { commentRevisionsQueryOptions, descriptionRevisionsQueryOptions } from '../queries.js';
+import { useMentionedPeople } from '../use-mentioned-people.js';
 
 /** The text whose history is shown: a comment or a ticket's description. */
 export type RevisedText = { commentId: string } | { ticketId: string };
@@ -24,12 +26,10 @@ export type RevisedText = { commentId: string } | { ticketId: string };
  */
 export function RevisionsDialog({
   text,
-  mentions,
   imageIds,
   onClose,
 }: {
   text: RevisedText;
-  mentions?: MarkdownProps['mentions'];
   imageIds: readonly string[];
   onClose: () => void;
 }) {
@@ -71,9 +71,7 @@ export function RevisionsDialog({
                   }),
                 })}
               </span>
-              <Markdown attachmentImageIds={imageIds} mentions={mentions}>
-                {revision.body}
-              </Markdown>
+              <RevisionBody body={revision.body} mentions={revision.mentions} imageIds={imageIds} />
             </li>
           ))}
         </ol>
@@ -97,5 +95,23 @@ export function RevisionsDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** A version of the text with the people it mentions as the reader may see them (§5.4). */
+function RevisionBody({
+  body,
+  mentions,
+  imageIds,
+}: {
+  body: string;
+  mentions: readonly CommentMention[];
+  imageIds: readonly string[];
+}) {
+  const people = useMentionedPeople(mentions);
+  return (
+    <Markdown attachmentImageIds={imageIds} mentions={people}>
+      {body}
+    </Markdown>
   );
 }

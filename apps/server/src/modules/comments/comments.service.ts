@@ -47,8 +47,14 @@ import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.s
 import { ContentRevisionsService } from '../content-revisions/content-revisions.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { TICKET, ticketRuleSelect } from '../tickets/tickets.abilities.js';
-import { type CommentRow, commentSelect, toCommentResponse } from './comment-responses.js';
+import {
+  type CommentRow,
+  commentSelect,
+  revisionsForReader,
+  toCommentResponse,
+} from './comment-responses.js';
 import { COMMENT } from './comments.abilities.js';
+import { lockCommentForUpdate } from './comments.sql.js';
 import { type MentionedTicket, mentionScope } from './mention-scope.js';
 import { identitySelect, visiblePerson } from '../users/visible-person.js';
 
@@ -240,12 +246,16 @@ export class CommentsService {
     commentId: string,
     query: ListContentRevisionsQuery,
   ): Promise<ContentRevisionPage> {
-    return this.revisions.list(this.prisma, principal, { commentId }, query);
+    return revisionsForReader(
+      this.prisma,
+      principal,
+      await this.revisions.list(this.prisma, principal, { commentId }, query),
+    );
   }
 
   /**
-   * A comment the principal reads, read again after the share lock of its ticket's project
-   * (§18.3): `404` when it is missing or invisible.
+   * A comment the principal reads, read again after the share lock of its ticket's project and
+   * the row lock of the comment (§18.3): `404` when it is missing or invisible.
    */
   private async lockAndFind(
     tx: Transaction,
@@ -257,7 +267,11 @@ export class CommentsService {
       where: { id: commentId },
       select: { ticket: { select: { projectId: true } } },
     });
-    if (located === null || !(await this.projects.lockForShare(tx, located.ticket.projectId))) {
+    if (
+      located === null ||
+      !(await this.projects.lockForShare(tx, located.ticket.projectId)) ||
+      !(await lockCommentForUpdate(tx, commentId))
+    ) {
       throw new AppError('request.not_found');
     }
     const row = await tx.comment.findFirst({
@@ -333,7 +347,8 @@ export class CommentsService {
     const merged: TimelineItem[] = [
       ...comments.map((comment) => ({ type: 'comment' as const, comment })),
       ...events.map((event) => ({ type: 'event' as const, event })),
-    ].sort((a, b) => idOf(a).localeCompare(idOf(b)));
+      // The database's order of UUIDs: their lower-case hex strings compared character by character.
+    ].sort((a, b) => (idOf(a) < idOf(b) ? -1 : idOf(a) > idOf(b) ? 1 : 0));
     const page = merged.slice(0, query.limit);
     const last = page.at(-1);
     return {
@@ -356,6 +371,8 @@ export class CommentsService {
     ability: AppAbility,
     ticket: CommentedTicket,
     input: CreateCommentDto,
+    /** Where a refused mention points: the text's field of the request (§17.2). */
+    bodyPointer = '/body',
   ): Promise<CommentResponse> {
     const isPublic = input.kind === 'public';
     const { id } = await tx.comment.create({
@@ -370,7 +387,17 @@ export class CommentsService {
       },
       select: { id: true },
     });
-    await this.syncMentions(tx, principal, ability, ticket, input.kind, id, input.body, []);
+    await this.syncMentions(
+      tx,
+      principal,
+      ability,
+      ticket,
+      input.kind,
+      id,
+      input.body,
+      [],
+      bodyPointer,
+    );
     await this.attachmentLinks.linkDrafts(
       tx,
       principal,
@@ -446,11 +473,12 @@ export class CommentsService {
     commentId: string,
     body: string,
     existingIds: readonly string[],
+    bodyPointer = '/body',
   ): Promise<void> {
     const ids = mentionIdsOf(body);
     if (ids.length > MAX_MENTIONS_PER_TEXT) {
       throw new AppError('comment.too_many_mentions', [
-        { pointer: '/body', code: 'field.invalid' },
+        { pointer: bodyPointer, code: 'field.invalid' },
       ]);
     }
     const existing = new Set(existingIds);
@@ -466,7 +494,7 @@ export class CommentsService {
       const allowed = await tx.user.count({ where: { AND: [scope, { id: { in: added } }] } });
       if (allowed !== added.length) {
         throw new AppError('comment.mention_not_allowed', [
-          { pointer: '/body', code: 'field.invalid' },
+          { pointer: bodyPointer, code: 'field.invalid' },
         ]);
       }
     }
@@ -577,9 +605,10 @@ function restoreHiddenMentions(principal: UserPrincipal, body: string, before: C
     return body;
   }
   const people = new Map(before.mentions.map(({ user }) => [user.id, user]));
-  const hidden = mentionIdsOf(before.body).filter((id) => {
-    const person = people.get(id);
-    return person !== undefined && visiblePerson(principal, person) === null;
+  // Every occurrence, in order, as the reader's text masked them (`mentionsForReader`).
+  const hidden = [...before.body.matchAll(/@\{([0-9a-f-]{36})\}/g)].flatMap(([, id]) => {
+    const person = id === undefined ? undefined : people.get(id);
+    return person !== undefined && visiblePerson(principal, person) === null ? [person.id] : [];
   });
   let index = 0;
   const restored = body.replaceAll(token, () => {

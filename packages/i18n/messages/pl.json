@@ -591,7 +591,8 @@
       "warning": "Bieżąca treść zostanie zastąpiona, a zaznaczone wcześniejsze wersje usunięte. Tego nie można cofnąć. Wysłane już e-maile i kopie zapasowe zachowują wcześniejszą treść.",
       "text": "Nowa treść",
       "versions": "Wcześniejsze wersje do usunięcia",
-      "confirm": "Zredaguj"
+      "confirm": "Zredaguj",
+      "loadAll": "Wyświetl wszystkie wcześniejsze wersje przed redakcją, aby żadna nie została przez pomyłkę."
     },
     "descriptionHistory": "Historia opisu",
     "redactDescription": "Zredaguj opis"

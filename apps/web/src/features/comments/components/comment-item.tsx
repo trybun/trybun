@@ -177,7 +177,6 @@ export function CommentItem({
       {dialog === 'history' && (
         <LazyRevisionsDialog
           text={{ commentId: comment.id }}
-          mentions={mentions}
           imageIds={imageIds}
           onClose={() => setDialog(null)}
         />

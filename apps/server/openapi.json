@@ -11875,6 +11875,38 @@
                           "body": {
                             "type": "string"
                           },
+                          "mentions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "customer"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "displayName": {
+                                  "nullable": true,
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "displayName"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "author": {
                             "nullable": true,
                             "type": "object",
@@ -11904,6 +11936,7 @@
                         "required": [
                           "id",
                           "body",
+                          "mentions",
                           "author",
                           "writtenAt"
                         ],
@@ -15971,6 +16004,38 @@
                           "body": {
                             "type": "string"
                           },
+                          "mentions": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "customer"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "displayName": {
+                                  "nullable": true,
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "displayName"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "author": {
                             "nullable": true,
                             "type": "object",
@@ -16000,6 +16065,7 @@
                         "required": [
                           "id",
                           "body",
+                          "mentions",
                           "author",
                           "writtenAt"
                         ],

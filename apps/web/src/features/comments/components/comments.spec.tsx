@@ -54,6 +54,9 @@ function teamComment(overrides: Partial<Comment> = {}): Comment {
 function answer(items: object[]) {
   fake.on('GET /api/v1/tickets/{ticketId}/timeline', { data: { items, nextCursor: null } });
   fake.on('GET /api/v1/attachments', { data: { items: [] } });
+  fake.on('GET /api/v1/projects/{projectId}', {
+    data: { id: ticketResponse().projectId, state: 'active', allowedActions: ['read'] },
+  });
 }
 
 function renderTimeline(ticket: Ticket | object, isTeam = true) {
@@ -135,6 +138,7 @@ describe('a comment', () => {
           {
             id: COMMENT_ID,
             body: 'First words',
+            mentions: [],
             author: AUTHOR,
             writtenAt: '2026-11-09T10:00:00.000Z',
           },
@@ -198,5 +202,42 @@ describe('a comment', () => {
     renderTimeline(ticketResponse());
 
     expect(await screen.findByText('@Customer')).toBeDefined();
+  });
+
+  it('redacts only after every earlier version is listed (Q9)', async () => {
+    const user = userEvent.setup();
+    const revision = (n: number) => ({
+      id: `0199a3f0-0000-7000-8000-0000000006${n.toString().padStart(2, '0')}`,
+      body: `Version ${n}`,
+      mentions: [],
+      author: AUTHOR,
+      writtenAt: '2026-11-09T10:00:00.000Z',
+    });
+    answer([{ type: 'comment', comment: teamComment() }]);
+    fake.on('GET /api/v1/comments/{commentId}/revisions', (init) =>
+      (init as { params: { query: { cursor?: string } } }).params.query.cursor === undefined
+        ? { data: { items: [revision(1)], nextCursor: 'next' } }
+        : { data: { items: [revision(2)], nextCursor: null } },
+    );
+    fake.on('POST /api/v1/comments/{commentId}/redaction', { data: teamComment() });
+    renderTimeline(ticketResponse());
+
+    await user.click(await screen.findByRole('button', { name: 'Actions of the comment' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Redact' }));
+    const dialog = within(await screen.findByRole('dialog', { name: 'Redact the comment' }));
+    await dialog.findByText(/Version 1|Anna/);
+    expect(dialog.getByRole('button', { name: 'Redact' }).hasAttribute('disabled')).toBe(true);
+
+    await user.click(dialog.getByRole('button', { name: 'Show more' }));
+    await waitFor(() =>
+      expect(dialog.getByRole('button', { name: 'Redact' }).hasAttribute('disabled')).toBe(false),
+    );
+    await user.click(dialog.getByRole('button', { name: 'Redact' }));
+
+    await waitFor(() =>
+      expect(fake.callsTo('POST /api/v1/comments/{commentId}/redaction')[0]?.init).toMatchObject({
+        body: { purgeRevisionIds: [revision(1).id, revision(2).id] },
+      }),
+    );
   });
 });

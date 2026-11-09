@@ -8,7 +8,10 @@ import {
   type EndUserComment,
   HIDDEN_MENTION_ID,
 } from '@trybun/contracts/comments';
+import type { ContentRevisionPage } from '@trybun/contracts/content-revisions';
+import { mentionIdsOf } from '@trybun/markdown';
 import type { Prisma } from '../../generated/prisma/client.js';
+import type { Transaction } from '../../platform/database/prisma.service.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import type { AppAbility } from '../../platform/authorization/ability-factory.js';
 import { identitySelect, visiblePerson } from '../users/visible-person.js';
@@ -112,4 +115,29 @@ export function toCommentResponse(
         ? null
         : { id: row.audienceOrganization.id, name: row.audienceOrganization.name },
   } satisfies Comment;
+}
+
+/**
+ * The earlier versions of a text as the reader may see their mentions (§5.4, S1-12): each body
+ * names its own people, who may differ from the current text's; a person the identity rule hides
+ * becomes `@{customer}`, so no hidden user ID leaves the server.
+ */
+export async function revisionsForReader(
+  db: Transaction,
+  principal: UserPrincipal,
+  page: ContentRevisionPage,
+): Promise<ContentRevisionPage> {
+  const ids = [...new Set(page.items.flatMap((revision) => mentionIdsOf(revision.body)))];
+  const people =
+    ids.length === 0
+      ? []
+      : await db.user.findMany({ where: { id: { in: ids } }, select: identitySelect(principal) });
+  const byId = new Map(people.map((person) => [person.id, person]));
+  return {
+    ...page,
+    items: page.items.map((revision) => {
+      const mentioned = mentionIdsOf(revision.body).flatMap((id) => byId.get(id) ?? []);
+      return { ...revision, ...mentionsForReader(principal, revision.body, mentioned) };
+    }),
+  };
 }

@@ -68,7 +68,8 @@ export class ContentRevisionsService {
 
   /**
    * The earlier versions of a text, newest first (§6.1): the caller has checked that the principal
-   * may read them. Their authors follow the identity rule (§5.4).
+   * may read them. Their authors follow the identity rule (§5.4); the caller masks their mentions
+   * (`revisionsForReader` of the comments module), which this module does not read.
    */
   async list(
     db: Transaction,
@@ -94,6 +95,7 @@ export class ContentRevisionsService {
       items: page.map((row) => ({
         id: row.id,
         body: row.body,
+        mentions: [],
         author: visiblePerson(principal, row.author),
         writtenAt: row.writtenAt.toISOString(),
       })),

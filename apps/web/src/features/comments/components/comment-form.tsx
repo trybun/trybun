@@ -16,16 +16,19 @@ import { RadioGroup, RadioGroupItem } from '@trybun/ui/components/radio-group';
 import { cn } from '@trybun/ui/lib/utils';
 import { LockIcon } from 'lucide-react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
-import { FORM_ERROR_MAP } from '../../../lib/errors/form-errors.js';
+import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
 import { useUnsavedChanges } from '../../../lib/forms/use-unsaved-changes.js';
 import { LazyAttachmentDrafts } from '../../attachments/components/lazy-attachment-drafts.js';
 import { useAttachmentDrafts } from '../../attachments/use-attachment-drafts.js';
+import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { newTicketHref } from '../../portal/hrefs.js';
+import { projectQueryOptions } from '../../projects/queries.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { LazyMarkdownEditor } from '../../tickets/components/lazy-markdown-editor.js';
 import { useAddComment } from '../mutations.js';
@@ -59,9 +62,12 @@ export function CommentForm({
   attachmentMaxSizeMb: number;
 }) {
   const t = useTranslations('comments');
+  // The state of the project, prefetched with the page; `404` when the requester lost access.
+  const project = useQuery(projectQueryOptions(browserApiClient, ticket.projectId));
   if (!ticket.allowedActions.includes('add_comment')) {
-    // The team cannot comment in an archived project, which the view's banner says already.
-    return isTeam ? null : (
+    // Nobody comments in an archived project, which the view's banner says already; no new
+    // ticket can be created there either.
+    return isTeam || project.data?.state === 'archived' ? null : (
       <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
         <p className="text-sm text-muted-foreground">{t('closed')}</p>
         <Button
@@ -123,7 +129,15 @@ function NewCommentForm({
       // A new form preselects the internal note again (§6.1).
       form.reset({ kind: initialKind, body: '', attachmentIds: [] });
     } catch (error) {
-      form.setError('root', { message: error instanceof ApiError ? error.code : undefined });
+      // A refused mention points at the text (§17.2): shown under the field.
+      const bodyError = (error instanceof ApiError ? fieldErrorsOf(error) : []).find(
+        ({ field }) => field === 'body',
+      );
+      if (bodyError === undefined) {
+        form.setError('root', { message: error instanceof ApiError ? error.code : undefined });
+      } else {
+        form.setError('body', { message: bodyError.code });
+      }
     }
   });
   const rootError = form.formState.errors.root;

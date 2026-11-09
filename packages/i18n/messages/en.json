@@ -591,7 +591,8 @@
       "warning": "The current text is replaced and the selected earlier versions are deleted. This cannot be undone. E-mails already sent and backups keep the earlier text.",
       "text": "New text",
       "versions": "Earlier versions to delete",
-      "confirm": "Redact"
+      "confirm": "Redact",
+      "loadAll": "List every earlier version before redacting, so none is kept by mistake."
     },
     "descriptionHistory": "Description history",
     "redactDescription": "Redact the description"

@@ -9,7 +9,15 @@ import { ticketDescriptionSchema, ticketPersonSchema } from '../tickets/index.js
  */
 export const contentRevisionSchema = z.object({
   id: z.uuid(),
+  /** The text; a person hidden from the reader appears as `@{customer}` (§5.4, S1-12). */
   body: z.string(),
+  /** The people the version mentions, as the reader may see them (S1-12 Q2). */
+  mentions: z.array(
+    z.object({
+      id: z.union([z.uuid(), z.literal('customer')]),
+      displayName: z.string().nullable(),
+    }),
+  ),
   author: ticketPersonSchema.nullable(),
   writtenAt: z.iso.datetime(),
 });

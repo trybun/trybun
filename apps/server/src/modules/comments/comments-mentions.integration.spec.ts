@@ -261,4 +261,69 @@ describe('mentions', () => {
         .sort(),
     ).toEqual([colleague.id, assignee.id].sort());
   });
+
+  it('masks a hidden person in the history too, and restores every occurrence on an edit (§5.4)', async () => {
+    const { organizationB, requester, colleague, ticket } = await setUp('all_customers');
+    const created = (
+      await post(requester, ticket.id, {
+        kind: 'public',
+        body: `Ask ${token(colleague)}, then ${token(colleague)} again`,
+      })
+    ).body as CommentResponse;
+    await http()
+      .patch(`/api/v1/comments/${created.id}`)
+      .set('Authorization', await as(requester))
+      .set('If-Match', 'W/"1"')
+      .send({ body: `Ask ${token(colleague)}, then ${token(colleague)} again!` });
+    await prisma.organizationMember.update({
+      where: { userId: colleague.id },
+      data: { organizationId: organizationB.id },
+    });
+
+    const history = await http()
+      .get(`/api/v1/comments/${created.id}/revisions`)
+      .set('Authorization', await as(requester));
+    const seen = (
+      await http()
+        .get(`/api/v1/comments/${created.id}`)
+        .set('Authorization', await as(requester))
+    ).body as CommentResponse;
+    const unchanged = await http()
+      .patch(`/api/v1/comments/${created.id}`)
+      .set('Authorization', await as(requester))
+      .set('If-Match', 'W/"2"')
+      .send({ body: `${seen.body} Thanks.` });
+
+    expect(history.body).toMatchObject({
+      items: [
+        {
+          body: 'Ask @{customer}, then @{customer} again',
+          mentions: [{ id: 'customer', displayName: null }],
+        },
+      ],
+    });
+    expect(JSON.stringify(history.body)).not.toContain(colleague.id);
+    expect(unchanged.status).toBe(200);
+    expect(
+      await prisma.comment.findUniqueOrThrow({ where: { id: created.id }, select: { body: true } }),
+    ).toEqual({
+      body: `Ask ${token(colleague)}, then ${token(colleague)} again! Thanks.`,
+    });
+  });
+
+  it('points a refused mention of a rejection reason at its field', async () => {
+    const { assignee, stranger, ticket } = await setUp();
+
+    const res = await http()
+      .put(`/api/v1/tickets/${ticket.id}/status`)
+      .set('Authorization', await as(assignee))
+      .set('If-Match', `W/"${ticket.version}"`)
+      .send({ status: 'rejected', rejectionReason: `Ask ${token(stranger)}` });
+
+    expect(res.status).toBe(422);
+    expect(res.body).toMatchObject({
+      code: 'comment.mention_not_allowed',
+      errors: [{ pointer: '/rejectionReason', code: 'field.invalid' }],
+    });
+  });
 });

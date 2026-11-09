@@ -4150,6 +4150,10 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             body: string;
+                            mentions: {
+                                id: string | "customer";
+                                displayName: string | null;
+                            }[];
                             author: {
                                 /** Format: uuid */
                                 id: string;
@@ -5217,6 +5221,10 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             body: string;
+                            mentions: {
+                                id: string | "customer";
+                                displayName: string | null;
+                            }[];
                             author: {
                                 /** Format: uuid */
                                 id: string;
