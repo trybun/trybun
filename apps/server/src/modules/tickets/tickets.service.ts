@@ -25,6 +25,12 @@ import {
   publicStatusOf,
   type UpdateTicketDto,
 } from '@trybun/contracts/tickets';
+import type { CommentResponse, CreateCommentDto } from '@trybun/contracts/comments';
+import type {
+  ContentRevisionPage,
+  ListContentRevisionsQuery,
+  RedactDescriptionDto,
+} from '@trybun/contracts/content-revisions';
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
@@ -45,10 +51,13 @@ import {
   ActivityEventsService,
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
+import { revisionsForReader } from '../comments/comment-responses.js';
+import { CommentsService } from '../comments/comments.service.js';
+import { ContentRevisionsService } from '../content-revisions/content-revisions.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
-import { originalIdsOf, toEndUserEvent } from '../activity-events/domain/end-user-events.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
+import { requesterReplyTarget } from './domain/requester-reply.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
 import { OrganizationsService } from '../organizations/organizations.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
@@ -83,7 +92,7 @@ import {
   listRequestedTicketKeys,
   lockTicketsForUpdate,
 } from './tickets.sql.js';
-import { identitySelect, visiblePerson } from './visible-person.js';
+import { identitySelect, visiblePerson } from '../users/visible-person.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
 
@@ -114,8 +123,8 @@ function ticketSelect(principal: UserPrincipal) {
     statusBeforeWaiting: true,
     waitingSince: true,
     closedAt: true,
-    rejectionReason: true,
-    sharingRefusalReason: true,
+    descriptionEditedAt: true,
+    descriptionEditedById: true,
     version: true,
     createdAt: true,
     updatedAt: true,
@@ -148,7 +157,6 @@ function systemTicketSelect() {
     statusBeforeWaiting: true,
     waitingSince: true,
     closedAt: true,
-    rejectionReason: true,
     version: true,
     assignee: { select: PERSON_SELECT },
     project: { select: { state: true, confirmResolution: true } },
@@ -218,6 +226,7 @@ function toTicketResponse(
     duplicateOf: duplicateOfResponse(row, ability),
     visibility: row.visibility,
     sharingRequest: row.sharingRequest,
+    descriptionEditedAt: row.descriptionEditedAt?.toISOString() ?? null,
   };
   if (principal.userKind === 'end_user') {
     return {
@@ -237,8 +246,6 @@ function toTicketResponse(
       row.organization === null ? null : { id: row.organization.id, name: row.organization.name },
     assignee: row.assignee,
     closedAt: row.closedAt?.toISOString() ?? null,
-    rejectionReason: row.rejectionReason,
-    sharingRefusalReason: row.sharingRefusalReason,
   } satisfies Ticket;
 }
 
@@ -258,7 +265,6 @@ function visibilityFieldsOf(row: TicketRow): VisibilityFields {
   return {
     visibility: row.visibility,
     sharingRequest: row.sharingRequest,
-    sharingRefusalReason: row.sharingRefusalReason,
   };
 }
 
@@ -293,7 +299,133 @@ export class TicketsService {
     private readonly attachmentLinks: AttachmentLinksService,
     private readonly outbox: OutboxService,
     private readonly clock: Clock,
+    private readonly comments: CommentsService,
+    private readonly revisions: ContentRevisionsService,
   ) {}
+
+  /**
+   * Redacts a ticket's description (§6.1, §13.2, S1-12 Q9): the new description replaces the
+   * current one, which is never kept, and the listed revisions are deleted. It marks the
+   * description edited and writes the internal event `description_redacted` and the audit entry
+   * `ticket.description_redacted`, none with content. A stale version gets `412`.
+   */
+  async redactDescription(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    input: RedactDescriptionDto,
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockProjectAndFind(tx, ability, principal, target.id);
+      this.assertCan(ability, 'redact_description', before);
+      assertVersionMatched(
+        await tx.ticket.updateMany(
+          versionedUpdate(target, {
+            description: input.description,
+            descriptionEditedAt: this.clock.now(),
+            descriptionEditedById: principal.userId,
+          }),
+        ),
+      );
+      await this.revisions.purge(tx, { ticketId: before.id }, input.purgeRevisionIds);
+      await this.activityEvents.record(tx, { userId: principal.userId }, before.id, [
+        { type: 'description_redacted', data: null, isPublic: false },
+      ]);
+      await this.auditLog.record(tx, {
+        action: 'ticket.description_redacted',
+        actorId: principal.userId,
+        target: { type: TICKET, id: before.id },
+      });
+      return toTicketResponse(
+        await this.findVisible(tx, ability, principal, target.id),
+        ability,
+        principal,
+      );
+    });
+  }
+
+  /**
+   * The earlier versions of a ticket's description, newest first (§6.1, S1-12 Q3): the target
+   * record guard has checked `read_description_revisions` – the team, and the requester.
+   */
+  async listDescriptionRevisions(
+    principal: UserPrincipal,
+    ticketId: string,
+    query: ListContentRevisionsQuery,
+  ): Promise<ContentRevisionPage> {
+    return revisionsForReader(
+      this.prisma,
+      principal,
+      await this.revisions.list(this.prisma, principal, { ticketId }, query),
+    );
+  }
+
+  /**
+   * Adds a comment or an internal note to a ticket (§6.1, S1-12). The ticket is locked – its
+   * project's share lock, then its row – and the rules decide on the locked row: `add_comment`
+   * (the target record guard checked it before validation, with `ticket.comments_closed` for an
+   * end user on a closed ticket), and `add_internal_note` for a note (`403`). Writing it is the
+   * comments module's (tickets → comments, Q11).
+   */
+  async addComment(
+    principal: UserPrincipal,
+    ticketId: string,
+    input: CreateCommentDto,
+  ): Promise<CommentResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const ticket = await this.lockAndFindTicket(tx, ability, principal, ticketId);
+      this.assertCan(ability, 'add_comment', ticket);
+      if (input.kind === 'internal') {
+        this.assertCan(ability, 'add_internal_note', ticket);
+      }
+      const comment = await this.comments.add(
+        tx,
+        principal,
+        ability,
+        { ...ticket, assigneeId: ticket.assignee?.id ?? null },
+        input,
+      );
+      await this.applyRequesterReply(tx, principal, ticket, input, comment.id);
+      return comment;
+    });
+  }
+
+  /**
+   * The requester-reply rules (§4.3, S1-12) in the transaction of the comment, on the ticket the
+   * comment locked: a public comment of the requester's end-user account answers a wait or
+   * reopens a `done` ticket. The change is state-conditional – no `If-Match`, the comment's row
+   * lock serializes it with "Yes, solved", whose own conditional update then finds a ticket no
+   * longer waiting – increases the ticket's version, and its `status_changed` event and outbox
+   * event name the requester, the event also the comment (Q15).
+   */
+  private async applyRequesterReply(
+    tx: Transaction,
+    principal: UserPrincipal,
+    ticket: TicketRow,
+    input: CreateCommentDto,
+    commentId: string,
+  ): Promise<void> {
+    const target = requesterReplyTarget(
+      ticket,
+      input.kind === 'public' &&
+        principal.userKind === 'end_user' &&
+        ticket.requesterId === principal.userId,
+    );
+    if (target === null) {
+      return;
+    }
+    const change = changeStatus(
+      { ...statusFieldsOf(ticket), source: ticket.source },
+      {
+        target,
+        currentOriginal: null,
+        confirmResolution: ticket.project.confirmResolution,
+        now: this.clock.now(),
+      },
+    );
+    await this.applyStatusChange(tx, { userId: principal.userId }, ticket, null, change, commentId);
+  }
 
   /**
    * Creates a ticket (§3.2). The project is locked in share mode and read through the ability
@@ -371,7 +503,12 @@ export class TicketsService {
         },
         select: ticketSelect(principal),
       });
-      await this.attachmentLinks.linkDrafts(tx, principal, row.id, input.attachmentIds ?? []);
+      await this.attachmentLinks.linkDrafts(
+        tx,
+        principal,
+        { ticketId: row.id },
+        input.attachmentIds ?? [],
+      );
       return toTicketResponse(row, ability, principal);
     });
   }
@@ -536,7 +673,29 @@ export class TicketsService {
         assertVersionMatched({ count: before.version === target.version ? 1 : 0 });
         return toTicketResponse(before, ability, principal);
       }
-      assertVersionMatched(await tx.ticket.updateMany(versionedUpdate(target, data)));
+      const isDescriptionEdited = 'description' in data;
+      assertVersionMatched(
+        await tx.ticket.updateMany(
+          versionedUpdate(target, {
+            ...data,
+            ...(isDescriptionEdited
+              ? { descriptionEditedAt: this.clock.now(), descriptionEditedById: principal.userId }
+              : {}),
+          }),
+        ),
+      );
+      if (isDescriptionEdited) {
+        // The replaced description becomes a content revision (§6.1, S1-12).
+        await this.revisions.record(
+          tx,
+          { ticketId: before.id },
+          {
+            body: before.description,
+            authorId: before.descriptionEditedById ?? before.requesterId,
+            writtenAt: before.descriptionEditedAt ?? before.createdAt,
+          },
+        );
+      }
       const after = await this.findVisible(tx, ability, principal, target.id);
       await this.activityEvents.recordChanges(
         tx,
@@ -552,7 +711,8 @@ export class TicketsService {
   /**
    * Changes the status of a ticket (§4.3) by the team: the rules of `status-transitions.ts` decide
    * the new status fields, the `duplicate_of` relation and the events; a request for the current
-   * status changes nothing but a new reason or a new original (Q16).
+   * status changes nothing but a new original (Q16). The reason of a rejection becomes a public
+   * comment of the acting team member in the same transaction (S1-12 Q13).
    */
   async changeStatus(
     principal: UserPrincipal,
@@ -581,7 +741,6 @@ export class TicketsService {
         { ...statusFieldsOf(before), source: before.source },
         {
           target: input.status,
-          ...(input.status === 'rejected' ? { rejectionReason: input.rejectionReason } : {}),
           ...(original === undefined ? {} : { original }),
           currentOriginal: this.currentOriginal(before),
           confirmResolution: before.project.confirmResolution,
@@ -595,6 +754,18 @@ export class TicketsService {
         target.version,
         change,
       );
+      if (input.status === 'rejected') {
+        // The reason is published to the requester as a public comment (§4.3, S1-12 Q13); a new
+        // reason on a rejected ticket adds another one.
+        await this.comments.add(
+          tx,
+          principal,
+          ability,
+          { ...before, assigneeId: before.assignee?.id ?? null },
+          { kind: 'public', body: input.rejectionReason },
+          '/rejectionReason',
+        );
+      }
       return toTicketResponse(
         await this.findVisible(tx, ability, principal, target.id),
         ability,
@@ -660,9 +831,19 @@ export class TicketsService {
       const before = await this.lockAndFindTicket(tx, ability, principal, target.id);
       this.assertCan(ability, decision.approve ? 'approve_sharing' : 'reject_sharing', before);
       const fields = visibilityFieldsOf(before);
-      const change = decision.approve
-        ? approveSharing(fields)
-        : rejectSharing(fields, decision.reason);
+      const change = decision.approve ? approveSharing(fields) : rejectSharing(fields);
+      if (!decision.approve) {
+        // The reason reaches the author as a public comment of the refusing team member, with the
+        // unchanged visibility as its audience (§5.2, S1-12 Q14).
+        await this.comments.add(
+          tx,
+          principal,
+          ability,
+          { ...before, assigneeId: before.assignee?.id ?? null },
+          { kind: 'public', body: decision.reason },
+          '/reason',
+        );
+      }
       return this.applyVisibilityChange(tx, ability, principal, target, before, change);
     });
   }
@@ -864,6 +1045,7 @@ export class TicketsService {
     before: StatusChangeSubject,
     version: number | null,
     change: StatusChange,
+    commentId?: string,
   ): Promise<boolean> {
     if (change.fields === null) {
       if (version !== null) {
@@ -918,6 +1100,7 @@ export class TicketsService {
           waitingReason,
           reopen: change.statusChanged.reopen,
           actorId: 'userId' in actor ? actor.userId : null,
+          ...(commentId === undefined ? {} : { commentId }),
         } satisfies TicketStatusChangedPayload,
       });
     }
@@ -1074,43 +1257,12 @@ export class TicketsService {
     ticketId: string,
     query: ListActivityEventsQuery,
   ): Promise<ActivityEventPage> {
-    const isEndUser = principal.userKind === 'end_user';
-    const page = await this.activityEvents.list(ticketId, query, { publicOnly: isEndUser });
-    if (!isEndUser) {
-      return page;
-    }
-    const originalIds = originalIdsOf(page.items);
-    const readableOriginals =
-      originalIds.length === 0
-        ? []
-        : await this.prisma.ticket.findMany({
-            where: {
-              AND: [
-                accessibleBy(this.abilities.forPrincipal(principal), 'read').ofType(TICKET),
-                { id: { in: originalIds } },
-              ],
-            },
-            select: { id: true },
-          });
-    const readableIds = new Set(readableOriginals.map(({ id }) => id));
-    // The actors the identity rule hides from this reader (§5.4, Q9).
-    const actorIds = [...new Set(page.items.flatMap((event) => event.actor?.id ?? []))];
-    const actors = await this.prisma.user.findMany({
-      where: { id: { in: actorIds } },
-      select: identitySelect(principal),
-    });
-    const hiddenActorIds = new Set(
-      actors.filter((actor) => visiblePerson(principal, actor) === null).map(({ id }) => id),
+    return this.activityEvents.listForViewer(
+      principal,
+      ticketId,
+      query,
+      accessibleBy(this.abilities.forPrincipal(principal), 'read').ofType(TICKET),
     );
-    return {
-      items: page.items.map((event) => {
-        const endUserEvent = toEndUserEvent(event, readableIds);
-        return event.actor !== null && hiddenActorIds.has(event.actor.id)
-          ? { ...endUserEvent, actor: null }
-          : endUserEvent;
-      }),
-      nextCursor: page.nextCursor,
-    };
   }
 
   /**

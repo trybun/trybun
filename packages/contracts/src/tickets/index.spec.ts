@@ -73,6 +73,10 @@ describe('ticket enums', () => {
         'set_visibility_all_customers',
         'approve_sharing',
         'reject_sharing',
+        'add_comment',
+        'add_internal_note',
+        'read_description_revisions',
+        'redact_description',
       ],
     ],
     [ticketWaitingReasonSchema, ['information', 'confirmation']],
@@ -326,6 +330,7 @@ describe('ticketResponseSchema', () => {
     duplicateOf: null,
     visibility: 'only_me',
     sharingRequest: 'none',
+    descriptionEditedAt: null,
   };
 
   it("keeps the team's fields of a team ticket", () => {
@@ -338,8 +343,6 @@ describe('ticketResponseSchema', () => {
       organization: null,
       assignee: null,
       closedAt: null,
-      rejectionReason: null,
-      sharingRefusalReason: null,
     };
 
     expect(ticketResponseSchema.parse(ticket)).toEqual(ticket);
@@ -354,8 +357,7 @@ describe('ticketResponseSchema', () => {
         source: 'user',
         priority: 'high',
         status: 'in_verification',
-        rejectionReason: 'Internal',
-        sharingRefusalReason: 'Internal',
+        closedAt: null,
       }),
     ).toEqual(endUserTicket);
   });

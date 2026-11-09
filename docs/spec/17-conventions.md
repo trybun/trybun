@@ -62,7 +62,7 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 
 - Tickets are never deleted; they are closed as `rejected` or `duplicate` ([§4.3](04-ticket-lifecycle.md)). Personal data is removed only through anonymization ([§13.2](13-non-functional.md)).
 - **The only exception** is undoing an import batch ([§12.5](12-api-webhooks-import.md)), possible only while no ticket of the batch has activity events other than "Imported": the tickets of the batch are deleted physically with their activity events, together with the accounts the batch created that have no other activity and the batch's external-ID records. Their ticket numbers are not reused: the ticket number counter is never lowered. The undo is recorded in the administrative audit log.
-- Other records (e.g. labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log.
+- Other records (e.g. comments, labels, saved views, webhooks) are deleted physically; the deletion is recorded in the activity timeline or the administrative audit log. A comment is deleted with its revisions, mentions and attachments ([§6.1](06-comments-notifications.md)).
 - Activity events never reference deletable records by foreign key; they store the values they show (ID and display name, e.g. of a label or milestone) in their own data, so deleting a record never changes or breaks the history ([§4.5](04-ticket-lifecycle.md)).
 - There is no generic soft-delete (`deleted_at`) mechanism.
 
@@ -121,6 +121,14 @@ The conventions are enforced in CI by `@trybun/eslint-config` ([§14.6](14-archi
 | `request.rate_limited` | 429 | More requests than the rate limit of the principal or the client IP allows ([§14.4](14-architecture.md)) |
 | `server.internal_error` | 500 | An unexpected error; the response carries no details and the error is logged with the request ID |
 | `server.unavailable` | 503 | PostgreSQL is unavailable (see "Dependency failures") |
+
+- The codes of a feature are described with its rules; the comment codes are:
+
+| Code | Status | Meaning |
+|---|---|---|
+| `ticket.comments_closed` | 409 | An end user comments on a `rejected` or `duplicate` ticket or 14 days or more after `done` – the reason of the restriction of `add_comment` ([§4.3](04-ticket-lifecycle.md)) |
+| `comment.mention_not_allowed` | 422 | A new mention outside the mention scope, or of an unknown ID; field code `field.invalid` at `/body` ([§6.1](06-comments-notifications.md)) |
+| `comment.too_many_mentions` | 422 | More than 50 distinct mentions in one text; field code `field.invalid` at `/body` ([§6.1](06-comments-notifications.md)) |
 - The web application translates error codes into messages in the user's language (translation key `errors.<code>`, [§17.1](#171-code-naming-conventions)); raw server messages are never shown to users.
 - Validation errors return `422` with the code `request.validation_failed` and list the invalid fields in an `errors` member (`[{ "pointer": "/title", "code": "string.too_long" }]`, JSON Pointer to the field), so forms can show them next to the fields. Field error codes are `<kind>.<reason>` from a closed list, chosen by the failing schema rule; a new code is added to this list and to `@trybun/contracts/problem-details`:
 

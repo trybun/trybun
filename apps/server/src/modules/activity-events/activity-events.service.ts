@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type {
   ActivityEvent,
   ActivityEventData,
+  ActivityEventPage,
+  ActivityEventResponse,
   ActivityEventSource,
   ActivityEventType,
   ListActivityEventsQuery,
@@ -12,8 +14,11 @@ import {
 } from '@trybun/contracts/activity-events';
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
-import { decodeCursor, toPage } from '../../platform/database/cursor.js';
+import type { UserPrincipal } from '../../platform/authentication/principal.js';
+import { decodeCursor, encodeCursor } from '../../platform/database/cursor.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { identitySelect, visiblePerson } from '../users/visible-person.js';
+import { originalIdsOf, toEndUserEvent } from './domain/end-user-events.js';
 import { fieldChanges, type TrackedTicketFields } from './domain/field-changes.js';
 
 /** Who made a change: a person, or the system for an automatic change (§4.5). */
@@ -46,7 +51,7 @@ function toEventResponse(row: EventRow): ActivityEvent {
 }
 
 /** Events are sorted by their time-ordered ID (UUIDv7). */
-const eventSortKeySchema = z.tuple([z.uuid()]);
+export const eventSortKeySchema = z.tuple([z.uuid()]);
 
 /**
  * The activity history of tickets (§4.5): immutable events, written in the transaction of the
@@ -114,25 +119,81 @@ export class ActivityEventsService {
   }
 
   /**
-   * The events of a ticket, oldest first. The caller has checked that the principal may read the
-   * ticket; `publicOnly` keeps the events end users may see (§4.5).
+   * The events of a ticket for a reader, oldest first (§4.5), in pages of the shared envelope. The
+   * caller has checked that the principal may read the ticket and passes the filter of the tickets
+   * they read (`accessibleBy`), which decides the originals of duplicates an end user sees.
    */
-  async list(
+  async listForViewer(
+    principal: UserPrincipal,
     ticketId: string,
     query: ListActivityEventsQuery,
-    options: { publicOnly: boolean },
-  ): Promise<{ items: ActivityEvent[]; nextCursor: string | null }> {
+    readableTickets: Prisma.TicketWhereInput,
+  ): Promise<ActivityEventPage> {
     const after = decodeCursor(query.cursor, eventSortKeySchema);
+    const items = await this.eventsForViewer(
+      principal,
+      ticketId,
+      { afterId: after?.[0] ?? null, take: query.limit + 1 },
+      readableTickets,
+    );
+    const page = items.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      items: page,
+      nextCursor: items.length > query.limit && last !== undefined ? encodeCursor([last.id]) : null,
+    };
+  }
+
+  /**
+   * At most `take` events of a ticket after the event `afterId`, oldest first, in the shape of
+   * their reader (§4.5, S1-11 Q9): the team gets every event, an end user only public events with
+   * their public data, the originals of duplicates they may read, and no actor the identity rule
+   * hides (§5.4). The timeline of comments merges them (S1-12 Q11).
+   */
+  async eventsForViewer(
+    principal: UserPrincipal,
+    ticketId: string,
+    { afterId, take }: { afterId: string | null; take: number },
+    readableTickets: Prisma.TicketWhereInput,
+  ): Promise<ActivityEventResponse[]> {
+    const isEndUser = principal.userKind === 'end_user';
     const rows = await this.prisma.activityEvent.findMany({
       where: {
         ticketId,
-        ...(options.publicOnly ? { isPublic: true } : {}),
-        ...(after === null ? {} : { id: { gt: after[0] } }),
+        ...(isEndUser ? { isPublic: true } : {}),
+        ...(afterId === null ? {} : { id: { gt: afterId } }),
       },
       select: EVENT_SELECT,
       orderBy: { id: 'asc' },
-      take: query.limit + 1,
+      take,
     });
-    return toPage(rows, query.limit, toEventResponse, (row) => [row.id]);
+    const events = rows.map(toEventResponse);
+    if (!isEndUser) {
+      return events;
+    }
+    const originalIds = originalIdsOf(events);
+    const readableOriginals =
+      originalIds.length === 0
+        ? []
+        : await this.prisma.ticket.findMany({
+            where: { AND: [readableTickets, { id: { in: originalIds } }] },
+            select: { id: true },
+          });
+    const readableIds = new Set(readableOriginals.map(({ id }) => id));
+    // The actors the identity rule hides from this reader (§5.4, Q9).
+    const actorIds = [...new Set(events.flatMap((event) => event.actor?.id ?? []))];
+    const actors = await this.prisma.user.findMany({
+      where: { id: { in: actorIds } },
+      select: identitySelect(principal),
+    });
+    const hiddenActorIds = new Set(
+      actors.filter((actor) => visiblePerson(principal, actor) === null).map(({ id }) => id),
+    );
+    return events.map((event) => {
+      const endUserEvent = toEndUserEvent(event, readableIds);
+      return event.actor !== null && hiddenActorIds.has(event.actor.id)
+        ? { ...endUserEvent, actor: null }
+        : endUserEvent;
+    });
   }
 }

@@ -12,7 +12,8 @@ import type {
 } from '@trybun/contracts/tickets';
 import { dataOf } from '../../lib/api-client/api-client.js';
 import { browserApiClient } from '../../lib/api-client/browser-api-client.js';
-import { activityEventsQueryOptions, ticketQueryOptions } from './queries.js';
+import { timelineQueryOptions } from '../comments/queries.js';
+import { ticketQueryOptions } from './queries.js';
 
 /** Invalidates every query of the tickets: the lists and the details. */
 function useInvalidateTickets() {
@@ -59,7 +60,7 @@ function useTicketChangeCallbacks() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ['tickets', 'list'] }),
       queryClient.invalidateQueries({
-        queryKey: activityEventsQueryOptions(browserApiClient, ticket.id).queryKey,
+        queryKey: timelineQueryOptions(browserApiClient, ticket.id).queryKey,
       }),
     ]);
   return {
@@ -151,7 +152,7 @@ export function useConfirmResolution() {
     onSettled: () => {
       void Promise.all([
         invalidateTickets(),
-        queryClient.invalidateQueries({ queryKey: ['activity-events'] }),
+        queryClient.invalidateQueries({ queryKey: ['comments'] }),
       ]);
     },
   });

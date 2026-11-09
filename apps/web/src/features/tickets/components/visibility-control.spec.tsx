@@ -107,7 +107,6 @@ describe('VisibilityControl', () => {
       data: {
         ...PENDING,
         sharingRequest: 'rejected',
-        sharingRefusalReason: 'Names a customer.',
         version: 4,
       },
     });
@@ -183,18 +182,12 @@ describe('VisibilityControl', () => {
     });
   });
 
-  it('shows the refusal and its reason to the team', async () => {
-    answer(
-      ticketResponse({
-        visibility: 'my_organization',
-        sharingRequest: 'rejected',
-        sharingRefusalReason: 'Names a customer.',
-      }),
-    );
+  it('shows the refusal and points to its reason in the timeline (S1-12)', async () => {
+    answer(ticketResponse({ visibility: 'my_organization', sharingRequest: 'rejected' }));
     renderView();
 
     expect(await screen.findByText('Sharing refused')).toBeDefined();
-    expect(screen.getByText('Reason of the refusal: Names a customer.')).toBeDefined();
+    expect(screen.getByText('The reason is in the timeline.')).toBeDefined();
   });
 
   it('leaves the visibility out for a ticket of the team (Q6)', async () => {

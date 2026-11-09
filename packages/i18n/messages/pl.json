@@ -368,7 +368,7 @@
       "withdrawn": "Wycofano prośbę o udostępnienie",
       "sharingRequested": "Prośba o udostępnienie",
       "sharingRefused": "Odmowa udostępnienia",
-      "refusalReason": "Powód odmowy: {reason}",
+      "refusalReasonInTimeline": "Powód jest na osi czasu.",
       "share": "Udostępnij wszystkim klientom",
       "shareTitle": "Udostępnić {identifier} wszystkim klientom?",
       "shareDescription": "Sprawdź, czy opis i załączniki nie zawierają danych identyfikujących klienta.",
@@ -492,7 +492,11 @@
         "sharingRequested": "{person} – prośba o udostępnienie wszystkim klientom",
         "sharingRequestWithdrawn": "{person} – wycofanie prośby o udostępnienie wszystkim klientom",
         "sharingApproved": "{person} – udostępnienie wszystkim klientom",
-        "sharingRejected": "{person} – odmowa udostępnienia wszystkim klientom"
+        "sharingRejected": "{person} – odmowa udostępnienia wszystkim klientom",
+        "commentEdited": "{person} – edycja komentarza",
+        "commentDeleted": "Komentarz usunięty – {person}",
+        "commentRedacted": "{person} – redakcja komentarza",
+        "descriptionRedacted": "{person} – redakcja opisu"
       }
     },
     "status": {
@@ -531,6 +535,67 @@
     "cancel": "Anuluj",
     "deleted": "Usunięto plik {name}",
     "unavailable": "Plik {name} nie jest już dostępny"
+  },
+  "comments": {
+    "kindLabel": "Rodzaj komentarza",
+    "kinds": {
+      "internal": "Notatka wewnętrzna",
+      "public": "Komentarz publiczny"
+    },
+    "audience": {
+      "only_me": "Widoczny dla zgłaszającego",
+      "my_organization": "Widoczny dla organizacji {organization}",
+      "all_customers": "Widoczny dla wszystkich klientów projektu"
+    },
+    "commentLabel": "Komentarz",
+    "bodyRequired": "Wpisz komentarz",
+    "editLabel": "Edycja komentarza",
+    "submit": "Skomentuj",
+    "submitInternal": "Dodaj notatkę wewnętrzną",
+    "submitPublic": "Skomentuj publicznie",
+    "closed": "To zgłoszenie jest zamknięte dla komentarzy.",
+    "createNewTicket": "Utwórz nowe zgłoszenie",
+    "internalNote": "Notatka wewnętrzna",
+    "edited": "edytowano",
+    "showHistory": "edytowano – pokaż historię edycji",
+    "actions": "Akcje komentarza",
+    "edit": "Edytuj",
+    "delete": "Usuń",
+    "redact": "Zredaguj",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "customer": "Klient",
+    "unknownPerson": "Nieznana osoba",
+    "deleteDialog": {
+      "title": "Usunąć ten komentarz?",
+      "description": "Komentarz, jego wcześniejsze wersje i pliki zostaną usunięte. Tego nie można cofnąć.",
+      "confirm": "Usuń"
+    },
+    "discard": {
+      "title": "Odrzucić zmiany?",
+      "description": "Wpisany tekst zostanie utracony.",
+      "confirm": "Odrzuć",
+      "cancel": "Edytuj dalej"
+    },
+    "history": {
+      "title": "Historia edycji",
+      "description": "Wcześniejsze wersje, od najnowszej.",
+      "writtenBy": "{person}, {time}",
+      "empty": "Brak wcześniejszych wersji.",
+      "showMore": "Pokaż więcej"
+    },
+    "redaction": {
+      "commentTitle": "Zredaguj komentarz",
+      "descriptionTitle": "Zredaguj opis",
+      "description": "Zastąp treść, aby usunąć dane osobowe.",
+      "warning": "Bieżąca treść zostanie zastąpiona, a zaznaczone wcześniejsze wersje usunięte. Tego nie można cofnąć. Wysłane już e-maile i kopie zapasowe zachowują wcześniejszą treść.",
+      "text": "Nowa treść",
+      "versions": "Wcześniejsze wersje do usunięcia",
+      "confirm": "Zredaguj",
+      "loadAll": "Wyświetl wszystkie wcześniejsze wersje przed redakcją, aby żadna nie została przez pomyłkę."
+    },
+    "descriptionHistory": "Historia opisu",
+    "redactDescription": "Zredaguj opis"
   },
   "users": {
     "accounts": {
@@ -897,7 +962,13 @@
       "attachFiles": "Dołącz pliki",
       "moreFormatting": "Więcej formatowania",
       "nothingToPreview": "Brak podglądu",
-      "uploading": "Przesyłanie {name}…"
+      "uploading": "Przesyłanie {name}…",
+      "mentionList": "Osoby do oznaczenia",
+      "mentionSearching": "Wyszukiwanie osób…",
+      "mentionNone": "Nie znaleziono osób",
+      "mentionCount": "{count, plural, one {Znaleziono # osobę} few {Znaleziono # osoby} many {Znaleziono # osób} other {Znaleziono # osoby}}",
+      "mentionTeam": "Zespół",
+      "mentionEndUser": "Użytkownik"
     },
     "attachmentList": {
       "uploading": "Przesyłanie…",
@@ -960,7 +1031,12 @@
       "sharing_not_pending": "Ta prośba o udostępnienie została już rozpatrzona.",
       "sharing_pending": "Najpierw rozpatrz prośbę o udostępnienie tego zgłoszenia.",
       "author_consent_required": "Tylko autor może poprosić o udostępnienie zgłoszenia widocznego tylko dla niego.",
-      "organization_changed": "Zgłaszający nie należy już do organizacji tego zgłoszenia."
+      "organization_changed": "Zgłaszający nie należy już do organizacji tego zgłoszenia.",
+      "comments_closed": "To zgłoszenie jest zamknięte dla komentarzy. Utwórz nowe zgłoszenie."
+    },
+    "comment": {
+      "mention_not_allowed": "Możesz wspomnieć tylko osoby, które widzą to zgłoszenie i ten komentarz.",
+      "too_many_mentions": "Komentarz może wspominać najwyżej 50 osób."
     },
     "attachment": {
       "type_not_allowed": "Pliki tego typu są niedozwolone.",

@@ -12,13 +12,11 @@ import {
 const ONLY_ME: VisibilityFields = {
   visibility: 'only_me',
   sharingRequest: 'none',
-  sharingRefusalReason: null,
 };
 const MY_ORGANIZATION: VisibilityFields = { ...ONLY_ME, visibility: 'my_organization' };
 const REJECTED: VisibilityFields = {
   visibility: 'my_organization',
   sharingRequest: 'rejected',
-  sharingRefusalReason: 'Names a customer.',
 };
 
 const requester = (
@@ -141,7 +139,7 @@ describe('changeVisibility', () => {
 describe('sharing decisions', () => {
   it('shares an approved request with one public event', () => {
     expect(approveSharing({ ...MY_ORGANIZATION, sharingRequest: 'pending' })).toEqual({
-      fields: { visibility: 'all_customers', sharingRequest: 'none', sharingRefusalReason: null },
+      fields: { visibility: 'all_customers', sharingRequest: 'none' },
       event: {
         type: 'sharing_approved',
         data: { from: 'my_organization', to: 'all_customers' },
@@ -152,8 +150,8 @@ describe('sharing decisions', () => {
   });
 
   it('keeps the visibility of a refused request and leaves the reason out of the event', () => {
-    expect(rejectSharing({ ...ONLY_ME, sharingRequest: 'pending' }, 'Names a customer.')).toEqual({
-      fields: { ...ONLY_ME, sharingRequest: 'rejected', sharingRefusalReason: 'Names a customer.' },
+    expect(rejectSharing({ ...ONLY_ME, sharingRequest: 'pending' })).toEqual({
+      fields: { ...ONLY_ME, sharingRequest: 'rejected' },
       event: { type: 'sharing_rejected', data: null, isPublic: false },
       audit: 'ticket.sharing_rejected',
     });

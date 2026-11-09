@@ -55,17 +55,13 @@ describe('tickets.visibility and tickets.sharing_request', () => {
     await expect(createTicket(prisma, base)).resolves.toMatchObject({
       visibility: 'only_me',
       sharingRequest: 'none',
-      sharingRefusalReason: null,
     });
     await expect(
       createTicket(prisma, { ...base, visibility: 'my_organization', sharingRequest: 'pending' }),
     ).resolves.toMatchObject({ sharingRequest: 'pending' });
     await expect(
       createTicket(prisma, { ...base, sharingRequest: 'rejected' }),
-    ).resolves.toMatchObject({
-      sharingRequest: 'rejected',
-      sharingRefusalReason: expect.any(String) as string,
-    });
+    ).resolves.toMatchObject({ sharingRequest: 'rejected' });
     await expect(
       createTicket(prisma, { ...base, visibility: 'all_customers' }),
     ).resolves.toMatchObject({ visibility: 'all_customers' });
@@ -79,8 +75,6 @@ describe('tickets.visibility and tickets.sharing_request', () => {
     ['a request on a shared ticket', { visibility: 'all_customers', sharingRequest: 'pending' }],
     ['a visibility of a team ticket', { source: 'developer', visibility: 'my_organization' }],
     ['a request on an integration ticket', { source: 'integration', sharingRequest: 'pending' }],
-    ['a refusal without its reason', { sharingRequest: 'rejected', sharingRefusalReason: null }],
-    ['a reason without a refusal', { sharingRefusalReason: 'No' }],
   ] as const)('refuses %s', async (_case, data) => {
     const base = { ...(await setUp()), source: 'user' as const, status: 'new' as const };
 

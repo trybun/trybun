@@ -368,7 +368,7 @@
       "withdrawn": "Request to share withdrawn",
       "sharingRequested": "Sharing requested",
       "sharingRefused": "Sharing refused",
-      "refusalReason": "Reason of the refusal: {reason}",
+      "refusalReasonInTimeline": "The reason is in the timeline.",
       "share": "Share with all customers",
       "shareTitle": "Share {identifier} with all customers?",
       "shareDescription": "Check that the description and attachments contain no data identifying the customer.",
@@ -492,7 +492,11 @@
         "sharingRequested": "{person} asked to share the ticket with all customers",
         "sharingRequestWithdrawn": "{person} withdrew the request to share the ticket with all customers",
         "sharingApproved": "{person} shared the ticket with all customers",
-        "sharingRejected": "{person} did not share the ticket with all customers"
+        "sharingRejected": "{person} did not share the ticket with all customers",
+        "commentEdited": "{person} edited a comment",
+        "commentDeleted": "Comment deleted by {person}",
+        "commentRedacted": "{person} redacted a comment",
+        "descriptionRedacted": "{person} redacted the description"
       }
     },
     "status": {
@@ -531,6 +535,67 @@
     "cancel": "Cancel",
     "deleted": "File {name} deleted",
     "unavailable": "File {name} is no longer available"
+  },
+  "comments": {
+    "kindLabel": "Kind of the comment",
+    "kinds": {
+      "internal": "Internal note",
+      "public": "Public comment"
+    },
+    "audience": {
+      "only_me": "Visible to the requester",
+      "my_organization": "Visible to organization {organization}",
+      "all_customers": "Visible to all customers of the project"
+    },
+    "commentLabel": "Comment",
+    "bodyRequired": "Write the comment",
+    "editLabel": "Edit the comment",
+    "submit": "Comment",
+    "submitInternal": "Add internal note",
+    "submitPublic": "Comment publicly",
+    "closed": "This ticket is closed for comments.",
+    "createNewTicket": "Create a new ticket",
+    "internalNote": "Internal note",
+    "edited": "edited",
+    "showHistory": "edited – show the edit history",
+    "actions": "Actions of the comment",
+    "edit": "Edit",
+    "delete": "Delete",
+    "redact": "Redact",
+    "save": "Save",
+    "cancel": "Cancel",
+    "customer": "Customer",
+    "unknownPerson": "Unknown person",
+    "deleteDialog": {
+      "title": "Delete this comment?",
+      "description": "The comment, its earlier versions and its files are deleted. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "discard": {
+      "title": "Discard your changes?",
+      "description": "The text you typed will be lost.",
+      "confirm": "Discard",
+      "cancel": "Keep editing"
+    },
+    "history": {
+      "title": "Edit history",
+      "description": "The earlier versions, newest first.",
+      "writtenBy": "{person}, {time}",
+      "empty": "There are no earlier versions.",
+      "showMore": "Show more"
+    },
+    "redaction": {
+      "commentTitle": "Redact the comment",
+      "descriptionTitle": "Redact the description",
+      "description": "Replace the text to remove personal data.",
+      "warning": "The current text is replaced and the selected earlier versions are deleted. This cannot be undone. E-mails already sent and backups keep the earlier text.",
+      "text": "New text",
+      "versions": "Earlier versions to delete",
+      "confirm": "Redact",
+      "loadAll": "List every earlier version before redacting, so none is kept by mistake."
+    },
+    "descriptionHistory": "Description history",
+    "redactDescription": "Redact the description"
   },
   "users": {
     "accounts": {
@@ -897,7 +962,13 @@
       "attachFiles": "Attach files",
       "moreFormatting": "More formatting",
       "nothingToPreview": "Nothing to preview",
-      "uploading": "Uploading {name}…"
+      "uploading": "Uploading {name}…",
+      "mentionList": "People to mention",
+      "mentionSearching": "Searching people…",
+      "mentionNone": "No people found",
+      "mentionCount": "{count, plural, one {# person found} other {# people found}}",
+      "mentionTeam": "Team",
+      "mentionEndUser": "End user"
     },
     "attachmentList": {
       "uploading": "Uploading…",
@@ -960,7 +1031,12 @@
       "sharing_not_pending": "This sharing request has already been decided.",
       "sharing_pending": "Decide the sharing request of this ticket first.",
       "author_consent_required": "Only its author can ask to share a ticket visible to them only.",
-      "organization_changed": "The requester no longer belongs to the organization of this ticket."
+      "organization_changed": "The requester no longer belongs to the organization of this ticket.",
+      "comments_closed": "This ticket is closed for comments. Create a new ticket instead."
+    },
+    "comment": {
+      "mention_not_allowed": "You can mention only people who can see this ticket and this comment.",
+      "too_many_mentions": "A comment can mention at most 50 people."
     },
     "attachment": {
       "type_not_allowed": "Files of this type are not allowed.",

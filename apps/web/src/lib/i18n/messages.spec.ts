@@ -46,6 +46,7 @@ const UI_COMPONENTS = join(SOURCES, '../../../packages/ui/src/components');
 const ROUTES_OF_FEATURE: Record<string, ClientMessagesRoute[]> = {
   administration: ['administration'],
   attachments: ['portal', 'tickets'],
+  comments: ['portal', 'tickets'],
   'app-shell': ['shell'],
   help: ['shell'],
   invitations: ['accounts', 'invitations', 'projects'],

@@ -15,10 +15,12 @@ import {
   INVITATION,
   invitationsAbilities,
 } from './invitations.abilities.js';
+import { FixedClock } from '../../../test/fixed-clock.js';
 
 const abilities = new AbilityFactory(
   [invitationsAbilities],
   [archivedTargetsOfInvitationsRestriction],
+  new FixedClock(),
 );
 
 type Target = 'project' | 'organization' | 'administrator';

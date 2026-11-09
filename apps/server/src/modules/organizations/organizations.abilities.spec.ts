@@ -14,8 +14,13 @@ import {
   ORGANIZATION,
   organizationsAbilities,
 } from './organizations.abilities.js';
+import { FixedClock } from '../../../test/fixed-clock.js';
 
-const abilities = new AbilityFactory([organizationsAbilities], [archivedOrganizationsRestriction]);
+const abilities = new AbilityFactory(
+  [organizationsAbilities],
+  [archivedOrganizationsRestriction],
+  new FixedClock(),
+);
 
 type Who = Extract<
   PrincipalFixture,
