@@ -6,7 +6,6 @@ import {
   type AddTicketAttachmentsDto,
   type Attachment,
   type AttachmentAction,
-  attachmentActionSchema,
   type AttachmentList,
   type AttachmentPage,
   type ListAttachmentsQuery,
@@ -32,11 +31,15 @@ import {
 import { ActivityEventsService } from '../activity-events/activity-events.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { TICKET, ticketRuleSelect } from '../tickets/tickets.abilities.js';
-import { identitySelect, visiblePerson } from '../tickets/visible-person.js';
 import { UsersService } from '../users/users.service.js';
 import { contentMatches } from './attachment-content.js';
+import {
+  type AttachmentRow,
+  attachmentSelect,
+  toAttachmentResponse,
+} from './attachment-responses.js';
 import { AttachmentLinksService } from './attachment-links.service.js';
-import { ATTACHMENT, attachmentRuleSelect, CREATE, DRAFT } from './attachments.abilities.js';
+import { ATTACHMENT, CREATE, DRAFT } from './attachments.abilities.js';
 import {
   ATTACHMENT_DELETED,
   ATTACHMENT_UPLOADED,
@@ -62,49 +65,6 @@ import {
 } from './domain/draft-quota.js';
 import { normalizeFileName } from './domain/file-name.js';
 import type { QuarantinedFile } from './quarantine-storage.engine.js';
-
-/** The fields of an attachment response and of its rules (§18.3). */
-function attachmentSelect(principal: UserPrincipal) {
-  return {
-    ...attachmentRuleSelect(principal),
-    fileName: true,
-    contentType: true,
-    size: true,
-    status: true,
-    createdAt: true,
-    uploadedBy: { select: identitySelect(principal) },
-  } satisfies Prisma.AttachmentSelect;
-}
-
-type AttachmentRow = Prisma.AttachmentGetPayload<{
-  select: ReturnType<typeof attachmentSelect>;
-}>;
-
-/**
- * The response shape of an attachment (§18.3) with the actions the principal may perform; its
- * uploader under the identity rule (§5.4, S1-11 Q9), so a customer of another organization who
- * reads a shared ticket sees "Customer" for its files too.
- */
-function toAttachmentResponse(
-  row: AttachmentRow,
-  ability: AppAbility,
-  principal: UserPrincipal,
-): Attachment {
-  const record = subject(ATTACHMENT, row);
-  return {
-    id: row.id,
-    fileName: row.fileName,
-    contentType: row.contentType,
-    size: row.size,
-    isImage: isRasterImage(row.contentType),
-    status: row.status,
-    ticketId: row.ticketId,
-    commentId: row.commentId,
-    uploadedBy: visiblePerson(principal, row.uploadedBy),
-    createdAt: row.createdAt.toISOString(),
-    allowedActions: attachmentActionSchema.options.filter((action) => ability.can(action, record)),
-  };
-}
 
 /** The attachments of a ticket are listed oldest first (§18.4). */
 const creationSortKeySchema = z.tuple([z.iso.datetime(), z.uuid()]);

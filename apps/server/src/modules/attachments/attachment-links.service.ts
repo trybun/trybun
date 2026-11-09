@@ -1,8 +1,10 @@
 import { accessibleBy } from '@casl/prisma/runtime';
 import { Injectable } from '@nestjs/common';
+import type { Attachment } from '@trybun/contracts/attachments';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
-import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
+import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
 import type { Transaction } from '../../platform/database/prisma.service.js';
+import { attachmentSelect, toAttachmentResponse } from './attachment-responses.js';
 import { ATTACHMENT, DRAFT } from './attachments.abilities.js';
 import { linkFailure } from './domain/linking.js';
 
@@ -64,5 +66,40 @@ export class AttachmentLinksService {
       select: { id: true },
     });
     throw linkFailure(attachmentIds, linkedIds, new Set(readable.map(({ id }) => id)));
+  }
+
+  /**
+   * The attachments of comments a principal reads (§13.3, S1-12 Q16), by comment and oldest first:
+   * returned with their comments, never in the ticket's attachment list. The read filter of the
+   * ability applies, so an attachment follows the kind and the audience of its comment.
+   */
+  async ofComments(
+    db: Transaction,
+    principal: UserPrincipal,
+    ability: AppAbility,
+    commentIds: readonly string[],
+  ): Promise<Map<string, Attachment[]>> {
+    const byComment = new Map<string, Attachment[]>();
+    if (commentIds.length === 0) {
+      return byComment;
+    }
+    const rows = await db.attachment.findMany({
+      where: {
+        AND: [
+          accessibleBy(ability, 'read').ofType(ATTACHMENT),
+          { commentId: { in: [...commentIds] } },
+        ],
+      },
+      select: attachmentSelect(principal),
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    for (const row of rows) {
+      if (row.commentId !== null) {
+        const list = byComment.get(row.commentId) ?? [];
+        list.push(toAttachmentResponse(row, ability, principal));
+        byComment.set(row.commentId, list);
+      }
+    }
+    return byComment;
   }
 }

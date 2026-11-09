@@ -46,7 +46,6 @@ import {
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
-import { originalIdsOf, toEndUserEvent } from '../activity-events/domain/end-user-events.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
@@ -83,7 +82,7 @@ import {
   listRequestedTicketKeys,
   lockTicketsForUpdate,
 } from './tickets.sql.js';
-import { identitySelect, visiblePerson } from './visible-person.js';
+import { identitySelect, visiblePerson } from '../users/visible-person.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
 
@@ -1081,43 +1080,12 @@ export class TicketsService {
     ticketId: string,
     query: ListActivityEventsQuery,
   ): Promise<ActivityEventPage> {
-    const isEndUser = principal.userKind === 'end_user';
-    const page = await this.activityEvents.list(ticketId, query, { publicOnly: isEndUser });
-    if (!isEndUser) {
-      return page;
-    }
-    const originalIds = originalIdsOf(page.items);
-    const readableOriginals =
-      originalIds.length === 0
-        ? []
-        : await this.prisma.ticket.findMany({
-            where: {
-              AND: [
-                accessibleBy(this.abilities.forPrincipal(principal), 'read').ofType(TICKET),
-                { id: { in: originalIds } },
-              ],
-            },
-            select: { id: true },
-          });
-    const readableIds = new Set(readableOriginals.map(({ id }) => id));
-    // The actors the identity rule hides from this reader (§5.4, Q9).
-    const actorIds = [...new Set(page.items.flatMap((event) => event.actor?.id ?? []))];
-    const actors = await this.prisma.user.findMany({
-      where: { id: { in: actorIds } },
-      select: identitySelect(principal),
-    });
-    const hiddenActorIds = new Set(
-      actors.filter((actor) => visiblePerson(principal, actor) === null).map(({ id }) => id),
+    return this.activityEvents.listForViewer(
+      principal,
+      ticketId,
+      query,
+      accessibleBy(this.abilities.forPrincipal(principal), 'read').ofType(TICKET),
     );
-    return {
-      items: page.items.map((event) => {
-        const endUserEvent = toEndUserEvent(event, readableIds);
-        return event.actor !== null && hiddenActorIds.has(event.actor.id)
-          ? { ...endUserEvent, actor: null }
-          : endUserEvent;
-      }),
-      nextCursor: page.nextCursor,
-    };
   }
 
   /**
