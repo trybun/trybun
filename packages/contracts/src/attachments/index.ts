@@ -34,7 +34,11 @@ export const attachmentSchema = z.object({
   isImage: z.boolean(),
   status: attachmentStatusSchema,
   ticketId: z.uuid().nullable(),
-  uploadedBy: ticketPersonSchema,
+  /**
+   * The uploader; `null` when the reader may not see their name – a customer of another
+   * organization, shown as "Customer" (§5.4, S1-11 Q9).
+   */
+  uploadedBy: ticketPersonSchema.nullable(),
   createdAt: z.iso.datetime(),
   allowedActions: z.array(attachmentActionSchema),
 });

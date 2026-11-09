@@ -20,3 +20,5 @@ Wybierz zgłoszenie, aby je otworzyć. Zobaczysz:
 - jego historię: kiedy zostało utworzone, każdą zmianę statusu i każdy plik dodany albo usunięty później wraz z osobą, która to zrobiła.
 
 Gdy zespół pyta, czy Twój problem został rozwiązany, zgłoszenie pokazuje to pytanie na górze: zobacz [Potwierdź, że problem został rozwiązany](confirm-that-your-problem-is-solved.md).
+
+Zgłoszenie pokazuje też, kto je widzi, i pozwala to zmienić: zobacz [Wybierz, kto widzi Twoje zgłoszenie](choose-who-can-see-your-ticket.md).

@@ -13,11 +13,13 @@ import { AssigneeControl } from './assignee-control.js';
 import { FieldPicker } from './field-picker.js';
 import { StatusControl } from './status-control.js';
 import { useFieldChange } from './use-field-change.js';
+import { VisibilityControl } from './visibility-control.js';
 
 /**
  * The fields of a ticket in the team ticket view (§3.2): status with its waiting reason, assignee,
  * type ("Not set" for an end-user ticket before triage), priority, project, requester, the
- * organization only when the ticket has one (§7.3), and the times of creation and the latest
+ * organization only when the ticket has one (§7.3), the visibility and the sharing request of an
+ * end user's ticket (`VisibilityControl`, S1-11), and the times of creation and the latest
  * change in the person's time zone (§13.1). A side panel from the `lg` breakpoint, the **Details**
  * section between the header and the description below it (Rule 9).
  *
@@ -119,6 +121,11 @@ export function TicketFieldPanel({ ticket }: { ticket: Ticket }) {
         </Field>
         {ticket.organization !== null && (
           <Field label={t('view.fields.organization')}>{ticket.organization.name}</Field>
+        )}
+        {ticket.source === 'user' && (
+          <Field label={t('view.fields.visibility')}>
+            <VisibilityControl ticket={ticket} />
+          </Field>
         )}
         <Field label={t('view.fields.created')}>
           <time dateTime={ticket.createdAt}>{time(ticket.createdAt)}</time>

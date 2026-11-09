@@ -3,7 +3,11 @@ import { seriousViolations } from './accessibility.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { PortalPage } from './pages/portal.page.js';
 import { TicketPage } from './pages/ticket.page.js';
-import { CUSTOMER_STORAGE_STATE, PARTNER_STORAGE_STATE } from './storage-state.js';
+import {
+  CUSTOMER_STORAGE_STATE,
+  PARTNER_STORAGE_STATE,
+  TEAM_STORAGE_STATE,
+} from './storage-state.js';
 import { waitForToastsToClose } from './toasts.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
@@ -216,7 +220,7 @@ test.describe('the portal of an end user with one project', () => {
     // The ticket moved to in progress and then to verification, and its priority and assignee
     // changed: only the change of the public status reaches the requester.
     await expect(portal.history).toHaveCount(2);
-    await expect(portal.history.nth(0)).toContainText('Ticket created');
+    await expect(portal.history.nth(0)).toContainText('Celina Customer created the ticket');
     await expect(portal.history.nth(1)).toContainText('Status changed to In progress');
     await expect(page.getByText(/priority/i)).toHaveCount(0);
     expect(await seriousViolations(page)).toEqual([]);
@@ -298,5 +302,82 @@ test.describe('the portal and a team member', () => {
     await expect(page).toHaveURL('/tickets/CP-1');
     await expect(ticket.heading).toBeVisible();
     await expect(ticket.details).toBeVisible();
+  });
+});
+
+// Ticket visibility of S1-11 (§5.1, §5.2): a request to share with all customers, approved by the
+// team, on phone, tablet and desktop, with axe.
+test.describe('sharing a ticket with all customers', () => {
+  test.use({ storageState: CUSTOMER_STORAGE_STATE });
+
+  test('the customer asks to share a new ticket, and a Developer approves it after the reminder', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    const portal = new PortalPage(page);
+    const shell = new AppShellPage(page);
+    const title = `Share the price list on ${testInfo.project.name} ${Date.now()}`;
+    await page.goto('/portal');
+    await portal.createTicket.click();
+    await portal.title.fill(title);
+
+    // Only me by default; All customers shows the warning of §5.1.
+    const visibility = page.getByRole('radiogroup');
+    await expect(visibility.getByRole('radio', { name: 'Only me' })).toBeChecked();
+    await visibility.getByRole('radio', { name: 'All customers' }).click();
+    await expect(
+      page.getByText('Make sure the description and attachments contain no confidential data.'),
+    ).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+    expect(await shell.horizontalOverflow()).toBe(0);
+    // The whole label of a choice is its target.
+    await expectTouchTarget(
+      visibility.locator('label').filter({ hasText: 'All customers' }),
+      minimumTargetSize(testInfo),
+    );
+    await portal.submit.click();
+
+    await expect(page).toHaveURL(/\/portal\/tickets\/CP-\d+$/);
+    const identifier = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+    // Celina belongs to Customer company, which has the project: her organization sees it while
+    // the request waits (Q4).
+    await expect(page.getByText('Visible to: My organization')).toBeVisible();
+    await expect(
+      page.getByText('Waiting for the team to share this ticket with all customers.'),
+    ).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
+
+    const team = await browser.newContext({ storageState: TEAM_STORAGE_STATE });
+    try {
+      const developer = await team.newPage();
+      await developer.goto(`/tickets/${identifier}`);
+      await expect(developer.getByText('Sharing requested')).toBeVisible();
+      const dialog = developer.getByRole('dialog', {
+        name: `Share ${identifier} with all customers?`,
+      });
+      // The server-rendered button opens nothing before the hydration: pressed until it does.
+      await expect(async () => {
+        await developer.getByRole('button', { name: 'Share with all customers' }).click();
+        await expect(dialog).toBeVisible({ timeout: 2_000 });
+      }).toPass();
+      await expect(
+        dialog.getByText(
+          'Check that the description and attachments contain no data identifying the customer.',
+        ),
+      ).toBeVisible();
+      // axe measures the contrast of a dialog still fading in: wait for its animations.
+      await dialog.evaluate((popup) =>
+        Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+      );
+      expect(await seriousViolations(developer)).toEqual([]);
+      await dialog.getByRole('button', { name: 'Share with all customers' }).click();
+      await expect(developer.getByText('Shared with all customers')).toBeVisible();
+    } finally {
+      await team.close();
+    }
+
+    await page.reload();
+    await expect(page.getByText('Visible to: All customers')).toBeVisible();
+    await expect(page.getByText('Shared with everyone')).toBeVisible();
   });
 });

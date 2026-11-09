@@ -33,6 +33,8 @@ const { NewTicketForm } = await import('./new-ticket-form.js');
 const fake = createFakeApiClient();
 api.current = fake.client;
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
+const ONLY_ME = ['only_me'] as const;
+const ALL_OPTIONS = ['only_me', 'my_organization', 'all_customers'] as const;
 
 afterEach(() => {
   cleanup();
@@ -48,7 +50,14 @@ describe('NewTicketForm', () => {
   ] as const)(
     'shows the end-user template as the placeholder of the description (%s, §3.4)',
     async (locale, label, placeholder) => {
-      renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />, { locale });
+      renderInApp(
+        <NewTicketForm
+          projectId={PROJECT_ID}
+          visibilityOptions={ONLY_ME}
+          attachmentMaxSizeMb={25}
+        />,
+        { locale },
+      );
 
       expect(
         // The editor loads lazily; its first import takes longer under the whole suite.
@@ -62,7 +71,9 @@ describe('NewTicketForm', () => {
   it('creates the ticket and opens it with a toast', async () => {
     const events = userEvent.setup();
     fake.on('POST /api/v1/tickets', { status: 201, data: { identifier: 'CP-7' } });
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
+    renderInApp(
+      <NewTicketForm projectId={PROJECT_ID} visibilityOptions={ONLY_ME} attachmentMaxSizeMb={25} />,
+    );
 
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Invoice PDF is empty');
     await events.type(await screen.findByRole('textbox', { name: 'Description' }), 'Since Monday');
@@ -70,14 +81,21 @@ describe('NewTicketForm', () => {
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/portal/tickets/CP-7'));
     expect(fake.callsTo('POST /api/v1/tickets')[0]?.init).toMatchObject({
-      body: { projectId: PROJECT_ID, title: 'Invoice PDF is empty', description: 'Since Monday' },
+      body: {
+        projectId: PROJECT_ID,
+        title: 'Invoice PDF is empty',
+        description: 'Since Monday',
+        visibility: 'only_me',
+      },
     });
     expect(toastAdd).toHaveBeenCalledWith({ title: 'Ticket CP-7 created', type: 'success' });
   });
 
   it('asks for a title without sending anything', async () => {
     const events = userEvent.setup();
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
+    renderInApp(
+      <NewTicketForm projectId={PROJECT_ID} visibilityOptions={ONLY_ME} attachmentMaxSizeMb={25} />,
+    );
 
     await events.click(screen.getByRole('button', { name: 'Submit' }));
 
@@ -97,7 +115,9 @@ describe('NewTicketForm', () => {
         errors: [{ pointer: '/title', code: 'string.too_long', detail: 'Too long' }],
       },
     });
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
+    renderInApp(
+      <NewTicketForm projectId={PROJECT_ID} visibilityOptions={ONLY_ME} attachmentMaxSizeMb={25} />,
+    );
 
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'A title');
     await events.click(screen.getByRole('button', { name: 'Submit' }));
@@ -123,7 +143,9 @@ describe('NewTicketForm', () => {
             });
         }),
     );
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
+    renderInApp(
+      <NewTicketForm projectId={PROJECT_ID} visibilityOptions={ONLY_ME} attachmentMaxSizeMb={25} />,
+    );
 
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Invoice PDF is empty');
     const submit = screen.getByRole('button', { name: 'Submit' });
@@ -154,7 +176,9 @@ describe('NewTicketForm', () => {
       data: { items: [attachmentResponse({ id: attachmentId })], nextCursor: null },
     });
     fake.on('POST /api/v1/tickets', { status: 201, data: { identifier: 'CP-7' } });
-    renderInApp(<NewTicketForm projectId={PROJECT_ID} attachmentMaxSizeMb={25} />);
+    renderInApp(
+      <NewTicketForm projectId={PROJECT_ID} visibilityOptions={ONLY_ME} attachmentMaxSizeMb={25} />,
+    );
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Invoice PDF is empty');
     await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
     const input = document.querySelector<HTMLInputElement>('input[type="file"]');
@@ -182,5 +206,58 @@ describe('NewTicketForm', () => {
         attachmentIds: [attachmentId],
       },
     });
+  });
+
+  // S1-11: the options the API allows, Only me by default, the warning of §5.1.
+  it('offers no visibility control with only_me as the only option', () => {
+    renderInApp(
+      <NewTicketForm projectId={PROJECT_ID} visibilityOptions={ONLY_ME} attachmentMaxSizeMb={25} />,
+    );
+
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+  });
+
+  it('creates a ticket for all customers after the warning', async () => {
+    const events = userEvent.setup();
+    fake.on('POST /api/v1/tickets', { status: 201, data: { identifier: 'CP-8' } });
+    renderInApp(
+      <NewTicketForm
+        projectId={PROJECT_ID}
+        visibilityOptions={ALL_OPTIONS}
+        attachmentMaxSizeMb={25}
+      />,
+    );
+
+    expect(screen.getByRole('radio', { name: 'Only me' }).getAttribute('aria-checked')).toBe(
+      'true',
+    );
+    expect(
+      screen.queryByText('Make sure the description and attachments contain no confidential data.'),
+    ).toBeNull();
+    await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Search is slow');
+    await events.click(screen.getByRole('radio', { name: 'All customers' }));
+    expect(
+      screen.getByText('Make sure the description and attachments contain no confidential data.'),
+    ).toBeDefined();
+    await events.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/portal/tickets/CP-8'));
+    expect(fake.callsTo('POST /api/v1/tickets')[0]?.init).toMatchObject({
+      body: { visibility: 'all_customers' },
+    });
+  });
+
+  it('shows the visibility in Polish', () => {
+    renderInApp(
+      <NewTicketForm
+        projectId={PROJECT_ID}
+        visibilityOptions={ALL_OPTIONS}
+        attachmentMaxSizeMb={25}
+      />,
+      { locale: 'pl' },
+    );
+
+    expect(screen.getByRole('group', { name: 'Widoczność' })).toBeDefined();
+    expect(screen.getByRole('radio', { name: 'Moja organizacja' })).toBeDefined();
   });
 });

@@ -10,6 +10,8 @@ import {
   type ChangeTicketStatusDto,
   type ConfirmResolutionDto,
   type CreateTicketDto,
+  type RejectTicketSharingDto,
+  type SetTicketVisibilityDto,
   type EndUserTicket,
   type ListTicketsQuery,
   type Ticket,
@@ -43,6 +45,7 @@ import {
   ActivityEventsService,
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
+import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { originalIdsOf, toEndUserEvent } from '../activity-events/domain/end-user-events.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
@@ -59,13 +62,28 @@ import {
   statusFieldsOf,
   waitsForConfirmation,
 } from './domain/status-transitions.js';
-import { CREATE_TICKET, TICKET, ticketRuleSelect } from './tickets.abilities.js';
+import {
+  approveSharing,
+  changeVisibility,
+  initialVisibility,
+  rejectSharing,
+  type VisibilityChange,
+  type VisibilityFields,
+} from './domain/visibility.js';
+import {
+  CREATE_TICKET,
+  CREATE_TICKET_ALL_CUSTOMERS,
+  CREATE_TICKET_MY_ORGANIZATION,
+  TICKET,
+  ticketRuleSelect,
+} from './tickets.abilities.js';
 import { TICKET_STATUS_CHANGED, type TicketStatusChangedPayload } from './tickets.events.js';
 import {
   allocateTicketNumber,
   listRequestedTicketKeys,
   lockTicketsForUpdate,
 } from './tickets.sql.js';
+import { identitySelect, visiblePerson } from './visible-person.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
 
@@ -97,11 +115,14 @@ function ticketSelect(principal: UserPrincipal) {
     waitingSince: true,
     closedAt: true,
     rejectionReason: true,
+    sharingRefusalReason: true,
     version: true,
     createdAt: true,
     updatedAt: true,
-    organization: { select: { id: true, name: true } },
-    requester: { select: PERSON_SELECT },
+    organization: {
+      select: { ...ticketRuleSelect(principal).organization.select, id: true, name: true },
+    },
+    requester: { select: identitySelect(principal) },
     assignee: { select: PERSON_SELECT },
     // At most one (§3.5): a partial unique index of the migrations.
     outgoingRelations: {
@@ -188,7 +209,6 @@ function toTicketResponse(
     identifier: ticketIdentifier(row.project.key, row.number),
     title: row.title,
     description: row.description,
-    requester: row.requester,
     version: row.version,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -196,23 +216,29 @@ function toTicketResponse(
     publicStatus: publicStatusOf(row.status),
     waitingReason: row.waitingReason,
     duplicateOf: duplicateOfResponse(row, ability),
+    visibility: row.visibility,
+    sharingRequest: row.sharingRequest,
   };
   if (principal.userKind === 'end_user') {
     return {
       ...commonFields,
+      requester: visiblePerson(principal, row.requester),
       publicStatusDescription: publicStatusDescriptionOf(row.status, row.waitingReason),
     } satisfies EndUserTicket;
   }
   return {
     ...commonFields,
+    requester: { id: row.requester.id, displayName: row.requester.displayName },
     type: row.type,
     source: row.source,
     priority: row.priority,
     status: row.status,
-    organization: row.organization,
+    organization:
+      row.organization === null ? null : { id: row.organization.id, name: row.organization.name },
     assignee: row.assignee,
     closedAt: row.closedAt?.toISOString() ?? null,
     rejectionReason: row.rejectionReason,
+    sharingRefusalReason: row.sharingRefusalReason,
   } satisfies Ticket;
 }
 
@@ -224,6 +250,15 @@ function trackedFields(row: TicketRow): TrackedTicketFields {
     type: row.type,
     priority: row.priority,
     assignee: row.assignee,
+  };
+}
+
+/** The visibility fields of a ticket (S1-11). */
+function visibilityFieldsOf(row: TicketRow): VisibilityFields {
+  return {
+    visibility: row.visibility,
+    sharingRequest: row.sharingRequest,
+    sharingRefusalReason: row.sharingRefusalReason,
   };
 }
 
@@ -254,6 +289,7 @@ export class TicketsService {
     private readonly users: UsersService,
     private readonly organizations: OrganizationsService,
     private readonly activityEvents: ActivityEventsService,
+    private readonly auditLog: AuditLogEntriesService,
     private readonly attachmentLinks: AttachmentLinksService,
     private readonly outbox: OutboxService,
     private readonly clock: Clock,
@@ -291,6 +327,17 @@ export class TicketsService {
       if (principal.userKind === 'end_user' && isFullForm) {
         throw new AppError('request.forbidden');
       }
+      // A visibility other than `only_me` needs its project action (S1-11 Q7); team tickets are
+      // `only_me` (Q6). Nothing is created without it.
+      const requested = input.visibility ?? 'only_me';
+      const canChooseOrganization = ability.can(CREATE_TICKET_MY_ORGANIZATION, projectRecord);
+      if (
+        (requested === 'my_organization' && !canChooseOrganization) ||
+        (requested === 'all_customers' && !ability.can(CREATE_TICKET_ALL_CUSTOMERS, projectRecord))
+      ) {
+        throw new AppError('request.forbidden');
+      }
+      const visibility = initialVisibility(requested, canChooseOrganization);
       const assigneeId = input.assigneeId ?? null;
       if (assigneeId !== null) {
         const newTicket = subject(TICKET, { id: '', requesterId: principal.userId, project });
@@ -298,6 +345,16 @@ export class TicketsService {
         await this.assertEligibleAssignee(tx, project.id, assigneeId);
       }
       const organizationId = await this.lockOrganizationSnapshot(tx, principal.userId);
+      // The snapshot locked now must still allow `my_organization`: the person may have left or
+      // changed their organization, or it may have been archived or lost the project, since the
+      // project was read (Q4, Q19).
+      if (visibility.visibility === 'my_organization') {
+        await this.assertRequesterInOrganization(tx, {
+          requesterId: principal.userId,
+          organizationId,
+          projectId: project.id,
+        });
+      }
       const number = await allocateTicketNumber(tx, project.id);
       const row = await tx.ticket.create({
         data: {
@@ -308,6 +365,7 @@ export class TicketsService {
           ...creationDefaults(principal.userKind, input),
           // The requester's organization at creation, whatever its state (§3.2).
           organizationId,
+          ...visibility,
           requesterId: principal.userId,
           assigneeId,
         },
@@ -543,6 +601,150 @@ export class TicketsService {
         principal,
       );
     });
+  }
+
+  /**
+   * Changes the visibility of a ticket (§5.3, S1-11): for the requester, `all_customers` requests
+   * sharing and `only_me` or `my_organization` withdraws a pending request; `visibility.ts`
+   * decides the fields and the one event. The ticket row is locked, and the action is checked on
+   * the locked row, so a withdrawal and a team decision never both apply. A request for the
+   * current value changes nothing and needs the rights of editing the ticket (Q12).
+   */
+  async setVisibility(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    input: SetTicketVisibilityDto,
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockAndFindTicket(tx, ability, principal, target.id);
+      const isByRequester =
+        principal.userKind === 'end_user' && before.requesterId === principal.userId;
+      const change = changeVisibility(visibilityFieldsOf(before), {
+        target: input.visibility,
+        isByRequester,
+        // Whether the requester may choose `my_organization` on this ticket now (Q4, Q19).
+        canChooseOrganization:
+          isByRequester &&
+          ability.can(
+            'set_visibility_my_organization',
+            subject(TICKET, { ...before, visibility: 'only_me', sharingRequest: 'none' }),
+          ),
+      });
+      if (change.fields === null) {
+        this.assertCan(ability, 'update', before);
+        assertVersionMatched({ count: before.version === target.version ? 1 : 0 });
+        return toTicketResponse(before, ability, principal);
+      }
+      this.assertCan(ability, `set_visibility_${input.visibility}`, before);
+      if (!isByRequester && input.visibility === 'my_organization') {
+        await this.assertRequesterInOrganization(tx, before);
+      }
+      return this.applyVisibilityChange(tx, ability, principal, target, before, change);
+    });
+  }
+
+  /**
+   * Decides a pending sharing request (§5.2): one approval by any team member shares the ticket
+   * with all customers, a refusal keeps the visibility and stores the reason (Q8). The first
+   * decision wins: the second meets `409 ticket.sharing_not_pending` – from the target record
+   * guard once the first is committed, from the check on the locked row otherwise.
+   */
+  async decideSharing(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    decision: { approve: true } | ({ approve: false } & RejectTicketSharingDto),
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockAndFindTicket(tx, ability, principal, target.id);
+      this.assertCan(ability, decision.approve ? 'approve_sharing' : 'reject_sharing', before);
+      const fields = visibilityFieldsOf(before);
+      const change = decision.approve
+        ? approveSharing(fields)
+        : rejectSharing(fields, decision.reason);
+      return this.applyVisibilityChange(tx, ability, principal, target, before, change);
+    });
+  }
+
+  /**
+   * A ticket the principal can see, read again after locking its row (§18.3): the share lock of its
+   * project first, then the row lock, so the rules decide on the state no concurrent change can
+   * alter before the commit.
+   */
+  private async lockAndFindTicket(
+    tx: Transaction,
+    ability: AppAbility,
+    principal: UserPrincipal,
+    ticketId: string,
+  ): Promise<TicketRow> {
+    await this.lockProjectAndFind(tx, ability, principal, ticketId);
+    await lockTicketsForUpdate(tx, [ticketId]);
+    return this.findVisible(tx, ability, principal, ticketId);
+  }
+
+  /**
+   * `my_organization` set by the team, or chosen at creation (Q4, Q19): only while the requester
+   * still belongs to the ticket's organization, which is active and has access to the project –
+   * otherwise the ticket would be shown to people the author left and hidden from the author.
+   */
+  private async assertRequesterInOrganization(
+    tx: Transaction,
+    ticket: { requesterId: string; organizationId: string | null; projectId: string },
+  ): Promise<void> {
+    if (ticket.organizationId === null) {
+      throw new AppError('ticket.organization_changed');
+    }
+    const memberships = await tx.organizationMember.count({
+      where: {
+        userId: ticket.requesterId,
+        organizationId: ticket.organizationId,
+        organization: { state: 'active', projects: { some: { projectId: ticket.projectId } } },
+      },
+    });
+    if (memberships === 0) {
+      throw new AppError('ticket.organization_changed');
+    }
+  }
+
+  /**
+   * Writes a change of the visibility fields with its version check, its activity event and – for
+   * the team's changes and decisions – its audit log entry, in one transaction (§13.5).
+   */
+  private async applyVisibilityChange(
+    tx: Transaction,
+    ability: AppAbility,
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    before: TicketRow,
+    change: VisibilityChange,
+  ): Promise<TicketResponse> {
+    if (change.fields !== null) {
+      assertVersionMatched(await tx.ticket.updateMany(versionedUpdate(target, change.fields)));
+    }
+    if (change.event !== null) {
+      await this.activityEvents.record(tx, { userId: principal.userId }, target.id, [change.event]);
+    }
+    const ticketTarget = { type: TICKET, id: target.id };
+    if (change.audit === 'ticket.visibility_changed' && change.fields !== null) {
+      await this.auditLog.record(tx, {
+        action: change.audit,
+        actorId: principal.userId,
+        target: ticketTarget,
+        details: { from: before.visibility, to: change.fields.visibility },
+      });
+    } else if (change.audit !== null && change.audit !== 'ticket.visibility_changed') {
+      await this.auditLog.record(tx, {
+        action: change.audit,
+        actorId: principal.userId,
+        target: ticketTarget,
+      });
+    }
+    return toTicketResponse(
+      await this.findVisible(tx, ability, principal, target.id),
+      ability,
+      principal,
+    );
   }
 
   /**
@@ -891,8 +1093,22 @@ export class TicketsService {
             select: { id: true },
           });
     const readableIds = new Set(readableOriginals.map(({ id }) => id));
+    // The actors the identity rule hides from this reader (§5.4, Q9).
+    const actorIds = [...new Set(page.items.flatMap((event) => event.actor?.id ?? []))];
+    const actors = await this.prisma.user.findMany({
+      where: { id: { in: actorIds } },
+      select: identitySelect(principal),
+    });
+    const hiddenActorIds = new Set(
+      actors.filter((actor) => visiblePerson(principal, actor) === null).map(({ id }) => id),
+    );
     return {
-      items: page.items.map((event) => toEndUserEvent(event, readableIds)),
+      items: page.items.map((event) => {
+        const endUserEvent = toEndUserEvent(event, readableIds);
+        return event.actor !== null && hiddenActorIds.has(event.actor.id)
+          ? { ...endUserEvent, actor: null }
+          : endUserEvent;
+      }),
       nextCursor: page.nextCursor,
     };
   }

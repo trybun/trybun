@@ -20,3 +20,5 @@ Select a ticket to open it. It shows:
 - its history: when it was created, every change of its status and every file added or deleted later, with who made it.
 
 When the team asks whether your problem is solved, the ticket shows the question at the top: see [Confirm that your problem is solved](confirm-that-your-problem-is-solved.md).
+
+The ticket also says who can see it, and lets you change that: see [Choose who can see your ticket](choose-who-can-see-your-ticket.md).

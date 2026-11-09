@@ -26,6 +26,10 @@ import {
   createTicketSchema,
   type ListTicketsQuery,
   listTicketsQuerySchema,
+  type RejectTicketSharingDto,
+  rejectTicketSharingSchema,
+  type SetTicketVisibilityDto,
+  setTicketVisibilitySchema,
   type TicketPage,
   ticketPageSchema,
   type TicketParams,
@@ -113,6 +117,53 @@ export class TicketsController {
     @ExpectedVersion() version: number,
   ): Promise<TicketResponse> {
     return this.tickets.changeStatus(principal, { id: ticketId, version }, input);
+  }
+
+  /**
+   * Changes the visibility of a ticket (§5.3): the service checks `set_visibility_<visibility>` on
+   * the locked ticket; for the requester, `all_customers` requests sharing (§5.2).
+   */
+  @Put(':ticketId/visibility')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'read' })
+  @ResponseSchema(ticketResponseSchema)
+  setVisibility(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: setTicketVisibilitySchema }) input: SetTicketVisibilityDto,
+    @ExpectedVersion() version: number,
+  ): Promise<TicketResponse> {
+    return this.tickets.setVisibility(principal, { id: ticketId, version }, input);
+  }
+
+  /** Shares a ticket with all customers on its author's pending request (§5.2). */
+  @Post(':ticketId/sharing/approve')
+  @HttpCode(HttpStatus.OK)
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'approve_sharing' })
+  @ResponseSchema(ticketResponseSchema)
+  approveSharing(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @ExpectedVersion() version: number,
+  ): Promise<TicketResponse> {
+    return this.tickets.decideSharing(principal, { id: ticketId, version }, { approve: true });
+  }
+
+  /** Refuses a pending sharing request with a required reason (§5.2). */
+  @Post(':ticketId/sharing/reject')
+  @HttpCode(HttpStatus.OK)
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'reject_sharing' })
+  @ResponseSchema(ticketResponseSchema)
+  rejectSharing(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: rejectTicketSharingSchema }) input: RejectTicketSharingDto,
+    @ExpectedVersion() version: number,
+  ): Promise<TicketResponse> {
+    return this.tickets.decideSharing(
+      principal,
+      { id: ticketId, version },
+      { approve: false, ...input },
+    );
   }
 
   /**

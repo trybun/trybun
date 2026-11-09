@@ -143,7 +143,7 @@ All endpoints under `/api/v1`, schemas in `@trybun/contracts/organizations`, the
 | `organization.member_not_end_user` | 422 | The account is a team account (field `/email`) |
 | `organization.member_of_other_organization` | 409 | The account belongs to another organization and `move` was not set |
 
-- No outbox event is written yet: nothing consumes organization changes before S1-11, which adds the event of a membership change it needs ([§18.1](../../../docs/spec/18-code-patterns.md) "Simple first").
+- No outbox event is written yet: nothing consumes organization changes. S1-11 needs none, because visibility is evaluated on every request; S1-15 adds the event of a membership change if it needs it ([§18.1](../../../docs/spec/18-code-patterns.md) "Simple first") (amended by S1-11, 2026-11-09).
 
 ### Audit log
 

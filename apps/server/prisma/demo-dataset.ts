@@ -69,15 +69,83 @@ const DEMO_PROJECTS = [
 ] as const;
 
 /**
- * The demo organization (§7.3): the company of the end users, by their e-mail domain, with access
- * to the customer portal and the first end users as members; the others belong to none.
+ * The demo organizations (§7.3): the company of the end users, by their e-mail domain, with access
+ * to the customer portal and the first end users and the portal users as members – the other
+ * faker end users belong to none; for ticket visibility (S1-11), a supplier with access to the ERP
+ * and an archived former partner with access to the customer portal, whose members are the
+ * visibility accounts below.
  */
-const DEMO_ORGANIZATION = {
-  name: 'Customer company',
-  domain: 'customer.example.com',
-  projectKeys: ['CP'],
-  memberCount: 6,
-} as const;
+const DEMO_ORGANIZATIONS = [
+  {
+    key: 'customer',
+    name: 'Customer company',
+    domain: 'customer.example.com',
+    state: 'active',
+    projectKeys: ['CP'],
+  },
+  {
+    key: 'supplier',
+    name: 'Supplier company',
+    domain: 'supplier.example.com',
+    state: 'active',
+    projectKeys: ['ERP'],
+  },
+  {
+    key: 'former',
+    name: 'Former partner',
+    domain: 'former-partner.example.com',
+    state: 'archived',
+    projectKeys: ['CP'],
+  },
+] as const;
+
+type DemoOrganizationKey = (typeof DEMO_ORGANIZATIONS)[number]['key'];
+
+/** The faker end users who belong to "Customer company"; the others belong to none. */
+const CUSTOMER_COMPANY_MEMBER_COUNT = 6;
+
+/**
+ * The end users of ticket visibility (S1-11), without Keycloak users, so none signs in: a member
+ * of the supplier, a person who moved from "Customer company" to the supplier and keeps tickets in
+ * the customer portal they no longer open, a member of the archived former partner, and a person
+ * without an organization with personal access to the customer portal.
+ */
+const DEMO_VISIBILITY_USERS = [
+  {
+    key: 'supplier',
+    email: 'sara.supplier@supplier.example.com',
+    displayName: 'Sara Supplier',
+    organization: 'supplier',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'mover',
+    email: 'marta.mover@supplier.example.com',
+    displayName: 'Marta Mover',
+    organization: 'supplier',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'former',
+    email: 'olaf.old@former-partner.example.com',
+    displayName: 'Olaf Old',
+    organization: 'former',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'loner',
+    email: 'nadia.nobody@example.net',
+    displayName: 'Nadia Nobody',
+    organization: null,
+    personalProjectKeys: ['CP'],
+  },
+] as const satisfies readonly {
+  key: string;
+  email: string;
+  displayName: string;
+  organization: DemoOrganizationKey | null;
+  personalProjectKeys: readonly string[];
+}[];
 
 /**
  * The accounts of the invitations and of the deactivation (§7.4): an end user of the customer
@@ -333,6 +401,122 @@ const DEMO_TICKETS = [
     assignee: null,
     events: [],
   },
+  // Every visibility and sharing request of S1-11 (§5.1, §5.2), for the property test and for
+  // manual review.
+  {
+    project: 'CP',
+    title: 'The invoice list is empty after the update',
+    description: 'Since this morning the list of invoices shows no entries for our company.',
+    requester: 'endUser0',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+  },
+  {
+    project: 'CP',
+    title: 'Show the delivery date on the order page',
+    description: 'Customers keep asking us when their order arrives.',
+    requester: 'endUser1',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+    sharingRequest: 'pending',
+  },
+  {
+    project: 'CP',
+    title: 'Search does not find orders by number',
+    description: 'Typing an order number into the search field finds nothing.',
+    requester: 'loner',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+    sharingRequest: 'pending',
+  },
+  {
+    project: 'CP',
+    title: 'Our discount is missing on the price list',
+    description: 'The negotiated 10% discount of our company is not applied.',
+    requester: 'endUser0',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+    sharingRequest: 'rejected',
+    sharingRefusalReason: 'The ticket names the discount of your company.',
+  },
+  {
+    project: 'ERP',
+    title: 'The stock report shows negative quantities',
+    description: 'Items returned by customers appear with negative stock.',
+    requester: 'supplier',
+    source: 'user',
+    type: null,
+    priority: 'high',
+    assignee: null,
+    events: [],
+    visibility: 'all_customers',
+  },
+  // The tickets of the person who moved, with the snapshot of the organization they left (§7.3).
+  {
+    project: 'CP',
+    title: 'Two-factor codes arrive late',
+    description: 'The text message with the code arrives after it has expired.',
+    requester: 'mover',
+    organization: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Add our second warehouse to the delivery addresses',
+    description: '',
+    requester: 'mover',
+    organization: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+  },
+  {
+    project: 'CP',
+    title: 'The help page has no search',
+    description: 'Finding an answer in the help takes long without a search field.',
+    requester: 'mover',
+    organization: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'all_customers',
+  },
+  {
+    project: 'CP',
+    title: 'Keep the order history of our closed account',
+    description: '',
+    requester: 'former',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+  },
 ] as const;
 
 /**
@@ -440,6 +624,19 @@ export function buildDemoDataset(): DemoDataset {
       updatedAt: CREATED_AT,
     }),
   );
+  const visibilityUsers = DEMO_VISIBILITY_USERS.map(
+    ({ email, displayName }, index): Prisma.UserCreateManyInput => ({
+      id: demoId(170 + index),
+      email,
+      displayName,
+      kind: 'end_user',
+      state: 'active',
+      language: 'en',
+      timeZone: 'Europe/Warsaw',
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    }),
+  );
   const invitedAndDeactivated = DEMO_INVITED_AND_DEACTIVATED.map(
     (account, index): Prisma.UserCreateManyInput => ({
       ...account,
@@ -485,17 +682,23 @@ export function buildDemoDataset(): DemoDataset {
       })),
     ),
     // Personal access of end users (§7.3).
-    ...DEMO_PORTAL_USERS.flatMap(({ personalProjectKeys }, userIndex) =>
-      personalProjectKeys.map((key): Prisma.ProjectMemberCreateManyInput => ({
+    ...[
+      ...DEMO_PORTAL_USERS.map((user, index) => ({ user, id: portalUsers[index]?.id })),
+      ...DEMO_VISIBILITY_USERS.map((user, index) => ({ user, id: visibilityUsers[index]?.id })),
+    ].flatMap(({ user, id }) =>
+      user.personalProjectKeys.map((key): Prisma.ProjectMemberCreateManyInput => ({
         projectId: demoId(300 + DEMO_PROJECTS.findIndex((project) => project.key === key)),
-        userId: portalUsers[userIndex]?.id ?? '',
+        userId: id ?? '',
         role: 'end_user',
         createdAt: CREATED_AT,
         updatedAt: CREATED_AT,
       })),
     ),
   ];
-  const organizationId = demoId(400);
+  const organizationIds = Object.fromEntries(
+    DEMO_ORGANIZATIONS.map(({ key }, index) => [key, demoId(400 + 2 * index)]),
+  ) as Record<DemoOrganizationKey, string>;
+  const organizationId = organizationIds.customer;
   const invitedBy = { manager: team[1]?.id ?? '', admin: team[0]?.id ?? '' };
   const invitations: Prisma.InvitationCreateManyInput[] = [
     {
@@ -525,45 +728,58 @@ export function buildDemoDataset(): DemoDataset {
       updatedAt: CREATED_AT,
     },
   ];
-  const organizationMemberIds = [
-    ...endUsers.slice(0, DEMO_ORGANIZATION.memberCount).map(({ id }) => id ?? ''),
-    ...portalUsers.map(({ id }) => id ?? ''),
+  const organizationMembers: Prisma.OrganizationMemberCreateManyInput[] = [
+    ...[...endUsers.slice(0, CUSTOMER_COMPANY_MEMBER_COUNT), ...portalUsers].map(({ id }) => ({
+      organizationId,
+      userId: id ?? '',
+      createdAt: CREATED_AT,
+    })),
+    ...DEMO_VISIBILITY_USERS.flatMap(({ organization }, index) =>
+      organization === null
+        ? []
+        : [
+            {
+              organizationId: organizationIds[organization],
+              userId: visibilityUsers[index]?.id ?? '',
+              createdAt: CREATED_AT,
+            },
+          ],
+    ),
   ];
   const { tickets, ticketRelations, ticketNumberCounters, activityEvents } = buildDemoTickets(
-    [...team, ...endUsers, ...portalUsers],
+    [...team, ...endUsers, ...portalUsers, ...visibilityUsers],
     projects,
-    organizationId,
-    organizationMemberIds,
+    organizationIds,
+    organizationMembers,
   );
   return {
-    users: [...team, ...endUsers, ...portalUsers, ...invitedAndDeactivated],
+    users: [...team, ...endUsers, ...portalUsers, ...visibilityUsers, ...invitedAndDeactivated],
     productTourProgress,
     projects,
     projectMembers,
-    organizations: [
-      {
-        id: organizationId,
-        name: DEMO_ORGANIZATION.name,
-        createdAt: CREATED_AT,
-        updatedAt: CREATED_AT,
-      },
-    ],
-    organizationDomains: [
-      {
-        id: demoId(401),
-        organizationId,
-        domain: DEMO_ORGANIZATION.domain,
-        createdAt: CREATED_AT,
-      },
-    ],
-    organizationProjects: projects
-      .filter(({ key }) => (DEMO_ORGANIZATION.projectKeys as readonly string[]).includes(key))
-      .map(({ id }) => ({ organizationId, projectId: id ?? '', createdAt: CREATED_AT })),
-    organizationMembers: organizationMemberIds.map((userId) => ({
-      organizationId,
-      userId,
+    organizations: DEMO_ORGANIZATIONS.map(({ key, name, state }) => ({
+      id: organizationIds[key],
+      name,
+      state,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    })),
+    organizationDomains: DEMO_ORGANIZATIONS.map(({ key, domain }, index) => ({
+      id: demoId(401 + 2 * index),
+      organizationId: organizationIds[key],
+      domain,
       createdAt: CREATED_AT,
     })),
+    organizationProjects: DEMO_ORGANIZATIONS.flatMap(({ key, projectKeys }) =>
+      projects
+        .filter((project) => (projectKeys as readonly string[]).includes(project.key))
+        .map(({ id }) => ({
+          organizationId: organizationIds[key],
+          projectId: id ?? '',
+          createdAt: CREATED_AT,
+        })),
+    ),
+    organizationMembers,
     invitations,
     tickets,
     ticketRelations,
@@ -579,8 +795,8 @@ export function buildDemoDataset(): DemoDataset {
 function buildDemoTickets(
   accounts: Prisma.UserCreateManyInput[],
   projects: Prisma.ProjectCreateManyInput[],
-  organizationId: string,
-  organizationMembers: string[],
+  organizationIds: Record<DemoOrganizationKey, string>,
+  organizationMembers: Prisma.OrganizationMemberCreateManyInput[],
 ): Pick<DemoDataset, 'tickets' | 'ticketRelations' | 'ticketNumberCounters' | 'activityEvents'> {
   const accountIds: Record<string, string> = {
     admin: accounts[0]?.id ?? '',
@@ -590,12 +806,15 @@ function buildDemoTickets(
     endUser0: accounts[5]?.id ?? '',
     endUser1: accounts[6]?.id ?? '',
     ...Object.fromEntries(
-      DEMO_PORTAL_USERS.map(({ key, email }) => [
+      [...DEMO_PORTAL_USERS, ...DEMO_VISIBILITY_USERS].map(({ key, email }) => [
         key,
         accounts.find((account) => account.email === email)?.id ?? '',
       ]),
     ),
   };
+  const organizationOf = new Map(
+    organizationMembers.map(({ userId, organizationId }) => [userId, organizationId]),
+  );
   const snapshotOf = (name: string | null) => {
     if (name === null) {
       return null;
@@ -624,7 +843,14 @@ function buildDemoTickets(
       source: ticket.source,
       priority: ticket.priority,
       status: ticket.source === 'developer' ? 'todo' : 'new',
-      organizationId: organizationMembers.includes(requesterId) ? organizationId : null,
+      // The requester's organization, or the one they belonged to at creation (§3.2).
+      organizationId:
+        'organization' in ticket
+          ? organizationIds[ticket.organization]
+          : (organizationOf.get(requesterId) ?? null),
+      visibility: 'visibility' in ticket ? ticket.visibility : 'only_me',
+      sharingRequest: 'sharingRequest' in ticket ? ticket.sharingRequest : 'none',
+      sharingRefusalReason: 'sharingRefusalReason' in ticket ? ticket.sharingRefusalReason : null,
       requesterId,
       assigneeId: ticket.assignee === null ? null : (accountIds[ticket.assignee] ?? null),
       version: 1 + ticket.events.length,

@@ -37,7 +37,9 @@ export const attachmentsAbilities: AbilityRules = ({ can }, principal) => {
     return;
   }
   // `is`: the in-memory check of a record supports a to-one relation only in this form.
-  can('read', ATTACHMENT, { ticket: { is: ticketReadConditions(principal) } });
+  for (const conditions of ticketReadConditions(principal)) {
+    can('read', ATTACHMENT, { ticket: { is: conditions } });
+  }
   for (const conditions of ticketChangeConditions(principal)) {
     can('delete', ATTACHMENT, { uploadedById: principal.userId, ticket: { is: conditions } });
   }

@@ -351,6 +351,36 @@
       "high": "Wysoki",
       "critical": "Krytyczny"
     },
+    "visibilities": {
+      "only_me": "Tylko dla mnie",
+      "my_organization": "Moja organizacja",
+      "all_customers": "Wszyscy klienci"
+    },
+    "visibility": {
+      "label": "Widoczność",
+      "warning": "Upewnij się, że opis i załączniki nie zawierają poufnych danych.",
+      "visibleTo": "Widoczne dla: {visibility}",
+      "pending": "Czeka na udostępnienie wszystkim klientom przez zespół.",
+      "rejected": "Zespół nie udostępnił tego zgłoszenia wszystkim klientom.",
+      "rejectedOrganization": "Twoja organizacja nadal je widzi.",
+      "changed": "Zmieniono widoczność: {visibility}",
+      "requested": "Wysłano prośbę o udostępnienie wszystkim klientom",
+      "withdrawn": "Wycofano prośbę o udostępnienie",
+      "sharingRequested": "Prośba o udostępnienie",
+      "sharingRefused": "Odmowa udostępnienia",
+      "refusalReason": "Powód odmowy: {reason}",
+      "share": "Udostępnij wszystkim klientom",
+      "shareTitle": "Udostępnić {identifier} wszystkim klientom?",
+      "shareDescription": "Sprawdź, czy opis i załączniki nie zawierają danych identyfikujących klienta.",
+      "shared": "Udostępniono wszystkim klientom",
+      "refuse": "Odmów",
+      "refuseTitle": "Odmówić udostępnienia {identifier}?",
+      "refuseDescription": "Zgłoszenie pozostanie widoczne tak jak teraz.",
+      "reason": "Powód",
+      "reasonRequired": "Podaj powód.",
+      "refused": "Odmówiono udostępnienia",
+      "cancel": "Anuluj"
+    },
     "templates": {
       "bug": "## Problem\n\n## Kroki do odtworzenia\n\n1.\n\n## Oczekiwany wynik\n\n## Faktyczny wynik\n\n## Środowisko",
       "feature": "## Cel\n\n## Proponowane rozwiązanie\n\n## Kryteria akceptacji\n\n- [ ]",
@@ -381,7 +411,8 @@
         "requester": "Zgłaszający",
         "organization": "Organizacja",
         "created": "Utworzono",
-        "updated": "Zaktualizowano"
+        "updated": "Zaktualizowano",
+        "visibility": "Widoczność"
       },
       "notSet": "Nie ustawiono",
       "unassigned": "Nieprzypisane",
@@ -456,7 +487,12 @@
         "duplicateLinkRemoved": "{person} – usunięcie powiązania z oryginałem {original}",
         "rejectionReasonChanged": "{person} – zmiana powodu odrzucenia",
         "attachmentAdded": "{person} – dodanie pliku {file}",
-        "attachmentDeleted": "{person} – usunięcie pliku {file}"
+        "attachmentDeleted": "{person} – usunięcie pliku {file}",
+        "visibilityChanged": "{person} – zmiana widoczności: {from} → {to}",
+        "sharingRequested": "{person} – prośba o udostępnienie wszystkim klientom",
+        "sharingRequestWithdrawn": "{person} – wycofanie prośby o udostępnienie wszystkim klientom",
+        "sharingApproved": "{person} – udostępnienie wszystkim klientom",
+        "sharingRejected": "{person} – odmowa udostępnienia wszystkim klientom"
       }
     },
     "status": {
@@ -762,7 +798,7 @@
       "description": "Opis",
       "noDescription": "Brak opisu.",
       "history": "Historia",
-      "created": "Utworzenie zgłoszenia",
+      "created": "{person} – utworzenie zgłoszenia",
       "statusChanged": "Status zmieniony na {status}",
       "attachmentAdded": "{person} dodał(a) plik {file}",
       "attachmentDeleted": "{person} usunął(-ęła) plik {file}",
@@ -774,7 +810,9 @@
       "answered": {
         "solved": "Dziękujemy. Zgłoszenie jest rozwiązane.",
         "not_solved": "Dziękujemy. Zespół dalej pracuje nad zgłoszeniem."
-      }
+      },
+      "sharedWithEveryone": "Udostępnione wszystkim",
+      "customer": "Klient"
     },
     "confirmation": {
       "other": "Zamiast tego wybierz drugą odpowiedź: {answer}",
@@ -918,7 +956,11 @@
       "assignee_not_eligible": "Przypisać można tylko aktywnych członków zespołu projektu.",
       "duplicate_of_self": "Zgłoszenie nie może być duplikatem samego siebie.",
       "duplicate_other_project": "Oryginalne zgłoszenie musi należeć do tego samego projektu.",
-      "resolution_confirmation_not_pending": "To zgłoszenie nie czeka już na Twoje potwierdzenie."
+      "resolution_confirmation_not_pending": "To zgłoszenie nie czeka już na Twoje potwierdzenie.",
+      "sharing_not_pending": "Ta prośba o udostępnienie została już rozpatrzona.",
+      "sharing_pending": "Najpierw rozpatrz prośbę o udostępnienie tego zgłoszenia.",
+      "author_consent_required": "Tylko autor może poprosić o udostępnienie zgłoszenia widocznego tylko dla niego.",
+      "organization_changed": "Zgłaszający nie należy już do organizacji tego zgłoszenia."
     },
     "attachment": {
       "type_not_allowed": "Pliki tego typu są niedozwolone.",

@@ -22,13 +22,15 @@ import { useTicketImageIds } from '../../attachments/use-ticket-image-ids.js';
 import { portalTicketHref } from '../../portal/hrefs.js';
 import { projectQueryOptions } from '../../projects/queries.js';
 import { activityEventsQueryOptions, ticketQueryOptions } from '../queries.js';
+import { PortalVisibility } from './portal-visibility.js';
 import { PublicStatusBadge } from './public-status-badge.js';
 import { ResolutionConfirmationPanel } from './resolution-confirmation-panel.js';
 
 /**
  * A ticket in the portal (§3.2, §4.2, §4.5): what an end user may see – the identifier, title,
- * public status with its description, the resolution question while it waits for the requester's
- * answer, the description with its images, the attachments and the public timeline. The API leaves
+ * public status with its description, its visibility (S1-11), the resolution question while it
+ * waits for the requester's answer, the description with its images, the attachments and the
+ * public timeline. The API leaves
  * internal fields and events out of the response; the view only shows what it receives. The data
  * is prefetched on the server.
  */
@@ -96,6 +98,7 @@ export function TicketView({ identifier }: { identifier: string }) {
           </p>
         )}
       </div>
+      <PortalVisibility ticket={data} />
       {data.allowedActions.includes('confirm_resolution') && (
         <ResolutionConfirmationPanel ticketId={data.id} />
       )}
@@ -122,9 +125,10 @@ export function TicketView({ identifier }: { identifier: string }) {
 }
 
 /**
- * The public timeline (§4.5): the creation as the first item, as on GitHub (S1-05 Q11), then the
- * public events, oldest first – in Stage 1 the public status changes and the files added to or
- * deleted from the ticket (S1-08 Q15).
+ * The public timeline (§4.5): the creation by the requester – their name, or "Customer" when the
+ * identity rule hides it (§5.4) – as the first item, as on GitHub (S1-05 Q11), then the public
+ * events, oldest first – in Stage 1 the public status changes, the files added to or deleted from
+ * the ticket (S1-08 Q15) and "Shared with everyone" (§5.2, S1-11).
  */
 function Timeline({ ticket }: { ticket: TicketResponse }) {
   const t = useTranslations('portal.ticket');
@@ -142,14 +146,37 @@ function Timeline({ ticket }: { ticket: TicketResponse }) {
       </h2>
       <ol className="flex flex-col gap-3 border-l border-border pl-4">
         <li className="flex flex-col">
-          <span>{t('created')}</span>
+          <span>
+            {t('created', {
+              // The requester under the identity rule: "Customer" when the API hides them (§5.4).
+              person:
+                ticket.requester === null
+                  ? t('customer')
+                  : (ticket.requester.displayName ?? t('unknownPerson')),
+            })}
+          </span>
           <time dateTime={ticket.createdAt} className="text-sm text-muted-foreground">
             {time(ticket.createdAt)}
           </time>
         </li>
         {items.map((event) => {
+          // No actor: the system, or a customer the identity rule hides (§5.4, S1-11 Q9).
           const actor =
-            event.actor === null ? t('system') : (event.actor.displayName ?? t('unknownPerson'));
+            event.actor === null
+              ? event.automaticSource === null
+                ? t('customer')
+                : t('system')
+              : (event.actor.displayName ?? t('unknownPerson'));
+          if (event.type === 'sharing_approved') {
+            return (
+              <li key={event.id} className="flex flex-col">
+                <span>{t('sharedWithEveryone')}</span>
+                <time dateTime={event.createdAt} className="text-sm text-muted-foreground">
+                  {time(event.createdAt)}
+                </time>
+              </li>
+            );
+          }
           if (isStatusChange(event)) {
             return (
               <li key={event.id} className="flex flex-col">

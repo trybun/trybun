@@ -23,7 +23,7 @@ export const strictEndUserProjectSchema = z.strictObject(endUserProjectSchema.sh
 export const strictEndUserTicketSchema = z.strictObject({
   ...endUserTicketSchema.shape,
   project: z.strictObject(ticketProjectReferenceSchema.shape),
-  requester: z.strictObject(ticketPersonSchema.shape),
+  requester: z.strictObject(ticketPersonSchema.shape).nullable(),
   duplicateOf: z.strictObject(ticketReferenceSchema.shape).nullable(),
 });
 

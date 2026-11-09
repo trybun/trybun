@@ -1037,7 +1037,9 @@
                                     "manage_members",
                                     "create_ticket",
                                     "assign_tickets",
-                                    "assign_tickets_self"
+                                    "assign_tickets_self",
+                                    "create_ticket_my_organization",
+                                    "create_ticket_all_customers"
                                   ]
                                 }
                               }
@@ -1093,7 +1095,9 @@
                                     "manage_members",
                                     "create_ticket",
                                     "assign_tickets",
-                                    "assign_tickets_self"
+                                    "assign_tickets_self",
+                                    "create_ticket_my_organization",
+                                    "create_ticket_all_customers"
                                   ]
                                 }
                               }
@@ -1228,7 +1232,9 @@
                           "manage_members",
                           "create_ticket",
                           "assign_tickets",
-                          "assign_tickets_self"
+                          "assign_tickets_self",
+                          "create_ticket_my_organization",
+                          "create_ticket_all_customers"
                         ]
                       }
                     }
@@ -1345,7 +1351,9 @@
                               "manage_members",
                               "create_ticket",
                               "assign_tickets",
-                              "assign_tickets_self"
+                              "assign_tickets_self",
+                              "create_ticket_my_organization",
+                              "create_ticket_all_customers"
                             ]
                           }
                         }
@@ -1401,7 +1409,9 @@
                               "manage_members",
                               "create_ticket",
                               "assign_tickets",
-                              "assign_tickets_self"
+                              "assign_tickets_self",
+                              "create_ticket_my_organization",
+                              "create_ticket_all_customers"
                             ]
                           }
                         }
@@ -1534,7 +1544,9 @@
                           "manage_members",
                           "create_ticket",
                           "assign_tickets",
-                          "assign_tickets_self"
+                          "assign_tickets_self",
+                          "create_ticket_my_organization",
+                          "create_ticket_all_customers"
                         ]
                       }
                     }
@@ -1672,7 +1684,9 @@
                           "manage_members",
                           "create_ticket",
                           "assign_tickets",
-                          "assign_tickets_self"
+                          "assign_tickets_self",
+                          "create_ticket_my_organization",
+                          "create_ticket_all_customers"
                         ]
                       }
                     }
@@ -5183,25 +5197,6 @@
                               "description": {
                                 "type": "string"
                               },
-                              "requester": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                  },
-                                  "displayName": {
-                                    "nullable": true,
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "id",
-                                  "displayName"
-                                ],
-                                "additionalProperties": false
-                              },
                               "version": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
@@ -5229,7 +5224,12 @@
                                     "assign_self",
                                     "change_status",
                                     "confirm_resolution",
-                                    "add_attachment"
+                                    "add_attachment",
+                                    "set_visibility_only_me",
+                                    "set_visibility_my_organization",
+                                    "set_visibility_all_customers",
+                                    "approve_sharing",
+                                    "reject_sharing"
                                   ]
                                 }
                               },
@@ -5273,6 +5273,41 @@
                                   "id",
                                   "number",
                                   "projectKey"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "visibility": {
+                                "type": "string",
+                                "enum": [
+                                  "only_me",
+                                  "my_organization",
+                                  "all_customers"
+                                ]
+                              },
+                              "sharingRequest": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "pending",
+                                  "rejected"
+                                ]
+                              },
+                              "requester": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "displayName": {
+                                    "nullable": true,
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "displayName"
                                 ],
                                 "additionalProperties": false
                               },
@@ -5365,6 +5400,10 @@
                               "rejectionReason": {
                                 "nullable": true,
                                 "type": "string"
+                              },
+                              "sharingRefusalReason": {
+                                "nullable": true,
+                                "type": "string"
                               }
                             },
                             "required": [
@@ -5375,7 +5414,6 @@
                               "identifier",
                               "title",
                               "description",
-                              "requester",
                               "version",
                               "createdAt",
                               "updatedAt",
@@ -5383,6 +5421,9 @@
                               "publicStatus",
                               "waitingReason",
                               "duplicateOf",
+                              "visibility",
+                              "sharingRequest",
+                              "requester",
                               "type",
                               "source",
                               "priority",
@@ -5390,7 +5431,8 @@
                               "organization",
                               "assignee",
                               "closedAt",
-                              "rejectionReason"
+                              "rejectionReason",
+                              "sharingRefusalReason"
                             ],
                             "additionalProperties": false
                           },
@@ -5443,25 +5485,6 @@
                               "description": {
                                 "type": "string"
                               },
-                              "requester": {
-                                "type": "object",
-                                "properties": {
-                                  "id": {
-                                    "type": "string",
-                                    "format": "uuid",
-                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                  },
-                                  "displayName": {
-                                    "nullable": true,
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "id",
-                                  "displayName"
-                                ],
-                                "additionalProperties": false
-                              },
                               "version": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
@@ -5489,7 +5512,12 @@
                                     "assign_self",
                                     "change_status",
                                     "confirm_resolution",
-                                    "add_attachment"
+                                    "add_attachment",
+                                    "set_visibility_only_me",
+                                    "set_visibility_my_organization",
+                                    "set_visibility_all_customers",
+                                    "approve_sharing",
+                                    "reject_sharing"
                                   ]
                                 }
                               },
@@ -5536,6 +5564,42 @@
                                 ],
                                 "additionalProperties": false
                               },
+                              "visibility": {
+                                "type": "string",
+                                "enum": [
+                                  "only_me",
+                                  "my_organization",
+                                  "all_customers"
+                                ]
+                              },
+                              "sharingRequest": {
+                                "type": "string",
+                                "enum": [
+                                  "none",
+                                  "pending",
+                                  "rejected"
+                                ]
+                              },
+                              "requester": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "displayName": {
+                                    "nullable": true,
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "displayName"
+                                ],
+                                "additionalProperties": false
+                              },
                               "publicStatusDescription": {
                                 "type": "string",
                                 "enum": [
@@ -5560,7 +5624,6 @@
                               "identifier",
                               "title",
                               "description",
-                              "requester",
                               "version",
                               "createdAt",
                               "updatedAt",
@@ -5568,6 +5631,9 @@
                               "publicStatus",
                               "waitingReason",
                               "duplicateOf",
+                              "visibility",
+                              "sharingRequest",
+                              "requester",
                               "publicStatusDescription"
                             ],
                             "additionalProperties": false
@@ -5650,6 +5716,14 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "only_me",
+                      "my_organization",
+                      "all_customers"
+                    ]
                   }
                 },
                 "required": [
@@ -5716,25 +5790,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -5762,7 +5817,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -5806,6 +5866,41 @@
                             "id",
                             "number",
                             "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
                           ],
                           "additionalProperties": false
                         },
@@ -5898,6 +5993,10 @@
                         "rejectionReason": {
                           "nullable": true,
                           "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -5908,7 +6007,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -5916,6 +6014,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "type",
                         "source",
                         "priority",
@@ -5923,7 +6024,8 @@
                         "organization",
                         "assignee",
                         "closedAt",
-                        "rejectionReason"
+                        "rejectionReason",
+                        "sharingRefusalReason"
                       ],
                       "additionalProperties": false
                     },
@@ -5976,25 +6078,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -6022,7 +6105,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -6069,6 +6157,42 @@
                           ],
                           "additionalProperties": false
                         },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
                         "publicStatusDescription": {
                           "type": "string",
                           "enum": [
@@ -6093,7 +6217,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -6101,6 +6224,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "publicStatusDescription"
                       ],
                       "additionalProperties": false
@@ -6187,25 +6313,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -6233,7 +6340,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -6277,6 +6389,41 @@
                             "id",
                             "number",
                             "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
                           ],
                           "additionalProperties": false
                         },
@@ -6369,6 +6516,10 @@
                         "rejectionReason": {
                           "nullable": true,
                           "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -6379,7 +6530,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -6387,6 +6537,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "type",
                         "source",
                         "priority",
@@ -6394,7 +6547,8 @@
                         "organization",
                         "assignee",
                         "closedAt",
-                        "rejectionReason"
+                        "rejectionReason",
+                        "sharingRefusalReason"
                       ],
                       "additionalProperties": false
                     },
@@ -6447,25 +6601,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -6493,7 +6628,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -6540,6 +6680,42 @@
                           ],
                           "additionalProperties": false
                         },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
                         "publicStatusDescription": {
                           "type": "string",
                           "enum": [
@@ -6564,7 +6740,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -6572,6 +6747,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "publicStatusDescription"
                       ],
                       "additionalProperties": false
@@ -6706,25 +6884,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -6752,7 +6911,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -6796,6 +6960,41 @@
                             "id",
                             "number",
                             "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
                           ],
                           "additionalProperties": false
                         },
@@ -6888,6 +7087,10 @@
                         "rejectionReason": {
                           "nullable": true,
                           "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -6898,7 +7101,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -6906,6 +7108,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "type",
                         "source",
                         "priority",
@@ -6913,7 +7118,8 @@
                         "organization",
                         "assignee",
                         "closedAt",
-                        "rejectionReason"
+                        "rejectionReason",
+                        "sharingRefusalReason"
                       ],
                       "additionalProperties": false
                     },
@@ -6966,25 +7172,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -7012,7 +7199,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -7059,6 +7251,42 @@
                           ],
                           "additionalProperties": false
                         },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
                         "publicStatusDescription": {
                           "type": "string",
                           "enum": [
@@ -7083,7 +7311,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -7091,6 +7318,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "publicStatusDescription"
                       ],
                       "additionalProperties": false
@@ -7251,25 +7481,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -7297,7 +7508,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -7341,6 +7557,41 @@
                             "id",
                             "number",
                             "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
                           ],
                           "additionalProperties": false
                         },
@@ -7433,6 +7684,10 @@
                         "rejectionReason": {
                           "nullable": true,
                           "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -7443,7 +7698,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -7451,6 +7705,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "type",
                         "source",
                         "priority",
@@ -7458,7 +7715,8 @@
                         "organization",
                         "assignee",
                         "closedAt",
-                        "rejectionReason"
+                        "rejectionReason",
+                        "sharingRefusalReason"
                       ],
                       "additionalProperties": false
                     },
@@ -7511,25 +7769,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -7557,7 +7796,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -7604,6 +7848,42 @@
                           ],
                           "additionalProperties": false
                         },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
                         "publicStatusDescription": {
                           "type": "string",
                           "enum": [
@@ -7628,7 +7908,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -7636,6 +7915,1623 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
+                        "publicStatusDescription"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Tickets"
+        ]
+      }
+    },
+    "/api/v1/tickets/{ticketId}/visibility": {
+      "put": {
+        "operationId": "TicketsController_setVisibility",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "only_me",
+                      "my_organization",
+                      "all_customers"
+                    ]
+                  }
+                },
+                "required": [
+                  "visibility"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "project": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "key",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution",
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "type": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "bug",
+                            "feature",
+                            "task",
+                            "question"
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "developer",
+                            "integration"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "low",
+                            "normal",
+                            "high",
+                            "critical"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "triage",
+                            "todo",
+                            "in_progress",
+                            "in_verification",
+                            "waiting_for_requester",
+                            "done",
+                            "rejected",
+                            "duplicate"
+                          ]
+                        },
+                        "organization": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "assignee": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "project",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
+                        "type",
+                        "source",
+                        "priority",
+                        "status",
+                        "organization",
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason",
+                        "sharingRefusalReason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "project": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "key",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution",
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "publicStatusDescription": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "analyzing",
+                            "information_needed",
+                            "confirmation_needed",
+                            "scheduled",
+                            "working",
+                            "testing",
+                            "resolved",
+                            "rejected",
+                            "merged"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "project",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
+                        "publicStatusDescription"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Tickets"
+        ]
+      }
+    },
+    "/api/v1/tickets/{ticketId}/sharing/approve": {
+      "post": {
+        "operationId": "TicketsController_approveSharing",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "project": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "key",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution",
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "type": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "bug",
+                            "feature",
+                            "task",
+                            "question"
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "developer",
+                            "integration"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "low",
+                            "normal",
+                            "high",
+                            "critical"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "triage",
+                            "todo",
+                            "in_progress",
+                            "in_verification",
+                            "waiting_for_requester",
+                            "done",
+                            "rejected",
+                            "duplicate"
+                          ]
+                        },
+                        "organization": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "assignee": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "project",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
+                        "type",
+                        "source",
+                        "priority",
+                        "status",
+                        "organization",
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason",
+                        "sharingRefusalReason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "project": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "key",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution",
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "publicStatusDescription": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "analyzing",
+                            "information_needed",
+                            "confirmation_needed",
+                            "scheduled",
+                            "working",
+                            "testing",
+                            "resolved",
+                            "rejected",
+                            "merged"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "project",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
+                        "publicStatusDescription"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Tickets"
+        ]
+      }
+    },
+    "/api/v1/tickets/{ticketId}/sharing/reject": {
+      "post": {
+        "operationId": "TicketsController_rejectSharing",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "project": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "key",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution",
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "type": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "bug",
+                            "feature",
+                            "task",
+                            "question"
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "developer",
+                            "integration"
+                          ]
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "low",
+                            "normal",
+                            "high",
+                            "critical"
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "triage",
+                            "todo",
+                            "in_progress",
+                            "in_verification",
+                            "waiting_for_requester",
+                            "done",
+                            "rejected",
+                            "duplicate"
+                          ]
+                        },
+                        "organization": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "assignee": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "closedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "rejectionReason": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "project",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
+                        "type",
+                        "source",
+                        "priority",
+                        "status",
+                        "organization",
+                        "assignee",
+                        "closedAt",
+                        "rejectionReason",
+                        "sharingRefusalReason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "projectId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "project": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "key",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "number": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "allowedActions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "update",
+                              "update_fields",
+                              "assign",
+                              "assign_self",
+                              "change_status",
+                              "confirm_resolution",
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
+                            ]
+                          }
+                        },
+                        "publicStatus": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "awaiting_reply",
+                            "in_progress",
+                            "resolved",
+                            "closed"
+                          ]
+                        },
+                        "waitingReason": {
+                          "nullable": true,
+                          "type": "string",
+                          "enum": [
+                            "information",
+                            "confirmation"
+                          ]
+                        },
+                        "duplicateOf": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9007199254740991
+                            },
+                            "projectKey": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "publicStatusDescription": {
+                          "type": "string",
+                          "enum": [
+                            "received",
+                            "analyzing",
+                            "information_needed",
+                            "confirmation_needed",
+                            "scheduled",
+                            "working",
+                            "testing",
+                            "resolved",
+                            "rejected",
+                            "merged"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "projectId",
+                        "project",
+                        "number",
+                        "identifier",
+                        "title",
+                        "description",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "allowedActions",
+                        "publicStatus",
+                        "waitingReason",
+                        "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "publicStatusDescription"
                       ],
                       "additionalProperties": false
@@ -7745,25 +9641,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -7791,7 +9668,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -7835,6 +9717,41 @@
                             "id",
                             "number",
                             "projectKey"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
                           ],
                           "additionalProperties": false
                         },
@@ -7927,6 +9844,10 @@
                         "rejectionReason": {
                           "nullable": true,
                           "type": "string"
+                        },
+                        "sharingRefusalReason": {
+                          "nullable": true,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -7937,7 +9858,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -7945,6 +9865,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "type",
                         "source",
                         "priority",
@@ -7952,7 +9875,8 @@
                         "organization",
                         "assignee",
                         "closedAt",
-                        "rejectionReason"
+                        "rejectionReason",
+                        "sharingRefusalReason"
                       ],
                       "additionalProperties": false
                     },
@@ -8005,25 +9929,6 @@
                         "description": {
                           "type": "string"
                         },
-                        "requester": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "format": "uuid",
-                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                            },
-                            "displayName": {
-                              "nullable": true,
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName"
-                          ],
-                          "additionalProperties": false
-                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -8051,7 +9956,12 @@
                               "assign_self",
                               "change_status",
                               "confirm_resolution",
-                              "add_attachment"
+                              "add_attachment",
+                              "set_visibility_only_me",
+                              "set_visibility_my_organization",
+                              "set_visibility_all_customers",
+                              "approve_sharing",
+                              "reject_sharing"
                             ]
                           }
                         },
@@ -8098,6 +10008,42 @@
                           ],
                           "additionalProperties": false
                         },
+                        "visibility": {
+                          "type": "string",
+                          "enum": [
+                            "only_me",
+                            "my_organization",
+                            "all_customers"
+                          ]
+                        },
+                        "sharingRequest": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "rejected"
+                          ]
+                        },
+                        "requester": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
                         "publicStatusDescription": {
                           "type": "string",
                           "enum": [
@@ -8122,7 +10068,6 @@
                         "identifier",
                         "title",
                         "description",
-                        "requester",
                         "version",
                         "createdAt",
                         "updatedAt",
@@ -8130,6 +10075,9 @@
                         "publicStatus",
                         "waitingReason",
                         "duplicateOf",
+                        "visibility",
+                        "sharingRequest",
+                        "requester",
                         "publicStatusDescription"
                       ],
                       "additionalProperties": false
@@ -8214,7 +10162,12 @@
                                   "duplicate_link_removed",
                                   "rejection_reason_changed",
                                   "attachment_added",
-                                  "attachment_deleted"
+                                  "attachment_deleted",
+                                  "visibility_changed",
+                                  "sharing_requested",
+                                  "sharing_request_withdrawn",
+                                  "sharing_approved",
+                                  "sharing_rejected"
                                 ]
                               },
                               "data": {
@@ -8438,7 +10391,12 @@
                                   "duplicate_link_removed",
                                   "rejection_reason_changed",
                                   "attachment_added",
-                                  "attachment_deleted"
+                                  "attachment_deleted",
+                                  "visibility_changed",
+                                  "sharing_requested",
+                                  "sharing_request_withdrawn",
+                                  "sharing_approved",
+                                  "sharing_rejected"
                                 ]
                               },
                               "data": {
@@ -8693,6 +10651,7 @@
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "uploadedBy": {
+                            "nullable": true,
                             "type": "object",
                             "properties": {
                               "id": {
@@ -8830,6 +10789,7 @@
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "uploadedBy": {
+                            "nullable": true,
                             "type": "object",
                             "properties": {
                               "id": {
@@ -8957,6 +10917,7 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
                     "uploadedBy": {
+                      "nullable": true,
                       "type": "object",
                       "properties": {
                         "id": {
@@ -9165,6 +11126,7 @@
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "uploadedBy": {
+                            "nullable": true,
                             "type": "object",
                             "properties": {
                               "id": {
@@ -9321,6 +11283,7 @@
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
                           "uploadedBy": {
+                            "nullable": true,
                             "type": "object",
                             "properties": {
                               "id": {

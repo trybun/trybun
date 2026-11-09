@@ -52,6 +52,8 @@ function ticket(overrides: Partial<EndUserTicket> = {}): EndUserTicket {
     publicStatus: 'in_progress',
     waitingReason: null,
     duplicateOf: null,
+    visibility: 'only_me',
+    sharingRequest: 'none',
     publicStatusDescription: 'testing',
     ...overrides,
   };
@@ -200,10 +202,102 @@ describe('TicketView', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
     expect(screen.getByText('We are testing the solution')).toBeDefined();
-    expect(screen.getByText('Ticket created')).toBeDefined();
+    expect(screen.getByText('Celina Customer created the ticket')).toBeDefined();
     expect(await screen.findByText('Status changed to In progress')).toBeDefined();
     expect(screen.getByText(/Dorota Developer/)).toBeDefined();
     expect(screen.queryByRole('heading', { name: 'Is your problem solved?' })).toBeNull();
+  });
+
+  // S1-11: the visibility, the state of a sharing request and its withdrawal (§5.2, §5.3).
+  it('shows a pending request as All customers and withdraws it', async () => {
+    const events = userEvent.setup();
+    const pending = ticket({
+      visibility: 'my_organization',
+      sharingRequest: 'pending',
+      allowedActions: [
+        'read',
+        'update',
+        'set_visibility_only_me',
+        'set_visibility_my_organization',
+      ],
+    });
+    answerTicket(pending);
+    fake.on('PUT /api/v1/tickets/{ticketId}/visibility', {
+      data: { ...pending, sharingRequest: 'none', version: 4 },
+    });
+    renderInApp(<TicketView identifier="CP-7" />);
+
+    expect(await screen.findByText('Visible to: My organization')).toBeDefined();
+    expect(
+      screen.getByText('Waiting for the team to share this ticket with all customers.'),
+    ).toBeDefined();
+    expect(screen.getByRole('radio', { name: 'All customers' }).getAttribute('aria-checked')).toBe(
+      'true',
+    );
+    await events.click(screen.getByRole('radio', { name: 'Only me' }));
+
+    await waitFor(() =>
+      expect(toastAdd).toHaveBeenCalledWith({
+        title: 'Request to share withdrawn',
+        type: 'success',
+      }),
+    );
+    expect(fake.callsTo('PUT /api/v1/tickets/{ticketId}/visibility')[0]?.init).toMatchObject({
+      body: { visibility: 'only_me' },
+      headers: { 'If-Match': 'W/"3"' },
+    });
+  });
+
+  it('shows a refusal without a control, and that the organization still sees the ticket', async () => {
+    answerTicket(
+      ticket({
+        visibility: 'my_organization',
+        sharingRequest: 'rejected',
+        allowedActions: ['read'],
+      }),
+    );
+    renderInApp(<TicketView identifier="CP-7" />);
+
+    expect(
+      await screen.findByText(
+        'The team did not share this ticket with all customers. Your organization can still see it.',
+      ),
+    ).toBeDefined();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+  });
+
+  it('shows Shared with everyone and a hidden customer as Customer (§5.2, §5.4)', async () => {
+    answerTicket(
+      ticket({ visibility: 'all_customers', requester: null, allowedActions: ['read'] }),
+    );
+    fake.on('GET /api/v1/tickets/{ticketId}/activity-events', {
+      data: {
+        items: [
+          {
+            id: '0199a3f0-0000-7000-8000-000000000042',
+            type: 'attachment_added',
+            data: { from: null, to: { id: IMAGE_ID, displayName: 'log.txt' } },
+            actor: null,
+            automaticSource: null,
+            createdAt: '2026-11-02T12:00:00.000Z',
+          },
+          {
+            id: '0199a3f0-0000-7000-8000-000000000043',
+            type: 'sharing_approved',
+            data: null,
+            actor: { id: '0199a3f0-0000-7000-8000-000000000041', displayName: 'Dorota Developer' },
+            automaticSource: null,
+            createdAt: '2026-11-02T13:00:00.000Z',
+          },
+        ],
+        nextCursor: null,
+      },
+    });
+    renderInApp(<TicketView identifier="CP-7" />);
+
+    expect(await screen.findByText('Shared with everyone')).toBeDefined();
+    expect(screen.getByText(/^Customer added the file log\.txt/)).toBeDefined();
+    expect(screen.getByText('Customer created the ticket')).toBeDefined();
   });
 
   it.each([

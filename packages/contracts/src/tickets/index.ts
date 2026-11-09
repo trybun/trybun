@@ -54,6 +54,20 @@ export function isTerminalStatus(status: TicketStatus): boolean {
 export const ticketWaitingReasonSchema = z.enum(['information', 'confirmation']);
 export type TicketWaitingReason = z.infer<typeof ticketWaitingReasonSchema>;
 
+/**
+ * `ticket.visibility` (§5.1): who among the customers sees a ticket besides its requester – the
+ * effective visibility, which a pending sharing request keeps until the team approves it.
+ */
+export const ticketVisibilitySchema = z.enum(['only_me', 'my_organization', 'all_customers']);
+export type TicketVisibility = z.infer<typeof ticketVisibilitySchema>;
+
+/**
+ * `ticket.sharing_request` (§5.2): the state of the author's request to share a ticket with all
+ * customers – `pending` until one team member decides it, `rejected` after a refusal.
+ */
+export const ticketSharingRequestSchema = z.enum(['none', 'pending', 'rejected']);
+export type TicketSharingRequest = z.infer<typeof ticketSharingRequestSchema>;
+
 /** The public statuses (§4.1): what end users see instead of the internal status. */
 export const ticketPublicStatusSchema = z.enum([
   'received',
@@ -135,8 +149,10 @@ export type ResolutionAnswer = z.infer<typeof resolutionAnswerSchema>;
  * The action codes of a ticket (§18.3), sent in its `allowedActions`: `update` changes the title
  * and the description, `update_fields` the type and the priority, `assign` sets any eligible
  * assignee, `assign_self` only the principal, `change_status` changes the status (team),
- * `confirm_resolution` answers the resolution confirmation (the requester, §7.5), and
- * `add_attachment` links files to the ticket (§3.2).
+ * `confirm_resolution` answers the resolution confirmation (the requester, §7.5),
+ * `add_attachment` links files to the ticket (§3.2), `set_visibility_<value>` changes the
+ * visibility to that value – for the requester, `set_visibility_all_customers` requests sharing –
+ * and `approve_sharing` / `reject_sharing` decide a pending sharing request (team, §5.2, S1-11).
  */
 export const ticketActionSchema = z.enum([
   'read',
@@ -147,6 +163,11 @@ export const ticketActionSchema = z.enum([
   'change_status',
   'confirm_resolution',
   'add_attachment',
+  'set_visibility_only_me',
+  'set_visibility_my_organization',
+  'set_visibility_all_customers',
+  'approve_sharing',
+  'reject_sharing',
 ]);
 export type TicketAction = z.infer<typeof ticketActionSchema>;
 
@@ -177,7 +198,8 @@ export const MAX_LINKED_ATTACHMENTS_PER_REQUEST = 100;
 
 /**
  * `POST /api/v1/tickets`. `type`, `priority` and `assigneeId` belong to the full form of the team
- * (§7.5): an end user sending them gets `403`. `attachmentIds` are the principal's own drafts,
+ * (§7.5): an end user sending them gets `403`. `visibility` (default `only_me`, §5.1) needs the
+ * project action of its value – `all_customers` creates a pending sharing request (S1-11). `attachmentIds` are the principal's own drafts,
  * linked to the new ticket without activity events (§3.2, §4.5).
  */
 export const createTicketSchema = z.object({
@@ -188,6 +210,7 @@ export const createTicketSchema = z.object({
   priority: ticketPrioritySchema.optional(),
   assigneeId: z.uuid().nullable().optional(),
   attachmentIds: z.array(z.uuid()).max(MAX_LINKED_ATTACHMENTS_PER_REQUEST).optional(),
+  visibility: ticketVisibilitySchema.optional(),
 });
 export type CreateTicketDto = z.infer<typeof createTicketSchema>;
 
@@ -234,6 +257,27 @@ export type ChangeTicketStatusDto = z.infer<typeof changeTicketStatusSchema>;
 export const confirmResolutionSchema = z.strictObject({ answer: resolutionAnswerSchema });
 export type ConfirmResolutionDto = z.infer<typeof confirmResolutionSchema>;
 
+/**
+ * `PUT /api/v1/tickets/{ticketId}/visibility` (§5.3): the target visibility. For the requester,
+ * `all_customers` requests sharing, and `only_me` or `my_organization` withdraws a pending request.
+ */
+export const setTicketVisibilitySchema = z.strictObject({ visibility: ticketVisibilitySchema });
+export type SetTicketVisibilityDto = z.infer<typeof setTicketVisibilitySchema>;
+
+/** The reason of a sharing refusal: GFM Markdown, trimmed, 1–2000 characters (§5.2). */
+export const TICKET_SHARING_REFUSAL_REASON_MAX_LENGTH = 2000;
+export const ticketSharingRefusalReasonSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(TICKET_SHARING_REFUSAL_REASON_MAX_LENGTH);
+
+/** `POST /api/v1/tickets/{ticketId}/sharing/reject` (§5.2): the required reason. */
+export const rejectTicketSharingSchema = z.strictObject({
+  reason: ticketSharingRefusalReasonSchema,
+});
+export type RejectTicketSharingDto = z.infer<typeof rejectTicketSharingSchema>;
+
 /** The original of a duplicate as a ticket shows it (§3.5). */
 export const ticketReferenceSchema = z.object({
   id: z.uuid(),
@@ -269,7 +313,6 @@ const commonTicketFields = {
   identifier: z.string(),
   title: z.string(),
   description: z.string(),
-  requester: ticketPersonSchema,
   version: z.int(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
@@ -279,11 +322,15 @@ const commonTicketFields = {
   waitingReason: ticketWaitingReasonSchema.nullable(),
   /** The original of a duplicate; for an end user only when they may read it (§3.5). */
   duplicateOf: ticketReferenceSchema.nullable(),
+  /** The effective visibility and the sharing request (§5.1, §5.2). */
+  visibility: ticketVisibilitySchema,
+  sharingRequest: ticketSharingRequestSchema,
 };
 
 /** A ticket as the team sees it (§3.2). */
 export const ticketSchema = z.object({
   ...commonTicketFields,
+  requester: ticketPersonSchema,
   type: ticketTypeSchema.nullable(),
   source: ticketSourceSchema,
   priority: ticketPrioritySchema,
@@ -294,16 +341,23 @@ export const ticketSchema = z.object({
   closedAt: z.iso.datetime().nullable(),
   /** The reason of a rejection, for the team only until S1-12 publishes it as a comment. */
   rejectionReason: z.string().nullable(),
+  /** The reason of a sharing refusal, for the team only until S1-12 (S1-11 Q8). */
+  sharingRefusalReason: z.string().nullable(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 
 /**
  * A ticket as an end user sees it (§3.2, columns "End user"): without type, priority, assignee,
- * source, organization, the internal status and the rejection reason, with the public description
+ * source, organization, the internal status and the rejection and refusal reasons, with the public description
  * of its state instead (§4.2).
  */
 export const endUserTicketSchema = z.object({
   ...commonTicketFields,
+  /**
+   * The requester; `null` when the reader may not see their name – a customer of another
+   * organization, shown as "Customer" (§5.4, S1-11 Q9).
+   */
+  requester: ticketPersonSchema.nullable(),
   publicStatusDescription: publicStatusDescriptionSchema,
 });
 export type EndUserTicket = z.infer<typeof endUserTicketSchema>;

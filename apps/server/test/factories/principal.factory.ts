@@ -1,5 +1,11 @@
 import { subject } from '@casl/ability';
-import type { TicketStatus, TicketWaitingReason } from '@trybun/contracts/tickets';
+import type {
+  TicketSharingRequest,
+  TicketSource,
+  TicketStatus,
+  TicketVisibility,
+  TicketWaitingReason,
+} from '@trybun/contracts/tickets';
 import type { UserPrincipal } from '../../src/platform/authentication/principal.js';
 
 export const PRINCIPAL_ID = '0190f2f4-7c1e-7000-8000-000000000001';
@@ -97,6 +103,15 @@ export interface TicketRecordOptions {
   state?: 'active' | 'archived';
   status?: TicketStatus;
   waitingReason?: TicketWaitingReason | null;
+  source?: TicketSource;
+  visibility?: TicketVisibility;
+  sharingRequest?: TicketSharingRequest;
+  /**
+   * The organization snapshot: `mine` – an organization the principal belongs to, `other` – one
+   * they do not belong to (e.g. one they left), `null` – none (the default).
+   */
+  organization?: 'mine' | 'other' | null;
+  organizationState?: 'active' | 'archived';
 }
 
 const SOMEONE_ELSE = '0190f2f4-7c1e-7000-8000-000000000099';
@@ -107,6 +122,17 @@ function ticketFields(fixture: PrincipalFixture, options: TicketRecordOptions) {
     requesterId: options.own === true ? PRINCIPAL_ID : SOMEONE_ELSE,
     status: options.status ?? 'in_progress',
     waitingReason: options.waitingReason ?? null,
+    source: options.source ?? 'user',
+    visibility: options.visibility ?? 'only_me',
+    sharingRequest: options.sharingRequest ?? 'none',
+    organizationId: options.organization == null ? null : 'organization',
+    organization:
+      options.organization == null
+        ? null
+        : {
+            state: options.organizationState ?? 'active',
+            members: options.organization === 'mine' ? [{ userId: PRINCIPAL_ID }] : [],
+          },
     project: {
       id: 'project',
       state: options.state ?? 'active',

@@ -40,6 +40,11 @@ function allowedActions(who: PrincipalFixture, options: RecordOptions) {
 
 const OWN_TICKET: TicketRecordOptions = { own: true };
 const OTHER_TICKET: TicketRecordOptions = { own: false };
+const COLLEAGUE_TICKET: TicketRecordOptions = {
+  visibility: 'my_organization',
+  organization: 'mine',
+};
+const SHARED_TICKET: TicketRecordOptions = { visibility: 'all_customers' };
 
 describe('attachment abilities', () => {
   it.each(PRINCIPAL_FIXTURES)('lets %s upload files', (who) => {
@@ -72,6 +77,20 @@ describe('attachment abilities', () => {
     ['Delete any attachment', 'delete', 'project_manager', false, OTHER_TICKET, true],
     ['Delete any attachment', 'delete', 'admin', false, OTHER_TICKET, true],
     ['Delete any attachment', 'delete', 'team_member', false, OTHER_TICKET, false],
+    // S1-11: the attachments follow the ticket's visibility, but only the requester's own tickets
+    // let an end user delete an upload (§7.5).
+    [
+      "Viewing a ticket's attachments",
+      'read',
+      'end_user_organization',
+      false,
+      COLLEAGUE_TICKET,
+      true,
+    ],
+    ["Viewing a ticket's attachments", 'read', 'end_user_personal', false, SHARED_TICKET, true],
+    ["Viewing a ticket's attachments", 'read', 'end_user', false, SHARED_TICKET, false],
+    ['Delete own attachments', 'delete', 'end_user_organization', true, COLLEAGUE_TICKET, false],
+    ['Delete own attachments', 'delete', 'end_user_personal', true, SHARED_TICKET, false],
   ] as const)(
     '%s (%s) – %s, own: %s, ticket %o: %s',
     (_row, action, who, own, ticket, isAllowed) => {

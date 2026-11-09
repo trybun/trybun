@@ -19,6 +19,8 @@ import {
   ticketSourceSchema,
   ticketStatusSchema,
   ticketTypeSchema,
+  ticketSharingRequestSchema,
+  ticketVisibilitySchema,
   ticketWaitingReasonSchema,
   updateTicketSchema,
 } from './index.js';
@@ -66,9 +68,16 @@ describe('ticket enums', () => {
         'change_status',
         'confirm_resolution',
         'add_attachment',
+        'set_visibility_only_me',
+        'set_visibility_my_organization',
+        'set_visibility_all_customers',
+        'approve_sharing',
+        'reject_sharing',
       ],
     ],
     [ticketWaitingReasonSchema, ['information', 'confirmation']],
+    [ticketVisibilitySchema, ['only_me', 'my_organization', 'all_customers']],
+    [ticketSharingRequestSchema, ['none', 'pending', 'rejected']],
     [ticketPublicStatusSchema, ['received', 'awaiting_reply', 'in_progress', 'resolved', 'closed']],
     [resolutionAnswerSchema, ['solved', 'not_solved']],
     [
@@ -315,6 +324,8 @@ describe('ticketResponseSchema', () => {
     publicStatus: 'in_progress',
     waitingReason: null,
     duplicateOf: null,
+    visibility: 'only_me',
+    sharingRequest: 'none',
   };
 
   it("keeps the team's fields of a team ticket", () => {
@@ -328,6 +339,7 @@ describe('ticketResponseSchema', () => {
       assignee: null,
       closedAt: null,
       rejectionReason: null,
+      sharingRefusalReason: null,
     };
 
     expect(ticketResponseSchema.parse(ticket)).toEqual(ticket);
@@ -343,6 +355,7 @@ describe('ticketResponseSchema', () => {
         priority: 'high',
         status: 'in_verification',
         rejectionReason: 'Internal',
+        sharingRefusalReason: 'Internal',
       }),
     ).toEqual(endUserTicket);
   });

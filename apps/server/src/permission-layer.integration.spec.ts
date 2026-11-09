@@ -32,6 +32,12 @@ import { PrismaService } from './platform/database/prisma.service.js';
 import { API_PREFIX } from './platform/http/api-prefix.js';
 import { strictEndUserProjectSchema, strictPageSchema } from '../test/end-user-schemas.js';
 
+/** The project actions of the Administrator: all but the end users' visibility of a new ticket. */
+const TEAM_PROJECT_ACTIONS = projectActionSchema.options.filter(
+  (action) =>
+    action !== 'create_ticket_my_organization' && action !== 'create_ticket_all_customers',
+);
+
 describe('permission layer', () => {
   const config = integrationConfig();
   let app: INestApplication<Server>;
@@ -52,6 +58,8 @@ describe('permission layer', () => {
     organizationTicket: { id: string };
     archivedTicket: { id: string };
     ticketB: { id: string };
+    colleagueTicket: { id: string };
+    sharedTicket: { id: string };
   };
   /** Drafts and attachments of the tickets above. */
   const attachments: { id: string }[] = [];
@@ -167,6 +175,30 @@ describe('permission layer', () => {
       status: 'new',
       type: null,
     });
+    // S1-11: a `my_organization` ticket of a colleague of the active organization and a shared
+    // ticket of the end user of that organization, both in project A.
+    const colleague = await createUser(prisma);
+    await prisma.organizationMember.create({
+      data: { userId: colleague.id, organizationId: records.organization.id },
+    });
+    records.colleagueTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: colleague.id,
+      organizationId: records.organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+      visibility: 'my_organization',
+    });
+    records.sharedTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.end_user_organization.id,
+      organizationId: records.organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+      visibility: 'all_customers',
+    });
     // Drafts of a team member and of an end user, and an attachment of each ticket by its
     // requester and by the Developer.
     attachments.push(
@@ -258,7 +290,16 @@ describe('permission layer', () => {
 
         expect(res.status).toBe(200);
         expect(strictEndUserProjectSchema.parse(res.body)).toMatchObject({
-          allowedActions: ['read', 'create_ticket'],
+          // `my_organization` only where the organization has access to the project (S1-11 Q19).
+          allowedActions:
+            fixture === 'end_user_organization'
+              ? [
+                  'read',
+                  'create_ticket',
+                  'create_ticket_my_organization',
+                  'create_ticket_all_customers',
+                ]
+              : ['read', 'create_ticket', 'create_ticket_all_customers'],
         });
       },
     );
@@ -287,7 +328,7 @@ describe('permission layer', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ role: null, allowedActions: projectActionSchema.options });
+      expect(res.body).toMatchObject({ role: null, allowedActions: TEAM_PROJECT_ACTIONS });
     });
 
     it('hides the projects of an archived organization (404)', async () => {
@@ -354,6 +395,8 @@ describe('permission layer', () => {
             records.organizationTicket.id,
             records.archivedTicket.id,
             records.ticketB.id,
+            records.colleagueTicket.id,
+            records.sharedTicket.id,
           ],
           Attachment: attachments.map(({ id }) => id),
         };
@@ -376,7 +419,7 @@ describe('permission layer', () => {
 
   describe('the actions of the project response (§18.3)', () => {
     it.each([
-      ['admin', 'projectA', projectActionSchema.options],
+      ['admin', 'projectA', TEAM_PROJECT_ACTIONS],
       ['admin', 'archivedProject', ['read', 'unarchive', 'read_members']],
       [
         'project_manager',
@@ -418,25 +461,45 @@ describe('permission layer', () => {
   });
 
   describe('the actions of the ticket response (§7.5, §18.3)', () => {
+    const TEAM_TICKET_ACTIONS = ticketActionSchema.options.filter(
+      (action) =>
+        action !== 'confirm_resolution' &&
+        !action.startsWith('set_visibility_') &&
+        !action.endsWith('_sharing'),
+    );
     it.each([
       // Answering the resolution confirmation belongs to the requester only (S1-04 Q3).
-      ['admin', 'teamTicket', ticketActionSchema.options.filter((a) => a !== 'confirm_resolution')],
-      [
-        'project_manager',
-        'teamTicket',
-        ticketActionSchema.options.filter((a) => a !== 'confirm_resolution'),
-      ],
+      // A team ticket has no visibility actions: it is visible to the team only (S1-11 Q6).
+      ['admin', 'teamTicket', TEAM_TICKET_ACTIONS],
+      ['project_manager', 'teamTicket', TEAM_TICKET_ACTIONS],
       [
         'developer',
         'teamTicket',
         ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
       ],
       ['admin', 'archivedTicket', ['read']],
-      ['end_user_personal', 'personalTicket', ['read', 'update', 'add_attachment']],
-      ['end_user_organization', 'organizationTicket', ['read', 'update', 'add_attachment']],
+      [
+        'end_user_personal',
+        'personalTicket',
+        ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+      ],
+      [
+        'end_user_organization',
+        'organizationTicket',
+        [
+          'read',
+          'update',
+          'add_attachment',
+          'set_visibility_my_organization',
+          'set_visibility_all_customers',
+        ],
+      ],
       ['end_user_personal', 'archivedTicket', ['read']],
       // A requester keeps reading a ticket after losing access to its project (§7.3).
       ['end_user_archived_organization', 'ticketB', ['read']],
+      // S1-11: reading a colleague's or a shared ticket gives no change (§7.5).
+      ['end_user_organization', 'colleagueTicket', ['read']],
+      ['end_user_personal', 'sharedTicket', ['read']],
     ] as const)('lists for %s on %s exactly %o', async (fixture, ticket, actions) => {
       const res = await http()
         .get(`/api/v1/tickets/${records[ticket].id}`)
@@ -452,6 +515,10 @@ describe('permission layer', () => {
       ['end_user_personal', 'organizationTicket'],
       ['end_user', 'personalTicket'],
       ['developer', 'ticketB'],
+      // S1-11: a colleague's ticket outside the organization, a shared one without project access.
+      ['end_user_personal', 'colleagueTicket'],
+      ['end_user_archived_organization', 'sharedTicket'],
+      ['end_user', 'sharedTicket'],
     ] as const)('hides from %s the ticket %s (404)', async (fixture, ticket) => {
       const res = await http()
         .get(`/api/v1/tickets/${records[ticket].id}`)

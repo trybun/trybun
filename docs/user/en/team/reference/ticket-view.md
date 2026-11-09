@@ -29,6 +29,7 @@ The description is shown formatted ([format text](../../end-user/reference/forma
 | **Project** | The project of the ticket; it cannot be changed |
 | **Requester** | Who reported the ticket |
 | **Organization** | The organization of the requester, shown only when there is one |
+| **Visibility** | Who among the customers sees a ticket from the portal: **Only me**, **My organization** or **All customers**, with a waiting or refused sharing request. See [Share a ticket with all customers](../how-to/share-a-ticket-with-all-customers.md) |
 | **Created**, **Updated** | When the ticket was created and last changed, in your time zone |
 
 ## Saving and Undo
@@ -56,6 +57,6 @@ A change between statuses that are not closed offers **Undo**. Closing or reopen
 
 ## Activity
 
-**Activity** lists everything that happened to the ticket, oldest first: who opened it, and every change of its title, description, type, priority, assignee, status and files, with the old and the new value. Changes made automatically show **System** instead of a person; a person whose account was deleted shows as **Deleted user**. **Show more** at the end loads the later entries.
+**Activity** lists everything that happened to the ticket, oldest first: who opened it, and every change of its title, description, type, priority, assignee, status, visibility and files, with the old and the new value. Changes made automatically show **System** instead of a person; a person whose account was deleted shows as **Deleted user**. **Show more** at the end loads the later entries.
 
 Switch on **Hide events** to hide these entries. Trybun remembers the choice for your account, so it applies on every device.

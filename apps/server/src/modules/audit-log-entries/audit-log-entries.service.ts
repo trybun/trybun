@@ -1,3 +1,4 @@
+import type { TicketVisibility } from '@trybun/contracts/tickets';
 import { Injectable } from '@nestjs/common';
 import type { InvitationTargetType } from '@trybun/contracts/invitations';
 import type { ProjectMemberRole } from '@trybun/contracts/projects';
@@ -49,6 +50,11 @@ interface AuditDetailsByAction {
   'user.reactivated': null;
   'user.admin_granted': null;
   'user.admin_revoked': null;
+  /** A change of a ticket's visibility by the team, also sharing at its initiative (S1-11). */
+  'ticket.visibility_changed': { from: TicketVisibility; to: TicketVisibility };
+  /** The decisions of a sharing request; the refusal reason is ticket content, never a detail. */
+  'ticket.sharing_approved': null;
+  'ticket.sharing_rejected': null;
 }
 
 export type AuditAction = keyof AuditDetailsByAction;

@@ -47,3 +47,7 @@ Found when ticket statuses were built (S1-06, November 2026):
 Found when attachments were built (S1-08, November 2026):
 
 - **Partial non-unique indexes written in the migration SQL** (`CREATE INDEX … WHERE "ticket_id" IS NULL`) are ignored by `prisma migrate diff` of Prisma 7.10 like expression indexes: the drift check (`--exit-code`) stays 0 with them in the database and none in the schema. The schema comment of the model names them (`Attachment`).
+
+Found when ticket visibility was built (S1-11, November 2026):
+
+- **Team ticket responses select `organization` for both the rules and the response**: merge the rule select into the response select instead of overriding it, or `allowedActions` silently lose rules that read the organization (S1-11).
