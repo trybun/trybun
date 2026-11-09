@@ -588,7 +588,7 @@ export type BulkChangeFailureStatus = z.infer<typeof bulkChangeFailureStatusSche
  * would have answered.
  */
 export const bulkChangeResultSchema = z.union([
-  z.object({ id: z.uuid(), status: z.literal(200), ticket: ticketListItemSchema }),
+  z.object({ id: z.uuid(), status: z.literal(200), ticket: ticketListItemResponseSchema }),
   z.object({ id: z.uuid(), status: bulkChangeFailureStatusSchema, code: errorCodeSchema }),
 ]);
 export type BulkChangeResult = z.infer<typeof bulkChangeResultSchema>;

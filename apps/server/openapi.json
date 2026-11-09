@@ -6613,6 +6613,806 @@
         ]
       }
     },
+    "/api/v1/tickets/bulk-changes": {
+      "post": {
+        "operationId": "TicketsController_bulkChange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tickets": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "change": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "status"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "new",
+                              "triage",
+                              "todo",
+                              "in_progress",
+                              "in_verification",
+                              "waiting_for_requester",
+                              "done",
+                              "rejected"
+                            ]
+                          },
+                          "rejectionReason": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2000
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "priority"
+                            ]
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "low",
+                              "normal",
+                              "high",
+                              "critical"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "priority"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string",
+                            "enum": [
+                              "assignee"
+                            ]
+                          },
+                          "assigneeId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "assigneeId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "tickets",
+                  "change"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "status": {
+                                "type": "number",
+                                "enum": [
+                                  200
+                                ]
+                              },
+                              "ticket": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "projectId": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "project": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "key",
+                                          "name"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "number": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "identifier": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "createdAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      },
+                                      "updatedAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      },
+                                      "allowedActions": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "read",
+                                            "update",
+                                            "update_fields",
+                                            "assign",
+                                            "assign_self",
+                                            "change_status",
+                                            "confirm_resolution",
+                                            "add_attachment",
+                                            "set_visibility_only_me",
+                                            "set_visibility_my_organization",
+                                            "set_visibility_all_customers",
+                                            "approve_sharing",
+                                            "reject_sharing",
+                                            "add_comment",
+                                            "add_internal_note",
+                                            "read_description_revisions",
+                                            "redact_description"
+                                          ]
+                                        }
+                                      },
+                                      "publicStatus": {
+                                        "type": "string",
+                                        "enum": [
+                                          "received",
+                                          "awaiting_reply",
+                                          "in_progress",
+                                          "resolved",
+                                          "closed"
+                                        ]
+                                      },
+                                      "waitingReason": {
+                                        "nullable": true,
+                                        "type": "string",
+                                        "enum": [
+                                          "information",
+                                          "confirmation"
+                                        ]
+                                      },
+                                      "duplicateOf": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "number": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "projectKey": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "number",
+                                          "projectKey"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "visibility": {
+                                        "type": "string",
+                                        "enum": [
+                                          "only_me",
+                                          "my_organization",
+                                          "all_customers"
+                                        ]
+                                      },
+                                      "sharingRequest": {
+                                        "type": "string",
+                                        "enum": [
+                                          "none",
+                                          "pending",
+                                          "rejected"
+                                        ]
+                                      },
+                                      "descriptionEditedAt": {
+                                        "nullable": true,
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      },
+                                      "requester": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "displayName": {
+                                            "nullable": true,
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "displayName"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "type": {
+                                        "nullable": true,
+                                        "type": "string",
+                                        "enum": [
+                                          "bug",
+                                          "feature",
+                                          "task",
+                                          "question"
+                                        ]
+                                      },
+                                      "source": {
+                                        "type": "string",
+                                        "enum": [
+                                          "user",
+                                          "developer",
+                                          "integration"
+                                        ]
+                                      },
+                                      "priority": {
+                                        "type": "string",
+                                        "enum": [
+                                          "low",
+                                          "normal",
+                                          "high",
+                                          "critical"
+                                        ]
+                                      },
+                                      "status": {
+                                        "type": "string",
+                                        "enum": [
+                                          "new",
+                                          "triage",
+                                          "todo",
+                                          "in_progress",
+                                          "in_verification",
+                                          "waiting_for_requester",
+                                          "done",
+                                          "rejected",
+                                          "duplicate"
+                                        ]
+                                      },
+                                      "organization": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "name"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "assignee": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "displayName": {
+                                            "nullable": true,
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "displayName"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "closedAt": {
+                                        "nullable": true,
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "projectId",
+                                      "project",
+                                      "number",
+                                      "identifier",
+                                      "title",
+                                      "version",
+                                      "createdAt",
+                                      "updatedAt",
+                                      "allowedActions",
+                                      "publicStatus",
+                                      "waitingReason",
+                                      "duplicateOf",
+                                      "visibility",
+                                      "sharingRequest",
+                                      "descriptionEditedAt",
+                                      "requester",
+                                      "type",
+                                      "source",
+                                      "priority",
+                                      "status",
+                                      "organization",
+                                      "assignee",
+                                      "closedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "projectId": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "project": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "key": {
+                                            "type": "string"
+                                          },
+                                          "name": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "key",
+                                          "name"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "number": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "identifier": {
+                                        "type": "string"
+                                      },
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "createdAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      },
+                                      "updatedAt": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      },
+                                      "allowedActions": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "read",
+                                            "update",
+                                            "update_fields",
+                                            "assign",
+                                            "assign_self",
+                                            "change_status",
+                                            "confirm_resolution",
+                                            "add_attachment",
+                                            "set_visibility_only_me",
+                                            "set_visibility_my_organization",
+                                            "set_visibility_all_customers",
+                                            "approve_sharing",
+                                            "reject_sharing",
+                                            "add_comment",
+                                            "add_internal_note",
+                                            "read_description_revisions",
+                                            "redact_description"
+                                          ]
+                                        }
+                                      },
+                                      "publicStatus": {
+                                        "type": "string",
+                                        "enum": [
+                                          "received",
+                                          "awaiting_reply",
+                                          "in_progress",
+                                          "resolved",
+                                          "closed"
+                                        ]
+                                      },
+                                      "waitingReason": {
+                                        "nullable": true,
+                                        "type": "string",
+                                        "enum": [
+                                          "information",
+                                          "confirmation"
+                                        ]
+                                      },
+                                      "duplicateOf": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "number": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "projectKey": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "number",
+                                          "projectKey"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "visibility": {
+                                        "type": "string",
+                                        "enum": [
+                                          "only_me",
+                                          "my_organization",
+                                          "all_customers"
+                                        ]
+                                      },
+                                      "sharingRequest": {
+                                        "type": "string",
+                                        "enum": [
+                                          "none",
+                                          "pending",
+                                          "rejected"
+                                        ]
+                                      },
+                                      "descriptionEditedAt": {
+                                        "nullable": true,
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      },
+                                      "requester": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "displayName": {
+                                            "nullable": true,
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "displayName"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "publicStatusDescription": {
+                                        "type": "string",
+                                        "enum": [
+                                          "received",
+                                          "analyzing",
+                                          "information_needed",
+                                          "confirmation_needed",
+                                          "scheduled",
+                                          "working",
+                                          "testing",
+                                          "resolved",
+                                          "rejected",
+                                          "merged"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "projectId",
+                                      "project",
+                                      "number",
+                                      "identifier",
+                                      "title",
+                                      "version",
+                                      "createdAt",
+                                      "updatedAt",
+                                      "allowedActions",
+                                      "publicStatus",
+                                      "waitingReason",
+                                      "duplicateOf",
+                                      "visibility",
+                                      "sharingRequest",
+                                      "descriptionEditedAt",
+                                      "requester",
+                                      "publicStatusDescription"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "status",
+                              "ticket"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "enum": [
+                                      403
+                                    ]
+                                  },
+                                  {
+                                    "type": "number",
+                                    "enum": [
+                                      404
+                                    ]
+                                  },
+                                  {
+                                    "type": "number",
+                                    "enum": [
+                                      409
+                                    ]
+                                  },
+                                  {
+                                    "type": "number",
+                                    "enum": [
+                                      412
+                                    ]
+                                  },
+                                  {
+                                    "type": "number",
+                                    "enum": [
+                                      422
+                                    ]
+                                  },
+                                  {
+                                    "type": "number",
+                                    "enum": [
+                                      500
+                                    ]
+                                  }
+                                ]
+                              },
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "request.malformed",
+                                  "request.not_found",
+                                  "request.forbidden",
+                                  "request.precondition_failed",
+                                  "request.too_large",
+                                  "request.validation_failed",
+                                  "request.precondition_required",
+                                  "request.rate_limited",
+                                  "authentication.required",
+                                  "authentication.second_factor_required",
+                                  "setup.token_invalid",
+                                  "setup.completed",
+                                  "setup.password_rejected",
+                                  "setup.email_taken",
+                                  "project.archived",
+                                  "project.key_taken",
+                                  "project.key_immutable",
+                                  "project.has_tickets",
+                                  "project_member.exists",
+                                  "project_member.user_not_eligible",
+                                  "organization.name_taken",
+                                  "organization.domain_public",
+                                  "organization.domain_taken",
+                                  "organization.archived",
+                                  "organization.not_empty",
+                                  "organization.member_not_found",
+                                  "organization.member_not_end_user",
+                                  "organization.member_of_other_organization",
+                                  "ticket.project_immutable",
+                                  "ticket.assignee_not_eligible",
+                                  "ticket.duplicate_of_self",
+                                  "ticket.duplicate_other_project",
+                                  "ticket.resolution_confirmation_not_pending",
+                                  "ticket.sharing_not_pending",
+                                  "ticket.sharing_pending",
+                                  "ticket.author_consent_required",
+                                  "ticket.organization_changed",
+                                  "ticket.comments_closed",
+                                  "comment.mention_not_allowed",
+                                  "comment.too_many_mentions",
+                                  "attachment.type_not_allowed",
+                                  "attachment.already_linked",
+                                  "attachment.draft_limit_reached",
+                                  "attachment.not_available",
+                                  "attachment.removed",
+                                  "invitation.account_kind_mismatch",
+                                  "invitation.account_deactivated",
+                                  "invitation.access_exists",
+                                  "invitation.organization_conflict",
+                                  "invitation.github_sign_in_missing",
+                                  "invitation.not_pending",
+                                  "invitation.account_mismatch",
+                                  "invitation.token_invalid",
+                                  "invitation.password_rejected",
+                                  "invitation.email_taken",
+                                  "user.last_administrator",
+                                  "server.internal_error",
+                                  "server.unavailable"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "status",
+                              "code"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "results"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Tickets"
+        ]
+      }
+    },
     "/api/v1/tickets/{ticketId}": {
       "get": {
         "operationId": "TicketsController_findOne",
