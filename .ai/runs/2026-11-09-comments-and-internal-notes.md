@@ -35,7 +35,7 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 - [x] 1.2 Add the comment migrations, Prisma models and factories — 930a36b
 - [x] 1.3 Inject the clock into the ability factory with its ADR — c42455d
 - [x] 1.4 Add the comment abilities and the attachment rules of comments — 7c24b23
-- [ ] 1.5 Add the comment list, detail and the merged timeline
+- [x] 1.5 Add the comment list, detail and the merged timeline — 38f99b5
 
 ### Phase 2: Writing
 
