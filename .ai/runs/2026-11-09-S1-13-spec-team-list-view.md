@@ -56,4 +56,4 @@ Make the S1-13 change specification `.ai/specs/2026-10-26-team-list-view.md` mer
 ### Phase 4: Review and finalize
 
 - [x] 4.1 Run the specification review and apply its findings — 6c765e5
-- [ ] 4.2 Update the PR body, labels and draft state
+- [x] 4.2 Update the PR body, labels and draft state — 1e15bc0
