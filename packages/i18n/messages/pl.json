@@ -548,7 +548,7 @@
       "loadingMore": "Wczytywanie…",
       "columns": {
         "select": "Zaznacz",
-        "identifier": "Identyfikator",
+        "identifier": "ID",
         "title": "Tytuł",
         "status": "Status",
         "priority": "Priorytet",
@@ -556,8 +556,7 @@
         "assignee": "Przypisany",
         "project": "Projekt",
         "organization": "Organizacja",
-        "updated": "Zaktualizowano",
-        "actions": "Akcje"
+        "updated": "Zaktualizowano"
       },
       "sort": {
         "label": "Sortuj",

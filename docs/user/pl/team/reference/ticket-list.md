@@ -8,7 +8,7 @@ Wybierz **Zgłoszenia** w nawigacji głównej, aby otworzyć listę zgłoszeń w
 
 ## Tabela i karty
 
-Na tablecie i komputerze lista jest tabelą z kolumnami **Identyfikator**, **Tytuł**, **Status**, **Priorytet**, **Typ**, **Przypisany**, **Projekt**, **Organizacja** i **Zaktualizowano** (jak dawno zgłoszenie się zmieniło). Na tablecie kolumny **Typ**, **Projekt** i **Organizacja** są ukryte, a kolumna **Organizacja** pojawia się dopiero, gdy istnieją organizacje.
+Na tablecie i komputerze lista jest tabelą z kolumnami **ID** (identyfikator), **Tytuł**, **Status**, **Priorytet**, **Typ**, **Przypisany**, **Projekt**, **Organizacja** i **Zaktualizowano** (jak dawno zgłoszenie się zmieniło). Na tablecie kolumny **Typ**, **Projekt** i **Organizacja** są ukryte, a kolumna **Organizacja** pojawia się dopiero, gdy istnieją organizacje.
 
 Na telefonie każde zgłoszenie jest kartą z identyfikatorem, tytułem, statusem, priorytetem i osobą przypisaną oraz polem wyboru, które je zaznacza.
 
@@ -51,7 +51,7 @@ Widok, filtry i kolejność są częścią adresu strony, więc zostają po odś
 
 ## Sortowanie
 
-Na tablecie i komputerze wybierz nagłówek kolumny **Identyfikator**, **Status**, **Priorytet** albo **Zaktualizowano**, aby posortować według niej, i wybierz go ponownie, aby odwrócić kolejność. Na telefonie wybierz kolejność w polu **Sortuj**, które oferuje też datę utworzenia. Zgłoszenia o tej samej wartości są ułożone według ostatniej zmiany. Statusy są sortowane w kolejności przepływu pracy, od **Nowe**; identyfikatory według projektu, a potem numeru. Zmiana kolejności nie zmienia widoku.
+Na tablecie i komputerze wybierz nagłówek kolumny **ID**, **Status**, **Priorytet** albo **Zaktualizowano**, aby posortować według niej, i wybierz go ponownie, aby odwrócić kolejność. Na telefonie wybierz kolejność w polu **Sortuj**, które oferuje też datę utworzenia. Zgłoszenia o tej samej wartości są ułożone według ostatniej zmiany. Statusy są sortowane w kolejności przepływu pracy, od **Nowe**; identyfikatory według projektu, a potem numeru. Zmiana kolejności nie zmienia widoku.
 
 ## Zaznaczanie
 

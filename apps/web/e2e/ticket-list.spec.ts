@@ -54,6 +54,14 @@ test.describe('the ticket list', () => {
     await expect(page.getByRole('table')).toHaveCount(isCards ? 0 : 1);
     await expect(page.getByRole('button', { name: 'Approve sharing' }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Refuse sharing' }).first()).toBeVisible();
+    if (!isCards) {
+      // The table fits the content area: no column – above all no action – hides behind
+      // horizontal scrolling (S1-13 QA).
+      const overflow = await page
+        .locator('[data-slot=table-container]')
+        .evaluate((container) => container.scrollWidth - container.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    }
     expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
   });
 

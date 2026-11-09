@@ -123,12 +123,23 @@ function SharingActions({ ticket }: { ticket: TicketListItem }) {
   return (
     <div className="flex flex-wrap gap-2">
       {ticket.allowedActions.includes('approve_sharing') && (
-        <Button type="button" size="sm" onClick={() => setDialog('approve')}>
+        <Button
+          type="button"
+          size="sm"
+          className="h-auto min-h-11 whitespace-normal xl:pointer-fine:min-h-7"
+          onClick={() => setDialog('approve')}
+        >
           {t('approve')}
         </Button>
       )}
       {ticket.allowedActions.includes('reject_sharing') && (
-        <Button type="button" size="sm" variant="outline" onClick={() => setDialog('refuse')}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-auto min-h-11 whitespace-normal xl:pointer-fine:min-h-7"
+          onClick={() => setDialog('refuse')}
+        >
           {t('refuse')}
         </Button>
       )}

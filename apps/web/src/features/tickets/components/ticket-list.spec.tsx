@@ -120,7 +120,7 @@ describe('TicketList', () => {
       <TicketList state={stateOfView('triage')} currentUserId={ME} organizationsExist={false} />,
     );
 
-    await userEvent.setup().click(await screen.findByRole('button', { name: 'Identifier' }));
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'ID' }));
     expect(replace).toHaveBeenCalledWith('/tickets?view=triage&sort=identifier&order=desc', {
       scroll: false,
     });
@@ -226,7 +226,10 @@ describe('TicketList', () => {
 
     await screen.findAllByRole('link', { name: 'Ticket 1' });
     const table = screen.getByRole('table');
-    expect(within(table).getByRole('columnheader', { name: 'Actions' })).toBeDefined();
+    // The actions sit in the title cell, never in a column behind horizontal scrolling (QA).
+    const titleCell = within(table).getByRole('link', { name: 'Ticket 1' }).closest('td');
+    expect(titleCell).not.toBeNull();
+    expect(within(titleCell!).getByRole('button', { name: 'Approve sharing' })).toBeDefined();
     expect(within(table).getAllByRole('button', { name: 'Approve sharing' })).toHaveLength(1);
     expect(within(table).getAllByRole('button', { name: 'Refuse sharing' })).toHaveLength(1);
   });

@@ -78,7 +78,6 @@ export function TicketTable({
   onSort: (columnId: string) => void;
   rowActions?: (ticket: TicketListItem) => React.ReactNode;
 }) {
-  const t = useTranslations('tickets.list');
   return (
     <Table>
       <TableHeader>
@@ -104,11 +103,6 @@ export function TicketTable({
                 </TableHead>
               );
             })}
-            {rowActions !== undefined && (
-              <TableHead>
-                <span className="sr-only">{t('columns.actions')}</span>
-              </TableHead>
-            )}
           </TableRow>
         ))}
       </TableHeader>
@@ -121,12 +115,18 @@ export function TicketTable({
                 <TableCell key={cell.id} className={cn(COLUMN_CLASS[cell.column.id])}>
                   {cell.column.id === 'select' ? (
                     <TicketCheckbox table={table} ticket={row.original} isSelected={isSelected} />
+                  ) : cell.column.id === 'title' && rowActions !== undefined ? (
+                    // The row actions sit under the title, as on the cards of phones, so they
+                    // are never behind horizontal scrolling (S1-13 QA).
+                    <div className="flex flex-col gap-2">
+                      <table.FlexRender cell={cell} />
+                      {rowActions(row.original)}
+                    </div>
                   ) : (
                     <table.FlexRender cell={cell} />
                   )}
                 </TableCell>
               ))}
-              {rowActions !== undefined && <TableCell>{rowActions(row.original)}</TableCell>}
             </TableRow>
           );
         })}

@@ -8,7 +8,7 @@ Select **Tickets** in the main navigation to open the list of the tickets of all
 
 ## Table and cards
 
-On a tablet or a computer the list is a table with the columns **Identifier**, **Title**, **Status**, **Priority**, **Type**, **Assignee**, **Project**, **Organization** and **Updated** (how long ago the ticket changed). Tablets hide **Type**, **Project** and **Organization**, and **Organization** is shown only once organizations exist.
+On a tablet or a computer the list is a table with the columns **ID** (the identifier), **Title**, **Status**, **Priority**, **Type**, **Assignee**, **Project**, **Organization** and **Updated** (how long ago the ticket changed). Tablets hide **Type**, **Project** and **Organization**, and **Organization** is shown only once organizations exist.
 
 On a phone every ticket is a card with its identifier, title, status, priority and assignee, and a checkbox to select it.
 
@@ -51,7 +51,7 @@ The view, the filters and the order are part of the address of the page, so they
 
 ## Sorting
 
-On a tablet or a computer, select the heading of **Identifier**, **Status**, **Priority** or **Updated** to sort by it, and again to reverse the order. On a phone choose the order in **Sort**, which also offers the creation date. Tickets with the same value follow the last update. Statuses sort in the order of the workflow, **New** first; identifiers by project, then number. Changing the order keeps the view.
+On a tablet or a computer, select the heading of **ID**, **Status**, **Priority** or **Updated** to sort by it, and again to reverse the order. On a phone choose the order in **Sort**, which also offers the creation date. Tickets with the same value follow the last update. Statuses sort in the order of the workflow, **New** first; identifiers by project, then number. Changing the order keeps the view.
 
 ## Selection
 

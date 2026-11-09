@@ -548,7 +548,7 @@
       "loadingMore": "Loading…",
       "columns": {
         "select": "Select",
-        "identifier": "Identifier",
+        "identifier": "ID",
         "title": "Title",
         "status": "Status",
         "priority": "Priority",
@@ -556,8 +556,7 @@
         "assignee": "Assignee",
         "project": "Project",
         "organization": "Organization",
-        "updated": "Updated",
-        "actions": "Actions"
+        "updated": "Updated"
       },
       "sort": {
         "label": "Sort",

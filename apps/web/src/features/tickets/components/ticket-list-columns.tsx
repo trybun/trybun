@@ -35,14 +35,21 @@ export const SORT_OF_COLUMN: Readonly<Partial<Record<string, TicketListSort>>> =
 };
 
 /**
- * The classes of the columns that tablets hide (§2.9): type, project and organization are shown
- * from the desktop width on.
+ * The classes of the columns (§2.9): the text of every column but the checkbox and the
+ * identifier wraps, so the table fits the content area from the tablet width on and nothing –
+ * above all the row actions in the title cell – hides behind horizontal scrolling. The title
+ * takes the remaining width. Tablets hide type, project and organization; they are shown from
+ * the desktop width on.
  */
 export const COLUMN_CLASS: Readonly<Partial<Record<string, string>>> = {
-  title: 'min-w-48 max-w-96 whitespace-normal',
-  type: 'hidden xl:table-cell',
-  project: 'hidden xl:table-cell',
-  organization: 'hidden xl:table-cell',
+  title: 'w-full min-w-28 whitespace-normal',
+  status: 'whitespace-normal',
+  priority: 'whitespace-normal',
+  type: 'hidden whitespace-normal xl:table-cell',
+  assignee: 'whitespace-normal',
+  project: 'hidden whitespace-normal xl:table-cell',
+  organization: 'hidden whitespace-normal xl:table-cell',
+  updated: 'whitespace-normal',
 };
 
 /** Whether one more ticket may be selected (§8.1): at most 100 at once. */
@@ -109,7 +116,10 @@ function UpdatedTime({ ticket }: { ticket: TicketListItem }) {
 function PriorityBadge({ ticket }: { ticket: TicketListItem }) {
   const labels = useTicketFieldLabels();
   return (
-    <Badge variant={ticket.priority === 'critical' ? 'destructive' : 'outline'}>
+    <Badge
+      variant={ticket.priority === 'critical' ? 'destructive' : 'outline'}
+      className="h-auto whitespace-normal"
+    >
       {labels.priority(ticket)}
     </Badge>
   );
@@ -117,7 +127,11 @@ function PriorityBadge({ ticket }: { ticket: TicketListItem }) {
 
 function StatusBadge({ ticket }: { ticket: TicketListItem }) {
   const labels = useTicketFieldLabels();
-  return <Badge variant="secondary">{labels.status(ticket)}</Badge>;
+  return (
+    <Badge variant="secondary" className="h-auto whitespace-normal">
+      {labels.status(ticket)}
+    </Badge>
+  );
 }
 
 export { PersonName, PriorityBadge, StatusBadge, UpdatedTime };
