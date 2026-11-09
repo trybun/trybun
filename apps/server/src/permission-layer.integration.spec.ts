@@ -71,6 +71,8 @@ describe('permission layer', () => {
   const attachments: { id: string }[] = [];
   /** Comments and internal notes of the tickets above, with their kinds and audiences (S1-12). */
   const comments: { id: string }[] = [];
+  /** The public comment of each end-user ticket by its requester. */
+  const commentsOf = {} as Record<string, { id: string }>;
   /** The attachments of the tickets above by their requester and by the Developer, by ticket. */
   const attachmentsOf = {} as Record<
     'teamTicket' | 'personalTicket' | 'organizationTicket' | 'archivedTicket' | 'ticketB',
@@ -277,6 +279,7 @@ describe('permission layer', () => {
         ...audience,
       });
       comments.push(byRequester, note, byDeveloper);
+      commentsOf[name] = byRequester;
       attachments.push(
         await createAttachment(prisma, { uploadedById: users.developer.id, commentId: note.id }),
         await createAttachment(prisma, {
@@ -777,6 +780,9 @@ describe('permission layer', () => {
       ['GET', (id: string) => `/api/v1/tickets/${id}/activity-events`],
       ['GET', (id: string) => `/api/v1/tickets/${id}/attachments`],
       ['POST', (id: string) => `/api/v1/tickets/${id}/attachments`],
+      ['GET', (id: string) => `/api/v1/tickets/${id}/comments`],
+      ['POST', (id: string) => `/api/v1/tickets/${id}/comments`],
+      ['GET', (id: string) => `/api/v1/tickets/${id}/timeline`],
     ] as const)(
       'answers %s %s of a ticket of project B with 404, as for a missing ticket',
       async (method, path) => {
@@ -789,6 +795,28 @@ describe('permission layer', () => {
             .send(method === 'GET' ? undefined : { title: 'Changed' });
 
         const invisible = await send(records.ticketB.id);
+        const missing = await send(randomUUID());
+
+        expect(invisible.status).toBe(404);
+        expect({ ...invisible.body, instance: undefined }).toEqual({
+          ...missing.body,
+          instance: undefined,
+        });
+      },
+    );
+
+    /** Requests of a Developer of project A: `404` for a comment of project B, as for a missing one. */
+    it.each([['GET', (id: string) => `/api/v1/comments/${id}`]] as const)(
+      'answers %s %s of a comment of project B with 404, as for a missing comment',
+      async (method, path) => {
+        const authorization = await authorizationOf('developer');
+        const send = (id: string) =>
+          http()
+            [method.toLowerCase() as 'get'](path(id))
+            .set('Authorization', authorization)
+            .set('If-Match', 'W/"1"');
+
+        const invisible = await send(commentsOf.ticketB?.id ?? '');
         const missing = await send(randomUUID());
 
         expect(invisible.status).toBe(404);

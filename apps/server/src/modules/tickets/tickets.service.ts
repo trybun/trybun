@@ -25,6 +25,7 @@ import {
   publicStatusOf,
   type UpdateTicketDto,
 } from '@trybun/contracts/tickets';
+import type { CommentResponse, CreateCommentDto } from '@trybun/contracts/comments';
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
@@ -45,6 +46,7 @@ import {
   ActivityEventsService,
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
+import { CommentsService } from '../comments/comments.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
@@ -294,7 +296,31 @@ export class TicketsService {
     private readonly attachmentLinks: AttachmentLinksService,
     private readonly outbox: OutboxService,
     private readonly clock: Clock,
+    private readonly comments: CommentsService,
   ) {}
+
+  /**
+   * Adds a comment or an internal note to a ticket (§6.1, S1-12). The ticket is locked – its
+   * project's share lock, then its row – and the rules decide on the locked row: `add_comment`
+   * (the target record guard checked it before validation, with `ticket.comments_closed` for an
+   * end user on a closed ticket), and `add_internal_note` for a note (`403`). Writing it is the
+   * comments module's (tickets → comments, Q11).
+   */
+  async addComment(
+    principal: UserPrincipal,
+    ticketId: string,
+    input: CreateCommentDto,
+  ): Promise<CommentResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const ticket = await this.lockAndFindTicket(tx, ability, principal, ticketId);
+      this.assertCan(ability, 'add_comment', ticket);
+      if (input.kind === 'internal') {
+        this.assertCan(ability, 'add_internal_note', ticket);
+      }
+      return this.comments.add(tx, principal, ability, ticket, input);
+    });
+  }
 
   /**
    * Creates a ticket (§3.2). The project is locked in share mode and read through the ability

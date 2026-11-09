@@ -3,11 +3,13 @@ import { Injectable } from '@nestjs/common';
 import type {
   CommentPage,
   CommentResponse,
+  CreateCommentDto,
   ListCommentsQuery,
   ListTimelineQuery,
   TimelineItem,
   TimelinePage,
 } from '@trybun/contracts/comments';
+import type { TicketVisibility } from '@trybun/contracts/tickets';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
 import { decodeCursor, encodeCursor } from '../../platform/database/cursor.js';
@@ -21,6 +23,13 @@ import { AttachmentLinksService } from '../attachments/attachment-links.service.
 import { TICKET } from '../tickets/tickets.abilities.js';
 import { type CommentRow, commentSelect, toCommentResponse } from './comment-responses.js';
 import { COMMENT } from './comments.abilities.js';
+
+/** The fields of a locked ticket a new comment reads (§5.2). */
+export interface CommentedTicket {
+  id: string;
+  visibility: TicketVisibility;
+  organizationId: string | null;
+}
 
 /** Comments, like events, are sorted by their time-ordered ID (UUIDv7, S1-12 Q11). */
 const commentSortKeySchema = eventSortKeySchema;
@@ -110,6 +119,42 @@ export class CommentsService {
       nextCursor:
         merged.length > query.limit && last !== undefined ? encodeCursor([idOf(last)]) : null,
     };
+  }
+
+  /**
+   * Writes a comment of a ticket in the caller's transaction (§6.1, S1-12): the tickets module has
+   * locked the ticket and checked `add_comment` and, for a note, `add_internal_note`. A public
+   * comment takes its audience from the ticket's effective visibility now – with the ticket's
+   * organization for `my_organization` (§5.2) – and keeps it; an internal note has none. The
+   * principal's own drafts are linked to it. A comment never changes the ticket (§17.2).
+   */
+  async add(
+    tx: Transaction,
+    principal: UserPrincipal,
+    ability: AppAbility,
+    ticket: CommentedTicket,
+    input: CreateCommentDto,
+  ): Promise<CommentResponse> {
+    const isPublic = input.kind === 'public';
+    const { id } = await tx.comment.create({
+      data: {
+        ticketId: ticket.id,
+        authorId: principal.userId,
+        kind: input.kind,
+        audience: isPublic ? ticket.visibility : null,
+        audienceOrganizationId:
+          isPublic && ticket.visibility === 'my_organization' ? ticket.organizationId : null,
+        body: input.body,
+      },
+      select: { id: true },
+    });
+    await this.attachmentLinks.linkDrafts(
+      tx,
+      principal,
+      { commentId: id },
+      input.attachmentIds ?? [],
+    );
+    return this.read(tx, principal, ability, id);
   }
 
   /** A comment through the ability (§18.3): `404` when the principal cannot read it. */
