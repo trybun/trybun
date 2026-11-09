@@ -121,7 +121,8 @@ Every domain term has exactly one meaning. **Use the code identifier in code** (
 | Product tour version | `product_tour.version` | Tour version / Wersja przewodnika | Integer from 1, increased when a tour's steps change materially, so the tour starts once more ([§2.4](02-agent-rules.md)) |
 | Help page | – | Help / Pomoc | A page of the user documentation in `docs/user/` for the audience `end-user`, `team` or `administrator`, shown in the help viewer at `/help` ([§2.3](02-agent-rules.md)) |
 | WIP limit | – | WIP limit / Limit WIP | Optional per-project limit of cards in a Kanban column; signalled, never blocking ([§8.2](08-team-views.md)) |
-| Predefined view | – | – | Saved view shipped with the system, e.g. "Unassigned" (PL: „Nieprzypisane”) or "Pending sharing approvals" (PL: „Oczekujące udostępnienia”) ([§8.1](08-team-views.md)) |
+| Predefined view | `my_open_tickets`, `triage`, `critical`, `unassigned`, `pending_sharing_approvals` | My open tickets / Moje otwarte zgłoszenia, Triage / Triage, Critical / Krytyczne, Unassigned / Nieprzypisane, Pending sharing approvals / Oczekujące udostępnienia | A filter set with a default sort, shipped as a constant of the system and selected with `?view=<code>`; not a stored saved view ([§8.1](08-team-views.md)) |
+| Bulk action | – | Bulk action / Akcja zbiorcza | One change applied to up to 100 selected tickets, each ticket changed separately with its own result ([§8.1](08-team-views.md)) |
 
 ## Integrations and operations
 

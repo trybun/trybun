@@ -200,6 +200,7 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Create own personal API tokens | – | ✅ | ✅ | ✅ |
 | Export own data, request account deletion ([§13.2](13-non-functional.md)) | ✅ | ✅ | ✅ | ✅ |
 | Execute anonymization, set retention period | – | – | – | ✅ |
+| View the names of the organizations with access to one of own projects (filters of the team views, [§8.1](08-team-views.md)) | – | ✅ | ✅ | ✅ |
 | Grant organizations access to projects | – | – | – | ✅ |
 | Manage organization members and e-mail domains, invite end users to an organization | – | – | – | ✅ |
 | Create, archive, unarchive and delete (if empty) projects and organizations | – | – | – | ✅ |
@@ -212,6 +213,8 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | GitHub integration configuration | – | – | – | ✅ |
 | Integration tokens, outgoing webhooks, data import | – | – | – | ✅ |
 | Administrative audit log ([§13.5](13-non-functional.md)) | – | – | – | ✅ |
+
+The row "View the names of the organizations" is expressed by the organization action `read_name`, outside the contract's action list and never sent in `allowedActions`: `GET /api/v1/organizations` returns to a Developer or Project manager only the ID and the name of the organizations with access to one of their projects (names their tickets already show), and the Administrator keeps the full response. For end users organizations stay invisible (`404`). `GET /api/v1/users/me` tells a team account whether any organization exists (`organizationsExist`), so the UI hides the organization elements of [§7.3](#system-without-organizations).
 
 The row "Assign tickets" is expressed by the ticket actions `assign` (anyone eligible) and `assign_self` (only the principal) and, for a ticket that does not exist yet (the full form, [§3.3](03-ticket-model.md#33-forms)), by the project actions `assign_tickets` and `assign_tickets_self`, defined in the same abilities ([§18.3](18-code-patterns.md#183-server-application)).
 
