@@ -274,7 +274,7 @@ One pure function `identityVisibleTo(viewer, person)` in `modules/tickets/domain
 - the viewer is the person;
 - both currently belong to the same organization, active or archived. Two people without an organization never count as the same organization.
 
-Otherwise the response carries `null` and the web application shows "Customer". The decision is the API's ([§14.4](../../../docs/spec/14-architecture.md)); the serializer never sends the name. The ticket and activity-event responses use it; S1-12 uses it for comment authors.
+Otherwise the response carries `null` and the web application shows "Customer". The decision is the API's ([§14.4](../../../docs/spec/14-architecture.md)); the serializer never sends the name. The ticket, activity-event and attachment (uploader) responses use it; S1-12 uses it for comment authors.
 
 ### Demo dataset
 
@@ -429,3 +429,4 @@ One phase, one PR (Q18), on the implemented S1-04 to S1-09. The UI steps land in
   - the import sets `only_me` itself.
 - 2026-11-08 – Approved: the maintainer accepted Q20 (the author keeps the rights of §7.5 on a shared ticket) and the other open answers as proposed; status `approved`.
 - 2026-11-09 – Implemented in #257.
+- 2026-11-09 – Code review: the uploader of an attachment follows the identity rule too, as §5.4 requires of every name in a response.
