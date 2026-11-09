@@ -313,7 +313,6 @@ const commonTicketFields = {
   identifier: z.string(),
   title: z.string(),
   description: z.string(),
-  requester: ticketPersonSchema,
   version: z.int(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
@@ -331,6 +330,7 @@ const commonTicketFields = {
 /** A ticket as the team sees it (§3.2). */
 export const ticketSchema = z.object({
   ...commonTicketFields,
+  requester: ticketPersonSchema,
   type: ticketTypeSchema.nullable(),
   source: ticketSourceSchema,
   priority: ticketPrioritySchema,
@@ -348,11 +348,16 @@ export type Ticket = z.infer<typeof ticketSchema>;
 
 /**
  * A ticket as an end user sees it (§3.2, columns "End user"): without type, priority, assignee,
- * source, organization, the internal status and the rejection reason, with the public description
+ * source, organization, the internal status and the rejection and refusal reasons, with the public description
  * of its state instead (§4.2).
  */
 export const endUserTicketSchema = z.object({
   ...commonTicketFields,
+  /**
+   * The requester; `null` when the reader may not see their name – a customer of another
+   * organization, shown as "Customer" (§5.4, S1-11 Q9).
+   */
+  requester: ticketPersonSchema.nullable(),
   publicStatusDescription: publicStatusDescriptionSchema,
 });
 export type EndUserTicket = z.infer<typeof endUserTicketSchema>;

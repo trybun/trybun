@@ -202,6 +202,107 @@ describe('ticket visibility', () => {
   });
 });
 
+describe('identities of other customers (§5.4, Q9)', () => {
+  const config = integrationConfig();
+  let app: INestApplication<Server>;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    app = await startApi(config);
+    prisma = app.get(PrismaService);
+  });
+
+  beforeEach(() => {
+    mswServer.use(keycloakJwksHandler(config));
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  const http = () => request(app.getHttpServer());
+
+  it('shows the requester and their actions to colleagues and to the team, and Customer to others', async () => {
+    const project = await createProject(prisma);
+    const [organization, otherOrganization] = [
+      await createOrganization(prisma),
+      await createOrganization(prisma),
+    ];
+    await prisma.organizationProject.createMany({
+      data: [organization, otherOrganization].map(({ id }) => ({
+        organizationId: id,
+        projectId: project.id,
+      })),
+    });
+    const user = () => createUser(prisma, { keycloakUserId: randomUUID() });
+    const [author, colleague, stranger] = [await user(), await user(), await user()];
+    await prisma.organizationMember.createMany({
+      data: [
+        { organizationId: organization.id, userId: author.id },
+        { organizationId: organization.id, userId: colleague.id },
+        { organizationId: otherOrganization.id, userId: stranger.id },
+      ],
+    });
+    const developer = await createUser(prisma, { keycloakUserId: randomUUID(), kind: 'team' });
+    await createProjectMember(prisma, {
+      projectId: project.id,
+      userId: developer.id,
+      role: 'developer',
+    });
+    const ticket = await createTicket(prisma, {
+      projectId: project.id,
+      requesterId: author.id,
+      organizationId: organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+      visibility: 'all_customers',
+    });
+    // A public event by the author and one by the team.
+    await prisma.activityEvent.createMany({
+      data: [
+        {
+          ticketId: ticket.id,
+          type: 'attachment_added',
+          data: { from: null, to: { id: randomUUID(), displayName: 'log.txt' } },
+          actorId: author.id,
+          isPublic: true,
+        },
+        {
+          ticketId: ticket.id,
+          type: 'sharing_approved',
+          data: { from: 'my_organization', to: 'all_customers' },
+          actorId: developer.id,
+          isPublic: true,
+        },
+      ],
+    });
+    const view = async (reader: User) => {
+      const authorization = await authorizationOf(config, reader);
+      const detail = await http()
+        .get(`/api/v1/tickets/${ticket.id}`)
+        .set('Authorization', authorization);
+      const events = await http()
+        .get(`/api/v1/tickets/${ticket.id}/activity-events`)
+        .set('Authorization', authorization);
+      const actors = (events.body as { items: { actor: { id: string } | null }[] }).items.map(
+        ({ actor }) => actor?.id ?? null,
+      );
+      return { requester: (detail.body as { requester: { id: string } | null }).requester, actors };
+    };
+
+    expect(await view(colleague)).toEqual({
+      requester: { id: author.id, displayName: author.displayName },
+      actors: [author.id, developer.id],
+    });
+    expect(await view(stranger)).toEqual({ requester: null, actors: [null, developer.id] });
+    expect((await view(developer)).requester).toEqual({
+      id: author.id,
+      displayName: author.displayName,
+    });
+  });
+});
+
 describe('changing the visibility and deciding sharing requests (§5.2, §5.3)', () => {
   const config = integrationConfig();
   let app: INestApplication<Server>;

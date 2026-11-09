@@ -2436,11 +2436,6 @@ export interface operations {
                             identifier: string;
                             title: string;
                             description: string;
-                            requester: {
-                                /** Format: uuid */
-                                id: string;
-                                displayName: string | null;
-                            };
                             version: number;
                             /** Format: date-time */
                             createdAt: string;
@@ -2461,6 +2456,11 @@ export interface operations {
                             visibility: "only_me" | "my_organization" | "all_customers";
                             /** @enum {string} */
                             sharingRequest: "none" | "pending" | "rejected";
+                            requester: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            };
                             /** @enum {string|null} */
                             type: "bug" | "feature" | "task" | "question" | null;
                             /** @enum {string} */
@@ -2498,11 +2498,6 @@ export interface operations {
                             identifier: string;
                             title: string;
                             description: string;
-                            requester: {
-                                /** Format: uuid */
-                                id: string;
-                                displayName: string | null;
-                            };
                             version: number;
                             /** Format: date-time */
                             createdAt: string;
@@ -2523,6 +2518,11 @@ export interface operations {
                             visibility: "only_me" | "my_organization" | "all_customers";
                             /** @enum {string} */
                             sharingRequest: "none" | "pending" | "rejected";
+                            requester: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
                             /** @enum {string} */
                             publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                         })[];
@@ -2579,11 +2579,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2604,6 +2599,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -2641,11 +2641,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2666,6 +2661,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
@@ -2704,11 +2704,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2729,6 +2724,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -2766,11 +2766,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2791,6 +2786,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
@@ -2844,11 +2844,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2869,6 +2864,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -2906,11 +2906,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2931,6 +2926,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
@@ -2985,11 +2985,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3010,6 +3005,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -3047,11 +3047,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3072,6 +3067,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
@@ -3117,11 +3117,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3142,6 +3137,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -3179,11 +3179,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3204,6 +3199,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
@@ -3242,11 +3242,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3267,6 +3262,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -3304,11 +3304,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3329,6 +3324,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
@@ -3373,11 +3373,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3398,6 +3393,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -3435,11 +3435,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3460,6 +3455,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };
@@ -3505,11 +3505,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3530,6 +3525,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
                         /** @enum {string|null} */
                         type: "bug" | "feature" | "task" | "question" | null;
                         /** @enum {string} */
@@ -3567,11 +3567,6 @@ export interface operations {
                         identifier: string;
                         title: string;
                         description: string;
-                        requester: {
-                            /** Format: uuid */
-                            id: string;
-                            displayName: string | null;
-                        };
                         version: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -3592,6 +3587,11 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
                         /** @enum {string} */
                         publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
                     };

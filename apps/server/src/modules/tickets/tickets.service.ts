@@ -54,6 +54,7 @@ import { OrganizationsService } from '../organizations/organizations.service.js'
 import { ProjectsService } from '../projects/projects.service.js';
 import { UsersService } from '../users/users.service.js';
 import { creationDefaults } from './domain/creation.js';
+import { identityVisibleTo } from './domain/identities.js';
 import {
   answerTarget,
   automaticCloseDueAt,
@@ -85,6 +86,43 @@ import {
 } from './tickets.sql.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
+
+/**
+ * A person and what the identity rule reads of them (§5.4): their account kind and whether their
+ * current organization has the principal as a member.
+ */
+function identitySelect(principal: UserPrincipal) {
+  return {
+    ...PERSON_SELECT,
+    kind: true,
+    organizationMember: {
+      select: {
+        organization: {
+          select: { members: { where: { userId: principal.userId }, select: { userId: true } } },
+        },
+      },
+    },
+  } satisfies Prisma.UserSelect;
+}
+
+type IdentityRow = Prisma.UserGetPayload<{ select: ReturnType<typeof identitySelect> }>;
+
+/** A person in an end user's response: `null` when the identity rule hides them (Q9). */
+function visiblePerson(
+  principal: UserPrincipal,
+  person: IdentityRow,
+): { id: string; displayName: string | null } | null {
+  const visible = identityVisibleTo(
+    { id: principal.userId, kind: principal.userKind },
+    {
+      id: person.id,
+      kind: person.kind,
+      sharesOrganizationWithViewer:
+        (person.organizationMember?.organization.members.length ?? 0) > 0,
+    },
+  );
+  return visible ? { id: person.id, displayName: person.displayName } : null;
+}
 
 /** The fields of a ticket a reference to it shows, with the fields of its rules. */
 function ticketReferenceSelect(principal: UserPrincipal) {
@@ -121,7 +159,7 @@ function ticketSelect(principal: UserPrincipal) {
     organization: {
       select: { ...ticketRuleSelect(principal).organization.select, id: true, name: true },
     },
-    requester: { select: PERSON_SELECT },
+    requester: { select: identitySelect(principal) },
     assignee: { select: PERSON_SELECT },
     // At most one (§3.5): a partial unique index of the migrations.
     outgoingRelations: {
@@ -208,7 +246,6 @@ function toTicketResponse(
     identifier: ticketIdentifier(row.project.key, row.number),
     title: row.title,
     description: row.description,
-    requester: row.requester,
     version: row.version,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -222,11 +259,13 @@ function toTicketResponse(
   if (principal.userKind === 'end_user') {
     return {
       ...commonFields,
+      requester: visiblePerson(principal, row.requester),
       publicStatusDescription: publicStatusDescriptionOf(row.status, row.waitingReason),
     } satisfies EndUserTicket;
   }
   return {
     ...commonFields,
+    requester: { id: row.requester.id, displayName: row.requester.displayName },
     type: row.type,
     source: row.source,
     priority: row.priority,
@@ -1079,8 +1118,22 @@ export class TicketsService {
             select: { id: true },
           });
     const readableIds = new Set(readableOriginals.map(({ id }) => id));
+    // The actors the identity rule hides from this reader (§5.4, Q9).
+    const actorIds = [...new Set(page.items.flatMap((event) => event.actor?.id ?? []))];
+    const actors = await this.prisma.user.findMany({
+      where: { id: { in: actorIds } },
+      select: identitySelect(principal),
+    });
+    const hiddenActorIds = new Set(
+      actors.filter((actor) => visiblePerson(principal, actor) === null).map(({ id }) => id),
+    );
     return {
-      items: page.items.map((event) => toEndUserEvent(event, readableIds)),
+      items: page.items.map((event) => {
+        const endUserEvent = toEndUserEvent(event, readableIds);
+        return event.actor !== null && hiddenActorIds.has(event.actor.id)
+          ? { ...endUserEvent, actor: null }
+          : endUserEvent;
+      }),
       nextCursor: page.nextCursor,
     };
   }

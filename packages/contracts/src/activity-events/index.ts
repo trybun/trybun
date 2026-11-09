@@ -127,7 +127,9 @@ export type EndUserActivityEventData = z.infer<typeof endUserActivityEventDataSc
 
 /**
  * A public activity event of a ticket as an end user sees it (§4.5, Q11): events that are not
- * public never reach end users; the actor and the automatic source as for the team.
+ * public never reach end users; the actor and the automatic source as for the team, except that
+ * the actor is `null` without an automatic source when the reader may not see their name – a
+ * customer of another organization, shown as "Customer" (§5.4, S1-11 Q9).
  */
 export const endUserActivityEventSchema = z.object({
   id: z.uuid(),
