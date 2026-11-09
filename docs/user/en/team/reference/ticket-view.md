@@ -49,7 +49,7 @@ If someone else changed the ticket in the meantime, Trybun says so and shows the
 
 Choose the new status in **Status**:
 
-- **Rejected** asks for the reason, which is required.
+- **Rejected** asks for the reason, which is required. The reason is added to the timeline as your public comment ([comments and internal notes](comments-and-internal-notes.md)).
 - **Duplicate** asks for the **Original ticket** of the same project – enter its identifier, for example `ERP-7` or just `7`, check its title and select **Mark as duplicate**.
 - **Done** in a project that asks requesters to confirm the solution ([project settings](project-settings.md)) moves the ticket to **Waiting for requester** instead, with the message "The requester is asked to confirm that the problem is solved. The ticket closes automatically after 7 days."
 
@@ -59,4 +59,6 @@ A change between statuses that are not closed offers **Undo**. Closing or reopen
 
 **Activity** lists everything that happened to the ticket, oldest first: who opened it, and every change of its title, description, type, priority, assignee, status, visibility and files, with the old and the new value. Changes made automatically show **System** instead of a person; a person whose account was deleted shows as **Deleted user**. **Show more** at the end loads the later entries.
 
-Switch on **Hide events** to hide these entries. Trybun remembers the choice for your account, so it applies on every device.
+Comments and internal notes appear between these entries, and the form to write one is at the end: see [Comments and internal notes](comments-and-internal-notes.md).
+
+Switch on **Hide events** to hide these entries and show only the comments and notes. Trybun remembers the choice for your account, so it applies on every device.

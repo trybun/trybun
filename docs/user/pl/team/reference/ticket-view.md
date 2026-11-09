@@ -49,7 +49,7 @@ Jeśli w międzyczasie ktoś inny zmienił zgłoszenie, Trybun o tym informuje i
 
 Nowy status wybierz w polu **Status**:
 
-- **Odrzucone** wymaga podania powodu.
+- **Odrzucone** wymaga podania powodu. Powód trafia na oś czasu jako Twój komentarz publiczny ([komentarze i notatki wewnętrzne](comments-and-internal-notes.md)).
 - **Duplikat** wymaga podania **Oryginalnego zgłoszenia** z tego samego projektu – wpisz jego identyfikator, na przykład `ERP-7` albo samo `7`, sprawdź jego tytuł i wybierz **Oznacz jako duplikat**.
 - **Zakończone** w projekcie, który prosi zgłaszających o potwierdzenie rozwiązania ([ustawienia projektu](project-settings.md)), przenosi zgłoszenie do statusu **Oczekuje na zgłaszającego** z komunikatem „Poprosiliśmy zgłaszającego o potwierdzenie rozwiązania problemu. Zgłoszenie zamknie się automatycznie po 7 dniach.”
 
@@ -59,4 +59,6 @@ Zmiana między statusami, które nie są zamknięte, oferuje **Cofnij**. Zamkni�
 
 **Aktywność** pokazuje wszystko, co działo się ze zgłoszeniem, od najstarszych wpisów: kto je utworzył oraz każdą zmianę tytułu, opisu, typu, priorytetu, osoby przypisanej, statusu, widoczności i plików, z poprzednią i nową wartością. Zmiany automatyczne zamiast osoby pokazują **System**; osoba, której konto usunięto, jest wyświetlana jako **Usunięty użytkownik**. **Pokaż więcej** na końcu wczytuje kolejne wpisy.
 
-Włącz **Ukryj zdarzenia**, aby ukryć te wpisy. Trybun zapamiętuje ten wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu.
+Między tymi wpisami pojawiają się komentarze i notatki wewnętrzne, a formularz do ich pisania jest na końcu: zobacz [Komentarze i notatki wewnętrzne](comments-and-internal-notes.md).
+
+Włącz **Ukryj zdarzenia**, aby ukryć te wpisy i pokazać tylko komentarze i notatki. Trybun zapamiętuje ten wybór na Twoim koncie, więc obowiązuje on na każdym urządzeniu.
