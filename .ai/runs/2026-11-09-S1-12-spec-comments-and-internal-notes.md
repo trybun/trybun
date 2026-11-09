@@ -56,4 +56,4 @@ Make the S1-12 change specification `.ai/specs/2026-10-26-comments-and-internal-
 ### Phase 4: Review and finalize
 
 - [x] 4.1 Run the specification review and apply its findings — db8aca0
-- [ ] 4.2 Update the PR body, labels and draft state
+- [x] 4.2 Update the PR body, labels and draft state — 780d37d
