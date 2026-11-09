@@ -61,4 +61,4 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 
 ### Phase 5: Review
 
-- [ ] 5.1 Apply the code review findings
+- [x] 5.1 Apply the code review findings — 84a16a4
