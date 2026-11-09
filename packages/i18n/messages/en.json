@@ -356,6 +356,31 @@
       "my_organization": "My organization",
       "all_customers": "All customers"
     },
+    "visibility": {
+      "label": "Visibility",
+      "warning": "Make sure the description and attachments contain no confidential data.",
+      "visibleTo": "Visible to: {visibility}",
+      "pending": "Waiting for the team to share this ticket with all customers.",
+      "rejected": "The team did not share this ticket with all customers.",
+      "rejectedOrganization": "Your organization can still see it.",
+      "changed": "Visibility changed: {visibility}",
+      "requested": "Sharing with all customers requested",
+      "withdrawn": "Request to share withdrawn",
+      "sharingRequested": "Sharing requested",
+      "sharingRefused": "Sharing refused",
+      "refusalReason": "Reason of the refusal: {reason}",
+      "share": "Share with all customers",
+      "shareTitle": "Share {identifier} with all customers?",
+      "shareDescription": "Check that the description and attachments contain no data identifying the customer.",
+      "shared": "Shared with all customers",
+      "refuse": "Refuse",
+      "refuseTitle": "Refuse to share {identifier}?",
+      "refuseDescription": "The ticket stays visible as it is now.",
+      "reason": "Reason",
+      "reasonRequired": "Enter a reason.",
+      "refused": "Sharing refused",
+      "cancel": "Cancel"
+    },
     "templates": {
       "bug": "## Problem\n\n## Steps to reproduce\n\n1.\n\n## Expected result\n\n## Actual result\n\n## Environment",
       "feature": "## Goal\n\n## Proposed solution\n\n## Acceptance criteria\n\n- [ ]",
@@ -386,7 +411,8 @@
         "requester": "Requester",
         "organization": "Organization",
         "created": "Created",
-        "updated": "Updated"
+        "updated": "Updated",
+        "visibility": "Visibility"
       },
       "notSet": "Not set",
       "unassigned": "Unassigned",
@@ -784,7 +810,9 @@
       "answered": {
         "solved": "Thank you. The ticket is resolved.",
         "not_solved": "Thank you. The team continues working on the ticket."
-      }
+      },
+      "sharedWithEveryone": "Shared with everyone",
+      "customer": "Customer"
     },
     "confirmation": {
       "other": "Choose the other answer instead: {answer}",

@@ -1,7 +1,11 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type CreateTicketDto, createTicketSchema } from '@trybun/contracts/tickets';
+import {
+  type CreateTicketDto,
+  createTicketSchema,
+  type TicketVisibility,
+} from '@trybun/contracts/tickets';
 import { Button, buttonVariants } from '@trybun/ui/components/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@trybun/ui/components/field';
 import { Input } from '@trybun/ui/components/input';
@@ -19,21 +23,26 @@ import { useAttachmentDrafts } from '../../attachments/use-attachment-drafts.js'
 import { portalProjectHref, portalTicketHref } from '../../portal/hrefs.js';
 import { useCreateTicket } from '../mutations.js';
 import { LazyMarkdownEditor } from './lazy-markdown-editor.js';
+import { VisibilityChoice } from './visibility-choice.js';
 
 /**
  * The simplified ticket form of end users (§3.3): the title and the description, whose placeholder
  * is the end-user template of §3.4 in the creator's language (Q9), with the files added in the
- * editor listed below it (S1-08 Q5, Q18). The ticket is created with the defaults of §5.1 (only
- * the requester sees it) until S1-11 adds the visibility switch (Q8). **Submit** stays disabled
+ * editor listed below it (S1-08 Q5, Q18), and the visibility below them with the options the API
+ * allows for the project (S1-11 Q7) – **Only me** by default (§5.1), no control with only that
+ * option, so the typical ticket needs no extra step (Rule 2). **Submit** stays disabled
  * while the request is pending, so a double press creates one ticket (Q20), and while a file is
  * still uploading; files still being checked are attached. After it the new ticket opens with a
  * toast.
  */
 export function NewTicketForm({
   projectId,
+  visibilityOptions,
   attachmentMaxSizeMb,
 }: {
   projectId: string;
+  /** The visibilities the person may choose in the project (`creationVisibilityOptions`). */
+  visibilityOptions: readonly TicketVisibility[];
   /** `TRYBUN_ATTACHMENT_MAX_SIZE_MB` of the web server (§13.3). */
   attachmentMaxSizeMb: number;
 }) {
@@ -43,7 +52,7 @@ export function NewTicketForm({
   const createTicket = useCreateTicket();
   const form = useForm<CreateTicketDto>({
     resolver: zodResolver(createTicketSchema, FORM_ERROR_MAP),
-    defaultValues: { projectId, title: '', description: '' },
+    defaultValues: { projectId, title: '', description: '', visibility: 'only_me' },
   });
   const attachments = useAttachmentDrafts({
     form,
@@ -115,6 +124,21 @@ export function NewTicketForm({
           )}
         />
         <LazyAttachmentDrafts drafts={attachments.drafts} onRemove={attachments.removeDraft} />
+        {visibilityOptions.length > 1 && (
+          <Controller
+            control={form.control}
+            name="visibility"
+            render={({ field }) => (
+              <VisibilityChoice
+                name={field.name}
+                inputRef={field.ref}
+                options={visibilityOptions}
+                value={field.value ?? 'only_me'}
+                onValueChange={field.onChange}
+              />
+            )}
+          />
+        )}
       </FieldGroup>
       {rootError !== undefined && (
         <p role="alert" className="text-sm text-destructive">

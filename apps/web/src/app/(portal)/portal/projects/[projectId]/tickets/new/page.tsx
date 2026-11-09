@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { portalProjectHref } from '../../../../../../../features/portal/hrefs.js';
 import { getPortalProject } from '../../../../../../../features/portal/project-page.js';
 import { NewTicketForm } from '../../../../../../../features/tickets/components/new-ticket-form.js';
+import { creationVisibilityOptions } from '../../../../../../../features/tickets/visibility.js';
 import { requireSession } from '../../../../../../../lib/auth/session.js';
 import { getEnv } from '../../../../../../../lib/env/env.js';
 
@@ -37,7 +38,11 @@ export default async function NewTicketPage({
         <h1 className="text-2xl font-bold">{t('heading')}</h1>
         <p className="text-sm text-muted-foreground">{t('project', { name: project.name })}</p>
       </div>
-      <NewTicketForm projectId={project.id} attachmentMaxSizeMb={getEnv().attachmentMaxSizeMb} />
+      <NewTicketForm
+        projectId={project.id}
+        visibilityOptions={creationVisibilityOptions(project.allowedActions)}
+        attachmentMaxSizeMb={getEnv().attachmentMaxSizeMb}
+      />
     </div>
   );
 }

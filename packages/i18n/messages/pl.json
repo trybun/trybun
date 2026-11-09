@@ -356,6 +356,31 @@
       "my_organization": "Moja organizacja",
       "all_customers": "Wszyscy klienci"
     },
+    "visibility": {
+      "label": "Widoczność",
+      "warning": "Upewnij się, że opis i załączniki nie zawierają poufnych danych.",
+      "visibleTo": "Widoczne dla: {visibility}",
+      "pending": "Czeka na udostępnienie wszystkim klientom przez zespół.",
+      "rejected": "Zespół nie udostępnił tego zgłoszenia wszystkim klientom.",
+      "rejectedOrganization": "Twoja organizacja nadal je widzi.",
+      "changed": "Zmieniono widoczność: {visibility}",
+      "requested": "Wysłano prośbę o udostępnienie wszystkim klientom",
+      "withdrawn": "Wycofano prośbę o udostępnienie",
+      "sharingRequested": "Prośba o udostępnienie",
+      "sharingRefused": "Odmowa udostępnienia",
+      "refusalReason": "Powód odmowy: {reason}",
+      "share": "Udostępnij wszystkim klientom",
+      "shareTitle": "Udostępnić {identifier} wszystkim klientom?",
+      "shareDescription": "Sprawdź, czy opis i załączniki nie zawierają danych identyfikujących klienta.",
+      "shared": "Udostępniono wszystkim klientom",
+      "refuse": "Odmów",
+      "refuseTitle": "Odmówić udostępnienia {identifier}?",
+      "refuseDescription": "Zgłoszenie pozostanie widoczne tak jak teraz.",
+      "reason": "Powód",
+      "reasonRequired": "Podaj powód.",
+      "refused": "Odmówiono udostępnienia",
+      "cancel": "Anuluj"
+    },
     "templates": {
       "bug": "## Problem\n\n## Kroki do odtworzenia\n\n1.\n\n## Oczekiwany wynik\n\n## Faktyczny wynik\n\n## Środowisko",
       "feature": "## Cel\n\n## Proponowane rozwiązanie\n\n## Kryteria akceptacji\n\n- [ ]",
@@ -386,7 +411,8 @@
         "requester": "Zgłaszający",
         "organization": "Organizacja",
         "created": "Utworzono",
-        "updated": "Zaktualizowano"
+        "updated": "Zaktualizowano",
+        "visibility": "Widoczność"
       },
       "notSet": "Nie ustawiono",
       "unassigned": "Nieprzypisane",
@@ -784,7 +810,9 @@
       "answered": {
         "solved": "Dziękujemy. Zgłoszenie jest rozwiązane.",
         "not_solved": "Dziękujemy. Zespół dalej pracuje nad zgłoszeniem."
-      }
+      },
+      "sharedWithEveryone": "Udostępnione wszystkim",
+      "customer": "Klient"
     },
     "confirmation": {
       "other": "Zamiast tego wybierz drugą odpowiedź: {answer}",

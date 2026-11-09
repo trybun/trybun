@@ -5,6 +5,7 @@ import type {
   ChangeTicketStatusDto,
   CreateTicketDto,
   ResolutionAnswer,
+  SetTicketVisibilityDto,
   Ticket,
   TicketResponse,
   UpdateTicketDto,
@@ -153,5 +154,48 @@ export function useConfirmResolution() {
         queryClient.invalidateQueries({ queryKey: ['activity-events'] }),
       ]);
     },
+  });
+}
+
+/**
+ * Changes the visibility of a ticket (§5.3) with `If-Match`: for the requester, `all_customers`
+ * requests sharing and `only_me` or `my_organization` withdraws a pending request (S1-11).
+ */
+export function useSetTicketVisibility() {
+  return useMutation({
+    mutationKey: TICKET_CHANGE_KEY,
+    mutationFn: ({ ticket, input }: { ticket: TicketVersion; input: SetTicketVisibilityDto }) =>
+      dataOf(
+        browserApiClient.PUT('/api/v1/tickets/{ticketId}/visibility', {
+          params: { path: { ticketId: ticket.id } },
+          headers: ifMatch(ticket),
+          body: input,
+        }),
+      ),
+    ...useTicketChangeCallbacks(),
+  });
+}
+
+/**
+ * Decides a pending sharing request (§5.2) with `If-Match`: shares the ticket with all customers,
+ * or refuses with the required reason. A colleague who decided first answers `409`.
+ */
+export function useDecideSharing() {
+  return useMutation({
+    mutationKey: TICKET_CHANGE_KEY,
+    mutationFn: ({ ticket, reason }: { ticket: TicketVersion; reason?: string }) =>
+      dataOf(
+        reason === undefined
+          ? browserApiClient.POST('/api/v1/tickets/{ticketId}/sharing/approve', {
+              params: { path: { ticketId: ticket.id } },
+              headers: ifMatch(ticket),
+            })
+          : browserApiClient.POST('/api/v1/tickets/{ticketId}/sharing/reject', {
+              params: { path: { ticketId: ticket.id } },
+              headers: ifMatch(ticket),
+              body: { reason },
+            }),
+      ),
+    ...useTicketChangeCallbacks(),
   });
 }
