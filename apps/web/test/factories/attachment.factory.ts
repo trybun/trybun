@@ -10,6 +10,7 @@ export function attachmentResponse(overrides: Partial<Attachment> = {}): Attachm
     isImage: false,
     status: 'quarantine',
     ticketId: null,
+    commentId: null,
     uploadedBy: { id: '0199a3f0-0000-7000-8000-000000000030', displayName: 'Celina Customer' },
     createdAt: '2026-11-06T09:00:00.000Z',
     allowedActions: ['read', 'delete'],

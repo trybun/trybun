@@ -10,7 +10,7 @@ import {
 /** A destination of the main navigation; its label is a key of the `appShell` namespace. */
 export interface NavigationItem {
   href: string;
-  labelKey: 'home' | 'projects' | 'administration' | 'myTickets';
+  labelKey: 'home' | 'projects' | 'tickets' | 'administration' | 'myTickets';
   icon: LucideIcon;
   /** The global action of the account the destination needs (`allowedActions`, §18.3). */
   requiredAction?: CurrentUserAction;
@@ -32,6 +32,7 @@ export interface NavigationItem {
  */
 export const NAVIGATION_ITEMS: readonly NavigationItem[] = [
   { href: '/', labelKey: 'home', icon: HouseIcon, isOnPhones: true },
+  { href: '/tickets', labelKey: 'tickets', icon: TicketIcon, isOnPhones: true },
   { href: '/projects', labelKey: 'projects', icon: FolderKanbanIcon, isOnPhones: true },
   {
     href: '/admin',

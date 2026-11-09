@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { buildPrincipal } from '../../../test/factories/principal.factory.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import { ADMINISTRATION, administrationAbilities } from './administration.abilities.js';
+import { FixedClock } from '../../../test/fixed-clock.js';
 
-const abilities = new AbilityFactory([administrationAbilities], []);
+const abilities = new AbilityFactory([administrationAbilities], [], new FixedClock());
 
 describe('administration abilities', () => {
   it.each([

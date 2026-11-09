@@ -111,7 +111,9 @@ export type OrganizationParams = z.infer<typeof organizationParamsSchema>;
 
 /**
  * `GET /api/v1/organizations`: the organizations in one state, sorted by name; `projectId` keeps
- * those that may access the project (the project settings, §7.3).
+ * those that may access the project (the project settings, §7.3). The Administrator reads every
+ * organization; another team member only the names of those with access to one of their projects
+ * (S1-13 Q6).
  */
 export const listOrganizationsQuerySchema = pageQuerySchema.extend({
   state: organizationStateSchema.default('active'),
@@ -119,7 +121,29 @@ export const listOrganizationsQuerySchema = pageQuerySchema.extend({
 });
 export type ListOrganizationsQuery = z.infer<typeof listOrganizationsQuerySchema>;
 
-export const organizationPageSchema = pageSchema(organizationSummarySchema);
+/**
+ * An organization as a team member reads it for the filters of the team views (S1-13 Q6): only its
+ * ID and name, for the organizations with access to one of their projects.
+ */
+export const organizationNameItemSchema = z.object({ id: z.uuid(), name: z.string() });
+export type OrganizationNameItem = z.infer<typeof organizationNameItemSchema>;
+
+/**
+ * The items of `GET /api/v1/organizations`: the summary for the Administrator, the name for other
+ * team members (S1-13 Q6).
+ */
+export const organizationListItemSchema = z.union([
+  organizationSummarySchema,
+  organizationNameItemSchema,
+]);
+export type OrganizationListItem = z.infer<typeof organizationListItemSchema>;
+
+/** Whether an item of the organization list is the Administrator's summary. */
+export function isOrganizationSummary(item: OrganizationListItem): item is OrganizationSummary {
+  return 'state' in item;
+}
+
+export const organizationPageSchema = pageSchema(organizationListItemSchema);
 export type OrganizationPage = z.infer<typeof organizationPageSchema>;
 
 /** `organization_member` (§7.3): an end-user account of an organization and the date it joined. */

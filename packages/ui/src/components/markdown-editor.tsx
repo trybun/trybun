@@ -1,7 +1,7 @@
 'use client';
 
 import { Toolbar as ToolbarPrimitive } from '@base-ui/react/toolbar';
-import { attachmentContentPath } from '@trybun/markdown';
+import { attachmentContentPath, type MentionedPerson } from '@trybun/markdown';
 import { cn } from 'cn';
 import {
   BoldIcon,
@@ -44,6 +44,12 @@ import {
   formatMarkdown,
   textEdit,
 } from './markdown-editor-format.js';
+import {
+  MentionSuggestionList,
+  useMentionSuggestions,
+  type MentionCandidate,
+  type MentionSearch,
+} from './markdown-editor-mentions.js';
 import { Markdown } from './markdown.js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs.js';
 import { Textarea } from './textarea.js';
@@ -177,6 +183,14 @@ interface MarkdownEditorProps extends Omit<
    * uploaded attachment. Without it, the editor has no "Attach files" button and ignores files.
    */
   onFilesAdd?: (files: File[]) => Promise<AddedFile>[];
+  /** The people whose tokens `@{<id>}` the preview shows as `@Name` (S1-12). */
+  mentions?: ReadonlyArray<MentionedPerson>;
+  /**
+   * Searches the people to mention for the text typed after `@` (S1-12). With it, typing `@` at
+   * the start or after whitespace opens a list of suggestions; choosing a person writes the token
+   * `@{<id>}`. Without it, the editor suggests nobody.
+   */
+  onMentionSearch?: MentionSearch;
   /** Classes of the editor's outer element. */
   className?: string;
 }
@@ -193,12 +207,16 @@ function MarkdownEditor({
   ref,
   attachmentImageIds,
   onFilesAdd,
+  mentions,
+  onMentionSearch,
   className,
   disabled,
   readOnly,
   onKeyDown,
   onPaste,
   onDrop,
+  onSelect,
+  onBlur,
   ...props
 }: MarkdownEditorProps) {
   const t = useTranslations('ui.markdownEditor');
@@ -209,6 +227,16 @@ function MarkdownEditor({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const text = value ?? ownValue;
+  const mention = useMentionSuggestions({
+    textareaRef,
+    onMentionSearch: disabled === true || readOnly === true ? undefined : onMentionSearch,
+    onChoose: (start, end, insert) => {
+      const textarea = textareaRef.current;
+      if (textarea !== null) {
+        replaceRange(textarea, start, end, insert);
+      }
+    },
+  });
 
   function change(next: string) {
     setOwnValue(next);
@@ -274,6 +302,9 @@ function MarkdownEditor({
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     onKeyDown?.(event);
+    if (!event.defaultPrevented && mention.handleKeyDown(event)) {
+      return;
+    }
     const isModifier = isApple ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
     if (event.defaultPrevented || !isModifier || event.altKey) {
       return;
@@ -431,21 +462,36 @@ function MarkdownEditor({
               }
             }}
             value={text}
-            onChange={(event) => change(event.currentTarget.value)}
+            onChange={(event) => {
+              change(event.currentTarget.value);
+              mention.update();
+            }}
+            onSelect={(event) => {
+              onSelect?.(event);
+              mention.update();
+            }}
+            onBlur={(event) => {
+              onBlur?.(event);
+              mention.close();
+            }}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             onDrop={handleDrop}
             disabled={disabled}
             readOnly={readOnly}
             aria-invalid={invalid === true ? true : undefined}
+            {...mention.textareaProps}
             {...props}
           />
+          <MentionSuggestionList textareaRef={textareaRef} {...mention.listProps} />
         </TabsContent>
         <TabsContent value="preview" className="min-h-24 pt-3">
           {text.trim() === '' ? (
             <p className="text-muted-foreground">{t('nothingToPreview')}</p>
           ) : (
-            <Markdown attachmentImageIds={attachmentImageIds}>{text}</Markdown>
+            <Markdown attachmentImageIds={attachmentImageIds} mentions={mentions}>
+              {text}
+            </Markdown>
           )}
         </TabsContent>
       </Tabs>
@@ -467,4 +513,4 @@ function MarkdownEditor({
 }
 
 export { MarkdownEditor };
-export type { MarkdownEditorProps };
+export type { MarkdownEditorProps, MentionCandidate, MentionSearch };

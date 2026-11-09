@@ -76,6 +76,11 @@ export const currentUserSchema = z.object({
   timeZone: z.string().nullable(),
   /** "Hide events" of the activity timeline (§4.5): the team sees only comments while it is on. */
   hideTimelineEvents: z.boolean(),
+  /**
+   * Whether an organization exists in any state (§7.3): the team views hide the organization
+   * elements while none does (S1-13 Q6). Always `false` for end users.
+   */
+  organizationsExist: z.boolean(),
   allowedActions: z.array(currentUserActionSchema),
 });
 export type CurrentUser = z.infer<typeof currentUserSchema>;

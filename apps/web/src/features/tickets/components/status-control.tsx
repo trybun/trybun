@@ -18,7 +18,7 @@ import { LazyDuplicateDialog } from './lazy-duplicate-dialog.js';
 import { LazyRejectDialog } from './lazy-reject-dialog.js';
 
 /** The internal statuses by kind (§4.1), in the order of the main flow. */
-const STATUS_KINDS = [
+export const STATUS_KINDS = [
   { kind: 'initial', statuses: ['new'] },
   { kind: 'active', statuses: ['triage', 'todo', 'in_progress', 'in_verification'] },
   { kind: 'paused', statuses: ['waiting_for_requester'] },

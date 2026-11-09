@@ -37,7 +37,7 @@ import {
 } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
 import { domainFieldErrors, emailDomain, parseDomains } from './domain/email-domains.js';
-import { CREATE, ORGANIZATION } from './organizations.abilities.js';
+import { CREATE, ORGANIZATION, READ_NAME } from './organizations.abilities.js';
 import {
   findAccountByEmail,
   isOrganizationNameTaken,
@@ -176,25 +176,47 @@ export class OrganizationsService {
     private readonly invitationRevocations: InvitationRevocationsService,
   ) {}
 
-  /** The organizations in one state, sorted by name; `projectId` keeps those with its access. */
+  /**
+   * The organizations in one state, sorted by name (§7.3); `projectId` keeps those with its
+   * access. Every one for the Administrator; for another team member only the ID and the name of
+   * those with access to one of their projects (S1-13 Q6); `404` for everyone else (§7.5).
+   */
   async list(principal: UserPrincipal, query: ListOrganizationsQuery): Promise<OrganizationPage> {
-    const ability = this.visibleAbility(principal);
+    const ability = this.abilities.forPrincipal(principal);
+    const canReadAll = ability.can('read', ORGANIZATION);
+    if (!canReadAll && !ability.can(READ_NAME, ORGANIZATION)) {
+      throw new AppError('request.not_found');
+    }
     const after = decodeCursor(query.cursor, organizationSortKeySchema);
+    const where: Prisma.OrganizationWhereInput = {
+      AND: [
+        accessibleBy(ability, canReadAll ? 'read' : READ_NAME).ofType(ORGANIZATION),
+        { state: query.state },
+        query.projectId === undefined ? {} : { projects: { some: { projectId: query.projectId } } },
+        after === null
+          ? {}
+          : { OR: [{ name: { gt: after[0] } }, { name: after[0], id: { gt: after[1] } }] },
+      ],
+    };
+    const orderBy: Prisma.OrganizationOrderByWithRelationInput[] = [{ name: 'asc' }, { id: 'asc' }];
+    if (!canReadAll) {
+      const rows = await this.prisma.organization.findMany({
+        where,
+        select: { id: true, name: true },
+        orderBy,
+        take: query.limit + 1,
+      });
+      return toPage(
+        rows,
+        query.limit,
+        (row) => ({ id: row.id, name: row.name }),
+        (row) => [row.name, row.id],
+      );
+    }
     const rows = await this.prisma.organization.findMany({
-      where: {
-        AND: [
-          accessibleBy(ability, 'read').ofType(ORGANIZATION),
-          { state: query.state },
-          query.projectId === undefined
-            ? {}
-            : { projects: { some: { projectId: query.projectId } } },
-          after === null
-            ? {}
-            : { OR: [{ name: { gt: after[0] } }, { name: after[0], id: { gt: after[1] } }] },
-        ],
-      },
+      where,
       select: SUMMARY_SELECT,
-      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      orderBy,
       take: query.limit + 1,
     });
     return toPage(

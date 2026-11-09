@@ -51,8 +51,30 @@ const TEAM_ACTIONS = ALL_ACTIONS.filter(
   (action) => action !== 'confirm_resolution' && !VISIBILITY_ACTIONS.includes(action),
 );
 
-/** The actions an archived project still allows on its tickets: reading them (§7.3). */
-const ACTIONS_OF_ARCHIVED_PROJECTS: readonly TicketAction[] = ['read'];
+/**
+ * The actions an archived project still allows on its tickets: reading them and the history of
+ * their descriptions (§7.3, S1-12).
+ */
+const ACTIONS_OF_ARCHIVED_PROJECTS: readonly TicketAction[] = [
+  'read',
+  'read_description_revisions',
+];
+
+/** How long an end user may still comment on a `done` ticket after its close (§4.3, Q19). */
+export const COMMENTS_CLOSE_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
+
+/**
+ * The tickets an end user may no longer comment on (§4.3): `rejected` and `duplicate`, and `done`
+ * 14 × 24 hours or more after `closedAt`; they create a new ticket instead.
+ */
+function commentsClosed(now: Date): Prisma.TicketWhereInput {
+  return {
+    OR: [
+      { status: { in: ['rejected', 'duplicate'] } },
+      { status: 'done', closedAt: { lte: new Date(now.getTime() - COMMENTS_CLOSE_AFTER_MS) } },
+    ],
+  };
+}
 
 /**
  * The membership condition of a team rule on a project (§18.3): the principal's membership with
@@ -246,7 +268,7 @@ function teamVisibilityRules(
  * `teamVisibilityRules`). The project actions `assign_tickets` and `assign_tickets_self` follow `assign`
  * and `assign_self`; an archived project allows neither (`archivedProjectsRestriction`).
  */
-export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
+export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal, now) => {
   if (principal.userKind === 'end_user') {
     for (const access of endUserProjectAccess(principal)) {
       can([CREATE_TICKET, CREATE_TICKET_ALL_CUSTOMERS], PROJECT, access);
@@ -259,8 +281,14 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
       requesterVisibilityRules(can, principal, access);
     }
     for (const conditions of ticketReadConditions(principal)) {
-      can('read', TICKET, conditions);
+      can(['read', 'add_comment'], TICKET, conditions);
+      // The author of the description sees its revisions (§7.5, S1-12 Q3).
+      can('read_description_revisions', TICKET, {
+        AND: [conditions, { requesterId: principal.userId }],
+      });
     }
+    // The team can always comment; an end user is refused on a closed ticket (§4.3).
+    cannot('add_comment', TICKET, commentsClosed(now)).because('ticket.comments_closed');
     can('confirm_resolution', TICKET, { requesterId: principal.userId });
     // The reason makes the API answer `409` instead of `403`, and keeps the action out of
     // `allowedActions` while no answer is possible (§18.3).
@@ -279,7 +307,18 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
   can(ASSIGN_TICKETS, PROJECT, memberFrom(principal, 'project_manager'));
   for (const conditions of ticketReadConditions(principal)) {
     can(
-      ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
+      [
+        'read',
+        'update',
+        'update_fields',
+        'assign_self',
+        'change_status',
+        'add_attachment',
+        'add_comment',
+        'add_internal_note',
+        'read_description_revisions',
+        'redact_description',
+      ],
       TICKET,
       conditions,
     );
@@ -316,6 +355,7 @@ export function ticketRuleSelect(principal: Principal) {
     requesterId: true,
     status: true,
     waitingReason: true,
+    closedAt: true,
     source: true,
     visibility: true,
     sharingRequest: true,

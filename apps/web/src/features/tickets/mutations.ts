@@ -2,6 +2,7 @@
 
 import { useIsMutating, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
+  BulkTicketChange,
   ChangeTicketStatusDto,
   CreateTicketDto,
   ResolutionAnswer,
@@ -12,7 +13,8 @@ import type {
 } from '@trybun/contracts/tickets';
 import { dataOf } from '../../lib/api-client/api-client.js';
 import { browserApiClient } from '../../lib/api-client/browser-api-client.js';
-import { activityEventsQueryOptions, ticketQueryOptions } from './queries.js';
+import { timelineQueryOptions } from '../comments/queries.js';
+import { ticketQueryOptions } from './queries.js';
 
 /** Invalidates every query of the tickets: the lists and the details. */
 function useInvalidateTickets() {
@@ -59,7 +61,7 @@ function useTicketChangeCallbacks() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ['tickets', 'list'] }),
       queryClient.invalidateQueries({
-        queryKey: activityEventsQueryOptions(browserApiClient, ticket.id).queryKey,
+        queryKey: timelineQueryOptions(browserApiClient, ticket.id).queryKey,
       }),
     ]);
   return {
@@ -151,7 +153,7 @@ export function useConfirmResolution() {
     onSettled: () => {
       void Promise.all([
         invalidateTickets(),
-        queryClient.invalidateQueries({ queryKey: ['activity-events'] }),
+        queryClient.invalidateQueries({ queryKey: ['comments'] }),
       ]);
     },
   });
@@ -197,5 +199,32 @@ export function useDecideSharing() {
             }),
       ),
     ...useTicketChangeCallbacks(),
+  });
+}
+
+/**
+ * One change for the selected tickets of the list (§8.1, S1-13): the versions of the list's query
+ * data are the bulk form of `If-Match` (§17.2). Afterwards the lists and the details of the
+ * changed tickets – keyed by identifier (S1-10) – are read again; the results name each ticket
+ * that was not changed.
+ */
+export function useBulkChangeTickets() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tickets, change }: { tickets: TicketVersion[]; change: BulkTicketChange }) =>
+      dataOf(
+        browserApiClient.POST('/api/v1/tickets/bulk-changes', {
+          body: { tickets: tickets.map(({ id, version }) => ({ id, version })), change },
+        }),
+      ),
+    onSettled: (_response, _error, { tickets }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tickets', 'list'] }),
+        ...tickets.map((ticket) =>
+          queryClient.invalidateQueries({
+            queryKey: ticketQueryOptions(browserApiClient, ticket.identifier).queryKey,
+          }),
+        ),
+      ]),
   });
 }

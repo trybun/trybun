@@ -139,8 +139,53 @@ export const WithUrlTransform: Story = {
   },
 };
 
-export const Phone: Story = { globals: viewport('phone') };
+const ANNA_ID = '3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b';
+const MENTIONS = [
+  { id: ANNA_ID, displayName: 'Anna Nowak' },
+  { id: 'customer', displayName: 'Customer' },
+];
+const MENTION_TEXT = `Thanks @{${ANNA_ID}}, please ask @{customer}. In code: \`@{${ANNA_ID}}\`.`;
 
-export const Tablet: Story = { globals: viewport('tablet') };
+/** Tokens of the people the view knows render as their names, not links (S1-12). */
+export const Mentions: Story = {
+  args: { children: MENTION_TEXT, mentions: MENTIONS },
+  play: async ({ canvasElement }) => {
+    const mentions = [...canvasElement.querySelectorAll('.mention')];
+    await expect(mentions.map((node) => node.textContent)).toEqual(['@Anna Nowak', '@Customer']);
+    await expect(within(canvasElement).queryByRole('link')).toBeNull();
+    await expect(canvasElement.querySelector('code')).toHaveTextContent(`@{${ANNA_ID}}`);
+  },
+};
 
-export const Desktop: Story = { globals: viewport('desktop') };
+/** Two texts with footnotes on one page, like two comments: their IDs and links do not clash. */
+export const FootnotesInTwoTexts: Story = {
+  args: { children: 'A note[^1].\n\n[^1]: The first footnote.' },
+  render: (args) => (
+    <div className="flex max-w-prose flex-col gap-6">
+      <Markdown {...args} />
+      <Markdown {...args}>{'Another note[^1].\n\n[^1]: The second footnote.'}</Markdown>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const ids = [...canvasElement.querySelectorAll('[id]')].map(({ id }) => id);
+    await expect(new Set(ids).size).toBe(ids.length);
+    const [, second] = within(canvasElement).getAllByRole('link', { name: '1' });
+    const target = second!.getAttribute('href')!.slice(1);
+    await expect(document.getElementById(target)).toHaveTextContent('The second footnote.');
+  },
+};
+
+export const Phone: Story = {
+  globals: viewport('phone'),
+  args: { children: `${HELP_PAGE}\n${MENTION_TEXT}`, mentions: MENTIONS },
+};
+
+export const Tablet: Story = {
+  globals: viewport('tablet'),
+  args: { children: `${HELP_PAGE}\n${MENTION_TEXT}`, mentions: MENTIONS },
+};
+
+export const Desktop: Story = {
+  globals: viewport('desktop'),
+  args: { children: `${HELP_PAGE}\n${MENTION_TEXT}`, mentions: MENTIONS },
+};

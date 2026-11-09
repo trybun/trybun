@@ -154,6 +154,7 @@ describe('POST /api/v1/attachments', () => {
         isImage: true,
         status: 'quarantine',
         ticketId: null,
+        commentId: null,
         uploadedBy: { id: user.id, displayName: user.displayName },
         createdAt: expect.any(String) as string,
         allowedActions: ['read', 'delete'],
