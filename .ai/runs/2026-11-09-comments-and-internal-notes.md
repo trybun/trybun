@@ -40,9 +40,9 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 ### Phase 2: Writing
 
 - [x] 2.1 Add comments with the audience and attachments — c356550
-- [ ] 2.2 Add mentions with their scope and suggestions
+- [x] 2.2 Add mentions with their scope and suggestions — 0c1ca00
 - [x] 2.3 Edit comments and descriptions with content revisions — 2dbf624
-- [ ] 2.4 Delete comments
+- [x] 2.4 Delete comments — 66943aa
 - [ ] 2.5 Redact comments and descriptions
 
 ### Phase 3: Status rules and reasons
@@ -53,7 +53,7 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 
 ### Phase 4: Web and documentation
 
-- [ ] 4.1 Render and suggest mentions in the Markdown editor
+- [x] 4.1 Render and suggest mentions in the Markdown editor — 098ecbe, aff4be8, 15201f2
 - [ ] 4.2 Add comments to the team ticket view
 - [ ] 4.3 Add comments and editing to the portal
 - [ ] 4.4 Write the user documentation and extend the demo dataset
