@@ -100,7 +100,9 @@ function ticketSelect(principal: UserPrincipal) {
     version: true,
     createdAt: true,
     updatedAt: true,
-    organization: { select: { id: true, name: true } },
+    organization: {
+      select: { ...ticketRuleSelect(principal).organization.select, id: true, name: true },
+    },
     requester: { select: PERSON_SELECT },
     assignee: { select: PERSON_SELECT },
     // At most one (§3.5): a partial unique index of the migrations.
@@ -209,7 +211,8 @@ function toTicketResponse(
     source: row.source,
     priority: row.priority,
     status: row.status,
-    organization: row.organization,
+    organization:
+      row.organization === null ? null : { id: row.organization.id, name: row.organization.name },
     assignee: row.assignee,
     closedAt: row.closedAt?.toISOString() ?? null,
     rejectionReason: row.rejectionReason,

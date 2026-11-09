@@ -52,6 +52,8 @@ describe('permission layer', () => {
     organizationTicket: { id: string };
     archivedTicket: { id: string };
     ticketB: { id: string };
+    colleagueTicket: { id: string };
+    sharedTicket: { id: string };
   };
   /** Drafts and attachments of the tickets above. */
   const attachments: { id: string }[] = [];
@@ -166,6 +168,30 @@ describe('permission layer', () => {
       source: 'user',
       status: 'new',
       type: null,
+    });
+    // S1-11: a `my_organization` ticket of a colleague of the active organization and a shared
+    // ticket of the end user of that organization, both in project A.
+    const colleague = await createUser(prisma);
+    await prisma.organizationMember.create({
+      data: { userId: colleague.id, organizationId: records.organization.id },
+    });
+    records.colleagueTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: colleague.id,
+      organizationId: records.organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+      visibility: 'my_organization',
+    });
+    records.sharedTicket = await createTicket(prisma, {
+      projectId: records.projectA.id,
+      requesterId: users.end_user_organization.id,
+      organizationId: records.organization.id,
+      source: 'user',
+      status: 'new',
+      type: null,
+      visibility: 'all_customers',
     });
     // Drafts of a team member and of an end user, and an attachment of each ticket by its
     // requester and by the Developer.
@@ -354,6 +380,8 @@ describe('permission layer', () => {
             records.organizationTicket.id,
             records.archivedTicket.id,
             records.ticketB.id,
+            records.colleagueTicket.id,
+            records.sharedTicket.id,
           ],
           Attachment: attachments.map(({ id }) => id),
         };
@@ -437,6 +465,9 @@ describe('permission layer', () => {
       ['end_user_personal', 'archivedTicket', ['read']],
       // A requester keeps reading a ticket after losing access to its project (§7.3).
       ['end_user_archived_organization', 'ticketB', ['read']],
+      // S1-11: reading a colleague's or a shared ticket gives no change (§7.5).
+      ['end_user_organization', 'colleagueTicket', ['read']],
+      ['end_user_personal', 'sharedTicket', ['read']],
     ] as const)('lists for %s on %s exactly %o', async (fixture, ticket, actions) => {
       const res = await http()
         .get(`/api/v1/tickets/${records[ticket].id}`)
@@ -452,6 +483,10 @@ describe('permission layer', () => {
       ['end_user_personal', 'organizationTicket'],
       ['end_user', 'personalTicket'],
       ['developer', 'ticketB'],
+      // S1-11: a colleague's ticket outside the organization, a shared one without project access.
+      ['end_user_personal', 'colleagueTicket'],
+      ['end_user_archived_organization', 'sharedTicket'],
+      ['end_user', 'sharedTicket'],
     ] as const)('hides from %s the ticket %s (404)', async (fixture, ticket) => {
       const res = await http()
         .get(`/api/v1/tickets/${records[ticket].id}`)
