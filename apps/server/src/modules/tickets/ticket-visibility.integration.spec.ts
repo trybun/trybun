@@ -13,6 +13,7 @@ import {
   keycloakJwksHandler,
   signAccessToken,
 } from '../../../test/factories/access-token.factory.js';
+import { createAttachment } from '../../../test/factories/attachment.factory.js';
 import { createOrganization } from '../../../test/factories/organization.factory.js';
 import { createProjectMember } from '../../../test/factories/project-member.factory.js';
 import { createProject } from '../../../test/factories/project.factory.js';
@@ -222,7 +223,7 @@ describe('identities of other customers (§5.4, Q9)', () => {
 
   const http = () => request(app.getHttpServer());
 
-  it('shows the requester and their actions to colleagues and to the team, and Customer to others', async () => {
+  it('shows the requester, their actions and their files to colleagues and to the team, and Customer to others', async () => {
     const project = await createProject(prisma);
     const [organization, otherOrganization] = [
       await createOrganization(prisma),
@@ -258,6 +259,17 @@ describe('identities of other customers (§5.4, Q9)', () => {
       type: null,
       visibility: 'all_customers',
     });
+    // A file of the author and one of the team.
+    await createAttachment(prisma, {
+      uploadedById: author.id,
+      ticketId: ticket.id,
+      status: 'available',
+    });
+    await createAttachment(prisma, {
+      uploadedById: developer.id,
+      ticketId: ticket.id,
+      status: 'available',
+    });
     // A public event by the author and one by the team.
     await prisma.activityEvent.createMany({
       data: [
@@ -285,20 +297,37 @@ describe('identities of other customers (§5.4, Q9)', () => {
       const events = await http()
         .get(`/api/v1/tickets/${ticket.id}/activity-events`)
         .set('Authorization', authorization);
+      const files = await http()
+        .get(`/api/v1/tickets/${ticket.id}/attachments`)
+        .set('Authorization', authorization);
       const actors = (events.body as { items: { actor: { id: string } | null }[] }).items.map(
         ({ actor }) => actor?.id ?? null,
       );
-      return { requester: (detail.body as { requester: { id: string } | null }).requester, actors };
+      const uploaders = (
+        files.body as { items: { uploadedBy: { id: string; displayName: string | null } | null }[] }
+      ).items.map(({ uploadedBy }) => uploadedBy);
+      return {
+        requester: (detail.body as { requester: { id: string } | null }).requester,
+        actors,
+        uploaders,
+      };
     };
+    const authorPerson = { id: author.id, displayName: author.displayName };
+    const developerPerson = { id: developer.id, displayName: developer.displayName };
 
     expect(await view(colleague)).toEqual({
-      requester: { id: author.id, displayName: author.displayName },
+      requester: authorPerson,
       actors: [author.id, developer.id],
+      uploaders: [authorPerson, developerPerson],
     });
-    expect(await view(stranger)).toEqual({ requester: null, actors: [null, developer.id] });
-    expect((await view(developer)).requester).toEqual({
-      id: author.id,
-      displayName: author.displayName,
+    expect(await view(stranger)).toEqual({
+      requester: null,
+      actors: [null, developer.id],
+      uploaders: [null, developerPerson],
+    });
+    expect(await view(developer)).toMatchObject({
+      requester: authorPerson,
+      uploaders: [authorPerson, developerPerson],
     });
   });
 });

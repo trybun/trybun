@@ -32,6 +32,7 @@ import {
 import { ActivityEventsService } from '../activity-events/activity-events.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { TICKET, ticketRuleSelect } from '../tickets/tickets.abilities.js';
+import { identitySelect, visiblePerson } from '../tickets/visible-person.js';
 import { UsersService } from '../users/users.service.js';
 import { contentMatches } from './attachment-content.js';
 import { AttachmentLinksService } from './attachment-links.service.js';
@@ -71,7 +72,7 @@ function attachmentSelect(principal: UserPrincipal) {
     size: true,
     status: true,
     createdAt: true,
-    uploadedBy: { select: { id: true, displayName: true } },
+    uploadedBy: { select: identitySelect(principal) },
   } satisfies Prisma.AttachmentSelect;
 }
 
@@ -79,8 +80,16 @@ type AttachmentRow = Prisma.AttachmentGetPayload<{
   select: ReturnType<typeof attachmentSelect>;
 }>;
 
-/** The response shape of an attachment (§18.3) with the actions the principal may perform. */
-function toAttachmentResponse(row: AttachmentRow, ability: AppAbility): Attachment {
+/**
+ * The response shape of an attachment (§18.3) with the actions the principal may perform; its
+ * uploader under the identity rule (§5.4, S1-11 Q9), so a customer of another organization who
+ * reads a shared ticket sees "Customer" for its files too.
+ */
+function toAttachmentResponse(
+  row: AttachmentRow,
+  ability: AppAbility,
+  principal: UserPrincipal,
+): Attachment {
   const record = subject(ATTACHMENT, row);
   return {
     id: row.id,
@@ -90,7 +99,7 @@ function toAttachmentResponse(row: AttachmentRow, ability: AppAbility): Attachme
     isImage: isRasterImage(row.contentType),
     status: row.status,
     ticketId: row.ticketId,
-    uploadedBy: row.uploadedBy,
+    uploadedBy: visiblePerson(principal, row.uploadedBy),
     createdAt: row.createdAt.toISOString(),
     allowedActions: attachmentActionSchema.options.filter((action) => ability.can(action, record)),
   };
@@ -263,6 +272,7 @@ export class AttachmentsService {
     return toAttachmentResponse(
       await this.findVisible(this.prisma, ability, principal, attachmentId),
       ability,
+      principal,
     );
   }
 
@@ -310,7 +320,7 @@ export class AttachmentsService {
     return toPage(
       rows,
       query.limit,
-      (row) => toAttachmentResponse(row, ability),
+      (row) => toAttachmentResponse(row, ability, principal),
       (row) => [row.createdAt.toISOString(), row.id],
     );
   }
@@ -472,7 +482,7 @@ export class AttachmentsService {
     const byId = new Map(rows.map((row) => [row.id, row]));
     return ids.flatMap((id) => {
       const row = byId.get(id);
-      return row === undefined ? [] : [toAttachmentResponse(row, ability)];
+      return row === undefined ? [] : [toAttachmentResponse(row, ability, principal)];
     });
   }
 

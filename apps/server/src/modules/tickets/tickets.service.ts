@@ -54,7 +54,6 @@ import { OrganizationsService } from '../organizations/organizations.service.js'
 import { ProjectsService } from '../projects/projects.service.js';
 import { UsersService } from '../users/users.service.js';
 import { creationDefaults } from './domain/creation.js';
-import { identityVisibleTo } from './domain/identities.js';
 import {
   answerTarget,
   automaticCloseDueAt,
@@ -84,45 +83,9 @@ import {
   listRequestedTicketKeys,
   lockTicketsForUpdate,
 } from './tickets.sql.js';
+import { identitySelect, visiblePerson } from './visible-person.js';
 
 const PERSON_SELECT = { id: true, displayName: true } satisfies Prisma.UserSelect;
-
-/**
- * A person and what the identity rule reads of them (§5.4): their account kind and whether their
- * current organization has the principal as a member.
- */
-function identitySelect(principal: UserPrincipal) {
-  return {
-    ...PERSON_SELECT,
-    kind: true,
-    organizationMember: {
-      select: {
-        organization: {
-          select: { members: { where: { userId: principal.userId }, select: { userId: true } } },
-        },
-      },
-    },
-  } satisfies Prisma.UserSelect;
-}
-
-type IdentityRow = Prisma.UserGetPayload<{ select: ReturnType<typeof identitySelect> }>;
-
-/** A person in an end user's response: `null` when the identity rule hides them (Q9). */
-function visiblePerson(
-  principal: UserPrincipal,
-  person: IdentityRow,
-): { id: string; displayName: string | null } | null {
-  const isVisible = identityVisibleTo(
-    { id: principal.userId, kind: principal.userKind },
-    {
-      id: person.id,
-      kind: person.kind,
-      sharesOrganizationWithViewer:
-        (person.organizationMember?.organization.members.length ?? 0) > 0,
-    },
-  );
-  return isVisible ? { id: person.id, displayName: person.displayName } : null;
-}
 
 /** The fields of a ticket a reference to it shows, with the fields of its rules. */
 function ticketReferenceSelect(principal: UserPrincipal) {

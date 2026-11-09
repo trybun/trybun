@@ -3739,7 +3739,7 @@ export interface operations {
                                 /** Format: uuid */
                                 id: string;
                                 displayName: string | null;
-                            };
+                            } | null;
                             /** Format: date-time */
                             createdAt: string;
                             allowedActions: ("read" | "delete")[];
@@ -3786,7 +3786,7 @@ export interface operations {
                                 /** Format: uuid */
                                 id: string;
                                 displayName: string | null;
-                            };
+                            } | null;
                             /** Format: date-time */
                             createdAt: string;
                             allowedActions: ("read" | "delete")[];
@@ -3827,7 +3827,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             displayName: string | null;
-                        };
+                        } | null;
                         /** Format: date-time */
                         createdAt: string;
                         allowedActions: ("read" | "delete")[];
@@ -3919,7 +3919,7 @@ export interface operations {
                                 /** Format: uuid */
                                 id: string;
                                 displayName: string | null;
-                            };
+                            } | null;
                             /** Format: date-time */
                             createdAt: string;
                             allowedActions: ("read" | "delete")[];
@@ -3968,7 +3968,7 @@ export interface operations {
                                 /** Format: uuid */
                                 id: string;
                                 displayName: string | null;
-                            };
+                            } | null;
                             /** Format: date-time */
                             createdAt: string;
                             allowedActions: ("read" | "delete")[];
