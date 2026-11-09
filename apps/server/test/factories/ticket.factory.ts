@@ -25,9 +25,6 @@ function statusFields(status: TicketStatus, input: TicketFactoryInput) {
         }
       : {}),
     ...(isTerminalStatus(status) ? { closedAt: input.closedAt ?? new Date() } : {}),
-    ...(status === 'rejected'
-      ? { rejectionReason: input.rejectionReason ?? faker.lorem.sentence() }
-      : {}),
     ...(input.sharingRequest === 'rejected'
       ? {
           sharingRefusalReason:

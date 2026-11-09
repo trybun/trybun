@@ -122,7 +122,6 @@ function ticketSelect(principal: UserPrincipal) {
     statusBeforeWaiting: true,
     waitingSince: true,
     closedAt: true,
-    rejectionReason: true,
     sharingRefusalReason: true,
     descriptionEditedAt: true,
     descriptionEditedById: true,
@@ -158,7 +157,6 @@ function systemTicketSelect() {
     statusBeforeWaiting: true,
     waitingSince: true,
     closedAt: true,
-    rejectionReason: true,
     version: true,
     assignee: { select: PERSON_SELECT },
     project: { select: { state: true, confirmResolution: true } },
@@ -248,7 +246,6 @@ function toTicketResponse(
       row.organization === null ? null : { id: row.organization.id, name: row.organization.name },
     assignee: row.assignee,
     closedAt: row.closedAt?.toISOString() ?? null,
-    rejectionReason: row.rejectionReason,
     sharingRefusalReason: row.sharingRefusalReason,
   } satisfies Ticket;
 }
@@ -712,7 +709,8 @@ export class TicketsService {
   /**
    * Changes the status of a ticket (§4.3) by the team: the rules of `status-transitions.ts` decide
    * the new status fields, the `duplicate_of` relation and the events; a request for the current
-   * status changes nothing but a new reason or a new original (Q16).
+   * status changes nothing but a new original (Q16). The reason of a rejection becomes a public
+   * comment of the acting team member in the same transaction (S1-12 Q13).
    */
   async changeStatus(
     principal: UserPrincipal,
@@ -741,7 +739,6 @@ export class TicketsService {
         { ...statusFieldsOf(before), source: before.source },
         {
           target: input.status,
-          ...(input.status === 'rejected' ? { rejectionReason: input.rejectionReason } : {}),
           ...(original === undefined ? {} : { original }),
           currentOriginal: this.currentOriginal(before),
           confirmResolution: before.project.confirmResolution,
@@ -755,6 +752,17 @@ export class TicketsService {
         target.version,
         change,
       );
+      if (input.status === 'rejected') {
+        // The reason is published to the requester as a public comment (§4.3, S1-12 Q13); a new
+        // reason on a rejected ticket adds another one.
+        await this.comments.add(
+          tx,
+          principal,
+          ability,
+          { ...before, assigneeId: before.assignee?.id ?? null },
+          { kind: 'public', body: input.rejectionReason },
+        );
+      }
       return toTicketResponse(
         await this.findVisible(tx, ability, principal, target.id),
         ability,

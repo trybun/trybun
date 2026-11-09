@@ -246,7 +246,7 @@ describe('the reject dialog', () => {
   it('requires a reason, then rejects with it and offers no Undo', async () => {
     answer(ticketResponse());
     fake.on('PUT /api/v1/tickets/{ticketId}/status', {
-      data: ticketResponse({ status: 'rejected', rejectionReason: 'Works as designed.' }),
+      data: ticketResponse({ status: 'rejected' }),
     });
     renderView();
 

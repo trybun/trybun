@@ -2611,7 +2611,6 @@ export interface operations {
                             } | null;
                             /** Format: date-time */
                             closedAt: string | null;
-                            rejectionReason: string | null;
                             sharingRefusalReason: string | null;
                         } | {
                             /** Format: uuid */
@@ -2758,7 +2757,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -2887,7 +2885,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -3031,7 +3028,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -3176,7 +3172,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -3312,7 +3307,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -3441,7 +3435,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -3576,7 +3569,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -3712,7 +3704,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */
@@ -4095,7 +4086,6 @@ export interface operations {
                         } | null;
                         /** Format: date-time */
                         closedAt: string | null;
-                        rejectionReason: string | null;
                         sharingRefusalReason: string | null;
                     } | {
                         /** Format: uuid */

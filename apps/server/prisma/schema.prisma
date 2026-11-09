@@ -472,9 +472,6 @@ model Ticket {
   waitingSince          DateTime?            @map("waiting_since") @db.Timestamptz(3)
   /// The time of the latest transition into a terminal status; set exactly while terminal.
   closedAt              DateTime?            @map("closed_at") @db.Timestamptz(3)
-  /// The reason of a rejection, set exactly while `rejected`; team only. Personal data: S1-16
-  /// covers it like a description until S1-12 publishes the reasons as comments and drops it.
-  rejectionReason       String?              @map("rejection_reason")
   /// The effective visibility (§5.1); a pending request keeps it until the team approves.
   /// Check constraints of the migrations keep it consistent with the sharing request, the
   /// organization snapshot and the source (S1-11).

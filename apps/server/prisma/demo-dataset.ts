@@ -44,6 +44,7 @@ export interface DemoDataset {
   ticketRelations: Prisma.TicketRelationCreateManyInput[];
   ticketNumberCounters: Prisma.TicketNumberCounterCreateManyInput[];
   activityEvents: Prisma.ActivityEventCreateManyInput[];
+  comments: Prisma.CommentCreateManyInput[];
 }
 
 /**
@@ -746,7 +747,7 @@ export function buildDemoDataset(): DemoDataset {
           ],
     ),
   ];
-  const { tickets, ticketRelations, ticketNumberCounters, activityEvents } = buildDemoTickets(
+  const { tickets, ticketRelations, ticketNumberCounters, activityEvents, comments } = buildDemoTickets(
     [...team, ...endUsers, ...portalUsers, ...visibilityUsers],
     projects,
     organizationIds,
@@ -785,6 +786,7 @@ export function buildDemoDataset(): DemoDataset {
     ticketRelations,
     ticketNumberCounters,
     activityEvents,
+    comments,
   };
 }
 
@@ -797,7 +799,10 @@ function buildDemoTickets(
   projects: Prisma.ProjectCreateManyInput[],
   organizationIds: Record<DemoOrganizationKey, string>,
   organizationMembers: Prisma.OrganizationMemberCreateManyInput[],
-): Pick<DemoDataset, 'tickets' | 'ticketRelations' | 'ticketNumberCounters' | 'activityEvents'> {
+): Pick<
+  DemoDataset,
+  'tickets' | 'ticketRelations' | 'ticketNumberCounters' | 'activityEvents' | 'comments'
+> {
   const accountIds: Record<string, string> = {
     admin: accounts[0]?.id ?? '',
     manager: accounts[1]?.id ?? '',
@@ -826,6 +831,7 @@ function buildDemoTickets(
   const tickets: Prisma.TicketCreateManyInput[] = [];
   const activityEvents: Prisma.ActivityEventCreateManyInput[] = [];
   const ticketRelations: Prisma.TicketRelationCreateManyInput[] = [];
+  const comments: Prisma.CommentCreateManyInput[] = [];
   DEMO_TICKETS.forEach((ticket, index) => {
     const projectId = projects.find(({ key }) => key === ticket.project)?.id ?? '';
     const number = (numbers.get(projectId) ?? 0) + 1;
@@ -898,10 +904,24 @@ function buildDemoTickets(
         ? {}
         : { waitingReason, statusBeforeWaiting: from, waitingSince: changedAt }),
       ...(['done', 'rejected', 'duplicate'].includes(change.to) ? { closedAt: changedAt } : {}),
-      ...('rejectionReason' in change ? { rejectionReason: change.rejectionReason } : {}),
       version: (ticket.version ?? 1) + 1,
       updatedAt: changedAt,
     });
+    if ('rejectionReason' in change) {
+      // The reason of a rejection is a public comment of the rejecting team member (S1-12 Q13).
+      comments.push({
+        id: demoId(950 + index),
+        ticketId: ticket.id ?? '',
+        authorId: accountIds[change.by] ?? '',
+        kind: 'public',
+        audience: ticket.visibility ?? 'only_me',
+        audienceOrganizationId:
+          ticket.visibility === 'my_organization' ? (ticket.organizationId ?? null) : null,
+        body: change.rejectionReason,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+    }
     if (duplicateOf !== null) {
       ticketRelations.push({
         id: demoId(900 + index),
@@ -929,6 +949,7 @@ function buildDemoTickets(
       lastNumber,
     })),
     activityEvents,
+    comments,
   };
 }
 
@@ -975,7 +996,12 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     // The attachments of the tickets restrict their deletion; their objects are removed by the
     // Worker's `attachment.deleted` job, as for every deleted attachment (S1-08).
     const attachments = await tx.attachment.findMany({
-      where: { ticket: { is: demoTickets } },
+      where: {
+        OR: [
+          { ticket: { is: demoTickets } },
+          { comment: { is: { ticket: { is: demoTickets } } } },
+        ],
+      },
       select: { id: true },
     });
     await tx.attachment.deleteMany({ where: { id: { in: attachments.map(({ id }) => id) } } });
@@ -1011,5 +1037,6 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     await tx.ticketRelation.createMany({ data: dataset.ticketRelations });
     await tx.ticketNumberCounter.createMany({ data: dataset.ticketNumberCounters });
     await tx.activityEvent.createMany({ data: dataset.activityEvents });
+    await tx.comment.createMany({ data: dataset.comments });
   });
 }

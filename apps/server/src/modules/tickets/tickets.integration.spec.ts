@@ -215,7 +215,6 @@ describe('tickets endpoints', () => {
         waitingReason: null,
         duplicateOf: null,
         closedAt: null,
-        rejectionReason: null,
       });
       expect(await events(ticket.id)).toEqual([]);
     });

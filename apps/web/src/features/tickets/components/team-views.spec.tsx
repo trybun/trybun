@@ -68,7 +68,6 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     organization: null,
     assignee: ANNA,
     closedAt: null,
-    rejectionReason: null,
     sharingRefusalReason: null,
     ...overrides,
   };

@@ -30,7 +30,6 @@ async function authorizationOf(config: TrybunConfig, user: User): Promise<string
   return `Bearer ${token}`;
 }
 
-
 describe('redaction', () => {
   const config = integrationConfig();
   let app: INestApplication<Server>;

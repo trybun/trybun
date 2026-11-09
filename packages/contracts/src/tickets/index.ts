@@ -348,8 +348,6 @@ export const ticketSchema = z.object({
   assignee: ticketPersonSchema.nullable(),
   /** The time of the latest transition into a terminal status (§4.3); none while open. */
   closedAt: z.iso.datetime().nullable(),
-  /** The reason of a rejection, for the team only until S1-12 publishes it as a comment. */
-  rejectionReason: z.string().nullable(),
   /** The reason of a sharing refusal, for the team only until S1-12 (S1-11 Q8). */
   sharingRefusalReason: z.string().nullable(),
 });
@@ -357,7 +355,7 @@ export type Ticket = z.infer<typeof ticketSchema>;
 
 /**
  * A ticket as an end user sees it (§3.2, columns "End user"): without type, priority, assignee,
- * source, organization, the internal status and the rejection and refusal reasons, with the public description
+ * source, organization, the internal status and the refusal reason, with the public description
  * of its state instead (§4.2).
  */
 export const endUserTicketSchema = z.object({
