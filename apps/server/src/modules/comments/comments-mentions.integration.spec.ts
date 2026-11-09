@@ -33,7 +33,8 @@ async function authorizationOf(config: TrybunConfig, user: User): Promise<string
   return `Bearer ${token}`;
 }
 
-describe('mentions', () => {
+// Many requests and sign-ins per case: slower runners need more than the default 5 s.
+describe('mentions', { timeout: 30_000 }, () => {
   const config = integrationConfig();
   let app: INestApplication<Server>;
   let prisma: PrismaService;
