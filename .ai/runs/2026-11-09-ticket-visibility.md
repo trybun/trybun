@@ -49,7 +49,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 
 ### Phase 5: Identities
 
-- [ ] 5.1 Show other customers as Customer
+- [x] 5.1 Show other customers as Customer — b453d13
 
 ### Phase 6: Web
 
