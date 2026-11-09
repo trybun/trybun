@@ -21,7 +21,7 @@
   "devDependencies": {
     "@trybun/eslint-config": "workspace:*",
     "@trybun/tsconfig": "workspace:*",
-    "eslint": "^10.13.0",
+    "eslint": "^10.14.0",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
