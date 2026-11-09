@@ -43,7 +43,7 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 - [x] 2.2 Add mentions with their scope and suggestions — 0c1ca00
 - [x] 2.3 Edit comments and descriptions with content revisions — 2dbf624
 - [x] 2.4 Delete comments — 66943aa
-- [ ] 2.5 Redact comments and descriptions
+- [x] 2.5 Redact comments and descriptions — 885745e
 
 ### Phase 3: Status rules and reasons
 
