@@ -64,9 +64,11 @@ type TableSortDirection = 'ascending' | 'descending' | 'none';
 const TableSortContext = createContext<TableSortDirection>('none');
 
 // The cell of a checkbox is 44 px on phones and tablets, so the 44 px hit area of the checkbox
-// stays inside its own row and column (§2.9); compact on desktop with a precise pointer.
+// stays inside its own row and column (§2.9); compact on desktop with a precise pointer, where
+// the padding on both sides keeps the 16 px box 24 px clear of a sort button in the next header
+// (WCAG 2.5.8 target size).
 const CHECKBOX_CELL =
-  '[&:has([role=checkbox])]:h-11 [&:has([role=checkbox])]:w-11 [&:has([role=checkbox])]:px-3.5 xl:pointer-fine:[&:has([role=checkbox])]:h-auto xl:pointer-fine:[&:has([role=checkbox])]:w-auto xl:pointer-fine:[&:has([role=checkbox])]:pr-0 xl:pointer-fine:[&:has([role=checkbox])]:pl-2';
+  '[&:has([role=checkbox])]:h-11 [&:has([role=checkbox])]:w-11 [&:has([role=checkbox])]:px-3.5 xl:pointer-fine:[&:has([role=checkbox])]:h-auto xl:pointer-fine:[&:has([role=checkbox])]:w-auto xl:pointer-fine:[&:has([role=checkbox])]:px-2';
 
 /**
  * A column header. With `sortDirection` the column is sortable: the header carries `aria-sort`

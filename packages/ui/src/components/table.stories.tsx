@@ -275,12 +275,50 @@ export const LongText: Story = {
   },
 };
 
+/**
+ * A selection column before a sortable column, as in the ticket list: the checkbox keeps the
+ * spacing of a small target to the sort button next to it (WCAG 2.5.8).
+ */
+function SelectableSortableTable() {
+  // As narrow as its content, like a table of many columns: no width is left to share out.
+  return (
+    <Table className="w-auto">
+      <TableCaption>Selectable and sortable tickets</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead>
+            <Checkbox aria-label="Select all sortable tickets" />
+          </TableHead>
+          <TableHead sortDirection="ascending">
+            <TableSortButton>Identifier</TableSortButton>
+          </TableHead>
+          <TableHead sortDirection="none">
+            <TableSortButton>Title</TableSortButton>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {TICKETS.map((ticket) => (
+          <TableRow key={ticket.identifier}>
+            <TableCell>
+              <Checkbox aria-label={`Select sortable ${ticket.identifier}`} />
+            </TableCell>
+            <TableCell className="font-medium">{ticket.identifier}</TableCell>
+            <TableCell>{ticket.title}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 /** Selection and sorting together, shown in the three viewports. */
 function Overview() {
   return (
     <div className="flex flex-col gap-8">
       <SelectableTable />
       <SortableTable />
+      <SelectableSortableTable />
     </div>
   );
 }
