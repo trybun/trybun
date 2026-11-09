@@ -798,7 +798,7 @@
       "description": "Description",
       "noDescription": "No description.",
       "history": "History",
-      "created": "Ticket created",
+      "created": "{person} created the ticket",
       "statusChanged": "Status changed to {status}",
       "attachmentAdded": "{person} added the file {file}",
       "attachmentDeleted": "{person} deleted the file {file}",

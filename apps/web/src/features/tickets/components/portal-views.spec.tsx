@@ -202,7 +202,7 @@ describe('TicketView', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
     expect(screen.getByText('We are testing the solution')).toBeDefined();
-    expect(screen.getByText('Ticket created')).toBeDefined();
+    expect(screen.getByText('Celina Customer created the ticket')).toBeDefined();
     expect(await screen.findByText('Status changed to In progress')).toBeDefined();
     expect(screen.getByText(/Dorota Developer/)).toBeDefined();
     expect(screen.queryByRole('heading', { name: 'Is your problem solved?' })).toBeNull();
@@ -267,7 +267,9 @@ describe('TicketView', () => {
   });
 
   it('shows Shared with everyone and a hidden customer as Customer (§5.2, §5.4)', async () => {
-    answerTicket(ticket({ visibility: 'all_customers', allowedActions: ['read'] }));
+    answerTicket(
+      ticket({ visibility: 'all_customers', requester: null, allowedActions: ['read'] }),
+    );
     fake.on('GET /api/v1/tickets/{ticketId}/activity-events', {
       data: {
         items: [
@@ -295,6 +297,7 @@ describe('TicketView', () => {
 
     expect(await screen.findByText('Shared with everyone')).toBeDefined();
     expect(screen.getByText(/^Customer added the file log\.txt/)).toBeDefined();
+    expect(screen.getByText('Customer created the ticket')).toBeDefined();
   });
 
   it.each([

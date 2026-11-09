@@ -125,9 +125,10 @@ export function TicketView({ identifier }: { identifier: string }) {
 }
 
 /**
- * The public timeline (§4.5): the creation as the first item, as on GitHub (S1-05 Q11), then the
- * public events, oldest first – in Stage 1 the public status changes, the files added to or
- * deleted from the ticket (S1-08 Q15) and "Shared with everyone" (§5.2, S1-11).
+ * The public timeline (§4.5): the creation by the requester – their name, or "Customer" when the
+ * identity rule hides it (§5.4) – as the first item, as on GitHub (S1-05 Q11), then the public
+ * events, oldest first – in Stage 1 the public status changes, the files added to or deleted from
+ * the ticket (S1-08 Q15) and "Shared with everyone" (§5.2, S1-11).
  */
 function Timeline({ ticket }: { ticket: TicketResponse }) {
   const t = useTranslations('portal.ticket');
@@ -145,7 +146,15 @@ function Timeline({ ticket }: { ticket: TicketResponse }) {
       </h2>
       <ol className="flex flex-col gap-3 border-l border-border pl-4">
         <li className="flex flex-col">
-          <span>{t('created')}</span>
+          <span>
+            {t('created', {
+              // The requester under the identity rule: "Customer" when the API hides them (§5.4).
+              person:
+                ticket.requester === null
+                  ? t('customer')
+                  : (ticket.requester.displayName ?? t('unknownPerson')),
+            })}
+          </span>
           <time dateTime={ticket.createdAt} className="text-sm text-muted-foreground">
             {time(ticket.createdAt)}
           </time>

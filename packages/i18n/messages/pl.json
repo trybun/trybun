@@ -798,7 +798,7 @@
       "description": "Opis",
       "noDescription": "Brak opisu.",
       "history": "Historia",
-      "created": "Utworzenie zgłoszenia",
+      "created": "{person} – utworzenie zgłoszenia",
       "statusChanged": "Status zmieniony na {status}",
       "attachmentAdded": "{person} dodał(a) plik {file}",
       "attachmentDeleted": "{person} usunął(-ęła) plik {file}",
