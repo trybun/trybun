@@ -17,7 +17,7 @@ const POSTGRES_DOCKERFILE_DIR = join(SERVER_DIR, '../../docker/postgres');
 const POSTGRES_IMAGE = 'trybun-postgres-test';
 // Pinned to a digest (§2.10).
 export const VALKEY_IMAGE =
-  'valkey/valkey:9.1.2-alpine3.24@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11';
+  'valkey/valkey:9.1.3-alpine3.24@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b';
 
 declare module 'vitest' {
   export interface ProvidedContext {
