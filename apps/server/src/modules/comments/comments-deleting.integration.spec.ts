@@ -165,4 +165,17 @@ describe('deleting comments', () => {
     expect((await remove(requester, comment.id, 5)).status).toBe(412);
     expect(await prisma.comment.count({ where: { id: comment.id } })).toBe(1);
   });
+
+  it('deletes a single file of a comment with an internal event (Q16)', async () => {
+    const { requester, ticket, file } = await setUp();
+
+    const res = await http()
+      .delete(`/api/v1/attachments/${file.id}`)
+      .set('Authorization', await as(requester));
+
+    expect(res.status).toBe(204);
+    expect(await prisma.activityEvent.findMany({ where: { ticketId: ticket.id } })).toMatchObject([
+      { type: 'attachment_deleted', isPublic: false, actorId: requester.id },
+    ]);
+  });
 });

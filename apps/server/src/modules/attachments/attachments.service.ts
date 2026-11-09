@@ -335,10 +335,15 @@ export class AttachmentsService {
       }
       const located = await tx.attachment.findUniqueOrThrow({
         where: { id: attachmentId },
-        select: { ticket: { select: { projectId: true } } },
+        select: {
+          ticket: { select: { projectId: true } },
+          comment: { select: { ticketId: true, ticket: { select: { projectId: true } } } },
+        },
       });
-      if (located.ticket !== null) {
-        await this.projects.lockForShare(tx, located.ticket.projectId);
+      // The project of the ticket, or of the comment's ticket (S1-12), in share mode (§7.3).
+      const projectId = located.ticket?.projectId ?? located.comment?.ticket.projectId;
+      if (projectId !== undefined) {
+        await this.projects.lockForShare(tx, projectId);
       }
       const row = await this.findVisible(tx, ability, principal, attachmentId);
       this.assertCan(ability, 'delete', row);
@@ -351,6 +356,21 @@ export class AttachmentsService {
             isPublic: true,
           },
         ]);
+      } else if (located.comment !== null) {
+        // A file of a comment: internal, so its name never reaches people outside the comment's
+        // audience (S1-12 Q16).
+        await this.activityEvents.record(
+          tx,
+          { userId: principal.userId },
+          located.comment.ticketId,
+          [
+            {
+              type: 'attachment_deleted',
+              data: { from: { id: row.id, displayName: row.fileName }, to: null },
+              isPublic: false,
+            },
+          ],
+        );
       }
       const payload = { attachmentId } satisfies AttachmentDeletedPayload;
       await this.outbox.add(tx, { type: ATTACHMENT_DELETED, payload });
