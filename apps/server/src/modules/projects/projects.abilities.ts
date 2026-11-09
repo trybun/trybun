@@ -23,6 +23,15 @@ const ACTIONS_OF_ARCHIVED_PROJECTS: readonly ProjectAction[] = [
 const ALL_ACTIONS = projectActionSchema.options;
 
 /**
+ * The project actions of end users only, which the Administrator does not inherit (S1-04 Q3):
+ * the visibility of a new ticket besides `only_me` (S1-11 Q6, Q7) – team tickets are `only_me`.
+ */
+const END_USER_ACTIONS: readonly ProjectAction[] = [
+  'create_ticket_my_organization',
+  'create_ticket_all_customers',
+];
+
+/**
  * The rules of projects (§7.5): the Administrator creates and manages every project; a team member
  * sees the projects they belong to and, as Project manager, changes the settings and the members;
  * an end user sees the projects of their personal access and of their active organization (§7.1,
@@ -47,7 +56,10 @@ export const projectsAbilities: AbilityRules = ({ can }, principal) => {
   }
   if (principal.isAdmin) {
     can(CREATE, PROJECT);
-    can([...ALL_ACTIONS], PROJECT);
+    can(
+      ALL_ACTIONS.filter((action) => !END_USER_ACTIONS.includes(action)),
+      PROJECT,
+    );
     return;
   }
   // Only team roles count: a membership that contradicts the account kind grants nothing (§7.1).

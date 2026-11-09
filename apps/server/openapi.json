@@ -1037,7 +1037,9 @@
                                     "manage_members",
                                     "create_ticket",
                                     "assign_tickets",
-                                    "assign_tickets_self"
+                                    "assign_tickets_self",
+                                    "create_ticket_my_organization",
+                                    "create_ticket_all_customers"
                                   ]
                                 }
                               }
@@ -1093,7 +1095,9 @@
                                     "manage_members",
                                     "create_ticket",
                                     "assign_tickets",
-                                    "assign_tickets_self"
+                                    "assign_tickets_self",
+                                    "create_ticket_my_organization",
+                                    "create_ticket_all_customers"
                                   ]
                                 }
                               }
@@ -1228,7 +1232,9 @@
                           "manage_members",
                           "create_ticket",
                           "assign_tickets",
-                          "assign_tickets_self"
+                          "assign_tickets_self",
+                          "create_ticket_my_organization",
+                          "create_ticket_all_customers"
                         ]
                       }
                     }
@@ -1345,7 +1351,9 @@
                               "manage_members",
                               "create_ticket",
                               "assign_tickets",
-                              "assign_tickets_self"
+                              "assign_tickets_self",
+                              "create_ticket_my_organization",
+                              "create_ticket_all_customers"
                             ]
                           }
                         }
@@ -1401,7 +1409,9 @@
                               "manage_members",
                               "create_ticket",
                               "assign_tickets",
-                              "assign_tickets_self"
+                              "assign_tickets_self",
+                              "create_ticket_my_organization",
+                              "create_ticket_all_customers"
                             ]
                           }
                         }
@@ -1534,7 +1544,9 @@
                           "manage_members",
                           "create_ticket",
                           "assign_tickets",
-                          "assign_tickets_self"
+                          "assign_tickets_self",
+                          "create_ticket_my_organization",
+                          "create_ticket_all_customers"
                         ]
                       }
                     }
@@ -1672,7 +1684,9 @@
                           "manage_members",
                           "create_ticket",
                           "assign_tickets",
-                          "assign_tickets_self"
+                          "assign_tickets_self",
+                          "create_ticket_my_organization",
+                          "create_ticket_all_customers"
                         ]
                       }
                     }
@@ -5701,6 +5715,14 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "only_me",
+                      "my_organization",
+                      "all_customers"
+                    ]
                   }
                 },
                 "required": [

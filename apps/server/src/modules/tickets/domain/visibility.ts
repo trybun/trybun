@@ -122,3 +122,23 @@ export function rejectSharing(before: VisibilityFields, reason: string): Visibil
     audit: 'ticket.sharing_rejected',
   };
 }
+
+/**
+ * The visibility of a new ticket (§5.1, S1-11): treated as an `only_me` ticket whose author applies
+ * the chosen visibility as their first change – `all_customers` creates a pending request with the
+ * effective visibility of a request (Q4). The caller has checked the project action of the value.
+ */
+export function initialVisibility(
+  requested: TicketVisibility,
+  mayChooseOrganization: boolean,
+): VisibilityFields {
+  const onlyMe: VisibilityFields = {
+    visibility: 'only_me',
+    sharingRequest: 'none',
+    sharingRefusalReason: null,
+  };
+  return (
+    changeVisibility(onlyMe, { target: requested, byRequester: true, mayChooseOrganization })
+      .fields ?? onlyMe
+  );
+}

@@ -29,6 +29,8 @@ describe('project enums', () => {
         'create_ticket',
         'assign_tickets',
         'assign_tickets_self',
+        'create_ticket_my_organization',
+        'create_ticket_all_customers',
       ],
     ],
   ])('lists the codes', (schema, codes) => {

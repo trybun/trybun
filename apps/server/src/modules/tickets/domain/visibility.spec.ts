@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   approveSharing,
   changeVisibility,
+  initialVisibility,
   rejectSharing,
   type VisibilityFields,
   type VisibilityRequest,
@@ -156,5 +157,16 @@ describe('sharing decisions', () => {
       event: { type: 'sharing_rejected', data: null, isPublic: false },
       audit: 'ticket.sharing_rejected',
     });
+  });
+});
+
+describe('initialVisibility', () => {
+  it.each([
+    ['only_me', true, ONLY_ME],
+    ['my_organization', true, MY_ORGANIZATION],
+    ['all_customers', true, { ...MY_ORGANIZATION, sharingRequest: 'pending' }],
+    ['all_customers', false, { ...ONLY_ME, sharingRequest: 'pending' }],
+  ] as const)('creates %s (organization may be chosen: %s) as %o', (requested, may, fields) => {
+    expect(initialVisibility(requested, may)).toEqual(fields);
   });
 });

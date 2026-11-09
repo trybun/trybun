@@ -198,7 +198,8 @@ export const MAX_LINKED_ATTACHMENTS_PER_REQUEST = 100;
 
 /**
  * `POST /api/v1/tickets`. `type`, `priority` and `assigneeId` belong to the full form of the team
- * (§7.5): an end user sending them gets `403`. `attachmentIds` are the principal's own drafts,
+ * (§7.5): an end user sending them gets `403`. `visibility` (default `only_me`, §5.1) needs the
+ * project action of its value – `all_customers` creates a pending sharing request (S1-11). `attachmentIds` are the principal's own drafts,
  * linked to the new ticket without activity events (§3.2, §4.5).
  */
 export const createTicketSchema = z.object({
@@ -209,6 +210,7 @@ export const createTicketSchema = z.object({
   priority: ticketPrioritySchema.optional(),
   assigneeId: z.uuid().nullable().optional(),
   attachmentIds: z.array(z.uuid()).max(MAX_LINKED_ATTACHMENTS_PER_REQUEST).optional(),
+  visibility: ticketVisibilitySchema.optional(),
 });
 export type CreateTicketDto = z.infer<typeof createTicketSchema>;
 

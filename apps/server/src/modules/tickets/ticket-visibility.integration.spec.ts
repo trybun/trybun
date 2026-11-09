@@ -493,6 +493,139 @@ describe('changing the visibility and deciding sharing requests (§5.2, §5.3)',
   });
 });
 
+describe('creating a ticket with a visibility (S1-11 Q7, Q19)', () => {
+  const config = integrationConfig();
+  let app: INestApplication<Server>;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    app = await startApi(config);
+    prisma = app.get(PrismaService);
+  });
+
+  beforeEach(() => {
+    mswServer.use(keycloakJwksHandler(config));
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  const http = () => request(app.getHttpServer());
+
+  /**
+   * A project, a member of an organization with access to it, an end user of personal access
+   * without an organization, and a Developer.
+   */
+  async function setUp() {
+    const project = await createProject(prisma);
+    const organization = await createOrganization(prisma);
+    await prisma.organizationProject.create({
+      data: { organizationId: organization.id, projectId: project.id },
+    });
+    const member = await createUser(prisma, { keycloakUserId: randomUUID() });
+    await prisma.organizationMember.create({
+      data: { organizationId: organization.id, userId: member.id },
+    });
+    const personal = await createUser(prisma, { keycloakUserId: randomUUID() });
+    await createProjectMember(prisma, {
+      projectId: project.id,
+      userId: personal.id,
+      role: 'end_user',
+    });
+    const developer = await createUser(prisma, { keycloakUserId: randomUUID(), kind: 'team' });
+    await createProjectMember(prisma, {
+      projectId: project.id,
+      userId: developer.id,
+      role: 'developer',
+    });
+    return { project, organization, member, personal, developer };
+  }
+
+  async function create(user: User, projectId: string, visibility?: string) {
+    return http()
+      .post('/api/v1/tickets')
+      .set('Authorization', await authorizationOf(config, user))
+      .send({
+        projectId,
+        title: 'Invoice missing',
+        ...(visibility === undefined ? {} : { visibility }),
+      });
+  }
+
+  async function projectActions(user: User, projectId: string) {
+    const res = await http()
+      .get(`/api/v1/projects/${projectId}`)
+      .set('Authorization', await authorizationOf(config, user));
+    return (res.body as { allowedActions: string[] }).allowedActions;
+  }
+
+  it.each([
+    [undefined, 'only_me', 'none'],
+    ['my_organization', 'my_organization', 'none'],
+    ['all_customers', 'my_organization', 'pending'],
+  ] as const)(
+    'creates the ticket of an organization member with %s as %s / %s',
+    async (requested, visibility, sharingRequest) => {
+      const { project, member } = await setUp();
+
+      const res = await create(member, project.id, requested);
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ visibility, sharingRequest });
+      // Creation writes no activity event (S1-05 Q11).
+      expect(
+        await prisma.activityEvent.count({ where: { ticketId: (res.body as { id: string }).id } }),
+      ).toBe(0);
+    },
+  );
+
+  it('offers a person without an organization no my_organization, and refuses it with nothing created', async () => {
+    const { project, personal } = await setUp();
+
+    expect(await projectActions(personal, project.id)).toEqual([
+      'read',
+      'create_ticket',
+      'create_ticket_all_customers',
+    ]);
+    const refused = await create(personal, project.id, 'my_organization');
+    const pending = await create(personal, project.id, 'all_customers');
+
+    expect(refused.status).toBe(403);
+    expect(await prisma.ticket.count({ where: { projectId: project.id } })).toBe(1);
+    expect(pending.status).toBe(201);
+    expect(pending.body).toMatchObject({ visibility: 'only_me', sharingRequest: 'pending' });
+  });
+
+  it('offers a member my_organization only where their organization has access to the project', async () => {
+    const { project, member } = await setUp();
+    const personalProject = await createProject(prisma);
+    await createProjectMember(prisma, {
+      projectId: personalProject.id,
+      userId: member.id,
+      role: 'end_user',
+    });
+
+    expect(await projectActions(member, project.id)).toContain('create_ticket_my_organization');
+    expect(await projectActions(member, personalProject.id)).not.toContain(
+      'create_ticket_my_organization',
+    );
+    expect((await create(member, personalProject.id, 'my_organization')).status).toBe(403);
+  });
+
+  it('creates team tickets only_me and refuses another visibility (Q6)', async () => {
+    const { project, developer } = await setUp();
+
+    expect(await projectActions(developer, project.id)).not.toContain(
+      'create_ticket_all_customers',
+    );
+    expect((await create(developer, project.id, 'all_customers')).status).toBe(403);
+    const created = await create(developer, project.id, 'only_me');
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({ visibility: 'only_me', sharingRequest: 'none' });
+  });
+});
+
 describe('lists equal details over the demo dataset (S1-11 Q13)', () => {
   let config: TrybunConfig;
   let app: INestApplication<Server>;

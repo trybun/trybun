@@ -21,6 +21,14 @@ export const CREATE_TICKET = 'create_ticket';
 export const ASSIGN_TICKETS = 'assign_tickets';
 export const ASSIGN_TICKETS_SELF = 'assign_tickets_self';
 
+/**
+ * Creating a ticket with a visibility other than `only_me` (S1-11 Q7): `my_organization` where the
+ * person's active organization has access to the project (Q19), `all_customers` – a sharing
+ * request – wherever they create tickets. Team tickets are `only_me` (Q6).
+ */
+export const CREATE_TICKET_MY_ORGANIZATION = 'create_ticket_my_organization';
+export const CREATE_TICKET_ALL_CUSTOMERS = 'create_ticket_all_customers';
+
 /** The contract's closed list (§18.3): an action added to it is restricted by default. */
 const ALL_ACTIONS = ticketActionSchema.options;
 
@@ -65,16 +73,21 @@ export function memberFrom(principal: Principal, role: 'developer' | 'project_ma
 function endUserProjectAccess(principal: Principal): Prisma.ProjectWhereInput[] {
   return [
     { members: { some: { userId: principal.userId, role: 'end_user' } } },
-    {
-      organizations: {
-        some: {
-          organization: {
-            is: { state: 'active', members: { some: { userId: principal.userId } } },
-          },
+    organizationProjectAccess(principal),
+  ];
+}
+
+/** The access to a project through the principal's active organization (§7.3). */
+function organizationProjectAccess(principal: Principal) {
+  return {
+    organizations: {
+      some: {
+        organization: {
+          is: { state: 'active', members: { some: { userId: principal.userId } } },
         },
       },
     },
-  ];
+  } satisfies Prisma.ProjectWhereInput;
 }
 
 /**
@@ -175,22 +188,7 @@ function requesterVisibilityRules(
   can('set_visibility_my_organization', TICKET, {
     ...own,
     ...ownOrganization(principal, 'active'),
-    project: {
-      is: {
-        AND: [
-          access,
-          {
-            organizations: {
-              some: {
-                organization: {
-                  is: { state: 'active', members: { some: { userId: principal.userId } } },
-                },
-              },
-            },
-          },
-        ],
-      },
-    },
+    project: { is: { AND: [access, organizationProjectAccess(principal)] } },
     OR: [{ visibility: 'only_me' }, { sharingRequest: 'pending' }],
   });
   can('set_visibility_all_customers', TICKET, {
@@ -251,8 +249,9 @@ function teamVisibilityRules(
 export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
   if (principal.userKind === 'end_user') {
     for (const access of endUserProjectAccess(principal)) {
-      can(CREATE_TICKET, PROJECT, access);
+      can([CREATE_TICKET, CREATE_TICKET_ALL_CUSTOMERS], PROJECT, access);
     }
+    can(CREATE_TICKET_MY_ORGANIZATION, PROJECT, organizationProjectAccess(principal));
     for (const conditions of ticketChangeConditions(principal)) {
       can(['update', 'add_attachment'], TICKET, conditions);
     }

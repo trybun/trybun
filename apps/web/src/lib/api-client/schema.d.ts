@@ -1106,7 +1106,7 @@ export interface operations {
                             /** @enum {string|null} */
                             role: "developer" | "project_manager" | "end_user" | null;
                             hasTickets: boolean;
-                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self" | "create_ticket_my_organization" | "create_ticket_all_customers")[];
                         } | {
                             /** Format: uuid */
                             id: string;
@@ -1114,7 +1114,7 @@ export interface operations {
                             key: string;
                             /** @enum {string} */
                             state: "active" | "archived";
-                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
+                            allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self" | "create_ticket_my_organization" | "create_ticket_all_customers")[];
                         })[];
                         nextCursor: string | null;
                     };
@@ -1159,7 +1159,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self" | "create_ticket_my_organization" | "create_ticket_all_customers")[];
                     };
                 };
             };
@@ -1197,7 +1197,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self" | "create_ticket_my_organization" | "create_ticket_all_customers")[];
                     } | {
                         /** Format: uuid */
                         id: string;
@@ -1205,7 +1205,7 @@ export interface operations {
                         key: string;
                         /** @enum {string} */
                         state: "active" | "archived";
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self" | "create_ticket_my_organization" | "create_ticket_all_customers")[];
                     };
                 };
             };
@@ -1270,7 +1270,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self" | "create_ticket_my_organization" | "create_ticket_all_customers")[];
                     };
                 };
             };
@@ -1308,7 +1308,7 @@ export interface operations {
                         /** @enum {string|null} */
                         role: "developer" | "project_manager" | "end_user" | null;
                         hasTickets: boolean;
-                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self")[];
+                        allowedActions: ("read" | "update" | "update_settings" | "archive" | "unarchive" | "delete" | "read_members" | "manage_members" | "create_ticket" | "assign_tickets" | "assign_tickets_self" | "create_ticket_my_organization" | "create_ticket_all_customers")[];
                     };
                 };
             };
@@ -2553,6 +2553,8 @@ export interface operations {
                     /** Format: uuid */
                     assigneeId?: string | null;
                     attachmentIds?: string[];
+                    /** @enum {string} */
+                    visibility?: "only_me" | "my_organization" | "all_customers";
                 };
             };
         };

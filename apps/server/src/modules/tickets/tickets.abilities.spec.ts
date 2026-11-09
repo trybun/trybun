@@ -16,6 +16,8 @@ import {
   ASSIGN_TICKETS_SELF,
   archivedProjectsOfTicketsRestriction,
   CREATE_TICKET,
+  CREATE_TICKET_ALL_CUSTOMERS,
+  CREATE_TICKET_MY_ORGANIZATION,
   ticketsAbilities,
 } from './tickets.abilities.js';
 
@@ -33,7 +35,12 @@ function can(who: PrincipalFixture, action: TicketAction, options: RecordOptions
 
 function canOnProject(
   who: PrincipalFixture,
-  action: typeof CREATE_TICKET | typeof ASSIGN_TICKETS | typeof ASSIGN_TICKETS_SELF,
+  action:
+    | typeof CREATE_TICKET
+    | typeof ASSIGN_TICKETS
+    | typeof ASSIGN_TICKETS_SELF
+    | typeof CREATE_TICKET_MY_ORGANIZATION
+    | typeof CREATE_TICKET_ALL_CUSTOMERS,
   state: State = 'active',
 ) {
   return abilities.forPrincipal(buildPrincipal(who)).can(action, buildProjectRecord(who, state));
@@ -76,6 +83,23 @@ describe('ticket abilities', () => {
     ['Assign tickets (to self only)', ASSIGN_TICKETS_SELF, 'end_user_personal', false],
   ] as const)('%s on the project (%s) – %s: %s', (_row, action, who, isAllowed) => {
     expect(canOnProject(who, action)).toBe(isAllowed);
+  });
+
+  // The visibility of a new ticket (S1-11 Q7, Q19).
+  it.each([
+    [CREATE_TICKET_MY_ORGANIZATION, 'end_user_organization', true],
+    [CREATE_TICKET_MY_ORGANIZATION, 'end_user_personal', false],
+    [CREATE_TICKET_MY_ORGANIZATION, 'end_user_archived_organization', false],
+    [CREATE_TICKET_MY_ORGANIZATION, 'developer', false],
+    [CREATE_TICKET_MY_ORGANIZATION, 'admin', false],
+    [CREATE_TICKET_ALL_CUSTOMERS, 'end_user_organization', true],
+    [CREATE_TICKET_ALL_CUSTOMERS, 'end_user_personal', true],
+    [CREATE_TICKET_ALL_CUSTOMERS, 'end_user', false],
+    [CREATE_TICKET_ALL_CUSTOMERS, 'developer', false],
+    [CREATE_TICKET_ALL_CUSTOMERS, 'admin', false],
+  ] as const)('%s on the project – %s: %s', (action, who, isAllowed) => {
+    expect(canOnProject(who, action)).toBe(isAllowed);
+    expect(canOnProject(who, action, 'archived')).toBe(false);
   });
 
   it.each([ASSIGN_TICKETS, ASSIGN_TICKETS_SELF] as const)(

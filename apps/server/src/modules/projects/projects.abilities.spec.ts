@@ -90,9 +90,15 @@ describe('project abilities', () => {
     expect(can(who, action)).toBe(isAllowed);
   });
 
+  const TEAM_PROJECT_ACTIONS = projectActionSchema.options.filter(
+    (action) =>
+      action !== 'create_ticket_my_organization' && action !== 'create_ticket_all_customers',
+  );
+
   // The actions of the project response for every principal and both states (§18.3).
   it.each([
-    ['admin', 'active', projectActionSchema.options],
+    // The visibility of a new ticket is for end users only (S1-11 Q6).
+    ['admin', 'active', TEAM_PROJECT_ACTIONS],
     ['admin', 'archived', ['read', 'unarchive', 'read_members']],
     ['project_manager', 'active', ['read', 'update_settings', 'read_members', 'manage_members']],
     ['project_manager', 'archived', ['read', 'read_members']],
@@ -162,6 +168,8 @@ describe('project abilities', () => {
         'create_ticket',
         'assign_tickets',
         'assign_tickets_self',
+        'create_ticket_my_organization',
+        'create_ticket_all_customers',
       ]);
       for (const action of refused) {
         expect(reasonCode(ability.relevantRuleFor(action, record)?.reason), action).toBe(

@@ -32,6 +32,12 @@ import { PrismaService } from './platform/database/prisma.service.js';
 import { API_PREFIX } from './platform/http/api-prefix.js';
 import { strictEndUserProjectSchema, strictPageSchema } from '../test/end-user-schemas.js';
 
+/** The project actions of the Administrator: all but the end users' visibility of a new ticket. */
+const TEAM_PROJECT_ACTIONS = projectActionSchema.options.filter(
+  (action) =>
+    action !== 'create_ticket_my_organization' && action !== 'create_ticket_all_customers',
+);
+
 describe('permission layer', () => {
   const config = integrationConfig();
   let app: INestApplication<Server>;
@@ -284,7 +290,16 @@ describe('permission layer', () => {
 
         expect(res.status).toBe(200);
         expect(strictEndUserProjectSchema.parse(res.body)).toMatchObject({
-          allowedActions: ['read', 'create_ticket'],
+          // `my_organization` only where the organization has access to the project (S1-11 Q19).
+          allowedActions:
+            fixture === 'end_user_organization'
+              ? [
+                  'read',
+                  'create_ticket',
+                  'create_ticket_my_organization',
+                  'create_ticket_all_customers',
+                ]
+              : ['read', 'create_ticket', 'create_ticket_all_customers'],
         });
       },
     );
@@ -313,7 +328,7 @@ describe('permission layer', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ role: null, allowedActions: projectActionSchema.options });
+      expect(res.body).toMatchObject({ role: null, allowedActions: TEAM_PROJECT_ACTIONS });
     });
 
     it('hides the projects of an archived organization (404)', async () => {
@@ -404,7 +419,7 @@ describe('permission layer', () => {
 
   describe('the actions of the project response (§18.3)', () => {
     it.each([
-      ['admin', 'projectA', projectActionSchema.options],
+      ['admin', 'projectA', TEAM_PROJECT_ACTIONS],
       ['admin', 'archivedProject', ['read', 'unarchive', 'read_members']],
       [
         'project_manager',

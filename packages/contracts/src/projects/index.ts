@@ -22,6 +22,9 @@ export type ProjectMemberRole = z.infer<typeof projectMemberRoleSchema>;
  * creates a ticket in it (§3.2). `assign_tickets` assigns anyone eligible to its tickets and
  * `assign_tickets_self` only the principal, so the full form knows its assignee control before the
  * ticket exists (S1-10 Q15); the ticket's own `assign` / `assign_self` decide on a ticket.
+ * `create_ticket_my_organization` and `create_ticket_all_customers` tell the form which visibility
+ * a new ticket may get besides `only_me` (S1-11 Q7): the first only where the person's active
+ * organization has access to the project (Q19).
  */
 export const projectActionSchema = z.enum([
   'read',
@@ -35,6 +38,8 @@ export const projectActionSchema = z.enum([
   'create_ticket',
   'assign_tickets',
   'assign_tickets_self',
+  'create_ticket_my_organization',
+  'create_ticket_all_customers',
 ]);
 export type ProjectAction = z.infer<typeof projectActionSchema>;
 

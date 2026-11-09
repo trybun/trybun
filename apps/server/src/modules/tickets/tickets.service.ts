@@ -65,11 +65,18 @@ import {
 import {
   approveSharing,
   changeVisibility,
+  initialVisibility,
   rejectSharing,
   type VisibilityChange,
   type VisibilityFields,
 } from './domain/visibility.js';
-import { CREATE_TICKET, TICKET, ticketRuleSelect } from './tickets.abilities.js';
+import {
+  CREATE_TICKET,
+  CREATE_TICKET_ALL_CUSTOMERS,
+  CREATE_TICKET_MY_ORGANIZATION,
+  TICKET,
+  ticketRuleSelect,
+} from './tickets.abilities.js';
 import { TICKET_STATUS_CHANGED, type TicketStatusChangedPayload } from './tickets.events.js';
 import {
   allocateTicketNumber,
@@ -318,6 +325,17 @@ export class TicketsService {
       if (principal.userKind === 'end_user' && isFullForm) {
         throw new AppError('request.forbidden');
       }
+      // A visibility other than `only_me` needs its project action (S1-11 Q7); team tickets are
+      // `only_me` (Q6). Nothing is created without it.
+      const requested = input.visibility ?? 'only_me';
+      const mayChooseOrganization = ability.can(CREATE_TICKET_MY_ORGANIZATION, projectRecord);
+      if (
+        (requested === 'my_organization' && !mayChooseOrganization) ||
+        (requested === 'all_customers' && !ability.can(CREATE_TICKET_ALL_CUSTOMERS, projectRecord))
+      ) {
+        throw new AppError('request.forbidden');
+      }
+      const visibility = initialVisibility(requested, mayChooseOrganization);
       const assigneeId = input.assigneeId ?? null;
       if (assigneeId !== null) {
         const newTicket = subject(TICKET, { id: '', requesterId: principal.userId, project });
@@ -325,6 +343,10 @@ export class TicketsService {
         await this.assertEligibleAssignee(tx, project.id, assigneeId);
       }
       const organizationId = await this.lockOrganizationSnapshot(tx, principal.userId);
+      // The person left their organization since the project was read (Q4).
+      if (visibility.visibility === 'my_organization' && organizationId === null) {
+        throw new AppError('ticket.organization_changed');
+      }
       const number = await allocateTicketNumber(tx, project.id);
       const row = await tx.ticket.create({
         data: {
@@ -335,6 +357,7 @@ export class TicketsService {
           ...creationDefaults(principal.userKind, input),
           // The requester's organization at creation, whatever its state (§3.2).
           organizationId,
+          ...visibility,
           requesterId: principal.userId,
           assigneeId,
         },
