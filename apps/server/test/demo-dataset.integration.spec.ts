@@ -105,8 +105,16 @@ describe('demo dataset', () => {
       ).toEqual({
         state: 'active',
         version: 1,
-        domains: organizationDomains.map(({ domain }) => ({ domain })),
-        _count: { projects: organizationProjects.length, members: organizationMembers.length },
+        domains: organizationDomains
+          .filter((domain) => domain.organizationId === organizationId)
+          .map(({ domain }) => ({ domain })),
+        _count: {
+          projects: organizationProjects.filter(
+            (access) => access.organizationId === organizationId,
+          ).length,
+          members: organizationMembers.filter((member) => member.organizationId === organizationId)
+            .length,
+        },
       });
     } finally {
       await prisma.$disconnect();
