@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Ticket, ticketSharingRefusalReasonSchema } from '@trybun/contracts/tickets';
+import { ticketSharingRefusalReasonSchema } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import {
   Dialog,
@@ -20,7 +20,8 @@ import { z } from 'zod';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP } from '../../../lib/errors/form-errors.js';
-import { useDecideSharing, useSetTicketVisibility } from '../mutations.js';
+import Link from 'next/link';
+import { type TicketVersion, useDecideSharing, useSetTicketVisibility } from '../mutations.js';
 import { LazyMarkdownEditor } from './lazy-markdown-editor.js';
 
 /** Closes a dialog that is open while it is rendered. */
@@ -41,11 +42,17 @@ function onOpenChangeOf(onClose: () => void) {
 export function ShareDialog({
   ticket,
   approve,
+  viewHref,
   onDone,
   onClose,
 }: {
-  ticket: Ticket;
+  ticket: TicketVersion;
   approve: boolean;
+  /**
+   * The ticket view, linked where the dialog opens without the description – in the list, so the
+   * team can check and redact the content first (§5.2, S1-13 Q11).
+   */
+  viewHref?: string;
   onDone: () => void;
   onClose: () => void;
 }) {
@@ -75,6 +82,11 @@ export function ShareDialog({
           <DialogTitle>{t('shareTitle', { identifier: ticket.identifier })}</DialogTitle>
           <DialogDescription>{t('shareDescription')}</DialogDescription>
         </DialogHeader>
+        {viewHref !== undefined && (
+          <Link href={viewHref} className="text-sm font-medium underline underline-offset-4">
+            {t('openTicketToCheck', { identifier: ticket.identifier })}
+          </Link>
+        )}
         {error !== null && (
           <p role="alert" className="text-sm text-destructive">
             {errorMessage(error)}
@@ -107,7 +119,7 @@ export function RefuseSharingDialog({
   onDone,
   onClose,
 }: {
-  ticket: Ticket;
+  ticket: TicketVersion;
   onDone: () => void;
   onClose: () => void;
 }) {

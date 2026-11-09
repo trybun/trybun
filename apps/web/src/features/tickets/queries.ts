@@ -1,4 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import type { SortOrder, TicketListFilters, TicketListSort } from '@trybun/contracts/tickets';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
 import { ApiError } from '../../lib/errors/api-error.js';
 
@@ -108,6 +109,127 @@ export function projectTicketQueryOptions(
         client.GET('/api/v1/tickets', { params: { query: { projectId, identifier } }, signal }),
       );
       return page.items[0] ?? null;
+    },
+  });
+}
+
+/** The tickets of one page of the list (§18.4, S1-13 Q19). */
+const TICKET_LIST_PAGE_SIZE = 50;
+
+/**
+ * The team's ticket list (§8.1, S1-13): the tickets of the filters in the sort, page by page with
+ * **Show more**. Every server-owned part of the request is in the key (§18.5).
+ */
+export function ticketListInfiniteQueryOptions(
+  client: ApiClient,
+  { filters, sort, order }: { filters: TicketListFilters; sort: TicketListSort; order: SortOrder },
+) {
+  return infiniteQueryOptions({
+    queryKey: ['tickets', 'list', { filters, sort, order }],
+    queryFn: ({ pageParam, signal }) =>
+      dataOf(
+        client.GET('/api/v1/tickets', {
+          params: {
+            query: {
+              ...filters,
+              sort,
+              order,
+              limit: TICKET_LIST_PAGE_SIZE,
+              ...(pageParam === null ? {} : { cursor: pageParam }),
+            },
+          },
+          signal,
+        }),
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (page) => page.nextCursor,
+  });
+}
+
+/** The organizations of the filter: at most this many options. */
+const ORGANIZATION_FILTER_LIMIT = 100;
+
+/**
+ * The options of the organization filter (S1-13 Q6): the IDs and names of the organizations with
+ * access to one of the person's projects, active and archived – archived organizations still
+ * appear in snapshots (§7.3).
+ */
+export function organizationFilterOptionsQueryOptions(client: ApiClient) {
+  return queryOptions({
+    queryKey: ['organizations', 'filter-options'],
+    queryFn: async ({ signal }) => {
+      const pages = await Promise.all(
+        (['active', 'archived'] as const).map((state) =>
+          dataOf(
+            client.GET('/api/v1/organizations', {
+              params: { query: { state, limit: ORGANIZATION_FILTER_LIMIT } },
+              signal,
+            }),
+          ),
+        ),
+      );
+      return pages
+        .flatMap((page) => page.items.map(({ id, name }) => ({ id, label: name })))
+        .sort((left, right) => left.label.localeCompare(right.label));
+    },
+  });
+}
+
+/** The members of the projects of the assignee filter (S1-13 Q7), at most this many per project. */
+const PROJECT_MEMBER_FILTER_LIMIT = 100;
+
+/**
+ * The people of the assignee filter (S1-13 Q7): the members of the chosen projects – also those
+ * who can no longer be assigned, so former assignees can still be found.
+ */
+export function assigneeFilterOptionsQueryOptions(
+  client: ApiClient,
+  projectIds: readonly string[],
+) {
+  return queryOptions({
+    queryKey: ['projects', 'members', 'filter-options', [...projectIds].sort()],
+    queryFn: async ({ signal }) => {
+      const pages = await Promise.all(
+        projectIds.map((projectId) =>
+          dataOf(
+            client.GET('/api/v1/projects/{projectId}/members', {
+              params: { path: { projectId }, query: { limit: PROJECT_MEMBER_FILTER_LIMIT } },
+              signal,
+            }),
+          ),
+        ),
+      );
+      const people = new Map<string, string | null>();
+      for (const { user } of pages.flatMap((page) => page.items)) {
+        people.set(user.id, user.displayName);
+      }
+      return [...people].map(([id, displayName]) => ({ id, label: displayName }));
+    },
+    enabled: projectIds.length > 0,
+  });
+}
+
+/** The projects of the filter: at most this many per state. */
+const PROJECT_FILTER_LIMIT = 100;
+
+/** The options of the project filter (§8.1): the person's projects, active and archived. */
+export function projectFilterOptionsQueryOptions(client: ApiClient) {
+  return queryOptions({
+    queryKey: ['projects', 'filter-options'],
+    queryFn: async ({ signal }) => {
+      const pages = await Promise.all(
+        (['active', 'archived'] as const).map((state) =>
+          dataOf(
+            client.GET('/api/v1/projects', {
+              params: { query: { state, limit: PROJECT_FILTER_LIMIT } },
+              signal,
+            }),
+          ),
+        ),
+      );
+      return pages.flatMap((page) =>
+        page.items.map(({ id, key, name }) => ({ id, label: `${key} · ${name}` })),
+      );
     },
   });
 }

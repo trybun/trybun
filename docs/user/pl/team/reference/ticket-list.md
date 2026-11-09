@@ -78,7 +78,7 @@ W przeciwnym razie okno – na telefonie na dole ekranu – podaje, ile zgłosze
 | Powód | Znaczenie |
 |---|---|
 | „Zmienione przez kogoś innego – odśwież, aby zobaczyć najnowszą wersję” | Ktoś zmienił zgłoszenie po wczytaniu listy |
-| „Nie masz uprawnień do tej czynności” | Twoja rola nie pozwala na tę zmianę zgłoszenia, na przykład na przypisanie innej osoby przez Developera |
+| „Nie masz uprawnień do wykonania tej czynności” | Twoja rola nie pozwala na tę zmianę zgłoszenia, na przykład na przypisanie innej osoby przez Developera |
 | „Już niedostępne” | Nie widzisz już zgłoszenia, na przykład dlatego, że usunięto Cię z jego projektu |
 | „Projekt jest zarchiwizowany” | Projekt zgłoszenia jest zarchiwizowany i tylko do odczytu |
 | Komunikat reguły, na przykład „Przypisać można tylko aktywnych członków zespołu projektu.” | Zmiana narusza regułę projektu zgłoszenia |
