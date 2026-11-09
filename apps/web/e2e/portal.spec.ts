@@ -330,8 +330,9 @@ test.describe('sharing a ticket with all customers', () => {
     ).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
+    // The whole label of a choice is its target.
     await expectTouchTarget(
-      visibility.getByRole('radio', { name: 'All customers' }),
+      visibility.locator('label').filter({ hasText: 'All customers' }),
       minimumTargetSize(testInfo),
     );
     await portal.submit.click();
