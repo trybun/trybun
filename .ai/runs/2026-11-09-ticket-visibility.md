@@ -34,7 +34,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 ### Phase 2: Read rules
 
 - [x] 2.1 Implement the read rules R1–R4 and keep changes to own tickets — 08dde2e
-- [ ] 2.2 Extend the demo dataset
+- [x] 2.2 Extend the demo dataset — 0c22bed
 - [ ] 2.3 Test the read rules, organization changes and lists against details
 
 ### Phase 3: Visibility actions
