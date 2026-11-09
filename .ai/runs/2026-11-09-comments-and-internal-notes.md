@@ -27,6 +27,8 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 
 ## Progress
 
+PR: #260
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Model, rules and reading
