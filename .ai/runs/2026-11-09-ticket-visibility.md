@@ -39,7 +39,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 
 ### Phase 3: Visibility actions
 
-- [ ] 3.1 Add the visibility actions, state rules and error codes
+- [x] 3.1 Add the visibility actions, state rules and error codes — d38bfca
 - [ ] 3.2 Add the visibility endpoint with activity events and audit entries
 
 ### Phase 4: Sharing decisions and creation
