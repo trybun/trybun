@@ -19,6 +19,7 @@ export type AppSubject =
       User: UserRuleRecord;
       Ticket: TicketRuleRecord;
       Attachment: AttachmentRuleRecord;
+      Comment: CommentRuleRecord;
     }>
   | 'Administration';
 
@@ -70,14 +71,29 @@ export type TicketRuleRecord = {
 };
 
 /**
- * An attachment as its rules read it (§7.5): its uploader and, once linked, its ticket as the
- * ticket's rules read it; `null` for a draft.
+ * An attachment as its rules read it (§7.5): its uploader and, once linked, its ticket or its
+ * comment as their rules read them; both `null` for a draft.
  */
 export type AttachmentRuleRecord = {
   id: string;
   uploadedById: string;
   ticketId: string | null;
+  commentId: string | null;
   ticket: TicketRuleRecord | null;
+  comment: CommentRuleRecord | null;
+};
+
+/**
+ * A comment as its rules read it (§7.5): its author, kind and audience, the principal's own
+ * membership of its audience organization, and its ticket as the ticket's rules read it.
+ */
+export type CommentRuleRecord = {
+  id: string;
+  authorId: string;
+  kind: string;
+  audience: string | null;
+  audienceOrganization: { members: { userId: string }[] } | null;
+  ticket: TicketRuleRecord;
 };
 
 /** The conditions of a rule: the Prisma `WhereInput` of its subject. */

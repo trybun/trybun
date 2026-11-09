@@ -13,6 +13,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { keycloakJwksHandler, signAccessToken } from '../test/factories/access-token.factory.js';
 import { createAttachment } from '../test/factories/attachment.factory.js';
+import { createComment } from '../test/factories/comment.factory.js';
 import { createInvitation } from '../test/factories/invitation.factory.js';
 import { createOrganization } from '../test/factories/organization.factory.js';
 import { PRINCIPAL_FIXTURES, type PrincipalFixture } from '../test/factories/principal.factory.js';
@@ -66,8 +67,10 @@ describe('permission layer', () => {
     colleagueTicket: { id: string };
     sharedTicket: { id: string };
   };
-  /** Drafts and attachments of the tickets above. */
+  /** Drafts and attachments of the tickets and comments above. */
   const attachments: { id: string }[] = [];
+  /** Comments and internal notes of the tickets above, with their kinds and audiences (S1-12). */
+  const comments: { id: string }[] = [];
   /** The attachments of the tickets above by their requester and by the Developer, by ticket. */
   const attachmentsOf = {} as Record<
     'teamTicket' | 'personalTicket' | 'organizationTicket' | 'archivedTicket' | 'ticketB',
@@ -237,6 +240,59 @@ describe('permission layer', () => {
       attachmentsOf[name] = { byRequester, byDeveloper };
       attachments.push(...new Set([byRequester, byDeveloper]));
     }
+    // S1-12: a public comment of each end-user ticket by its requester with the ticket's
+    // visibility as its audience, an internal note and a public comment of the Developer, a
+    // comment of the shared ticket written while it was `my_organization`, and an attachment of a
+    // note and of a public comment.
+    for (const name of [
+      'personalTicket',
+      'organizationTicket',
+      'archivedTicket',
+      'ticketB',
+      'colleagueTicket',
+      'sharedTicket',
+    ] as const) {
+      const ticket = await prisma.ticket.findUniqueOrThrow({
+        where: { id: records[name].id },
+        select: { id: true, requesterId: true, visibility: true, organizationId: true },
+      });
+      const audience = {
+        audience: ticket.visibility,
+        audienceOrganizationId:
+          ticket.visibility === 'my_organization' ? ticket.organizationId : null,
+      };
+      const byRequester = await createComment(prisma, {
+        ticketId: ticket.id,
+        authorId: ticket.requesterId,
+        ...audience,
+      });
+      const note = await createComment(prisma, {
+        ticketId: ticket.id,
+        authorId: users.developer.id,
+        kind: 'internal',
+      });
+      const byDeveloper = await createComment(prisma, {
+        ticketId: ticket.id,
+        authorId: users.developer.id,
+        ...audience,
+      });
+      comments.push(byRequester, note, byDeveloper);
+      attachments.push(
+        await createAttachment(prisma, { uploadedById: users.developer.id, commentId: note.id }),
+        await createAttachment(prisma, {
+          uploadedById: ticket.requesterId,
+          commentId: byRequester.id,
+        }),
+      );
+    }
+    comments.push(
+      await createComment(prisma, {
+        ticketId: records.sharedTicket.id,
+        authorId: users.end_user_organization.id,
+        audience: 'my_organization',
+        audienceOrganizationId: records.organization.id,
+      }),
+    );
   });
 
   beforeEach(() => {
@@ -381,6 +437,11 @@ describe('permission layer', () => {
             where: { AND: [accessibleBy(ability, 'read').ofType('Attachment'), where] },
             select,
           });
+        case 'Comment':
+          return prisma.comment.findMany({
+            where: { AND: [accessibleBy(ability, 'read').ofType('Comment'), where] },
+            select,
+          });
       }
     }
 
@@ -404,6 +465,7 @@ describe('permission layer', () => {
             records.sharedTicket.id,
           ],
           Attachment: attachments.map(({ id }) => id),
+          Comment: comments.map(({ id }) => id),
         };
 
         for (const descriptor of ABILITY_DEFINITIONS.records) {
@@ -480,13 +542,31 @@ describe('permission layer', () => {
       [
         'developer',
         'teamTicket',
-        ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
+        [
+          'read',
+          'update',
+          'update_fields',
+          'assign_self',
+          'change_status',
+          'add_attachment',
+          'add_comment',
+          'add_internal_note',
+          'read_description_revisions',
+          'redact_description',
+        ],
       ],
-      ['admin', 'archivedTicket', ['read']],
+      ['admin', 'archivedTicket', ['read', 'read_description_revisions']],
       [
         'end_user_personal',
         'personalTicket',
-        ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+        [
+          'read',
+          'update',
+          'add_attachment',
+          'set_visibility_all_customers',
+          'add_comment',
+          'read_description_revisions',
+        ],
       ],
       [
         'end_user_organization',
@@ -497,14 +577,22 @@ describe('permission layer', () => {
           'add_attachment',
           'set_visibility_my_organization',
           'set_visibility_all_customers',
+          'add_comment',
+          'read_description_revisions',
         ],
       ],
-      ['end_user_personal', 'archivedTicket', ['read']],
-      // A requester keeps reading a ticket after losing access to its project (§7.3).
-      ['end_user_archived_organization', 'ticketB', ['read']],
-      // S1-11: reading a colleague's or a shared ticket gives no change (§7.5).
-      ['end_user_organization', 'colleagueTicket', ['read']],
-      ['end_user_personal', 'sharedTicket', ['read']],
+      ['end_user_personal', 'archivedTicket', ['read', 'read_description_revisions']],
+      // A requester keeps reading – and commenting on – a ticket after losing access to its
+      // project ("read and comment", §7.3).
+      [
+        'end_user_archived_organization',
+        'ticketB',
+        ['read', 'add_comment', 'read_description_revisions'],
+      ],
+      // S1-11: reading a colleague's or a shared ticket gives no change of the ticket (§7.5), but
+      // everyone who reads a ticket comments on it (S1-12).
+      ['end_user_organization', 'colleagueTicket', ['read', 'add_comment']],
+      ['end_user_personal', 'sharedTicket', ['read', 'add_comment']],
     ] as const)('lists for %s on %s exactly %o', async (fixture, ticket, actions) => {
       const res = await http()
         .get(`/api/v1/tickets/${records[ticket].id}`)

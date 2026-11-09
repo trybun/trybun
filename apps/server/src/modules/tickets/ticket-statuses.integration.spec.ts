@@ -775,6 +775,8 @@ describe('ticket status endpoints', () => {
           'confirm_resolution',
           'add_attachment',
           'set_visibility_all_customers',
+          'add_comment',
+          'read_description_revisions',
         ],
       });
       expect(await read(ticket.id)).toMatchObject({ statusBeforeWaiting: 'in_verification' });
@@ -819,7 +821,14 @@ describe('ticket status endpoints', () => {
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
         publicStatus,
-        allowedActions: ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+        allowedActions: [
+          'read',
+          'update',
+          'add_attachment',
+          'set_visibility_all_customers',
+          'add_comment',
+          'read_description_revisions',
+        ],
       });
       expect((await read(ticket.id)).status).toBe(status);
       const [, answered] = await events(ticket.id);

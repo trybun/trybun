@@ -206,6 +206,10 @@ describe('tickets endpoints', () => {
           'assign_self',
           'change_status',
           'add_attachment',
+          'add_comment',
+          'add_internal_note',
+          'read_description_revisions',
+          'redact_description',
         ],
         publicStatus: 'in_progress',
         waitingReason: null,
@@ -253,6 +257,8 @@ describe('tickets endpoints', () => {
           'add_attachment',
           'set_visibility_my_organization',
           'set_visibility_all_customers',
+          'add_comment',
+          'read_description_revisions',
         ],
         publicStatus: 'received',
         publicStatusDescription: 'received',
@@ -260,6 +266,7 @@ describe('tickets endpoints', () => {
         duplicateOf: null,
         visibility: 'only_me',
         sharingRequest: 'none',
+        descriptionEditedAt: null,
       });
       expect(
         await prisma.ticket.findUniqueOrThrow({
@@ -551,7 +558,12 @@ describe('tickets endpoints', () => {
       const edit = await update(authorization, ticket, { title: 'Clearer title' });
 
       expect(read.status).toBe(200);
-      expect((read.body as EndUserTicket).allowedActions).toEqual(['read']);
+      // "Read and comment" (§7.3): the requester still comments and reads the description's history.
+      expect((read.body as EndUserTicket).allowedActions).toEqual([
+        'read',
+        'add_comment',
+        'read_description_revisions',
+      ]);
       expect(edit.status).toBe(403);
     });
 
@@ -714,7 +726,7 @@ describe('tickets endpoints', () => {
 
       expect(res.status).toBe(409);
       expect(res.body).toMatchObject({ code: 'project.archived' });
-      expect((read.body as Ticket).allowedActions).toEqual(['read']);
+      expect((read.body as Ticket).allowedActions).toEqual(['read', 'read_description_revisions']);
     });
   });
 

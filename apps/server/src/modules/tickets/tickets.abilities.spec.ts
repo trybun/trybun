@@ -314,39 +314,80 @@ describe('ticket abilities', () => {
   // The actions of the ticket response for every principal (§18.3).
   it.each([
     ['admin', false, 'active', TEAM_ACTIONS],
-    ['admin', false, 'archived', ['read']],
+    ['admin', false, 'archived', ['read', 'read_description_revisions']],
     ['project_manager', false, 'active', TEAM_ACTIONS],
-    ['project_manager', false, 'archived', ['read']],
+    ['project_manager', false, 'archived', ['read', 'read_description_revisions']],
     [
       'developer',
       false,
       'active',
-      ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
+      [
+        'read',
+        'update',
+        'update_fields',
+        'assign_self',
+        'change_status',
+        'add_attachment',
+        'add_comment',
+        'add_internal_note',
+        'read_description_revisions',
+        'redact_description',
+      ],
     ],
     [
       'developer',
       true,
       'active',
-      ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
+      [
+        'read',
+        'update',
+        'update_fields',
+        'assign_self',
+        'change_status',
+        'add_attachment',
+        'add_comment',
+        'add_internal_note',
+        'read_description_revisions',
+        'redact_description',
+      ],
     ],
-    ['developer', false, 'archived', ['read']],
+    ['developer', false, 'archived', ['read', 'read_description_revisions']],
     ['team_member', false, 'active', []],
     [
       'end_user_personal',
       true,
       'active',
-      ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+      [
+        'read',
+        'update',
+        'add_attachment',
+        'set_visibility_all_customers',
+        'add_comment',
+        'read_description_revisions',
+      ],
     ],
-    ['end_user_personal', true, 'archived', ['read']],
+    ['end_user_personal', true, 'archived', ['read', 'read_description_revisions']],
     ['end_user_personal', false, 'active', []],
     [
       'end_user_organization',
       true,
       'active',
-      ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+      [
+        'read',
+        'update',
+        'add_attachment',
+        'set_visibility_all_customers',
+        'add_comment',
+        'read_description_revisions',
+      ],
     ],
-    ['end_user_archived_organization', true, 'active', ['read']],
-    ['end_user', true, 'active', ['read']],
+    [
+      'end_user_archived_organization',
+      true,
+      'active',
+      ['read', 'add_comment', 'read_description_revisions'],
+    ],
+    ['end_user', true, 'active', ['read', 'add_comment', 'read_description_revisions']],
   ] as const)(
     '%s on a ticket (own: %s) of an %s project may perform %o',
     (who, own, state, actions) => {
@@ -607,7 +648,9 @@ describe('ticket abilities', () => {
         ...WAITING_FOR_CONFIRMATION,
       });
 
-      for (const action of ticketActionSchema.options.filter((a) => a !== 'read')) {
+      for (const action of ticketActionSchema.options.filter(
+        (a) => a !== 'read' && a !== 'read_description_revisions',
+      )) {
         expect(ability.can(action, record), action).toBe(false);
         const reason = ability.relevantRuleFor(action, record)?.reason;
         if (ability.can('read', record)) {

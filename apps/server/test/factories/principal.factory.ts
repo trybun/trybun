@@ -103,6 +103,8 @@ export interface TicketRecordOptions {
   state?: 'active' | 'archived';
   status?: TicketStatus;
   waitingReason?: TicketWaitingReason | null;
+  /** The latest close; set by default for a terminal status, as the check constraints require. */
+  closedAt?: Date | null;
   source?: TicketSource;
   visibility?: TicketVisibility;
   sharingRequest?: TicketSharingRequest;
@@ -122,6 +124,12 @@ function ticketFields(fixture: PrincipalFixture, options: TicketRecordOptions) {
     requesterId: options.own === true ? PRINCIPAL_ID : SOMEONE_ELSE,
     status: options.status ?? 'in_progress',
     waitingReason: options.waitingReason ?? null,
+    closedAt:
+      options.closedAt !== undefined
+        ? options.closedAt
+        : ['done', 'rejected', 'duplicate'].includes(options.status ?? '')
+          ? new Date('2026-11-08T10:00:00.000Z')
+          : null,
     source: options.source ?? 'user',
     visibility: options.visibility ?? 'only_me',
     sharingRequest: options.sharingRequest ?? 'none',
@@ -157,13 +165,59 @@ export function buildTicketRecord(fixture: PrincipalFixture, options: TicketReco
  */
 export function buildAttachmentRecord(
   fixture: PrincipalFixture,
-  options: { own?: boolean; ticket?: TicketRecordOptions | null } = {},
+  options: {
+    own?: boolean;
+    ticket?: TicketRecordOptions | null;
+    comment?: CommentRecordOptions;
+  } = {},
 ) {
-  const ticket = options.ticket === null ? null : ticketFields(fixture, options.ticket ?? {});
+  const comment = options.comment === undefined ? null : commentFields(fixture, options.comment);
+  const ticket =
+    options.ticket === null || comment !== null
+      ? null
+      : ticketFields(fixture, options.ticket ?? {});
   return subject('Attachment', {
     id: 'attachment',
     uploadedById: options.own === true ? PRINCIPAL_ID : SOMEONE_ELSE,
     ticketId: ticket?.id ?? null,
+    commentId: comment?.id ?? null,
     ticket,
+    comment,
   });
+}
+
+/** The options of a comment record of a fixture. */
+export interface CommentRecordOptions {
+  /** Written by the principal. */
+  own?: boolean;
+  kind?: 'public' | 'internal';
+  /** The audience of a public comment; `only_me` by default, none for an internal note. */
+  audience?: TicketVisibility;
+  /** For `my_organization`: whether the principal belongs to the audience organization. */
+  audienceOrganization?: 'mine' | 'other';
+  ticket?: TicketRecordOptions;
+}
+
+function commentFields(fixture: PrincipalFixture, options: CommentRecordOptions) {
+  const kind = options.kind ?? 'public';
+  const audience = kind === 'internal' ? null : (options.audience ?? 'only_me');
+  return {
+    id: 'comment',
+    authorId: options.own === true ? PRINCIPAL_ID : SOMEONE_ELSE,
+    kind,
+    audience,
+    audienceOrganization:
+      audience !== 'my_organization'
+        ? null
+        : {
+            members:
+              (options.audienceOrganization ?? 'mine') === 'mine' ? [{ userId: PRINCIPAL_ID }] : [],
+          },
+    ticket: ticketFields(fixture, options.ticket ?? {}),
+  };
+}
+
+/** A comment as its record descriptor loads it for the principal of a fixture. */
+export function buildCommentRecord(fixture: PrincipalFixture, options: CommentRecordOptions = {}) {
+  return subject('Comment', commentFields(fixture, options));
 }

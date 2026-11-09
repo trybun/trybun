@@ -5,6 +5,11 @@ import {
 } from './modules/attachments/attachments.abilities.js';
 import { administrationAbilities } from './modules/administration/administration.abilities.js';
 import {
+  archivedProjectsOfCommentsRestriction,
+  commentRecords,
+  commentsAbilities,
+} from './modules/comments/comments.abilities.js';
+import {
   archivedTargetsOfInvitationsRestriction,
   invitationRecords,
   invitationsAbilities,
@@ -40,6 +45,7 @@ export const ABILITY_DEFINITIONS = {
     usersAbilities,
     ticketsAbilities,
     attachmentsAbilities,
+    commentsAbilities,
   ],
   restrictions: [
     archivedProjectsRestriction,
@@ -47,6 +53,7 @@ export const ABILITY_DEFINITIONS = {
     archivedTargetsOfInvitationsRestriction,
     archivedProjectsOfTicketsRestriction,
     archivedProjectsOfAttachmentsRestriction,
+    archivedProjectsOfCommentsRestriction,
   ],
   records: [
     projectRecords,
@@ -55,5 +62,6 @@ export const ABILITY_DEFINITIONS = {
     userRecords,
     ticketRecords,
     attachmentRecords,
+    commentRecords,
   ],
 };
