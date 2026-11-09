@@ -159,6 +159,8 @@ describe('TeamTicketView', () => {
       Priority: 'High',
       Project: 'ERP system',
       Requester: 'Celina Customer',
+      // An end user's ticket shows its visibility (S1-11).
+      Visibility: 'Only me',
       Created: 'Nov 2, 2026, 9:00 AM',
       Updated: 'Nov 3, 2026, 10:30 AM',
     });
