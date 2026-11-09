@@ -27,7 +27,7 @@ The ticket shows "Waiting for the team to share this ticket with all customers."
 
 To withdraw a request that is still waiting, select **Only me** or **My organization**.
 
-If the team does not share the ticket, it says "The team did not share this ticket with all customers." The ticket keeps its visibility, and you can ask again.
+If the team does not share the ticket, it says "The team did not share this ticket with all customers." The team's reason is a comment in the history of the ticket. The ticket keeps its visibility, and you can ask again.
 
 ## What you cannot change
 

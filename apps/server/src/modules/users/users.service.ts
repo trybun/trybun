@@ -192,7 +192,10 @@ export class UsersService {
     }
     // The column holds a language of the catalogues; any other value means the system default.
     const language = languageSchema.safeParse(user.language).data ?? null;
-    return { ...user, language, allowedActions };
+    // In any state (§7.3): archived organizations still appear in snapshots and filters (S1-13 Q6).
+    const hasOrganization =
+      principal.userKind === 'team' && (await this.prisma.organization.count({ take: 1 })) > 0;
+    return { ...user, language, organizationsExist: hasOrganization, allowedActions };
   }
 
   /**

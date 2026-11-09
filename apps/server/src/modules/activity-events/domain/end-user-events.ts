@@ -1,5 +1,6 @@
 import {
   type ActivityEvent,
+  activityEventChangeDataSchema,
   type EndUserActivityEvent,
   type EndUserActivityEventData,
   endUserSnapshotChangeDataSchema,
@@ -26,7 +27,7 @@ function endUserDataOf(
   if (event.type !== 'status_changed') {
     return null;
   }
-  const { from, to, duplicateOf } = event.data;
+  const { from, to, duplicateOf } = activityEventChangeDataSchema.parse(event.data);
   return {
     from: publicStatusOf(ticketStatusSchema.parse(from)),
     to: publicStatusOf(ticketStatusSchema.parse(to)),
@@ -57,8 +58,10 @@ export function originalIdsOf(events: readonly ActivityEvent[]): string[] {
   return [
     ...new Set(
       events.flatMap((event) =>
-        event.type === 'status_changed' && event.data?.duplicateOf != null
-          ? [event.data.duplicateOf.id]
+        event.type === 'status_changed' && event.data !== null && 'duplicateOf' in event.data
+          ? event.data.duplicateOf != null
+            ? [event.data.duplicateOf.id]
+            : []
           : [],
       ),
     ),

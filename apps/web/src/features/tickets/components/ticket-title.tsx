@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type Ticket, ticketTitleSchema } from '@trybun/contracts/tickets';
+import { type TicketResponse, ticketTitleSchema } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import { Field, FieldError, FieldLabel } from '@trybun/ui/components/field';
 import { Input } from '@trybun/ui/components/input';
@@ -24,7 +24,7 @@ type TitleValues = z.infer<typeof titleFormSchema>;
  * field keeps the typed title and shows the message – for `412` the standard conflict message
  * (§17.2), while the ticket is read again.
  */
-export function TicketTitle({ ticket }: { ticket: Ticket }) {
+export function TicketTitle({ ticket }: { ticket: TicketResponse }) {
   const t = useTranslations('tickets');
   const [isEditing, setIsEditing] = useState(false);
   // The focus returns to **Edit title** when the field closes.
@@ -67,7 +67,7 @@ export function TicketTitle({ ticket }: { ticket: Ticket }) {
   );
 }
 
-function TitleForm({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
+function TitleForm({ ticket, onClose }: { ticket: TicketResponse; onClose: () => void }) {
   const t = useTranslations('tickets');
   const errorMessage = useErrorMessage();
   const updateTicket = useUpdateTicket();

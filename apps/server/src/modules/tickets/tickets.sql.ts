@@ -104,19 +104,23 @@ export interface RequestedTicketKey {
  * The tickets a person requested (`involvement=mine`, raw SQL), in the fixed order of the list:
  * those awaiting the requester's reply first, then the most recently updated, then by ID – the
  * first key is derived from the status, which Prisma cannot order by. It filters only by the
- * requester, the project and the keyset cursor, and returns up to `limit` keys: the records are
+ * requester, the projects and the keyset cursor, and returns up to `limit` keys: the records are
  * loaded through the ability afterwards, so visibility is never re-implemented here (§18.3).
  */
 export function listRequestedTicketKeys(
   db: Transaction,
   requesterId: string,
-  options: { projectId: string | null; after: RequestedTicketKey | null; limit: number },
+  options: {
+    projectIds: readonly string[] | null;
+    after: RequestedTicketKey | null;
+    limit: number;
+  },
 ): Promise<RequestedTicketKey[]> {
   const awaiting = Prisma.sql`("status"::text IN (${Prisma.join(AWAITING_REPLY_STATUSES)}))`;
   const inProject =
-    options.projectId === null
+    options.projectIds === null
       ? Prisma.empty
-      : Prisma.sql`AND "project_id" = ${options.projectId}::uuid`;
+      : Prisma.sql`AND "project_id" IN (${Prisma.join(options.projectIds.map((id) => Prisma.sql`${id}::uuid`))})`;
   const { after } = options;
   // Every key descends, so the rows after the cursor are those with a smaller row value.
   const afterCursor =

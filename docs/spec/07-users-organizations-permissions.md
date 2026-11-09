@@ -59,7 +59,7 @@ Rules:
 - Team members do not belong to customer organizations and see tickets of all organizations in their projects.
 - A project can serve **many organizations**, and an organization can access **many projects**.
 - Members of an organization automatically get access to all projects of the organization; no per-person access grants are needed.
-- End users can `@mention` members of their own organization (if any) and team members. The mention suggestions contain only people who can currently see the ticket: the project's team members and, if the ticket's visibility includes them, members of the author's organization. A mention never grants access to a ticket.
+- End users can `@mention` members of their own organization (if any) and the team members who take part in the ticket – its assignee and the team members who wrote a public comment on it that the author can read – not every team member of the project, so the fewest names of the team are disclosed. The mention suggestions contain only people who can currently see the ticket: those team members and, if the ticket's visibility includes them, members of the author's organization. Team members mention, in an internal note, the project's team members, and in a public comment also the requester and, for `my_organization` or `all_customers`, the members of the ticket's organization – never customers of other organizations ([§5.2](05-visibility-and-search.md#comment-audience)). A mention never grants access to a ticket.
 
 ### Users without an organization
 
@@ -164,11 +164,11 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | View all tickets of the project | – | ✅ | ✅ | ✅ |
 | Add public comments to visible tickets (terminal tickets: [§4.3](04-ticket-lifecycle.md)) | ✅ | ✅ | ✅ | ✅ |
 | Confirm or decline resolution of own ticket ([§4.3](04-ticket-lifecycle.md)) | ✅ (requester only) | – | – | – |
-| Edit or delete own comments and notes | ✅ | ✅ | ✅ | ✅ |
-| Delete any comment (e.g. to remove personal data) | – | ✅ | ✅ | ✅ |
+| Edit or delete own comments and notes (also on closed tickets; kind and audience never change, [§6.1](06-comments-notifications.md)) | ✅ | ✅ | ✅ | ✅ |
+| Delete any comment (e.g. to remove personal data; a description is emptied by an edit, never deleted, [§6.1](06-comments-notifications.md)) | – | ✅ | ✅ | ✅ |
 | Edit own ticket title and description | ✅ | ✅ | ✅ | ✅ |
 | Edit any ticket title and description | – | ✅ | ✅ | ✅ |
-| View edit history of descriptions and comments | own texts only | ✅ | ✅ | ✅ |
+| View edit history of descriptions and comments | own texts only (own comments, the description of an own ticket) | ✅ | ✅ | ✅ |
 | Redact a description or any comment ([§5.2](05-visibility-and-search.md)) | – | ✅ | ✅ | ✅ |
 | Add attachments to visible tickets ([§13.3](13-non-functional.md)) | ✅ (with current access to the project, [§7.3](#73-organizations)) | ✅ | ✅ | ✅ |
 | Delete own attachments | ✅ (with current access to the project, [§7.3](#73-organizations)) | ✅ | ✅ | ✅ |
@@ -200,6 +200,7 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Create own personal API tokens | – | ✅ | ✅ | ✅ |
 | Export own data, request account deletion ([§13.2](13-non-functional.md)) | ✅ | ✅ | ✅ | ✅ |
 | Execute anonymization, set retention period | – | – | – | ✅ |
+| View the names of the organizations with access to one of own projects (filters of the team views, [§8.1](08-team-views.md)) | – | ✅ | ✅ | ✅ |
 | Grant organizations access to projects | – | – | – | ✅ |
 | Manage organization members and e-mail domains, invite end users to an organization | – | – | – | ✅ |
 | Create, archive, unarchive and delete (if empty) projects and organizations | – | – | – | ✅ |
@@ -213,4 +214,8 @@ All permission decisions are made by the API; the UI only adapts to them ([§14.
 | Integration tokens, outgoing webhooks, data import | – | – | – | ✅ |
 | Administrative audit log ([§13.5](13-non-functional.md)) | – | – | – | ✅ |
 
+The row "View the names of the organizations" is expressed by the organization action `read_name`, outside the contract's action list and never sent in `allowedActions`: `GET /api/v1/organizations` returns to a Developer or Project manager only the ID and the name of the organizations with access to one of their projects (names their tickets already show), and the Administrator keeps the full response. For end users organizations stay invisible (`404`). `GET /api/v1/users/me` tells a team account whether any organization exists (`organizationsExist`), so the UI hides the organization elements of [§7.3](#system-without-organizations).
+
 The row "Assign tickets" is expressed by the ticket actions `assign` (anyone eligible) and `assign_self` (only the principal) and, for a ticket that does not exist yet (the full form, [§3.3](03-ticket-model.md#33-forms)), by the project actions `assign_tickets` and `assign_tickets_self`, defined in the same abilities ([§18.3](18-code-patterns.md#183-server-application)).
+
+The comment rows are expressed by the ticket actions `add_comment` (every role that can read the ticket; for end users restricted on closed tickets with the reason `ticket.comments_closed`, [§4.3](04-ticket-lifecycle.md)), `add_internal_note`, `read_description_revisions` and `redact_description`, and by the actions of the subject `Comment`: `read` (with the comment audience, [§5.2](05-visibility-and-search.md#comment-audience)), `update`, `delete`, `redact` and `read_revisions`. Revisions are no subject of their own: they are read through `Comment` `read_revisions` and `Ticket` `read_description_revisions`, which carry the read conditions and stay allowed in an archived project. The rules of comment attachments – readable with their comment, deleted with its `delete` conditions ([§13.3](13-non-functional.md)) – live with the other attachment rules in `attachments.abilities.ts`, which imports the comment rules.

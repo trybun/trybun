@@ -44,6 +44,8 @@ export interface DemoDataset {
   ticketRelations: Prisma.TicketRelationCreateManyInput[];
   ticketNumberCounters: Prisma.TicketNumberCounterCreateManyInput[];
   activityEvents: Prisma.ActivityEventCreateManyInput[];
+  comments: Prisma.CommentCreateManyInput[];
+  contentRevisions: Prisma.ContentRevisionCreateManyInput[];
 }
 
 /**
@@ -566,6 +568,15 @@ export function demoId(n: number): string {
   return `019b8d00-0000-7000-8000-${n.toString(16).padStart(12, '0')}`;
 }
 
+/**
+ * A UUIDv7 of the demo record number `n` written at `at` (§17.2): the timeline merges comments and
+ * events by their time-ordered IDs (S1-12 Q11), so the IDs of both follow their times.
+ */
+export function demoTimeId(at: Date, n: number): string {
+  const time = at.getTime().toString(16).padStart(12, '0');
+  return `${time.slice(0, 8)}-${time.slice(8)}-7000-8000-${n.toString(16).padStart(12, '0')}`;
+}
+
 export function buildDemoDataset(): DemoDataset {
   const faker = new Faker({ locale: [pl, en, base], seed: FAKER_SEED });
   // Team accounts sign in with a password in the local environment only (§7.4); their Keycloak
@@ -746,7 +757,14 @@ export function buildDemoDataset(): DemoDataset {
           ],
     ),
   ];
-  const { tickets, ticketRelations, ticketNumberCounters, activityEvents } = buildDemoTickets(
+  const {
+    tickets,
+    ticketRelations,
+    ticketNumberCounters,
+    activityEvents,
+    comments,
+    contentRevisions,
+  } = buildDemoTickets(
     [...team, ...endUsers, ...portalUsers, ...visibilityUsers],
     projects,
     organizationIds,
@@ -785,8 +803,59 @@ export function buildDemoDataset(): DemoDataset {
     ticketRelations,
     ticketNumberCounters,
     activityEvents,
+    comments,
+    contentRevisions,
   };
 }
+
+/**
+ * The demo comments (S1-12): a comment of the supplier on its ticket written before the ticket was
+ * shared – which keeps its organization as the audience – and the team's public answer, an
+ * internal note, an edited public comment with its earlier version, and a reply of a requester.
+ * `ticket` is the index in `DEMO_TICKETS`; `after` the hours after the ticket's creation.
+ */
+const DEMO_COMMENTS = [
+  {
+    ticket: 21,
+    by: 'supplier',
+    kind: 'public',
+    audience: 'my_organization',
+    after: 2,
+    body: 'The quantities turned negative after the stock correction of Monday.',
+  },
+  {
+    ticket: 21,
+    by: 'developer',
+    kind: 'public',
+    audience: 'all_customers',
+    after: 5,
+    body: 'Thank you, we can reproduce it and are working on a fix.',
+  },
+  {
+    ticket: 11,
+    by: 'developer',
+    kind: 'internal',
+    after: 3,
+    body: 'Reproduced on staging: the VAT table of March is missing.',
+  },
+  {
+    ticket: 11,
+    by: 'developer',
+    kind: 'public',
+    audience: 'only_me',
+    after: 4,
+    body: 'Fixed in the next release, which comes on Friday.',
+    earlier: 'We are looking into it.',
+  },
+  {
+    ticket: 0,
+    by: 'endUser0',
+    kind: 'public',
+    audience: 'only_me',
+    after: 1,
+    body: 'The download button does nothing in Firefox either.',
+  },
+] as const;
 
 /**
  * The demo tickets with their numbers – consecutive per project from 1 – the counters at the last
@@ -797,7 +866,15 @@ function buildDemoTickets(
   projects: Prisma.ProjectCreateManyInput[],
   organizationIds: Record<DemoOrganizationKey, string>,
   organizationMembers: Prisma.OrganizationMemberCreateManyInput[],
-): Pick<DemoDataset, 'tickets' | 'ticketRelations' | 'ticketNumberCounters' | 'activityEvents'> {
+): Pick<
+  DemoDataset,
+  | 'tickets'
+  | 'ticketRelations'
+  | 'ticketNumberCounters'
+  | 'activityEvents'
+  | 'comments'
+  | 'contentRevisions'
+> {
   const accountIds: Record<string, string> = {
     admin: accounts[0]?.id ?? '',
     manager: accounts[1]?.id ?? '',
@@ -826,6 +903,7 @@ function buildDemoTickets(
   const tickets: Prisma.TicketCreateManyInput[] = [];
   const activityEvents: Prisma.ActivityEventCreateManyInput[] = [];
   const ticketRelations: Prisma.TicketRelationCreateManyInput[] = [];
+  const comments: Prisma.CommentCreateManyInput[] = [];
   DEMO_TICKETS.forEach((ticket, index) => {
     const projectId = projects.find(({ key }) => key === ticket.project)?.id ?? '';
     const number = (numbers.get(projectId) ?? 0) + 1;
@@ -850,17 +928,43 @@ function buildDemoTickets(
           : (organizationOf.get(requesterId) ?? null),
       visibility: 'visibility' in ticket ? ticket.visibility : 'only_me',
       sharingRequest: 'sharingRequest' in ticket ? ticket.sharingRequest : 'none',
-      sharingRefusalReason: 'sharingRefusalReason' in ticket ? ticket.sharingRefusalReason : null,
       requesterId,
       assigneeId: ticket.assignee === null ? null : (accountIds[ticket.assignee] ?? null),
       version: 1 + ticket.events.length,
       createdAt,
       updatedAt: createdAt,
     });
+    if ('sharingRefusalReason' in ticket) {
+      // A refused request (S1-11): the refusal event of the manager and the reason as a public
+      // comment with the unchanged visibility as its audience (S1-12 Q14).
+      const refusedAt = new Date(createdAt.getTime() + 6 * 60 * 60 * 1000);
+      activityEvents.push({
+        id: demoTimeId(refusedAt, 1100 + index),
+        ticketId: id,
+        type: 'sharing_rejected',
+        actorId: accountIds.manager ?? null,
+        createdAt: refusedAt,
+      });
+      comments.push({
+        id: demoTimeId(refusedAt, 1200 + index),
+        ticketId: id,
+        authorId: accountIds.manager ?? '',
+        kind: 'public',
+        audience: 'visibility' in ticket ? ticket.visibility : 'only_me',
+        audienceOrganizationId:
+          'visibility' in ticket && ticket.visibility === 'my_organization'
+            ? (organizationOf.get(requesterId) ?? null)
+            : null,
+        body: ticket.sharingRefusalReason,
+        createdAt: refusedAt,
+        updatedAt: refusedAt,
+      });
+    }
     ticket.events.forEach((event, eventIndex) => {
       const isReference = event.field === 'assignee';
+      const at = new Date(createdAt.getTime() + (eventIndex + 1) * 60 * 60 * 1000);
       activityEvents.push({
-        id: demoId(700 + index * 10 + eventIndex),
+        id: demoTimeId(at, 700 + index * 10 + eventIndex),
         ticketId: id,
         type: EVENT_TYPE_OF_FIELD[event.field],
         data:
@@ -870,7 +974,7 @@ function buildDemoTickets(
               ? { from: snapshotOf(event.from), to: snapshotOf(event.to) }
               : { from: event.from, to: event.to },
         actorId: accountIds[event.by] ?? null,
-        createdAt: new Date(createdAt.getTime() + (eventIndex + 1) * 60 * 60 * 1000),
+        createdAt: at,
       });
     });
   });
@@ -898,10 +1002,24 @@ function buildDemoTickets(
         ? {}
         : { waitingReason, statusBeforeWaiting: from, waitingSince: changedAt }),
       ...(['done', 'rejected', 'duplicate'].includes(change.to) ? { closedAt: changedAt } : {}),
-      ...('rejectionReason' in change ? { rejectionReason: change.rejectionReason } : {}),
       version: (ticket.version ?? 1) + 1,
       updatedAt: changedAt,
     });
+    if ('rejectionReason' in change) {
+      // The reason of a rejection is a public comment of the rejecting team member (S1-12 Q13).
+      comments.push({
+        id: demoTimeId(changedAt, 1300 + index),
+        ticketId: ticket.id ?? '',
+        authorId: accountIds[change.by] ?? '',
+        kind: 'public',
+        audience: ticket.visibility ?? 'only_me',
+        audienceOrganizationId:
+          ticket.visibility === 'my_organization' ? (ticket.organizationId ?? null) : null,
+        body: change.rejectionReason,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+    }
     if (duplicateOf !== null) {
       ticketRelations.push({
         id: demoId(900 + index),
@@ -912,7 +1030,7 @@ function buildDemoTickets(
       });
     }
     activityEvents.push({
-      id: demoId(800 + index),
+      id: demoTimeId(changedAt, 800 + index),
       ticketId: ticket.id ?? '',
       type: 'status_changed',
       data: { from, to: change.to, reopen: false, waitingReason, duplicateOf },
@@ -920,6 +1038,53 @@ function buildDemoTickets(
       isPublic: publicStatusOf(from) !== publicStatusOf(change.to),
       createdAt: changedAt,
     });
+  });
+  const contentRevisions: Prisma.ContentRevisionCreateManyInput[] = [];
+  DEMO_COMMENTS.forEach((comment, index) => {
+    const ticket = tickets[comment.ticket];
+    if (ticket === undefined) {
+      return;
+    }
+    const authorId = accountIds[comment.by] ?? '';
+    const writtenAt = new Date(
+      (ticket.createdAt as Date).getTime() + comment.after * 60 * 60 * 1000,
+    );
+    const commentId = demoTimeId(writtenAt, 1400 + index);
+    const audience = comment.kind === 'public' ? comment.audience : null;
+    const editedAt = 'earlier' in comment ? new Date(writtenAt.getTime() + 30 * 60 * 1000) : null;
+    comments.push({
+      id: commentId,
+      ticketId: ticket.id ?? '',
+      authorId,
+      kind: comment.kind,
+      audience,
+      audienceOrganizationId:
+        audience === 'my_organization' ? (organizationOf.get(authorId) ?? null) : null,
+      body: comment.body,
+      editedAt,
+      editedById: editedAt === null ? null : authorId,
+      version: editedAt === null ? 1 : 2,
+      createdAt: writtenAt,
+      updatedAt: editedAt ?? writtenAt,
+    });
+    if ('earlier' in comment && editedAt !== null) {
+      contentRevisions.push({
+        id: demoTimeId(editedAt, 1500 + index),
+        commentId,
+        body: comment.earlier,
+        authorId,
+        writtenAt,
+        createdAt: editedAt,
+      });
+      activityEvents.push({
+        id: demoTimeId(editedAt, 1600 + index),
+        ticketId: ticket.id ?? '',
+        type: 'comment_edited',
+        data: { commentId },
+        actorId: authorId,
+        createdAt: editedAt,
+      });
+    }
   });
   return {
     tickets,
@@ -929,6 +1094,8 @@ function buildDemoTickets(
       lastNumber,
     })),
     activityEvents,
+    comments,
+    contentRevisions,
   };
 }
 
@@ -975,7 +1142,9 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     // The attachments of the tickets restrict their deletion; their objects are removed by the
     // Worker's `attachment.deleted` job, as for every deleted attachment (S1-08).
     const attachments = await tx.attachment.findMany({
-      where: { ticket: { is: demoTickets } },
+      where: {
+        OR: [{ ticket: { is: demoTickets } }, { comment: { is: { ticket: { is: demoTickets } } } }],
+      },
       select: { id: true },
     });
     await tx.attachment.deleteMany({ where: { id: { in: attachments.map(({ id }) => id) } } });
@@ -1011,5 +1180,7 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
     await tx.ticketRelation.createMany({ data: dataset.ticketRelations });
     await tx.ticketNumberCounter.createMany({ data: dataset.ticketNumberCounters });
     await tx.activityEvent.createMany({ data: dataset.activityEvents });
+    await tx.comment.createMany({ data: dataset.comments });
+    await tx.contentRevision.createMany({ data: dataset.contentRevisions });
   });
 }

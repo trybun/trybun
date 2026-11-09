@@ -12,6 +12,7 @@ import {
   QUARANTINE_PREFIX,
   quarantineKey,
 } from '../../platform/storage/object-storage.js';
+import { DRAFT } from './attachments.abilities.js';
 import { ATTACHMENT_DELETED, type AttachmentDeletedPayload } from './attachments.events.js';
 import {
   type AttachmentObject,
@@ -67,7 +68,7 @@ export class AttachmentPurgeService {
     let purged = 0;
     for (;;) {
       const rows = await this.prisma.attachment.findMany({
-        where: { ticketId: null, createdAt: { lt: cutoff } },
+        where: { ...DRAFT, createdAt: { lt: cutoff } },
         select: { id: true },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: PURGE_BATCH_SIZE,
@@ -75,7 +76,7 @@ export class AttachmentPurgeService {
       purged += await this.prisma.$transaction(async (tx) => {
         let deleted = 0;
         for (const { id } of rows) {
-          const { count } = await tx.attachment.deleteMany({ where: { id, ticketId: null } });
+          const { count } = await tx.attachment.deleteMany({ where: { id, ...DRAFT } });
           if (count === 1) {
             const payload = { attachmentId: id } satisfies AttachmentDeletedPayload;
             await this.outbox.add(tx, { type: ATTACHMENT_DELETED, payload });

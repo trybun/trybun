@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { errorCodeSchema } from '../errors/index.js';
 import { pageQuerySchema, pageSchema } from '../pagination/index.js';
 import { PROJECT_KEY_PATTERN } from '../projects/index.js';
 
@@ -153,6 +154,9 @@ export type ResolutionAnswer = z.infer<typeof resolutionAnswerSchema>;
  * `add_attachment` links files to the ticket (§3.2), `set_visibility_<value>` changes the
  * visibility to that value – for the requester, `set_visibility_all_customers` requests sharing –
  * and `approve_sharing` / `reject_sharing` decide a pending sharing request (team, §5.2, S1-11).
+ * `add_comment` writes a public comment – its restriction carries `ticket.comments_closed` on a
+ * closed ticket (§4.3) – `add_internal_note` an internal note (team), `read_description_revisions`
+ * lists the earlier versions of the description and `redact_description` redacts it (team, S1-12).
  */
 export const ticketActionSchema = z.enum([
   'read',
@@ -168,6 +172,10 @@ export const ticketActionSchema = z.enum([
   'set_visibility_all_customers',
   'approve_sharing',
   'reject_sharing',
+  'add_comment',
+  'add_internal_note',
+  'read_description_revisions',
+  'redact_description',
 ]);
 export type TicketAction = z.infer<typeof ticketActionSchema>;
 
@@ -325,6 +333,8 @@ const commonTicketFields = {
   /** The effective visibility and the sharing request (§5.1, §5.2). */
   visibility: ticketVisibilitySchema,
   sharingRequest: ticketSharingRequestSchema,
+  /** The time of the last edit or redaction of the description; the UI shows "edited" (§6.1). */
+  descriptionEditedAt: z.iso.datetime().nullable(),
 };
 
 /** A ticket as the team sees it (§3.2). */
@@ -339,16 +349,12 @@ export const ticketSchema = z.object({
   assignee: ticketPersonSchema.nullable(),
   /** The time of the latest transition into a terminal status (§4.3); none while open. */
   closedAt: z.iso.datetime().nullable(),
-  /** The reason of a rejection, for the team only until S1-12 publishes it as a comment. */
-  rejectionReason: z.string().nullable(),
-  /** The reason of a sharing refusal, for the team only until S1-12 (S1-11 Q8). */
-  sharingRefusalReason: z.string().nullable(),
 });
 export type Ticket = z.infer<typeof ticketSchema>;
 
 /**
  * A ticket as an end user sees it (§3.2, columns "End user"): without type, priority, assignee,
- * source, organization, the internal status and the rejection and refusal reasons, with the public description
+ * source, organization and the internal status, with the public description
  * of its state instead (§4.2).
  */
 export const endUserTicketSchema = z.object({
@@ -380,23 +386,215 @@ export type TicketParams = z.infer<typeof ticketParamsSchema>;
 export const ticketInvolvementSchema = z.enum(['mine']);
 export type TicketInvolvement = z.infer<typeof ticketInvolvementSchema>;
 
+/** The largest number of values of one filter of the ticket list (S1-13). */
+export const MAX_TICKET_FILTER_VALUES = 50;
+
 /**
- * `GET /api/v1/tickets`: newest first – by number within a project. `identifier` returns at most
- * the one ticket with it (§3.2); filters and sorting of the list views come with S1-13.
- * `involvement=mine` lists the tickets the principal requested in a fixed order instead: those
- * awaiting the requester's reply first, then the most recently updated, then by ID. Such a page
- * may be shorter than `limit` while `nextCursor` is set; it is not combined with `identifier`.
+ * A query parameter with one or more values (S1-13): repeated (`status=new&status=triage`) or
+ * once; the values of one filter are combined with OR.
+ */
+function oneOrMore<Item extends z.ZodType>(item: Item) {
+  return z
+    .union([item, z.array(item).min(1).max(MAX_TICKET_FILTER_VALUES)])
+    .transform((value): z.output<Item>[] => (Array.isArray(value) ? value : [value]));
+}
+
+/** The value of a filter that matches tickets without the field: no type, no organization. */
+export const TICKET_FILTER_NONE = 'none';
+
+/** The value of the assignee filter that is the principal (S1-13). */
+export const TICKET_FILTER_ME = 'me';
+
+/** The sharing requests the list filters by (S1-13): `none` is not a filter value. */
+export const ticketSharingRequestFilterSchema = ticketSharingRequestSchema.exclude(['none']);
+export type TicketSharingRequestFilter = z.infer<typeof ticketSharingRequestFilterSchema>;
+
+/**
+ * The filters of the ticket list (§8.1, S1-13), all multi-valued; filters are combined with AND. A
+ * value of a record the principal cannot see matches no ticket (Q5). Every filter but `projectId`
+ * is for the team only (Q21). S1-14's board reuses them.
+ */
+export const ticketListFiltersSchema = z.object({
+  projectId: oneOrMore(z.uuid()).optional(),
+  organizationId: oneOrMore(z.union([z.uuid(), z.literal(TICKET_FILTER_NONE)])).optional(),
+  type: oneOrMore(z.union([ticketTypeSchema, z.literal(TICKET_FILTER_NONE)])).optional(),
+  status: oneOrMore(ticketStatusSchema).optional(),
+  priority: oneOrMore(ticketPrioritySchema).optional(),
+  assigneeId: oneOrMore(
+    z.union([z.uuid(), z.literal(TICKET_FILTER_ME), z.literal(TICKET_FILTER_NONE)]),
+  ).optional(),
+  source: oneOrMore(ticketSourceSchema).optional(),
+  sharingRequest: oneOrMore(ticketSharingRequestFilterSchema).optional(),
+});
+export type TicketListFilters = z.output<typeof ticketListFiltersSchema>;
+
+/** The sort keys of the ticket list (§8.1, S1-13 Q8). */
+export const ticketListSortSchema = z.enum([
+  'priority',
+  'status',
+  'identifier',
+  'createdAt',
+  'updatedAt',
+]);
+export type TicketListSort = z.infer<typeof ticketListSortSchema>;
+
+/** The direction of a sort (S1-13): `desc` unless given. */
+export const sortOrderSchema = z.enum(['asc', 'desc']);
+export type SortOrder = z.infer<typeof sortOrderSchema>;
+
+/**
+ * The parameters of `GET /api/v1/tickets` that only team accounts may send (Q21): an end user
+ * sending one gets `422 field.unrecognized`, so the list never reveals a field their response hides.
+ */
+export const TEAM_TICKET_LIST_PARAMETERS = [
+  'organizationId',
+  'type',
+  'status',
+  'priority',
+  'assigneeId',
+  'source',
+  'sharingRequest',
+  'sort',
+  'order',
+] as const satisfies readonly (keyof ListTicketsQuery)[];
+
+/**
+ * `GET /api/v1/tickets`. Without `sort`: newest first – by number within one project.
+ * `identifier` returns at most the one ticket with it (§3.2). `involvement=mine` lists the tickets
+ * the principal requested in a fixed order instead: those awaiting the requester's reply first,
+ * then the most recently updated, then by ID. Such a page may be shorter than `limit` while
+ * `nextCursor` is set; it is not combined with `identifier` or the parameters of the team.
+ * `sort` orders by the key, then by the last update (newest first), then by ID (S1-13 Q8);
+ * `order` needs `sort`.
  */
 export const listTicketsQuerySchema = pageQuerySchema
   .extend({
-    projectId: z.uuid().optional(),
+    ...ticketListFiltersSchema.shape,
     identifier: ticketIdentifierSchema.optional(),
     involvement: ticketInvolvementSchema.optional(),
+    sort: ticketListSortSchema.optional(),
+    order: sortOrderSchema.optional(),
   })
-  .refine((query) => query.involvement === undefined || query.identifier === undefined, {
-    path: ['identifier'],
+  .superRefine((query, context) => {
+    if (query.involvement !== undefined) {
+      for (const key of ['identifier', ...TEAM_TICKET_LIST_PARAMETERS] as const) {
+        if (query[key] !== undefined) {
+          context.addIssue({ code: 'custom', path: [key], message: 'Not with involvement' });
+        }
+      }
+    }
+    if (query.order !== undefined && query.sort === undefined) {
+      context.addIssue({ code: 'custom', path: ['order'], message: 'Needs sort' });
+    }
   });
-export type ListTicketsQuery = z.infer<typeof listTicketsQuerySchema>;
+export type ListTicketsQuery = z.output<typeof listTicketsQuerySchema>;
 
-export const ticketPageSchema = pageSchema(ticketResponseSchema);
+/** A ticket of the team in a list (S1-13 Q10): without the description. */
+export const ticketListItemSchema = ticketSchema.omit({ description: true });
+export type TicketListItem = z.infer<typeof ticketListItemSchema>;
+
+/** A ticket of an end user in a list (S1-13 Q10): without the description. */
+export const endUserTicketListItemSchema = endUserTicketSchema.omit({ description: true });
+export type EndUserTicketListItem = z.infer<typeof endUserTicketListItemSchema>;
+
+/**
+ * An item of `GET /api/v1/tickets` (S1-13 Q10): a ticket without its description, in the team's
+ * or the end user's shape; the detail `GET /api/v1/tickets/{ticketId}` carries the description.
+ */
+export const ticketListItemResponseSchema = z.union([
+  ticketListItemSchema,
+  endUserTicketListItemSchema,
+]);
+export type TicketListItemResponse = z.infer<typeof ticketListItemResponseSchema>;
+
+export const ticketPageSchema = pageSchema(ticketListItemResponseSchema);
 export type TicketPage = z.infer<typeof ticketPageSchema>;
+
+/** The largest number of tickets of one bulk change (§8.1, §17.2). */
+export const MAX_BULK_CHANGE_TICKETS = 100;
+
+/** A ticket of a bulk change: its ID and the version the change expects (§17.2 "Concurrency"). */
+export const bulkChangeTargetSchema = z.strictObject({ id: z.uuid(), version: z.int().min(1) });
+export type BulkChangeTarget = z.infer<typeof bulkChangeTargetSchema>;
+
+/** The statuses a bulk change may set (§8.1): every status but `duplicate`. */
+const BULK_TARGET_STATUSES = ticketStatusSchema.exclude(['duplicate']);
+
+/**
+ * The one change of a bulk change (S1-13 Q2, Q3): a status – with one reason for `rejected`, used
+ * for every ticket – a priority or an assignee (`null` unassigns).
+ */
+export const bulkTicketChangeSchema = z.discriminatedUnion('field', [
+  z
+    .strictObject({
+      field: z.literal('status'),
+      status: BULK_TARGET_STATUSES,
+      rejectionReason: ticketRejectionReasonSchema.optional(),
+    })
+    .superRefine((change, context) => {
+      if (change.status === 'rejected' && change.rejectionReason === undefined) {
+        context.addIssue({ code: 'custom', path: ['rejectionReason'], message: 'Required' });
+      }
+      if (change.status !== 'rejected' && change.rejectionReason !== undefined) {
+        context.addIssue({
+          code: 'unrecognized_keys',
+          keys: ['rejectionReason'],
+          path: [],
+          message: 'Only for rejected',
+        });
+      }
+    }),
+  z.strictObject({ field: z.literal('priority'), priority: ticketPrioritySchema }),
+  z.strictObject({ field: z.literal('assignee'), assigneeId: z.uuid().nullable() }),
+]);
+export type BulkTicketChange = z.infer<typeof bulkTicketChangeSchema>;
+
+/**
+ * `POST /api/v1/tickets/bulk-changes` (§8.1, §17.2): one change for 1–100 tickets with unique
+ * IDs, each changed in its own transaction in request order.
+ */
+export const bulkChangeTicketsSchema = z.strictObject({
+  tickets: z
+    .array(bulkChangeTargetSchema)
+    .min(1)
+    .max(MAX_BULK_CHANGE_TICKETS)
+    .superRefine((tickets, context) => {
+      const seen = new Set<string>();
+      tickets.forEach((ticket, index) => {
+        if (seen.has(ticket.id)) {
+          context.addIssue({ code: 'custom', path: [index, 'id'], message: 'Repeated' });
+        }
+        seen.add(ticket.id);
+      });
+    }),
+  change: bulkTicketChangeSchema,
+});
+export type BulkChangeTicketsDto = z.infer<typeof bulkChangeTicketsSchema>;
+
+/** The HTTP statuses of a ticket that a bulk change did not change (S1-13 Q1). */
+export const bulkChangeFailureStatusSchema = z.union([
+  z.literal(403),
+  z.literal(404),
+  z.literal(409),
+  z.literal(412),
+  z.literal(422),
+  z.literal(500),
+]);
+export type BulkChangeFailureStatus = z.infer<typeof bulkChangeFailureStatusSchema>;
+
+/**
+ * The result of one ticket of a bulk change (S1-13 Q1): `200` with the changed ticket – its actual
+ * status, e.g. after the redirect of `done` – or the status and the error code a single change
+ * would have answered.
+ */
+export const bulkChangeResultSchema = z.union([
+  z.object({ id: z.uuid(), status: z.literal(200), ticket: ticketListItemResponseSchema }),
+  z.object({ id: z.uuid(), status: bulkChangeFailureStatusSchema, code: errorCodeSchema }),
+]);
+export type BulkChangeResult = z.infer<typeof bulkChangeResultSchema>;
+
+/** The response of a bulk change: one result per ticket, in request order. */
+export const bulkChangeTicketsResponseSchema = z.object({
+  results: z.array(bulkChangeResultSchema),
+});
+export type BulkChangeTicketsResponse = z.infer<typeof bulkChangeTicketsResponseSchema>;

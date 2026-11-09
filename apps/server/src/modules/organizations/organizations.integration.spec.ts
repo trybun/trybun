@@ -266,7 +266,7 @@ describe('organizations endpoints', () => {
 
   describe('visibility', () => {
     it.each(['team_member', 'end_user'] as const)(
-      'answers every endpoint with 404 for a %s',
+      'answers every endpoint but the list with 404 for a %s',
       async (who) => {
         const { authorization } = await signIn(who);
         const organization = await createOrganization(prisma);
@@ -304,7 +304,15 @@ describe('organizations endpoints', () => {
           http().delete(`${path}/members/${randomUUID()}`).set('Authorization', authorization),
         ]);
 
-        expect(responses.map((res) => res.status)).toEqual(Array(10).fill(404));
+        // A team member lists the names of the organizations of their projects (S1-13 Q6): none
+        // here, as they belong to no project; every other endpoint stays invisible.
+        expect(responses.map((res) => res.status)).toEqual([
+          who === 'team_member' ? 200 : 404,
+          ...Array<number>(9).fill(404),
+        ]);
+        if (who === 'team_member') {
+          expect(responses[0]?.body).toEqual({ items: [], nextCursor: null });
+        }
       },
     );
   });

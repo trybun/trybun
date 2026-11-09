@@ -9,8 +9,9 @@ import {
 } from '../../../test/factories/principal.factory.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import { USER, usersAbilities } from './users.abilities.js';
+import { FixedClock } from '../../../test/fixed-clock.js';
 
-const abilities = new AbilityFactory([usersAbilities], []);
+const abilities = new AbilityFactory([usersAbilities], [], new FixedClock());
 
 const OTHER_ID = '0190f2f4-7c1e-7000-8000-000000000002';
 

@@ -17,7 +17,9 @@ Wybierz zgłoszenie, aby je otworzyć. Zobaczysz:
 - jego status i to, co w tej chwili oznacza, na przykład **W realizacji** – „Testujemy rozwiązanie”;
 - Twój opis;
 - jego pliki, które możesz otworzyć: zobacz [Dołącz pliki](attach-files.md);
-- jego historię: kiedy zostało utworzone, każdą zmianę statusu i każdy plik dodany albo usunięty później wraz z osobą, która to zrobiła.
+- jego historię: kiedy zostało utworzone, każdą zmianę statusu i każdy plik dodany albo usunięty później wraz z osobą, która to zrobiła, oraz komentarze.
+
+Aby odpowiedzieć zespołowi, zobacz [Komentowanie zgłoszenia](comment-on-your-ticket.md).
 
 Gdy zespół pyta, czy Twój problem został rozwiązany, zgłoszenie pokazuje to pytanie na górze: zobacz [Potwierdź, że problem został rozwiązany](confirm-that-your-problem-is-solved.md).
 

@@ -30,7 +30,6 @@ function ticket(overrides: Partial<StatusTicket> = {}): StatusTicket {
     statusBeforeWaiting: null,
     waitingSince: null,
     closedAt: null,
-    rejectionReason: null,
     ...overrides,
   };
 }
@@ -49,7 +48,6 @@ const closed = (status: 'done' | 'rejected' | 'duplicate', overrides: Partial<St
   ticket({
     status,
     closedAt: EARLIER,
-    rejectionReason: status === 'rejected' ? 'Out of scope' : null,
     ...overrides,
   });
 
@@ -81,30 +79,12 @@ describe('changeStatus', () => {
       });
     });
 
-    it('replaces a new rejection reason with an event without the text (Q16)', () => {
-      const change = changeStatus(
-        closed('rejected'),
-        request({ target: 'rejected', rejectionReason: 'Works as designed' }),
-      );
+    it('changes no field for a repeated rejection: its reason is a comment (S1-12)', () => {
+      const change = changeStatus(closed('rejected'), request({ target: 'rejected' }));
 
-      expect(change.fields).toMatchObject({
-        status: 'rejected',
-        rejectionReason: 'Works as designed',
-        closedAt: EARLIER,
-      });
-      expect(change.events).toEqual([
-        { type: 'rejection_reason_changed', data: null, isPublic: false },
-      ]);
+      expect(change.fields).toBeNull();
+      expect(change.events).toEqual([]);
       expect(change.statusChanged).toBeNull();
-    });
-
-    it('changes nothing for the same rejection reason', () => {
-      expect(
-        changeStatus(
-          closed('rejected'),
-          request({ target: 'rejected', rejectionReason: 'Out of scope' }),
-        ).events,
-      ).toEqual([]);
     });
 
     it('re-points a duplicate to a new original without new status fields (Q16)', () => {
@@ -135,11 +115,8 @@ describe('changeStatus', () => {
   });
 
   describe('rejecting and duplicates', () => {
-    it('stores the rejection reason and closes the ticket', () => {
-      const change = changeStatus(
-        ticket(),
-        request({ target: 'rejected', rejectionReason: 'Out of scope' }),
-      );
+    it('closes a rejected ticket; its reason is a comment of the service (S1-12)', () => {
+      const change = changeStatus(ticket(), request({ target: 'rejected' }));
 
       expect(change.fields).toEqual({
         status: 'rejected',
@@ -147,7 +124,6 @@ describe('changeStatus', () => {
         statusBeforeWaiting: null,
         waitingSince: null,
         closedAt: NOW,
-        rejectionReason: 'Out of scope',
       });
       expect(change.events).toEqual([
         {
@@ -175,7 +151,6 @@ describe('changeStatus', () => {
     it('clears the reason when the ticket leaves rejected', () => {
       expect(changeStatus(closed('rejected'), request({ target: 'todo' })).fields).toMatchObject({
         status: 'todo',
-        rejectionReason: null,
         closedAt: null,
       });
     });
@@ -216,7 +191,6 @@ describe('changeStatus', () => {
         statusBeforeWaiting: 'in_progress',
         waitingSince: NOW,
         closedAt: null,
-        rejectionReason: null,
       });
       expect(change.statusChanged).toEqual({
         from: 'in_progress',
@@ -272,7 +246,6 @@ describe('changeStatus', () => {
         statusBeforeWaiting: null,
         waitingSince: null,
         closedAt: null,
-        rejectionReason: null,
       });
     });
   });
@@ -339,13 +312,10 @@ describe('changeStatus', () => {
     );
 
     it('sets the closing time anew from one terminal status to another without a reopen (Q6)', () => {
-      const change = changeStatus(
-        closed('done'),
-        request({ target: 'rejected', rejectionReason: 'Not reproducible' }),
-      );
+      const change = changeStatus(closed('done'), request({ target: 'rejected' }));
 
       expect(change.reopen).toBe(false);
-      expect(change.fields).toMatchObject({ closedAt: NOW, rejectionReason: 'Not reproducible' });
+      expect(change.fields).toMatchObject({ closedAt: NOW });
       // `resolved` → `closed` is a public change (§4.5).
       expect(change.events[0]?.isPublic).toBe(true);
     });

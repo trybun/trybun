@@ -6,7 +6,6 @@ import {
   type AddTicketAttachmentsDto,
   type Attachment,
   type AttachmentAction,
-  attachmentActionSchema,
   type AttachmentList,
   type AttachmentPage,
   type ListAttachmentsQuery,
@@ -32,11 +31,15 @@ import {
 import { ActivityEventsService } from '../activity-events/activity-events.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { TICKET, ticketRuleSelect } from '../tickets/tickets.abilities.js';
-import { identitySelect, visiblePerson } from '../tickets/visible-person.js';
 import { UsersService } from '../users/users.service.js';
 import { contentMatches } from './attachment-content.js';
+import {
+  type AttachmentRow,
+  attachmentSelect,
+  toAttachmentResponse,
+} from './attachment-responses.js';
 import { AttachmentLinksService } from './attachment-links.service.js';
-import { ATTACHMENT, attachmentRuleSelect, CREATE } from './attachments.abilities.js';
+import { ATTACHMENT, CREATE, DRAFT } from './attachments.abilities.js';
 import {
   ATTACHMENT_DELETED,
   ATTACHMENT_UPLOADED,
@@ -62,48 +65,6 @@ import {
 } from './domain/draft-quota.js';
 import { normalizeFileName } from './domain/file-name.js';
 import type { QuarantinedFile } from './quarantine-storage.engine.js';
-
-/** The fields of an attachment response and of its rules (§18.3). */
-function attachmentSelect(principal: UserPrincipal) {
-  return {
-    ...attachmentRuleSelect(principal),
-    fileName: true,
-    contentType: true,
-    size: true,
-    status: true,
-    createdAt: true,
-    uploadedBy: { select: identitySelect(principal) },
-  } satisfies Prisma.AttachmentSelect;
-}
-
-type AttachmentRow = Prisma.AttachmentGetPayload<{
-  select: ReturnType<typeof attachmentSelect>;
-}>;
-
-/**
- * The response shape of an attachment (§18.3) with the actions the principal may perform; its
- * uploader under the identity rule (§5.4, S1-11 Q9), so a customer of another organization who
- * reads a shared ticket sees "Customer" for its files too.
- */
-function toAttachmentResponse(
-  row: AttachmentRow,
-  ability: AppAbility,
-  principal: UserPrincipal,
-): Attachment {
-  const record = subject(ATTACHMENT, row);
-  return {
-    id: row.id,
-    fileName: row.fileName,
-    contentType: row.contentType,
-    size: row.size,
-    isImage: isRasterImage(row.contentType),
-    status: row.status,
-    ticketId: row.ticketId,
-    uploadedBy: visiblePerson(principal, row.uploadedBy),
-    createdAt: row.createdAt.toISOString(),
-    allowedActions: attachmentActionSchema.options.filter((action) => ability.can(action, record)),
-  };
-}
 
 /** The attachments of a ticket are listed oldest first (§18.4). */
 const creationSortKeySchema = z.tuple([z.iso.datetime(), z.uuid()]);
@@ -374,10 +335,15 @@ export class AttachmentsService {
       }
       const located = await tx.attachment.findUniqueOrThrow({
         where: { id: attachmentId },
-        select: { ticket: { select: { projectId: true } } },
+        select: {
+          ticket: { select: { projectId: true } },
+          comment: { select: { ticketId: true, ticket: { select: { projectId: true } } } },
+        },
       });
-      if (located.ticket !== null) {
-        await this.projects.lockForShare(tx, located.ticket.projectId);
+      // The project of the ticket, or of the comment's ticket (S1-12), in share mode (§7.3).
+      const projectId = located.ticket?.projectId ?? located.comment?.ticket.projectId;
+      if (projectId !== undefined) {
+        await this.projects.lockForShare(tx, projectId);
       }
       const row = await this.findVisible(tx, ability, principal, attachmentId);
       this.assertCan(ability, 'delete', row);
@@ -390,6 +356,21 @@ export class AttachmentsService {
             isPublic: true,
           },
         ]);
+      } else if (located.comment !== null) {
+        // A file of a comment: internal, so its name never reaches people outside the comment's
+        // audience (S1-12 Q16).
+        await this.activityEvents.record(
+          tx,
+          { userId: principal.userId },
+          located.comment.ticketId,
+          [
+            {
+              type: 'attachment_deleted',
+              data: { from: { id: row.id, displayName: row.fileName }, to: null },
+              isPublic: false,
+            },
+          ],
+        );
       }
       const payload = { attachmentId } satisfies AttachmentDeletedPayload;
       await this.outbox.add(tx, { type: ATTACHMENT_DELETED, payload });
@@ -429,7 +410,7 @@ export class AttachmentsService {
           reasonCode(ability.relevantRuleFor('add_attachment', ticketRecord)?.reason),
         );
       }
-      const linked = await this.links.linkDrafts(tx, principal, ticketId, input.attachmentIds);
+      const linked = await this.links.linkDrafts(tx, principal, { ticketId }, input.attachmentIds);
       await this.activityEvents.record(
         tx,
         { userId: principal.userId },
@@ -505,7 +486,7 @@ export class AttachmentsService {
   private async draftUsage(db: Transaction, userId: string): Promise<DraftUsage> {
     const groups = await db.attachment.groupBy({
       by: ['status'],
-      where: { uploadedById: userId, ticketId: null },
+      where: { uploadedById: userId, ...DRAFT },
       _count: { _all: true },
       _sum: { size: true },
     });

@@ -4,6 +4,7 @@ import type { Principal } from '../authentication/principal.js';
 import type { Transaction } from '../database/prisma.service.js';
 import type {
   AttachmentRuleRecord,
+  CommentRuleRecord,
   InvitationRuleRecord,
   OrganizationRuleRecord,
   ProjectRuleRecord,
@@ -19,6 +20,7 @@ export interface RuleRecords {
   User: UserRuleRecord;
   Ticket: TicketRuleRecord;
   Attachment: AttachmentRuleRecord;
+  Comment: CommentRuleRecord;
 }
 
 /** The Prisma filter of each subject with records. */
@@ -29,6 +31,7 @@ export interface RecordFilters {
   User: Prisma.UserWhereInput;
   Ticket: Prisma.TicketWhereInput;
   Attachment: Prisma.AttachmentWhereInput;
+  Comment: Prisma.CommentWhereInput;
 }
 
 export type RecordSubject = keyof RuleRecords;

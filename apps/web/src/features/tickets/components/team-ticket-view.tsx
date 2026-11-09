@@ -78,7 +78,7 @@ export function TeamTicketView({
           attachmentMaxSizeMb={attachmentMaxSizeMb}
         />
         <TicketAttachments ticketId={data.id} />
-        <ActivityTimeline ticket={data} />
+        <ActivityTimeline ticket={data} attachmentMaxSizeMb={attachmentMaxSizeMb} />
       </div>
     </article>
   );

@@ -19,6 +19,7 @@ import { createOwnDatabase } from '../../../test/setup/own-database.js';
 import { AuthenticationModule } from '../../platform/authentication/authentication.module.js';
 import { ABILITY_DEFINITIONS } from '../../ability-definitions.js';
 import { AuthorizationModule } from '../../platform/authorization/authorization.module.js';
+import { ClockModule } from '../../platform/clock/clock.module.js';
 import { ConfigModule } from '../../platform/config/config.module.js';
 import type { TrybunConfig } from '../../platform/config/config.schema.js';
 import { DatabaseModule } from '../../platform/database/database.module.js';
@@ -51,6 +52,7 @@ describe('administration endpoints', () => {
         ErrorsModule,
         HttpModule,
         AuthenticationModule,
+        ClockModule,
         AuthorizationModule.forRoot(ABILITY_DEFINITIONS),
         AdministrationModule,
       ],
