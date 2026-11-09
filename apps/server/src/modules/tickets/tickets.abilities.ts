@@ -65,31 +65,74 @@ function endUserProjectAccess(principal: Principal): Prisma.ProjectWhereInput[] 
 }
 
 /**
- * The conditions under which a principal reads a ticket (§7.5): an end user the tickets they
- * requested (`only_me` until S1-11), also after losing access to the project (§7.3); a team member
- * the tickets of their projects; the Administrator every ticket. The attachment rules wrap them, so
- * attachments follow every visibility rule of tickets.
+ * The organization of a ticket's snapshot while the principal still belongs to it (§7.3): a
+ * person belongs to at most one organization, so this is "the snapshot is the principal's current
+ * organization" as a relation condition limited to the principal (§18.3, S1-04 Q2). `active`
+ * also requires the organization not to be archived.
  */
-export function ticketReadConditions(principal: Principal): Prisma.TicketWhereInput {
-  if (principal.userKind === 'end_user') {
-    return { requesterId: principal.userId };
+function ownOrganization(principal: Principal, state?: 'active') {
+  return {
+    organization: {
+      is: {
+        ...(state === undefined ? {} : { state }),
+        members: { some: { userId: principal.userId } },
+      },
+    },
+  } satisfies Prisma.TicketWhereInput;
+}
+
+/**
+ * The own tickets an end user reads (§7.3, S1-11 Q1): R1 – own `only_me` and `all_customers`
+ * tickets in any project, also without current access to it; R2 – own tickets of the organization
+ * the person still belongs to, archived or not. Own `my_organization` tickets of an organization
+ * the person left are not among them.
+ */
+function ownTicketConditions(principal: Principal): Prisma.TicketWhereInput[] {
+  return [
+    { requesterId: principal.userId, visibility: { in: ['only_me', 'all_customers'] } },
+    { requesterId: principal.userId, ...ownOrganization(principal) },
+  ];
+}
+
+/**
+ * The conditions under which a principal reads a ticket (§7.5), one CASL rule per condition: an
+ * end user their own tickets (R1, R2), the `my_organization` tickets of their active organization
+ * (R3) and the shared tickets (R4) – the last two only in projects they can read, under each path
+ * of access (S1-11 Q2, Q3); a team member the tickets of their projects; the Administrator every
+ * ticket. The attachment rules wrap them, so attachments follow every visibility rule of tickets.
+ */
+export function ticketReadConditions(principal: Principal): Prisma.TicketWhereInput[] {
+  if (principal.userKind !== 'end_user') {
+    return [principal.isAdmin ? {} : { project: { is: memberFrom(principal, 'developer') } }];
   }
-  return principal.isAdmin ? {} : { project: { is: memberFrom(principal, 'developer') } };
+  const access = endUserProjectAccess(principal);
+  return [
+    ...ownTicketConditions(principal),
+    ...access.map((project) => ({
+      visibility: 'my_organization' as const,
+      ...ownOrganization(principal, 'active'),
+      project: { is: project },
+    })),
+    ...access.map((project) => ({
+      visibility: 'all_customers' as const,
+      project: { is: project },
+    })),
+  ];
 }
 
 /**
  * The conditions under which a principal changes a ticket they read – edits it or adds
- * attachments (§7.5), one rule per condition: an end user while they can still read the project
- * (Q14), the team under the read conditions.
+ * attachments (§7.5), one rule per condition: an end user only their own tickets (R1, R2) and only
+ * while they can still read the project (Q14) – reading a colleague's or a shared ticket gives no
+ * change; the team under the read conditions.
  */
 export function ticketChangeConditions(principal: Principal): Prisma.TicketWhereInput[] {
   if (principal.userKind !== 'end_user') {
-    return [ticketReadConditions(principal)];
+    return ticketReadConditions(principal);
   }
-  return endUserProjectAccess(principal).map((access) => ({
-    ...ticketReadConditions(principal),
-    project: { is: access },
-  }));
+  return ownTicketConditions(principal).flatMap((own) =>
+    endUserProjectAccess(principal).map((project) => ({ ...own, project: { is: project } })),
+  );
 }
 
 /**
@@ -110,7 +153,9 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
     for (const conditions of ticketChangeConditions(principal)) {
       can(['update', 'add_attachment'], TICKET, conditions);
     }
-    can('read', TICKET, ticketReadConditions(principal));
+    for (const conditions of ticketReadConditions(principal)) {
+      can('read', TICKET, conditions);
+    }
     can('confirm_resolution', TICKET, { requesterId: principal.userId });
     // The reason makes the API answer `409` instead of `403`, and keeps the action out of
     // `allowedActions` while no answer is possible (§18.3).
@@ -126,11 +171,13 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
   }
   can([CREATE_TICKET, ASSIGN_TICKETS_SELF], PROJECT, memberFrom(principal, 'developer'));
   can(ASSIGN_TICKETS, PROJECT, memberFrom(principal, 'project_manager'));
-  can(
-    ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
-    TICKET,
-    ticketReadConditions(principal),
-  );
+  for (const conditions of ticketReadConditions(principal)) {
+    can(
+      ['read', 'update', 'update_fields', 'assign_self', 'change_status', 'add_attachment'],
+      TICKET,
+      conditions,
+    );
+  }
   can('assign', TICKET, { project: { is: memberFrom(principal, 'project_manager') } });
 };
 
@@ -149,8 +196,9 @@ export const archivedProjectsOfTicketsRestriction: AbilityRules = ({ cannot }) =
 };
 
 /**
- * The fields of a ticket its rules read (§18.3): its requester, its status and waiting reason and,
- * of its project, the fields the project's rules read – its state, the principal's own membership
+ * The fields of a ticket its rules read (§18.3): its requester, source, status and waiting reason,
+ * its visibility and sharing request, of its organization snapshot the state and the principal's
+ * own membership, and, of its project, the fields the project's rules read – its state, the principal's own membership
  * and the access of the principal's organization.
  */
 export function ticketRuleSelect(principal: Principal) {
@@ -159,6 +207,16 @@ export function ticketRuleSelect(principal: Principal) {
     requesterId: true,
     status: true,
     waitingReason: true,
+    source: true,
+    visibility: true,
+    sharingRequest: true,
+    organizationId: true,
+    organization: {
+      select: {
+        state: true,
+        members: { where: { userId: principal.userId }, select: { userId: true } },
+      },
+    },
     project: { select: projectRuleSelect(principal) },
   } satisfies Prisma.TicketSelect;
 }

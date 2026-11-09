@@ -133,6 +133,107 @@ describe('ticket abilities', () => {
     expect(can(who, action, { own })).toBe(isAllowed);
   });
 
+  // The read rules R1–R4 of S1-11 (§5.1, §7.3): own tickets, the tickets of the principal's
+  // organization and shared tickets.
+  it.each([
+    ['own only_me ticket', 'end_user_personal', { own: true }, true],
+    ['own only_me ticket without project access', 'end_user', { own: true }, true],
+    // Q1: the author keeps their own shared ticket without project access.
+    [
+      'own shared ticket without project access',
+      'end_user',
+      { own: true, visibility: 'all_customers' },
+      true,
+    ],
+    [
+      'own my_organization ticket of their organization',
+      'end_user_organization',
+      { own: true, visibility: 'my_organization', organization: 'mine' },
+      true,
+    ],
+    // Q3: members of an archived organization keep their own tickets.
+    [
+      'own my_organization ticket of their archived organization',
+      'end_user_archived_organization',
+      {
+        own: true,
+        visibility: 'my_organization',
+        organization: 'mine',
+        organizationState: 'archived',
+      },
+      true,
+    ],
+    // §7.3: after a change of organization, own my_organization tickets of the old one disappear.
+    [
+      'own my_organization ticket of an organization they left',
+      'end_user_personal',
+      { visibility: 'my_organization', own: true, organization: 'other' },
+      false,
+    ],
+    [
+      "a colleague's my_organization ticket",
+      'end_user_organization',
+      { visibility: 'my_organization', organization: 'mine' },
+      true,
+    ],
+    [
+      "a colleague's my_organization ticket in a project of personal access",
+      'end_user_personal',
+      { visibility: 'my_organization', organization: 'mine' },
+      true,
+    ],
+    // Q2: never a colleague's ticket of a project the principal cannot open.
+    [
+      "a colleague's my_organization ticket without project access",
+      'end_user',
+      { visibility: 'my_organization', organization: 'mine' },
+      false,
+    ],
+    // Q3: colleagues' tickets are hidden while the organization is archived.
+    [
+      "a colleague's my_organization ticket of an archived organization",
+      'end_user_personal',
+      { visibility: 'my_organization', organization: 'mine', organizationState: 'archived' },
+      false,
+    ],
+    [
+      'a my_organization ticket of another organization',
+      'end_user_organization',
+      { visibility: 'my_organization', organization: 'other' },
+      false,
+    ],
+    ["another person's only_me ticket", 'end_user_organization', { organization: 'mine' }, false],
+    ['a shared ticket', 'end_user_organization', { visibility: 'all_customers' }, true],
+    ['a shared ticket', 'end_user_personal', { visibility: 'all_customers' }, true],
+    ['a shared ticket without project access', 'end_user', { visibility: 'all_customers' }, false],
+    [
+      'a shared ticket through an archived organization',
+      'end_user_archived_organization',
+      { visibility: 'all_customers' },
+      false,
+    ],
+  ] as const)('reads %s – %s: %s', (_case, who, options, isAllowed) => {
+    expect(can(who, 'read', options)).toBe(isAllowed);
+  });
+
+  // Reading a colleague's or a shared ticket gives no change of it (§7.5, "Edit own ticket").
+  it.each([
+    ['end_user_organization', { visibility: 'my_organization', organization: 'mine' }],
+    ['end_user_personal', { visibility: 'all_customers' }],
+  ] as const)('lets %s read but not change a ticket of someone else (%o)', (who, options) => {
+    expect(can(who, 'read', options)).toBe(true);
+    expect(can(who, 'update', options)).toBe(false);
+    expect(can(who, 'add_attachment', options)).toBe(false);
+  });
+
+  it('lets a requester change their own my_organization ticket while they can read the project', () => {
+    const options = { own: true, visibility: 'my_organization', organization: 'mine' } as const;
+
+    expect(can('end_user_organization', 'update', options)).toBe(true);
+    expect(can('end_user_organization', 'add_attachment', options)).toBe(true);
+    expect(can('end_user', 'update', options)).toBe(false);
+  });
+
   const WAITING_FOR_CONFIRMATION = {
     status: 'waiting_for_requester',
     waitingReason: 'confirmation',
