@@ -901,7 +901,13 @@
       "attachFiles": "Dołącz pliki",
       "moreFormatting": "Więcej formatowania",
       "nothingToPreview": "Brak podglądu",
-      "uploading": "Przesyłanie {name}…"
+      "uploading": "Przesyłanie {name}…",
+      "mentionList": "Osoby do oznaczenia",
+      "mentionSearching": "Wyszukiwanie osób…",
+      "mentionNone": "Nie znaleziono osób",
+      "mentionCount": "{count, plural, one {Znaleziono # osobę} few {Znaleziono # osoby} many {Znaleziono # osób} other {Znaleziono # osoby}}",
+      "mentionTeam": "Zespół",
+      "mentionEndUser": "Użytkownik"
     },
     "attachmentList": {
       "uploading": "Przesyłanie…",

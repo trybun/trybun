@@ -158,3 +158,70 @@ export const IMAGE_CASES: ImageCase[] = [
     text: 'Badge',
   },
 ];
+
+/** A team member of the mention cases. */
+export const MENTIONED_USER_ID = '3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b';
+/** A user who is not among the people a view knows, e.g. one removed from the team. */
+export const UNKNOWN_USER_ID = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d';
+
+/** The people the views of the mention cases know (S1-12); the customer is a hidden person. */
+export const MENTIONED_PEOPLE = [
+  { id: MENTIONED_USER_ID, displayName: 'Anna Nowak' },
+  { id: 'customer', displayName: 'Customer' },
+];
+
+export interface MentionCase {
+  name: string;
+  source: string;
+  /** The names rendered as mentions, in order, each as `<span class="mention">@Name</span>`. */
+  mentions: string[];
+  /** Text rendered as written, e.g. a token that is no mention. */
+  text?: string;
+}
+
+/** The rendering of mention tokens (S1-12) with {@link MENTIONED_PEOPLE}. */
+export const MENTION_CASES: MentionCase[] = [
+  { name: 'known user', source: `Thanks @{${MENTIONED_USER_ID}}!`, mentions: ['Anna Nowak'] },
+  { name: 'hidden customer', source: 'Ask @{customer} first', mentions: ['Customer'] },
+  {
+    name: 'two tokens in one text node',
+    source: `@{${MENTIONED_USER_ID}} and @{customer}`,
+    mentions: ['Anna Nowak', 'Customer'],
+  },
+  {
+    name: 'unknown user stays text',
+    source: `Hi @{${UNKNOWN_USER_ID}}`,
+    mentions: [],
+    text: `@{${UNKNOWN_USER_ID}}`,
+  },
+  {
+    name: 'inline code stays text',
+    source: `\`@{${MENTIONED_USER_ID}}\``,
+    mentions: [],
+    text: `@{${MENTIONED_USER_ID}}`,
+  },
+  {
+    name: 'code block stays text',
+    source: `\`\`\`\n@{${MENTIONED_USER_ID}}\n\`\`\``,
+    mentions: [],
+    text: `@{${MENTIONED_USER_ID}}`,
+  },
+  {
+    name: 'link text stays text',
+    source: `[@{${MENTIONED_USER_ID}}](/profile)`,
+    mentions: [],
+    text: `@{${MENTIONED_USER_ID}}`,
+  },
+  {
+    name: 'upper-case ID stays text',
+    source: `@{${MENTIONED_USER_ID.toUpperCase()}}`,
+    mentions: [],
+    text: `@{${MENTIONED_USER_ID.toUpperCase()}}`,
+  },
+  { name: 'inside emphasis', source: `**@{${MENTIONED_USER_ID}}**`, mentions: ['Anna Nowak'] },
+];
+
+/** The rendered mention of a person, as every web renderer writes it. */
+export function mentionHtml(displayName: string): string {
+  return `<span class="mention">@${displayName}</span>`;
+}
