@@ -15,6 +15,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 - Tasks within a stage are listed in a sensible order; tasks marked with the same group number can be done in parallel.
 - A stage is finished when all its tasks are merged and its **exit criteria** are met. Each finished stage is released ([§15.4](../spec/15-deployment.md)) and deployed to the test environment.
 - Task status is tracked in this file: `[ ]` open, `[x]` done.
+- **Ideas – unscheduled** at the end collects ideas without a stage, release or order. They are not tasks: no agent implements an idea from that list. An idea becomes work only when the maintainer moves it into a stage of this plan; from then on it follows the rules above.
 
 ## Versioning of stages
 
@@ -249,3 +250,15 @@ The knowledge base is not yet described in the specification. S9-01 writes the c
 | [ ] S9-02 | 2 | Articles for the team: model, Markdown editor, drafts and publishing, categories, permissions, activity in the audit log | S9-01 | A Developer creates a draft and publishes it · an end user never sees a draft (API returns 404) |
 | [ ] S9-03 | 3 | Articles in the end-user portal: list and article view in the project home, articles in the portal search and in the similar-ticket suggestions while typing | §5.5, §5.6, §5.7, S9-01 | Typing a title that matches a published article suggests the article · an end user sees only articles of projects they can access |
 | [ ] S9-04 | 3 | Article from a ticket: the team creates an article from a resolved ticket, the ticket links to the article | S9-01 | The new article starts with the redacted content of the ticket · the ticket's activity timeline shows the link |
+
+---
+
+## Ideas – unscheduled
+
+Ideas worth keeping, without a stage, a release or an order. Nothing here is decided or specified ("How to use this plan"). When the maintainer schedules an idea, it moves into a stage with its tasks and is removed from this list.
+
+| Idea | Why | Notes |
+|---|---|---|
+| Live chat with end users (a widget on the customer's website) | Many helpdesks offer chat beside e-mail (market benchmark `.ai/specs/research/2026-11-09-market-benchmark.md`) | A separate kind of product: needs agents available in real time; a chat conversation is not searchable or shareable like a ticket ([§5.2](../spec/05-visibility-and-search.md), [§5.6](../spec/05-visibility-and-search.md)) unless it becomes one |
+| Slack and Microsoft Teams as a channel for end users to report tickets | B2B support tools (Pylon, Plain) receive requests in channels shared with the customer | Needs identity mapping to accounts and organizations ([§7.3](../spec/07-users-organizations-permissions.md)) and must keep ticket visibility ([§5.1](../spec/05-visibility-and-search.md)); could be built on the public API ([§12.3](../spec/12-api-webhooks-import.md)) |
+| Team notifications in Slack and Microsoft Teams | Teams already work there: new tickets in triage, SLA warnings, assignments | Builds on outgoing webhooks ([§12.4](../spec/12-api-webhooks-import.md)) and notification events ([§6.6](../spec/06-comments-notifications.md)); a ready integration would add channel choice and formatted messages |
