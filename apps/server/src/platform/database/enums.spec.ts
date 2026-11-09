@@ -7,9 +7,11 @@ import { productTourStatusSchema } from '@trybun/contracts/product-tours';
 import { projectMemberRoleSchema, projectStateSchema } from '@trybun/contracts/projects';
 import {
   ticketPrioritySchema,
+  ticketSharingRequestSchema,
   ticketSourceSchema,
   ticketStatusSchema,
   ticketTypeSchema,
+  ticketVisibilitySchema,
   ticketWaitingReasonSchema,
 } from '@trybun/contracts/tickets';
 import { userKindSchema, userStateSchema } from '@trybun/contracts/users';
@@ -23,9 +25,11 @@ import {
   ProjectRole,
   ProjectState,
   TicketPriority,
+  TicketSharingRequest,
   TicketSource,
   TicketStatus,
   TicketType,
+  TicketVisibility,
   TicketWaitingReason,
   UserKind,
   UserState,
@@ -45,6 +49,8 @@ describe('Prisma enums', () => {
     ['TicketPriority', TicketPriority, ticketPrioritySchema.options],
     ['TicketStatus', TicketStatus, ticketStatusSchema.options],
     ['TicketWaitingReason', TicketWaitingReason, ticketWaitingReasonSchema.options],
+    ['TicketVisibility', TicketVisibility, ticketVisibilitySchema.options],
+    ['TicketSharingRequest', TicketSharingRequest, ticketSharingRequestSchema.options],
     ['ActivityEventSource', ActivityEventSource, activityEventSourceSchema.options],
     ['AttachmentStatus', AttachmentStatus, attachmentStatusSchema.options],
   ])('%s matches its contract enum', (_name, prismaEnum, contractValues) => {

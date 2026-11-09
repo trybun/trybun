@@ -13,7 +13,7 @@ export type TicketFactoryInput = Omit<
 /**
  * The fields a status requires (§4.3), as the check constraints of the migrations demand: the
  * waiting fields while waiting, the closing time while terminal and the reason while rejected –
- * each unless the input sets it.
+ * each unless the input sets it; likewise the refusal reason of a refused sharing request (S1-11).
  */
 function statusFields(status: TicketStatus, input: TicketFactoryInput) {
   return {
@@ -27,6 +27,14 @@ function statusFields(status: TicketStatus, input: TicketFactoryInput) {
     ...(isTerminalStatus(status) ? { closedAt: input.closedAt ?? new Date() } : {}),
     ...(status === 'rejected'
       ? { rejectionReason: input.rejectionReason ?? faker.lorem.sentence() }
+      : {}),
+    ...(input.sharingRequest === 'rejected'
+      ? {
+          sharingRefusalReason:
+            input.sharingRefusalReason === undefined
+              ? faker.lorem.sentence()
+              : input.sharingRefusalReason,
+        }
       : {}),
   };
 }

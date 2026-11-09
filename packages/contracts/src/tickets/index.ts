@@ -54,6 +54,20 @@ export function isTerminalStatus(status: TicketStatus): boolean {
 export const ticketWaitingReasonSchema = z.enum(['information', 'confirmation']);
 export type TicketWaitingReason = z.infer<typeof ticketWaitingReasonSchema>;
 
+/**
+ * `ticket.visibility` (§5.1): who among the customers sees a ticket besides its requester – the
+ * effective visibility, which a pending sharing request keeps until the team approves it.
+ */
+export const ticketVisibilitySchema = z.enum(['only_me', 'my_organization', 'all_customers']);
+export type TicketVisibility = z.infer<typeof ticketVisibilitySchema>;
+
+/**
+ * `ticket.sharing_request` (§5.2): the state of the author's request to share a ticket with all
+ * customers – `pending` until one team member decides it, `rejected` after a refusal.
+ */
+export const ticketSharingRequestSchema = z.enum(['none', 'pending', 'rejected']);
+export type TicketSharingRequest = z.infer<typeof ticketSharingRequestSchema>;
+
 /** The public statuses (§4.1): what end users see instead of the internal status. */
 export const ticketPublicStatusSchema = z.enum([
   'received',
