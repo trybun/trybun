@@ -3,8 +3,11 @@ import { Injectable } from '@nestjs/common';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory } from '../../platform/authorization/ability-factory.js';
 import type { Transaction } from '../../platform/database/prisma.service.js';
-import { ATTACHMENT } from './attachments.abilities.js';
+import { ATTACHMENT, DRAFT } from './attachments.abilities.js';
 import { linkFailure } from './domain/linking.js';
+
+/** The parent a draft is linked to: a ticket or a comment (S1-12 Q16). */
+export type AttachmentParent = { ticketId: string } | { commentId: string };
 
 /** A draft linked to a ticket, as the activity events of the link name it. */
 export interface LinkedDraft {
@@ -13,8 +16,8 @@ export interface LinkedDraft {
 }
 
 /**
- * Links drafts to tickets in the transaction of another use case (§3.2, Q4): adding attachments
- * to a ticket and creating a ticket. A module of its own, so the tickets module – also in the
+ * Links drafts to tickets and comments in the transaction of another use case (§3.2, Q4): adding
+ * attachments to a ticket, creating a ticket, and writing or editing a comment (S1-12). A module of its own, so the tickets module – also in the
  * Worker – uses it without the endpoints and the storage of the attachments module (§18.3).
  */
 @Injectable()
@@ -22,18 +25,18 @@ export class AttachmentLinksService {
   constructor(private readonly abilities: AbilityFactory) {}
 
   /**
-   * Links the principal's own drafts to a ticket in the caller's transaction (§3.2, Q4, Q11), in
+   * Links the principal's own drafts to a ticket or a comment in the caller's transaction (§3.2, Q4, Q11), in
    * the order of the request; a repeated ID is linked once. Any status can be linked. One update
    * on the principal's unlinked drafts links them, so a concurrent link or purge never succeeds
    * together with it (ADR 0008); when it misses an ID, the caller's transaction is rolled back and
    * the IDs are classified – `404` for an ID the principal cannot read, else
    * `422 attachment.already_linked` at its pointer. The caller has checked that the principal may
-   * add attachments to the ticket; no activity event is written.
+   * add attachments to the parent; no activity event is written.
    */
   async linkDrafts(
     tx: Transaction,
     principal: UserPrincipal,
-    ticketId: string,
+    parent: AttachmentParent,
     attachmentIds: readonly string[],
   ): Promise<LinkedDraft[]> {
     const ids = [...new Set(attachmentIds)];
@@ -41,8 +44,8 @@ export class AttachmentLinksService {
       return [];
     }
     const linked = await tx.attachment.updateManyAndReturn({
-      where: { id: { in: ids }, uploadedById: principal.userId, ticketId: null },
-      data: { ticketId },
+      where: { id: { in: ids }, uploadedById: principal.userId, ...DRAFT },
+      data: parent,
       select: { id: true, fileName: true },
     });
     if (linked.length === ids.length) {

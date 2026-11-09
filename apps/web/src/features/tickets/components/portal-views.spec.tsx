@@ -54,6 +54,7 @@ function ticket(overrides: Partial<EndUserTicket> = {}): EndUserTicket {
     duplicateOf: null,
     visibility: 'only_me',
     sharingRequest: 'none',
+    descriptionEditedAt: null,
     publicStatusDescription: 'testing',
     ...overrides,
   };

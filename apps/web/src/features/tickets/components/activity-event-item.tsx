@@ -52,7 +52,8 @@ function useEventText(event: ActivityEventResponse): string {
   const t = useTranslations('tickets');
   const person =
     event.actor === null ? t('timeline.system') : (event.actor.displayName ?? t('deletedUser'));
-  const data = event.data;
+  // A comment event (S1-12) carries only the comment's ID, never a changed value.
+  const data = event.data !== null && 'from' in event.data ? event.data : null;
   const name = (value: ActivityEventValue | undefined) => snapshotNameOf(value) ?? t('deletedUser');
   const status = (value: unknown) => {
     const parsed = ticketStatusSchema.safeParse(value);
@@ -134,6 +135,14 @@ function useEventText(event: ActivityEventResponse): string {
       return t('timeline.events.sharingApproved', { person });
     case 'sharing_rejected':
       return t('timeline.events.sharingRejected', { person });
+    case 'comment_edited':
+      return t('timeline.events.commentEdited', { person });
+    case 'comment_deleted':
+      return t('timeline.events.commentDeleted', { person });
+    case 'comment_redacted':
+      return t('timeline.events.commentRedacted', { person });
+    case 'description_redacted':
+      return t('timeline.events.descriptionRedacted', { person });
   }
 
   /**

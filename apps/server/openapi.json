@@ -5229,7 +5229,11 @@
                                     "set_visibility_my_organization",
                                     "set_visibility_all_customers",
                                     "approve_sharing",
-                                    "reject_sharing"
+                                    "reject_sharing",
+                                    "add_comment",
+                                    "add_internal_note",
+                                    "read_description_revisions",
+                                    "redact_description"
                                   ]
                                 }
                               },
@@ -5291,6 +5295,12 @@
                                   "pending",
                                   "rejected"
                                 ]
+                              },
+                              "descriptionEditedAt": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                               },
                               "requester": {
                                 "type": "object",
@@ -5423,6 +5433,7 @@
                               "duplicateOf",
                               "visibility",
                               "sharingRequest",
+                              "descriptionEditedAt",
                               "requester",
                               "type",
                               "source",
@@ -5517,7 +5528,11 @@
                                     "set_visibility_my_organization",
                                     "set_visibility_all_customers",
                                     "approve_sharing",
-                                    "reject_sharing"
+                                    "reject_sharing",
+                                    "add_comment",
+                                    "add_internal_note",
+                                    "read_description_revisions",
+                                    "redact_description"
                                   ]
                                 }
                               },
@@ -5580,6 +5595,12 @@
                                   "rejected"
                                 ]
                               },
+                              "descriptionEditedAt": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                              },
                               "requester": {
                                 "nullable": true,
                                 "type": "object",
@@ -5633,6 +5654,7 @@
                               "duplicateOf",
                               "visibility",
                               "sharingRequest",
+                              "descriptionEditedAt",
                               "requester",
                               "publicStatusDescription"
                             ],
@@ -5822,7 +5844,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -5884,6 +5910,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -6016,6 +6048,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -6110,7 +6143,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -6173,6 +6210,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -6226,6 +6269,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -6345,7 +6389,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -6407,6 +6455,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -6539,6 +6593,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -6633,7 +6688,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -6696,6 +6755,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -6749,6 +6814,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -6916,7 +6982,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -6978,6 +7048,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -7110,6 +7186,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -7204,7 +7281,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -7267,6 +7348,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -7320,6 +7407,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -7513,7 +7601,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -7575,6 +7667,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -7707,6 +7805,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -7801,7 +7900,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -7864,6 +7967,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -7917,6 +8026,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -8060,7 +8170,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -8122,6 +8236,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -8254,6 +8374,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -8348,7 +8469,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -8411,6 +8536,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -8464,6 +8595,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -8583,7 +8715,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -8645,6 +8781,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -8777,6 +8919,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -8871,7 +9014,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -8934,6 +9081,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -8987,6 +9140,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -9127,7 +9281,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -9189,6 +9347,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -9321,6 +9485,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -9415,7 +9580,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -9478,6 +9647,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -9531,6 +9706,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -9673,7 +9849,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -9735,6 +9915,12 @@
                             "pending",
                             "rejected"
                           ]
+                        },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                         },
                         "requester": {
                           "type": "object",
@@ -9867,6 +10053,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "type",
                         "source",
@@ -9961,7 +10148,11 @@
                               "set_visibility_my_organization",
                               "set_visibility_all_customers",
                               "approve_sharing",
-                              "reject_sharing"
+                              "reject_sharing",
+                              "add_comment",
+                              "add_internal_note",
+                              "read_description_revisions",
+                              "redact_description"
                             ]
                           }
                         },
@@ -10024,6 +10215,12 @@
                             "rejected"
                           ]
                         },
+                        "descriptionEditedAt": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
                         "requester": {
                           "nullable": true,
                           "type": "object",
@@ -10077,6 +10274,7 @@
                         "duplicateOf",
                         "visibility",
                         "sharingRequest",
+                        "descriptionEditedAt",
                         "requester",
                         "publicStatusDescription"
                       ],
@@ -10167,165 +10365,194 @@
                                   "sharing_requested",
                                   "sharing_request_withdrawn",
                                   "sharing_approved",
-                                  "sharing_rejected"
+                                  "sharing_rejected",
+                                  "comment_edited",
+                                  "comment_deleted",
+                                  "comment_redacted",
+                                  "description_redacted"
                                 ]
                               },
                               "data": {
                                 "nullable": true,
-                                "type": "object",
-                                "properties": {
-                                  "from": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                          },
-                                          "displayName": {
-                                            "nullable": true,
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "id",
-                                          "displayName"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                          },
-                                          "number": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 9007199254740991
-                                          },
-                                          "projectKey": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "id",
-                                          "number",
-                                          "projectKey"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "string",
-                                        "nullable": true,
-                                        "enum": [
-                                          null
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  "to": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                          },
-                                          "displayName": {
-                                            "nullable": true,
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "id",
-                                          "displayName"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "object",
-                                        "properties": {
-                                          "id": {
-                                            "type": "string",
-                                            "format": "uuid",
-                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                                          },
-                                          "number": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "maximum": 9007199254740991
-                                          },
-                                          "projectKey": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "required": [
-                                          "id",
-                                          "number",
-                                          "projectKey"
-                                        ],
-                                        "additionalProperties": false
-                                      },
-                                      {
-                                        "type": "string",
-                                        "nullable": true,
-                                        "enum": [
-                                          null
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  "reopen": {
-                                    "type": "boolean"
-                                  },
-                                  "waitingReason": {
-                                    "nullable": true,
-                                    "type": "string"
-                                  },
-                                  "duplicateOf": {
-                                    "nullable": true,
+                                "anyOf": [
+                                  {
                                     "type": "object",
                                     "properties": {
-                                      "id": {
+                                      "from": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "displayName": {
+                                                "nullable": true,
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "displayName"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "number": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 9007199254740991
+                                              },
+                                              "projectKey": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "number",
+                                              "projectKey"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "string",
+                                            "nullable": true,
+                                            "enum": [
+                                              null
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "to": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string"
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "displayName": {
+                                                "nullable": true,
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "displayName"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "number": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 9007199254740991
+                                              },
+                                              "projectKey": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "id",
+                                              "number",
+                                              "projectKey"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "string",
+                                            "nullable": true,
+                                            "enum": [
+                                              null
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "reopen": {
+                                        "type": "boolean"
+                                      },
+                                      "waitingReason": {
+                                        "nullable": true,
+                                        "type": "string"
+                                      },
+                                      "duplicateOf": {
+                                        "nullable": true,
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "number": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "projectKey": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "number",
+                                          "projectKey"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "from",
+                                      "to"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "commentId": {
                                         "type": "string",
                                         "format": "uuid",
                                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                                       },
-                                      "number": {
-                                        "type": "integer",
-                                        "minimum": 1,
-                                        "maximum": 9007199254740991
-                                      },
-                                      "projectKey": {
-                                        "type": "string"
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "public",
+                                          "internal"
+                                        ]
                                       }
                                     },
                                     "required": [
-                                      "id",
-                                      "number",
-                                      "projectKey"
+                                      "commentId"
                                     ],
                                     "additionalProperties": false
                                   }
-                                },
-                                "required": [
-                                  "from",
-                                  "to"
-                                ],
-                                "additionalProperties": false
+                                ]
                               },
                               "actor": {
                                 "nullable": true,
@@ -10396,7 +10623,11 @@
                                   "sharing_requested",
                                   "sharing_request_withdrawn",
                                   "sharing_approved",
-                                  "sharing_rejected"
+                                  "sharing_rejected",
+                                  "comment_edited",
+                                  "comment_deleted",
+                                  "comment_redacted",
+                                  "description_redacted"
                                 ]
                               },
                               "data": {
@@ -10650,6 +10881,12 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
+                          "commentId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
                           "uploadedBy": {
                             "nullable": true,
                             "type": "object",
@@ -10694,6 +10931,7 @@
                           "isImage",
                           "status",
                           "ticketId",
+                          "commentId",
                           "uploadedBy",
                           "createdAt",
                           "allowedActions"
@@ -10788,6 +11026,12 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
+                          "commentId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
                           "uploadedBy": {
                             "nullable": true,
                             "type": "object",
@@ -10832,6 +11076,7 @@
                           "isImage",
                           "status",
                           "ticketId",
+                          "commentId",
                           "uploadedBy",
                           "createdAt",
                           "allowedActions"
@@ -10916,6 +11161,12 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
+                    "commentId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
                     "uploadedBy": {
                       "nullable": true,
                       "type": "object",
@@ -10960,6 +11211,7 @@
                     "isImage",
                     "status",
                     "ticketId",
+                    "commentId",
                     "uploadedBy",
                     "createdAt",
                     "allowedActions"
@@ -11125,6 +11377,12 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
+                          "commentId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
                           "uploadedBy": {
                             "nullable": true,
                             "type": "object",
@@ -11169,6 +11427,7 @@
                           "isImage",
                           "status",
                           "ticketId",
+                          "commentId",
                           "uploadedBy",
                           "createdAt",
                           "allowedActions"
@@ -11282,6 +11541,12 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
+                          "commentId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
                           "uploadedBy": {
                             "nullable": true,
                             "type": "object",
@@ -11326,6 +11591,7 @@
                           "isImage",
                           "status",
                           "ticketId",
+                          "commentId",
                           "uploadedBy",
                           "createdAt",
                           "allowedActions"

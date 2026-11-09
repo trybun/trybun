@@ -2441,7 +2441,7 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                             /** @enum {string} */
                             publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                             /** @enum {string|null} */
@@ -2456,6 +2456,8 @@ export interface operations {
                             visibility: "only_me" | "my_organization" | "all_customers";
                             /** @enum {string} */
                             sharingRequest: "none" | "pending" | "rejected";
+                            /** Format: date-time */
+                            descriptionEditedAt: string | null;
                             requester: {
                                 /** Format: uuid */
                                 id: string;
@@ -2503,7 +2505,7 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                             /** @enum {string} */
                             publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                             /** @enum {string|null} */
@@ -2518,6 +2520,8 @@ export interface operations {
                             visibility: "only_me" | "my_organization" | "all_customers";
                             /** @enum {string} */
                             sharingRequest: "none" | "pending" | "rejected";
+                            /** Format: date-time */
+                            descriptionEditedAt: string | null;
                             requester: {
                                 /** Format: uuid */
                                 id: string;
@@ -2584,7 +2588,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2599,6 +2603,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -2646,7 +2652,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2661,6 +2667,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -2709,7 +2717,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2724,6 +2732,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -2771,7 +2781,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2786,6 +2796,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -2849,7 +2861,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2864,6 +2876,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -2911,7 +2925,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2926,6 +2940,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -2990,7 +3006,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3005,6 +3021,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3052,7 +3070,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3067,6 +3085,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3122,7 +3142,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3137,6 +3157,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3184,7 +3206,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3199,6 +3221,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3247,7 +3271,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3262,6 +3286,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3309,7 +3335,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3324,6 +3350,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3378,7 +3406,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3393,6 +3421,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3440,7 +3470,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3455,6 +3485,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3510,7 +3542,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3525,6 +3557,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3572,7 +3606,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3587,6 +3621,8 @@ export interface operations {
                         visibility: "only_me" | "my_organization" | "all_customers";
                         /** @enum {string} */
                         sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
                         requester: {
                             /** Format: uuid */
                             id: string;
@@ -3623,8 +3659,8 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted" | "visibility_changed" | "sharing_requested" | "sharing_request_withdrawn" | "sharing_approved" | "sharing_rejected";
-                            data: {
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted" | "visibility_changed" | "sharing_requested" | "sharing_request_withdrawn" | "sharing_approved" | "sharing_rejected" | "comment_edited" | "comment_deleted" | "comment_redacted" | "description_redacted";
+                            data: ({
                                 from: string | {
                                     /** Format: uuid */
                                     id: string;
@@ -3653,7 +3689,12 @@ export interface operations {
                                     number: number;
                                     projectKey: string;
                                 } | null;
-                            } | null;
+                            } | {
+                                /** Format: uuid */
+                                commentId: string;
+                                /** @enum {string} */
+                                kind?: "public" | "internal";
+                            }) | null;
                             actor: {
                                 /** Format: uuid */
                                 id: string;
@@ -3667,7 +3708,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted" | "visibility_changed" | "sharing_requested" | "sharing_request_withdrawn" | "sharing_approved" | "sharing_rejected";
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted" | "visibility_changed" | "sharing_requested" | "sharing_request_withdrawn" | "sharing_approved" | "sharing_rejected" | "comment_edited" | "comment_deleted" | "comment_redacted" | "description_redacted";
                             data: ({
                                 /** @enum {string} */
                                 from: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
@@ -3735,6 +3776,8 @@ export interface operations {
                             status: "quarantine" | "available" | "infected" | "rejected";
                             /** Format: uuid */
                             ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
                             uploadedBy: {
                                 /** Format: uuid */
                                 id: string;
@@ -3782,6 +3825,8 @@ export interface operations {
                             status: "quarantine" | "available" | "infected" | "rejected";
                             /** Format: uuid */
                             ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
                             uploadedBy: {
                                 /** Format: uuid */
                                 id: string;
@@ -3823,6 +3868,8 @@ export interface operations {
                         status: "quarantine" | "available" | "infected" | "rejected";
                         /** Format: uuid */
                         ticketId: string | null;
+                        /** Format: uuid */
+                        commentId: string | null;
                         uploadedBy: {
                             /** Format: uuid */
                             id: string;
@@ -3915,6 +3962,8 @@ export interface operations {
                             status: "quarantine" | "available" | "infected" | "rejected";
                             /** Format: uuid */
                             ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
                             uploadedBy: {
                                 /** Format: uuid */
                                 id: string;
@@ -3964,6 +4013,8 @@ export interface operations {
                             status: "quarantine" | "available" | "infected" | "rejected";
                             /** Format: uuid */
                             ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
                             uploadedBy: {
                                 /** Format: uuid */
                                 id: string;

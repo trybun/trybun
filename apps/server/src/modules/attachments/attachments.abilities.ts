@@ -20,6 +20,12 @@ export const CREATE = 'create';
 /** The contract's closed list (§18.3): an action added to it is restricted by default. */
 const ALL_ACTIONS = attachmentActionSchema.options;
 
+/**
+ * A draft (§13.3): an attachment linked to neither a ticket nor a comment (S1-12 Q16). Every
+ * query and rule that means a draft uses this condition.
+ */
+export const DRAFT = { ticketId: null, commentId: null } satisfies Prisma.AttachmentWhereInput;
+
 /** The actions an archived project still allows on the attachments of its tickets (§7.3). */
 const ACTIONS_OF_ARCHIVED_PROJECTS: readonly AttachmentAction[] = ['read'];
 
@@ -31,7 +37,7 @@ const ACTIONS_OF_ARCHIVED_PROJECTS: readonly AttachmentAction[] = ['read'];
  */
 export const attachmentsAbilities: AbilityRules = ({ can }, principal) => {
   can(CREATE, ATTACHMENT);
-  can(['read', 'delete'], ATTACHMENT, { ticketId: null, uploadedById: principal.userId });
+  can(['read', 'delete'], ATTACHMENT, { ...DRAFT, uploadedById: principal.userId });
   if (principal.userKind !== 'end_user' && principal.isAdmin) {
     can(['read', 'delete'], ATTACHMENT, { ticketId: { not: null } });
     return;
@@ -73,6 +79,7 @@ export function attachmentRuleSelect(principal: Principal) {
     id: true,
     uploadedById: true,
     ticketId: true,
+    commentId: true,
     ticket: { select: ticketRuleSelect(principal) },
   } satisfies Prisma.AttachmentSelect;
 }

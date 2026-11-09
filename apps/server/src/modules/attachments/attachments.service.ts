@@ -36,7 +36,7 @@ import { identitySelect, visiblePerson } from '../tickets/visible-person.js';
 import { UsersService } from '../users/users.service.js';
 import { contentMatches } from './attachment-content.js';
 import { AttachmentLinksService } from './attachment-links.service.js';
-import { ATTACHMENT, attachmentRuleSelect, CREATE } from './attachments.abilities.js';
+import { ATTACHMENT, attachmentRuleSelect, CREATE, DRAFT } from './attachments.abilities.js';
 import {
   ATTACHMENT_DELETED,
   ATTACHMENT_UPLOADED,
@@ -99,6 +99,7 @@ function toAttachmentResponse(
     isImage: isRasterImage(row.contentType),
     status: row.status,
     ticketId: row.ticketId,
+    commentId: row.commentId,
     uploadedBy: visiblePerson(principal, row.uploadedBy),
     createdAt: row.createdAt.toISOString(),
     allowedActions: attachmentActionSchema.options.filter((action) => ability.can(action, record)),
@@ -429,7 +430,7 @@ export class AttachmentsService {
           reasonCode(ability.relevantRuleFor('add_attachment', ticketRecord)?.reason),
         );
       }
-      const linked = await this.links.linkDrafts(tx, principal, ticketId, input.attachmentIds);
+      const linked = await this.links.linkDrafts(tx, principal, { ticketId }, input.attachmentIds);
       await this.activityEvents.record(
         tx,
         { userId: principal.userId },
@@ -505,7 +506,7 @@ export class AttachmentsService {
   private async draftUsage(db: Transaction, userId: string): Promise<DraftUsage> {
     const groups = await db.attachment.groupBy({
       by: ['status'],
-      where: { uploadedById: userId, ticketId: null },
+      where: { uploadedById: userId, ...DRAFT },
       _count: { _all: true },
       _sum: { size: true },
     });

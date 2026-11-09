@@ -492,7 +492,11 @@
         "sharingRequested": "{person} asked to share the ticket with all customers",
         "sharingRequestWithdrawn": "{person} withdrew the request to share the ticket with all customers",
         "sharingApproved": "{person} shared the ticket with all customers",
-        "sharingRejected": "{person} did not share the ticket with all customers"
+        "sharingRejected": "{person} did not share the ticket with all customers",
+        "commentEdited": "{person} edited a comment",
+        "commentDeleted": "Comment deleted by {person}",
+        "commentRedacted": "{person} redacted a comment",
+        "descriptionRedacted": "{person} redacted the description"
       }
     },
     "status": {
@@ -960,7 +964,12 @@
       "sharing_not_pending": "This sharing request has already been decided.",
       "sharing_pending": "Decide the sharing request of this ticket first.",
       "author_consent_required": "Only its author can ask to share a ticket visible to them only.",
-      "organization_changed": "The requester no longer belongs to the organization of this ticket."
+      "organization_changed": "The requester no longer belongs to the organization of this ticket.",
+      "comments_closed": "This ticket is closed for comments. Create a new ticket instead."
+    },
+    "comment": {
+      "mention_not_allowed": "You can mention only people who can see this ticket and this comment.",
+      "too_many_mentions": "A comment can mention at most 50 people."
     },
     "attachment": {
       "type_not_allowed": "Files of this type are not allowed.",

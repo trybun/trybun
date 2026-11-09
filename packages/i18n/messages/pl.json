@@ -492,7 +492,11 @@
         "sharingRequested": "{person} – prośba o udostępnienie wszystkim klientom",
         "sharingRequestWithdrawn": "{person} – wycofanie prośby o udostępnienie wszystkim klientom",
         "sharingApproved": "{person} – udostępnienie wszystkim klientom",
-        "sharingRejected": "{person} – odmowa udostępnienia wszystkim klientom"
+        "sharingRejected": "{person} – odmowa udostępnienia wszystkim klientom",
+        "commentEdited": "{person} – edycja komentarza",
+        "commentDeleted": "Komentarz usunięty – {person}",
+        "commentRedacted": "{person} – redakcja komentarza",
+        "descriptionRedacted": "{person} – redakcja opisu"
       }
     },
     "status": {
@@ -960,7 +964,12 @@
       "sharing_not_pending": "Ta prośba o udostępnienie została już rozpatrzona.",
       "sharing_pending": "Najpierw rozpatrz prośbę o udostępnienie tego zgłoszenia.",
       "author_consent_required": "Tylko autor może poprosić o udostępnienie zgłoszenia widocznego tylko dla niego.",
-      "organization_changed": "Zgłaszający nie należy już do organizacji tego zgłoszenia."
+      "organization_changed": "Zgłaszający nie należy już do organizacji tego zgłoszenia.",
+      "comments_closed": "To zgłoszenie jest zamknięte dla komentarzy. Utwórz nowe zgłoszenie."
+    },
+    "comment": {
+      "mention_not_allowed": "Możesz wspomnieć tylko osoby, które widzą to zgłoszenie i ten komentarz.",
+      "too_many_mentions": "Komentarz może wspominać najwyżej 50 osób."
     },
     "attachment": {
       "type_not_allowed": "Pliki tego typu są niedozwolone.",

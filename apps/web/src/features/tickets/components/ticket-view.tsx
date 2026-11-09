@@ -234,11 +234,12 @@ function isStatusChange(event: ActivityEventResponse): boolean {
 
 /** The file name of an added or deleted file: the snapshot of the attachment (S1-08 Q9). */
 function attachmentFileNameOf(event: ActivityEventResponse): string | undefined {
+  const data = event.data !== null && 'from' in event.data ? event.data : null;
   const snapshot =
     event.type === 'attachment_added'
-      ? event.data?.to
+      ? data?.to
       : event.type === 'attachment_deleted'
-        ? event.data?.from
+        ? data?.from
         : undefined;
   return typeof snapshot === 'object' && snapshot !== null && 'displayName' in snapshot
     ? (snapshot.displayName ?? undefined)
@@ -247,5 +248,6 @@ function attachmentFileNameOf(event: ActivityEventResponse): string | undefined 
 
 function publicStatusTo(event: ActivityEventResponse): TicketPublicStatus {
   // The response is a union whose team arm carries any status code; the portal receives public ones.
-  return ticketPublicStatusSchema.catch('received').parse(event.data?.to);
+  const data = event.data !== null && 'to' in event.data ? event.data : null;
+  return ticketPublicStatusSchema.catch('received').parse(data?.to);
 }

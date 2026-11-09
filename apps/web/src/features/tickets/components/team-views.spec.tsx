@@ -60,6 +60,7 @@ function ticket(overrides: Partial<Ticket> = {}): Ticket {
     duplicateOf: null,
     visibility: 'only_me',
     sharingRequest: 'none',
+    descriptionEditedAt: null,
     type: 'bug',
     source: 'user',
     priority: 'high',
