@@ -56,7 +56,7 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 - [x] 4.1 Render and suggest mentions in the Markdown editor — 098ecbe, aff4be8, 15201f2
 - [x] 4.2 Add comments to the team ticket view — 9ac1589
 - [x] 4.3 Add comments and editing to the portal — 9ac1589, 8890d53
-- [ ] 4.4 Write the user documentation and extend the demo dataset
+- [x] 4.4 Write the user documentation and extend the demo dataset — 72bb3cb, f3384c4
 - [x] 4.5 Apply the specification changes and move the spec to implemented — 0859648, 8e8bc5e
 
 ### Phase 5: Review
