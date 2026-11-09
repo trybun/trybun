@@ -153,6 +153,9 @@ export type ResolutionAnswer = z.infer<typeof resolutionAnswerSchema>;
  * `add_attachment` links files to the ticket (§3.2), `set_visibility_<value>` changes the
  * visibility to that value – for the requester, `set_visibility_all_customers` requests sharing –
  * and `approve_sharing` / `reject_sharing` decide a pending sharing request (team, §5.2, S1-11).
+ * `add_comment` writes a public comment – its restriction carries `ticket.comments_closed` on a
+ * closed ticket (§4.3) – `add_internal_note` an internal note (team), `read_description_revisions`
+ * lists the earlier versions of the description and `redact_description` redacts it (team, S1-12).
  */
 export const ticketActionSchema = z.enum([
   'read',
@@ -168,6 +171,10 @@ export const ticketActionSchema = z.enum([
   'set_visibility_all_customers',
   'approve_sharing',
   'reject_sharing',
+  'add_comment',
+  'add_internal_note',
+  'read_description_revisions',
+  'redact_description',
 ]);
 export type TicketAction = z.infer<typeof ticketActionSchema>;
 
@@ -325,6 +332,8 @@ const commonTicketFields = {
   /** The effective visibility and the sharing request (§5.1, §5.2). */
   visibility: ticketVisibilitySchema,
   sharingRequest: ticketSharingRequestSchema,
+  /** The time of the last edit or redaction of the description; the UI shows "edited" (§6.1). */
+  descriptionEditedAt: z.iso.datetime().nullable(),
 };
 
 /** A ticket as the team sees it (§3.2). */
