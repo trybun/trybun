@@ -56,6 +56,7 @@ import { ContentRevisionsService } from '../content-revisions/content-revisions.
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
+import { requesterReplyTarget } from './domain/requester-reply.js';
 import { PROJECT, projectRuleSelect } from '../projects/projects.abilities.js';
 import { OrganizationsService } from '../organizations/organizations.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
@@ -379,14 +380,52 @@ export class TicketsService {
       if (input.kind === 'internal') {
         this.assertCan(ability, 'add_internal_note', ticket);
       }
-      return this.comments.add(
+      const comment = await this.comments.add(
         tx,
         principal,
         ability,
         { ...ticket, assigneeId: ticket.assignee?.id ?? null },
         input,
       );
+      await this.applyRequesterReply(tx, principal, ticket, input, comment.id);
+      return comment;
     });
+  }
+
+  /**
+   * The requester-reply rules (§4.3, S1-12) in the transaction of the comment, on the ticket the
+   * comment locked: a public comment of the requester's end-user account answers a wait or
+   * reopens a `done` ticket. The change is state-conditional – no `If-Match`, the comment's row
+   * lock serializes it with "Yes, solved", whose own conditional update then finds a ticket no
+   * longer waiting – increases the ticket's version, and its `status_changed` event and outbox
+   * event name the requester, the event also the comment (Q15).
+   */
+  private async applyRequesterReply(
+    tx: Transaction,
+    principal: UserPrincipal,
+    ticket: TicketRow,
+    input: CreateCommentDto,
+    commentId: string,
+  ): Promise<void> {
+    const target = requesterReplyTarget(
+      ticket,
+      input.kind === 'public' &&
+        principal.userKind === 'end_user' &&
+        ticket.requesterId === principal.userId,
+    );
+    if (target === null) {
+      return;
+    }
+    const change = changeStatus(
+      { ...statusFieldsOf(ticket), source: ticket.source },
+      {
+        target,
+        currentOriginal: null,
+        confirmResolution: ticket.project.confirmResolution,
+        now: this.clock.now(),
+      },
+    );
+    await this.applyStatusChange(tx, { userId: principal.userId }, ticket, null, change, commentId);
   }
 
   /**
@@ -985,6 +1024,7 @@ export class TicketsService {
     before: StatusChangeSubject,
     version: number | null,
     change: StatusChange,
+    commentId?: string,
   ): Promise<boolean> {
     if (change.fields === null) {
       if (version !== null) {
@@ -1039,6 +1079,7 @@ export class TicketsService {
           waitingReason,
           reopen: change.statusChanged.reopen,
           actorId: 'userId' in actor ? actor.userId : null,
+          ...(commentId === undefined ? {} : { commentId }),
         } satisfies TicketStatusChangedPayload,
       });
     }
