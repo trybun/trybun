@@ -345,9 +345,15 @@ export class TicketsService {
         await this.assertEligibleAssignee(tx, project.id, assigneeId);
       }
       const organizationId = await this.lockOrganizationSnapshot(tx, principal.userId);
-      // The person left their organization since the project was read (Q4).
-      if (visibility.visibility === 'my_organization' && organizationId === null) {
-        throw new AppError('ticket.organization_changed');
+      // The snapshot locked now must still allow `my_organization`: the person may have left or
+      // changed their organization, or it may have been archived or lost the project, since the
+      // project was read (Q4, Q19).
+      if (visibility.visibility === 'my_organization') {
+        await this.assertRequesterInOrganization(tx, {
+          requesterId: principal.userId,
+          organizationId,
+          projectId: project.id,
+        });
       }
       const number = await allocateTicketNumber(tx, project.id);
       const row = await tx.ticket.create({
@@ -678,19 +684,25 @@ export class TicketsService {
   }
 
   /**
-   * `my_organization` set by the team (Q4, Q19): only while the requester still belongs to the
-   * ticket's organization, which is active and has access to the project – otherwise the ticket
-   * would be shown to people the author left and hidden from the author.
+   * `my_organization` set by the team, or chosen at creation (Q4, Q19): only while the requester
+   * still belongs to the ticket's organization, which is active and has access to the project –
+   * otherwise the ticket would be shown to people the author left and hidden from the author.
    */
-  private async assertRequesterInOrganization(tx: Transaction, before: TicketRow): Promise<void> {
+  private async assertRequesterInOrganization(
+    tx: Transaction,
+    ticket: { requesterId: string; organizationId: string | null; projectId: string },
+  ): Promise<void> {
+    if (ticket.organizationId === null) {
+      throw new AppError('ticket.organization_changed');
+    }
     const memberships = await tx.organizationMember.count({
       where: {
-        userId: before.requesterId,
-        organizationId: before.organizationId ?? undefined,
-        organization: { state: 'active', projects: { some: { projectId: before.projectId } } },
+        userId: ticket.requesterId,
+        organizationId: ticket.organizationId,
+        organization: { state: 'active', projects: { some: { projectId: ticket.projectId } } },
       },
     });
-    if (before.organizationId === null || memberships === 0) {
+    if (memberships === 0) {
       throw new AppError('ticket.organization_changed');
     }
   }

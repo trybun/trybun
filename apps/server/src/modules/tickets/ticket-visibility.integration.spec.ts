@@ -7,7 +7,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { TicketPage } from '@trybun/contracts/tickets';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDemoDataset, seedDemoData } from '../../../prisma/demo-dataset.js';
 import {
   keycloakJwksHandler,
@@ -741,6 +741,41 @@ describe('creating a ticket with a visibility (S1-11 Q7, Q19)', () => {
       'create_ticket_my_organization',
     );
     expect((await create(member, personalProject.id, 'my_organization')).status).toBe(403);
+  });
+
+  it('refuses my_organization when the organization is archived while the ticket is created (Q4)', async () => {
+    const { project, organization, member } = await setUp();
+
+    let creation: Promise<request.Response> | undefined;
+    await prisma.$transaction(
+      async (tx) => {
+        // The archive holds the organization row: the creation has read the project with the
+        // organization still active and waits for the share lock of its snapshot.
+        await tx.organization.update({
+          where: { id: organization.id },
+          data: { state: 'archived', version: { increment: 1 } },
+        });
+        const [{ pid }] = await tx.$queryRaw<[{ pid: number }]>`SELECT pg_backend_pid() AS pid`;
+        creation = create(member, project.id, 'my_organization').then((res) => res);
+        // Only a connection this transaction blocks: other test files run in parallel.
+        await vi.waitFor(
+          async () => {
+            const [waiting] = await prisma.$queryRaw<[{ count: bigint }]>`
+              SELECT count(*) FROM pg_stat_activity
+              WHERE datname = current_database() AND ${pid}::int = ANY(pg_blocking_pids(pid))
+                AND query LIKE '%FOR SHARE%'`;
+            expect(waiting.count).toBeGreaterThanOrEqual(1n);
+          },
+          { timeout: 5000, interval: 20 },
+        );
+      },
+      { timeout: 10_000 },
+    );
+    const res = await (creation as Promise<request.Response>);
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'ticket.organization_changed' });
+    expect(await prisma.ticket.count({ where: { projectId: project.id } })).toBe(0);
   });
 
   it('creates team tickets only_me and refuses another visibility (Q6)', async () => {
