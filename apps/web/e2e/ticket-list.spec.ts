@@ -63,9 +63,14 @@ test.describe('the ticket list', () => {
     await page.goto('/tickets?view=triage');
     await expect(page.getByRole('heading', { level: 1, name: 'Tickets' })).toBeVisible();
 
-    // The chip of the view's status filter: removing it makes the person's own empty filter.
-    await page.getByRole('button', { name: /^Remove filter Status/ }).click();
-    await expect(page).toHaveURL(/\/tickets\?view=custom$/);
+    // The chip of the view's status filter: removing it makes the person's own empty filter. A
+    // click on the server-rendered chip before the hydration does nothing, so it is repeated.
+    await expect(async () => {
+      if (!page.url().endsWith('?view=custom')) {
+        await page.getByRole('button', { name: /^Remove filter Status/ }).click({ timeout: 2_000 });
+      }
+      await expect(page).toHaveURL(/\/tickets\?view=custom$/, { timeout: 2_000 });
+    }).toPass();
     await page.reload();
     await expect(page).toHaveURL(/\/tickets\?view=custom$/);
     await expect(page.getByRole('button', { name: /^Remove filter/ })).toHaveCount(0);
@@ -82,10 +87,13 @@ test.describe('the ticket list', () => {
       const first = await createTicket(api, projectId, `Bulk E2E first ${suffix}`);
       const second = await createTicket(api, projectId, `Bulk E2E second ${suffix}`);
       await page.goto(`/tickets?projectId=${projectId}&sort=createdAt&order=desc`);
-      await page.getByRole('checkbox', { name: `Select ${first.identifier}` }).check();
-      await page.getByRole('checkbox', { name: `Select ${second.identifier}` }).check();
       const bar = page.getByRole('region', { name: 'Bulk actions' });
-      await expect(bar.getByText('2 selected')).toBeVisible();
+      // A server-rendered checkbox ignores a click before the hydration, so it is repeated.
+      await expect(async () => {
+        await page.getByRole('checkbox', { name: `Select ${first.identifier}` }).check();
+        await page.getByRole('checkbox', { name: `Select ${second.identifier}` }).check();
+        await expect(bar.getByText('2 selected')).toBeVisible({ timeout: 2_000 });
+      }).toPass();
 
       // Someone else changes the second ticket after the list was read.
       const changed = await api.patch(`/api/v1/tickets/${second.id}`, {
