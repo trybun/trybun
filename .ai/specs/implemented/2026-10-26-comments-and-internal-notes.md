@@ -291,7 +291,7 @@ Tests: the filter-equals-check test of S1-04 (`lists equal details` in `permissi
 - **Team ticket view** (S1-10's timeline):
   - A comment form at the end of the timeline with `LazyMarkdownEditor` (S1-07, `features/tickets/components/`) and S1-08's `useAttachmentDrafts` (its Q18). Above it, a two-option switch "Internal note" (PL „Notatka wewnętrzna”), preselected on every new form, and "Public comment" (PL „Komentarz publiczny”).
   - With "Public comment" chosen, a one-line hint states who will see it ("Visible to the requester" / "Visible to organization X" / "Visible to all customers of the project", PL „Widoczny dla zgłaszającego” / „Widoczny dla organizacji X” / „Widoczny dla wszystkich klientów projektu”). The hint is built from the ticket's visibility. The submit button reads "Add internal note" (PL „Dodaj notatkę wewnętrzną”) or "Comment publicly" (PL „Skomentuj publicznie”).
-  - Internal notes in the timeline and the form in internal mode have their own background token, a lock icon and the label "Internal note". Colour is never the only signal ([§13.4](../../../docs/spec/13-non-functional.md)).
+  - Internal notes in the timeline and the form in internal mode have the warning tint of the theme (`bg-warning/10`, `border-warning/50`; no token of their own), a lock icon and the label "Internal note". Colour is never the only signal ([§13.4](../../../docs/spec/13-non-functional.md)).
 - **Portal ticket view** (S1-09):
   - A comment field below the public timeline, always public.
   - When `allowedActions` lacks `add_comment` because the ticket is closed, the view shows "Create a new ticket" (PL „Utwórz nowe zgłoszenie”) instead ([§4.3](../../../docs/spec/04-ticket-lifecycle.md)).

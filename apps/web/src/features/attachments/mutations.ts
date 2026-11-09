@@ -47,7 +47,7 @@ export function useDeleteAttachment() {
           params: { path: { attachmentId: attachment.id } },
         }),
       ),
-    onSettled: (_data, _error, attachment) =>
+    onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['attachments'] }),
         // The timeline shows the event of a ticket's file and the files of its comments.

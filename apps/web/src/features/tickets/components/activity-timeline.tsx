@@ -57,7 +57,7 @@ export function ActivityTimeline({
                     onError: (error) => toast.add({ title: errorMessage(error), type: 'error' }),
                     // The API decides what the timeline holds with the stored setting (§4.5).
                     onSettled: () =>
-                      queryClient.invalidateQueries({
+                      void queryClient.invalidateQueries({
                         queryKey: timelineQueryOptions(browserApiClient, ticket.id).queryKey,
                       }),
                   },

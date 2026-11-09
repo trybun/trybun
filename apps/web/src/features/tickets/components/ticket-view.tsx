@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { ActivityEventResponse } from '@trybun/contracts/activity-events';
 import {
   type TicketPublicStatus,
@@ -9,8 +9,6 @@ import {
   ticketPublicStatusSchema,
 } from '@trybun/contracts/tickets';
 import { Alert, AlertDescription } from '@trybun/ui/components/alert';
-import { Button } from '@trybun/ui/components/button';
-import { Markdown } from '@trybun/ui/components/markdown';
 import { ArchiveIcon, ChevronLeftIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -23,6 +21,8 @@ import { portalTicketHref } from '../../portal/hrefs.js';
 import { projectQueryOptions } from '../../projects/queries.js';
 import { TimelineList } from '../../comments/components/timeline-list.js';
 import { ticketQueryOptions } from '../queries.js';
+import { TicketDescription } from './ticket-description.js';
+import { TicketTitle } from './ticket-title.js';
 import { PortalVisibility } from './portal-visibility.js';
 import { PublicStatusBadge } from './public-status-badge.js';
 import { ResolutionConfirmationPanel } from './resolution-confirmation-panel.js';
@@ -83,7 +83,7 @@ export function TicketView({
         <p className="font-mono text-sm text-muted-foreground">
           {data.identifier} · {data.project.name}
         </p>
-        <h1 className="text-2xl font-bold break-words">{data.title}</h1>
+        <TicketTitle ticket={data} />
         <div className="flex flex-wrap items-center gap-2">
           <PublicStatusBadge status={data.publicStatus} />
           {description !== undefined && (
@@ -116,16 +116,11 @@ export function TicketView({
           <AlertDescription>{t('archivedBanner')}</AlertDescription>
         </Alert>
       )}
-      <section aria-labelledby="ticket-description" className="flex flex-col gap-2">
-        <h2 id="ticket-description" className="text-lg font-semibold">
-          {t('description')}
-        </h2>
-        {data.description === '' ? (
-          <p className="text-sm text-muted-foreground">{t('noDescription')}</p>
-        ) : (
-          <Markdown attachmentImageIds={imageIds}>{data.description}</Markdown>
-        )}
-      </section>
+      <TicketDescription
+        ticket={data}
+        imageIds={imageIds}
+        attachmentMaxSizeMb={attachmentMaxSizeMb}
+      />
       <TicketAttachments ticketId={data.id} />
       <Timeline ticket={data} attachmentMaxSizeMb={attachmentMaxSizeMb} />
     </article>

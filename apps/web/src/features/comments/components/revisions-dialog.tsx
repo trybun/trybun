@@ -56,7 +56,7 @@ export function RevisionsDialog({
           <DialogTitle>{t('history.title')}</DialogTitle>
           <DialogDescription>{t('history.description')}</DialogDescription>
         </DialogHeader>
-        <ol className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
+        <ol className="flex max-h-96 flex-col gap-4 overflow-y-auto">
           {items.map((revision) => (
             <li key={revision.id} className="flex flex-col gap-1 border-b border-border pb-3">
               <span className="text-sm text-muted-foreground">
