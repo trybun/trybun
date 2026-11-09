@@ -365,6 +365,10 @@ test.describe('sharing a ticket with all customers', () => {
           'Check that the description and attachments contain no data identifying the customer.',
         ),
       ).toBeVisible();
+      // axe measures the contrast of a dialog still fading in: wait for its animations.
+      await dialog.evaluate((popup) =>
+        Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+      );
       expect(await seriousViolations(developer)).toEqual([]);
       await dialog.getByRole('button', { name: 'Share with all customers' }).click();
       await expect(developer.getByText('Shared with all customers')).toBeVisible();
