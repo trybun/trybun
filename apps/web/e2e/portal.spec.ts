@@ -219,9 +219,12 @@ test.describe('the portal of an end user with one project', () => {
     await expect(page.getByText('We are testing the solution')).toBeVisible();
     // The ticket moved to in progress and then to verification, and its priority and assignee
     // changed: only the change of the public status reaches the requester.
-    await expect(portal.history).toHaveCount(2);
+    // The team's public comment reaches her, its internal note never does (S1-12).
+    await expect(portal.history).toHaveCount(3);
     await expect(portal.history.nth(0)).toContainText('Celina Customer created the ticket');
-    await expect(portal.history.nth(1)).toContainText('Status changed to In progress');
+    await expect(portal.history.nth(1)).toContainText('Fixed in the next release');
+    await expect(portal.history.nth(2)).toContainText('Status changed to In progress');
+    await expect(page.getByText('Reproduced on staging')).toHaveCount(0);
     await expect(page.getByText(/priority/i)).toHaveCount(0);
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
