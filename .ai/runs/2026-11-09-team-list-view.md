@@ -48,15 +48,15 @@ Everything the spec lists under Non-goals: label, milestone and SLA filters and 
 ### Phase 4: Web
 
 - [x] 4.1 Add the Table component to @trybun/ui — 98b6b98
-- [ ] 4.2 Add the ticket list page with the table and the cards
-- [ ] 4.3 Add the filters, the sort and the predefined views
-- [ ] 4.4 Add sharing approval actions to Pending sharing approvals
-- [ ] 4.5 Add the bulk action bar and the result dialog
+- [x] 4.2 Add the ticket list page with the table and the cards — c4fb2a1
+- [x] 4.3 Add the filters, the sort and the predefined views — c4fb2a1
+- [x] 4.4 Add sharing approval actions to Pending sharing approvals — c4fb2a1
+- [x] 4.5 Add the bulk action bar and the result dialog — c4fb2a1
 
 ### Phase 5: Documentation and dataset
 
 - [ ] 5.1 Extend the demo dataset and the E2E tests
-- [ ] 5.2 Write the user documentation
+- [x] 5.2 Write the user documentation — ae28c5b
 - [ ] 5.3 Apply the specification changes and move the spec to implemented
 
 ### Phase 6: Review
