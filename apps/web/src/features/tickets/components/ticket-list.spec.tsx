@@ -226,6 +226,7 @@ describe('TicketList', () => {
 
     await screen.findAllByRole('link', { name: 'Ticket 1' });
     const table = screen.getByRole('table');
+    expect(within(table).getByRole('columnheader', { name: 'Actions' })).toBeDefined();
     expect(within(table).getAllByRole('button', { name: 'Approve sharing' })).toHaveLength(1);
     expect(within(table).getAllByRole('button', { name: 'Refuse sharing' })).toHaveLength(1);
   });

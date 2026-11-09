@@ -106,7 +106,7 @@ export function TicketTable({
             })}
             {rowActions !== undefined && (
               <TableHead>
-                <span className="sr-only">{t('sharing.approve')}</span>
+                <span className="sr-only">{t('columns.actions')}</span>
               </TableHead>
             )}
           </TableRow>

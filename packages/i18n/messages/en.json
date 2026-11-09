@@ -556,7 +556,8 @@
         "assignee": "Assignee",
         "project": "Project",
         "organization": "Organization",
-        "updated": "Updated"
+        "updated": "Updated",
+        "actions": "Actions"
       },
       "sort": {
         "label": "Sort",

@@ -556,7 +556,8 @@
         "assignee": "Przypisany",
         "project": "Projekt",
         "organization": "Organizacja",
-        "updated": "Zaktualizowano"
+        "updated": "Zaktualizowano",
+        "actions": "Akcje"
       },
       "sort": {
         "label": "Sortuj",
