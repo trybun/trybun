@@ -17,7 +17,9 @@ Select a ticket to open it. It shows:
 - its status and what it means at the moment, for example **In progress** – "We are testing the solution";
 - your description;
 - its files, which you can open: see [Attach files](attach-files.md);
-- its history: when it was created, every change of its status and every file added or deleted later, with who made it.
+- its history: when it was created, every change of its status and every file added or deleted later, with who made it, and the comments.
+
+To reply to the team, see [Comment on your ticket](comment-on-your-ticket.md).
 
 When the team asks whether your problem is solved, the ticket shows the question at the top: see [Confirm that your problem is solved](confirm-that-your-problem-is-solved.md).
 
