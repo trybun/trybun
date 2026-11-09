@@ -26,7 +26,8 @@ describe('help content', () => {
   });
 
   it('opens the help of the most specific audience of the reader for a view', () => {
-    expect(getHelpViews('end_user')['/']).toBe('end-user/tutorials/getting-started');
+    expect(getHelpViews('end_user')['/portal']).toBe('end-user/tutorials/getting-started');
+    expect(getHelpViews('end_user')['/']).toBeUndefined();
     expect(getHelpViews('team')['/']).toBe(TEAM_PAGE);
     expect(getHelpViews('team')['/admin']).toBe('administrator/tutorials/set-up-trybun');
     expect(getHelpViews('end_user')['/admin']).toBeUndefined();

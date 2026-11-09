@@ -15,6 +15,7 @@ const readinessSchema = z.object({
   status: dependencyStatusSchema,
   database: z.literal('ok'),
   valkey: dependencyStatusSchema,
+  storage: dependencyStatusSchema,
 });
 
 /**

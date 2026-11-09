@@ -67,7 +67,7 @@ describe('Administrator panel', () => {
       expect(html).toContain(done);
       expect(html).toContain(toDo);
       expect(html).toContain('href="/help/administrator/how-to/configure-email"');
-      expect(requireSession).toHaveBeenCalledWith('/admin');
+      expect(requireSession).toHaveBeenCalledWith();
     },
   );
 
@@ -80,6 +80,34 @@ describe('Administrator panel', () => {
       'Everything on this list is set up.',
     );
   });
+
+  it('keeps the checklist and About at the readable width of a detail page (§2.9)', async () => {
+    GET.mockReturnValue(ok({ items: [], nextCursor: null }));
+    expect(await render(await GettingStartedPage())).toMatch(
+      /^<section [^>]*class="[^"]*\bmax-w-3xl\b/,
+    );
+
+    GET.mockReturnValue(ok({ version: '0.4.1', license: 'MIT' }));
+    expect(await render(await AboutPage())).toMatch(/^<section [^>]*class="[^"]*\bmax-w-3xl\b/);
+  });
+
+  it.each([
+    ['en', 'Invite the team'],
+    ['pl', 'Zaproś zespół'],
+  ] as const)(
+    'links "Invite the team" to the help page on inviting people (%s)',
+    async (language, title) => {
+      locale = language;
+      GET.mockReturnValue(
+        ok({ items: [{ id: 'invite_team', isDone: false, isOptional: false }], nextCursor: null }),
+      );
+
+      const html = await render(await GettingStartedPage());
+
+      expect(html).toContain(title);
+      expect(html).toContain('href="/help/team/how-to/invite-people-to-a-project"');
+    },
+  );
 
   it('shows the version of /health and the license', async () => {
     GET.mockReturnValue(ok({ version: '0.4.1', license: 'MIT' }));

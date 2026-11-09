@@ -90,6 +90,16 @@ describe('changeLanguage', () => {
     expect(await renderPage()).toContain('Przekierowanie do logowania…');
   });
 
+  it('reads the texts of a language passed explicitly, e.g. the account language', async () => {
+    // The request speaks English (`Accept-Language`); next-intl passes the language as `locale`.
+    const config = await getRequestConfig({ locale: 'pl', requestLocale: Promise.resolve('pl') });
+
+    expect(config).toMatchObject({
+      locale: 'pl',
+      messages: { signIn: { redirecting: 'Przekierowanie do logowania…' } },
+    });
+  });
+
   it('formats dates in the system default time zone', async () => {
     const config = await getRequestConfig({ requestLocale: Promise.resolve(undefined) });
 

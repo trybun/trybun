@@ -4,7 +4,7 @@ import { requireSession } from '../../../lib/auth/session.js';
 
 /** The landing page of the Administrator panel: the getting-started checklist (§15.6). */
 export default async function GettingStartedPage() {
-  await requireSession('/admin');
+  await requireSession();
   const client = await getServerApiClient();
   const page = await dataOrNotFound(client.GET('/api/v1/administration/getting-started'));
   return <GettingStartedChecklist items={page.items} />;

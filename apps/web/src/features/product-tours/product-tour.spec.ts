@@ -1,6 +1,13 @@
 import type { ProductTourProgress } from '@trybun/contracts/product-tours';
 import { describe, expect, it } from 'vitest';
-import { isTourDue, type ProductTour, visibleSteps } from './product-tour.js';
+import {
+  isNearViewportEdge,
+  isRingInset,
+  isTourDue,
+  type ProductTour,
+  tourSheetSide,
+  visibleSteps,
+} from './product-tour.js';
 
 const TOUR: ProductTour = {
   id: 'first_login',
@@ -43,11 +50,78 @@ describe('isTourDue', () => {
   });
 });
 
+describe('isNearViewportEdge', () => {
+  const VIEWPORT = { width: 360, height: 611 };
+
+  it.each([
+    ['the bottom navigation of phones', { top: 555, right: 360, bottom: 611, left: 0 }, true],
+    ['a target 4 px above the bottom edge', { top: 500, right: 300, bottom: 607, left: 60 }, true],
+    ['a target 4 px from the left edge', { top: 100, right: 300, bottom: 200, left: 4 }, true],
+    ['a target at the top edge', { top: 0, right: 300, bottom: 56, left: 60 }, true],
+    ['a target partly below the viewport', { top: 580, right: 300, bottom: 700, left: 60 }, true],
+    ['a target 5 px inside every edge', { top: 5, right: 355, bottom: 606, left: 5 }, false],
+    ['a header button', { top: 6, right: 350, bottom: 50, left: 306 }, false],
+  ])('%s: %s', (_case, rect, isNear) => {
+    expect(isNearViewportEdge(rect, VIEWPORT)).toBe(isNear);
+  });
+});
+
+describe('isRingInset', () => {
+  const VIEWPORT = { width: 360, height: 611 };
+  const SCROLL_MARGIN = { top: 72, bottom: 76 };
+
+  it.each([
+    // Scrolled clear of the edge by the scroll margin, not flush with it (#191).
+    ['a target below the viewport', { top: 700, right: 300, bottom: 760, left: 60 }, false],
+    ['a target partly below the viewport', { top: 580, right: 300, bottom: 700, left: 60 }, false],
+    ['a target above the viewport', { top: -200, right: 300, bottom: -100, left: 60 }, false],
+    [
+      'a target below the viewport at its left edge',
+      { top: 700, right: 300, bottom: 760, left: 0 },
+      true,
+    ],
+    // Taller than the room between the margins: the scroll still ends at an edge.
+    ['a target taller than the viewport', { top: 56, right: 360, bottom: 1400, left: 0 }, true],
+    [
+      'a target below the viewport too tall for the margins',
+      { top: 700, right: 300, bottom: 1200, left: 60 },
+      true,
+    ],
+    // Fixed or already visible: it stays where it is (#196).
+    ['the bottom navigation of phones', { top: 555, right: 360, bottom: 611, left: 0 }, true],
+    ['a header button', { top: 6, right: 350, bottom: 50, left: 306 }, false],
+  ])('%s: %s', (_case, rect, isInset) => {
+    expect(isRingInset(rect, VIEWPORT, SCROLL_MARGIN)).toBe(isInset);
+  });
+});
+
 describe('visibleSteps', () => {
   it.each([
     ['shows an optional step whose target is rendered', () => true, 3],
     ['leaves out an optional step whose target is missing', () => false, 2],
   ])('%s', (_case, isRendered, count) => {
     expect(visibleSteps(TOUR, isRendered)).toHaveLength(count);
+  });
+});
+
+describe('tourSheetSide', () => {
+  const VIEWPORT = { height: 780 };
+  const SCROLL_MARGIN = { top: 72, bottom: 76 };
+
+  it.each([
+    // Scrolled to the bottom margin, above the bottom navigation: the sheet opens at the top (#209).
+    ['a target below the viewport', { top: 900, bottom: 1060 }, 'top'],
+    ['a target partly below the viewport', { top: 700, bottom: 860 }, 'top'],
+    ['a target where the scroll left it', { top: 544, bottom: 704 }, 'top'],
+    ['a target above the viewport', { top: -300, bottom: -140 }, 'bottom'],
+    ['the bottom navigation of phones', { top: 724, bottom: 780 }, 'top'],
+    ['a header button', { top: 6, bottom: 50 }, 'bottom'],
+    ['a target in the upper half', { top: 120, bottom: 300 }, 'bottom'],
+    // Taller than the room between the margins: judged where it is.
+    ['a target below the viewport too tall for the margins', { top: 900, bottom: 1600 }, 'top'],
+    ['a target taller than the viewport', { top: 56, bottom: 1400 }, 'top'],
+    ['a target filling the screen', { top: 56, bottom: 700 }, 'bottom'],
+  ] as const)('%s: %s', (_case, rect, side) => {
+    expect(tourSheetSide(rect, VIEWPORT, SCROLL_MARGIN)).toBe(side);
   });
 });

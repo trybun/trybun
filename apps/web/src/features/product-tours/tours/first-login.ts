@@ -16,7 +16,6 @@ export const FIRST_LOGIN_TOUR: ProductTour = {
       target: 'app-shell-navigation',
       titleKey: 'tours.first_login.steps.navigation.title',
       descriptionKey: 'tours.first_login.steps.navigation.description',
-      phoneSheetSide: 'top',
     },
     {
       target: 'app-header-help',

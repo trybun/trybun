@@ -223,6 +223,7 @@ Rule 9 is **directly subordinate to Rule 2** (and through it to Rule 1): on smal
 - **No hover-only interactions**: everything available on hover is also available by tap.
 - Forms use the correct input types (`email`, `tel`, `number`, `date`) so phones show the right keyboard, and form fields use at least 16 px text so iOS does not zoom in on focus.
 - The layout respects device safe areas (notches, home indicators).
+- **Content width** in the application shell follows what the page is for. Forms, settings and the detail of one record use a readable width of at most 768 px, so lines stay short and labels stay near their fields. Lists, tables and boards use the full width of the content area, so columns and long titles have room, as in GitHub, Linear and Jira. Help text keeps the width of prose. Below the tablet breakpoint every page fills the screen.
 - A **web app manifest** with the brand icons ([`docs/brand/`](../brand/README.md)) lets users add Trybun to the home screen. Offline operation is not required.
 
 ### Patterns per element
@@ -240,12 +241,14 @@ Rule 9 is **directly subordinate to Rule 2** (and through it to Rule 1): on smal
 | Product tours (Rule 4) | Bottom-sheet tips instead of tips next to elements; the target is scrolled into view and highlighted, and a tip about an element at the bottom edge opens at the top edge | As on desktop |
 | E-mails ([§6.5](06-comments-notifications.md)) | Responsive templates readable on phones | – |
 
+On desktop the side navigation is expanded by default and can be collapsed to icons like on a tablet; the browser remembers the desktop choice. Tablets start with it collapsed and do not remember it. Collapsed, each icon shows the item's name in a tooltip on pointer hover and keyboard focus; the name stays the link's accessible name.
+
 Keyboard shortcuts remain a desktop accelerator; every action they trigger is also reachable by touch.
 
 ### Performance
 
 - Pages are usable on mobile networks: code splitting and lazy loading of heavy views (Gantt, editor), optimized images.
-- Performance budget checked in CI with Lighthouse (mobile profile): Performance and Accessibility scores of at least 90, LCP < 2.5 s, TBT < 200 ms and CLS < 0.1 for the **key pages**. Key pages are listed per stage and extended by the task that adds a page:
+- Performance budget checked in CI with Lighthouse (mobile profile): Performance and Accessibility scores of at least 90, LCP < 2.5 s, TBT < 200 ms and CLS < 0.1 for the **key pages**. Each value applies to its median over three Lighthouse runs per page, measured one page at a time after the other E2E tests. Key pages are listed per stage and extended by the task that adds a page:
   - Stage 0: sign-in redirect (the page of the web application; the Keycloak login screen it leads to is not part of the budget), empty application shell,
   - Stage 1: portal project home, ticket creation form, ticket view (end user and team), team list view, Kanban board,
   - later stages: triage queue, roadmap, Gantt chart, SLA report.
@@ -397,7 +400,7 @@ An implementation task is done only when:
 12. the code follows the patterns of the catalogue, and a new or changed pattern is proposed for approval (Rule 12),
 13. tests pass and the new functionality is covered by tests,
 14. all automated quality gates in CI pass,
-15. the change has been reviewed and approved by a human.
+15. the change has been reviewed and approved – by a human, or by the review and QA gates of the delivery workflow the maintainer runs ([`SDLC.md`](../../SDLC.md), [ADR 0011](../adr/0011-maintainer-account-and-workflow-approval.md)); changes of requirements always by the maintainer (Rule 8).
 
 ## 2.14 Agent workflow
 
@@ -412,8 +415,8 @@ An implementation task is done only when:
 
 - Work is split into **small, well-defined tasks**. Every task names the specification sections it implements.
 - One task = one pull request of limited scope, easy for a human to review.
-- Agents never push directly to the main branch. The main branch is protected and accepts changes only through approved pull requests.
-- The project's own agents (run by the maintainer, e.g. through Cezar) push branches and open pull requests **only as the project's GitHub App** ([§16.5](16-open-source.md), [ADR 0005](../adr/0005-github-app-as-agent-identity.md)), never as the maintainer. The maintainer approves the pull request as **code owner**; agents never approve pull requests. External contributors and their agents use their own GitHub accounts ([§16.4](16-open-source.md)).
+- Agents never push directly to the main branch. The main branch is protected and accepts changes only through pull requests with green CI.
+- The project's own agents (run by the maintainer, e.g. through Cezar) act on GitHub with the **maintainer's account** ([§16.5](16-open-source.md), [ADR 0011](../adr/0011-maintainer-account-and-workflow-approval.md)). They review, approve and merge pull requests only in the delivery workflows the maintainer runs ([`SDLC.md`](../../SDLC.md)), never a change of requirements (Rule 8), and never change repository settings, rulesets, environments, secrets or `v*` tags. External contributors and their agents use their own GitHub accounts ([§16.4](16-open-source.md)).
 - If the implementation reveals a gap or contradiction in the specification, the agent **does not resolve it on its own**: it proposes a specification change marked for human approval (Rule 8).
 - Significant technical decisions, including deliberate departures from conventions (Rule 1), are recorded as **ADRs** (Architecture Decision Records) in the repository.
 - Other agents may be working on other tasks in parallel (separate worktrees, e.g. through Cezar). Keep changes within the scope of the task and keep the branch up to date with `main` before opening a pull request.
@@ -434,9 +437,9 @@ These practices follow recommendations of the Claude Code team and apply to ever
 
 - **Trunk-based development**: short-lived branches from `main`, one per task, merged through pull requests with **squash merge**, so every merged PR is one Conventional Commit on `main`.
 - The squash commit takes the **PR title** as its title and the commit messages as its body, so the PR title must be a Conventional Commit with a scope from the list below (or none); commitlint checks it.
-- `main` is protected by the ruleset "Protect main" (no bypass actors): a pull request with 1 approval and Code Owners review ([§16.3](16-open-source.md)); stale approvals are dismissed on push, and the most recent push must be approved by someone other than its pusher; squash is the only merge method; force pushes and deletion are blocked. The CI gates below are its required status checks. Branches are deleted after merge.
-- Branch names: `KEY-123-short-description` for tickets, `S0-01-short-description` for tasks of the implementation plan, `cez/<id>` for branches created by Cezar; maintenance branches `release/X.Y.x` only according to Rule 11.
-- Commit scopes form a closed list: `web`, `server`, `ui`, `contracts`, `i18n`, `config` (shared tooling: `@trybun/tsconfig`, `@trybun/eslint-config`, root configuration), `deploy` (Docker Compose, Caddy, Keycloak configuration, install, update and backup scripts), `docs` (user documentation), `spec`, `plan`, `adr`, `agents` (`AGENTS.md`, `CLAUDE.md`, `.ai/skills/`), `memory` (`.ai/memory/`), `brand`, `repo` (community and GitHub files), `ci`, `deps`, `release`. A new scope is added by changing this list. The scope is optional for repository-wide changes (e.g. `chore: …`). The commit message check (commitlint) enforces this list.
+- `main` is protected by the ruleset "Protect main" (no bypass actors): a pull request is required; the CI gates below are its required status checks; squash is the only merge method; force pushes and deletion are blocked. It requires no approval: only accounts with write access – the maintainer and collaborators – can merge, and approval follows the delivery workflow ([§16.3](16-open-source.md), [ADR 0011](../adr/0011-maintainer-account-and-workflow-approval.md)). Branches are deleted after merge.
+- Branch names: `<type>/<short-description>` with the Conventional Commit type of the change (`feat/`, `fix/`, `docs/`, `chore/`, …), as the Open Mercato skills create them – `fix/issue-123-short-description` for an issue; `S0-01-short-description` for tasks of the implementation plan; `cez/<id>` for branches created by Cezar; maintenance branches `release/X.Y.x` only according to Rule 11.
+- Commit scopes form a closed list: `web`, `server`, `ui`, `contracts`, `i18n`, `config` (shared tooling: `@trybun/tsconfig`, `@trybun/eslint-config`, root configuration), `deploy` (Docker Compose, Caddy, Keycloak configuration, install, update and backup scripts), `docs` (user documentation), `spec`, `plan`, `adr`, `agents` (`AGENTS.md`, `CLAUDE.md`, `SDLC.md`, `.ai/skills/`, the agent pipeline configuration), `runs` (execution plans of agent runs in `.ai/runs/`), `memory` (`.ai/memory/`), `brand`, `repo` (community and GitHub files), `ci`, `deps`, `release`. A new scope is added by changing this list. The scope is optional for repository-wide changes (e.g. `chore: …`). The commit message check (commitlint) enforces this list.
 
 ### Architecture Decision Records
 

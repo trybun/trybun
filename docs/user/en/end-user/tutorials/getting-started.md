@@ -1,7 +1,7 @@
 ---
 title: Getting started with Trybun
 description: Sign in, find your way around the screen, get help and sign out.
-views: ['/']
+views: ['/portal']
 ---
 
 Trybun is where you report problems and requests to the team and follow how they are handled. This tutorial walks you through the parts of the screen you will use every time.
@@ -11,12 +11,12 @@ Trybun is where you report problems and requests to the team and follow how they
 1. Open the address of Trybun in your browser. The sign-in screen appears.
 2. Sign in with your account.
 
-After signing in you see the **Home** page.
+After signing in you see your project. If you can report to several projects, you see **Your projects** first: select the project you want.
 
 ## Find your way around
 
-- The **header** at the top shows the Trybun logo, which always takes you back to **Home**. On its right are the help icon and your account menu.
-- The **main navigation** lists the places you can go. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left.
+- The **header** at the top shows the Trybun logo, which always takes you back to your project, or to **Your projects**. On its right are the help icon and your account menu.
+- The **main navigation** lists the places you can go: **My tickets**, and **Projects** when you can report to several projects. On a phone it is at the bottom of the screen; on a tablet or a computer it is on the left. The button at its top collapses it to icons and expands it again; on a computer Trybun remembers your choice in this browser. When it shows only icons, point at an icon or move to it with the keyboard to see its name.
 
 ## Get help
 
@@ -31,4 +31,6 @@ Trybun also signs you out by itself after 8 hours without activity, and 30 days 
 
 ## Next steps
 
-- [Change the language](../how-to/change-language.md)
+- [Report a problem](../how-to/report-a-problem.md)
+- [Follow your tickets](../how-to/follow-your-tickets.md)
+- [Change your language and time zone](../how-to/change-language.md)

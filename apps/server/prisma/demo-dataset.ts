@@ -1,8 +1,14 @@
 // Deterministic demo dataset of the local environment and the E2E tests (§15.12): fixed IDs,
 // fixed timestamps and a seeded Faker, so two runs load identical data.
+import { createHash } from 'node:crypto';
 import { base, en, Faker, pl } from '@faker-js/faker';
 import type { ProductTourId } from '@trybun/contracts/product-tours';
+import { publicStatusOf } from '@trybun/contracts/tickets';
 import type { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
+import {
+  ATTACHMENT_DELETED,
+  type AttachmentDeletedPayload,
+} from '../src/modules/attachments/attachments.events.js';
 
 const FAKER_SEED = 20_261_023;
 const CREATED_AT = new Date('2026-01-05T08:00:00.000Z');
@@ -13,16 +19,562 @@ export const NEWCOMER_EMAIL = 'newcomer@example.com';
  * The current version of every product tour (`apps/web/src/features/product-tours/tours/`): the
  * other team accounts have completed them, so the tours interrupt neither demos nor E2E tests.
  */
-const PRODUCT_TOUR_VERSIONS: Record<ProductTourId, number> = { first_login: 1 };
+const PRODUCT_TOUR_VERSIONS: Record<ProductTourId, number> = {
+  first_login: 1,
+  organization_detail: 1,
+};
+
+/**
+ * The pending demo invitation expires long after the fixed timestamps, so it stays pending on
+ * every run; issued invitations expire 7 days after issue (§7.4).
+ */
+const PENDING_INVITATION_EXPIRES_AT = new Date('2099-12-31T00:00:00.000Z');
 
 export interface DemoDataset {
   users: Prisma.UserCreateManyInput[];
   productTourProgress: Prisma.ProductTourProgressCreateManyInput[];
+  projects: Prisma.ProjectCreateManyInput[];
+  projectMembers: Prisma.ProjectMemberCreateManyInput[];
+  organizations: Prisma.OrganizationCreateManyInput[];
+  organizationDomains: Prisma.OrganizationDomainCreateManyInput[];
+  organizationProjects: Prisma.OrganizationProjectCreateManyInput[];
+  organizationMembers: Prisma.OrganizationMemberCreateManyInput[];
+  invitations: Prisma.InvitationCreateManyInput[];
+  tickets: Prisma.TicketCreateManyInput[];
+  ticketRelations: Prisma.TicketRelationCreateManyInput[];
+  ticketNumberCounters: Prisma.TicketNumberCounterCreateManyInput[];
+  activityEvents: Prisma.ActivityEventCreateManyInput[];
+  comments: Prisma.CommentCreateManyInput[];
+  contentRevisions: Prisma.ContentRevisionCreateManyInput[];
+}
+
+/**
+ * The demo projects (§3.1): two active ones and an archived one, with the manager as Project
+ * manager and the other team accounts as Developers; the Administrator belongs to none, as the
+ * role covers every project.
+ */
+const DEMO_PROJECTS = [
+  {
+    name: 'Customer portal',
+    key: 'CP',
+    state: 'active',
+    members: ['manager', 'developer'],
+    confirmResolution: true,
+  },
+  {
+    name: 'ERP',
+    key: 'ERP',
+    state: 'active',
+    members: ['manager', 'developer', 'newcomer'],
+  },
+  { name: 'Legacy intranet', key: 'LEGACY', state: 'archived', members: ['manager', 'developer'] },
+] as const;
+
+/**
+ * The demo organizations (§7.3): the company of the end users, by their e-mail domain, with access
+ * to the customer portal and the first end users and the portal users as members – the other
+ * faker end users belong to none; for ticket visibility (S1-11), a supplier with access to the ERP
+ * and an archived former partner with access to the customer portal, whose members are the
+ * visibility accounts below.
+ */
+const DEMO_ORGANIZATIONS = [
+  {
+    key: 'customer',
+    name: 'Customer company',
+    domain: 'customer.example.com',
+    state: 'active',
+    projectKeys: ['CP'],
+  },
+  {
+    key: 'supplier',
+    name: 'Supplier company',
+    domain: 'supplier.example.com',
+    state: 'active',
+    projectKeys: ['ERP'],
+  },
+  {
+    key: 'former',
+    name: 'Former partner',
+    domain: 'former-partner.example.com',
+    state: 'archived',
+    projectKeys: ['CP'],
+  },
+] as const;
+
+type DemoOrganizationKey = (typeof DEMO_ORGANIZATIONS)[number]['key'];
+
+/** The faker end users who belong to "Customer company"; the others belong to none. */
+const CUSTOMER_COMPANY_MEMBER_COUNT = 6;
+
+/**
+ * The end users of ticket visibility (S1-11), without Keycloak users, so none signs in: a member
+ * of the supplier, a person who moved from "Customer company" to the supplier and keeps tickets in
+ * the customer portal they no longer open, a member of the archived former partner, and a person
+ * without an organization with personal access to the customer portal.
+ */
+const DEMO_VISIBILITY_USERS = [
+  {
+    key: 'supplier',
+    email: 'sara.supplier@supplier.example.com',
+    displayName: 'Sara Supplier',
+    organization: 'supplier',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'mover',
+    email: 'marta.mover@supplier.example.com',
+    displayName: 'Marta Mover',
+    organization: 'supplier',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'former',
+    email: 'olaf.old@former-partner.example.com',
+    displayName: 'Olaf Old',
+    organization: 'former',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'loner',
+    email: 'nadia.nobody@example.net',
+    displayName: 'Nadia Nobody',
+    organization: null,
+    personalProjectKeys: ['CP'],
+  },
+] as const satisfies readonly {
+  key: string;
+  email: string;
+  displayName: string;
+  organization: DemoOrganizationKey | null;
+  personalProjectKeys: readonly string[];
+}[];
+
+/**
+ * The accounts of the invitations and of the deactivation (§7.4): an end user of the customer
+ * company invited to the customer portal (pending, matched to the demo organization by the
+ * domain), a team member whose invitation to the ERP expired, and a deactivated end user. None
+ * has a Keycloak user, so none can sign in.
+ */
+const DEMO_INVITED_AND_DEACTIVATED = [
+  {
+    email: 'invited@customer.example.com',
+    displayName: null,
+    kind: 'end_user',
+    state: 'invited',
+  },
+  { email: 'candidate@example.com', displayName: null, kind: 'team', state: 'invited' },
+  {
+    email: 'former@customer.example.com',
+    displayName: 'Filip Former',
+    kind: 'end_user',
+    state: 'deactivated',
+  },
+] as const;
+
+/**
+ * The end users who sign in to the portal in the local environment and the E2E tests (§5.7); their
+ * Keycloak users have the same IDs (docker/keycloak/dev/trybun-realm.json). The customer works in
+ * one project, the customer portal of their organization; the partner also has personal access to
+ * the ERP, so they choose between two projects.
+ */
+export const DEMO_PORTAL_USERS = [
+  {
+    key: 'customer',
+    email: 'customer@customer.example.com',
+    displayName: 'Celina Customer',
+    personalProjectKeys: [],
+  },
+  {
+    key: 'partner',
+    email: 'partner@customer.example.com',
+    displayName: 'Piotr Partner',
+    personalProjectKeys: ['ERP'],
+  },
+] as const;
+
+/**
+ * The demo tickets (§3.2) in the active projects and the archived one: every source, type and
+ * priority, the end users' tickets with the organization of their requester, some assigned. They
+ * start in their initial statuses; `DEMO_STATUS_CHANGES` moves some of them. `events` are the
+ * field changes recorded after the creation (§4.5), by the account named in `by`.
+ */
+const DEMO_TICKETS = [
+  {
+    project: 'CP',
+    title: 'Cannot download the invoice PDF',
+    description: 'The **Download** button on the invoice page does nothing since Monday.',
+    requester: 'endUser0',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'How do I change the e-mail address of my account?',
+    description: '',
+    requester: 'endUser1',
+    source: 'user',
+    type: 'question',
+    priority: 'low',
+    assignee: null,
+    events: [{ by: 'developer', field: 'type', from: null, to: 'question' }],
+  },
+  {
+    project: 'CP',
+    title: 'Sign-in page crashes on Safari',
+    description: 'Safari 26 shows a blank page after the sign-in button is pressed.',
+    requester: 'manager',
+    source: 'developer',
+    type: 'bug',
+    priority: 'critical',
+    assignee: 'developer',
+    events: [
+      { by: 'manager', field: 'priority', from: 'normal', to: 'critical' },
+      { by: 'manager', field: 'assignee', from: null, to: 'developer' },
+    ],
+  },
+  {
+    project: 'CP',
+    title: 'Export the invoice list to CSV',
+    description: 'Customers ask for a CSV export of all invoices of a year.',
+    requester: 'developer',
+    source: 'developer',
+    type: 'feature',
+    priority: 'low',
+    assignee: 'developer',
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'TypeError in checkout.js',
+    description: "Cannot read properties of undefined (reading 'total') at checkout.js:118",
+    requester: 'admin',
+    source: 'integration',
+    type: 'bug',
+    priority: 'high',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'ERP',
+    title: 'Speed up the monthly closing report',
+    description: 'The report takes more than ten minutes for the largest company.',
+    requester: 'manager',
+    source: 'developer',
+    type: 'task',
+    priority: 'high',
+    assignee: 'newcomer',
+    events: [
+      {
+        by: 'manager',
+        field: 'title',
+        from: 'Report slow',
+        to: 'Speed up the monthly closing report',
+      },
+      { by: 'manager', field: 'assignee', from: null, to: 'newcomer' },
+    ],
+  },
+  {
+    project: 'ERP',
+    title: 'Add the cost centre to purchase orders',
+    description: '',
+    requester: 'developer',
+    source: 'developer',
+    type: 'feature',
+    priority: 'normal',
+    assignee: null,
+    events: [{ by: 'developer', field: 'description', from: null, to: null }],
+  },
+  {
+    project: 'LEGACY',
+    title: 'Migrate the phone book to the customer portal',
+    description: '',
+    requester: 'manager',
+    source: 'developer',
+    type: 'task',
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Invoice PDF does not download',
+    description: 'Clicking **Download** on an invoice has no effect.',
+    requester: 'endUser1',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  // The tickets of the customer in every public status of §4.2 (S1-09); `DEMO_STATUS_CHANGES`
+  // moves them.
+  {
+    project: 'CP',
+    title: 'The order history loads slowly',
+    description: 'Opening **Orders** takes about 20 seconds.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Add a dark theme',
+    description: 'Working in the evening would be easier on the eyes.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Wrong VAT rate on the March invoice',
+    description: 'The invoice shows 23% instead of 8% for the books.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: 'developer',
+    // Internal changes: never shown to the requester (§4.5).
+    events: [
+      { by: 'manager', field: 'priority', from: 'normal', to: 'high' },
+      { by: 'manager', field: 'assignee', from: null, to: 'developer' },
+    ],
+  },
+  {
+    project: 'CP',
+    title: 'Cannot change my password',
+    description: 'The **Save** button stays disabled.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: 'developer',
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Export the delivery notes',
+    description: 'I need the delivery notes of last year.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'The newsletter link is broken',
+    description: 'The link in the October newsletter leads to a 404 page.',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Pay invoices with a gift card',
+    description: '',
+    requester: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'ERP',
+    title: 'Access to the supplier reports',
+    description: 'Our purchasing team needs the supplier reports.',
+    requester: 'partner',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  // Every visibility and sharing request of S1-11 (§5.1, §5.2), for the property test and for
+  // manual review.
+  {
+    project: 'CP',
+    title: 'The invoice list is empty after the update',
+    description: 'Since this morning the list of invoices shows no entries for our company.',
+    requester: 'endUser0',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+  },
+  {
+    project: 'CP',
+    title: 'Show the delivery date on the order page',
+    description: 'Customers keep asking us when their order arrives.',
+    requester: 'endUser1',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+    sharingRequest: 'pending',
+  },
+  {
+    project: 'CP',
+    title: 'Search does not find orders by number',
+    description: 'Typing an order number into the search field finds nothing.',
+    requester: 'loner',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+    sharingRequest: 'pending',
+  },
+  {
+    project: 'CP',
+    title: 'Our discount is missing on the price list',
+    description: 'The negotiated 10% discount of our company is not applied.',
+    requester: 'endUser0',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+    sharingRequest: 'rejected',
+    sharingRefusalReason: 'The ticket names the discount of your company.',
+  },
+  {
+    project: 'ERP',
+    title: 'The stock report shows negative quantities',
+    description: 'Items returned by customers appear with negative stock.',
+    requester: 'supplier',
+    source: 'user',
+    type: null,
+    priority: 'high',
+    assignee: null,
+    events: [],
+    visibility: 'all_customers',
+  },
+  // The tickets of the person who moved, with the snapshot of the organization they left (§7.3).
+  {
+    project: 'CP',
+    title: 'Two-factor codes arrive late',
+    description: 'The text message with the code arrives after it has expired.',
+    requester: 'mover',
+    organization: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'normal',
+    assignee: null,
+    events: [],
+  },
+  {
+    project: 'CP',
+    title: 'Add our second warehouse to the delivery addresses',
+    description: '',
+    requester: 'mover',
+    organization: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+  },
+  {
+    project: 'CP',
+    title: 'The help page has no search',
+    description: 'Finding an answer in the help takes long without a search field.',
+    requester: 'mover',
+    organization: 'customer',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'all_customers',
+  },
+  {
+    project: 'CP',
+    title: 'Keep the order history of our closed account',
+    description: '',
+    requester: 'former',
+    source: 'user',
+    type: null,
+    priority: 'low',
+    assignee: null,
+    events: [],
+    visibility: 'my_organization',
+  },
+] as const;
+
+/**
+ * The status changes of demo tickets after their field changes (§4.3), in order, by their index in
+ * `DEMO_TICKETS`: a ticket that waits for the confirmation of its resolution (the Customer portal
+ * asks for it) and a duplicate of it; the customer's tickets in every public status (S1-09) – one
+ * scheduled, one under test after internal moves, one waiting for confirmation, one waiting for
+ * information, one resolved and one rejected.
+ */
+const DEMO_STATUS_CHANGES = [
+  { ticket: 0, by: 'developer', to: 'waiting_for_requester', waitingReason: 'confirmation' },
+  { ticket: 8, by: 'developer', to: 'duplicate', duplicateOf: 0 },
+  { ticket: 10, by: 'manager', to: 'todo' },
+  { ticket: 11, by: 'developer', to: 'in_progress' },
+  { ticket: 11, by: 'developer', to: 'in_verification' },
+  { ticket: 12, by: 'developer', to: 'in_progress' },
+  { ticket: 12, by: 'developer', to: 'waiting_for_requester', waitingReason: 'confirmation' },
+  { ticket: 13, by: 'manager', to: 'waiting_for_requester', waitingReason: 'information' },
+  { ticket: 14, by: 'developer', to: 'done' },
+  {
+    ticket: 15,
+    by: 'manager',
+    to: 'rejected',
+    rejectionReason: 'Gift cards are not part of our payment terms.',
+  },
+] as const;
+
+/** The event type of a change of a field of a demo ticket (§4.5). */
+const EVENT_TYPE_OF_FIELD = {
+  title: 'title_changed',
+  description: 'description_edited',
+  type: 'type_changed',
+  priority: 'priority_changed',
+  assignee: 'assignee_changed',
+} as const;
+
+/**
+ * The stored hash of a demo invitation's token (ADR 0009). The token is not published, so the
+ * demo links do not work; **Copy new link** issues a working one.
+ */
+function demoTokenHash(n: number): string {
+  return createHash('sha256').update(`demo-invitation-${n}`).digest('base64url');
 }
 
 /** UUIDv7 of the demo record number `n` (§17.2). */
 export function demoId(n: number): string {
   return `019b8d00-0000-7000-8000-${n.toString(16).padStart(12, '0')}`;
+}
+
+/**
+ * A UUIDv7 of the demo record number `n` written at `at` (§17.2): the timeline merges comments and
+ * events by their time-ordered IDs (S1-12 Q11), so the IDs of both follow their times.
+ */
+export function demoTimeId(at: Date, n: number): string {
+  const time = at.getTime().toString(16).padStart(12, '0');
+  return `${time.slice(0, 8)}-${time.slice(8)}-7000-8000-${n.toString(16).padStart(12, '0')}`;
 }
 
 export function buildDemoDataset(): DemoDataset {
@@ -34,6 +586,8 @@ export function buildDemoDataset(): DemoDataset {
     { email: 'manager@example.com', displayName: 'Marek Manager' },
     { email: 'developer@example.com', displayName: 'Dorota Developer' },
     { email: NEWCOMER_EMAIL, displayName: 'Nina Newcomer' },
+    // Deactivated and reactivated by the E2E test of deactivation, so no other test signs in as it.
+    { email: 'leaver@example.com', displayName: 'Leon Leaver' },
   ].map((account, index) => ({
     ...account,
     id: demoId(index + 1),
@@ -42,6 +596,8 @@ export function buildDemoDataset(): DemoDataset {
     state: 'active',
     language: 'pl',
     timeZone: 'Europe/Warsaw',
+    // Restored on every load, as the tour progress: the E2E test of "Hide events" changes it.
+    hideTimelineEvents: false,
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
   }));
@@ -65,6 +621,41 @@ export function buildDemoDataset(): DemoDataset {
       };
     },
   );
+  const portalUsers = DEMO_PORTAL_USERS.map(
+    ({ email, displayName }, index): Prisma.UserCreateManyInput => ({
+      id: demoId(160 + index),
+      keycloakUserId: demoId(160 + index),
+      email,
+      displayName,
+      kind: 'end_user',
+      state: 'active',
+      language: 'pl',
+      timeZone: 'Europe/Warsaw',
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    }),
+  );
+  const visibilityUsers = DEMO_VISIBILITY_USERS.map(
+    ({ email, displayName }, index): Prisma.UserCreateManyInput => ({
+      id: demoId(170 + index),
+      email,
+      displayName,
+      kind: 'end_user',
+      state: 'active',
+      language: 'en',
+      timeZone: 'Europe/Warsaw',
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    }),
+  );
+  const invitedAndDeactivated = DEMO_INVITED_AND_DEACTIVATED.map(
+    (account, index): Prisma.UserCreateManyInput => ({
+      ...account,
+      id: demoId(150 + index),
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    }),
+  );
   const productTourProgress = team
     .filter((account) => account.email !== NEWCOMER_EMAIL)
     .flatMap((account) =>
@@ -77,15 +668,448 @@ export function buildDemoDataset(): DemoDataset {
       })),
     )
     .map((progress, index) => ({ ...progress, id: demoId(200 + index) }));
-  return { users: [...team, ...endUsers], productTourProgress };
+  const teamByName = {
+    manager: team[1]?.id ?? '',
+    developer: team[2]?.id ?? '',
+    newcomer: team[3]?.id ?? '',
+  };
+  const projects = DEMO_PROJECTS.map((project, index): Prisma.ProjectCreateManyInput => ({
+    id: demoId(300 + index),
+    name: project.name,
+    key: project.key,
+    state: project.state,
+    confirmResolution: 'confirmResolution' in project ? project.confirmResolution : false,
+    createdAt: CREATED_AT,
+    updatedAt: CREATED_AT,
+  }));
+  const projectMembers = [
+    ...DEMO_PROJECTS.flatMap(({ members }, index) =>
+      members.map((member): Prisma.ProjectMemberCreateManyInput => ({
+        projectId: demoId(300 + index),
+        userId: teamByName[member],
+        role: member === 'manager' ? 'project_manager' : 'developer',
+        createdAt: CREATED_AT,
+        updatedAt: CREATED_AT,
+      })),
+    ),
+    // Personal access of end users (§7.3).
+    ...[
+      ...DEMO_PORTAL_USERS.map((user, index) => ({ user, id: portalUsers[index]?.id })),
+      ...DEMO_VISIBILITY_USERS.map((user, index) => ({ user, id: visibilityUsers[index]?.id })),
+    ].flatMap(({ user, id }) =>
+      user.personalProjectKeys.map((key): Prisma.ProjectMemberCreateManyInput => ({
+        projectId: demoId(300 + DEMO_PROJECTS.findIndex((project) => project.key === key)),
+        userId: id ?? '',
+        role: 'end_user',
+        createdAt: CREATED_AT,
+        updatedAt: CREATED_AT,
+      })),
+    ),
+  ];
+  const organizationIds = Object.fromEntries(
+    DEMO_ORGANIZATIONS.map(({ key }, index) => [key, demoId(400 + 2 * index)]),
+  ) as Record<DemoOrganizationKey, string>;
+  const organizationId = organizationIds.customer;
+  const invitedBy = { manager: team[1]?.id ?? '', admin: team[0]?.id ?? '' };
+  const invitations: Prisma.InvitationCreateManyInput[] = [
+    {
+      id: demoId(500),
+      userId: invitedAndDeactivated[0]?.id ?? '',
+      target: 'project',
+      projectId: projects[0]?.id ?? null,
+      role: 'end_user',
+      // The address's domain belongs to the demo organization, which has the project (§7.3).
+      organizationId,
+      invitedById: invitedBy.manager,
+      tokenHash: demoTokenHash(500),
+      expiresAt: PENDING_INVITATION_EXPIRES_AT,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    },
+    {
+      id: demoId(501),
+      userId: invitedAndDeactivated[1]?.id ?? '',
+      target: 'project',
+      projectId: projects[1]?.id ?? null,
+      role: 'developer',
+      invitedById: invitedBy.admin,
+      tokenHash: demoTokenHash(501),
+      expiresAt: new Date(CREATED_AT.getTime() + 7 * 24 * 60 * 60 * 1000),
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    },
+  ];
+  const organizationMembers: Prisma.OrganizationMemberCreateManyInput[] = [
+    ...[...endUsers.slice(0, CUSTOMER_COMPANY_MEMBER_COUNT), ...portalUsers].map(({ id }) => ({
+      organizationId,
+      userId: id ?? '',
+      createdAt: CREATED_AT,
+    })),
+    ...DEMO_VISIBILITY_USERS.flatMap(({ organization }, index) =>
+      organization === null
+        ? []
+        : [
+            {
+              organizationId: organizationIds[organization],
+              userId: visibilityUsers[index]?.id ?? '',
+              createdAt: CREATED_AT,
+            },
+          ],
+    ),
+  ];
+  const {
+    tickets,
+    ticketRelations,
+    ticketNumberCounters,
+    activityEvents,
+    comments,
+    contentRevisions,
+  } = buildDemoTickets(
+    [...team, ...endUsers, ...portalUsers, ...visibilityUsers],
+    projects,
+    organizationIds,
+    organizationMembers,
+  );
+  return {
+    users: [...team, ...endUsers, ...portalUsers, ...visibilityUsers, ...invitedAndDeactivated],
+    productTourProgress,
+    projects,
+    projectMembers,
+    organizations: DEMO_ORGANIZATIONS.map(({ key, name, state }) => ({
+      id: organizationIds[key],
+      name,
+      state,
+      createdAt: CREATED_AT,
+      updatedAt: CREATED_AT,
+    })),
+    organizationDomains: DEMO_ORGANIZATIONS.map(({ key, domain }, index) => ({
+      id: demoId(401 + 2 * index),
+      organizationId: organizationIds[key],
+      domain,
+      createdAt: CREATED_AT,
+    })),
+    organizationProjects: DEMO_ORGANIZATIONS.flatMap(({ key, projectKeys }) =>
+      projects
+        .filter((project) => (projectKeys as readonly string[]).includes(project.key))
+        .map(({ id }) => ({
+          organizationId: organizationIds[key],
+          projectId: id ?? '',
+          createdAt: CREATED_AT,
+        })),
+    ),
+    organizationMembers,
+    invitations,
+    tickets,
+    ticketRelations,
+    ticketNumberCounters,
+    activityEvents,
+    comments,
+    contentRevisions,
+  };
+}
+
+/**
+ * The demo comments (S1-12): a comment of the supplier on its ticket written before the ticket was
+ * shared – which keeps its organization as the audience – and the team's public answer, an
+ * internal note, an edited public comment with its earlier version, and a reply of a requester.
+ * `ticket` is the index in `DEMO_TICKETS`; `after` the hours after the ticket's creation.
+ */
+const DEMO_COMMENTS = [
+  {
+    ticket: 21,
+    by: 'supplier',
+    kind: 'public',
+    audience: 'my_organization',
+    after: 2,
+    body: 'The quantities turned negative after the stock correction of Monday.',
+  },
+  {
+    ticket: 21,
+    by: 'developer',
+    kind: 'public',
+    audience: 'all_customers',
+    after: 5,
+    body: 'Thank you, we can reproduce it and are working on a fix.',
+  },
+  {
+    ticket: 11,
+    by: 'developer',
+    kind: 'internal',
+    after: 3,
+    body: 'Reproduced on staging: the VAT table of March is missing.',
+  },
+  {
+    ticket: 11,
+    by: 'developer',
+    kind: 'public',
+    audience: 'only_me',
+    after: 4,
+    body: 'Fixed in the next release, which comes on Friday.',
+    earlier: 'We are looking into it.',
+  },
+  {
+    ticket: 0,
+    by: 'endUser0',
+    kind: 'public',
+    audience: 'only_me',
+    after: 1,
+    body: 'The download button does nothing in Firefox either.',
+  },
+] as const;
+
+/**
+ * The demo tickets with their numbers – consecutive per project from 1 – the counters at the last
+ * number, and their activity events, each a day after the previous one.
+ */
+function buildDemoTickets(
+  accounts: Prisma.UserCreateManyInput[],
+  projects: Prisma.ProjectCreateManyInput[],
+  organizationIds: Record<DemoOrganizationKey, string>,
+  organizationMembers: Prisma.OrganizationMemberCreateManyInput[],
+): Pick<
+  DemoDataset,
+  | 'tickets'
+  | 'ticketRelations'
+  | 'ticketNumberCounters'
+  | 'activityEvents'
+  | 'comments'
+  | 'contentRevisions'
+> {
+  const accountIds: Record<string, string> = {
+    admin: accounts[0]?.id ?? '',
+    manager: accounts[1]?.id ?? '',
+    developer: accounts[2]?.id ?? '',
+    newcomer: accounts[3]?.id ?? '',
+    endUser0: accounts[5]?.id ?? '',
+    endUser1: accounts[6]?.id ?? '',
+    ...Object.fromEntries(
+      [...DEMO_PORTAL_USERS, ...DEMO_VISIBILITY_USERS].map(({ key, email }) => [
+        key,
+        accounts.find((account) => account.email === email)?.id ?? '',
+      ]),
+    ),
+  };
+  const organizationOf = new Map(
+    organizationMembers.map(({ userId, organizationId }) => [userId, organizationId]),
+  );
+  const snapshotOf = (name: string | null) => {
+    if (name === null) {
+      return null;
+    }
+    const account = accounts.find(({ id }) => id === accountIds[name]);
+    return { id: account?.id ?? '', displayName: account?.displayName ?? null };
+  };
+  const numbers = new Map<string, number>();
+  const tickets: Prisma.TicketCreateManyInput[] = [];
+  const activityEvents: Prisma.ActivityEventCreateManyInput[] = [];
+  const ticketRelations: Prisma.TicketRelationCreateManyInput[] = [];
+  const comments: Prisma.CommentCreateManyInput[] = [];
+  DEMO_TICKETS.forEach((ticket, index) => {
+    const projectId = projects.find(({ key }) => key === ticket.project)?.id ?? '';
+    const number = (numbers.get(projectId) ?? 0) + 1;
+    numbers.set(projectId, number);
+    const id = demoId(600 + index);
+    const requesterId = accountIds[ticket.requester] ?? '';
+    const createdAt = new Date(CREATED_AT.getTime() + (index + 1) * 24 * 60 * 60 * 1000);
+    tickets.push({
+      id,
+      projectId,
+      number,
+      title: ticket.title,
+      description: ticket.description,
+      type: ticket.type,
+      source: ticket.source,
+      priority: ticket.priority,
+      status: ticket.source === 'developer' ? 'todo' : 'new',
+      // The requester's organization, or the one they belonged to at creation (§3.2).
+      organizationId:
+        'organization' in ticket
+          ? organizationIds[ticket.organization]
+          : (organizationOf.get(requesterId) ?? null),
+      visibility: 'visibility' in ticket ? ticket.visibility : 'only_me',
+      sharingRequest: 'sharingRequest' in ticket ? ticket.sharingRequest : 'none',
+      requesterId,
+      assigneeId: ticket.assignee === null ? null : (accountIds[ticket.assignee] ?? null),
+      version: 1 + ticket.events.length,
+      createdAt,
+      updatedAt: createdAt,
+    });
+    if ('sharingRefusalReason' in ticket) {
+      // A refused request (S1-11): the refusal event of the manager and the reason as a public
+      // comment with the unchanged visibility as its audience (S1-12 Q14).
+      const refusedAt = new Date(createdAt.getTime() + 6 * 60 * 60 * 1000);
+      activityEvents.push({
+        id: demoTimeId(refusedAt, 1100 + index),
+        ticketId: id,
+        type: 'sharing_rejected',
+        actorId: accountIds.manager ?? null,
+        createdAt: refusedAt,
+      });
+      comments.push({
+        id: demoTimeId(refusedAt, 1200 + index),
+        ticketId: id,
+        authorId: accountIds.manager ?? '',
+        kind: 'public',
+        audience: 'visibility' in ticket ? ticket.visibility : 'only_me',
+        audienceOrganizationId:
+          'visibility' in ticket && ticket.visibility === 'my_organization'
+            ? (organizationOf.get(requesterId) ?? null)
+            : null,
+        body: ticket.sharingRefusalReason,
+        createdAt: refusedAt,
+        updatedAt: refusedAt,
+      });
+    }
+    ticket.events.forEach((event, eventIndex) => {
+      const isReference = event.field === 'assignee';
+      const at = new Date(createdAt.getTime() + (eventIndex + 1) * 60 * 60 * 1000);
+      activityEvents.push({
+        id: demoTimeId(at, 700 + index * 10 + eventIndex),
+        ticketId: id,
+        type: EVENT_TYPE_OF_FIELD[event.field],
+        data:
+          event.field === 'description'
+            ? undefined
+            : isReference
+              ? { from: snapshotOf(event.from), to: snapshotOf(event.to) }
+              : { from: event.from, to: event.to },
+        actorId: accountIds[event.by] ?? null,
+        createdAt: at,
+      });
+    });
+  });
+  DEMO_STATUS_CHANGES.forEach((change, index) => {
+    const ticket = tickets[change.ticket];
+    if (ticket === undefined) {
+      return;
+    }
+    const from = ticket.status;
+    // Successive changes of one ticket an hour apart.
+    const changedAt = new Date(
+      (ticket.updatedAt as Date).getTime() +
+        (ticket.updatedAt === ticket.createdAt ? 12 : 1) * 60 * 60 * 1000,
+    );
+    const original = 'duplicateOf' in change ? tickets[change.duplicateOf] : undefined;
+    const originalKey = projects.find(({ id }) => id === original?.projectId)?.key ?? '';
+    const duplicateOf =
+      original === undefined
+        ? null
+        : { id: original.id ?? '', number: original.number, projectKey: originalKey };
+    const waitingReason = 'waitingReason' in change ? change.waitingReason : null;
+    Object.assign(ticket, {
+      status: change.to,
+      ...(waitingReason === null
+        ? {}
+        : { waitingReason, statusBeforeWaiting: from, waitingSince: changedAt }),
+      ...(['done', 'rejected', 'duplicate'].includes(change.to) ? { closedAt: changedAt } : {}),
+      version: (ticket.version ?? 1) + 1,
+      updatedAt: changedAt,
+    });
+    if ('rejectionReason' in change) {
+      // The reason of a rejection is a public comment of the rejecting team member (S1-12 Q13).
+      comments.push({
+        id: demoTimeId(changedAt, 1300 + index),
+        ticketId: ticket.id ?? '',
+        authorId: accountIds[change.by] ?? '',
+        kind: 'public',
+        audience: ticket.visibility ?? 'only_me',
+        audienceOrganizationId:
+          ticket.visibility === 'my_organization' ? (ticket.organizationId ?? null) : null,
+        body: change.rejectionReason,
+        createdAt: changedAt,
+        updatedAt: changedAt,
+      });
+    }
+    if (duplicateOf !== null) {
+      ticketRelations.push({
+        id: demoId(900 + index),
+        kind: 'duplicate_of',
+        sourceTicketId: ticket.id ?? '',
+        targetTicketId: duplicateOf.id,
+        createdAt: changedAt,
+      });
+    }
+    activityEvents.push({
+      id: demoTimeId(changedAt, 800 + index),
+      ticketId: ticket.id ?? '',
+      type: 'status_changed',
+      data: { from, to: change.to, reopen: false, waitingReason, duplicateOf },
+      actorId: accountIds[change.by] ?? null,
+      isPublic: publicStatusOf(from) !== publicStatusOf(change.to),
+      createdAt: changedAt,
+    });
+  });
+  const contentRevisions: Prisma.ContentRevisionCreateManyInput[] = [];
+  DEMO_COMMENTS.forEach((comment, index) => {
+    const ticket = tickets[comment.ticket];
+    if (ticket === undefined) {
+      return;
+    }
+    const authorId = accountIds[comment.by] ?? '';
+    const writtenAt = new Date(
+      (ticket.createdAt as Date).getTime() + comment.after * 60 * 60 * 1000,
+    );
+    const commentId = demoTimeId(writtenAt, 1400 + index);
+    const audience = comment.kind === 'public' ? comment.audience : null;
+    const editedAt = 'earlier' in comment ? new Date(writtenAt.getTime() + 30 * 60 * 1000) : null;
+    comments.push({
+      id: commentId,
+      ticketId: ticket.id ?? '',
+      authorId,
+      kind: comment.kind,
+      audience,
+      audienceOrganizationId:
+        audience === 'my_organization' ? (organizationOf.get(authorId) ?? null) : null,
+      body: comment.body,
+      editedAt,
+      editedById: editedAt === null ? null : authorId,
+      version: editedAt === null ? 1 : 2,
+      createdAt: writtenAt,
+      updatedAt: editedAt ?? writtenAt,
+    });
+    if ('earlier' in comment && editedAt !== null) {
+      contentRevisions.push({
+        id: demoTimeId(editedAt, 1500 + index),
+        commentId,
+        body: comment.earlier,
+        authorId,
+        writtenAt,
+        createdAt: editedAt,
+      });
+      activityEvents.push({
+        id: demoTimeId(editedAt, 1600 + index),
+        ticketId: ticket.id ?? '',
+        type: 'comment_edited',
+        data: { commentId },
+        actorId: authorId,
+        createdAt: editedAt,
+      });
+    }
+  });
+  return {
+    tickets,
+    ticketRelations,
+    ticketNumberCounters: [...numbers].map(([projectId, lastNumber]) => ({
+      projectId,
+      lastNumber,
+    })),
+    activityEvents,
+    comments,
+    contentRevisions,
+  };
 }
 
 /**
  * Loads the demo dataset; running it again restores the same records – also the tour progress,
- * so the newcomer sees the tours again.
+ * so the newcomer sees the tours again, the demo projects with their members, the demo
+ * organization with its domain, project access and members, the demo invitations – a link
+ * resent, revoked or accepted during a demo comes back as it was – and the demo tickets with their
+ * activity: tickets created during a demo in the demo projects are removed with their events and
+ * attachments, as undoing an import removes tickets (§12.5).
  */
 export async function seedDemoData(prisma: PrismaClient): Promise<void> {
-  const { users, productTourProgress } = buildDemoDataset();
+  const dataset = buildDemoDataset();
+  const { users, productTourProgress, projects, projectMembers, organizations } = dataset;
   await prisma.$transaction(async (tx) => {
     for (const user of users) {
       await tx.user.upsert({ where: { id: user.id }, create: user, update: user });
@@ -94,5 +1118,69 @@ export async function seedDemoData(prisma: PrismaClient): Promise<void> {
       where: { userId: { in: users.map((user) => user.id ?? '') } },
     });
     await tx.productTourProgress.createMany({ data: productTourProgress });
+    for (const project of projects) {
+      // The version is restored too, so a state changed during a demo comes back.
+      const data = { ...project, version: 1 };
+      await tx.project.upsert({ where: { id: project.id }, create: data, update: data });
+    }
+    await tx.projectMember.deleteMany({
+      where: { projectId: { in: projects.map((project) => project.id ?? '') } },
+    });
+    await tx.projectMember.createMany({ data: projectMembers });
+    // Before the organization, which the tickets keep. Deleting a ticket removes its events.
+    const projectIds = projects.map((project) => project.id ?? '');
+    const demoTickets = {
+      OR: [
+        { projectId: { in: projectIds } },
+        { organizationId: { in: organizations.map((organization) => organization.id ?? '') } },
+      ],
+    } satisfies Prisma.TicketWhereInput;
+    // A ticket's original cannot be deleted while a relation points to it: relations first.
+    await tx.ticketRelation.deleteMany({
+      where: { OR: [{ sourceTicket: { is: demoTickets } }, { targetTicket: { is: demoTickets } }] },
+    });
+    // The attachments of the tickets restrict their deletion; their objects are removed by the
+    // Worker's `attachment.deleted` job, as for every deleted attachment (S1-08).
+    const attachments = await tx.attachment.findMany({
+      where: {
+        OR: [{ ticket: { is: demoTickets } }, { comment: { is: { ticket: { is: demoTickets } } } }],
+      },
+      select: { id: true },
+    });
+    await tx.attachment.deleteMany({ where: { id: { in: attachments.map(({ id }) => id) } } });
+    await tx.outboxEvent.createMany({
+      data: attachments.map(({ id }) => ({
+        type: ATTACHMENT_DELETED,
+        payload: { attachmentId: id } satisfies AttachmentDeletedPayload,
+      })),
+    });
+    await tx.ticket.deleteMany({ where: demoTickets });
+    await tx.ticketNumberCounter.deleteMany({ where: { projectId: { in: projectIds } } });
+    // Deleting the organization removes its domains, project access and members (§7.3).
+    await tx.organization.deleteMany({
+      where: { id: { in: organizations.map((organization) => organization.id ?? '') } },
+    });
+    // A member moved or a domain taken over during a demo comes back too.
+    await tx.organizationMember.deleteMany({
+      where: { userId: { in: dataset.organizationMembers.map(({ userId }) => userId) } },
+    });
+    await tx.organizationDomain.deleteMany({
+      where: { domain: { in: dataset.organizationDomains.map(({ domain }) => domain) } },
+    });
+    await tx.organization.createMany({ data: organizations });
+    await tx.organizationDomain.createMany({ data: dataset.organizationDomains });
+    await tx.organizationProject.createMany({ data: dataset.organizationProjects });
+    await tx.organizationMember.createMany({ data: dataset.organizationMembers });
+    // Deleted after the organization, whose deletion cascades to the matched invitation.
+    await tx.invitation.deleteMany({
+      where: { id: { in: dataset.invitations.map((invitation) => invitation.id ?? '') } },
+    });
+    await tx.invitation.createMany({ data: dataset.invitations });
+    await tx.ticket.createMany({ data: dataset.tickets });
+    await tx.ticketRelation.createMany({ data: dataset.ticketRelations });
+    await tx.ticketNumberCounter.createMany({ data: dataset.ticketNumberCounters });
+    await tx.activityEvent.createMany({ data: dataset.activityEvents });
+    await tx.comment.createMany({ data: dataset.comments });
+    await tx.contentRevision.createMany({ data: dataset.contentRevisions });
   });
 }
