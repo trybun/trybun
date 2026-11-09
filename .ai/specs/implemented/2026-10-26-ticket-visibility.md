@@ -429,4 +429,4 @@ One phase, one PR (Q18), on the implemented S1-04 to S1-09. The UI steps land in
   - the import sets `only_me` itself.
 - 2026-11-08 – Approved: the maintainer accepted Q20 (the author keeps the rights of §7.5 on a shared ticket) and the other open answers as proposed; status `approved`.
 - 2026-11-09 – Implemented in #257.
-- 2026-11-09 – Code review: the uploader of an attachment follows the identity rule too, as §5.4 requires of every name in a response.
+- 2026-11-09 – Code review: the uploader of an attachment follows the identity rule too, as §5.4 requires of every name in a response; confirmed by the maintainer on 2026-11-09 as an application of §5.4 and Q9, not a new requirement.
