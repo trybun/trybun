@@ -810,6 +810,7 @@ describe('permission layer', () => {
     it.each([
       ['GET', (id: string) => `/api/v1/comments/${id}`],
       ['PATCH', (id: string) => `/api/v1/comments/${id}`],
+      ['DELETE', (id: string) => `/api/v1/comments/${id}`],
       ['GET', (id: string) => `/api/v1/comments/${id}/revisions`],
     ] as const)(
       'answers %s %s of a comment of project B with 404, as for a missing comment',

@@ -4,8 +4,10 @@ import type { Attachment } from '@trybun/contracts/attachments';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
 import type { Transaction } from '../../platform/database/prisma.service.js';
+import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { attachmentSelect, toAttachmentResponse } from './attachment-responses.js';
 import { ATTACHMENT, DRAFT } from './attachments.abilities.js';
+import { ATTACHMENT_DELETED, type AttachmentDeletedPayload } from './attachments.events.js';
 import { linkFailure } from './domain/linking.js';
 
 /** The parent a draft is linked to: a ticket or a comment (S1-12 Q16). */
@@ -24,7 +26,27 @@ export interface LinkedDraft {
  */
 @Injectable()
 export class AttachmentLinksService {
-  constructor(private readonly abilities: AbilityFactory) {}
+  constructor(
+    private readonly abilities: AbilityFactory,
+    private readonly outbox: OutboxService,
+  ) {}
+
+  /**
+   * Deletes the attachments of a comment with it, in the caller's transaction (§13.3, S1-12): the
+   * rows go now, their objects through `attachment.deleted` after the commit, as for any deleted
+   * attachment (ADR 0008). No activity event: `comment_deleted` covers the comment.
+   */
+  async deleteOfComment(tx: Transaction, commentId: string): Promise<void> {
+    const rows = await tx.attachment.findMany({ where: { commentId }, select: { id: true } });
+    if (rows.length === 0) {
+      return;
+    }
+    await tx.attachment.deleteMany({ where: { commentId } });
+    for (const { id } of rows) {
+      const payload = { attachmentId: id } satisfies AttachmentDeletedPayload;
+      await this.outbox.add(tx, { type: ATTACHMENT_DELETED, payload });
+    }
+  }
 
   /**
    * Links the principal's own drafts to a ticket or a comment in the caller's transaction (§3.2, Q4, Q11), in

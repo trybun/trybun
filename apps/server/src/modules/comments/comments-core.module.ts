@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ActivityEventsModule } from '../activity-events/activity-events.module.js';
 import { AttachmentLinksModule } from '../attachments/attachment-links.module.js';
+import { AuditLogEntriesModule } from '../audit-log-entries/audit-log-entries.module.js';
 import { ContentRevisionsModule } from '../content-revisions/content-revisions.module.js';
 import { ProjectsModule } from '../projects/projects.module.js';
 import { CommentsService } from './comments.service.js';
@@ -12,7 +13,13 @@ import { CommentsService } from './comments.service.js';
  * tickets (tickets → comments, Q11).
  */
 @Module({
-  imports: [ActivityEventsModule, AttachmentLinksModule, ContentRevisionsModule, ProjectsModule],
+  imports: [
+    ActivityEventsModule,
+    AttachmentLinksModule,
+    AuditLogEntriesModule,
+    ContentRevisionsModule,
+    ProjectsModule,
+  ],
   providers: [CommentsService],
   exports: [CommentsService],
 })

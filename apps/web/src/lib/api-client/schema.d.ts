@@ -718,7 +718,7 @@ export interface paths {
         get: operations["CommentsController_get"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["CommentsController_delete"];
         options?: never;
         head?: never;
         patch: operations["CommentsController_update"];
@@ -4723,6 +4723,25 @@ export interface operations {
                         allowedActions: ("read" | "update" | "delete" | "redact" | "read_revisions")[];
                     };
                 };
+            };
+        };
+    };
+    CommentsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

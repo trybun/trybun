@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Query,
+} from '@nestjs/common';
 import {
   type CommentPage,
   commentPageSchema,
@@ -21,6 +31,7 @@ import {
   type ListContentRevisionsQuery,
   listContentRevisionsQuerySchema,
 } from '@trybun/contracts/content-revisions';
+import { ApiNoContentResponse } from '@nestjs/swagger';
 import { type TicketParams, ticketParamsSchema } from '@trybun/contracts/tickets';
 import { CurrentPrincipal } from '../../platform/authentication/current-principal.decorator.js';
 import type { Principal } from '../../platform/authentication/principal.js';
@@ -85,6 +96,19 @@ export class CommentsController {
     @ExpectedVersion() version: number,
   ): Promise<CommentResponse> {
     return this.comments.update(principal, { id: commentId, version }, input);
+  }
+
+  /** Deletes a comment with its revisions, mentions and attachments (§6.1). */
+  @Delete('comments/:commentId')
+  @TargetRecord({ subject: COMMENT, param: 'commentId', action: 'delete' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse()
+  delete(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: commentParamsSchema }) { commentId }: CommentParams,
+    @ExpectedVersion() version: number,
+  ): Promise<void> {
+    return this.comments.delete(principal, { id: commentId, version });
   }
 
   /** The earlier versions of a comment, newest first (§6.1, S1-12 Q3). */

@@ -26,6 +26,7 @@ import {
   assertVersionMatched,
   type VersionedTarget,
   versionedUpdate,
+  versionedWhere,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
 import { AppError } from '../../platform/errors/app-error.js';
@@ -34,6 +35,7 @@ import {
   eventSortKeySchema,
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
+import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { ContentRevisionsService } from '../content-revisions/content-revisions.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
 import { TICKET } from '../tickets/tickets.abilities.js';
@@ -64,8 +66,41 @@ export class CommentsService {
     private readonly attachmentLinks: AttachmentLinksService,
     private readonly revisions: ContentRevisionsService,
     private readonly projects: ProjectsService,
+    private readonly auditLog: AuditLogEntriesService,
     private readonly clock: Clock,
   ) {}
+
+  /**
+   * Deletes a comment or a note (§6.1, S1-12 Q7): the author their own, the team any. The row, its
+   * revisions, its mentions and its attachments are deleted physically (§17.2); the team timeline
+   * keeps the internal event `comment_deleted` with the person who deleted it, its data only the ID
+   * and the kind. A deletion by a team member is written to the audit log (§13.5).
+   */
+  async delete(principal: UserPrincipal, target: VersionedTarget): Promise<void> {
+    const ability = this.abilities.forPrincipal(principal);
+    await this.prisma.$transaction(async (tx) => {
+      const before = await this.lockAndFind(tx, ability, principal, target.id);
+      assertCan(ability, 'delete', before);
+      assertVersionMatched({ count: before.version === target.version ? 1 : 0 });
+      await this.attachmentLinks.deleteOfComment(tx, before.id);
+      assertVersionMatched(await tx.comment.deleteMany({ where: versionedWhere(target) }));
+      await this.activityEvents.record(tx, { userId: principal.userId }, before.ticketId, [
+        {
+          type: 'comment_deleted',
+          data: { commentId: before.id, kind: before.kind },
+          isPublic: false,
+        },
+      ]);
+      if (principal.userKind === 'team') {
+        await this.auditLog.record(tx, {
+          action: 'comment.deleted',
+          actorId: principal.userId,
+          target: { type: COMMENT, id: before.id },
+          details: { ticketId: before.ticketId, kind: before.kind },
+        });
+      }
+    });
+  }
 
   /**
    * Edits the own comment or note (§6.1, S1-12 Q12): the replaced text becomes a content revision
