@@ -6,7 +6,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 
 - Every task below is meant to be **one pull request** ([§2.14](../spec/02-agent-rules.md)). If a task turns out larger, split it before starting and update this plan in the same PR.
 - Every task lists the specification sections it implements. Read them (and the glossary) before starting.
-- Tasks that deliver functionality (Stages 1–8) start with a **change specification** in `.ai/specs/` approved through its own pull request ([§2.8](../spec/02-agent-rules.md)). Infrastructure tasks of Stage 0 may skip it, except S0-10 and S0-12, which deliver user-facing behaviour and start with a change specification.
+- Tasks that deliver functionality (Stages 1–9) start with a **change specification** in `.ai/specs/` approved through its own pull request ([§2.8](../spec/02-agent-rules.md)). Infrastructure tasks of Stage 0 may skip it, except S0-10 and S0-12, which deliver user-facing behaviour and start with a change specification.
 - Every task follows the **Definition of Done** ([§2.13](../spec/02-agent-rules.md)): conventions, minimum user steps, user docs, tours, README, reusable components, project memory, up-to-date specification, phone and tablet support, dependency security, versioning, code patterns, tests, CI gates, human review.
 - Every task writes code with the **code patterns** of [§18](../spec/18-code-patterns.md) (Rule 12). The tasks listed in [§18.9](../spec/18-code-patterns.md) build the **reference implementation** of a pattern; tasks of the same group that use the pattern follow §18 and align with the reference when they rebase on `main`.
 - The **"Done when"** column lists checkable statements that must hold in addition to the Definition of Done. They rely only on the task itself and on tasks of earlier groups or stages. A change specification may refine them, never weaken them.
@@ -29,6 +29,7 @@ This plan splits the implementation of the specification ([`docs/spec/`](../spec
 | 6 | `0.7.0` | Public API, webhooks and import |
 | 7 | `1.0.0` | Semantic search and production hardening |
 | 8 | `1.1.0` | Voluntary project funding |
+| 9 | `1.2.0` | Knowledge base |
 
 The versions result from the pre-`1.0.0` rule of Rule 11 ([§2.11](../spec/02-agent-rules.md)): `feat:` commits increase MINOR. `1.0.0` is set by a human-authored `Release-As:` footer at the end of Stage 7.
 
@@ -231,3 +232,20 @@ The versions result from the pre-`1.0.0` rule of Rule 11 ([§2.11](../spec/02-ag
 | [ ] S8-02 | 2 | `.github/FUNDING.yml` with the GitHub Sponsors account; `funding` field in all `package.json` files | §16.6 | The "Sponsor" button appears on the repository page |
 | [ ] S8-03 | 2 | "Support the project" section in README (before "License") with link/badge and optional sponsors list; "Support the project" page in the documentation (EN/PL) | §2.3, §2.5, §16.6 | README section exists before "License"; documentation page exists in EN and PL |
 | [ ] S8-04 | 3 | "Support the project" link on the "About" page of the Administrator panel; E2E test that no support prompts appear for end users | §15.4, §16.6 | The E2E test passes for all end-user views |
+
+---
+
+## Stage 9 – Knowledge base
+
+**Goal:** end users find answers in help articles before they report a ticket, and the team publishes known solutions once instead of answering the same question again (pattern: help centers of Zendesk, Zammad and Freshdesk; market benchmark `.ai/specs/research/2026-11-09-market-benchmark.md`).
+
+**Exit criteria:** the team publishes articles in a project; end users find them in the portal search and among the suggestions while typing a new ticket; articles respect visibility and are available in English and Polish.
+
+The knowledge base is not yet described in the specification. S9-01 writes the change specification and the new specification section; it refines the tasks below (scope, permissions, "Done when") before any of them starts.
+
+| # | Group | Task | Spec | Done when |
+|---|---|---|---|---|
+| [ ] S9-01 | 1 | Change specification of the knowledge base: articles and categories per project, who writes and publishes, visibility for end users, languages, search and suggestions, link between articles and tickets; new section of the system specification and glossary entries; refinement of S9-02 to S9-04 | §2.8, §5.5, §5.6 | The change specification is approved with no open questions · the specification section and the glossary terms exist · S9-02 to S9-04 reference the new section |
+| [ ] S9-02 | 2 | Articles for the team: model, Markdown editor, drafts and publishing, categories, permissions, activity in the audit log | S9-01 | A Developer creates a draft and publishes it · an end user never sees a draft (API returns 404) |
+| [ ] S9-03 | 3 | Articles in the end-user portal: list and article view in the project home, articles in the portal search and in the similar-ticket suggestions while typing | §5.5, §5.6, §5.7, S9-01 | Typing a title that matches a published article suggests the article · an end user sees only articles of projects they can access |
+| [ ] S9-04 | 3 | Article from a ticket: the team creates an article from a resolved ticket, the ticket links to the article | S9-01 | The new article starts with the redacted content of the ticket · the ticket's activity timeline shows the link |
