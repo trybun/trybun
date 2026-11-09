@@ -47,7 +47,7 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 
 ### Phase 3: Status rules and reasons
 
-- [ ] 3.1 Apply the requester-reply rules
+- [x] 3.1 Apply the requester-reply rules — 3be25ab
 - [ ] 3.2 Publish rejection reasons as comments and migrate the column
 - [ ] 3.3 Publish sharing refusal reasons as comments and migrate the column
 
