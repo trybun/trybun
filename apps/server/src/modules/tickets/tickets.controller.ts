@@ -45,6 +45,12 @@ import {
   type CreateCommentDto,
   createCommentSchema,
 } from '@trybun/contracts/comments';
+import {
+  type ContentRevisionPage,
+  contentRevisionPageSchema,
+  type ListContentRevisionsQuery,
+  listContentRevisionsQuerySchema,
+} from '@trybun/contracts/content-revisions';
 import type { Response } from 'express';
 import { CurrentPrincipal } from '../../platform/authentication/current-principal.decorator.js';
 import type { Principal } from '../../platform/authentication/principal.js';
@@ -204,6 +210,18 @@ export class TicketsController {
     const comment = await this.tickets.addComment(principal, ticketId, input);
     response.location(`/${API_PREFIX}/comments/${comment.id}`);
     return comment;
+  }
+
+  /** The earlier versions of the description, newest first (§6.1, S1-12 Q3). */
+  @Get(':ticketId/description-revisions')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'read_description_revisions' })
+  @ResponseSchema(contentRevisionPageSchema)
+  listDescriptionRevisions(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Query({ schema: listContentRevisionsQuerySchema }) query: ListContentRevisionsQuery,
+  ): Promise<ContentRevisionPage> {
+    return this.tickets.listDescriptionRevisions(principal, ticketId, query);
   }
 
   /** The activity history of a ticket, oldest first (§4.5). */

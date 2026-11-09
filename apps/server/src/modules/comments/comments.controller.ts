@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import {
   type CommentPage,
   commentPageSchema,
@@ -12,11 +12,20 @@ import {
   listTimelineQuerySchema,
   type TimelinePage,
   timelinePageSchema,
+  type UpdateCommentDto,
+  updateCommentSchema,
 } from '@trybun/contracts/comments';
+import {
+  type ContentRevisionPage,
+  contentRevisionPageSchema,
+  type ListContentRevisionsQuery,
+  listContentRevisionsQuerySchema,
+} from '@trybun/contracts/content-revisions';
 import { type TicketParams, ticketParamsSchema } from '@trybun/contracts/tickets';
 import { CurrentPrincipal } from '../../platform/authentication/current-principal.decorator.js';
 import type { Principal } from '../../platform/authentication/principal.js';
 import { TargetRecord } from '../../platform/authorization/target-record.decorator.js';
+import { ExpectedVersion } from '../../platform/http/expected-version.decorator.js';
 import { ResponseSchema } from '../../platform/http/response-schema.decorator.js';
 import { TICKET } from '../tickets/tickets.abilities.js';
 import { COMMENT } from './comments.abilities.js';
@@ -63,5 +72,30 @@ export class CommentsController {
     @Param({ schema: commentParamsSchema }) { commentId }: CommentParams,
   ): Promise<CommentResponse> {
     return this.comments.get(principal, commentId);
+  }
+
+  /** Edits the own comment or note; the replaced text becomes a revision (§6.1). */
+  @Patch('comments/:commentId')
+  @TargetRecord({ subject: COMMENT, param: 'commentId', action: 'update' })
+  @ResponseSchema(commentResponseSchema)
+  update(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: commentParamsSchema }) { commentId }: CommentParams,
+    @Body({ schema: updateCommentSchema }) input: UpdateCommentDto,
+    @ExpectedVersion() version: number,
+  ): Promise<CommentResponse> {
+    return this.comments.update(principal, { id: commentId, version }, input);
+  }
+
+  /** The earlier versions of a comment, newest first (§6.1, S1-12 Q3). */
+  @Get('comments/:commentId/revisions')
+  @TargetRecord({ subject: COMMENT, param: 'commentId', action: 'read_revisions' })
+  @ResponseSchema(contentRevisionPageSchema)
+  listRevisions(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: commentParamsSchema }) { commentId }: CommentParams,
+    @Query({ schema: listContentRevisionsQuerySchema }) query: ListContentRevisionsQuery,
+  ): Promise<ContentRevisionPage> {
+    return this.comments.listRevisions(principal, commentId, query);
   }
 }

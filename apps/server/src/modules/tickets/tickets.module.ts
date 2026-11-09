@@ -4,6 +4,7 @@ import { ActivityEventsModule } from '../activity-events/activity-events.module.
 import { AuditLogEntriesModule } from '../audit-log-entries/audit-log-entries.module.js';
 import { AttachmentLinksModule } from '../attachments/attachment-links.module.js';
 import { CommentsCoreModule } from '../comments/comments-core.module.js';
+import { ContentRevisionsModule } from '../content-revisions/content-revisions.module.js';
 import { OrganizationsModule } from '../organizations/organizations.module.js';
 import { ProjectsModule } from '../projects/projects.module.js';
 import { UsersModule } from '../users/users.module.js';
@@ -24,6 +25,7 @@ import { TicketsService } from './tickets.service.js';
     AuditLogEntriesModule,
     AttachmentLinksModule,
     CommentsCoreModule,
+    ContentRevisionsModule,
     OrganizationsModule,
     OutboxModule,
     ProjectsModule,

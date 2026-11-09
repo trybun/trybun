@@ -783,6 +783,7 @@ describe('permission layer', () => {
       ['GET', (id: string) => `/api/v1/tickets/${id}/comments`],
       ['POST', (id: string) => `/api/v1/tickets/${id}/comments`],
       ['GET', (id: string) => `/api/v1/tickets/${id}/timeline`],
+      ['GET', (id: string) => `/api/v1/tickets/${id}/description-revisions`],
     ] as const)(
       'answers %s %s of a ticket of project B with 404, as for a missing ticket',
       async (method, path) => {
@@ -806,7 +807,11 @@ describe('permission layer', () => {
     );
 
     /** Requests of a Developer of project A: `404` for a comment of project B, as for a missing one. */
-    it.each([['GET', (id: string) => `/api/v1/comments/${id}`]] as const)(
+    it.each([
+      ['GET', (id: string) => `/api/v1/comments/${id}`],
+      ['PATCH', (id: string) => `/api/v1/comments/${id}`],
+      ['GET', (id: string) => `/api/v1/comments/${id}/revisions`],
+    ] as const)(
       'answers %s %s of a comment of project B with 404, as for a missing comment',
       async (method, path) => {
         const authorization = await authorizationOf('developer');

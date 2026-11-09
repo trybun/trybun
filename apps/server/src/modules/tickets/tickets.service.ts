@@ -26,6 +26,10 @@ import {
   type UpdateTicketDto,
 } from '@trybun/contracts/tickets';
 import type { CommentResponse, CreateCommentDto } from '@trybun/contracts/comments';
+import type {
+  ContentRevisionPage,
+  ListContentRevisionsQuery,
+} from '@trybun/contracts/content-revisions';
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
@@ -47,6 +51,7 @@ import {
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
 import { CommentsService } from '../comments/comments.service.js';
+import { ContentRevisionsService } from '../content-revisions/content-revisions.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import type { TrackedTicketFields } from '../activity-events/domain/field-changes.js';
 import { ASSIGNABLE_MEMBER } from '../projects/assignable-members.js';
@@ -118,6 +123,7 @@ function ticketSelect(principal: UserPrincipal) {
     rejectionReason: true,
     sharingRefusalReason: true,
     descriptionEditedAt: true,
+    descriptionEditedById: true,
     version: true,
     createdAt: true,
     updatedAt: true,
@@ -297,7 +303,20 @@ export class TicketsService {
     private readonly outbox: OutboxService,
     private readonly clock: Clock,
     private readonly comments: CommentsService,
+    private readonly revisions: ContentRevisionsService,
   ) {}
+
+  /**
+   * The earlier versions of a ticket's description, newest first (§6.1, S1-12 Q3): the target
+   * record guard has checked `read_description_revisions` – the team, and the requester.
+   */
+  listDescriptionRevisions(
+    principal: UserPrincipal,
+    ticketId: string,
+    query: ListContentRevisionsQuery,
+  ): Promise<ContentRevisionPage> {
+    return this.revisions.list(this.prisma, principal, { ticketId }, query);
+  }
 
   /**
    * Adds a comment or an internal note to a ticket (§6.1, S1-12). The ticket is locked – its
@@ -568,7 +587,29 @@ export class TicketsService {
         assertVersionMatched({ count: before.version === target.version ? 1 : 0 });
         return toTicketResponse(before, ability, principal);
       }
-      assertVersionMatched(await tx.ticket.updateMany(versionedUpdate(target, data)));
+      const isDescriptionEdited = 'description' in data;
+      assertVersionMatched(
+        await tx.ticket.updateMany(
+          versionedUpdate(target, {
+            ...data,
+            ...(isDescriptionEdited
+              ? { descriptionEditedAt: this.clock.now(), descriptionEditedById: principal.userId }
+              : {}),
+          }),
+        ),
+      );
+      if (isDescriptionEdited) {
+        // The replaced description becomes a content revision (§6.1, S1-12).
+        await this.revisions.record(
+          tx,
+          { ticketId: before.id },
+          {
+            body: before.description,
+            authorId: before.descriptionEditedById ?? before.requesterId,
+            writtenAt: before.descriptionEditedAt ?? before.createdAt,
+          },
+        );
+      }
       const after = await this.findVisible(tx, ability, principal, target.id);
       await this.activityEvents.recordChanges(
         tx,

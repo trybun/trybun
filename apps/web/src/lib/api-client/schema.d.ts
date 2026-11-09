@@ -596,6 +596,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tickets/{ticketId}/description-revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TicketsController_listDescriptionRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tickets/{ticketId}/activity-events": {
         parameters: {
             query?: never;
@@ -700,6 +716,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["CommentsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CommentsController_update"];
+        trace?: never;
+    };
+    "/api/v1/comments/{commentId}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CommentsController_listRevisions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3930,6 +3962,44 @@ export interface operations {
             };
         };
     };
+    TicketsController_listDescriptionRevisions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            body: string;
+                            author: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** Format: date-time */
+                            writtenAt: string;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
     TicketsController_listActivityEvents: {
         parameters: {
             query?: {
@@ -4651,6 +4721,167 @@ export interface operations {
                         /** Format: date-time */
                         createdAt: string;
                         allowedActions: ("read" | "update" | "delete" | "redact" | "read_revisions")[];
+                    };
+                };
+            };
+        };
+    };
+    CommentsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                    attachmentIds?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        ticketId: string;
+                        author: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        body: string;
+                        mentions: {
+                            id: string | "customer";
+                            displayName: string | null;
+                        }[];
+                        attachments: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
+                        /** Format: date-time */
+                        editedAt: string | null;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        allowedActions: ("read" | "update" | "delete" | "redact" | "read_revisions")[];
+                        /** @enum {string} */
+                        kind: "public" | "internal";
+                        /** @enum {string|null} */
+                        audience: "only_me" | "my_organization" | "all_customers" | null;
+                        audienceOrganization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        ticketId: string;
+                        author: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        body: string;
+                        mentions: {
+                            id: string | "customer";
+                            displayName: string | null;
+                        }[];
+                        attachments: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
+                        /** Format: date-time */
+                        editedAt: string | null;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        allowedActions: ("read" | "update" | "delete" | "redact" | "read_revisions")[];
+                    };
+                };
+            };
+        };
+    };
+    CommentsController_listRevisions: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            body: string;
+                            author: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** Format: date-time */
+                            writtenAt: string;
+                        }[];
+                        nextCursor: string | null;
                     };
                 };
             };

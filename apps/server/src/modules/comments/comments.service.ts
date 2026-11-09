@@ -1,18 +1,32 @@
+import { subject } from '@casl/ability';
 import { accessibleBy } from '@casl/prisma/runtime';
 import { Injectable } from '@nestjs/common';
 import type {
+  CommentAction,
   CommentPage,
   CommentResponse,
   CreateCommentDto,
   ListCommentsQuery,
+  UpdateCommentDto,
   ListTimelineQuery,
   TimelineItem,
   TimelinePage,
 } from '@trybun/contracts/comments';
+import type {
+  ContentRevisionPage,
+  ListContentRevisionsQuery,
+} from '@trybun/contracts/content-revisions';
 import type { TicketVisibility } from '@trybun/contracts/tickets';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
+import { reasonCode } from '../../platform/authorization/prisma-record-access.js';
+import { Clock } from '../../platform/clock/clock.js';
 import { decodeCursor, encodeCursor } from '../../platform/database/cursor.js';
+import {
+  assertVersionMatched,
+  type VersionedTarget,
+  versionedUpdate,
+} from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
 import { AppError } from '../../platform/errors/app-error.js';
 import {
@@ -20,6 +34,8 @@ import {
   eventSortKeySchema,
 } from '../activity-events/activity-events.service.js';
 import { AttachmentLinksService } from '../attachments/attachment-links.service.js';
+import { ContentRevisionsService } from '../content-revisions/content-revisions.service.js';
+import { ProjectsService } from '../projects/projects.service.js';
 import { TICKET } from '../tickets/tickets.abilities.js';
 import { type CommentRow, commentSelect, toCommentResponse } from './comment-responses.js';
 import { COMMENT } from './comments.abilities.js';
@@ -46,7 +62,93 @@ export class CommentsService {
     private readonly abilities: AbilityFactory,
     private readonly activityEvents: ActivityEventsService,
     private readonly attachmentLinks: AttachmentLinksService,
+    private readonly revisions: ContentRevisionsService,
+    private readonly projects: ProjectsService,
+    private readonly clock: Clock,
   ) {}
+
+  /**
+   * Edits the own comment or note (§6.1, S1-12 Q12): the replaced text becomes a content revision
+   * with its author and the time it was written, the comment gets the edit marker, and the team
+   * timeline the internal event `comment_edited` without content (Q6). The kind and the audience
+   * never change; further own drafts may be linked. The project is locked in share mode, so an
+   * archiving waits for the edit or refuses it (§7.3).
+   */
+  async update(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    input: UpdateCommentDto,
+  ): Promise<CommentResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockAndFind(tx, ability, principal, target.id);
+      assertCan(ability, 'update', before);
+      if (input.body !== before.body) {
+        const now = this.clock.now();
+        assertVersionMatched(
+          await tx.comment.updateMany(
+            versionedUpdate(target, {
+              body: input.body,
+              editedAt: now,
+              editedById: principal.userId,
+            }),
+          ),
+        );
+        await this.revisions.record(tx, { commentId: before.id }, replacedVersionOf(before));
+        await this.activityEvents.record(tx, { userId: principal.userId }, before.ticketId, [
+          { type: 'comment_edited', data: { commentId: before.id }, isPublic: false },
+        ]);
+      } else {
+        assertVersionMatched({ count: before.version === target.version ? 1 : 0 });
+      }
+      await this.attachmentLinks.linkDrafts(
+        tx,
+        principal,
+        { commentId: before.id },
+        input.attachmentIds ?? [],
+      );
+      return this.read(tx, principal, ability, before.id);
+    });
+  }
+
+  /**
+   * The earlier versions of a comment, newest first (§6.1, S1-12 Q3): the target record guard has
+   * checked `read_revisions` – the team, and the author of the comment.
+   */
+  async listRevisions(
+    principal: UserPrincipal,
+    commentId: string,
+    query: ListContentRevisionsQuery,
+  ): Promise<ContentRevisionPage> {
+    return this.revisions.list(this.prisma, principal, { commentId }, query);
+  }
+
+  /**
+   * A comment the principal reads, read again after the share lock of its ticket's project
+   * (§18.3): `404` when it is missing or invisible.
+   */
+  private async lockAndFind(
+    tx: Transaction,
+    ability: AppAbility,
+    principal: UserPrincipal,
+    commentId: string,
+  ): Promise<CommentRow> {
+    const located = await tx.comment.findUnique({
+      where: { id: commentId },
+      select: { ticket: { select: { projectId: true } } },
+    });
+    if (located === null || !(await this.projects.lockForShare(tx, located.ticket.projectId))) {
+      throw new AppError('request.not_found');
+    }
+    const row = await tx.comment.findFirst({
+      where: { AND: [accessibleBy(ability, 'read').ofType(COMMENT), { id: commentId }] },
+      select: commentSelect(principal),
+    });
+    if (row === null) {
+      throw new AppError('request.not_found');
+    }
+    return row;
+  }
 
   /**
    * The comments of a ticket the principal reads, oldest first (§6.1). The caller has checked
@@ -216,6 +318,26 @@ export class CommentsService {
     return rows.map((row) =>
       toCommentResponse(row, ability, principal, attachments.get(row.id) ?? []),
     );
+  }
+}
+
+/**
+ * The version an edit or a redaction replaces (§6.1): its text, the person who wrote it – the
+ * last editor, else the author – and when.
+ */
+function replacedVersionOf(row: CommentRow) {
+  return {
+    body: row.body,
+    authorId: row.editedById ?? row.authorId,
+    writtenAt: row.editedAt ?? row.createdAt,
+  };
+}
+
+/** `403`, or the code of the denying rule, when the principal may not act on the comment. */
+function assertCan(ability: AppAbility, action: CommentAction, row: CommentRow): void {
+  const record = subject(COMMENT, row);
+  if (!ability.can(action, record)) {
+    throw new AppError(reasonCode(ability.relevantRuleFor(action, record)?.reason));
   }
 }
 

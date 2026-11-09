@@ -22,6 +22,7 @@ export function commentSelect(principal: UserPrincipal) {
     ticketId: true,
     body: true,
     editedAt: true,
+    editedById: true,
     version: true,
     createdAt: true,
     audienceOrganization: {
