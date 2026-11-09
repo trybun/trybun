@@ -117,7 +117,8 @@ test.describe('the ticket list', () => {
         result.getByText('Changed by someone else – reload to see the latest version'),
       ).toBeVisible();
       expect(await seriousViolations(page)).toEqual([]);
-      await result.getByRole('button', { name: 'Close' }).click();
+      // The footer's Close, before the dialog's own close button (also named Close) in the DOM.
+      await result.getByRole('button', { name: 'Close' }).first().click();
       await expect(
         page.getByRole('checkbox', { name: `Select ${second.identifier}` }),
       ).toBeChecked();

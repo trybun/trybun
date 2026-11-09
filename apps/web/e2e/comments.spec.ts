@@ -56,6 +56,13 @@ test.describe('comments and internal notes', () => {
       .filter({ hasText: `Root cause found ${stamp}` });
     await expect(noteItem).toBeVisible();
     await expect(noteItem.getByText('Internal note')).toBeVisible();
+    // The note shows before the ticket is read again (two requests since S1-13); until then the
+    // submit button is disabled, and axe runs only after its fade back to full opacity.
+    const submit = activity.getByRole('button', { name: 'Add internal note' });
+    await expect(submit).toBeEnabled();
+    await submit.evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    );
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
 
