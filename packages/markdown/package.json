@@ -23,10 +23,10 @@
   "devDependencies": {
     "@trybun/eslint-config": "workspace:*",
     "@trybun/tsconfig": "workspace:*",
-    "eslint": "^10.13.0",
+    "eslint": "^10.14.0",
     "rehype-stringify": "^10.0.1",
     "remark-rehype": "^11.1.2",
     "typescript": "~6.0.3",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   }
 }
