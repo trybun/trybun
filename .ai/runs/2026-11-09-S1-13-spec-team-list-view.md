@@ -29,7 +29,7 @@ Make the S1-13 change specification `.ai/specs/2026-10-26-team-list-view.md` mer
 
 ## Assumptions
 
-- The maintainer decides the open questions in this session (at least Q1 and Q6, plus any question the alignment adds or reopens).
+- The maintainer decides the open questions in this session (at least Q1 and Q6, plus any question the alignment adds or reopens). Done on 2026-11-09: all recommended answers approved, including the reopened Q10.
 - The specification review runs through `om-auto-review-pr 123 --autofix`, as for PR #120, #121 and #122.
 
 ## Risks
@@ -51,7 +51,7 @@ Make the S1-13 change specification `.ai/specs/2026-10-26-team-list-view.md` mer
 
 ### Phase 3: Record the maintainer's decisions
 
-- [ ] 3.1 Record the answers to Q1, Q6 and the questions the alignment raised
+- [x] 3.1 Record the answers to Q1, Q6 and the questions the alignment raised — 9fbda3d
 
 ### Phase 4: Review and finalize
 
