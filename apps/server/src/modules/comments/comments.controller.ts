@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import {
@@ -20,6 +21,10 @@ import {
   listCommentsQuerySchema,
   type ListTimelineQuery,
   listTimelineQuerySchema,
+  type MentionCandidatePage,
+  mentionCandidatePageSchema,
+  type MentionCandidatesDto,
+  mentionCandidatesSchema,
   type TimelinePage,
   timelinePageSchema,
   type UpdateCommentDto,
@@ -72,6 +77,22 @@ export class CommentsController {
     @Query({ schema: listTimelineQuerySchema }) query: ListTimelineQuery,
   ): Promise<TimelinePage> {
     return this.comments.timeline(principal, ticketId, query);
+  }
+
+  /**
+   * The people a comment being written may mention (§7.3, S1-12 Q4): free text in the body, never
+   * in the URL (§17.2).
+   */
+  @Post('tickets/:ticketId/mention-candidates')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'add_comment' })
+  @HttpCode(HttpStatus.OK)
+  @ResponseSchema(mentionCandidatePageSchema)
+  mentionCandidates(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: mentionCandidatesSchema }) input: MentionCandidatesDto,
+  ): Promise<MentionCandidatePage> {
+    return this.comments.mentionCandidates(principal, ticketId, input);
   }
 
   /** A comment the principal reads. */

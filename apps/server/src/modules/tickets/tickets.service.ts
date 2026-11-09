@@ -337,7 +337,13 @@ export class TicketsService {
       if (input.kind === 'internal') {
         this.assertCan(ability, 'add_internal_note', ticket);
       }
-      return this.comments.add(tx, principal, ability, ticket, input);
+      return this.comments.add(
+        tx,
+        principal,
+        ability,
+        { ...ticket, assigneeId: ticket.assignee?.id ?? null },
+        input,
+      );
     });
   }
 

@@ -1,22 +1,29 @@
 import { subject } from '@casl/ability';
 import { accessibleBy } from '@casl/prisma/runtime';
 import { Injectable } from '@nestjs/common';
-import type {
-  CommentAction,
-  CommentPage,
-  CommentResponse,
-  CreateCommentDto,
-  ListCommentsQuery,
-  UpdateCommentDto,
-  ListTimelineQuery,
-  TimelineItem,
-  TimelinePage,
+import {
+  type CommentAction,
+  type CommentKind,
+  type CommentPage,
+  type CommentResponse,
+  type CreateCommentDto,
+  type ListCommentsQuery,
+  type MentionCandidatePage,
+  type MentionCandidatesDto,
+  type UpdateCommentDto,
+  type ListTimelineQuery,
+  type TimelineItem,
+  type TimelinePage,
+  HIDDEN_MENTION_ID,
+  MAX_MENTION_CANDIDATES,
+  MAX_MENTIONS_PER_TEXT,
 } from '@trybun/contracts/comments';
 import type {
   ContentRevisionPage,
   ListContentRevisionsQuery,
 } from '@trybun/contracts/content-revisions';
-import type { TicketVisibility } from '@trybun/contracts/tickets';
+import { mentionIdsOf } from '@trybun/markdown';
+import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
 import { reasonCode } from '../../platform/authorization/prisma-record-access.js';
@@ -38,16 +45,24 @@ import { AttachmentLinksService } from '../attachments/attachment-links.service.
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { ContentRevisionsService } from '../content-revisions/content-revisions.service.js';
 import { ProjectsService } from '../projects/projects.service.js';
-import { TICKET } from '../tickets/tickets.abilities.js';
+import { TICKET, ticketRuleSelect } from '../tickets/tickets.abilities.js';
 import { type CommentRow, commentSelect, toCommentResponse } from './comment-responses.js';
 import { COMMENT } from './comments.abilities.js';
+import { type MentionedTicket, mentionScope } from './mention-scope.js';
+import { identitySelect, visiblePerson } from '../users/visible-person.js';
 
-/** The fields of a locked ticket a new comment reads (§5.2). */
-export interface CommentedTicket {
-  id: string;
-  visibility: TicketVisibility;
-  organizationId: string | null;
-}
+/** The fields of a locked ticket a new comment reads: its audience (§5.2) and mention scope. */
+export type CommentedTicket = MentionedTicket;
+
+/** The fields of a ticket the mention scope reads. */
+const MENTIONED_TICKET_SELECT = {
+  id: true,
+  projectId: true,
+  requesterId: true,
+  organizationId: true,
+  assigneeId: true,
+  visibility: true,
+} satisfies Prisma.TicketSelect;
 
 /** Comments, like events, are sorted by their time-ordered ID (UUIDv7, S1-12 Q11). */
 const commentSortKeySchema = eventSortKeySchema;
@@ -118,12 +133,13 @@ export class CommentsService {
     return this.prisma.$transaction(async (tx) => {
       const before = await this.lockAndFind(tx, ability, principal, target.id);
       assertCan(ability, 'update', before);
-      if (input.body !== before.body) {
+      const body = restoreHiddenMentions(principal, input.body, before);
+      if (body !== before.body) {
         const now = this.clock.now();
         assertVersionMatched(
           await tx.comment.updateMany(
             versionedUpdate(target, {
-              body: input.body,
+              body,
               editedAt: now,
               editedById: principal.userId,
             }),
@@ -133,6 +149,20 @@ export class CommentsService {
         await this.activityEvents.record(tx, { userId: principal.userId }, before.ticketId, [
           { type: 'comment_edited', data: { commentId: before.id }, isPublic: false },
         ]);
+        const ticket = await tx.ticket.findUniqueOrThrow({
+          where: { id: before.ticketId },
+          select: MENTIONED_TICKET_SELECT,
+        });
+        await this.syncMentions(
+          tx,
+          principal,
+          ability,
+          ticket,
+          before.kind,
+          before.id,
+          body,
+          before.mentions.map(({ user }) => user.id),
+        );
       } else {
         assertVersionMatched({ count: before.version === target.version ? 1 : 0 });
       }
@@ -285,6 +315,7 @@ export class CommentsService {
       },
       select: { id: true },
     });
+    await this.syncMentions(tx, principal, ability, ticket, input.kind, id, input.body, []);
     await this.attachmentLinks.linkDrafts(
       tx,
       principal,
@@ -292,6 +323,117 @@ export class CommentsService {
       input.attachmentIds ?? [],
     );
     return this.read(tx, principal, ability, id);
+  }
+
+  /**
+   * The people a comment being written may mention whose display name contains the query
+   * (§7.3, S1-12 Q4): at most 10, team members first. The target record guard has checked
+   * `add_comment`; a note also needs `add_internal_note`.
+   */
+  async mentionCandidates(
+    principal: UserPrincipal,
+    ticketId: string,
+    input: MentionCandidatesDto,
+  ): Promise<MentionCandidatePage> {
+    const ability = this.abilities.forPrincipal(principal);
+    const ticket = await this.prisma.ticket.findUniqueOrThrow({
+      where: { id: ticketId },
+      select: { ...MENTIONED_TICKET_SELECT, ...ticketRuleSelect(principal) },
+    });
+    if (input.kind === 'internal') {
+      const record = subject(TICKET, ticket);
+      if (!ability.can('add_internal_note', record)) {
+        throw new AppError(
+          reasonCode(ability.relevantRuleFor('add_internal_note', record)?.reason),
+        );
+      }
+    }
+    const scope = mentionScope(
+      principal,
+      ability,
+      ticket,
+      input.kind,
+      await this.organizationOf(this.prisma, principal),
+    );
+    const people = await this.prisma.user.findMany({
+      where: {
+        AND: [
+          scope,
+          input.query === '' ? {} : { displayName: { contains: input.query, mode: 'insensitive' } },
+        ],
+      },
+      select: identitySelect(principal),
+      orderBy: [{ kind: 'asc' }, { displayName: 'asc' }, { id: 'asc' }],
+      take: MAX_MENTION_CANDIDATES,
+    });
+    return {
+      items: people.flatMap((person) =>
+        visiblePerson(principal, person) === null
+          ? []
+          : [{ id: person.id, displayName: person.displayName, userKind: person.kind }],
+      ),
+      nextCursor: null,
+    };
+  }
+
+  /**
+   * Stores the mentions of a text (§6.1, S1-12 Q4): at most 50 people (`422
+   * comment.too_many_mentions`); a mention that is new in the text must be in the mention scope,
+   * else `422 comment.mention_not_allowed` – the same code for an unknown ID, so nothing is
+   * revealed; existing ones are kept, removed ones deleted. A mention never grants access.
+   */
+  private async syncMentions(
+    tx: Transaction,
+    principal: UserPrincipal,
+    ability: AppAbility,
+    ticket: MentionedTicket,
+    kind: CommentKind,
+    commentId: string,
+    body: string,
+    existingIds: readonly string[],
+  ): Promise<void> {
+    const ids = mentionIdsOf(body);
+    if (ids.length > MAX_MENTIONS_PER_TEXT) {
+      throw new AppError('comment.too_many_mentions', [
+        { pointer: '/body', code: 'field.invalid' },
+      ]);
+    }
+    const existing = new Set(existingIds);
+    const added = ids.filter((id) => !existing.has(id));
+    if (added.length > 0) {
+      const scope = mentionScope(
+        principal,
+        ability,
+        ticket,
+        kind,
+        await this.organizationOf(tx, principal),
+      );
+      const allowed = await tx.user.count({ where: { AND: [scope, { id: { in: added } }] } });
+      if (allowed !== added.length) {
+        throw new AppError('comment.mention_not_allowed', [
+          { pointer: '/body', code: 'field.invalid' },
+        ]);
+      }
+    }
+    await tx.commentMention.deleteMany({ where: { commentId, userId: { notIn: ids } } });
+    if (added.length > 0) {
+      await tx.commentMention.createMany({
+        data: added.map((userId) => ({ commentId, userId })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  /** The organization the principal belongs to now, if any (§7.3). */
+  private async organizationOf(db: Transaction, principal: UserPrincipal): Promise<string | null> {
+    if (principal.userKind !== 'end_user') {
+      return null;
+    }
+    const membership = await db.organizationMember.findUnique({
+      where: { userId: principal.userId },
+      select: { organizationId: true },
+    });
+    return membership?.organizationId ?? null;
   }
 
   /** A comment through the ability (§18.3): `404` when the principal cannot read it. */
@@ -366,6 +508,36 @@ function replacedVersionOf(row: CommentRow) {
     authorId: row.editedById ?? row.authorId,
     writtenAt: row.editedAt ?? row.createdAt,
   };
+}
+
+/**
+ * The submitted text of an edit with the hidden mentions restored (§5.4, S1-12): the editor saw a
+ * person hidden from them as `@{customer}`, so each such token is replaced, in order, by the
+ * hidden people of the previous text. A token more than there were is refused, as a mention of
+ * someone outside the scope.
+ */
+function restoreHiddenMentions(principal: UserPrincipal, body: string, before: CommentRow): string {
+  const token = `@{${HIDDEN_MENTION_ID}}`;
+  if (!body.includes(token)) {
+    return body;
+  }
+  const people = new Map(before.mentions.map(({ user }) => [user.id, user]));
+  const hidden = mentionIdsOf(before.body).filter((id) => {
+    const person = people.get(id);
+    return person !== undefined && visiblePerson(principal, person) === null;
+  });
+  let index = 0;
+  const restored = body.replaceAll(token, () => {
+    const id = hidden[index];
+    index += 1;
+    return id === undefined ? token : `@{${id}}`;
+  });
+  if (index > hidden.length) {
+    throw new AppError('comment.mention_not_allowed', [
+      { pointer: '/body', code: 'field.invalid' },
+    ]);
+  }
+  return restored;
 }
 
 /** `403`, or the code of the denying rule, when the principal may not act on the comment. */

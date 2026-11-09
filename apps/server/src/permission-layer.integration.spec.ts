@@ -784,6 +784,7 @@ describe('permission layer', () => {
       ['POST', (id: string) => `/api/v1/tickets/${id}/comments`],
       ['GET', (id: string) => `/api/v1/tickets/${id}/timeline`],
       ['GET', (id: string) => `/api/v1/tickets/${id}/description-revisions`],
+      ['POST', (id: string) => `/api/v1/tickets/${id}/mention-candidates`],
     ] as const)(
       'answers %s %s of a ticket of project B with 404, as for a missing ticket',
       async (method, path) => {

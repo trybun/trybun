@@ -708,6 +708,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tickets/{ticketId}/mention-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CommentsController_mentionCandidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/comments/{commentId}": {
         parameters: {
             query?: never;
@@ -4604,6 +4620,44 @@ export interface operations {
                                 createdAt: string;
                             };
                         })[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    CommentsController_mentionCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    kind: "public" | "internal";
+                    query: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            /** @enum {string} */
+                            userKind: "team" | "end_user";
+                        }[];
                         nextCursor: string | null;
                     };
                 };
