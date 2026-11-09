@@ -2,17 +2,17 @@
 
 | | |
 |---|---|
-| Status | `approved` |
+| Status | `implemented` |
 | Created | 2026-10-26 |
 | Plan task | `S1-11` |
 | System specification sections | §3.2, §4.5, §5.1, §5.2, §5.3, §5.4, §5.7, §6.7, §7.3, §7.5, §13.3, §13.5, §14.4, §18.3, glossary |
-| Related issues / PRs | Builds on the implemented specifications of S1-02 [organizations](implemented/2026-10-26-organizations.md) ([#112](https://github.com/trybun/trybun/pull/112)), S1-04 [permission layer](implemented/2026-10-26-permission-layer.md) ([#114](https://github.com/trybun/trybun/pull/114)), S1-05 [ticket model](implemented/2026-10-26-ticket-model.md) ([#115](https://github.com/trybun/trybun/pull/115)), S1-06 [statuses](implemented/2026-10-26-ticket-statuses.md) ([#116](https://github.com/trybun/trybun/pull/116)), S1-08 [attachments](implemented/2026-10-26-attachments.md) and S1-09 [end-user portal](implemented/2026-10-26-end-user-portal.md) ([#118](https://github.com/trybun/trybun/pull/118)); the approved S1-10 [team ticket view](implemented/2026-10-26-team-ticket-view.md) ([#120](https://github.com/trybun/trybun/pull/120), implementation open in [#256](https://github.com/trybun/trybun/pull/256)); S1-12 comments and S1-21 title redaction ([spec](2026-10-26-title-redaction.md)) not implemented yet |
+| Related issues / PRs | Builds on the implemented specifications of S1-02 [organizations](2026-10-26-organizations.md) ([#112](https://github.com/trybun/trybun/pull/112)), S1-04 [permission layer](2026-10-26-permission-layer.md) ([#114](https://github.com/trybun/trybun/pull/114)), S1-05 [ticket model](2026-10-26-ticket-model.md) ([#115](https://github.com/trybun/trybun/pull/115)), S1-06 [statuses](2026-10-26-ticket-statuses.md) ([#116](https://github.com/trybun/trybun/pull/116)), S1-08 [attachments](2026-10-26-attachments.md) and S1-09 [end-user portal](2026-10-26-end-user-portal.md) ([#118](https://github.com/trybun/trybun/pull/118)); the approved S1-10 [team ticket view](2026-10-26-team-ticket-view.md) ([#120](https://github.com/trybun/trybun/pull/120), implementation open in [#256](https://github.com/trybun/trybun/pull/256)); S1-12 comments and S1-21 title redaction ([spec](../2026-10-26-title-redaction.md)) not implemented yet |
 
 ## Context
 
-An end user decides who among the customers can see their ticket: only themselves, their organization, or – after the team approves – all customers of the project ([§5.1](../../docs/spec/05-visibility-and-search.md)). Today nothing of this exists. S1-05 built tickets without a visibility: an end user reads only the tickets they requested (`ticketReadConditions` in `apps/server/src/modules/tickets/tickets.abilities.ts` returns `{ requesterId }`), which is exactly `only_me`. S1-11 adds the columns `visibility` and `sharing_request`, widens the read rule, and builds the sharing request with its team decision.
+An end user decides who among the customers can see their ticket: only themselves, their organization, or – after the team approves – all customers of the project ([§5.1](../../../docs/spec/05-visibility-and-search.md)). Today nothing of this exists. S1-05 built tickets without a visibility: an end user reads only the tickets they requested (`ticketReadConditions` in `apps/server/src/modules/tickets/tickets.abilities.ts` returns `{ requesterId }`), which is exactly `only_me`. S1-11 adds the columns `visibility` and `sharing_request`, widens the read rule, and builds the sharing request with its team decision.
 
-The plan's scope for S1-11: `only_me`, `my_organization`, `all_customers` with team approval (sharing request states), shared tickets, widening and narrowing rules, the warning text, and the effects of an organization change on ticket visibility ([§7.3](../../docs/spec/07-users-organizations-permissions.md)). Out of scope: comment audience and the refusal reason as a public comment (S1-12), the "Pending sharing approvals" view (S1-13), the notification to the project team (S1-15).
+The plan's scope for S1-11: `only_me`, `my_organization`, `all_customers` with team approval (sharing request states), shared tickets, widening and narrowing rules, the warning text, and the effects of an organization change on ticket visibility ([§7.3](../../../docs/spec/07-users-organizations-permissions.md)). Out of scope: comment audience and the refusal reason as a public comment (S1-12), the "Pending sharing approvals" view (S1-13), the notification to the project team (S1-15).
 
 The plan's "Done when" for S1-11:
 
@@ -24,7 +24,7 @@ The plan's "Done when" for S1-11:
 
 This specification builds on the implemented code and the approved answers of the sibling specifications, and does not decide their questions again:
 
-- the principal of S1-04 and its pattern: relation conditions limited to the principal, no data preloaded on it (S1-04 Q2, [§18.3](../../docs/spec/18-code-patterns.md));
+- the principal of S1-04 and its pattern: relation conditions limited to the principal, no data preloaded on it (S1-04 Q2, [§18.3](../../../docs/spec/18-code-patterns.md));
 - the ticket model, the activity events and the locks of S1-05 and S1-06;
 - the organization membership of S1-02;
 - the portal form and ticket view of S1-09, whose Q8 gives S1-11 the visibility field, its rules, the warning and the way the form learns its options;
@@ -41,23 +41,23 @@ Agents may not decide them (Rule 8). Each is listed under [Open questions](#open
 
 ## Goals
 
-- `ticket.visibility` (effective visibility) and `ticket.sharing_request` stored and kept consistent by the database ([§5.1](../../docs/spec/05-visibility-and-search.md)).
-- One set of CASL rules decides which tickets an end user sees, for lists and details alike, from the person's **current** organization membership and project access. An organization change takes effect on the next request without a migration of tickets ([§7.3](../../docs/spec/07-users-organizations-permissions.md)).
-- The widening and narrowing rules of [§5.3](../../docs/spec/05-visibility-and-search.md) and the sharing request with one team approval or a refusal with a reason ([§5.2](../../docs/spec/05-visibility-and-search.md)), as actions in `allowedActions`.
+- `ticket.visibility` (effective visibility) and `ticket.sharing_request` stored and kept consistent by the database ([§5.1](../../../docs/spec/05-visibility-and-search.md)).
+- One set of CASL rules decides which tickets an end user sees, for lists and details alike, from the person's **current** organization membership and project access. An organization change takes effect on the next request without a migration of tickets ([§7.3](../../../docs/spec/07-users-organizations-permissions.md)).
+- The widening and narrowing rules of [§5.3](../../../docs/spec/05-visibility-and-search.md) and the sharing request with one team approval or a refusal with a reason ([§5.2](../../../docs/spec/05-visibility-and-search.md)), as actions in `allowedActions`.
 - Only meaningful options in the control, decided by the API: **My organization** only where the person's active organization has access to the project, and therefore never while no organization exists.
-- The warning of [§5.1](../../docs/spec/05-visibility-and-search.md) when **All customers** is chosen.
-- The identities of other customers ("Customer", [§5.4](../../docs/spec/05-visibility-and-search.md)) decided by the API.
-- Activity events for every visibility change, the approval as a public event, and audit log entries for the team's decisions ([§4.5](../../docs/spec/04-ticket-lifecycle.md), [§13.5](../../docs/spec/13-non-functional.md)).
+- The warning of [§5.1](../../../docs/spec/05-visibility-and-search.md) when **All customers** is chosen.
+- The identities of other customers ("Customer", [§5.4](../../../docs/spec/05-visibility-and-search.md)) decided by the API.
+- Activity events for every visibility change, the approval as a public event, and audit log entries for the team's decisions ([§4.5](../../../docs/spec/04-ticket-lifecycle.md), [§13.5](../../../docs/spec/13-non-functional.md)).
 
 ## Non-goals
 
 - Comment audience, and publishing the refusal reason as a public comment (S1-12). S1-11 stores the reason until then ([Q8](#open-questions)).
 - The predefined view "Pending sharing approvals" and the triage queue (S1-13). S1-11 adds the field they filter on.
 - The in-app notification of the project team, watcher removal after a change of organization, and an outbox event of a membership change (S1-15, [Q10](#open-questions)).
-- Redaction before approval ([§5.2](../../docs/spec/05-visibility-and-search.md), S1-12 and S1-16), and the link from the approval dialog to the title redaction of S1-21. The approval dialog only reminds the team to check the content.
+- Redaction before approval ([§5.2](../../../docs/spec/05-visibility-and-search.md), S1-12 and S1-16), and the link from the approval dialog to the title redaction of S1-21. The approval dialog only reminds the team to check the content.
 - A visibility control in the team's full form (S1-10): team tickets are always `only_me` ([Q6](#open-questions)).
 - Similar tickets and search (S2-02, S2-03). They read through the same rule when they arrive. Until then, no portal list shows other people's tickets.
-- The "duplicate and redacted copy" flow for `only_me` tickets ([§5.2](../../docs/spec/05-visibility-and-search.md), last paragraph): it uses only S1-05, S1-06 and later watcher tasks, and adds no visibility rule.
+- The "duplicate and redacted copy" flow for `only_me` tickets ([§5.2](../../../docs/spec/05-visibility-and-search.md), last paragraph): it uses only S1-05, S1-06 and later watcher tasks, and adds no visibility rule.
 - The reference page about visibility and the "Creating a ticket" tour (S1-18).
 
 ## Proposed change
@@ -83,11 +83,11 @@ In the typical case the person takes no extra step (Rule 2): the default is kept
 |---|---|
 | `pending` | "Waiting for the team to share this ticket with all customers." / „Czeka na udostępnienie wszystkim klientom przez zespół.” |
 | `rejected` | "The team did not share this ticket with all customers." / „Zespół nie udostępnił tego zgłoszenia wszystkim klientom.” – followed, when the visibility is `my_organization`, by "Your organization can still see it." / „Twoja organizacja nadal je widzi.” |
-| approved (visibility `all_customers`) | Public timeline entry "Shared with everyone" / „Udostępnione wszystkim” ([§5.2](../../docs/spec/05-visibility-and-search.md)) |
+| approved (visibility `all_customers`) | Public timeline entry "Shared with everyone" / „Udostępnione wszystkim” ([§5.2](../../../docs/spec/05-visibility-and-search.md)) |
 
 The reason of a refusal reaches the author as a public comment once S1-12 exists ([Q8](#open-questions)).
 
-Own tickets in projects the person can no longer open (after a change of organization, [§7.3](../../docs/spec/07-users-organizations-permissions.md)) stay in **My tickets** across all projects (S1-09, `involvement=mine`), which reads through the same rules, and open from there. Own `my_organization` tickets of the old organization are no longer in it.
+Own tickets in projects the person can no longer open (after a change of organization, [§7.3](../../../docs/spec/07-users-organizations-permissions.md)) stay in **My tickets** across all projects (S1-09, `involvement=mine`), which reads through the same rules, and open from there. Own `my_organization` tickets of the old organization are no longer in it.
 
 **End user, another person's ticket** (portal ticket view of S1-09). S1-11 is the first task that lets an end user read tickets they did not request – their organization's (R3) and shared ones (R4, [below](#who-sees-a-ticket)). **My tickets** lists only their own (§5.7), so in S1-11 they reach such a ticket by its link, e.g. one a colleague sent; the portal search (S2-03) and watching (S1-15) list them later. The same view shows what §5.4 allows: title, description, public status and the public timeline, with the requester's name or "Customer" ([Identities](#identities-of-other-customers)). It has no visibility control, no edit and no resolution question, because the ticket's `allowedActions` hold none of them (see [Who sees a ticket](#who-sees-a-ticket)).
 
@@ -108,16 +108,16 @@ S1-11 adds three columns to `tickets` (owned by `modules/tickets/`) in one migra
 | `sharingRequest` | `sharing_request` | enum `ticket_sharing_request` (`none`, `pending`, `rejected`), not null, default `none` |
 | `sharingRefusalReason` | `sharing_refusal_reason` | GFM text, trimmed, 1–2000 characters, nullable; until S1-12 ([Q8](#open-questions)) |
 
-Check constraints keep the combinations of [§5.1](../../docs/spec/05-visibility-and-search.md) and [§5.4](../../docs/spec/05-visibility-and-search.md):
+Check constraints keep the combinations of [§5.1](../../../docs/spec/05-visibility-and-search.md) and [§5.4](../../../docs/spec/05-visibility-and-search.md):
 
 - `visibility = 'my_organization'` only when `organization_id IS NOT NULL`;
 - `sharing_request <> 'none'` only when `visibility <> 'all_customers'` (approval clears the request);
-- `source <> 'user'` implies `visibility = 'only_me'` and `sharing_request = 'none'` – team and integration tickets are visible to the team only ([Q6](#open-questions)). Imported tickets are always `only_me` whatever their source ([§12.5](../../docs/spec/12-api-webhooks-import.md)); the import sets it, since a CSV import may map the source to `user`, which this constraint does not cover;
+- `source <> 'user'` implies `visibility = 'only_me'` and `sharing_request = 'none'` – team and integration tickets are visible to the team only ([Q6](#open-questions)). Imported tickets are always `only_me` whatever their source ([§12.5](../../../docs/spec/12-api-webhooks-import.md)); the import sets it, since a CSV import may map the source to `user`, which this constraint does not cover;
 - `sharing_refusal_reason IS NOT NULL` exactly when `sharing_request = 'rejected'`.
 
 A partial index `(project_id)` where `sharing_request = 'pending'` serves the view of S1-13. The read rules use the existing indexes on `requester_id` and `organization_id` and a new `(project_id, visibility)`.
 
-The enums follow the glossary codes and have the unit test that keeps each Prisma enum equal to its contract enum ([§18.4](../../docs/spec/18-code-patterns.md)).
+The enums follow the glossary codes and have the unit test that keeps each Prisma enum equal to its contract enum ([§18.4](../../../docs/spec/18-code-patterns.md)).
 
 ```mermaid
 stateDiagram-v2
@@ -145,22 +145,22 @@ The team sees every ticket of its projects, the Administrator every ticket (S1-0
 
 | Rule | Condition | Meaning |
 |---|---|---|
-| R1 own | `requesterId = U` and `visibility` in (`only_me`, `all_customers`) | Own tickets, in any project, even without current access to it ([§7.3](../../docs/spec/07-users-organizations-permissions.md)) |
+| R1 own | `requesterId = U` and `visibility` in (`only_me`, `all_customers`) | Own tickets, in any project, even without current access to it ([§7.3](../../../docs/spec/07-users-organizations-permissions.md)) |
 | R2 own in the current organization | `requesterId = U` and `organization: { is: { members: { some: { userId: U } } } }` (archived or not) | Own `my_organization` tickets, while the person still belongs to the organization of the snapshot |
 | R3 organization | `visibility = 'my_organization'` and `organization: { is: { state: 'active', members: { some: { userId: U } } } }` and project access of `U` | Tickets of the person's organization, including pending requests, while the organization is **active** |
 | R4 shared | `visibility = 'all_customers'` and project access of `U` | Shared tickets |
 
-"Project access of `U`" is `project: { is: access }` for each entry of `endUserProjectAccess(principal)` – personal access or access through the active organization – so R3 and R4 are one CASL rule per access path, as `ticketChangeConditions` already does. `ticketReadConditions` therefore returns a list of conditions, one per CASL rule, as `ticketChangeConditions` does; the `read` rule of tickets and the attachment `read` rule (`attachments.abilities.ts`) loop over it. All conditions are relation conditions limited to the principal ([§18.3](../../docs/spec/18-code-patterns.md), S1-04 Q2): a person belongs to at most one organization, so "the snapshot's organization has `U` as a member" means "the snapshot is `U`'s current organization". The principal is not changed. `ticketRuleSelect` gains `visibility`, `sharingRequest`, `source`, `organizationId`, and of the snapshot's organization its `state` and the principal's own membership.
+"Project access of `U`" is `project: { is: access }` for each entry of `endUserProjectAccess(principal)` – personal access or access through the active organization – so R3 and R4 are one CASL rule per access path, as `ticketChangeConditions` already does. `ticketReadConditions` therefore returns a list of conditions, one per CASL rule, as `ticketChangeConditions` does; the `read` rule of tickets and the attachment `read` rule (`attachments.abilities.ts`) loop over it. All conditions are relation conditions limited to the principal ([§18.3](../../../docs/spec/18-code-patterns.md), S1-04 Q2): a person belongs to at most one organization, so "the snapshot's organization has `U` as a member" means "the snapshot is `U`'s current organization". The principal is not changed. `ticketRuleSelect` gains `visibility`, `sharingRequest`, `source`, `organizationId`, and of the snapshot's organization its `state` and the principal's own membership.
 
 Consequences, which are the "Done when":
 
 - A pending request keeps `my_organization` (or `only_me`), so it is visible to the author's organization only (R3).
 - After a change of organization, R1 still returns the person's `only_me` tickets; R2 and R3 no longer match `my_organization` tickets of the old organization, including the person's own. Shared tickets stay visible in projects the person still has access to (R4).
-- While the organization is archived, its members keep their own tickets (R1, R2) and lose their colleagues' tickets (R3), as they lose the access granted through the organization ([§7.3](../../docs/spec/07-users-organizations-permissions.md)).
+- While the organization is archived, its members keep their own tickets (R1, R2) and lose their colleagues' tickets (R3), as they lose the access granted through the organization ([§7.3](../../../docs/spec/07-users-organizations-permissions.md)).
 
-Every query keeps `accessibleBy(ability, 'read')`. The list, the detail, `involvement=mine` of S1-09, the attachments of the ticket ([§13.3](../../docs/spec/13-non-functional.md), S1-08) and the comments of S1-12 all follow the same rules. Nothing is migrated on an organization change: visibility is evaluated on every request against the current membership, and no cache is kept across requests ([§14.4](../../docs/spec/14-architecture.md)). The `involvement=mine` query already loads its page through the ability, so after an organization change an end user's page can be shorter than `limit` too. S1-09 says this only of team members; clients already follow `nextCursor`.
+Every query keeps `accessibleBy(ability, 'read')`. The list, the detail, `involvement=mine` of S1-09, the attachments of the ticket ([§13.3](../../../docs/spec/13-non-functional.md), S1-08) and the comments of S1-12 all follow the same rules. Nothing is migrated on an organization change: visibility is evaluated on every request against the current membership, and no cache is kept across requests ([§14.4](../../../docs/spec/14-architecture.md)). The `involvement=mine` query already loads its page through the ability, so after an organization change an end user's page can be shorter than `limit` too. S1-09 says this only of team members; clients already follow `nextCursor`.
 
-The other end-user actions on own tickets – `update` and `add_attachment` of `ticketChangeConditions`, and the visibility actions below – additionally require current access to the project. Without it, the person keeps **read and comment** access to own `only_me` tickets ([§7.3](../../docs/spec/07-users-organizations-permissions.md)); the comment rule is S1-12's. These actions stay the requester's own ([§7.5](../../docs/spec/07-users-organizations-permissions.md), "Edit own ticket title and description"): `ticketChangeConditions` combines only the own-ticket rules R1 and R2 with each project access path and does **not** take over R3 and R4. A colleague who reads a `my_organization` ticket, and a customer who reads a shared one, may neither edit it, nor add or delete attachments on it (`attachments.abilities.ts` wraps `ticketChangeConditions` for `delete`), nor change its visibility.
+The other end-user actions on own tickets – `update` and `add_attachment` of `ticketChangeConditions`, and the visibility actions below – additionally require current access to the project. Without it, the person keeps **read and comment** access to own `only_me` tickets ([§7.3](../../../docs/spec/07-users-organizations-permissions.md)); the comment rule is S1-12's. These actions stay the requester's own ([§7.5](../../../docs/spec/07-users-organizations-permissions.md), "Edit own ticket title and description"): `ticketChangeConditions` combines only the own-ticket rules R1 and R2 with each project access path and does **not** take over R3 and R4. A colleague who reads a `my_organization` ticket, and a customer who reads a shared one, may neither edit it, nor add or delete attachments on it (`attachments.abilities.ts` wraps `ticketChangeConditions` for `delete`), nor change its visibility.
 
 ### Changing visibility
 
@@ -177,20 +177,20 @@ Every rule excludes the current value, so `allowedActions` lists only real chang
 | `set_visibility_all_customers` | **requests** sharing: not shared and not pending | **shares** at the team's initiative: only from `my_organization` |
 | `approve_sharing`, `reject_sharing` | – | request `pending` |
 
-Rules standing for a state of the record carry an error code as their reason, written `cannot(…).because('<code>')` like `ticket.resolution_confirmation_not_pending` ([§18.3](../../docs/spec/18-code-patterns.md)). The API returns them with their status instead of `403` ([Q12](#open-questions)):
+Rules standing for a state of the record carry an error code as their reason, written `cannot(…).because('<code>')` like `ticket.resolution_confirmation_not_pending` ([§18.3](../../../docs/spec/18-code-patterns.md)). The API returns them with their status instead of `403` ([Q12](#open-questions)):
 
 | Code | HTTP | When |
 |---|---|---|
 | `ticket.sharing_not_pending` | 409 | Approve or refuse without a pending request, e.g. a colleague decided first |
 | `ticket.sharing_pending` | 409 | The team changes the visibility of a ticket with a pending request – it decides the request first |
-| `ticket.author_consent_required` | 409 | The team shares an `only_me` ticket ([§5.2](../../docs/spec/05-visibility-and-search.md)) |
+| `ticket.author_consent_required` | 409 | The team shares an `only_me` ticket ([§5.2](../../../docs/spec/05-visibility-and-search.md)) |
 | `ticket.organization_changed` | 409 | The team sets `my_organization` on a ticket whose requester no longer belongs to the snapshot's organization, which is archived or has lost access to the project, or a ticket is created with `my_organization` when the snapshot locked at creation does not allow it – the ticket would be shown to people the author left and hidden from the author (R1, R2) |
 
 The codes go into `errorCodeSchema` and its status map in `packages/contracts/src/errors/index.ts`, with the messages `errors.<code>` in `packages/i18n/messages/en.json` and `pl.json`.
 
-CASL conditions cannot compare the snapshot with the **requester's** membership when the principal is a team member, so the team's `ticket.organization_changed` is a business rule checked by the service on the locked row ([§18.3](../../docs/spec/18-code-patterns.md), "Request pipeline"). `allowedActions` may still list the action in this rare case, and the web application shows the error. When two state rules apply, `ticket.sharing_pending` wins (the request is decided first).
+CASL conditions cannot compare the snapshot with the **requester's** membership when the principal is a team member, so the team's `ticket.organization_changed` is a business rule checked by the service on the locked row ([§18.3](../../../docs/spec/18-code-patterns.md), "Request pipeline"). `allowedActions` may still list the action in this rare case, and the web application shows the error. When two state rules apply, `ticket.sharing_pending` wins (the request is decided first).
 
-Every other refusal is `403 request.forbidden`, e.g. an end user narrowing a shared ticket, which needs the team ([§5.3](../../docs/spec/05-visibility-and-search.md)).
+Every other refusal is `403 request.forbidden`, e.g. an end user narrowing a shared ticket, which needs the team ([§5.3](../../../docs/spec/05-visibility-and-search.md)).
 
 Effects, each in one transaction with the conditional update on `version` (`versionedUpdate` and `assertVersionMatched`, `platform/database/optimistic-locking.ts`):
 
@@ -208,9 +208,9 @@ The values `from` and `to` are visibility codes.
 
 End users get `sharing_approved` without data: `endUserDataOf` (`activity-events/domain/end-user-events.ts`) keeps its allow-list, and "Shared with everyone" needs only the type. The actor of an approval is always a team member, so the identity rule below never hides it.
 
-Comment audiences are not changed by any of these ([§5.3](../../docs/spec/05-visibility-and-search.md), S1-12). A request for the current value returns `200` without an event or a new `version` (as S1-06 Q16) – except the author's withdrawal of a pending request above, which is a change of `sharing_request`.
+Comment audiences are not changed by any of these ([§5.3](../../../docs/spec/05-visibility-and-search.md), S1-12). A request for the current value returns `200` without an event or a new `version` (as S1-06 Q16) – except the author's withdrawal of a pending request above, which is a change of `sharing_request`.
 
-**Audit log** ([§13.5](../../docs/spec/13-non-functional.md)), with the ticket as target, written in the same transaction with `AuditLogEntriesService.record(tx, …)`. `AuditDetailsByAction` gains three actions:
+**Audit log** ([§13.5](../../../docs/spec/13-non-functional.md)), with the ticket as target, written in the same transaction with `AuditLogEntriesService.record(tx, …)`. `AuditDetailsByAction` gains three actions:
 
 - `ticket.visibility_changed` `{ from, to }` when a team member changes the visibility, including sharing at their initiative;
 - `ticket.sharing_approved` (`null`);
@@ -240,13 +240,13 @@ The two actions join `projectActionSchema` (`@trybun/contracts/projects`) and ar
 
 A value without its action returns `403` with nothing created, as S1-05 does for the team-only fields. The snapshot of the organization is locked at creation (`lockOrganizationSnapshot`). If it no longer allows `my_organization` – the person left the organization in between – the creation fails with `409 ticket.organization_changed`. Choosing `all_customers` creates the ticket with `sharing_request = 'pending'` and the effective visibility of a request (table above). Creation writes no activity event (S1-05 Q11); the pending request is visible to the team through the field.
 
-Team accounts create tickets with source `developer`, which are visible to the team only ([§5.4](../../docs/spec/05-visibility-and-search.md)). Their only option is `only_me`: the full form of S1-10 has no visibility control, and a `visibility` other than `only_me` from a team account returns `403` ([Q6](#open-questions)).
+Team accounts create tickets with source `developer`, which are visible to the team only ([§5.4](../../../docs/spec/05-visibility-and-search.md)). Their only option is `only_me`: the full form of S1-10 has no visibility control, and a `visibility` other than `only_me` from a team account returns `403` ([Q6](#open-questions)).
 
-While no organization exists, nobody holds `create_ticket_my_organization`, so nobody is offered `my_organization` ([§7.3](../../docs/spec/07-users-organizations-permissions.md), "System without organizations").
+While no organization exists, nobody holds `create_ticket_my_organization`, so nobody is offered `my_organization` ([§7.3](../../../docs/spec/07-users-organizations-permissions.md), "System without organizations").
 
 ### API
 
-All endpoints follow the request pipeline of [§18.3](../../docs/spec/18-code-patterns.md); schemas in `@trybun/contracts/tickets`.
+All endpoints follow the request pipeline of [§18.3](../../../docs/spec/18-code-patterns.md); schemas in `@trybun/contracts/tickets`.
 
 | Endpoint | Guard action | Notes |
 |---|---|---|
@@ -267,14 +267,14 @@ The OpenAPI document and the web client are regenerated with `pnpm api:generate`
 
 ### Identities of other customers
 
-One pure function `identityVisibleTo(viewer, person)` in `modules/tickets/domain/` decides whether an end user sees a person's name ([§5.4](../../docs/spec/05-visibility-and-search.md), [Q9](#open-questions)). It returns yes when:
+One pure function `identityVisibleTo(viewer, person)` in `modules/tickets/domain/` decides whether an end user sees a person's name ([§5.4](../../../docs/spec/05-visibility-and-search.md), [Q9](#open-questions)). It returns yes when:
 
 - the viewer is a team member;
 - the person is a team member;
 - the viewer is the person;
 - both currently belong to the same organization, active or archived. Two people without an organization never count as the same organization.
 
-Otherwise the response carries `null` and the web application shows "Customer". The decision is the API's ([§14.4](../../docs/spec/14-architecture.md)); the serializer never sends the name. The ticket and activity-event responses use it; S1-12 uses it for comment authors.
+Otherwise the response carries `null` and the web application shows "Customer". The decision is the API's ([§14.4](../../../docs/spec/14-architecture.md)); the serializer never sends the name. The ticket and activity-event responses use it; S1-12 uses it for comment authors.
 
 ### Demo dataset
 
@@ -311,8 +311,8 @@ Customer portal then serves "Customer company" (and the archived organization), 
 ### Prior art
 
 - **Jira Service Management** shares requests with the reporter's organization or with chosen people, and has no team approval; Trybun adds the approval because a shared ticket exposes the content to other companies. The reporter always sees their own requests, as R1 does.
-- **Zendesk** lets organization members see each other's tickets through an organization setting, not per ticket; Trybun keeps the choice per ticket with the private default required by GDPR Art. 25 ([§5.1](../../docs/spec/05-visibility-and-search.md)).
-- **Discourse** shows a moderation queue for posts awaiting approval with one approval required – the same "one approval by any team member" rule as [§5.2](../../docs/spec/05-visibility-and-search.md).
+- **Zendesk** lets organization members see each other's tickets through an organization setting, not per ticket; Trybun keeps the choice per ticket with the private default required by GDPR Art. 25 ([§5.1](../../../docs/spec/05-visibility-and-search.md)).
+- **Discourse** shows a moderation queue for posts awaiting approval with one approval required – the same "one approval by any team member" rule as [§5.2](../../../docs/spec/05-visibility-and-search.md).
 - **GOV.UK Design System** and Nielsen Norman Group recommend radio buttons over a select for a short list of mutually exclusive options, because every option is visible and chosen with one action ([Q14](#open-questions)).
 
 ## Changes to the system specification
@@ -349,7 +349,7 @@ Implementation must not start until every question has an answer. The maintainer
 4. **Sharing request from an `only_me` ticket.** §5.1 keeps a pending ticket at `my_organization` "or `only_me` if the author has no organization". After a change of organization the snapshot names the old organization. — **Answer (approved by the maintainer, 2026-11-08):** the request widens the ticket to `my_organization` only when the author could choose `my_organization`: the snapshot's organization is active, the author still belongs to it, and it has access to the project (Q19); otherwise it stays `only_me` while pending. The author may choose `my_organization` only under the same condition, and so may the team (`409 ticket.organization_changed`), so a ticket is never exposed to an organization its author left, nor hidden from its author by such a change.
 5. **Withdrawing and repeating a request.** — **Answer (approved by the maintainer, 2026-11-08):** while a request is pending, the author withdraws it by choosing `only_me` or `my_organization` (`sharing_request = none`, event `sharing_request_withdrawn`); after a refusal they may request again at any time (§5.2), which clears the stored reason.
 6. **Visibility of team and integration tickets.** §7.5 lets every role "choose visibility of own ticket", but §5.4 makes tickets with source `developer` or `integration` visible to the team only. The approved S1-10 Q11 expected "S1-11's visibility control in the form". — **Answer (approved by the maintainer, 2026-11-08):** they are always `only_me` without a request (check constraint); the team's full form has no visibility control, and the §7.5 row becomes end-user only. S1-10 Q11 is narrowed to the field panel. A team member who wants customers to see a problem shares an end user's ticket or creates it on a customer's behalf, which no Stage 1 task builds. Rejected alternative: the team chooses the visibility of its own tickets – it contradicts §5.4 and opens a second sharing path without the author's consent.
-7. **How the web application learns the options.** The web application must not compute them ([§14.4](../../docs/spec/14-architecture.md)). — **Answer (approved by the maintainer, 2026-11-08):** on a ticket, one action code per target value in `allowedActions`; for creation, the project actions `create_ticket_my_organization` and `create_ticket_all_customers` in the project's `allowedActions`. This is the pattern S1-10 Q15 approved for the full form's assignee control (`assign_tickets`, `assign_tickets_self`), so no new response shape is needed (Rule 12); server-computed capability flags are common practice (GitHub's `viewerCan…` fields). Rejected alternative: a list field `ticketVisibilityOptions` on `endUserProjectSchema`, which S1-09 Q8 suggested – a second shape next to `allowedActions` for the same problem.
+7. **How the web application learns the options.** The web application must not compute them ([§14.4](../../../docs/spec/14-architecture.md)). — **Answer (approved by the maintainer, 2026-11-08):** on a ticket, one action code per target value in `allowedActions`; for creation, the project actions `create_ticket_my_organization` and `create_ticket_all_customers` in the project's `allowedActions`. This is the pattern S1-10 Q15 approved for the full form's assignee control (`assign_tickets`, `assign_tickets_self`), so no new response shape is needed (Rule 12); server-computed capability flags are common practice (GitHub's `viewerCan…` fields). Rejected alternative: a list field `ticketVisibilityOptions` on `endUserProjectSchema`, which S1-09 Q8 suggested – a second shape next to `allowedActions` for the same problem.
 8. **Where the refusal reason lives before S1-12.** §5.2 publishes it to the author as a public comment, but comments arrive with S1-12 (group 6), and immutable events cannot hold redactable text. — **Answer (approved by the maintainer, 2026-11-08):** as S1-06 does for the rejection reason (S1-06 Q2, `tickets.rejection_reason`), a nullable `tickets.sharing_refusal_reason`. The refusal requires it, only the team sees it, and a new request clears it. S1-12 then publishes it as a public comment on every refusal, migrates the stored reasons of `rejected` tickets into comments and drops the column. While the column exists, S1-16 covers it in export, redaction and anonymization. Until S1-12, the author sees the refused state without the reason. Rejected alternative: S1-11 requires but does not store the reason (the text is lost).
 9. **Identities of other customers.** The plan lists §5.4 for S1-11, and S1-09 leaves the "Customer" display to it. §5.4 does not say whether "the requester's own organization" is the ticket's snapshot or current membership. — **Answer (approved by the maintainer, 2026-11-08):** the current memberships of both people, evaluated by `identityVisibleTo`; a requester who left the organization is shown as "Customer" to their former colleagues. It reveals the least, and S1-12 reuses the function for comment authors.
 10. **Watchers after a change of organization.** §7.3 removes the person from the watchers of tickets they no longer see; watchers arrive with S1-15. The S1-02 specification expected S1-11 to add the event of a membership change it needs. — **Answer (approved by the maintainer, 2026-11-08):** S1-11 writes no outbox event and touches no watchers: it evaluates visibility on every request and has no consumer of the event. S1-15 removes watchers without access when it sends (§6.7) and, if it needs it, adds the outbox event of a membership change to S1-02's use case. The maintainer adds this to the row of S1-15. Rejected alternative: S1-11 adds the event now – an event without a consumer until S1-15.
@@ -367,7 +367,7 @@ Implementation must not start until every question has an answer. The maintainer
     - The identity rule (Q9) is small and needed as soon as other people's tickets become visible.
 
     Rejected alternative: the maintainer splits the plan row, and the steps below become two PRs after step 3.
-19. **Where `my_organization` is offered.** The principal carries no organization (S1-04 Q2 withdrew preloaded membership data), and a rule on a project reaches the person's organization only through the organization's access to the project. A person with personal access whose organization has no access to the project cannot be described by a CASL rule on that project. — **Answer (approved by the maintainer, 2026-11-08):** `my_organization` is offered – at creation, when widening and when a request widens a ticket – only where the person's active organization has access to the project. Every condition stays a relation condition limited to the principal ([§18.3](../../docs/spec/18-code-patterns.md)), and the option is not offered where colleagues could rarely see the ticket. Rejected alternative: `organizationId` and `organizationState` on the principal – the option also works under personal access, but it changes the §18.3 pattern (an ADR and a migration of the existing rules, Rule 12).
+19. **Where `my_organization` is offered.** The principal carries no organization (S1-04 Q2 withdrew preloaded membership data), and a rule on a project reaches the person's organization only through the organization's access to the project. A person with personal access whose organization has no access to the project cannot be described by a CASL rule on that project. — **Answer (approved by the maintainer, 2026-11-08):** `my_organization` is offered – at creation, when widening and when a request widens a ticket – only where the person's active organization has access to the project. Every condition stays a relation condition limited to the principal ([§18.3](../../../docs/spec/18-code-patterns.md)), and the option is not offered where colleagues could rarely see the ticket. Rejected alternative: `organizationId` and `organizationState` on the principal – the option also works under personal access, but it changes the §18.3 pattern (an ADR and a migration of the existing rules, Rule 12).
 20. **The author's changes to a shared ticket.** §7.5 lets the requester edit the title and description of their own ticket (the API since S1-05, the portal with S1-12) and add attachments (S1-08). After an approval, such a change reaches every customer of the project without the check the team made before approving (§5.2). — **Answer (approved by the maintainer, 2026-11-08):** unchanged – the author keeps the rights of §7.5 on a shared ticket. Every edit is in the timeline (S1-05), and the team can narrow the ticket or redact it (S1-12) when an edit exposes data. Rejected alternative: once a ticket is shared, only the team edits it – safer, but it changes the §7.5 row "Edit own ticket title and description" and leaves the author unable to correct their own report.
 
 ## Implementation plan
@@ -428,3 +428,4 @@ One phase, one PR (Q18), on the implemented S1-04 to S1-09. The UI steps land in
   - the new proposal Q20 covers the author's edits of a shared ticket;
   - the import sets `only_me` itself.
 - 2026-11-08 – Approved: the maintainer accepted Q20 (the author keeps the rights of §7.5 on a shared ticket) and the other open answers as proposed; status `approved`.
+- 2026-11-09 – Implemented in #257.
