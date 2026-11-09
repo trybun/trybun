@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import type { TimelinePage } from '@trybun/contracts/comments';
 import type { TicketPage } from '@trybun/contracts/tickets';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -861,6 +862,43 @@ describe('lists equal details over the demo dataset (S1-11 Q13)', () => {
           .get(`/api/v1/tickets/${ticketId}`)
           .set('Authorization', authorization);
         expect(res.status, `${principal.email} ${ticketId}`).toBe(listed.has(ticketId) ? 200 : 404);
+      }
+    }
+  }, 120_000);
+
+  // S1-12: no end-user list of comments or timeline returns a comment whose detail is `404`, and
+  // every comment a detail returns is in the list of its ticket.
+  it('lists a comment for every principal exactly when its detail is 200, else 404', async () => {
+    const dataset = buildDemoDataset();
+    expect(dataset.comments.length).toBeGreaterThan(3);
+    const principals = await prisma.user.findMany({
+      where: { state: 'active', kind: 'end_user' },
+    });
+    const http = request(app.getHttpServer());
+    for (const principal of principals) {
+      const authorization = await authorizationOf(config, principal);
+      for (const ticketId of new Set(dataset.comments.map(({ ticketId }) => ticketId))) {
+        const list = await http
+          .get(`/api/v1/tickets/${ticketId}/timeline`)
+          .set('Authorization', authorization);
+        const listed = new Set(
+          list.status === 200
+            ? (list.body as TimelinePage).items.flatMap((item) =>
+                item.type === 'comment' ? [item.comment.id] : [],
+              )
+            : [],
+        );
+        for (const comment of dataset.comments.filter((row) => row.ticketId === ticketId)) {
+          const res = await http
+            .get(`/api/v1/comments/${comment.id ?? ''}`)
+            .set('Authorization', authorization);
+          expect(res.status, `${principal.email} ${comment.id ?? ''}`).toBe(
+            listed.has(comment.id ?? '') ? 200 : 404,
+          );
+          if (comment.kind === 'internal') {
+            expect(res.status).toBe(404);
+          }
+        }
       }
     }
   }, 120_000);
