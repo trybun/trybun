@@ -24,11 +24,24 @@ export const ASSIGN_TICKETS_SELF = 'assign_tickets_self';
 /** The contract's closed list (§18.3): an action added to it is restricted by default. */
 const ALL_ACTIONS = ticketActionSchema.options;
 
+/** The actions on the visibility of a ticket and its sharing request (§5.1–§5.3, S1-11). */
+const VISIBILITY_ACTIONS: readonly TicketAction[] = [
+  'set_visibility_only_me',
+  'set_visibility_my_organization',
+  'set_visibility_all_customers',
+  'approve_sharing',
+  'reject_sharing',
+];
+
 /**
- * The actions of the team (§7.5): every action except answering the resolution confirmation,
- * which belongs to the requester's end-user account and is not inherited by team roles (S1-04 Q3).
+ * The actions of the team (§7.5) without conditions of the ticket's state: every action except
+ * answering the resolution confirmation, which belongs to the requester's end-user account and is
+ * not inherited by team roles (S1-04 Q3), and except the visibility actions, whose rules depend on
+ * the ticket's visibility and request (`visibilityRules`).
  */
-const TEAM_ACTIONS = ALL_ACTIONS.filter((action) => action !== 'confirm_resolution');
+const TEAM_ACTIONS = ALL_ACTIONS.filter(
+  (action) => action !== 'confirm_resolution' && !VISIBILITY_ACTIONS.includes(action),
+);
 
 /** The actions an archived project still allows on its tickets: reading them (§7.3). */
 const ACTIONS_OF_ARCHIVED_PROJECTS: readonly TicketAction[] = ['read'];
@@ -136,13 +149,103 @@ export function ticketChangeConditions(principal: Principal): Prisma.TicketWhere
 }
 
 /**
+ * The visibility rules of the requester (§5.3, S1-11), each on their own ticket while they can read
+ * its project (`access`), and each excluding the current value – except that choosing `only_me` or
+ * `my_organization` withdraws a pending request:
+ * - `only_me` – a ticket not shared;
+ * - `my_organization` – a ticket not shared whose snapshot is the principal's active organization
+ *   with access to the project (Q4, Q19);
+ * - `all_customers` requests sharing – a ticket neither shared nor pending.
+ * A shared ticket is narrowed by the team only (§5.3).
+ */
+function requesterVisibilityRules(
+  can: Parameters<AbilityRules>[0]['can'],
+  principal: Principal,
+  access: Prisma.ProjectWhereInput,
+) {
+  const own = { requesterId: principal.userId, project: { is: access } };
+  const ownOrganizationTicket = {
+    visibility: 'my_organization' as const,
+    ...ownOrganization(principal),
+  };
+  can('set_visibility_only_me', TICKET, {
+    ...own,
+    OR: [ownOrganizationTicket, { sharingRequest: 'pending' }],
+  });
+  can('set_visibility_my_organization', TICKET, {
+    ...own,
+    ...ownOrganization(principal, 'active'),
+    project: {
+      is: {
+        AND: [
+          access,
+          {
+            organizations: {
+              some: {
+                organization: {
+                  is: { state: 'active', members: { some: { userId: principal.userId } } },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+    OR: [{ visibility: 'only_me' }, { sharingRequest: 'pending' }],
+  });
+  can('set_visibility_all_customers', TICKET, {
+    ...own,
+    sharingRequest: { not: 'pending' },
+    OR: [{ visibility: 'only_me' }, ownOrganizationTicket],
+  });
+}
+
+/**
+ * The visibility rules of the team on the tickets of end users it reads (`conditions`, §5.2, §5.3,
+ * S1-11): any change to another value, sharing only a `my_organization` ticket, deciding only a
+ * pending request. The state rules carry their codes (§18.3) – the request is decided first
+ * (`ticket.sharing_pending` wins, so it is defined last), an `only_me` ticket is shared only on
+ * its author's request; the service also checks the requester's organization for
+ * `my_organization` (`ticket.organization_changed`).
+ */
+function teamVisibilityRules(
+  { can, cannot }: Pick<Parameters<AbilityRules>[0], 'can' | 'cannot'>,
+  conditions: Prisma.TicketWhereInput,
+) {
+  const userTicket = { ...conditions, source: 'user' as const };
+  can('set_visibility_only_me', TICKET, { ...userTicket, visibility: { not: 'only_me' } });
+  can('set_visibility_my_organization', TICKET, {
+    ...userTicket,
+    organizationId: { not: null },
+    visibility: { not: 'my_organization' },
+  });
+  can('set_visibility_all_customers', TICKET, {
+    ...userTicket,
+    visibility: { not: 'all_customers' },
+  });
+  can(['approve_sharing', 'reject_sharing'], TICKET, userTicket);
+  cannot('set_visibility_all_customers', TICKET, { visibility: 'only_me' }).because(
+    'ticket.author_consent_required',
+  );
+  cannot(['approve_sharing', 'reject_sharing'], TICKET, {
+    sharingRequest: { not: 'pending' },
+  }).because('ticket.sharing_not_pending');
+  cannot(
+    ['set_visibility_only_me', 'set_visibility_my_organization', 'set_visibility_all_customers'],
+    TICKET,
+    { sharingRequest: 'pending' },
+  ).because('ticket.sharing_pending');
+}
+
+/**
  * The rules of tickets (§7.5): the team works on the tickets of their projects – a Developer
  * edits them, adds attachments and assigns only themselves, a Project manager assigns anyone
  * eligible; the Administrator does everything. An end user creates tickets in the projects they
  * can read and sees the tickets they requested, and edits them and adds attachments while they can
  * still read the project: after losing access, a requester keeps reading (§7.3). The team changes
  * the status; only the requester answers the resolution confirmation, and only while the ticket
- * waits for it (§4.3). The project actions `assign_tickets` and `assign_tickets_self` follow `assign`
+ * waits for it (§4.3). The visibility actions follow §5.3 (`requesterVisibilityRules`,
+ * `teamVisibilityRules`). The project actions `assign_tickets` and `assign_tickets_self` follow `assign`
  * and `assign_self`; an archived project allows neither (`archivedProjectsRestriction`).
  */
 export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
@@ -152,6 +255,9 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
     }
     for (const conditions of ticketChangeConditions(principal)) {
       can(['update', 'add_attachment'], TICKET, conditions);
+    }
+    for (const access of endUserProjectAccess(principal)) {
+      requesterVisibilityRules(can, principal, access);
     }
     for (const conditions of ticketReadConditions(principal)) {
       can('read', TICKET, conditions);
@@ -167,6 +273,7 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
   if (principal.isAdmin) {
     can([CREATE_TICKET, ASSIGN_TICKETS, ASSIGN_TICKETS_SELF], PROJECT);
     can([...TEAM_ACTIONS], TICKET);
+    teamVisibilityRules({ can, cannot }, {});
     return;
   }
   can([CREATE_TICKET, ASSIGN_TICKETS_SELF], PROJECT, memberFrom(principal, 'developer'));
@@ -179,6 +286,9 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal) => {
     );
   }
   can('assign', TICKET, { project: { is: memberFrom(principal, 'project_manager') } });
+  for (const conditions of ticketReadConditions(principal)) {
+    teamVisibilityRules({ can, cannot }, conditions);
+  }
 };
 
 /**

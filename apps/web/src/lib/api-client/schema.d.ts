@@ -2398,7 +2398,7 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                             /** @enum {string} */
                             publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                             /** @enum {string|null} */
@@ -2455,7 +2455,7 @@ export interface operations {
                             createdAt: string;
                             /** Format: date-time */
                             updatedAt: string;
-                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                            allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                             /** @enum {string} */
                             publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                             /** @enum {string|null} */
@@ -2530,7 +2530,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2587,7 +2587,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2646,7 +2646,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2703,7 +2703,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2777,7 +2777,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2834,7 +2834,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2909,7 +2909,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -2966,7 +2966,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3032,7 +3032,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3089,7 +3089,7 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment")[];
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing")[];
                         /** @enum {string} */
                         publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
                         /** @enum {string|null} */
@@ -3131,7 +3131,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted";
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted" | "visibility_changed" | "sharing_requested" | "sharing_request_withdrawn" | "sharing_approved" | "sharing_rejected";
                             data: {
                                 from: string | {
                                     /** Format: uuid */
@@ -3175,7 +3175,7 @@ export interface operations {
                             /** Format: uuid */
                             id: string;
                             /** @enum {string} */
-                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted";
+                            type: "title_changed" | "description_edited" | "type_changed" | "priority_changed" | "assignee_changed" | "status_changed" | "duplicate_original_changed" | "duplicate_link_removed" | "rejection_reason_changed" | "attachment_added" | "attachment_deleted" | "visibility_changed" | "sharing_requested" | "sharing_request_withdrawn" | "sharing_approved" | "sharing_rejected";
                             data: ({
                                 /** @enum {string} */
                                 from: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";

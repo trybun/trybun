@@ -6,6 +6,7 @@ import {
   ticketPrioritySchema,
   ticketStatusSchema,
   ticketTypeSchema,
+  ticketVisibilitySchema,
   ticketWaitingReasonSchema,
 } from '@trybun/contracts/tickets';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -65,6 +66,10 @@ function useEventText(event: ActivityEventResponse): string {
     const parsed = ticketPrioritySchema.safeParse(value);
     return parsed.success ? t(`priorities.${parsed.data}`) : String(value);
   };
+  const visibility = (value: unknown) => {
+    const parsed = ticketVisibilitySchema.safeParse(value);
+    return parsed.success ? t(`visibilities.${parsed.data}`) : String(value);
+  };
   const original = (value: unknown) => ticketSnapshotOf(value) ?? '';
   switch (event.type) {
     case 'title_changed':
@@ -115,6 +120,20 @@ function useEventText(event: ActivityEventResponse): string {
       return t('timeline.events.attachmentAdded', { person, file: name(data?.to) });
     case 'attachment_deleted':
       return t('timeline.events.attachmentDeleted', { person, file: name(data?.from) });
+    case 'visibility_changed':
+      return t('timeline.events.visibilityChanged', {
+        person,
+        from: visibility(data?.from),
+        to: visibility(data?.to),
+      });
+    case 'sharing_requested':
+      return t('timeline.events.sharingRequested', { person });
+    case 'sharing_request_withdrawn':
+      return t('timeline.events.sharingRequestWithdrawn', { person });
+    case 'sharing_approved':
+      return t('timeline.events.sharingApproved', { person });
+    case 'sharing_rejected':
+      return t('timeline.events.sharingRejected', { person });
   }
 
   /**

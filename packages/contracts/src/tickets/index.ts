@@ -149,8 +149,10 @@ export type ResolutionAnswer = z.infer<typeof resolutionAnswerSchema>;
  * The action codes of a ticket (§18.3), sent in its `allowedActions`: `update` changes the title
  * and the description, `update_fields` the type and the priority, `assign` sets any eligible
  * assignee, `assign_self` only the principal, `change_status` changes the status (team),
- * `confirm_resolution` answers the resolution confirmation (the requester, §7.5), and
- * `add_attachment` links files to the ticket (§3.2).
+ * `confirm_resolution` answers the resolution confirmation (the requester, §7.5),
+ * `add_attachment` links files to the ticket (§3.2), `set_visibility_<value>` changes the
+ * visibility to that value – for the requester, `set_visibility_all_customers` requests sharing –
+ * and `approve_sharing` / `reject_sharing` decide a pending sharing request (team, §5.2, S1-11).
  */
 export const ticketActionSchema = z.enum([
   'read',
@@ -161,6 +163,11 @@ export const ticketActionSchema = z.enum([
   'change_status',
   'confirm_resolution',
   'add_attachment',
+  'set_visibility_only_me',
+  'set_visibility_my_organization',
+  'set_visibility_all_customers',
+  'approve_sharing',
+  'reject_sharing',
 ]);
 export type TicketAction = z.infer<typeof ticketActionSchema>;
 
@@ -247,6 +254,27 @@ export type ChangeTicketStatusDto = z.infer<typeof changeTicketStatusSchema>;
 /** `POST /api/v1/tickets/{ticketId}/resolution-confirmation` (§4.3): the requester's answer. */
 export const confirmResolutionSchema = z.strictObject({ answer: resolutionAnswerSchema });
 export type ConfirmResolutionDto = z.infer<typeof confirmResolutionSchema>;
+
+/**
+ * `PUT /api/v1/tickets/{ticketId}/visibility` (§5.3): the target visibility. For the requester,
+ * `all_customers` requests sharing, and `only_me` or `my_organization` withdraws a pending request.
+ */
+export const setTicketVisibilitySchema = z.strictObject({ visibility: ticketVisibilitySchema });
+export type SetTicketVisibilityDto = z.infer<typeof setTicketVisibilitySchema>;
+
+/** The reason of a sharing refusal: GFM Markdown, trimmed, 1–2000 characters (§5.2). */
+export const TICKET_SHARING_REFUSAL_REASON_MAX_LENGTH = 2000;
+export const ticketSharingRefusalReasonSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(TICKET_SHARING_REFUSAL_REASON_MAX_LENGTH);
+
+/** `POST /api/v1/tickets/{ticketId}/sharing/reject` (§5.2): the required reason. */
+export const rejectTicketSharingSchema = z.strictObject({
+  reason: ticketSharingRefusalReasonSchema,
+});
+export type RejectTicketSharingDto = z.infer<typeof rejectTicketSharingSchema>;
 
 /** The original of a duplicate as a ticket shows it (§3.5). */
 export const ticketReferenceSchema = z.object({

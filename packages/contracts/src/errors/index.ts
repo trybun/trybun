@@ -38,6 +38,10 @@ export const errorCodeSchema = z.enum([
   'ticket.duplicate_of_self',
   'ticket.duplicate_other_project',
   'ticket.resolution_confirmation_not_pending',
+  'ticket.sharing_not_pending',
+  'ticket.sharing_pending',
+  'ticket.author_consent_required',
+  'ticket.organization_changed',
   'attachment.type_not_allowed',
   'attachment.already_linked',
   'attachment.draft_limit_reached',
@@ -122,6 +126,16 @@ export const ERROR_HTTP_STATUS: Record<ErrorCode, number> = {
   'ticket.duplicate_of_self': 422,
   'ticket.duplicate_other_project': 422,
   'ticket.resolution_confirmation_not_pending': 409,
+  // Approving or refusing a sharing request that is no longer pending, e.g. decided by a colleague
+  // first (§5.2).
+  'ticket.sharing_not_pending': 409,
+  // The team changes the visibility of a ticket whose sharing request it has not decided (§5.2).
+  'ticket.sharing_pending': 409,
+  // The team shares an `only_me` ticket, which needs its author's request (§5.2).
+  'ticket.author_consent_required': 409,
+  // `my_organization` for a requester who no longer belongs to the ticket's active organization
+  // with access to the project (S1-11 Q4, Q19).
+  'ticket.organization_changed': 409,
   // A file whose content does not match its extension, an extension outside the allowlist, or an
   // encrypted ZIP archive or PDF file (§13.3).
   'attachment.type_not_allowed': 422,

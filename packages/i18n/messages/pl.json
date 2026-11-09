@@ -351,6 +351,11 @@
       "high": "Wysoki",
       "critical": "Krytyczny"
     },
+    "visibilities": {
+      "only_me": "Tylko dla mnie",
+      "my_organization": "Moja organizacja",
+      "all_customers": "Wszyscy klienci"
+    },
     "templates": {
       "bug": "## Problem\n\n## Kroki do odtworzenia\n\n1.\n\n## Oczekiwany wynik\n\n## Faktyczny wynik\n\n## Środowisko",
       "feature": "## Cel\n\n## Proponowane rozwiązanie\n\n## Kryteria akceptacji\n\n- [ ]",
@@ -456,7 +461,12 @@
         "duplicateLinkRemoved": "{person} – usunięcie powiązania z oryginałem {original}",
         "rejectionReasonChanged": "{person} – zmiana powodu odrzucenia",
         "attachmentAdded": "{person} – dodanie pliku {file}",
-        "attachmentDeleted": "{person} – usunięcie pliku {file}"
+        "attachmentDeleted": "{person} – usunięcie pliku {file}",
+        "visibilityChanged": "{person} – zmiana widoczności: {from} → {to}",
+        "sharingRequested": "{person} – prośba o udostępnienie wszystkim klientom",
+        "sharingRequestWithdrawn": "{person} – wycofanie prośby o udostępnienie wszystkim klientom",
+        "sharingApproved": "{person} – udostępnienie wszystkim klientom",
+        "sharingRejected": "{person} – odmowa udostępnienia wszystkim klientom"
       }
     },
     "status": {
@@ -918,7 +928,11 @@
       "assignee_not_eligible": "Przypisać można tylko aktywnych członków zespołu projektu.",
       "duplicate_of_self": "Zgłoszenie nie może być duplikatem samego siebie.",
       "duplicate_other_project": "Oryginalne zgłoszenie musi należeć do tego samego projektu.",
-      "resolution_confirmation_not_pending": "To zgłoszenie nie czeka już na Twoje potwierdzenie."
+      "resolution_confirmation_not_pending": "To zgłoszenie nie czeka już na Twoje potwierdzenie.",
+      "sharing_not_pending": "Ta prośba o udostępnienie została już rozpatrzona.",
+      "sharing_pending": "Najpierw rozpatrz prośbę o udostępnienie tego zgłoszenia.",
+      "author_consent_required": "Tylko autor może poprosić o udostępnienie zgłoszenia widocznego tylko dla niego.",
+      "organization_changed": "Zgłaszający nie należy już do organizacji tego zgłoszenia."
     },
     "attachment": {
       "type_not_allowed": "Pliki tego typu są niedozwolone.",

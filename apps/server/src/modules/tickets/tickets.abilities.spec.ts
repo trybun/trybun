@@ -273,7 +273,17 @@ describe('ticket abilities', () => {
     expect(reasonCode(rule?.reason)).toBe('ticket.resolution_confirmation_not_pending');
   });
 
-  const TEAM_ACTIONS = ticketActionSchema.options.filter((a) => a !== 'confirm_resolution');
+  const VISIBILITY_ACTIONS: readonly TicketAction[] = [
+    'set_visibility_only_me',
+    'set_visibility_my_organization',
+    'set_visibility_all_customers',
+    'approve_sharing',
+    'reject_sharing',
+  ];
+  // On an `only_me` ticket without a request, the team has no visibility action (S1-11).
+  const TEAM_ACTIONS = ticketActionSchema.options.filter(
+    (a) => a !== 'confirm_resolution' && !VISIBILITY_ACTIONS.includes(a),
+  );
 
   // The actions of the ticket response for every principal (§18.3).
   it.each([
@@ -295,10 +305,20 @@ describe('ticket abilities', () => {
     ],
     ['developer', false, 'archived', ['read']],
     ['team_member', false, 'active', []],
-    ['end_user_personal', true, 'active', ['read', 'update', 'add_attachment']],
+    [
+      'end_user_personal',
+      true,
+      'active',
+      ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+    ],
     ['end_user_personal', true, 'archived', ['read']],
     ['end_user_personal', false, 'active', []],
-    ['end_user_organization', true, 'active', ['read', 'update', 'add_attachment']],
+    [
+      'end_user_organization',
+      true,
+      'active',
+      ['read', 'update', 'add_attachment', 'set_visibility_all_customers'],
+    ],
     ['end_user_archived_organization', true, 'active', ['read']],
     ['end_user', true, 'active', ['read']],
   ] as const)(
@@ -307,6 +327,228 @@ describe('ticket abilities', () => {
       expect(allowedActions(who, { own, state })).toEqual(actions);
     },
   );
+
+  // The visibility actions of S1-11 (§5.2, §5.3): the rows of the action table.
+  const MINE = { own: true, organization: 'mine' } as const;
+  it.each([
+    // The requester, while they can read the project.
+    [
+      'requester narrows',
+      'end_user_organization',
+      'set_visibility_only_me',
+      { ...MINE, visibility: 'my_organization' },
+      true,
+    ],
+    ['requester keeps only_me', 'end_user_organization', 'set_visibility_only_me', MINE, false],
+    [
+      'requester withdraws to only_me',
+      'end_user_organization',
+      'set_visibility_only_me',
+      { ...MINE, sharingRequest: 'pending' },
+      true,
+    ],
+    [
+      'requester narrows a shared ticket',
+      'end_user_organization',
+      'set_visibility_only_me',
+      { ...MINE, visibility: 'all_customers' },
+      false,
+    ],
+    [
+      'requester without project access',
+      'end_user',
+      'set_visibility_only_me',
+      { ...MINE, visibility: 'my_organization' },
+      false,
+    ],
+    ['requester widens', 'end_user_organization', 'set_visibility_my_organization', MINE, true],
+    [
+      'requester withdraws to my_organization',
+      'end_user_organization',
+      'set_visibility_my_organization',
+      { ...MINE, visibility: 'my_organization', sharingRequest: 'pending' },
+      true,
+    ],
+    [
+      'requester keeps my_organization',
+      'end_user_organization',
+      'set_visibility_my_organization',
+      { ...MINE, visibility: 'my_organization' },
+      false,
+    ],
+    // Q4: never to an organization the requester left.
+    [
+      'requester widens to a left organization',
+      'end_user_organization',
+      'set_visibility_my_organization',
+      { own: true, organization: 'other' },
+      false,
+    ],
+    [
+      'requester widens without an organization',
+      'end_user_organization',
+      'set_visibility_my_organization',
+      { own: true },
+      false,
+    ],
+    [
+      'requester widens in an archived organization',
+      'end_user_archived_organization',
+      'set_visibility_my_organization',
+      { ...MINE, organizationState: 'archived' },
+      false,
+    ],
+    // Q19: only where the organization has access to the project.
+    [
+      'requester widens under personal access only',
+      'end_user_personal',
+      'set_visibility_my_organization',
+      MINE,
+      false,
+    ],
+    [
+      'requester widens a shared ticket',
+      'end_user_organization',
+      'set_visibility_my_organization',
+      { ...MINE, visibility: 'all_customers' },
+      false,
+    ],
+    [
+      'requester requests sharing',
+      'end_user_organization',
+      'set_visibility_all_customers',
+      MINE,
+      true,
+    ],
+    [
+      'requester requests sharing of my_organization',
+      'end_user_organization',
+      'set_visibility_all_customers',
+      { ...MINE, visibility: 'my_organization' },
+      true,
+    ],
+    [
+      'requester requests again after a refusal',
+      'end_user_organization',
+      'set_visibility_all_customers',
+      { ...MINE, sharingRequest: 'rejected' },
+      true,
+    ],
+    [
+      'requester requests twice',
+      'end_user_organization',
+      'set_visibility_all_customers',
+      { ...MINE, sharingRequest: 'pending' },
+      false,
+    ],
+    [
+      'requester of a shared ticket',
+      'end_user_organization',
+      'set_visibility_all_customers',
+      { ...MINE, visibility: 'all_customers' },
+      false,
+    ],
+    [
+      'colleague of a my_organization ticket',
+      'end_user_organization',
+      'set_visibility_all_customers',
+      { organization: 'mine', visibility: 'my_organization' },
+      false,
+    ],
+    [
+      'end user decides a request',
+      'end_user_organization',
+      'approve_sharing',
+      { ...MINE, sharingRequest: 'pending' },
+      false,
+    ],
+    // The team.
+    [
+      'Developer narrows a shared ticket',
+      'developer',
+      'set_visibility_only_me',
+      { visibility: 'all_customers' },
+      true,
+    ],
+    ['Developer keeps only_me', 'developer', 'set_visibility_only_me', {}, false],
+    [
+      'Developer sets my_organization',
+      'developer',
+      'set_visibility_my_organization',
+      { organization: 'other' },
+      true,
+    ],
+    [
+      'Developer sets my_organization without a snapshot',
+      'developer',
+      'set_visibility_my_organization',
+      {},
+      false,
+    ],
+    [
+      'Developer shares a my_organization ticket',
+      'developer',
+      'set_visibility_all_customers',
+      { organization: 'other', visibility: 'my_organization' },
+      true,
+    ],
+    ['Developer shares an only_me ticket', 'developer', 'set_visibility_all_customers', {}, false],
+    [
+      'Developer changes a pending ticket',
+      'developer',
+      'set_visibility_only_me',
+      { visibility: 'my_organization', organization: 'other', sharingRequest: 'pending' },
+      false,
+    ],
+    [
+      'Developer changes a team ticket',
+      'developer',
+      'set_visibility_all_customers',
+      { source: 'developer', organization: 'other', visibility: 'my_organization' },
+      false,
+    ],
+    ['Developer approves', 'developer', 'approve_sharing', { sharingRequest: 'pending' }, true],
+    ['Developer refuses', 'developer', 'reject_sharing', { sharingRequest: 'pending' }, true],
+    ['Developer approves without a request', 'developer', 'approve_sharing', {}, false],
+    [
+      'Project manager approves',
+      'project_manager',
+      'approve_sharing',
+      { sharingRequest: 'pending' },
+      true,
+    ],
+    ['Administrator approves', 'admin', 'approve_sharing', { sharingRequest: 'pending' }, true],
+    ['Administrator shares an only_me ticket', 'admin', 'set_visibility_all_customers', {}, false],
+    [
+      'team member outside the project approves',
+      'team_member',
+      'approve_sharing',
+      { sharingRequest: 'pending' },
+      false,
+    ],
+  ] as const)('%s (%s, %s, %o): %s', (_case, who, action, options, isAllowed) => {
+    expect(can(who, action, options)).toBe(isAllowed);
+  });
+
+  it.each([
+    ['approve_sharing', {}, 'ticket.sharing_not_pending'],
+    ['reject_sharing', { sharingRequest: 'rejected' }, 'ticket.sharing_not_pending'],
+    ['set_visibility_all_customers', {}, 'ticket.author_consent_required'],
+    [
+      'set_visibility_only_me',
+      { visibility: 'all_customers' as const, sharingRequest: 'pending' },
+      'ticket.sharing_pending',
+    ],
+    // When two state rules apply, the request is decided first.
+    ['set_visibility_all_customers', { sharingRequest: 'pending' }, 'ticket.sharing_pending'],
+  ] as const)('answers the team %s on %o with %s', (action, options, code) => {
+    const ability = abilities.forPrincipal(buildPrincipal('developer'));
+
+    const rule = ability.relevantRuleFor(action, buildTicketRecord('developer', options));
+
+    expect(ability.can(action, buildTicketRecord('developer', options))).toBe(false);
+    expect(reasonCode(rule?.reason)).toBe(code);
+  });
 
   it.each(['active', 'archived'] as const)(
     'holds the hierarchy on an %s project: Developer ⊆ Project manager ⊆ Administrator (§7.2)',

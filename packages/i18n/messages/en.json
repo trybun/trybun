@@ -351,6 +351,11 @@
       "high": "High",
       "critical": "Critical"
     },
+    "visibilities": {
+      "only_me": "Only me",
+      "my_organization": "My organization",
+      "all_customers": "All customers"
+    },
     "templates": {
       "bug": "## Problem\n\n## Steps to reproduce\n\n1.\n\n## Expected result\n\n## Actual result\n\n## Environment",
       "feature": "## Goal\n\n## Proposed solution\n\n## Acceptance criteria\n\n- [ ]",
@@ -456,7 +461,12 @@
         "duplicateLinkRemoved": "{person} removed the link to the original {original}",
         "rejectionReasonChanged": "{person} changed the rejection reason",
         "attachmentAdded": "{person} added the file {file}",
-        "attachmentDeleted": "{person} deleted the file {file}"
+        "attachmentDeleted": "{person} deleted the file {file}",
+        "visibilityChanged": "{person} changed the visibility: {from} → {to}",
+        "sharingRequested": "{person} asked to share the ticket with all customers",
+        "sharingRequestWithdrawn": "{person} withdrew the request to share the ticket with all customers",
+        "sharingApproved": "{person} shared the ticket with all customers",
+        "sharingRejected": "{person} did not share the ticket with all customers"
       }
     },
     "status": {
@@ -918,7 +928,11 @@
       "assignee_not_eligible": "Only active team members of the project can be assigned.",
       "duplicate_of_self": "A ticket cannot be a duplicate of itself.",
       "duplicate_other_project": "The original ticket must be in the same project.",
-      "resolution_confirmation_not_pending": "This ticket no longer waits for your confirmation."
+      "resolution_confirmation_not_pending": "This ticket no longer waits for your confirmation.",
+      "sharing_not_pending": "This sharing request has already been decided.",
+      "sharing_pending": "Decide the sharing request of this ticket first.",
+      "author_consent_required": "Only its author can ask to share a ticket visible to them only.",
+      "organization_changed": "The requester no longer belongs to the organization of this ticket."
     },
     "attachment": {
       "type_not_allowed": "Files of this type are not allowed.",

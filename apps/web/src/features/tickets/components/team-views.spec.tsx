@@ -375,7 +375,7 @@ describe('ActivityEventItem', () => {
     return screen.getByRole('listitem').firstElementChild?.textContent;
   }
 
-  // One catalogue text per event type of S1-05, S1-06 and S1-08 (§4.5).
+  // One catalogue text per event type of S1-05, S1-06, S1-08 and S1-11 (§4.5).
   it.each<[string, Partial<ActivityEvent>, string]>([
     [
       'title_changed',
@@ -481,6 +481,31 @@ describe('ActivityEventItem', () => {
       'attachment_deleted',
       { type: 'attachment_deleted', data: { from: FILE, to: null } },
       'Anna deleted the file log.txt',
+    ],
+    [
+      'visibility_changed',
+      { type: 'visibility_changed', data: { from: 'all_customers', to: 'only_me' } },
+      'Anna changed the visibility: All customers → Only me',
+    ],
+    [
+      'sharing_requested',
+      { type: 'sharing_requested', data: { from: 'only_me', to: 'my_organization' } },
+      'Anna asked to share the ticket with all customers',
+    ],
+    [
+      'sharing_request_withdrawn',
+      { type: 'sharing_request_withdrawn', data: { from: 'my_organization', to: 'only_me' } },
+      'Anna withdrew the request to share the ticket with all customers',
+    ],
+    [
+      'sharing_approved',
+      { type: 'sharing_approved', data: { from: 'my_organization', to: 'all_customers' } },
+      'Anna shared the ticket with all customers',
+    ],
+    [
+      'sharing_rejected',
+      { type: 'sharing_rejected' },
+      'Anna did not share the ticket with all customers',
     ],
     [
       'an anonymized actor and assignee',

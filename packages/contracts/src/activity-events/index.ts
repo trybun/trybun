@@ -5,8 +5,9 @@ import { ticketPublicStatusSchema } from '../tickets/index.js';
 /**
  * `activity_event.type` (§4.5): one event per changed field of a ticket, the events of its
  * status (S1-06) – a status change, the re-pointing and the removal of a duplicate's link, and a
- * new rejection reason (without its text) – and a file added to or deleted from an existing ticket
- * (S1-08). Later tasks add theirs.
+ * new rejection reason (without its text) – a file added to or deleted from an existing ticket
+ * (S1-08), and the visibility changes and sharing decisions (S1-11): only `sharing_approved` is
+ * public, and no event holds the refusal reason. Later tasks add theirs.
  */
 export const activityEventTypeSchema = z.enum([
   'title_changed',
@@ -20,6 +21,11 @@ export const activityEventTypeSchema = z.enum([
   'rejection_reason_changed',
   'attachment_added',
   'attachment_deleted',
+  'visibility_changed',
+  'sharing_requested',
+  'sharing_request_withdrawn',
+  'sharing_approved',
+  'sharing_rejected',
 ]);
 export type ActivityEventType = z.infer<typeof activityEventTypeSchema>;
 
