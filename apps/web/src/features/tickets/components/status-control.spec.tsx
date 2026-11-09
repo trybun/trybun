@@ -48,6 +48,10 @@ function answer(ticket: Ticket) {
     const items = identifier === 'ERP-12' ? [ticket] : identifier === 'ERP-7' ? [ORIGINAL] : [];
     return { data: { items, nextCursor: null } };
   });
+  fake.on('GET /api/v1/tickets/{ticketId}', (init) => {
+    const { ticketId } = (init as { params: { path: { ticketId: string } } }).params.path;
+    return { data: ticketId === ORIGINAL.id ? ORIGINAL : ticket };
+  });
   fake.on('GET /api/v1/users/me', {
     data: {
       id: '0199a3f0-0000-7000-8000-000000000031',

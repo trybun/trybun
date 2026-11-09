@@ -33,7 +33,8 @@ export function myTicketsQueryOptions(
 
 /**
  * A ticket by its identifier such as `ERP-12` (§3.2, S1-05 Q12): the identifier lookup returns at
- * most the one ticket; an invisible ticket is answered like a missing one, with `404` (§5.3).
+ * most the one ticket; an invisible ticket is answered like a missing one, with `404` (§5.3). A
+ * list item has no description (S1-13 Q10), so the detail is read by the ID the lookup found.
  */
 export function ticketQueryOptions(client: ApiClient, identifier: string) {
   return queryOptions({
@@ -42,11 +43,16 @@ export function ticketQueryOptions(client: ApiClient, identifier: string) {
       const page = await dataOf(
         client.GET('/api/v1/tickets', { params: { query: { identifier } }, signal }),
       );
-      const [ticket] = page.items;
-      if (ticket === undefined) {
+      const [item] = page.items;
+      if (item === undefined) {
         throw new ApiError(404, 'request.not_found');
       }
-      return ticket;
+      return dataOf(
+        client.GET('/api/v1/tickets/{ticketId}', {
+          params: { path: { ticketId: item.id } },
+          signal,
+        }),
+      );
     },
     retry: (failureCount, error) =>
       !(error instanceof ApiError && error.status < 500) && failureCount < 3,

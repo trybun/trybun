@@ -39,6 +39,7 @@ const CONFLICT = 'This item was changed by someone else – reload to see the la
 /** Answers the reads of the view with `ticket`. */
 function answer(ticket: Ticket) {
   fake.on('GET /api/v1/tickets', { data: { items: [ticket], nextCursor: null } });
+  fake.on('GET /api/v1/tickets/{ticketId}', { data: ticket });
   fake.on('GET /api/v1/users/me', {
     data: {
       id: '0199a3f0-0000-7000-8000-000000000031',

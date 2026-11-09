@@ -116,6 +116,7 @@ describe('MyTicketsList', () => {
 describe('TicketView', () => {
   function answerTicket(value: EndUserTicket) {
     fake.on('GET /api/v1/tickets', { data: { items: [value], nextCursor: null } });
+    fake.on('GET /api/v1/tickets/{ticketId}', { data: value });
     fake.on('GET /api/v1/projects/{projectId}', {
       data: { ...PROJECT, state: 'active', allowedActions: ['read', 'create_ticket'] },
     });
@@ -385,20 +386,16 @@ describe('TicketView', () => {
 describe('ResolutionConfirmation', () => {
   it('changes nothing until the answer is pressed (§4.3)', async () => {
     const events = userEvent.setup();
-    fake.on('GET /api/v1/tickets', {
-      data: {
-        items: [
-          ticket({
-            publicStatus: 'awaiting_reply',
-            allowedActions: ['read', 'confirm_resolution'],
-          }),
-        ],
-        nextCursor: null,
-      },
+    const waiting = ticket({
+      publicStatus: 'awaiting_reply',
+      allowedActions: ['read', 'confirm_resolution'],
     });
+    fake.on('GET /api/v1/tickets', { data: { items: [waiting], nextCursor: null } });
+    fake.on('GET /api/v1/tickets/{ticketId}', { data: waiting });
     fake.on('POST /api/v1/tickets/{ticketId}/resolution-confirmation', () => {
       // After the answer the ticket no longer waits for it.
       fake.on('GET /api/v1/tickets', { data: { items: [ticket()], nextCursor: null } });
+      fake.on('GET /api/v1/tickets/{ticketId}', { data: ticket() });
       return { data: ticket() };
     });
     renderInApp(<ResolutionConfirmation identifier="CP-7" answer="not_solved" />);
@@ -421,6 +418,7 @@ describe('ResolutionConfirmation', () => {
 
   it('says when the ticket no longer waits for the answer', async () => {
     fake.on('GET /api/v1/tickets', { data: { items: [ticket()], nextCursor: null } });
+    fake.on('GET /api/v1/tickets/{ticketId}', { data: ticket() });
     renderInApp(<ResolutionConfirmation identifier="CP-7" answer="solved" />);
 
     expect(

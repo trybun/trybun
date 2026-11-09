@@ -868,6 +868,7 @@ export interface operations {
                         language: "en" | "pl" | null;
                         timeZone: string | null;
                         hideTimelineEvents: boolean;
+                        organizationsExist: boolean;
                         allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };
@@ -908,6 +909,7 @@ export interface operations {
                         language: "en" | "pl" | null;
                         timeZone: string | null;
                         hideTimelineEvents: boolean;
+                        organizationsExist: boolean;
                         allowedActions: ("open_administration" | "create_project" | "create_organization")[];
                     };
                 };
@@ -1656,7 +1658,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: {
+                        items: ({
                             /** Format: uuid */
                             id: string;
                             name: string;
@@ -1670,7 +1672,11 @@ export interface operations {
                             /** Format: date-time */
                             updatedAt: string;
                             allowedActions: ("read" | "update" | "archive" | "unarchive" | "delete" | "manage_projects" | "manage_members")[];
-                        }[];
+                        } | {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        })[];
                         nextCursor: string | null;
                     };
                 };
@@ -2533,9 +2539,18 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: number;
-                projectId?: string;
+                projectId?: string | string[];
+                organizationId?: (string | "none") | (string | "none")[];
+                type?: (("bug" | "feature" | "task" | "question") | "none") | (("bug" | "feature" | "task" | "question") | "none")[];
+                status?: ("new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate") | ("new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate")[];
+                priority?: ("low" | "normal" | "high" | "critical") | ("low" | "normal" | "high" | "critical")[];
+                assigneeId?: (string | "me" | "none") | (string | "me" | "none")[];
+                source?: ("user" | "developer" | "integration") | ("user" | "developer" | "integration")[];
+                sharingRequest?: ("pending" | "rejected") | ("pending" | "rejected")[];
                 identifier?: string;
                 involvement?: "mine";
+                sort?: "priority" | "status" | "identifier" | "createdAt" | "updatedAt";
+                order?: "asc" | "desc";
             };
             header?: never;
             path?: never;
@@ -2563,7 +2578,6 @@ export interface operations {
                             number: number;
                             identifier: string;
                             title: string;
-                            description: string;
                             version: number;
                             /** Format: date-time */
                             createdAt: string;
@@ -2625,7 +2639,6 @@ export interface operations {
                             number: number;
                             identifier: string;
                             title: string;
-                            description: string;
                             version: number;
                             /** Format: date-time */
                             createdAt: string;
