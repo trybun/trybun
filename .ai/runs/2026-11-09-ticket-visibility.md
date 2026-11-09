@@ -25,6 +25,8 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 
 ## Progress
 
+PR: #257
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Data model
