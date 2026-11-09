@@ -62,3 +62,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 ### Phase 7: Specification
 
 - [x] 7.1 Apply the specification changes and move the spec to implemented — 5e29561
+
+### Phase 8: Review
+
+- [x] 8.1 Apply the code review findings — 2190bff, 9513f65, 1a391da, 0a7804b, 1e38de6
