@@ -20,10 +20,12 @@ import {
   CREATE_TICKET_MY_ORGANIZATION,
   ticketsAbilities,
 } from './tickets.abilities.js';
+import { FixedClock } from '../../../test/fixed-clock.js';
 
 const abilities = new AbilityFactory(
   [projectsAbilities, ticketsAbilities],
   [archivedProjectsRestriction, archivedProjectsOfTicketsRestriction],
+  new FixedClock(),
 );
 
 type State = 'active' | 'archived';

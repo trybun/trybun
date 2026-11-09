@@ -373,7 +373,12 @@ export class TicketsService {
         },
         select: ticketSelect(principal),
       });
-      await this.attachmentLinks.linkDrafts(tx, principal, { ticketId: row.id }, input.attachmentIds ?? []);
+      await this.attachmentLinks.linkDrafts(
+        tx,
+        principal,
+        { ticketId: row.id },
+        input.attachmentIds ?? [],
+      );
       return toTicketResponse(row, ability, principal);
     });
   }

@@ -20,10 +20,12 @@ import {
   attachmentsAbilities,
   CREATE,
 } from './attachments.abilities.js';
+import { FixedClock } from '../../../test/fixed-clock.js';
 
 const abilities = new AbilityFactory(
   [ticketsAbilities, attachmentsAbilities],
   [archivedProjectsOfTicketsRestriction, archivedProjectsOfAttachmentsRestriction],
+  new FixedClock(),
 );
 
 type RecordOptions = Parameters<typeof buildAttachmentRecord>[1];

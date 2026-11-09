@@ -3,6 +3,7 @@ import { createPrismaAbility, type PrismaQueryOf, type Subjects } from '@casl/pr
 import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { Principal } from '../authentication/principal.js';
+import { Clock } from '../clock/clock.js';
 
 /**
  * The subjects of the abilities (§18.3): the Prisma model names – with their records, whose rule
@@ -88,8 +89,16 @@ export type PrismaQuery = PrismaQueryOf<Prisma.TypeMap>;
  */
 export type AppAbility = Ability<[string, AppSubject], PrismaQuery>;
 
-/** The rules a feature module defines in its `<feature>.abilities.ts` (§18.3). */
-export type AbilityRules = (builder: AbilityBuilder<AppAbility>, principal: Principal) => void;
+/**
+ * The rules a feature module defines in its `<feature>.abilities.ts` (§18.3), given the current
+ * time for the rules that depend on it, e.g. comments on a ticket closed for 14 days (§4.3,
+ * ADR 0013). Rules that do not depend on it ignore the parameter.
+ */
+export type AbilityRules = (
+  builder: AbilityBuilder<AppAbility>,
+  principal: Principal,
+  now: Date,
+) => void;
 
 export const ABILITY_RULES = Symbol('AbilityRules');
 export const ABILITY_RESTRICTIONS = Symbol('AbilityRestrictions');
@@ -104,19 +113,22 @@ export interface AbilityDefinitions {
 /**
  * Builds the ability of a principal from the rules of all feature modules, passed to
  * `AuthorizationModule.forRoot()` by the root module, followed by the global restrictions (§18.3),
- * so they override every other rule.
+ * so they override every other rule. The current time comes from the injected clock, read once per
+ * ability, so every rule of one ability sees the same time (ADR 0013).
  */
 @Injectable()
 export class AbilityFactory {
   constructor(
     @Inject(ABILITY_RULES) private readonly rules: readonly AbilityRules[],
-    @Inject(ABILITY_RESTRICTIONS) private readonly restrictions: readonly AbilityRules[] = [],
+    @Inject(ABILITY_RESTRICTIONS) private readonly restrictions: readonly AbilityRules[],
+    private readonly clock: Clock,
   ) {}
 
   forPrincipal(principal: Principal): AppAbility {
     const builder = new AbilityBuilder<AppAbility>(createPrismaAbility);
+    const now = this.clock.now();
     for (const define of [...this.rules, ...this.restrictions]) {
-      define(builder, principal);
+      define(builder, principal, now);
     }
     return builder.build();
   }

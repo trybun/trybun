@@ -31,6 +31,7 @@ import type { RecordSubject } from './platform/authorization/record-descriptor.j
 import { PrismaService } from './platform/database/prisma.service.js';
 import { API_PREFIX } from './platform/http/api-prefix.js';
 import { strictEndUserProjectSchema, strictPageSchema } from '../test/end-user-schemas.js';
+import { SystemClock } from './platform/clock/clock.js';
 
 /** The project actions of the Administrator: all but the end users' visibility of a new ticket. */
 const TEAM_PROJECT_ACTIONS = projectActionSchema.options.filter(
@@ -42,7 +43,11 @@ describe('permission layer', () => {
   const config = integrationConfig();
   let app: INestApplication<Server>;
   let prisma: PrismaService;
-  const abilities = new AbilityFactory(ABILITY_DEFINITIONS.rules, ABILITY_DEFINITIONS.restrictions);
+  const abilities = new AbilityFactory(
+    ABILITY_DEFINITIONS.rules,
+    ABILITY_DEFINITIONS.restrictions,
+    new SystemClock(),
+  );
 
   /** The records of this test: an active project A, a project B and an archived project. */
   const records = {} as {

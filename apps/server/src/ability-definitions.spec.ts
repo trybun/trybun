@@ -5,6 +5,7 @@ import { buildPrincipal, PRINCIPAL_FIXTURES } from '../test/factories/principal.
 import { ABILITY_DEFINITIONS } from './ability-definitions.js';
 import type { Transaction } from './platform/database/prisma.service.js';
 import { AbilityFactory } from './platform/authorization/ability-factory.js';
+import { FixedClock } from '../test/fixed-clock.js';
 
 /** The Prisma operators of a condition: they are no fields of the record. */
 const LOGICAL = new Set(['AND', 'OR', 'NOT']);
@@ -59,7 +60,11 @@ async function selectOf(
   return select;
 }
 
-const abilities = new AbilityFactory(ABILITY_DEFINITIONS.rules, ABILITY_DEFINITIONS.restrictions);
+const abilities = new AbilityFactory(
+  ABILITY_DEFINITIONS.rules,
+  ABILITY_DEFINITIONS.restrictions,
+  new FixedClock(),
+);
 
 describe('record descriptors', () => {
   it.each(PRINCIPAL_FIXTURES)(

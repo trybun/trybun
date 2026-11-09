@@ -16,8 +16,13 @@ import {
   PROJECT,
   projectsAbilities,
 } from './projects.abilities.js';
+import { FixedClock } from '../../../test/fixed-clock.js';
 
-const abilities = new AbilityFactory([projectsAbilities], [archivedProjectsRestriction]);
+const abilities = new AbilityFactory(
+  [projectsAbilities],
+  [archivedProjectsRestriction],
+  new FixedClock(),
+);
 
 type State = 'active' | 'archived';
 
