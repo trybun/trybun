@@ -326,4 +326,42 @@ describe('mentions', () => {
       errors: [{ pointer: '/rejectionReason', code: 'field.invalid' }],
     });
   });
+
+  it('masks a hidden person in the description history (§5.4)', async () => {
+    const { organizationB, requester, colleague, ticket } = await setUp('all_customers');
+    await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { description: `Ask ${token(colleague)}` },
+    });
+    await http()
+      .patch(`/api/v1/tickets/${ticket.id}`)
+      .set('Authorization', await as(requester))
+      .set('If-Match', 'W/"1"')
+      .send({ description: 'Updated' });
+    await prisma.organizationMember.update({
+      where: { userId: colleague.id },
+      data: { organizationId: organizationB.id },
+    });
+
+    const history = await http()
+      .get(`/api/v1/tickets/${ticket.id}/description-revisions`)
+      .set('Authorization', await as(requester));
+
+    expect(history.body).toMatchObject({ items: [{ body: 'Ask @{customer}' }] });
+    expect(JSON.stringify(history.body)).not.toContain(colleague.id);
+  });
+
+  it('points a refused mention of a sharing refusal at its field', async () => {
+    const { assignee, stranger, ticket } = await setUp();
+    await prisma.ticket.update({ where: { id: ticket.id }, data: { sharingRequest: 'pending' } });
+
+    const res = await http()
+      .post(`/api/v1/tickets/${ticket.id}/sharing/reject`)
+      .set('Authorization', await as(assignee))
+      .set('If-Match', `W/"${ticket.version}"`)
+      .send({ reason: `Ask ${token(stranger)}` });
+
+    expect(res.status).toBe(422);
+    expect(res.body).toMatchObject({ errors: [{ pointer: '/reason', code: 'field.invalid' }] });
+  });
 });

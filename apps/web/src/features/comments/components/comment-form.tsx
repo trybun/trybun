@@ -67,7 +67,8 @@ export function CommentForm({
   if (!ticket.allowedActions.includes('add_comment')) {
     // Nobody comments in an archived project, which the view's banner says already; no new
     // ticket can be created there either.
-    return isTeam || project.data?.state === 'archived' ? null : (
+    // Only in an active project the requester reads: otherwise no new ticket can be created there.
+    return isTeam || project.data?.state !== 'active' ? null : (
       <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
         <p className="text-sm text-muted-foreground">{t('closed')}</p>
         <Button
