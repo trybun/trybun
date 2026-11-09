@@ -32,14 +32,14 @@ Everything the spec lists under Non-goals: label, milestone and SLA filters and 
 
 ### Phase 1: List API
 
-- [ ] 1.1 Add the list, bulk-change and organization-name contracts
-- [ ] 1.2 Add filters and sorting to the ticket list for the team
-- [ ] 1.3 Read the ticket detail by ID after the identifier lookup
-- [ ] 1.4 Add the list indexes migration
+- [x] 1.1 Add the list, bulk-change and organization-name contracts — 79c8f34
+- [x] 1.2 Add filters and sorting to the ticket list for the team — bd72776
+- [x] 1.3 Read the ticket detail by ID after the identifier lookup — 4bb3095
+- [x] 1.4 Add the list indexes migration — 0cc4e5d
 
 ### Phase 2: Organizations for the filter
 
-- [ ] 2.1 Let team members read the names of their organizations and add organizationsExist
+- [x] 2.1 Let team members read the names of their organizations and add organizationsExist — 18b0c1a
 
 ### Phase 3: Bulk changes
 
@@ -47,7 +47,7 @@ Everything the spec lists under Non-goals: label, milestone and SLA filters and 
 
 ### Phase 4: Web
 
-- [ ] 4.1 Add the Table component to @trybun/ui
+- [x] 4.1 Add the Table component to @trybun/ui — 98b6b98
 - [ ] 4.2 Add the ticket list page with the table and the cards
 - [ ] 4.3 Add the filters, the sort and the predefined views
 - [ ] 4.4 Add sharing approval actions to Pending sharing approvals
