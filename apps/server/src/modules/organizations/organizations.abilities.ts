@@ -3,6 +3,7 @@ import { type OrganizationAction, organizationActionSchema } from '@trybun/contr
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { AbilityRules } from '../../platform/authorization/ability-factory.js';
 import { teamRolesFrom } from '../../platform/authorization/project-roles.js';
+import type { Principal } from '../../platform/authentication/principal.js';
 import type { RecordDescriptor } from '../../platform/authorization/record-descriptor.js';
 
 /** The subject of the organizations (§18.3). */
@@ -75,17 +76,35 @@ export const archivedOrganizationsRestriction: AbilityRules = ({ cannot }) => {
   ).because('organization.archived');
 };
 
-/** The fields of an organization its rules read (§18.3). */
-export const ORGANIZATION_RULE_SELECT = {
-  id: true,
-  state: true,
-} satisfies Prisma.OrganizationSelect;
+/**
+ * The fields of an organization its rules read (§18.3): its state, and the principal's own team
+ * memberships of the projects it may access (S1-13 Q6).
+ */
+export function organizationRuleSelect(principal: Principal) {
+  return {
+    id: true,
+    state: true,
+    projects: {
+      where: { project: { members: { some: { userId: principal.userId } } } },
+      select: {
+        project: {
+          select: {
+            members: { where: { userId: principal.userId }, select: { userId: true, role: true } },
+          },
+        },
+      },
+    },
+  } satisfies Prisma.OrganizationSelect;
+}
 
 /** How the record access loads an organization (§18.3). */
 export const organizationRecords: RecordDescriptor<'Organization'> = {
   subject: ORGANIZATION,
-  async find(db, where) {
-    const row = await db.organization.findFirst({ where, select: ORGANIZATION_RULE_SELECT });
+  async find(db, where, principal) {
+    const row = await db.organization.findFirst({
+      where,
+      select: organizationRuleSelect(principal),
+    });
     return row === null ? null : subject(ORGANIZATION, row);
   },
 };
