@@ -235,6 +235,7 @@ test.describe('assignment in the team ticket view', () => {
           : expect(ticket.assigneePicker).toHaveValue('Dorota Developer'));
         const toast = ticket.toast('Assigned to Dorota Developer');
         await expect(toast).toBeVisible();
+        await ticket.waitUntilIdle();
         expect(await seriousViolations(page)).toEqual([]);
         await expectTouchTarget(ticket.assigneePicker, minimumTargetSize(testInfo));
 
