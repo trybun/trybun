@@ -39,9 +39,9 @@ Everything the spec lists under Non-goals: notifications, watchers and live upda
 
 ### Phase 2: Writing
 
-- [ ] 2.1 Add comments with the audience and attachments
+- [x] 2.1 Add comments with the audience and attachments — c356550
 - [ ] 2.2 Add mentions with their scope and suggestions
-- [ ] 2.3 Edit comments and descriptions with content revisions
+- [x] 2.3 Edit comments and descriptions with content revisions — 2dbf624
 - [ ] 2.4 Delete comments
 - [ ] 2.5 Redact comments and descriptions
 
