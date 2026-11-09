@@ -23,12 +23,12 @@ const REJECTED: VisibilityFields = {
 
 const requester = (
   target: VisibilityRequest['target'],
-  mayChooseOrganization = true,
-): VisibilityRequest => ({ target, byRequester: true, mayChooseOrganization });
+  canChooseOrganization = true,
+): VisibilityRequest => ({ target, isByRequester: true, canChooseOrganization });
 const team = (target: VisibilityRequest['target']): VisibilityRequest => ({
   target,
-  byRequester: false,
-  mayChooseOrganization: false,
+  isByRequester: false,
+  canChooseOrganization: false,
 });
 
 describe('changeVisibility', () => {

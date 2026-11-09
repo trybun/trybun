@@ -64,7 +64,7 @@ describe('tickets.visibility and tickets.sharing_request', () => {
       createTicket(prisma, { ...base, sharingRequest: 'rejected' }),
     ).resolves.toMatchObject({
       sharingRequest: 'rejected',
-      sharingRefusalReason: expect.any(String),
+      sharingRefusalReason: expect.any(String) as string,
     });
     await expect(
       createTicket(prisma, { ...base, visibility: 'all_customers' }),

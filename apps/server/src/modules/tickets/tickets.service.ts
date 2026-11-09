@@ -112,7 +112,7 @@ function visiblePerson(
   principal: UserPrincipal,
   person: IdentityRow,
 ): { id: string; displayName: string | null } | null {
-  const visible = identityVisibleTo(
+  const isVisible = identityVisibleTo(
     { id: principal.userId, kind: principal.userKind },
     {
       id: person.id,
@@ -121,7 +121,7 @@ function visiblePerson(
         (person.organizationMember?.organization.members.length ?? 0) > 0,
     },
   );
-  return visible ? { id: person.id, displayName: person.displayName } : null;
+  return isVisible ? { id: person.id, displayName: person.displayName } : null;
 }
 
 /** The fields of a ticket a reference to it shows, with the fields of its rules. */
@@ -367,14 +367,14 @@ export class TicketsService {
       // A visibility other than `only_me` needs its project action (S1-11 Q7); team tickets are
       // `only_me` (Q6). Nothing is created without it.
       const requested = input.visibility ?? 'only_me';
-      const mayChooseOrganization = ability.can(CREATE_TICKET_MY_ORGANIZATION, projectRecord);
+      const canChooseOrganization = ability.can(CREATE_TICKET_MY_ORGANIZATION, projectRecord);
       if (
-        (requested === 'my_organization' && !mayChooseOrganization) ||
+        (requested === 'my_organization' && !canChooseOrganization) ||
         (requested === 'all_customers' && !ability.can(CREATE_TICKET_ALL_CUSTOMERS, projectRecord))
       ) {
         throw new AppError('request.forbidden');
       }
-      const visibility = initialVisibility(requested, mayChooseOrganization);
+      const visibility = initialVisibility(requested, canChooseOrganization);
       const assigneeId = input.assigneeId ?? null;
       if (assigneeId !== null) {
         const newTicket = subject(TICKET, { id: '', requesterId: principal.userId, project });
@@ -649,14 +649,14 @@ export class TicketsService {
     const ability = this.abilities.forPrincipal(principal);
     return this.prisma.$transaction(async (tx) => {
       const before = await this.lockAndFindTicket(tx, ability, principal, target.id);
-      const byRequester =
+      const isByRequester =
         principal.userKind === 'end_user' && before.requesterId === principal.userId;
       const change = changeVisibility(visibilityFieldsOf(before), {
         target: input.visibility,
-        byRequester,
+        isByRequester,
         // Whether the requester may choose `my_organization` on this ticket now (Q4, Q19).
-        mayChooseOrganization:
-          byRequester &&
+        canChooseOrganization:
+          isByRequester &&
           ability.can(
             'set_visibility_my_organization',
             subject(TICKET, { ...before, visibility: 'only_me', sharingRequest: 'none' }),
@@ -668,7 +668,7 @@ export class TicketsService {
         return toTicketResponse(before, ability, principal);
       }
       this.assertCan(ability, `set_visibility_${input.visibility}`, before);
-      if (!byRequester && input.visibility === 'my_organization') {
+      if (!isByRequester && input.visibility === 'my_organization') {
         await this.assertRequesterInOrganization(tx, before);
       }
       return this.applyVisibilityChange(tx, ability, principal, target, before, change);

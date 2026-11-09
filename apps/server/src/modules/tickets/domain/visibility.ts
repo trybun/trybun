@@ -31,12 +31,12 @@ const UNCHANGED: VisibilityChange = { fields: null, event: null, audit: null };
 export interface VisibilityRequest {
   target: TicketVisibility;
   /** The ticket's requester; anyone else allowed to change it is the team (§5.3). */
-  byRequester: boolean;
+  isByRequester: boolean;
   /**
    * Whether the requester could choose `my_organization` now (Q4, Q19): a sharing request widens
    * an `only_me` ticket to it only then.
    */
-  mayChooseOrganization: boolean;
+  canChooseOrganization: boolean;
 }
 
 function event(
@@ -59,8 +59,8 @@ export function changeVisibility(
   before: VisibilityFields,
   request: VisibilityRequest,
 ): VisibilityChange {
-  const { target, byRequester } = request;
-  if (byRequester && before.sharingRequest === 'pending') {
+  const { target, isByRequester } = request;
+  if (isByRequester && before.sharingRequest === 'pending') {
     if (target === 'all_customers') {
       return UNCHANGED;
     }
@@ -70,9 +70,9 @@ export function changeVisibility(
       audit: null,
     };
   }
-  if (byRequester && target === 'all_customers') {
+  if (isByRequester && target === 'all_customers') {
     const effective =
-      before.visibility === 'only_me' && request.mayChooseOrganization
+      before.visibility === 'only_me' && request.canChooseOrganization
         ? 'my_organization'
         : before.visibility;
     return {
@@ -91,7 +91,7 @@ export function changeVisibility(
   return {
     fields,
     event: event('visibility_changed', before.visibility, target),
-    audit: byRequester ? null : 'ticket.visibility_changed',
+    audit: isByRequester ? null : 'ticket.visibility_changed',
   };
 }
 
@@ -130,7 +130,7 @@ export function rejectSharing(before: VisibilityFields, reason: string): Visibil
  */
 export function initialVisibility(
   requested: TicketVisibility,
-  mayChooseOrganization: boolean,
+  canChooseOrganization: boolean,
 ): VisibilityFields {
   const onlyMe: VisibilityFields = {
     visibility: 'only_me',
@@ -138,7 +138,7 @@ export function initialVisibility(
     sharingRefusalReason: null,
   };
   return (
-    changeVisibility(onlyMe, { target: requested, byRequester: true, mayChooseOrganization })
+    changeVisibility(onlyMe, { target: requested, isByRequester: true, canChooseOrganization })
       .fields ?? onlyMe
   );
 }
