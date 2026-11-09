@@ -57,7 +57,7 @@ Everything the spec lists under Non-goals: comment audience and publishing the r
 - [x] 6.2 Show and change the visibility in the portal ticket view — b32aae9
 - [x] 6.3 Add the visibility field and the sharing decisions to the team field panel — 8e5d89e
 - [x] 6.4 Write the user documentation — ea09251
-- [ ] 6.5 Add the E2E test of sharing
+- [x] 6.5 Add the E2E test of sharing — 4344cad
 
 ### Phase 7: Specification
 
