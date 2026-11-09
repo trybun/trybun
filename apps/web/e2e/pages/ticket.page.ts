@@ -56,6 +56,20 @@ export class TicketPage {
     expect((await saved).status()).toBe(200);
   }
 
+  /**
+   * Waits until the field panel is idle: while a change of the ticket is pending, every field is
+   * disabled and drawn dimmed (`useIsTicketChanging`), and then fades back. The change stays
+   * pending after its response while the lists and the timeline are read again, so the toast of
+   * the change can show before the fields are enabled. An accessibility check waits for this, as
+   * it would otherwise measure the contrast of the dimmed text.
+   */
+  async waitUntilIdle(): Promise<void> {
+    await expect(this.details.locator(':disabled')).toHaveCount(0);
+    await this.details.evaluate((panel) =>
+      Promise.all(panel.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+    );
+  }
+
   goto(identifier: string) {
     return this.page.goto(`/tickets/${identifier}`);
   }
