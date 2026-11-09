@@ -28,6 +28,8 @@ Everything the spec lists under Non-goals: label, milestone and SLA filters and 
 
 ## Progress
 
+PR: #270
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: List API
@@ -61,4 +63,4 @@ Everything the spec lists under Non-goals: label, milestone and SLA filters and 
 
 ### Phase 6: Review
 
-- [ ] 6.1 Apply the code review findings
+- [x] 6.1 Apply the code review findings — 3d2a265, a9e0bd6, 61ed652, 24fd6fc, 6bae81c, 55e5716
