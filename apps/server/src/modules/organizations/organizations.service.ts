@@ -176,11 +176,10 @@ export class OrganizationsService {
     private readonly invitationRevocations: InvitationRevocationsService,
   ) {}
 
-  /** The organizations in one state, sorted by name; `projectId` keeps those with its access. */
   /**
-   * The organizations in one state, sorted by name (§7.3): every one for the Administrator; for
-   * another team member only the ID and the name of those with access to one of their projects
-   * (S1-13 Q6); `404` for everyone else (§7.5).
+   * The organizations in one state, sorted by name (§7.3); `projectId` keeps those with its
+   * access. Every one for the Administrator; for another team member only the ID and the name of
+   * those with access to one of their projects (S1-13 Q6); `404` for everyone else (§7.5).
    */
   async list(principal: UserPrincipal, query: ListOrganizationsQuery): Promise<OrganizationPage> {
     const ability = this.abilities.forPrincipal(principal);
