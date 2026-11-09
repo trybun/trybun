@@ -596,6 +596,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tickets/{ticketId}/description-redaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TicketsController_redactDescription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tickets/{ticketId}/description-revisions": {
         parameters: {
             query?: never;
@@ -738,6 +754,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["CommentsController_update"];
+        trace?: never;
+    };
+    "/api/v1/comments/{commentId}/redaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CommentsController_redact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/comments/{commentId}/revisions": {
@@ -3978,6 +4010,142 @@ export interface operations {
             };
         };
     };
+    TicketsController_redactDescription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    description: string;
+                    purgeRevisionIds: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string} */
+                        visibility: "only_me" | "my_organization" | "all_customers";
+                        /** @enum {string} */
+                        sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        };
+                        /** @enum {string|null} */
+                        type: "bug" | "feature" | "task" | "question" | null;
+                        /** @enum {string} */
+                        source: "user" | "developer" | "integration";
+                        /** @enum {string} */
+                        priority: "low" | "normal" | "high" | "critical";
+                        /** @enum {string} */
+                        status: "new" | "triage" | "todo" | "in_progress" | "in_verification" | "waiting_for_requester" | "done" | "rejected" | "duplicate";
+                        organization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                        assignee: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** Format: date-time */
+                        closedAt: string | null;
+                        rejectionReason: string | null;
+                        sharingRefusalReason: string | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        projectId: string;
+                        project: {
+                            /** Format: uuid */
+                            id: string;
+                            key: string;
+                            name: string;
+                        };
+                        number: number;
+                        identifier: string;
+                        title: string;
+                        description: string;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        allowedActions: ("read" | "update" | "update_fields" | "assign" | "assign_self" | "change_status" | "confirm_resolution" | "add_attachment" | "set_visibility_only_me" | "set_visibility_my_organization" | "set_visibility_all_customers" | "approve_sharing" | "reject_sharing" | "add_comment" | "add_internal_note" | "read_description_revisions" | "redact_description")[];
+                        /** @enum {string} */
+                        publicStatus: "received" | "awaiting_reply" | "in_progress" | "resolved" | "closed";
+                        /** @enum {string|null} */
+                        waitingReason: "information" | "confirmation" | null;
+                        duplicateOf: {
+                            /** Format: uuid */
+                            id: string;
+                            number: number;
+                            projectKey: string;
+                        } | null;
+                        /** @enum {string} */
+                        visibility: "only_me" | "my_organization" | "all_customers";
+                        /** @enum {string} */
+                        sharingRequest: "none" | "pending" | "rejected";
+                        /** Format: date-time */
+                        descriptionEditedAt: string | null;
+                        requester: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        /** @enum {string} */
+                        publicStatusDescription: "received" | "analyzing" | "information_needed" | "confirmation_needed" | "scheduled" | "working" | "testing" | "resolved" | "rejected" | "merged";
+                    };
+                };
+            };
+        };
+    };
     TicketsController_listDescriptionRevisions: {
         parameters: {
             query?: {
@@ -4813,6 +4981,129 @@ export interface operations {
                 "application/json": {
                     body: string;
                     attachmentIds?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        ticketId: string;
+                        author: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        body: string;
+                        mentions: {
+                            id: string | "customer";
+                            displayName: string | null;
+                        }[];
+                        attachments: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
+                        /** Format: date-time */
+                        editedAt: string | null;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        allowedActions: ("read" | "update" | "delete" | "redact" | "read_revisions")[];
+                        /** @enum {string} */
+                        kind: "public" | "internal";
+                        /** @enum {string|null} */
+                        audience: "only_me" | "my_organization" | "all_customers" | null;
+                        audienceOrganization: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                        } | null;
+                    } | {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        ticketId: string;
+                        author: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                        } | null;
+                        body: string;
+                        mentions: {
+                            id: string | "customer";
+                            displayName: string | null;
+                        }[];
+                        attachments: {
+                            /** Format: uuid */
+                            id: string;
+                            fileName: string;
+                            contentType: string;
+                            size: number;
+                            isImage: boolean;
+                            /** @enum {string} */
+                            status: "quarantine" | "available" | "infected" | "rejected";
+                            /** Format: uuid */
+                            ticketId: string | null;
+                            /** Format: uuid */
+                            commentId: string | null;
+                            uploadedBy: {
+                                /** Format: uuid */
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            allowedActions: ("read" | "delete")[];
+                        }[];
+                        /** Format: date-time */
+                        editedAt: string | null;
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        allowedActions: ("read" | "update" | "delete" | "redact" | "read_revisions")[];
+                    };
+                };
+            };
+        };
+    };
+    CommentsController_redact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                    purgeRevisionIds: string[];
                 };
             };
         };

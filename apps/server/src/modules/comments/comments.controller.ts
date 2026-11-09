@@ -25,6 +25,8 @@ import {
   mentionCandidatePageSchema,
   type MentionCandidatesDto,
   mentionCandidatesSchema,
+  type RedactCommentDto,
+  redactCommentSchema,
   type TimelinePage,
   timelinePageSchema,
   type UpdateCommentDto,
@@ -130,6 +132,20 @@ export class CommentsController {
     @ExpectedVersion() version: number,
   ): Promise<void> {
     return this.comments.delete(principal, { id: commentId, version });
+  }
+
+  /** Redacts a comment: the current text is never kept, the listed revisions are deleted. */
+  @Post('comments/:commentId/redaction')
+  @TargetRecord({ subject: COMMENT, param: 'commentId', action: 'redact' })
+  @HttpCode(HttpStatus.OK)
+  @ResponseSchema(commentResponseSchema)
+  redact(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: commentParamsSchema }) { commentId }: CommentParams,
+    @Body({ schema: redactCommentSchema }) input: RedactCommentDto,
+    @ExpectedVersion() version: number,
+  ): Promise<CommentResponse> {
+    return this.comments.redact(principal, { id: commentId, version }, input);
   }
 
   /** The earlier versions of a comment, newest first (§6.1, S1-12 Q3). */

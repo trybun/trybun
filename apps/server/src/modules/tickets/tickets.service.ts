@@ -29,6 +29,7 @@ import type { CommentResponse, CreateCommentDto } from '@trybun/contracts/commen
 import type {
   ContentRevisionPage,
   ListContentRevisionsQuery,
+  RedactDescriptionDto,
 } from '@trybun/contracts/content-revisions';
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
@@ -305,6 +306,47 @@ export class TicketsService {
     private readonly comments: CommentsService,
     private readonly revisions: ContentRevisionsService,
   ) {}
+
+  /**
+   * Redacts a ticket's description (§6.1, §13.2, S1-12 Q9): the new description replaces the
+   * current one, which is never kept, and the listed revisions are deleted. It marks the
+   * description edited and writes the internal event `description_redacted` and the audit entry
+   * `ticket.description_redacted`, none with content. A stale version gets `412`.
+   */
+  async redactDescription(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    input: RedactDescriptionDto,
+  ): Promise<TicketResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockProjectAndFind(tx, ability, principal, target.id);
+      this.assertCan(ability, 'redact_description', before);
+      assertVersionMatched(
+        await tx.ticket.updateMany(
+          versionedUpdate(target, {
+            description: input.description,
+            descriptionEditedAt: this.clock.now(),
+            descriptionEditedById: principal.userId,
+          }),
+        ),
+      );
+      await this.revisions.purge(tx, { ticketId: before.id }, input.purgeRevisionIds);
+      await this.activityEvents.record(tx, { userId: principal.userId }, before.id, [
+        { type: 'description_redacted', data: null, isPublic: false },
+      ]);
+      await this.auditLog.record(tx, {
+        action: 'ticket.description_redacted',
+        actorId: principal.userId,
+        target: { type: TICKET, id: before.id },
+      });
+      return toTicketResponse(
+        await this.findVisible(tx, ability, principal, target.id),
+        ability,
+        principal,
+      );
+    });
+  }
 
   /**
    * The earlier versions of a ticket's description, newest first (§6.1, S1-12 Q3): the target

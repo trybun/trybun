@@ -10,6 +10,7 @@ import {
   type ListCommentsQuery,
   type MentionCandidatePage,
   type MentionCandidatesDto,
+  type RedactCommentDto,
   type UpdateCommentDto,
   type ListTimelineQuery,
   type TimelineItem,
@@ -172,6 +173,60 @@ export class CommentsService {
         { commentId: before.id },
         input.attachmentIds ?? [],
       );
+      return this.read(tx, principal, ability, before.id);
+    });
+  }
+
+  /**
+   * Redacts a comment or a note (§6.1, §13.2, S1-12 Q9): the new text replaces the current one,
+   * which is never kept, and the listed revisions are deleted, so after the default selection no
+   * row holds the earlier text. It marks the comment edited, writes the internal event
+   * `comment_redacted` and the audit entry `comment.redacted`, none with content; the mentions are
+   * read again from the new text. A stale version gets `412`, so nobody redacts a text they have
+   * not seen.
+   */
+  async redact(
+    principal: UserPrincipal,
+    target: VersionedTarget,
+    input: RedactCommentDto,
+  ): Promise<CommentResponse> {
+    const ability = this.abilities.forPrincipal(principal);
+    return this.prisma.$transaction(async (tx) => {
+      const before = await this.lockAndFind(tx, ability, principal, target.id);
+      assertCan(ability, 'redact', before);
+      assertVersionMatched(
+        await tx.comment.updateMany(
+          versionedUpdate(target, {
+            body: input.body,
+            editedAt: this.clock.now(),
+            editedById: principal.userId,
+          }),
+        ),
+      );
+      await this.revisions.purge(tx, { commentId: before.id }, input.purgeRevisionIds);
+      const ticket = await tx.ticket.findUniqueOrThrow({
+        where: { id: before.ticketId },
+        select: MENTIONED_TICKET_SELECT,
+      });
+      await this.syncMentions(
+        tx,
+        principal,
+        ability,
+        ticket,
+        before.kind,
+        before.id,
+        input.body,
+        before.mentions.map(({ user }) => user.id),
+      );
+      await this.activityEvents.record(tx, { userId: principal.userId }, before.ticketId, [
+        { type: 'comment_redacted', data: { commentId: before.id }, isPublic: false },
+      ]);
+      await this.auditLog.record(tx, {
+        action: 'comment.redacted',
+        actorId: principal.userId,
+        target: { type: COMMENT, id: before.id },
+        details: { ticketId: before.ticketId },
+      });
       return this.read(tx, principal, ability, before.id);
     });
   }

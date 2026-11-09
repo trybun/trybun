@@ -50,6 +50,8 @@ import {
   contentRevisionPageSchema,
   type ListContentRevisionsQuery,
   listContentRevisionsQuerySchema,
+  type RedactDescriptionDto,
+  redactDescriptionSchema,
 } from '@trybun/contracts/content-revisions';
 import type { Response } from 'express';
 import { CurrentPrincipal } from '../../platform/authentication/current-principal.decorator.js';
@@ -210,6 +212,20 @@ export class TicketsController {
     const comment = await this.tickets.addComment(principal, ticketId, input);
     response.location(`/${API_PREFIX}/comments/${comment.id}`);
     return comment;
+  }
+
+  /** Redacts the description: the current text is never kept, the listed revisions are deleted. */
+  @Post(':ticketId/description-redaction')
+  @TargetRecord({ subject: TICKET, param: 'ticketId', action: 'redact_description' })
+  @HttpCode(HttpStatus.OK)
+  @ResponseSchema(ticketResponseSchema)
+  redactDescription(
+    @CurrentPrincipal() principal: Principal,
+    @Param({ schema: ticketParamsSchema }) { ticketId }: TicketParams,
+    @Body({ schema: redactDescriptionSchema }) input: RedactDescriptionDto,
+    @ExpectedVersion() version: number,
+  ): Promise<TicketResponse> {
+    return this.tickets.redactDescription(principal, { id: ticketId, version }, input);
   }
 
   /** The earlier versions of the description, newest first (§6.1, S1-12 Q3). */
