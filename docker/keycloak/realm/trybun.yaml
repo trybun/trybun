@@ -427,7 +427,8 @@ clients:
     implicitFlowEnabled: false
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: true
-    defaultClientScopes: [basic]
+    # `kc-admin-api` adds the audience of the Admin API, which it requires since Keycloak 26.8.2.
+    defaultClientScopes: [basic, kc-admin-api]
     optionalClientScopes: []
 
 # Permissions of the service account of `trybun-server`: managing the users of this realm only.

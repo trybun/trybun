@@ -5,7 +5,7 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 
 // Pinned to the digest of compose.yaml (§2.10).
 const SEAWEEDFS_IMAGE =
-  'chrislusf/seaweedfs:4.50@sha256:c2658820e763294a9e9de7b36c81e59b879e3459148351aee4e31a126ca64860';
+  'chrislusf/seaweedfs:4.51@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8';
 
 /** The credentials of `TEST_ENV` (test/env.ts). */
 const ACCESS_KEY_ID = 'trybun-test';

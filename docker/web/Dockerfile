@@ -1,7 +1,7 @@
 # ghcr.io/trybun/web: the web application in Next.js standalone mode (§15.4).
 # Build context: the repository root. Base image pinned to a digest in the `FROM` lines,
 # where Dependabot updates it (§2.10).
-FROM node:24.22.0-trixie-slim@sha256:a6155384446670e9719bdc4fd0ebe4d4b29fb32a8d6aa523da3547a6cfbcf22c AS build
+FROM node:24.22.1-trixie-slim@sha256:89c5244bc22a9bc3287d89ebc7e49b9cb5bb84cd40e6175ac3421d5a9f68b95a AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable
 WORKDIR /repo
@@ -12,7 +12,7 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
   pnpm install --offline --frozen-lockfile --filter @trybun/web...
 RUN pnpm --filter @trybun/web build
 
-FROM node:24.22.0-trixie-slim@sha256:a6155384446670e9719bdc4fd0ebe4d4b29fb32a8d6aa523da3547a6cfbcf22c
+FROM node:24.22.1-trixie-slim@sha256:89c5244bc22a9bc3287d89ebc7e49b9cb5bb84cd40e6175ac3421d5a9f68b95a
 # The configuration is read at runtime only (§15.3).
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 WORKDIR /app
