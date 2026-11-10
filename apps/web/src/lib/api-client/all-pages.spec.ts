@@ -4,13 +4,13 @@ import { ALL_PAGES_MAX_PAGES, allPageItems } from './all-pages.js';
 
 /** A list of `count` numbers served in pages of `size`, the cursor being the next offset. */
 function pagedList(count: number, size: number) {
-  return vi.fn(async (cursor: string | null) => {
+  return vi.fn((cursor: string | null) => {
     const offset = cursor === null ? 0 : Number(cursor);
     const end = Math.min(offset + size, count);
-    return {
+    return Promise.resolve({
       items: Array.from({ length: end - offset }, (_, index) => offset + index),
       nextCursor: end < count ? String(end) : null,
-    };
+    });
   });
 }
 
