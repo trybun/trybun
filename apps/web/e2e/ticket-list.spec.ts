@@ -26,13 +26,33 @@ interface TicketReply {
   version: number;
 }
 
-async function projectIdOf(api: APIRequestContext, name: string): Promise<string> {
+interface ProjectReply {
+  id: string;
+  key: string;
+  name: string;
+}
+
+async function projectOf(api: APIRequestContext, name: string): Promise<ProjectReply> {
   const response = await api.get('/api/v1/projects?state=active');
   expect(response.status()).toBe(200);
-  const { items } = (await response.json()) as { items: { id: string; name: string }[] };
+  const { items } = (await response.json()) as { items: ProjectReply[] };
   const project = items.find((candidate) => candidate.name === name);
   expect(project, name).toBeDefined();
-  return project!.id;
+  return project!;
+}
+
+async function projectIdOf(api: APIRequestContext, name: string): Promise<string> {
+  return (await projectOf(api, name)).id;
+}
+
+/** A team member of a project with a display name, from the people of the assignee filter. */
+async function memberOf(api: APIRequestContext, projectId: string): Promise<string> {
+  const response = await api.get(`/api/v1/project-members?projectId=${projectId}`);
+  expect(response.status()).toBe(200);
+  const { items } = (await response.json()) as { items: { displayName: string | null }[] };
+  const name = items.find((person) => person.displayName !== null)?.displayName;
+  expect(name, 'a member with a display name').toBeDefined();
+  return name!;
 }
 
 async function createTicket(api: APIRequestContext, projectId: string, title: string) {
@@ -82,6 +102,68 @@ test.describe('the ticket list', () => {
     await page.reload();
     await expect(page).toHaveURL(/\/tickets\?view=custom$/);
     await expect(page.getByRole('button', { name: /^Remove filter/ })).toHaveCount(0);
+  });
+
+  test('chooses a project by part of its key, then an assignee of it, and keeps both on reload', async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    const api = await teamApi(baseURL ?? '');
+    let project: ProjectReply;
+    let person: string;
+    try {
+      project = await projectOf(api, 'Customer portal');
+      person = await memberOf(api, project.id);
+    } finally {
+      await api.dispose();
+    }
+    const isSheet = (page.viewportSize()?.width ?? 0) < TABLET_BREAKPOINT_PX;
+    const fields = page.getByRole('list', { name: 'Filters' });
+    const addFilter = async (field: string) => {
+      // A click on the server-rendered button before the hydration does nothing, so it is repeated.
+      await expect(async () => {
+        await page.getByRole('button', { name: 'Add filter' }).click({ timeout: 2_000 });
+        await expect(fields).toBeVisible({ timeout: 2_000 });
+      }).toPass();
+      await fields.getByRole('button', { name: field }).click();
+    };
+    const close = async () => {
+      if (isSheet) {
+        await page.getByRole('button', { name: 'Done' }).click();
+      } else {
+        await page.keyboard.press('Escape');
+      }
+      await expect(fields).toBeHidden();
+    };
+    await page.goto('/tickets?view=custom');
+
+    await addFilter('Project');
+    // Part of the key, in lower case: the search runs on the server, case-insensitively.
+    await page
+      .getByRole('combobox', { name: 'Search projects…' })
+      .fill(project.key.slice(0, -1).toLowerCase());
+    await page.getByRole('option', { name: `${project.key} · ${project.name}` }).click();
+    await expect(page).toHaveURL(new RegExp(`projectId=${project.id}`));
+    // The picker stays open with the choice ticked; axe checks the open picker on every device.
+    await expect(
+      page.getByRole('option', { name: `${project.key} · ${project.name}` }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
+    await close();
+
+    await addFilter('Assignee');
+    await page.getByRole('combobox', { name: 'Search people…' }).fill(person.slice(0, 3));
+    await page.getByRole('option', { name: person, exact: true }).click();
+    await expect(page).toHaveURL(/assigneeId=/);
+    await close();
+
+    await page.reload();
+    await expect(
+      page.getByRole('button', { name: `Change filter Project: ${project.key}` }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: `Change filter Assignee: ${person}` }),
+    ).toBeVisible();
   });
 
   test('lists a ticket changed by someone else as a conflict and keeps it selected', async ({

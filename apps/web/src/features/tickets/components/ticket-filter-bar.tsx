@@ -117,7 +117,7 @@ export function TicketFilterBar({
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>(null);
   const [opener, setOpener] = useState<string | null>(null);
-  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [shouldFocusInput, setShouldFocusInput] = useState(false);
   // How the last press was made – events of the portalled popup bubble here too: a touch keeps
   // the focus off the search input (Q7).
   const lastPress = useRef<string>('mouse');
@@ -171,7 +171,7 @@ export function TicketFilterBar({
   /** Shows a step; a picker's input takes the focus unless the press was a touch (Q7). */
   const show = (next: Step) => {
     const isTouch = lastPress.current === 'touch';
-    setIsInputFocused(next !== null && !isTouch);
+    setShouldFocusInput(next !== null && !isTouch);
     setStep(next);
     if (isTouch) {
       // The pressed row leaves the DOM: the popup keeps the focus, the keyboard stays down.
@@ -208,7 +208,7 @@ export function TicketFilterBar({
       label={labelOf(key)}
       filters={filters}
       nameOf={nameOf}
-      autoFocus={isInputFocused}
+      autoFocus={shouldFocusInput}
       className={className}
       onFiltersChange={onFiltersChange}
     />
