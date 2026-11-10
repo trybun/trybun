@@ -152,11 +152,12 @@ export function useTicketColumns(organizationsExist: boolean) {
           id: 'identifier',
           header: () => t('columns.identifier'),
           // Tablets hide the type column, so the cell shows the type below the identifier until
-          // the desktop width, on one line (§8.1).
+          // the desktop width (§8.1): on one line while the table has room, else a long translation
+          // wraps – hyphenated where the browser knows the language – so the table never scrolls.
           cell: ({ row }) => (
             <span className="flex flex-col">
               <span className="font-mono text-sm">{row.original.identifier}</span>
-              <span className="text-xs text-muted-foreground xl:hidden">
+              <span className="text-xs wrap-anywhere hyphens-auto whitespace-normal text-muted-foreground xl:hidden">
                 {labels.type(row.original)}
               </span>
             </span>

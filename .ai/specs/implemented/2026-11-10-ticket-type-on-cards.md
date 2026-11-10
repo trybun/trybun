@@ -33,7 +33,7 @@ Established tools show the type in their lists: GitHub shows an issue type "on a
 ## Proposed change
 
 - **Phone card:** the line of the identifier also shows the type, as small muted text after a separator: `ERP-12 · Bug`. That line is short and has free space today, so the card keeps its height. A long identifier and type wrap within the line.
-- **Tablet table (`md` to `xl`):** the **ID** cell shows the type below the identifier, in the same small muted text and on one line, so the table gets no new column. The cell is as wide as the longer of the two lines (the longest labels are „Funkcjonalność” and „Nie ustawiono”), and the table still fits the content area without horizontal scrolling, as S1-13 requires. A row with a one-line title grows from 44 px to about 52 px: the two lines (20 px and 16 px) and the padding of the shared table cell (8 px above and below) need 52 px. Rows with a two-line title are 56 px high today and keep their height ([Q3](#open-questions)).
+- **Tablet table (`md` to `xl`):** the **ID** cell shows the type below the identifier, in the same small muted text, so the table gets no new column. The type stays on one line while the table has room; when it has none, a long label wraps within the cell – hyphenated where the browser knows the page's language – instead of widening the table, so the table still fits the content area without horizontal scrolling, as S1-13 requires ([Q4](#open-questions)). A row with a one-line title grows from 44 px to about 52 px: the two lines (20 px and 16 px) and the padding of the shared table cell (8 px above and below) need 52 px. Rows with a two-line title are 56 px high today and keep their height ([Q3](#open-questions)).
 - **Desktop (`xl` and wider):** unchanged. The **Type** column stays, and the **ID** cell shows only the identifier, so the type is not shown twice.
 - **No type:** "Not set" („Nie ustawiono”), the same label as the desktop column.
 - **Assistive technology:** the separator is hidden from the accessibility tree. The type is part of the ticket's link on the card, so the link's accessible name is the identifier, the type and the title, in this order.
@@ -56,11 +56,13 @@ User documentation (EN, PL): `team/reference/ticket-list.md`, section "Table and
 2. Where is the type placed? — **Answer:** next to the identifier on the card and below it in the tablet ID cell; the desktop keeps its column (proposed after the QA of #290 and accepted by the maintainer, 2026-11-10).
 3. Does a tablet row keep its 44 px with the type below the identifier? — **Answer:** no. A row with a one-line title becomes about 52 px high (8 px more), with the padding of the shared `TableCell` unchanged. Keeping 44 px would need a smaller padding in this one cell, a special case in the shared table for 8 px, while rows with a two-line title are 56 px already (raised by the specification review of #293, 2026-11-10; approved by the maintainer with the merge of #293).
 
+4. What if the longest translated label does not fit one line on the narrowest tablet? — **Answer:** it wraps within the ID cell (`hyphens: auto`, `overflow-wrap: anywhere`), so the table does not scroll. At 768 px in Polish, „Funkcjonalność” and „Nie ustawiono” widened the table by up to 48 px when kept on one line (review of #294). The common practice is to design for text expansion in translation (W3C Internationalization) and to wrap table cells instead of scrolling or truncating with a tooltip that touch screens cannot reach (Rule 9) (decided by the maintainer, 2026-11-10: follow the established conventions).
+
 ## Acceptance criteria
 
 - [x] At 360 px every card of the demo dataset shows `<identifier> · <type>` on one line, and the link of a card with a one-line title stays 44 px high (E2E on the phone).
 - [x] A ticket without a type shows "Not set" / „Nie ustawiono” on the card and in the tablet ID cell.
-- [x] From `md` to below `xl` the ID cell shows the type below the identifier on one line, the column set is unchanged (no **Type** column) and the table has no horizontal scrolling (E2E on the tablet, with the check of S1-13).
+- [x] From `md` to below `xl` the ID cell shows the type below the identifier, the column set is unchanged (no **Type** column) and the table has no horizontal scrolling; at 768 px in Polish the longest labels wrap in the cell (E2E on the tablet, with the check of S1-13).
 - [x] From `xl` on, the **Type** column is shown and the ID cell shows only the identifier (E2E on the desktop).
 - [x] The accessible name of the card's link has the identifier, the type and the title in this order, without the separator. Axe passes on the list (E2E).
 - [x] Component tests cover the content of the card and of the ID cell, including a ticket without a type. The breakpoints are checked in E2E, because jsdom applies no CSS.
@@ -72,3 +74,4 @@ User documentation (EN, PL): `team/reference/ticket-list.md`, section "Table and
 - 2026-11-10 – Created after the manual QA of #290.
 - 2026-11-10 – Specification review of #293: corrected the tablet row height (about 52 px for a one-line title, Q3), added the criterion of no horizontal scrolling, and made the accessible name and the test level of the criteria precise.
 - 2026-11-10 – Implemented in #294.
+- 2026-11-10 – Review of #294: a long type label wraps in the tablet ID cell instead of widening the table (Q4).

@@ -142,6 +142,39 @@ test.describe('the ticket list', () => {
     });
   }
 
+  // The longest type labels are Polish („Funkcjonalność”, „Nie ustawiono”): on the narrowest
+  // tablet they wrap in the ID cell instead of widening the table (§8.1).
+  test.describe('in Polish on the narrowest tablet', () => {
+    test.use({ locale: 'pl-PL', viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
+
+    for (const { url, title, type } of [
+      {
+        url: '/tickets?type=feature',
+        title: 'Export the invoice list to CSV',
+        type: 'Funkcjonalność',
+      },
+      {
+        url: '/tickets?view=pending_sharing_approvals',
+        title: PENDING_TITLE,
+        type: 'Nie ustawiono',
+      },
+    ]) {
+      test(`wraps the type "${type}" instead of scrolling the table`, async ({ page }) => {
+        test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+        await page.goto(url);
+        const row = page
+          .getByRole('table')
+          .getByRole('row')
+          .filter({ has: page.getByRole('link', { name: title }) });
+        await expect(row.getByRole('cell').nth(1).getByText(type, { exact: true })).toBeVisible();
+        const overflow = await page
+          .locator('[data-slot=table-container]')
+          .evaluate((container) => container.scrollWidth - container.clientWidth);
+        expect(overflow).toBeLessThanOrEqual(0);
+      });
+    }
+  });
+
   test('keeps the filters in the URL and leaves the view when a filter changes', async ({
     page,
   }) => {
