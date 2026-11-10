@@ -175,17 +175,16 @@ function ComboboxCheckboxItem({ className, children, ...props }: ComboboxPrimiti
 
 /**
  * A polite live region in the popup for what the list cannot say itself: loading, "type to find
- * more". Keep it mounted and change only its children, so screen readers announce each change;
- * it hides itself while empty. An error with an action is an `Alert` instead.
+ * more". Keep it mounted and change only its children, so screen readers announce each change.
+ * While empty it has no height but stays displayed: a region under `display: none` leaves the
+ * accessibility tree, and Base UI asks never to hide it. An error with an action is a
+ * `role="alert"` block beside it instead (story `PickerError`).
  */
 function ComboboxStatus({ className, ...props }: ComboboxPrimitive.Status.Props) {
   return (
     <ComboboxPrimitive.Status
       data-slot="combobox-status"
-      className={cn(
-        'px-2 py-3 text-center text-sm text-muted-foreground empty:hidden empty:p-0',
-        className,
-      )}
+      className={cn('px-2 py-3 text-center text-sm text-muted-foreground empty:p-0', className)}
       {...props}
     />
   );

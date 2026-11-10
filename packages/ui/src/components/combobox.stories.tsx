@@ -142,11 +142,14 @@ const PROJECTS = [
 ];
 
 function ProjectPicker({
-  status,
+  loading,
+  error,
   ...args
 }: ComponentProps<typeof Combobox> & {
-  /** Shown above the list instead of the empty message: loading (`ComboboxStatus`) or an error. */
-  status?: ReactNode;
+  /** Text of the live region (`ComboboxStatus`, kept mounted), e.g. while a page is loading. */
+  loading?: string;
+  /** Shown instead of the empty message when the options could not be loaded. */
+  error?: ReactNode;
 }) {
   return (
     <Combobox multiple {...args}>
@@ -155,7 +158,8 @@ function ProjectPicker({
       </ComboboxTrigger>
       <ComboboxContent aria-label="Project" className="w-72">
         <ComboboxPopupInput aria-label="Search projects" placeholder="Search projects…" />
-        {status ?? <ComboboxEmpty>No projects match.</ComboboxEmpty>}
+        <ComboboxStatus>{loading}</ComboboxStatus>
+        {error ?? (loading ? null : <ComboboxEmpty>No projects match.</ComboboxEmpty>)}
         <ComboboxList aria-label="Projects">
           {(item: string) => (
             <ComboboxCheckboxItem key={item} value={item}>
@@ -192,6 +196,11 @@ export const Picker: Story = {
     await expect(screen.getByRole('dialog', { name: 'Project' })).not.toHaveAttribute(
       'data-closed',
     );
+    // The empty live region stays in the accessibility tree, so its first text is announced.
+    const status = document.querySelector('[data-slot="combobox-status"]') as HTMLElement;
+    await expect(status).toHaveAttribute('role', 'status');
+    await expect(status).toBeEmptyDOMElement();
+    await expect(getComputedStyle(status).display).not.toBe('none');
   },
 };
 
@@ -264,7 +273,7 @@ export const PickerOpen: Story = {
 export const PickerLoading: Story = {
   args: { items: [], defaultOpen: true },
   render: (args: ComponentProps<typeof Combobox>) => (
-    <ProjectPicker {...args} status={<ComboboxStatus>Loading projects…</ComboboxStatus>} />
+    <ProjectPicker {...args} loading="Loading projects…" />
   ),
   play: async () => {
     await expect(await screen.findByRole('status')).toHaveTextContent('Loading projects…');
@@ -286,7 +295,7 @@ export const PickerError: Story = {
   render: (args: ComponentProps<typeof Combobox>) => (
     <ProjectPicker
       {...args}
-      status={
+      error={
         <div role="alert" className="flex flex-col items-center gap-2 px-2 py-3 text-sm">
           <p>The projects could not be loaded.</p>
           <Button variant="outline" size="sm">
