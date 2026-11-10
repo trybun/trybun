@@ -29,7 +29,7 @@ Who has it: every team member (Developer and above) in an installation with more
 The filter follows the convention of Linear, GitHub Projects, Jira and the faceted filter of shadcn/ui's data table:
 
 - **+ Filter** opens the list of fields not yet active (Project, Organization – while organizations exist –, Type, Status, Priority, Assignee, Source, Sharing request). Choosing a field opens **that field's picker** in place.
-- **A picker** is a search input (focused on open) over a checkbox list. The chosen values are pinned on top; the rest follows in the API's order. Toggling a value **applies at once**: the URL and the list change, the picker stays open for further choices.
+- **A picker** is a search input (focused on open) over a checkbox list. The chosen values are pinned on top; the rest follows by name – for projects and organizations the active ones first, then the archived ones, deduplicated by ID. Toggling a value **applies at once**: the URL and the list change, the picker stays open for further choices.
 - **Entity fields** (Project, Organization, Assignee) search on the server: the first page is shown on open, typing narrows it (`useDeferredValue`, as the assignee picker of S1-10). **Fixed fields** (Type, Status, Priority, Source, Sharing request) filter their few options on the client; Status keeps the **Open** shortcut (the six non-terminal statuses) and its kind groups; Assignee keeps **Me** and **Unassigned** on top.
 - **Chips**: one per active field, "Project: QM150 +2" (the first chosen name and the count of the rest). The chip reopens the field's picker; its **×** removes the filter; **Clear filters** stays.
 - **Assignee follows the projects at once**: its options are the members of the projects in the current filter, which is now always the applied one – the hint "Choose projects to filter by their people" shows exactly when no project is chosen.
@@ -81,7 +81,7 @@ All additive (§17.2; `BACKWARD_COMPATIBILITY.md`: the API is called only by the
 | `GET /api/v1/projects` | `query` (string, trimmed, ≤ 100) | Case-insensitive substring of `key` or `name`; within the given `state` |
 | `GET /api/v1/projects` | `id` (UUID, repeated, ≤ `MAX_TICKET_FILTER_VALUES` = 50) | Only these projects; still within `state` and the person's abilities; invisible IDs are simply absent |
 | `GET /api/v1/organizations` | `query`, `id` (as above) | `query` searches `name`; both the Administrator's summary and the team member's `read_name` items (S1-13 Q6); combined with the existing `projectId` by AND |
-| `GET /api/v1/project-members` (**new**) | `projectId` (UUID, repeated, ≤ 50, optional), `query`, `userId` (UUID, repeated, ≤ 50), cursor | The distinct accounts (`projectAccountSchema`, no e-mail) that are members of the given projects – or, without `projectId`, of every project whose members the person may read (the rule of `GET /projects/{id}/members`) – sorted by display name, cursor-paginated. Invisible projects contribute nothing. |
+| `GET /api/v1/project-members` (**new**) | `projectId` (UUID, repeated, ≤ 50, optional), `query`, `userId` (UUID, repeated, ≤ 50), cursor | The distinct accounts (`projectAccountSchema`, no e-mail) with a **team role** (`teamRolesFrom('developer')`) in the given projects – or, without `projectId`, in every project whose members the person may read (the rule of `GET /projects/{id}/members`) – sorted by display name, cursor-paginated. Memberships with the `end_user` role (personal access, §7.3) are left out: only team roles can be assignees (`ASSIGNABLE_MEMBER`, §3.2). Deactivated accounts stay, so former assignees can be found. `query` searches display name and GitHub login (`accountsMatching`). Invisible projects contribute nothing. |
 
 **Why a new endpoint for people:** searching the members of *n* chosen projects through `GET /projects/{id}/members` costs *n* requests per deferred search; with 50 chosen projects two keystrokes exceed the default per-user rate limit (`TRYBUN_RATE_LIMIT_PER_USER` = 100/min, §14.4). One request also lets a chip name a chosen assignee without knowing their project (a shared link with only `assigneeId`), so "Unknown" stays reserved for people the person cannot see. `GET /projects/{id}/members` is unchanged.
 
@@ -107,13 +107,13 @@ Current state (QA of #276, 150 projects): [panel on desktop](assets/ticket-list-
 
 **Flow (phone, 360 px):** **+ Filter** → bottom sheet, step 1 field list → step 2 picker with a back button ("Filters") and a **Done** button that only closes the sheet (changes are already applied). The input is 16 px text (no iOS zoom), rows 44 px.
 
-**States:** loading (skeleton rows under the pinned values), empty search ("No projects match "qm9"."), error (inline message with **Try again**; pinned values stay), no projects chosen in Assignee (Me, Unassigned, then the hint "Choose projects to filter by their people").
+**States:** loading (skeleton rows under the pinned values), more results (when a search page has a `nextCursor`, a status line "Type to find more" below the list, outside the listbox's options – the picker shows one page of `FILTER_SEARCH_LIMIT` per state and never scrolls further), empty search ("No projects match "qm9"."), error (inline message with **Try again**; pinned values stay), no projects chosen in Assignee (Me, Unassigned, then the hint "Choose projects to filter by their people").
 
 **Labels:** projects `KEY · Name` as today; people by display name (deleted user: "Deleted user"); organizations by name; "No organization" / "None" / "Unassigned" / "Me" stay as fixed first options of their fields.
 
 **Accessibility:** the picker follows the WAI-ARIA combobox pattern with a multi-select listbox (Base UI: `aria-multiselectable`, `aria-selected`); the field list is a menu of buttons; chip buttons have names "Change filter Project: QM150 +2" and "Remove filter Project: QM150 +2"; the result count of the list is announced as today. Every target ≥ 44 px (Rule 9).
 
-**Texts (EN / PL, new or changed):** "Add filter" / „Dodaj filtr”; "Search projects…" / „Szukaj projektów…” (one per entity field); "No {field} match "{query}"." / „Brak wyników dla „{query}”.”; "Done" / „Gotowe”; "{first} +{count}" chip value; removed: "Show tickets" („Pokaż zgłoszenia”).
+**Texts (EN / PL, new or changed):** "Add filter" / „Dodaj filtr”; "Search projects…" / „Szukaj projektów…” (one per entity field); "No {field} match "{query}"." / „Brak wyników dla „{query}”.”; "Done" / „Gotowe”; "Type to find more" / „Wpisz, aby znaleźć więcej”; "{first} +{count}" chip value; removed: "Show tickets" („Pokaż zgłoszenia”).
 
 **Product tour:** the ticket list has no product tour today (`features/product-tours/tours/` holds `first-login` and `organization-detail`), so there is none to update; no tour is added (see Resolved assumptions, Q5). The bar gets `data-tour="ticket-list-filter"` so a later tour can target it.
 
@@ -124,6 +124,7 @@ Current state (QA of #276, 150 projects): [panel on desktop](assets/ticket-list-
 - **Value of an invisible record** (shared link): the name lookup does not return it, the chip shows "Unknown" („Nieznany”), it matches no ticket (S1-13 Q5, unchanged). A pinned row "Unknown" is shown in the picker so it can be unticked.
 - **Chosen value beyond the first search page:** always visible – pinned rows come from the name lookup by ID, not from the search page.
 - **Assignee after removing projects, or from a link without projects:** the chip names the person through `GET /project-members?userId=…` (all projects of the signed-in person), so it shows "Unknown" only for someone they cannot see. The Assignee options still follow the chosen projects (S1-13 Q7, unchanged).
+- **Former assignee without any membership:** a person removed from every project the signed-in person can read is not returned by the lookup, so their chip says "Unknown" although tickets assigned to them may still be listed – the same as today; naming them would need a people lookup outside project membership, which is not part of this change.
 - **Many projects chosen (up to 50):** the Assignee search is still one request (`projectId` repeated), within the rate limit.
 - **Fast typing:** `useDeferredValue` plus TanStack Query cancels stale requests via `signal`; results of an older query never replace newer ones (query key includes the search).
 - **Each toggle reloads the list:** with `keepPreviousData` (new, see Architecture) the list keeps its rows while the new page loads, so toggling several values does not flash an empty list. Rapid toggles cancel the superseded list requests through `signal`.
@@ -177,7 +178,8 @@ Glossary: no new domain terms.
 - [ ] Every Project, Organization and Assignee option the person can see can be found by typing part of its key or name, with 150+ projects, 120+ organizations and 120+ members of one project, on phone, tablet and desktop.
 - [ ] Each filter has its own picker; no panel stacks all filters; chosen values are pinned on top.
 - [ ] Each change applies at once; a change of the Project filter changes the Assignee options at once.
-- [ ] The chip of a visible record shows its name (also beyond the first search page); "Unknown" only for records the person cannot see (S1-13 Q5); the chip reopens its picker, × removes it.
+- [ ] The chip of a visible record shows its name (also beyond the first search page); "Unknown" only for records the person cannot see (S1-13 Q5) and for a former assignee without any membership (Edge Cases); the chip reopens its picker, × removes it.
+- [ ] The Assignee options and lookups never contain an end user with personal access.
 - [ ] The search and the lookups never return a record the person cannot read: integration tests per endpoint for the Administrator, a Developer who is a member, a Developer who is not, a team member without organization access, and an end user (`422` / `404`).
 - [ ] Toggling a value keeps the previous rows of the list until the new page arrives.
 - [ ] 360 px phone, tablet and desktop; 44 px targets; the keyboard `play` tests of `ComboboxPopupInput` / `ComboboxCheckboxItem` pass; axe clean on the open picker (Rule 9).
@@ -196,7 +198,7 @@ Glossary: no new domain terms.
 
 1. Contracts: move `MAX_TICKET_FILTER_VALUES` and `oneOrMore` to `pagination`; `query` and repeated `id` on `listProjectsQuerySchema` and `listOrganizationsQuerySchema`; the schemas of `GET /project-members`. Unit tests of the schemas (single value, repeated, > 50 rejected, blank `query` ignored).
 2. `ProjectsService.list` and `OrganizationsService.list` (both branches) apply `query` and `id`; an end user's `query`/`id` → `422 field.unrecognized`. Integration tests (Testcontainers): matching by key and name, case-insensitive, a key with `_` matched literally, with cursor; `id` returns only visible records; Administrator, member Developer, non-member Developer, team member without organization access, end user.
-3. `GET /project-members` in the projects module (controller, service, the read rule of project members across projects, distinct accounts, sort, cursor). Integration tests: several projects, no `projectId`, `userId`, `query`, an invisible project ignored, an end user `404`.
+3. `GET /project-members` in the projects module (controller, service, the read rule of project members across projects, distinct accounts, sort, cursor). Integration tests: several projects, no `projectId`, `userId`, `query`, an invisible project ignored, an `end_user` membership left out, a deactivated member kept, an end user `404`.
 4. `pnpm api:generate`; §7.5, §12.1, §17.2 updated.
 
 **Phase 2 – Combobox parts**
@@ -216,3 +218,4 @@ Glossary: no new domain terms.
 
 - 2026-11-10 – Created (autonomous defaults, #279).
 - 2026-11-10 – Specification review (fresh context): one `GET /project-members` instead of one request per project (rate limit) and for assignee names without projects; team-only parameters; `keepPreviousData`; named Combobox parts and keyboard tests; Phase 2 split; §18.5 wording.
+- 2026-11-10 – Review of #280: `GET /project-members` returns team-role memberships only (no end users), `query` fields named; order of merged active and archived pages; "Type to find more" row; former assignees without membership stay "Unknown".
