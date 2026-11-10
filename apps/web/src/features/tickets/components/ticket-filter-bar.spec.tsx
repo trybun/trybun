@@ -150,9 +150,9 @@ describe('TicketFilterBar (#279)', () => {
     expect(onChange).toHaveBeenLastCalledWith({ projectId: [uuid(150)] });
     // The picker stays open for further choices with the search kept, the chip names the choice
     // by its key.
-    expect(
-      (screen.getByRole('combobox', { name: 'Search projects…' }) as HTMLInputElement).value,
-    ).toBe('qm1');
+    expect(screen.getByRole<HTMLInputElement>('combobox', { name: 'Search projects…' }).value).toBe(
+      'qm1',
+    );
     expect(screen.getByRole('option', { name: 'QM1 · Quality one' })).toBeDefined();
     expect(
       await screen.findByRole('button', { name: 'Change filter Project: QM150' }),
