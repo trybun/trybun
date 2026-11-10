@@ -233,4 +233,34 @@ describe('TicketList', () => {
     expect(within(table).getAllByRole('button', { name: 'Approve sharing' })).toHaveLength(1);
     expect(within(table).getAllByRole('button', { name: 'Refuse sharing' })).toHaveLength(1);
   });
+
+  it('names a project from beyond the first page in its chip, and only an invisible one Unknown (#272)', async () => {
+    const id = (number: number) => `0199a3f0-0000-7000-8000-${String(number).padStart(12, '0')}`;
+    const projects = Array.from({ length: 150 }, (_, index) => ({
+      id: id(index + 1),
+      key: `P${index + 1}`,
+      name: `Project ${index + 1}`,
+    }));
+    fake.on('GET /api/v1/tickets', { data: { items: [], nextCursor: null } });
+    fake.on('GET /api/v1/projects', (init) => {
+      const { state, cursor } = (init as { params: { query: { state: string; cursor?: string } } })
+        .params.query;
+      if (state === 'archived') {
+        return { data: { items: [], nextCursor: null } };
+      }
+      return cursor === undefined
+        ? { data: { items: projects.slice(0, 100), nextCursor: '100' } }
+        : { data: { items: projects.slice(100), nextCursor: null } };
+    });
+    fake.on('GET /api/v1/projects/{projectId}/members', { data: { items: [], nextCursor: null } });
+    renderInApp(
+      <TicketList
+        state={withFilters(stateOfView('triage'), { projectId: [id(150), id(999)] })}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    expect(await screen.findByText(/P150 · Project 150, Unknown/)).toBeDefined();
+  });
 });
