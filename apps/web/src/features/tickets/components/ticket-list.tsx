@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useTable } from '@tanstack/react-table';
 import type {
   BulkChangeResult,
@@ -21,7 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from '@trybun/ui/components/tabs';
 import { toast } from '@trybun/ui/components/toast';
 import { useRouter } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useMemo, useOptimistic, useState, useTransition } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { type TicketVersion, useBulkChangeTickets } from '../mutations.js';
@@ -169,12 +169,22 @@ function SharingActions({ ticket }: { ticket: TicketListItem }) {
   );
 }
 
+/** The tickets of the list's state, page by page (§18.4). */
+function useTicketListQuery(state: TicketListState) {
+  // A filter applies at once (#279): while the next page loads, the rows of the last one stay.
+  return useInfiniteQuery({
+    ...ticketListInfiniteQueryOptions(browserApiClient, state),
+    placeholderData: keepPreviousData,
+  });
+}
+
+type TicketListQuery = ReturnType<typeof useTicketListQuery>;
+
 /**
- * The team's ticket list (§8.1, S1-13): the view picker, the filter bar, the tickets as a table
- * from the tablet width on and as cards on phones – both from one TanStack Table row model and
- * selection (Q14), switched by CSS so the server's HTML is right on every device – **Show more**
- * (Q19), and the bulk actions with their results (Q1, Q17). All state but the selection lives in
- * the URL (§18.5); the page renders the list anew for every address, which clears the selection.
+ * The team's ticket list (§8.1, S1-13): the view picker, the filter bar and the tickets. The
+ * filter bar stays mounted across a change of the address, so an open picker stays open while its
+ * changes apply (#279); the tickets render anew for every address, which clears the selection
+ * (Q17). All state but the selection lives in the URL (§18.5).
  */
 export function TicketList({
   state,
@@ -185,11 +195,62 @@ export function TicketList({
   currentUserId: string;
   organizationsExist: boolean;
 }) {
-  const t = useTranslations('tickets.list');
-  const errorMessage = useErrorMessage();
   const router = useRouter();
   const go = (next: TicketListState) => router.replace(ticketListHref(next), { scroll: false });
-  const tickets = useInfiniteQuery(ticketListInfiniteQueryOptions(browserApiClient, state));
+  const tickets = useTicketListQuery(state);
+  // The chips and the pickers show a change at once, before the server renders the new address.
+  const [, startTransition] = useTransition();
+  const [filters, setOptimisticFilters] = useOptimistic(state.filters);
+  const sorting: TicketListSorting = { sort: state.sort, order: state.order };
+
+  return (
+    <div className="flex flex-col gap-4 pb-40 md:pb-0">
+      <TicketViewPicker view={state.view} onViewChange={(view) => go(stateOfView(view))} />
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <TicketFilterBar
+          filters={filters}
+          organizationsExist={organizationsExist}
+          onFiltersChange={(next: TicketListFilters) =>
+            startTransition(() => {
+              setOptimisticFilters(next);
+              go(withFilters(state, next));
+            })
+          }
+        />
+        <TicketSortSelect sorting={sorting} onSortingChange={(next) => go({ ...state, ...next })} />
+      </div>
+      <TicketResults
+        key={ticketListHref(state)}
+        state={state}
+        tickets={tickets}
+        currentUserId={currentUserId}
+        organizationsExist={organizationsExist}
+        onStateChange={go}
+      />
+    </div>
+  );
+}
+
+/**
+ * The tickets of the list: as a table from the tablet width on and as cards on phones – both from
+ * one TanStack Table row model and selection (Q14), switched by CSS so the server's HTML is right
+ * on every device – **Show more** (Q19), and the bulk actions with their results (Q1, Q17).
+ */
+function TicketResults({
+  state,
+  tickets,
+  currentUserId,
+  organizationsExist,
+  onStateChange: go,
+}: {
+  state: TicketListState;
+  tickets: TicketListQuery;
+  currentUserId: string;
+  organizationsExist: boolean;
+  onStateChange: (state: TicketListState) => void;
+}) {
+  const t = useTranslations('tickets.list');
+  const errorMessage = useErrorMessage();
   const items = useMemo(
     () => tickets.data?.pages.flatMap((page) => page.items).filter(isTeamItem) ?? NO_ITEMS,
     [tickets.data],
@@ -283,16 +344,7 @@ export function TicketList({
       : undefined;
 
   return (
-    <div className="flex flex-col gap-4 pb-40 md:pb-0">
-      <TicketViewPicker view={state.view} onViewChange={(view) => go(stateOfView(view))} />
-      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-        <TicketFilterBar
-          filters={state.filters}
-          organizationsExist={organizationsExist}
-          onFiltersChange={(filters: TicketListFilters) => go(withFilters(state, filters))}
-        />
-        <TicketSortSelect sorting={sorting} onSortingChange={(next) => go({ ...state, ...next })} />
-      </div>
+    <div className="flex flex-col gap-4" aria-busy={tickets.isPlaceholderData}>
       {selected.length > 0 && (
         <TicketBulkActionBar
           selected={selected}

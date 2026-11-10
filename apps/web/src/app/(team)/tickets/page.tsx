@@ -2,10 +2,7 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { getTranslations } from 'next-intl/server';
 import { TicketList } from '../../../features/tickets/components/ticket-list.js';
 import { ticketListInfiniteQueryOptions } from '../../../features/tickets/queries.js';
-import {
-  parseTicketListSearchParams,
-  ticketListHref,
-} from '../../../features/tickets/ticket-list.js';
+import { parseTicketListSearchParams } from '../../../features/tickets/ticket-list.js';
 import { currentUserQueryOptions } from '../../../features/users/queries.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../lib/auth/session.js';
@@ -34,9 +31,9 @@ export default async function TicketsPage({
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">{t('title')}</h1>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        {/* A new address renders a new list, which clears the selection (S1-13 Q17). */}
+        {/* A new address renders new results, which clears the selection (S1-13 Q17); the filter
+            bar stays, so an open picker stays open (#279). */}
         <TicketList
-          key={ticketListHref(state)}
           state={state}
           currentUserId={user?.id ?? ''}
           organizationsExist={user?.organizationsExist === true}
