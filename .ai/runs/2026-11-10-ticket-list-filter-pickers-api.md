@@ -22,11 +22,13 @@ Substring search without an index (sequential scan, accepted at today's sizes by
 
 ## Progress
 
+PR: #284
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: API search and lookup
 
-- [ ] 1.1 Contracts: shared pagination pieces, query and id, project-members schemas
-- [ ] 1.2 Search and lookup of the project and organization lists
-- [ ] 1.3 GET /project-members
-- [ ] 1.4 OpenAPI client and §7.5, §12.1, §17.2
+- [x] 1.1 Contracts: shared pagination pieces, query and id, project-members schemas — a6d3592
+- [x] 1.2 Search and lookup of the project and organization lists — ca8e47a
+- [x] 1.3 GET /project-members — f5a3c1a
+- [x] 1.4 OpenAPI client and §7.5, §12.1, §17.2 — 0411ba0

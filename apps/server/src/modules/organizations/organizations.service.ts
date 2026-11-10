@@ -180,8 +180,9 @@ export class OrganizationsService {
   /**
    * The organizations in one state, sorted by name (§7.3); `projectId` keeps those with its
    * access, `query` those whose name contains it and `id` the given ones (the pickers of the ticket
-   * list filters, §8.1), all inside the read rule. Every one for the Administrator; for another team member only the ID and the name of
-   * those with access to one of their projects (S1-13 Q6); `404` for everyone else (§7.5).
+   * list filters, §8.1), all inside the read rule. Every one for the Administrator; for another
+   * team member only the ID and the name of those with access to one of their projects (S1-13 Q6);
+   * `404` for everyone else (§7.5).
    */
   async list(principal: UserPrincipal, query: ListOrganizationsQuery): Promise<OrganizationPage> {
     const ability = this.abilities.forPrincipal(principal);
