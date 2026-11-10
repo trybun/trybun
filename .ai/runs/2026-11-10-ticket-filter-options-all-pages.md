@@ -22,6 +22,8 @@ More requests to open the panel above 100 entries (bounded at 20 per list).
 
 ## Progress
 
+PR: #276
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Every option of the filters
@@ -29,4 +31,4 @@ More requests to open the panel above 100 entries (bounded at 20 per list).
 - [x] 1.1 Add the bounded all-pages helper with unit tests — c1a3f4f
 - [x] 1.2 Move creatableProjects onto the helper — ae8afa6
 - [x] 1.3 Load every page in the three filter-option factories with tests — f5a74df
-- [ ] 1.4 Update §8.1 and §18.5 and run the validation gate
+- [x] 1.4 Update §8.1 and §18.5 and run the validation gate — 8853bfa
