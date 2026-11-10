@@ -302,7 +302,9 @@ export function TicketFilterBar({
                 {step === null ? t('title') : labelOf(step)}
               </DrawerTitle>
             </DrawerHeader>
-            <div className="flex min-h-0 flex-1 flex-col px-4 py-2">
+            {/* Scrolls when the sheet is lower than the field list (a phone in landscape), so no
+                row slides under Done. */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-2">
               {step === null ? fieldList : picker(step, 'min-h-0 flex-1')}
             </div>
             <DrawerFooter className="pt-2">

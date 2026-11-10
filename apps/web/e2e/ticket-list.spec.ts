@@ -104,6 +104,24 @@ test.describe('the ticket list', () => {
     await expect(page.getByRole('button', { name: /^Remove filter/ })).toHaveCount(0);
   });
 
+  test('reaches every field of the bottom sheet on a phone in landscape', async ({ page }) => {
+    test.skip(test.info().project.name !== 'phone', 'The test turns the phone itself.');
+    // Lower than the field list with its header and Done: the fields scroll, none slides under Done.
+    await page.setViewportSize({ width: 740, height: 360 });
+    await page.goto('/tickets?view=custom');
+    const fields = page.getByRole('list', { name: 'Filters' });
+    // A click on the server-rendered button before the hydration does nothing, so it is repeated.
+    await expect(async () => {
+      await page.getByRole('button', { name: 'Add filter' }).click({ timeout: 2_000 });
+      await expect(fields).toBeVisible({ timeout: 2_000 });
+    }).toPass();
+
+    for (const field of await fields.getByRole('button').allInnerTexts()) {
+      await fields.getByRole('button', { name: field.trim() }).click();
+      await page.getByRole('button', { name: 'Back to filters' }).click();
+    }
+  });
+
   test('chooses a project by part of its key, then an assignee of it, and keeps both on reload', async ({
     page,
     baseURL,
