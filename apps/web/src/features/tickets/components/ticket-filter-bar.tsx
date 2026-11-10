@@ -198,8 +198,14 @@ export function TicketFilterBar({
 
   // In the popover the list scrolls within the height left on the screen (a phone in landscape);
   // `p-1 -m-1` keeps the focus ring of its rows inside the scrolling box.
-  const fieldList = (className?: string) => (
-    <ul className={cn('flex flex-col', className)} aria-label={t('fields')}>
+  const fieldList = (
+    <ul
+      className={cn(
+        'flex flex-col',
+        !isSheet && '-m-1 min-h-0 overflow-y-auto overscroll-contain p-1',
+      )}
+      aria-label={t('fields')}
+    >
       {available.map((field) => (
         <li key={field.key}>
           <Button
@@ -319,7 +325,7 @@ export function TicketFilterBar({
             {/* Scrolls when the sheet is lower than the field list (a phone in landscape), so no
                 row slides under Done. */}
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-2">
-              {step === null ? fieldList() : picker(step, 'min-h-0 flex-1')}
+              {step === null ? fieldList : picker(step, 'min-h-0 flex-1')}
             </div>
             <DrawerFooter className="pt-2">
               <DrawerClose render={<Button type="button" />}>{t('done')}</DrawerClose>
@@ -339,9 +345,7 @@ export function TicketFilterBar({
             <PopoverTitle className="sr-only">
               {step === null ? t('title') : labelOf(step)}
             </PopoverTitle>
-            {step === null
-              ? fieldList('-m-1 min-h-0 overflow-y-auto overscroll-contain p-1')
-              : picker(step, 'max-h-96')}
+            {step === null ? fieldList : picker(step, 'max-h-96')}
           </PopoverContent>
         </Popover>
       )}
