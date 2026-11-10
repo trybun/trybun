@@ -26,13 +26,15 @@ The tablet ID cell gets wider ("Funkcjonalność", "Nie ustawiono") – checked 
 
 ## Progress
 
+PR: #294
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: List
 
-- [ ] 1.1 Type on the phone card and in the tablet ID cell, with component tests
-- [ ] 1.2 E2E on phone, tablet and desktop
+- [x] 1.1 Type on the phone card and in the tablet ID cell, with component tests — 9f75623
+- [x] 1.2 E2E on phone, tablet and desktop — 4a6cdc6
 
 ### Phase 2: Documentation and specification
 
-- [ ] 2.1 User documentation, help content, §8.1 and the change specification
+- [x] 2.1 User documentation, help content, §8.1 and the change specification — ca24bda
