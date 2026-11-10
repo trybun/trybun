@@ -32,13 +32,13 @@ Each toggle reads the list again (accepted by the spec, `keepPreviousData` keeps
 
 ### Phase 1: Data
 
-- [ ] 1.1 Search and name query factories
-- [ ] 1.2 Keep the previous rows while a filter change loads
+- [x] 1.1 Search and name query factories — fbe8b6a
+- [x] 1.2 Keep the previous rows while a filter change loads — ccf3cab
 
 ### Phase 2: Pickers and bar
 
-- [ ] 2.1 One picker per field
-- [ ] 2.2 Filter bar with field list, chips and two-step sheet
+- [x] 2.1 One picker per field — ddc18f9
+- [x] 2.2 Filter bar with field list, chips and two-step sheet — ddc18f9
 
 ### Phase 3: Docs, specification and E2E
 
