@@ -2,13 +2,17 @@
 
 import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox';
 import { cn } from 'cn';
-import { CheckIcon, ChevronDownIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, SearchIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 /**
- * A searchable single choice from a long list (shadcn/ui Combobox on Base UI): the input filters
- * the `items` of the root as the person types. Adapted from base-nova: 44 px input and items on
- * touch devices, 16 px text below the desktop breakpoint (§2.9), theme tokens only.
+ * A searchable choice from a long list (shadcn/ui Combobox on Base UI): the input filters the
+ * `items` of the root as the person types. Adapted from base-nova: 44 px input and items on touch
+ * devices, 16 px text below the desktop breakpoint (§2.9), theme tokens only.
+ *
+ * Two layouts: `ComboboxInput` in the page with `ComboboxItem` (a single choice), or a button
+ * (`ComboboxTrigger`) that opens `ComboboxContent` with `ComboboxPopupInput` on top and
+ * `ComboboxCheckboxItem` rows – the picker of several values (`multiple`).
  */
 const Combobox = ComboboxPrimitive.Root;
 
@@ -34,6 +38,15 @@ function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
       </ComboboxPrimitive.Trigger>
     </div>
   );
+}
+
+/**
+ * The button that opens the list when the input sits in the popup (`ComboboxPopupInput`). Render
+ * it as a `Button` (`render={<Button variant="outline" />}`); it gets the focus back on close.
+ * Base UI gives it the `combobox` role, which takes no name from its content: pass `aria-label`.
+ */
+function ComboboxTrigger(props: ComboboxPrimitive.Trigger.Props) {
+  return <ComboboxPrimitive.Trigger data-slot="combobox-trigger" {...props} />;
 }
 
 function ComboboxContent({
@@ -101,6 +114,62 @@ function ComboboxItem({ className, children, ...props }: ComboboxPrimitive.Item.
   );
 }
 
+/**
+ * The search input at the top of `ComboboxContent`. Base UI moves the focus into it when the
+ * popup opens with a mouse or the keyboard – on touch it focuses the popup instead, so the
+ * on-screen keyboard does not cover the list until the person taps the input. It needs an
+ * accessible name (`aria-label`).
+ */
+function ComboboxPopupInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
+  return (
+    <div data-slot="combobox-popup-input-group" className="relative border-b border-border p-1">
+      <SearchIcon
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground xl:pointer-fine:left-3.5"
+      />
+      <ComboboxPrimitive.Input
+        data-slot="combobox-popup-input"
+        className={cn(
+          'h-11 w-full min-w-0 rounded-md border border-input bg-transparent py-1 pr-3 pl-9 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pl-8 xl:pointer-fine:text-sm',
+          className,
+        )}
+        {...props}
+      />
+    </div>
+  );
+}
+
+/**
+ * An item of a multiple choice (`multiple` on the root): a checkbox-styled box before the label,
+ * checked while the item is selected. The box is decorative – the list is `aria-multiselectable`
+ * and every item carries `aria-selected`; the tick, not only the colour, shows the state. The box
+ * follows `aria-selected`: the `data-selected` variant of shadcn's CSS wants `"true"`, Base UI
+ * writes an empty attribute.
+ */
+function ComboboxCheckboxItem({ className, children, ...props }: ComboboxPrimitive.Item.Props) {
+  return (
+    <ComboboxPrimitive.Item
+      data-slot="combobox-checkbox-item"
+      className={cn(
+        'group/combobox-checkbox-item relative flex min-h-11 w-full cursor-default items-center gap-2 rounded-md py-1 pr-2 pl-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground xl:pointer-fine:min-h-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+        className,
+      )}
+      {...props}
+    >
+      <span
+        aria-hidden
+        data-slot="combobox-checkbox-item-box"
+        className="flex size-4 shrink-0 items-center justify-center rounded-sm border border-input text-primary-foreground transition-colors group-aria-selected/combobox-checkbox-item:border-primary group-aria-selected/combobox-checkbox-item:bg-primary dark:bg-input/30 dark:group-aria-selected/combobox-checkbox-item:bg-primary"
+      >
+        <ComboboxPrimitive.ItemIndicator>
+          <CheckIcon className="size-3.5" />
+        </ComboboxPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </ComboboxPrimitive.Item>
+  );
+}
+
 /** Shown instead of the list when no item matches the input. */
 function ComboboxEmpty({ className, ...props }: ComboboxPrimitive.Empty.Props) {
   return (
@@ -115,4 +184,14 @@ function ComboboxEmpty({ className, ...props }: ComboboxPrimitive.Empty.Props) {
   );
 }
 
-export { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty };
+export {
+  Combobox,
+  ComboboxInput,
+  ComboboxTrigger,
+  ComboboxContent,
+  ComboboxPopupInput,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxCheckboxItem,
+  ComboboxEmpty,
+};
