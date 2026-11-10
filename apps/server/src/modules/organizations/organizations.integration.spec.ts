@@ -406,7 +406,7 @@ describe('organizations endpoints', () => {
       const {
         tag,
         organizations: [acme, acmeLabs, other],
-      } = await organizationsOfProject(['Acme Corp', 'ACME Labs', 'Globex']);
+      } = await organizationsOfProject(['Acme Corp', 'Acme Labs', 'Globex']);
       const { authorization } = await signIn();
 
       const lookup = [acme, acmeLabs, other].map(

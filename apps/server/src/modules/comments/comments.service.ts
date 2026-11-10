@@ -37,6 +37,7 @@ import {
   versionedWhere,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { containsText } from '../../platform/database/text-search.js';
 import { AppError } from '../../platform/errors/app-error.js';
 import {
   ActivityEventsService,
@@ -439,10 +440,7 @@ export class CommentsService {
     );
     const people = await this.prisma.user.findMany({
       where: {
-        AND: [
-          scope,
-          input.query === '' ? {} : { displayName: { contains: input.query, mode: 'insensitive' } },
-        ],
+        AND: [scope, input.query === '' ? {} : { displayName: containsText(input.query) }],
       },
       select: identitySelect(principal),
       orderBy: [{ kind: 'asc' }, { displayName: 'asc' }, { id: 'asc' }],
