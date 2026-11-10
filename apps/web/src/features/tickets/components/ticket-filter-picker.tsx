@@ -153,8 +153,9 @@ export function TicketFilterPicker({
       value={values}
       inputValue={search}
       onInputValueChange={(text, details) => {
-        // A press on an item may write into the input as well; only typing searches (S1-10).
-        if (details.reason === 'input-change' || details.reason === 'input-clear') {
+        // Only typing searches: a press on an item clears the input of a multiple choice
+        // (`input-clear`), which would drop the search between two choices of one result.
+        if (details.reason === 'input-change') {
           setSearch(text);
         }
       }}

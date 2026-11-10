@@ -42,5 +42,5 @@ Each toggle reads the list again (accepted by the spec, `keepPreviousData` keeps
 
 ### Phase 3: Docs, specification and E2E
 
-- [ ] 3.1 Translations, user documentation and specification
-- [ ] 3.2 E2E and validation gate
+- [x] 3.1 Translations, user documentation and specification — 6686337
+- [x] 3.2 E2E and validation gate — a1f2317
