@@ -574,12 +574,16 @@
         }
       },
       "filters": {
-        "filter": "Filter",
         "title": "Filter tickets",
+        "add": "Add filter",
+        "fields": "Filters",
+        "back": "Back to filters",
+        "done": "Done",
         "clear": "Clear filters",
-        "apply": "Show tickets",
         "remove": "Remove filter {filter}: {values}",
         "chip": "{filter}: {values}",
+        "change": "Change filter {filter}: {values}",
+        "values": "{first} +{count}",
         "unknown": "Unknown",
         "open": "Open",
         "me": "Me",
@@ -587,6 +591,10 @@
         "none": "Not set",
         "noOrganization": "No organization",
         "chooseProjects": "Choose projects to filter by their people.",
+        "loading": "Loading…",
+        "typeToFindMore": "Type to find more",
+        "loadFailed": "The options could not be loaded.",
+        "retry": "Try again",
         "names": {
           "projectId": "Project",
           "organizationId": "Organization",
@@ -596,6 +604,26 @@
           "assigneeId": "Assignee",
           "source": "Source",
           "sharingRequest": "Sharing request"
+        },
+        "searches": {
+          "projectId": "Search projects…",
+          "organizationId": "Search organizations…",
+          "type": "Search types…",
+          "status": "Search statuses…",
+          "priority": "Search priorities…",
+          "assigneeId": "Search people…",
+          "source": "Search sources…",
+          "sharingRequest": "Search sharing requests…"
+        },
+        "noMatches": {
+          "projectId": "No projects match “{query}”.",
+          "organizationId": "No organizations match “{query}”.",
+          "type": "No types match “{query}”.",
+          "status": "No statuses match “{query}”.",
+          "priority": "No priorities match “{query}”.",
+          "assigneeId": "No people match “{query}”.",
+          "source": "No sources match “{query}”.",
+          "sharingRequest": "No sharing requests match “{query}”."
         },
         "sharingRequests": {
           "pending": "Pending",

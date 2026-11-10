@@ -174,6 +174,18 @@ export function withFilters(state: TicketListState, filters: TicketListFilters):
   };
 }
 
+/** The filters with the values of one filter replaced; a filter without values is removed. */
+export function withFilterValues(
+  filters: TicketListFilters,
+  key: TicketListFilterKey,
+  values: readonly string[],
+): TicketListFilters {
+  const rest = Object.fromEntries(
+    Object.entries(filters).filter(([current]) => current !== key),
+  ) as TicketListFilters;
+  return values.length === 0 ? rest : { ...rest, [key]: [...values] };
+}
+
 /** The state of a predefined view, or of empty own filters, with its default sort. */
 export function stateOfView(view: TicketListView): TicketListState {
   return { view, filters: filtersOfView(view), ...defaultSortingOf(view) };
