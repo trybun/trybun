@@ -1,7 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { MAX_PAGE_LIMIT } from '@trybun/contracts/pagination';
+import { MAX_TICKET_FILTER_VALUES } from '@trybun/contracts/pagination';
 import type { SortOrder, TicketListFilters, TicketListSort } from '@trybun/contracts/tickets';
-import { allPageItems } from '../../lib/api-client/all-pages.js';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
 import { ApiError } from '../../lib/errors/api-error.js';
 
@@ -34,6 +33,11 @@ export function myTicketsQueryOptions(
   });
 }
 
+/** Whether a failed read is tried again: a refusal (`4xx`, also `429`) never is, as it would repeat. */
+function retryUnlessRefused(failureCount: number, error: Error) {
+  return !(error instanceof ApiError && error.status < 500) && failureCount < 3;
+}
+
 /**
  * A ticket by its identifier such as `ERP-12` (§3.2, S1-05 Q12): the identifier lookup returns at
  * most the one ticket; an invisible ticket is answered like a missing one, with `404` (§5.3). A
@@ -57,8 +61,7 @@ export function ticketQueryOptions(client: ApiClient, identifier: string) {
         }),
       );
     },
-    retry: (failureCount, error) =>
-      !(error instanceof ApiError && error.status < 500) && failureCount < 3,
+    retry: retryUnlessRefused,
   });
 }
 
@@ -148,105 +151,215 @@ export function ticketListInfiniteQueryOptions(
   });
 }
 
-/** The records of a filter's options, each once: a list read page by page may repeat one. */
-function uniqueById<Item extends { id: string }>(items: Item[]): Item[] {
-  return [...new Map(items.map((item) => [item.id, item])).values()];
-}
-
-/** The cursor parameter of the next page of a list, if any (§18.4). */
-function cursorQuery(cursor: string | null) {
-  return cursor === null ? {} : { cursor };
-}
+/** How many options one search of a filter picker shows, per state of a list (§8.1, #279). */
+export const FILTER_SEARCH_LIMIT = 50;
 
 /**
- * The options of the organization filter (S1-13 Q6): the IDs and names of the organizations with
- * access to one of the person's projects, active and archived – archived organizations still
- * appear in snapshots (§7.3). Every page is read, up to the bound of `allPageItems` (#272).
+ * A record a filter can choose: its ID, its label (`null` for a deleted user) and, for a project,
+ * its key, which its chip shows.
  */
-export function organizationFilterOptionsQueryOptions(client: ApiClient) {
+export interface FilterRecord {
+  id: string;
+  label: string | null;
+  short?: string;
+}
+
+/** One search of a filter picker: the first page, and whether typing would find more. */
+export interface FilterSearchPage {
+  records: FilterRecord[];
+  hasMore: boolean;
+}
+
+/** The records of a filter, each once: the active and the archived list may share one. */
+function uniqueById(records: FilterRecord[]): FilterRecord[] {
+  return [...new Map(records.map((record) => [record.id, record])).values()];
+}
+
+/** The search parameter of a list: a blank search is no search. */
+function searchQuery(search: string) {
+  const query = search.trim();
+  return query === '' ? {} : { query };
+}
+
+/** One page of each state of a list, the active records first, then the archived ones (§7.3). */
+async function bothStates<Item>(
+  read: (state: 'active' | 'archived') => Promise<{ items: Item[]; nextCursor: string | null }>,
+  toRecord: (item: Item) => FilterRecord,
+): Promise<FilterSearchPage> {
+  const pages = await Promise.all((['active', 'archived'] as const).map(read));
+  return {
+    records: uniqueById(pages.flatMap((page) => page.items.map(toRecord))),
+    hasMore: pages.some((page) => page.nextCursor !== null),
+  };
+}
+
+const projectRecord = ({ id, key, name }: { id: string; key: string; name: string }) => ({
+  id,
+  label: `${key} · ${name}`,
+  short: key,
+});
+
+const organizationRecord = ({ id, name }: { id: string; name: string }) => ({ id, label: name });
+
+const personRecord = ({
+  id,
+  displayName,
+  githubLogin,
+}: {
+  id: string;
+  displayName: string | null;
+  githubLogin: string | null;
+}) => ({ id, label: displayName ?? (githubLogin === null ? null : `@${githubLogin}`) });
+
+/**
+ * The projects of the project filter's picker (§8.1, #279): searched on the server by key and
+ * name, the first page of the active and of the archived projects – archived ones still have
+ * tickets. Typing narrows the list; the picker never reads further pages.
+ */
+export function projectFilterSearchQueryOptions(client: ApiClient, search: string) {
   return queryOptions({
-    queryKey: ['organizations', 'filter-options'],
-    queryFn: async ({ signal }) => {
-      const lists = await Promise.all(
-        (['active', 'archived'] as const).map((state) =>
-          allPageItems((cursor) =>
-            dataOf(
-              client.GET('/api/v1/organizations', {
-                params: { query: { state, limit: MAX_PAGE_LIMIT, ...cursorQuery(cursor) } },
-                signal,
-              }),
-            ),
+    queryKey: ['projects', 'filter-search', { query: search.trim() }],
+    queryFn: ({ signal }) =>
+      bothStates(
+        (state) =>
+          dataOf(
+            client.GET('/api/v1/projects', {
+              params: { query: { state, limit: FILTER_SEARCH_LIMIT, ...searchQuery(search) } },
+              signal,
+            }),
           ),
-        ),
-      );
-      return uniqueById(lists.flat())
-        .map(({ id, name }) => ({ id, label: name }))
-        .sort((left, right) => left.label.localeCompare(right.label));
-    },
+        projectRecord,
+      ),
+    retry: retryUnlessRefused,
   });
 }
 
 /**
- * The people of the assignee filter (S1-13 Q7): the members of the chosen projects – also those
- * who can no longer be assigned, so former assignees can still be found. Every page of each
- * project's members is read, up to the bound of `allPageItems` (#272).
+ * The organizations of the organization filter's picker (S1-13 Q6, #279): those with access to
+ * one of the person's projects, searched on the server by name, active and archived (§7.3).
  */
-export function assigneeFilterOptionsQueryOptions(
+export function organizationFilterSearchQueryOptions(client: ApiClient, search: string) {
+  return queryOptions({
+    queryKey: ['organizations', 'filter-search', { query: search.trim() }],
+    queryFn: ({ signal }) =>
+      bothStates(
+        (state) =>
+          dataOf(
+            client.GET('/api/v1/organizations', {
+              params: { query: { state, limit: FILTER_SEARCH_LIMIT, ...searchQuery(search) } },
+              signal,
+            }),
+          ),
+        organizationRecord,
+      ),
+    retry: retryUnlessRefused,
+  });
+}
+
+/**
+ * The people of the assignee filter's picker (S1-13 Q7, #279): the team members of the chosen
+ * projects in one request, searched on the server by display name and GitHub login – also those
+ * who can no longer be assigned, so former assignees can be found. Without projects there is
+ * nobody to offer.
+ */
+export function assigneeFilterSearchQueryOptions(
   client: ApiClient,
   projectIds: readonly string[],
+  search: string,
 ) {
   return queryOptions({
-    queryKey: ['projects', 'members', 'filter-options', [...projectIds].sort()],
-    queryFn: async ({ signal }) => {
-      const lists = await Promise.all(
-        projectIds.map((projectId) =>
-          allPageItems((cursor) =>
-            dataOf(
-              client.GET('/api/v1/projects/{projectId}/members', {
-                params: {
-                  path: { projectId },
-                  query: { limit: MAX_PAGE_LIMIT, ...cursorQuery(cursor) },
-                },
-                signal,
-              }),
-            ),
-          ),
-        ),
+    queryKey: [
+      'projects',
+      'members',
+      'filter-search',
+      { projectId: [...projectIds].sort(), query: search.trim() },
+    ],
+    queryFn: async ({ signal }): Promise<FilterSearchPage> => {
+      const page = await dataOf(
+        client.GET('/api/v1/project-members', {
+          params: {
+            query: {
+              projectId: [...projectIds],
+              limit: FILTER_SEARCH_LIMIT,
+              ...searchQuery(search),
+            },
+          },
+          signal,
+        }),
       );
-      const people = new Map<string, string | null>();
-      for (const { user } of lists.flat()) {
-        people.set(user.id, user.displayName);
-      }
-      return [...people].map(([id, displayName]) => ({ id, label: displayName }));
+      return { records: page.items.map(personRecord), hasMore: page.nextCursor !== null };
     },
     enabled: projectIds.length > 0,
+    retry: retryUnlessRefused,
   });
 }
 
 /**
- * The options of the project filter (§8.1): the person's projects, active and archived. Every page
- * is read, up to the bound of `allPageItems` (#272).
+ * The projects of chosen IDs, for the chips and the pinned rows of the project filter (#279):
+ * looked up by ID in both states. An ID the person cannot see is simply absent – its chip says
+ * "Unknown" (S1-13 Q5).
  */
-export function projectFilterOptionsQueryOptions(client: ApiClient) {
+export function projectFilterNamesQueryOptions(client: ApiClient, ids: readonly string[]) {
   return queryOptions({
-    queryKey: ['projects', 'filter-options'],
-    queryFn: async ({ signal }) => {
-      const lists = await Promise.all(
-        (['active', 'archived'] as const).map((state) =>
-          allPageItems((cursor) =>
+    queryKey: ['projects', 'filter-names', [...ids].sort()],
+    queryFn: async ({ signal }) =>
+      (
+        await bothStates(
+          (state) =>
             dataOf(
               client.GET('/api/v1/projects', {
-                params: { query: { state, limit: MAX_PAGE_LIMIT, ...cursorQuery(cursor) } },
+                params: { query: { state, id: [...ids], limit: MAX_TICKET_FILTER_VALUES } },
                 signal,
               }),
             ),
-          ),
-        ),
+          projectRecord,
+        )
+      ).records,
+    enabled: ids.length > 0,
+    retry: retryUnlessRefused,
+  });
+}
+
+/** The organizations of chosen IDs, for the chips and the pinned rows (#279). */
+export function organizationFilterNamesQueryOptions(client: ApiClient, ids: readonly string[]) {
+  return queryOptions({
+    queryKey: ['organizations', 'filter-names', [...ids].sort()],
+    queryFn: async ({ signal }) =>
+      (
+        await bothStates(
+          (state) =>
+            dataOf(
+              client.GET('/api/v1/organizations', {
+                params: { query: { state, id: [...ids], limit: MAX_TICKET_FILTER_VALUES } },
+                signal,
+              }),
+            ),
+          organizationRecord,
+        )
+      ).records,
+    enabled: ids.length > 0,
+    retry: retryUnlessRefused,
+  });
+}
+
+/**
+ * The people of chosen IDs, for the chips and the pinned rows of the assignee filter (#279): among
+ * the members of every project whose members the person may read, so a shared link with only an
+ * assignee still names them.
+ */
+export function assigneeFilterNamesQueryOptions(client: ApiClient, ids: readonly string[]) {
+  return queryOptions({
+    queryKey: ['projects', 'members', 'filter-names', [...ids].sort()],
+    queryFn: async ({ signal }) => {
+      const page = await dataOf(
+        client.GET('/api/v1/project-members', {
+          params: { query: { userId: [...ids], limit: MAX_TICKET_FILTER_VALUES } },
+          signal,
+        }),
       );
-      return uniqueById(lists.flat()).map(({ id, key, name }) => ({
-        id,
-        label: `${key} · ${name}`,
-      }));
+      return page.items.map(personRecord);
     },
+    enabled: ids.length > 0,
+    retry: retryUnlessRefused,
   });
 }

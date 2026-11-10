@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-10 |
 | Plan task | – (follow-up of `S1-13`) |
 | System specification sections | §7.5, §8.1, §12.1, §17.2, §18.5, §18.6 |
-| Related issues / PRs | #279, #276, #272, #270, [S1-13 spec](implemented/2026-10-26-team-list-view.md), [#272 spec](2026-11-10-ticket-filter-options-all-pages.md) |
+| Related issues / PRs | #279, #276, #272, #270, [S1-13 spec](2026-10-26-team-list-view.md), [#272 spec](../2026-11-10-ticket-filter-options-all-pages.md) |
 
 ## 📝 TLDR
 
@@ -97,11 +97,11 @@ Both `state` values of projects and organizations are still read with two parall
 
 Proposal mockups (illustrative static HTML, not accepted designs; the app's real components and tokens apply):
 
-- [Field list of **+ Filter**](assets/ticket-list-filter-pickers/mockup-01-field-list.png)
-- [Project picker with search, pinned choices and chips, desktop](assets/ticket-list-filter-pickers/mockup-02-project-picker-desktop.png)
-- [Project picker as the second step of the bottom sheet, phone 360 px](assets/ticket-list-filter-pickers/mockup-03-project-picker-phone.png)
+- [Field list of **+ Filter**](../assets/ticket-list-filter-pickers/mockup-01-field-list.png)
+- [Project picker with search, pinned choices and chips, desktop](../assets/ticket-list-filter-pickers/mockup-02-project-picker-desktop.png)
+- [Project picker as the second step of the bottom sheet, phone 360 px](../assets/ticket-list-filter-pickers/mockup-03-project-picker-phone.png)
 
-Current state (QA of #276, 150 projects): [panel on desktop](assets/ticket-list-filter-pickers/current-01-panel-desktop.png), [panel on a phone](assets/ticket-list-filter-pickers/current-02-panel-phone.png).
+Current state (QA of #276, 150 projects): [panel on desktop](../assets/ticket-list-filter-pickers/current-01-panel-desktop.png), [panel on a phone](../assets/ticket-list-filter-pickers/current-02-panel-phone.png).
 
 **Flow (desktop / tablet):** **+ Filter** → popover with the field list (one 44 px row per field, active fields omitted) → choosing *Project* swaps the popover's content to the Project picker, input focused (mouse or keyboard) → typing `qm1` shows matching projects after the deferred search → ticking `QM150` applies (URL `?projectId=…`, list reloads, chip "Project: QM150" appears) → Esc or click outside closes. Choosing the chip reopens the Project picker with `QM150` checked on top.
 
@@ -221,3 +221,4 @@ Glossary: no new domain terms.
 - 2026-11-10 – Specification review (fresh context): one `GET /project-members` instead of one request per project (rate limit) and for assignee names without projects; team-only parameters; `keepPreviousData`; named Combobox parts and keyboard tests; Phase 2 split; §18.5 wording.
 - 2026-11-10 – Review of #280: `GET /project-members` returns team-role memberships only (no end users), `query` fields named; order of merged active and archived pages; "Type to find more" row; former assignees without membership stay "Unknown".
 - 2026-11-10 – Q7 (maintainer): a touch open focuses the picker's popup, not its search input (Base UI default, #285).
+- 2026-11-10 – Implemented: API (#284), Combobox parts (#285), pickers in the web app (#290). The picker is rendered `inline` in the bar's popover or bottom sheet, which share one set of triggers (Add filter and the chips), so `ComboboxTrigger`/`ComboboxContent` are not used; the focus rule of Q7 is reproduced by the bar. Approved pattern added to §18.3: text search of lists through `containsText()`.

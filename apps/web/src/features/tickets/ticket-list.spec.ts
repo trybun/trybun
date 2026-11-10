@@ -5,6 +5,7 @@ import {
   parseTicketListSearchParams,
   stateOfView,
   ticketListHref,
+  withFilterValues,
   withFilters,
 } from './ticket-list.js';
 
@@ -99,5 +100,19 @@ describe('ticketListHref', () => {
     expect(
       withFilters({ ...stateOfView('triage'), sort: 'identifier', order: 'asc' }, {}),
     ).toMatchObject({ sort: 'identifier', order: 'asc' });
+  });
+});
+
+describe('withFilterValues (#279)', () => {
+  it('replaces the values of one filter and keeps the others', () => {
+    expect(withFilterValues({ priority: ['low'], type: ['bug'] }, 'type', ['task', 'bug'])).toEqual(
+      { priority: ['low'], type: ['task', 'bug'] },
+    );
+  });
+
+  it('removes a filter left without values', () => {
+    expect(withFilterValues({ priority: ['low'], type: ['bug'] }, 'type', [])).toEqual({
+      priority: ['low'],
+    });
   });
 });

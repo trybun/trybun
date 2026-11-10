@@ -3,6 +3,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { TicketListItem } from '@trybun/contracts/tickets';
 import { TABLET_MEDIA_QUERY } from '@trybun/ui/hooks/use-media-query';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
@@ -234,33 +235,47 @@ describe('TicketList', () => {
     expect(within(table).getAllByRole('button', { name: 'Refuse sharing' })).toHaveLength(1);
   });
 
-  it('names a project from beyond the first page in its chip, and only an invisible one Unknown (#272)', async () => {
-    const id = (number: number) => `0199a3f0-0000-7000-8000-${String(number).padStart(12, '0')}`;
-    const projects = Array.from({ length: 150 }, (_, index) => ({
-      id: id(index + 1),
-      key: `P${index + 1}`,
-      name: `Project ${index + 1}`,
-    }));
-    fake.on('GET /api/v1/tickets', { data: { items: [], nextCursor: null } });
-    fake.on('GET /api/v1/projects', (init) => {
-      const { state, cursor } = (init as { params: { query: { state: string; cursor?: string } } })
-        .params.query;
-      if (state === 'archived') {
-        return { data: { items: [], nextCursor: null } };
-      }
-      return cursor === undefined
-        ? { data: { items: projects.slice(0, 100), nextCursor: '100' } }
-        : { data: { items: projects.slice(100), nextCursor: null } };
+  it('keeps the rows of the last filters while the next ones load (#279)', async () => {
+    answerList([ticket(1)]);
+    const before = withFilters(stateOfView('triage'), { priority: ['high'] });
+    const after = withFilters(stateOfView('triage'), { priority: ['high', 'low'] });
+    function Harness() {
+      const [state, setState] = useState(before);
+      return (
+        <>
+          <button type="button" onClick={() => setState(after)}>
+            Next filters
+          </button>
+          <TicketList state={state} currentUserId={ME} organizationsExist={false} />
+        </>
+      );
+    }
+    renderInApp(<Harness />);
+    await screen.findAllByRole('link', { name: 'Ticket 1' });
+
+    let answer: (reply: unknown) => void = () => undefined;
+    fake.client.GET.mockImplementationOnce(
+      () => new Promise((resolve) => (answer = resolve)) as never,
+    );
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Next filters' }));
+
+    // The next page is on its way (the stand-in answers later, unrecorded): the rows stay, the
+    // results are marked busy.
+    await waitFor(() => {
+      const [path, init] = fake.client.GET.mock.lastCall ?? [];
+      expect(path).toBe('/api/v1/tickets');
+      expect(init).toMatchObject({ params: { query: { priority: ['high', 'low'] } } });
     });
-    fake.on('GET /api/v1/projects/{projectId}/members', { data: { items: [], nextCursor: null } });
-    renderInApp(
-      <TicketList
-        state={withFilters(stateOfView('triage'), { projectId: [id(150), id(999)] })}
-        currentUserId={ME}
-        organizationsExist={false}
-      />,
+    expect(screen.getAllByRole('link', { name: 'Ticket 1' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('table').closest('[aria-busy]')?.getAttribute('aria-busy')).toBe(
+      'true',
     );
 
-    expect(await screen.findByText(/P150 · Project 150, Unknown/)).toBeDefined();
+    answer({
+      data: { items: [ticket(2)], nextCursor: null },
+      response: new Response(null, { status: 200 }),
+    });
+    await screen.findAllByRole('link', { name: 'Ticket 2' });
+    expect(screen.queryByRole('link', { name: 'Ticket 1' })).toBeNull();
   });
 });

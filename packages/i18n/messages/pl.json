@@ -574,12 +574,16 @@
         }
       },
       "filters": {
-        "filter": "Filtruj",
         "title": "Filtruj zgłoszenia",
+        "add": "Dodaj filtr",
+        "fields": "Filtry",
+        "back": "Wróć do filtrów",
+        "done": "Gotowe",
         "clear": "Wyczyść filtry",
-        "apply": "Pokaż zgłoszenia",
         "remove": "Usuń filtr {filter}: {values}",
         "chip": "{filter}: {values}",
+        "change": "Zmień filtr {filter}: {values}",
+        "values": "{first} +{count}",
         "unknown": "Nieznany",
         "open": "Otwarte",
         "me": "Ja",
@@ -587,6 +591,10 @@
         "none": "Nie ustawiono",
         "noOrganization": "Bez organizacji",
         "chooseProjects": "Wybierz projekty, aby filtrować według ich osób.",
+        "loading": "Wczytywanie…",
+        "typeToFindMore": "Wpisz, aby znaleźć więcej",
+        "loadFailed": "Nie udało się wczytać opcji.",
+        "retry": "Spróbuj ponownie",
         "names": {
           "projectId": "Projekt",
           "organizationId": "Organizacja",
@@ -596,6 +604,26 @@
           "assigneeId": "Przypisany",
           "source": "Źródło",
           "sharingRequest": "Prośba o udostępnienie"
+        },
+        "searches": {
+          "projectId": "Szukaj projektów…",
+          "organizationId": "Szukaj organizacji…",
+          "type": "Szukaj typów…",
+          "status": "Szukaj statusów…",
+          "priority": "Szukaj priorytetów…",
+          "assigneeId": "Szukaj osób…",
+          "source": "Szukaj źródeł…",
+          "sharingRequest": "Szukaj próśb o udostępnienie…"
+        },
+        "noMatches": {
+          "projectId": "Brak wyników dla „{query}”.",
+          "organizationId": "Brak wyników dla „{query}”.",
+          "type": "Brak wyników dla „{query}”.",
+          "status": "Brak wyników dla „{query}”.",
+          "priority": "Brak wyników dla „{query}”.",
+          "assigneeId": "Brak wyników dla „{query}”.",
+          "source": "Brak wyników dla „{query}”.",
+          "sharingRequest": "Brak wyników dla „{query}”."
         },
         "sharingRequests": {
           "pending": "Oczekująca",

@@ -32,7 +32,11 @@ Gdy zmienisz filtr, żaden widok nie jest już zaznaczony: lista pokazuje **Filt
 
 ## Filtry
 
-Wybierz **Filtruj**, aby wybrać filtry – na telefonie otwierają się na dole ekranu. Każdy filtr może mieć kilka wartości: zgłoszenie pasuje, gdy ma jedną z wartości filtru, i to dla wszystkich filtrów naraz.
+Wybierz **Dodaj filtr** i wybierz pole – na telefonie pola otwierają się na dole ekranu. Pole otwiera własną listę wartości z polem wyszukiwania u góry: wpisz fragment nazwy – w przypadku projektu także fragment jego klucza – aby zawęzić listę, i wybierz potrzebne wartości. Każda zaznaczona lub odznaczona wartość działa od razu, a lista zostaje otwarta na kolejne wybory; zamknij ją klawiszem Esc, wybierając miejsce poza nią albo – na telefonie – przyciskiem **Gotowe**, a przyciskiem **Filtry** wróć tam do listy pól.
+
+Wybrane wartości są na początku listy. Projekty, organizacje i osoby są wyszukiwane spośród wszystkich, które widzisz; gdy jest ich więcej, niż pokazuje lista, widać „Wpisz, aby znaleźć więcej”.
+
+Każdy filtr może mieć kilka wartości: zgłoszenie pasuje, gdy ma jedną z wartości filtru, i to dla wszystkich filtrów naraz.
 
 | Filtr | Wartości |
 |---|---|
@@ -41,11 +45,11 @@ Wybierz **Filtruj**, aby wybrać filtry – na telefonie otwierają się na dole
 | **Typ** | **Błąd**, **Funkcjonalność**, **Zadanie**, **Pytanie**, **Nie ustawiono** |
 | **Status** | Statusy, pogrupowane jak w widoku zgłoszenia; **Otwarte** wybiera każdy status, który nie jest zamknięty |
 | **Priorytet** | **Niski**, **Normalny**, **Wysoki**, **Krytyczny** |
-| **Przypisany** | **Ja**, **Nieprzypisane** i członkowie projektów wybranych w filtrze **Projekt** |
+| **Przypisany** | **Ja**, **Nieprzypisane** i członkowie projektów wybranych w filtrze **Projekt** – najpierw wybierz projekt, aby znaleźć osoby |
 | **Źródło** | **Użytkownik** (z portalu), **Developer** (zespół), a **Integracja** dopiero, gdy jakieś zgłoszenie z niej pochodzi |
 | **Prośba o udostępnienie** | **Oczekująca**, **Odmówiona** |
 
-Aktywne filtry są widoczne nad listą jako etykiety, na przykład „Status: Nowe, Do analizy”. Wybierz **×** na etykiecie, aby usunąć ten filtr, albo **Wyczyść filtry**, aby usunąć wszystkie; bez filtrów lista pokazuje każde zgłoszenie, które widzisz.
+Aktywne filtry są widoczne obok **Dodaj filtr** jako etykiety z pierwszą wartością i liczbą pozostałych, na przykład „Status: Nowe +1”. Wybierz etykietę, aby zmienić jej wartości, jej **×**, aby usunąć ten filtr, albo **Wyczyść filtry**, aby usunąć wszystkie; bez filtrów lista pokazuje każde zgłoszenie, które widzisz.
 
 Widok, filtry i kolejność są częścią adresu strony, więc zostają po odświeżeniu i możesz je udostępnić jako link – na przykład `/tickets?view=triage`. Lista bez żadnego filtru ma adres `/tickets?view=custom`. Gdy link wskazuje coś, czego nie widzisz – na przykład projekt, którego nie jesteś już członkiem – jego etykieta pokazuje „Nieznany” i nie pasuje do żadnego zgłoszenia; usuń ją, a pozostałe wartości nadal obowiązują.
 
