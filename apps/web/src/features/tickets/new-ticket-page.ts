@@ -2,7 +2,8 @@ import 'server-only';
 import { MAX_PAGE_LIMIT } from '@trybun/contracts/pagination';
 import { ticketTypeSchema } from '@trybun/contracts/tickets';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
+import { allPageItems } from '../../lib/api-client/all-pages.js';
+import { dataOf } from '../../lib/api-client/api-client.js';
 import { getServerApiClient } from '../../lib/api-client/server-api-client.js';
 import { getServerQueryClient } from '../../lib/query-client/server-query-client.js';
 import { currentUserQueryOptions } from '../users/queries.js';
@@ -35,29 +36,18 @@ export async function getNewTicketPage(): Promise<{
   return { projects, templates };
 }
 
-/** One page of the active projects the person can see. */
-async function activeProjectsPage(client: ApiClient, cursor: string | null) {
-  return dataOf(
-    client.GET('/api/v1/projects', {
-      params: {
-        query: { state: 'active', limit: MAX_PAGE_LIMIT, ...(cursor === null ? {} : { cursor }) },
-      },
-    }),
-  );
-}
-
 async function creatableProjects(): Promise<CreatableProject[]> {
   const client = await getServerApiClient();
-  const projects: CreatableProject[] = [];
-  let cursor: string | null = null;
-  do {
-    const page = await activeProjectsPage(client, cursor);
-    for (const { id, name, allowedActions } of page.items) {
-      if (allowedActions.includes('create_ticket')) {
-        projects.push({ id, name, allowedActions });
-      }
-    }
-    cursor = page.nextCursor;
-  } while (cursor !== null);
-  return projects;
+  const projects = await allPageItems((cursor) =>
+    dataOf(
+      client.GET('/api/v1/projects', {
+        params: {
+          query: { state: 'active', limit: MAX_PAGE_LIMIT, ...(cursor === null ? {} : { cursor }) },
+        },
+      }),
+    ),
+  );
+  return projects
+    .filter(({ allowedActions }) => allowedActions.includes('create_ticket'))
+    .map(({ id, name, allowedActions }) => ({ id, name, allowedActions }));
 }
