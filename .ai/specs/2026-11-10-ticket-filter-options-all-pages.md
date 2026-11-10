@@ -38,8 +38,8 @@ A small shared helper in `lib/api-client` reads every page of a list endpoint up
 
 Web application only (`apps/web`):
 
-- new `lib/api-client/all-pages.ts`: `allPageItems(fetchPage, { maxPages })` – calls `fetchPage(cursor)` with `null`, then each `nextCursor`, concatenating `items`, and stops at `null` or after `maxPages` pages. A failed page rejects the whole read (`dataOf()` already turns it into an `ApiError`), so the query shows its error state rather than a silently partial list.
-- `features/tickets/queries.ts`: the three filter-option factories use the helper with `limit: MAX_PAGE_LIMIT` and `maxPages: FILTER_OPTION_MAX_PAGES` (20); the three per-list limit constants are removed. Query keys and the `{ id, label }` result shapes are unchanged, so `ticket-filter-options.ts` and the panel stay as they are.
+- new `lib/api-client/all-pages.ts`: `allPageItems(fetchPage, { maxPages })` (default bound `ALL_PAGES_MAX_PAGES` = 20) – calls `fetchPage(cursor)` with `null`, then each `nextCursor`, concatenating `items`, and stops at `null` or after `maxPages` pages. A failed page rejects the whole read (`dataOf()` already turns it into an `ApiError`), so the query shows its error state rather than a silently partial list.
+- `features/tickets/queries.ts`: the three filter-option factories use the helper with `limit: MAX_PAGE_LIMIT` and its default bound; the three per-list limit constants are removed. Query keys and the `{ id, label }` result shapes are unchanged, so `ticket-filter-options.ts` and the panel stay as they are.
 - `features/tickets/new-ticket-page.ts`: `creatableProjects()` uses the helper (same bound).
 
 The API, contracts, OpenAPI document and the CASL abilities are untouched; each page is read through the BFF with the person's session, as today.
@@ -95,8 +95,9 @@ Reversible, web-only change; no contract, schema or permission surface. The cost
 1. Add `allPageItems` in `apps/web/src/lib/api-client/all-pages.ts` with unit tests: one page, several pages, the bound, a failed page.
 2. Move `creatableProjects()` in `new-ticket-page.ts` onto the helper; existing tests stay green.
 3. Use the helper in `projectFilterOptionsQueryOptions`, `organizationFilterOptionsQueryOptions` and `assigneeFilterOptionsQueryOptions`, deduplicating by ID; unit tests with a mocked client that returns more than one page (150 projects, 150 organizations, 150 members) and assert every option, and the chip label of an entry from the second page.
-4. Update §8.1 and §18.5, set this spec to `implemented`, move it to `implemented/`, add the changelog entry; run the validation gate.
+4. Update §8.1 and §18.5; run the validation gate. Setting this spec to `implemented`, moving it to `implemented/` and its changelog entry follow once both this spec PR and the implementation PR have merged (the implementation PR, #276, was opened before this spec reached `main`).
 
 ## Changelog
 
 - 2026-11-10 – Created (autonomous defaults, #272).
+- 2026-11-10 – Specification review: the bound is the helper's default `ALL_PAGES_MAX_PAGES`, as implemented in #276; the move to `implemented/` follows both merges.
