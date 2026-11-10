@@ -1,6 +1,6 @@
 # Execution plan: ticket list filter pickers – Phase 3, one picker per field
 
-Source doc: .ai/specs/2026-11-10-ticket-list-filter-pickers.md (spec PR #280)
+Source doc: .ai/specs/implemented/2026-11-10-ticket-list-filter-pickers.md (spec PR #280)
 Issue: #279
 
 ## Goal
