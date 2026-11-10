@@ -8,9 +8,11 @@ Select **Tickets** in the main navigation to open the list of the tickets of all
 
 ## Table and cards
 
-On a tablet or a computer the list is a table with the columns **ID** (the identifier), **Title**, **Status**, **Priority**, **Type**, **Assignee**, **Project**, **Organization** and **Updated** (how long ago the ticket changed). Tablets hide **Type**, **Project** and **Organization**, and **Organization** is shown only once organizations exist.
+On a tablet or a computer the list is a table with the columns **ID** (the identifier), **Title**, **Status**, **Priority**, **Type**, **Assignee**, **Project**, **Organization** and **Updated** (how long ago the ticket changed). Tablets hide **Type**, **Project** and **Organization** and show the type below the identifier in **ID** instead, and **Organization** is shown only once organizations exist.
 
-On a phone every ticket is a card with its identifier, title, status, priority and assignee, and a checkbox to select it.
+On a phone every ticket is a card with its identifier and type (for example `ERP-12 · Bug`), title, status, priority and assignee, and a checkbox to select it.
+
+A ticket without a type shows **Not set**: it still needs a type, for example in the **Triage** view.
 
 The list shows 50 tickets; **Show more** at the end loads the next 50. The list shows no descriptions: open a ticket to read its description and files.
 

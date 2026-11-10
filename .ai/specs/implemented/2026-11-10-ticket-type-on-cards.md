@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-10 |
 | Plan task | – (follow-up of `S1-13`) |
 | System specification sections | §8.1 |
-| Related issues / PRs | [QA of #290](https://github.com/trybun/trybun/pull/290#issuecomment-6778339622), [S1-13 spec](implemented/2026-10-26-team-list-view.md) |
+| Related issues / PRs | [QA of #290](https://github.com/trybun/trybun/pull/290#issuecomment-6778339622), [S1-13 spec](2026-10-26-team-list-view.md), #293 (specification), #294 (implementation) |
 
 ## Context
 
@@ -54,20 +54,21 @@ User documentation (EN, PL): `team/reference/ticket-list.md`, section "Table and
 
 1. What do the card and the tablet ID cell show when a ticket has no type? — **Answer:** "Not set" („Nie ustawiono”), as the desktop column; it helps triage (decided by the maintainer, 2026-11-10).
 2. Where is the type placed? — **Answer:** next to the identifier on the card and below it in the tablet ID cell; the desktop keeps its column (proposed after the QA of #290 and accepted by the maintainer, 2026-11-10).
-3. Does a tablet row keep its 44 px with the type below the identifier? — **Proposed answer:** no. A row with a one-line title becomes about 52 px high (8 px more), with the padding of the shared `TableCell` unchanged. Keeping 44 px would need a smaller padding in this one cell, a special case in the shared table for 8 px, while rows with a two-line title are 56 px already (raised by the specification review of #293, 2026-11-10; approved with this pull request unless the maintainer answers otherwise).
+3. Does a tablet row keep its 44 px with the type below the identifier? — **Answer:** no. A row with a one-line title becomes about 52 px high (8 px more), with the padding of the shared `TableCell` unchanged. Keeping 44 px would need a smaller padding in this one cell, a special case in the shared table for 8 px, while rows with a two-line title are 56 px already (raised by the specification review of #293, 2026-11-10; approved by the maintainer with the merge of #293).
 
 ## Acceptance criteria
 
-- [ ] At 360 px every card of the demo dataset shows `<identifier> · <type>` on one line, and the link of a card with a one-line title stays 44 px high (E2E on the phone).
-- [ ] A ticket without a type shows "Not set" / „Nie ustawiono” on the card and in the tablet ID cell.
-- [ ] From `md` to below `xl` the ID cell shows the type below the identifier on one line, the column set is unchanged (no **Type** column) and the table has no horizontal scrolling (E2E on the tablet, with the check of S1-13).
-- [ ] From `xl` on, the **Type** column is shown and the ID cell shows only the identifier (E2E on the desktop).
-- [ ] The accessible name of the card's link has the identifier, the type and the title in this order, without the separator. Axe passes on the list (E2E).
-- [ ] Component tests cover the content of the card and of the ID cell, including a ticket without a type. The breakpoints are checked in E2E, because jsdom applies no CSS.
-- [ ] Works on phone, tablet and desktop (Rule 9)
-- [ ] User documentation updated (EN, PL) and help content regenerated (Rule 3); no product tour change (Rule 4)
+- [x] At 360 px every card of the demo dataset shows `<identifier> · <type>` on one line, and the link of a card with a one-line title stays 44 px high (E2E on the phone).
+- [x] A ticket without a type shows "Not set" / „Nie ustawiono” on the card and in the tablet ID cell.
+- [x] From `md` to below `xl` the ID cell shows the type below the identifier on one line, the column set is unchanged (no **Type** column) and the table has no horizontal scrolling (E2E on the tablet, with the check of S1-13).
+- [x] From `xl` on, the **Type** column is shown and the ID cell shows only the identifier (E2E on the desktop).
+- [x] The accessible name of the card's link has the identifier, the type and the title in this order, without the separator. Axe passes on the list (E2E).
+- [x] Component tests cover the content of the card and of the ID cell, including a ticket without a type. The breakpoints are checked in E2E, because jsdom applies no CSS.
+- [x] Works on phone, tablet and desktop (Rule 9)
+- [x] User documentation updated (EN, PL) and help content regenerated (Rule 3); no product tour change (Rule 4)
 
 ## Changelog
 
 - 2026-11-10 – Created after the manual QA of #290.
 - 2026-11-10 – Specification review of #293: corrected the tablet row height (about 52 px for a one-line title, Q3), added the criterion of no horizontal scrolling, and made the accessible name and the test level of the criteria precise.
+- 2026-11-10 – Implemented in #294.
