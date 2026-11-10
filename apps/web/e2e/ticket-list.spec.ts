@@ -122,6 +122,32 @@ test.describe('the ticket list', () => {
     }
   });
 
+  test('scrolls the field list inside the popover on a wide phone in landscape', async ({
+    page,
+  }) => {
+    test.skip(test.info().project.name !== 'phone', 'The test turns the phone itself.');
+    // Wide enough for the popover (≥ 48rem) but lower than its field list (UI QA of #290, D2).
+    await page.setViewportSize({ width: 780, height: 360 });
+    await page.goto('/tickets?view=custom');
+    const fields = page.getByRole('list', { name: 'Filters' });
+    await expect(async () => {
+      await page.getByRole('button', { name: 'Add filter' }).click({ timeout: 2_000 });
+      await expect(fields).toBeVisible({ timeout: 2_000 });
+    }).toPass();
+
+    const popup = page.locator('[data-slot="popover-content"]');
+    const popupBox = (await popup.boundingBox())!;
+    const listBox = (await fields.boundingBox())!;
+    // The list ends inside the popover, which ends inside the screen; its last row is reached by
+    // scrolling the list.
+    expect(listBox.y + listBox.height).toBeLessThanOrEqual(popupBox.y + popupBox.height);
+    expect(popupBox.y + popupBox.height).toBeLessThanOrEqual(360);
+    const last = fields.getByRole('button').last();
+    await last.scrollIntoViewIfNeeded();
+    const lastBox = (await last.boundingBox())!;
+    expect(lastBox.y + lastBox.height).toBeLessThanOrEqual(listBox.y + listBox.height + 1);
+  });
+
   test('chooses a project by part of its key, then an assignee of it, and keeps both on reload', async ({
     page,
     baseURL,

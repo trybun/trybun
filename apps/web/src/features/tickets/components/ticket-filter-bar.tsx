@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@trybun/ui/components/select';
 import { TABLET_MEDIA_QUERY, useMediaQuery } from '@trybun/ui/hooks/use-media-query';
+import { cn } from '@trybun/ui/lib/utils';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
@@ -182,10 +183,23 @@ export function TicketFilterBar({
     setOpener(triggerId(key));
     show(key);
   };
-  const remove = (key: TicketListFilterKey) => onFiltersChange(withFilterValues(filters, key, []));
+  /** Moves the focus off a button that is about to leave the DOM, so it never falls to the page. */
+  const focusTrigger = (key: Step) => document.getElementById(triggerId(key))?.focus();
+  /** Removes a filter; the focus moves to the next chip, else the previous one, else Add filter. */
+  const remove = (key: TicketListFilterKey) => {
+    const index = chips.indexOf(key);
+    focusTrigger(chips[index + 1] ?? chips[index - 1] ?? null);
+    onFiltersChange(withFilterValues(filters, key, []));
+  };
+  const clear = () => {
+    focusTrigger(null);
+    onFiltersChange({});
+  };
 
-  const fieldList = (
-    <ul className="flex flex-col" aria-label={t('fields')}>
+  // In the popover the list scrolls within the height left on the screen (a phone in landscape);
+  // `p-1 -m-1` keeps the focus ring of its rows inside the scrolling box.
+  const fieldList = (className?: string) => (
+    <ul className={cn('flex flex-col', className)} aria-label={t('fields')}>
       {available.map((field) => (
         <li key={field.key}>
           <Button
@@ -268,7 +282,7 @@ export function TicketFilterBar({
           );
         })}
         {active.length > 0 && (
-          <Button type="button" variant="link" onClick={() => onFiltersChange({})}>
+          <Button type="button" variant="link" onClick={clear}>
             {t('clear')}
           </Button>
         )}
@@ -305,7 +319,7 @@ export function TicketFilterBar({
             {/* Scrolls when the sheet is lower than the field list (a phone in landscape), so no
                 row slides under Done. */}
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-2">
-              {step === null ? fieldList : picker(step, 'min-h-0 flex-1')}
+              {step === null ? fieldList() : picker(step, 'min-h-0 flex-1')}
             </div>
             <DrawerFooter className="pt-2">
               <DrawerClose render={<Button type="button" />}>{t('done')}</DrawerClose>
@@ -325,7 +339,9 @@ export function TicketFilterBar({
             <PopoverTitle className="sr-only">
               {step === null ? t('title') : labelOf(step)}
             </PopoverTitle>
-            {step === null ? fieldList : picker(step, 'max-h-96')}
+            {step === null
+              ? fieldList('-m-1 min-h-0 overflow-y-auto overscroll-contain p-1')
+              : picker(step, 'max-h-96')}
           </PopoverContent>
         </Popover>
       )}

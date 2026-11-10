@@ -215,6 +215,62 @@ describe('TicketFilterBar (#279)', () => {
     expect(within(fields).getByRole('button', { name: 'Priority' })).toBeDefined();
   });
 
+  it('moves the focus to the next chip, else the previous one, else Add filter after a × (WCAG 2.4.3)', async () => {
+    answerLists();
+    const events = userEvent.setup();
+    renderBar({ type: ['bug'], status: ['new'], priority: ['high'] });
+
+    await events.click(await screen.findByRole('button', { name: /^Remove filter Status/ }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Change filter Priority: High' }),
+      ),
+    );
+
+    // The last chip hands the focus back to the one before it.
+    await events.keyboard('{Tab}{Enter}');
+    expect(screen.queryByRole('button', { name: /Priority/ })).toBeNull();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: /^Change filter Type/ }),
+      ),
+    );
+
+    await events.click(screen.getByRole('button', { name: /^Remove filter Type/ }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add filter' })),
+    );
+  });
+
+  it('moves the focus to Add filter after Clear filters (WCAG 2.4.3)', async () => {
+    answerLists();
+    const events = userEvent.setup();
+    const onChange = renderBar({ status: ['new'], priority: ['high'] });
+
+    await events.click(screen.getByRole('button', { name: 'Clear filters' }));
+
+    expect(onChange).toHaveBeenLastCalledWith({});
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).toBeNull();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Add filter' })),
+    );
+  });
+
+  it('lets the field list scroll within the height the popover has on the screen', async () => {
+    answerLists();
+    const events = userEvent.setup();
+    renderBar();
+
+    await events.click(screen.getByRole('button', { name: 'Add filter' }));
+    const fields = await screen.findByRole('list', { name: 'Filters' });
+    const popup = fields.closest('[data-slot="popover-content"]');
+    // The popup is capped at the height left beside its trigger; the list shrinks and scrolls
+    // inside it instead of spilling past its border (a phone in landscape, 780 × 360).
+    expect(popup?.className).toContain('max-h-(--available-height)');
+    expect(fields.className).toEqual(expect.stringContaining('min-h-0'));
+    expect(fields.className).toEqual(expect.stringContaining('overflow-y-auto'));
+  });
+
   it('shows the count of the values while their names cannot be looked up, never "Unknown"', async () => {
     answerLists();
     fake.on('GET /api/v1/projects', {
