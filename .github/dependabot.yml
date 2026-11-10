@@ -28,6 +28,10 @@ updates:
       # The @types/node major follows the Node.js runtime; it moves with the planned LTS move (§2.10).
       - dependency-name: '@types/node'
         update-types: [version-update:semver-major]
+      # Lighthouse 13.6 pulls in sentry (FSL-1.1-Apache-2.0, source-available), which the license
+      # policy denies (§2.14); the maintainer decided to stay on 13.5 until upstream drops it (#274).
+      - dependency-name: lighthouse
+        versions: ['>=13.6.0']
     commit-message:
       prefix: fix(deps)
       prefix-development: chore(deps)
