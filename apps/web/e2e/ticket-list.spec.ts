@@ -136,6 +136,10 @@ test.describe('the ticket list', () => {
     }).toPass();
 
     const popup = page.locator('[data-slot="popover-content"]');
+    // Measure the settled popover: it zooms in on open, and a scaled box ends short of its list.
+    await popup.evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    );
     const popupBox = (await popup.boundingBox())!;
     const listBox = (await fields.boundingBox())!;
     // The list ends inside the popover, which ends inside the screen; its last row is reached by
