@@ -19,6 +19,7 @@ import {
   type ProjectMemberPage,
   type ProjectPage,
   type ProjectResponse,
+  TEAM_PROJECT_LIST_PARAMETERS,
   type UpdateProjectDto,
 } from '@trybun/contracts/projects';
 import { z } from 'zod';
@@ -34,9 +35,11 @@ import {
   versionedWhere,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { containsText } from '../../platform/database/text-search.js';
 import { isForeignKeyViolation } from '../../platform/database/foreign-key-violation.js';
 import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
+import { assertNoTeamParameters } from '../../platform/http/team-parameters.js';
 import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
@@ -173,14 +176,11 @@ function accountsAfter(after: z.infer<typeof accountSortKeySchema> | null): Pris
 
 /** The accounts whose display name or GitHub login contains the search text, if there is one. */
 function accountsMatching(search: string | undefined): Prisma.UserWhereInput {
-  if (search === undefined || search === '') {
+  if (search === undefined) {
     return {};
   }
   return {
-    OR: [
-      { displayName: { contains: search, mode: 'insensitive' } },
-      { githubLogin: { contains: search, mode: 'insensitive' } },
-    ],
+    OR: [{ displayName: containsText(search) }, { githubLogin: containsText(search) }],
   };
 }
 
@@ -208,8 +208,15 @@ export class ProjectsService {
     private readonly outbox: OutboxService,
   ) {}
 
-  /** The projects in one state the principal can see, sorted by name. */
+  /**
+   * The projects in one state the principal can see, sorted by name. A team account may search
+   * them by key and name (`query`) and keep only the given ones (`id`) – the pickers of the ticket
+   * list filters (§8.1); both only narrow the `read` filter, so an invisible project is absent.
+   */
   async list(principal: UserPrincipal, query: ListProjectsQuery): Promise<ProjectPage> {
+    if (principal.userKind === 'end_user') {
+      assertNoTeamParameters(query, TEAM_PROJECT_LIST_PARAMETERS);
+    }
     const ability = this.abilities.forPrincipal(principal);
     const after = decodeCursor(query.cursor, projectSortKeySchema);
     const rows = await this.prisma.project.findMany({
@@ -217,6 +224,10 @@ export class ProjectsService {
         AND: [
           accessibleBy(ability, 'read').ofType(PROJECT),
           { state: query.state },
+          query.id === undefined ? {} : { id: { in: query.id } },
+          query.query === undefined
+            ? {}
+            : { OR: [{ key: containsText(query.query) }, { name: containsText(query.query) }] },
           after === null
             ? {}
             : { OR: [{ name: { gt: after[0] } }, { name: after[0], id: { gt: after[1] } }] },

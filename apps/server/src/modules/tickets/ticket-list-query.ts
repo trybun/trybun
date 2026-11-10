@@ -11,20 +11,14 @@ import {
 } from '@trybun/contracts/tickets';
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
-import { AppError } from '../../platform/errors/app-error.js';
+import { assertNoTeamParameters } from '../../platform/http/team-parameters.js';
 
 /**
  * `422 field.unrecognized` for the parameters of the team in an end user's request (S1-13 Q21):
  * an end user never filters or sorts their tickets by a field their response hides.
  */
 export function assertNoTeamListParameters(query: ListTicketsQuery): void {
-  const sent = TEAM_TICKET_LIST_PARAMETERS.filter((key) => query[key] !== undefined);
-  if (sent.length > 0) {
-    throw new AppError(
-      'request.validation_failed',
-      sent.map((key) => ({ pointer: `/${key}`, code: 'field.unrecognized' })),
-    );
-  }
+  assertNoTeamParameters(query, TEAM_TICKET_LIST_PARAMETERS);
 }
 
 /** The values of a filter that name records, and whether it also matches tickets without one. */

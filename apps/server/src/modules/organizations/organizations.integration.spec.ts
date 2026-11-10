@@ -18,6 +18,7 @@ import {
   buildOrganizationDomain,
   createOrganization,
 } from '../../../test/factories/organization.factory.js';
+import { createProjectMember } from '../../../test/factories/project-member.factory.js';
 import { createProject } from '../../../test/factories/project.factory.js';
 import { createTicket } from '../../../test/factories/ticket.factory.js';
 import { createUser } from '../../../test/factories/user.factory.js';
@@ -372,6 +373,124 @@ describe('organizations endpoints', () => {
         domains: [domain],
         projects: [{ id: project.id, key: project.key, name: project.name, state: 'active' }],
       });
+    });
+  });
+
+  describe('searching and looking up (§8.1)', () => {
+    const ids = (res: { body: unknown }) =>
+      (res.body as OrganizationPage).items.map(({ id }) => id);
+
+    /** Organizations whose names share a unique tag, with access to a new project. */
+    async function organizationsOfProject(names: readonly string[]) {
+      const tag = randomUUID().slice(0, 8);
+      const project = await createProject(prisma);
+      const organizations: Organization[] = [];
+      for (const name of names) {
+        const organization = await createOrganization(prisma, { name: `${name} ${tag}` });
+        await prisma.organizationProject.create({
+          data: { organizationId: organization.id, projectId: project.id },
+        });
+        organizations.push(organization);
+      }
+      return { tag, project, organizations };
+    }
+
+    /** A Developer of the project, who reads the names of its organizations (S1-13 Q6). */
+    async function signInDeveloper(projectId: string) {
+      const session = await signIn('team_member');
+      await createProjectMember(prisma, { projectId, userId: session.user.id, role: 'developer' });
+      return session;
+    }
+
+    it('finds organizations by name, ignoring case, page by page, for the Administrator', async () => {
+      const {
+        tag,
+        organizations: [acme, acmeLabs, other],
+      } = await organizationsOfProject(['Acme Corp', 'ACME Labs', 'Globex']);
+      const { authorization } = await signIn();
+
+      const lookup = [acme, acmeLabs, other].map(
+        (organization) => `id=${String(organization?.id)}`,
+      );
+      const search = `/api/v1/organizations?query=acme&${lookup.join('&')}&limit=1`;
+      const page1 = await http().get(search).set('Authorization', authorization);
+      const page2 = await http()
+        .get(`${search}&cursor=${String((page1.body as OrganizationPage).nextCursor)}`)
+        .set('Authorization', authorization);
+      const byTag = await http()
+        .get(`/api/v1/organizations?query=GLOBEX%20${tag.toUpperCase()}`)
+        .set('Authorization', authorization);
+
+      expect(page1.body).toMatchObject({ items: [{ id: acme?.id, memberCount: 0 }] });
+      expect(page2.body).toMatchObject({ items: [{ id: acmeLabs?.id }], nextCursor: null });
+      expect(ids(byTag)).toEqual([other?.id]);
+    });
+
+    it('matches _ and % literally', async () => {
+      const {
+        tag,
+        organizations: [underscore],
+      } = await organizationsOfProject(['Acme_Co', 'AcmexCo']);
+      const { authorization } = await signIn();
+
+      const res = await http()
+        .get(`/api/v1/organizations?query=acme_co%20${tag}`)
+        .set('Authorization', authorization);
+      const percent = await http()
+        .get(`/api/v1/organizations?query=%25${tag}`)
+        .set('Authorization', authorization);
+
+      expect(ids(res)).toEqual([underscore?.id]);
+      expect(ids(percent)).toEqual([]);
+    });
+
+    it('gives a Developer only the names of the organizations of their projects, by query and id', async () => {
+      const {
+        tag,
+        project,
+        organizations: [mine],
+      } = await organizationsOfProject(['Initech']);
+      const foreign = await createOrganization(prisma, { name: `Initech foreign ${tag}` });
+      const { authorization } = await signInDeveloper(project.id);
+
+      const byQuery = await http()
+        .get(`/api/v1/organizations?query=initech&projectId=${project.id}`)
+        .set('Authorization', authorization);
+      const byTag = await http()
+        .get(`/api/v1/organizations?query=${tag}`)
+        .set('Authorization', authorization);
+      const byId = await http()
+        .get(`/api/v1/organizations?id=${String(mine?.id)}&id=${foreign.id}`)
+        .set('Authorization', authorization);
+
+      expect(byQuery.body).toEqual({
+        items: [{ id: mine?.id, name: mine?.name }],
+        nextCursor: null,
+      });
+      expect(ids(byTag)).toEqual([mine?.id]);
+      expect(byId.body).toEqual({ items: [{ id: mine?.id, name: mine?.name }], nextCursor: null });
+    });
+
+    it('finds nothing for a team member whose projects no organization may access', async () => {
+      const { tag, organizations } = await organizationsOfProject(['Umbrella']);
+      const { authorization } = await signInDeveloper((await createProject(prisma)).id);
+
+      const res = await http()
+        .get(`/api/v1/organizations?query=${tag}&id=${String(organizations[0]?.id)}`)
+        .set('Authorization', authorization);
+
+      expect(res.body).toEqual({ items: [], nextCursor: null });
+    });
+
+    it('answers an end user with 404', async () => {
+      const { organizations } = await organizationsOfProject(['Hooli']);
+      const { authorization } = await signIn('end_user');
+
+      const res = await http()
+        .get(`/api/v1/organizations?query=hooli&id=${String(organizations[0]?.id)}`)
+        .set('Authorization', authorization);
+
+      expect(res.status).toBe(404);
     });
   });
 

@@ -78,8 +78,8 @@ describe('listSearchQuerySchema', () => {
   });
 
   it('rejects a text longer than the limit', () => {
-    expect(listSearchQuerySchema.safeParse('a'.repeat(LIST_SEARCH_QUERY_MAX_LENGTH + 1)).success).toBe(
-      false,
-    );
+    expect(
+      listSearchQuerySchema.safeParse('a'.repeat(LIST_SEARCH_QUERY_MAX_LENGTH + 1)).success,
+    ).toBe(false);
   });
 });

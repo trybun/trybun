@@ -131,9 +131,9 @@ describe('listProjectMembersQuerySchema', () => {
 
 describe('listProjectMemberAccountsQuerySchema', () => {
   it('reads one or more projects and accounts', () => {
-    expect(
-      listProjectMemberAccountsQuerySchema.parse({ projectId: ID, userId: [ID, ID] }),
-    ).toEqual({ projectId: [ID], userId: [ID, ID], limit: 50 });
+    expect(listProjectMemberAccountsQuerySchema.parse({ projectId: ID, userId: [ID, ID] })).toEqual(
+      { projectId: [ID], userId: [ID, ID], limit: 50 },
+    );
   });
 
   it('reads every project without projectId and ignores a blank query', () => {
@@ -142,8 +142,7 @@ describe('listProjectMemberAccountsQuerySchema', () => {
 
   it.each(['projectId', 'userId'])('rejects more than 50 values of %s', (key) => {
     expect(
-      listProjectMemberAccountsQuerySchema.safeParse({ [key]: Array<string>(51).fill(ID) })
-        .success,
+      listProjectMemberAccountsQuerySchema.safeParse({ [key]: Array<string>(51).fill(ID) }).success,
     ).toBe(false);
   });
 });

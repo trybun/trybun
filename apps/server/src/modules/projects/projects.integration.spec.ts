@@ -296,6 +296,124 @@ describe('projects endpoints', () => {
     });
   });
 
+  describe('searching and looking up (§8.1)', () => {
+    /** A unique token that keeps the projects of one test apart from those of the others. */
+    const token = () => randomUUID().slice(0, 8);
+
+    async function list(authorization: string, query: string) {
+      return http().get(`/api/v1/projects?${query}`).set('Authorization', authorization);
+    }
+
+    const ids = (res: { body: unknown }) => (res.body as ProjectPage).items.map(({ id }) => id);
+
+    it('finds projects by key and by name, ignoring case, page by page', async () => {
+      const tag = token();
+      const byName = await createProject(prisma, { name: `Alpha ${tag} portal` });
+      const byKey = await createProject(prisma, {
+        name: 'Bravo',
+        key: `Q${tag.toUpperCase().replace(/[^A-Z0-9]/g, '0')}`,
+      });
+      const other = await createProject(prisma, { name: `Charlie ${tag} shop` });
+      await createProject(prisma, { name: 'Unrelated' });
+      const { authorization } = await signIn('admin');
+
+      const name = await list(authorization, `query=${tag.toUpperCase()}%20PORTAL`);
+      const key = await list(authorization, `query=q${tag}`);
+      const first = await list(authorization, `query=${tag}&limit=2`);
+      const second = await list(
+        authorization,
+        `query=${tag}&limit=2&cursor=${String((first.body as ProjectPage).nextCursor)}`,
+      );
+
+      expect(ids(name)).toEqual([byName.id]);
+      expect(ids(key)).toEqual([byKey.id]);
+      expect(ids(first)).toEqual([byName.id, byKey.id]);
+      expect(second.body).toMatchObject({ items: [{ id: other.id }], nextCursor: null });
+    });
+
+    it('matches _ and % literally, not as wildcards', async () => {
+      const tag = token();
+      const underscore = await createProject(prisma, { name: `${tag} a_b` });
+      await createProject(prisma, { name: `${tag} axb` });
+      const percent = await createProject(prisma, { name: `${tag} 100% done` });
+      const thousand = await createProject(prisma, { name: `${tag} 1000 done` });
+      const { authorization } = await signIn('admin');
+
+      const byUnderscore = await list(authorization, `query=${tag}%20a_b`);
+      const byPercent = await list(authorization, `query=${tag}%20100%25`);
+      const onlyPercent = await list(authorization, `query=%25&id=${percent.id}&id=${thousand.id}`);
+
+      expect(ids(byUnderscore)).toEqual([underscore.id]);
+      expect(ids(byPercent)).toEqual([percent.id]);
+      expect(ids(onlyPercent)).toEqual([percent.id]);
+    });
+
+    it('searches within the requested state', async () => {
+      const tag = token();
+      const active = await createProject(prisma, { name: `${tag} active` });
+      const archived = await createProject(prisma, { name: `${tag} archived`, state: 'archived' });
+      const { authorization } = await signIn('admin');
+
+      expect(ids(await list(authorization, `query=${tag}`))).toEqual([active.id]);
+      expect(ids(await list(authorization, `query=${tag}&state=archived`))).toEqual([archived.id]);
+    });
+
+    it('looks up projects by repeated id, only the visible ones', async () => {
+      const mine = await createProject(prisma, { name: 'Lookup mine' });
+      const alsoMine = await createProject(prisma, { name: 'Lookup also mine' });
+      const foreign = await createProject(prisma, { name: 'Lookup foreign' });
+      await createProject(prisma, { name: 'Lookup not asked' });
+      const { user, authorization } = await signIn('developer', { project: mine });
+      await createProjectMember(prisma, { projectId: alsoMine.id, userId: user.id });
+      const { authorization: outsider } = await signIn('outsider');
+      const { authorization: admin } = await signIn('admin');
+      const query = [mine, alsoMine, foreign].map(({ id }) => `id=${id}`).join('&');
+
+      expect(ids(await list(authorization, query))).toEqual([alsoMine.id, mine.id]);
+      expect(ids(await list(authorization, `id=${foreign.id}`))).toEqual([]);
+      expect(ids(await list(outsider, query))).toEqual([]);
+      expect(ids(await list(admin, query))).toEqual([alsoMine.id, foreign.id, mine.id]);
+    });
+
+    it('never finds a project the person cannot read by searching', async () => {
+      const tag = token();
+      const mine = await createProject(prisma, { name: `${tag} mine` });
+      await createProject(prisma, { name: `${tag} foreign` });
+      const { authorization: member } = await signIn('developer', { project: mine });
+      const { authorization: outsider } = await signIn('outsider');
+
+      expect(ids(await list(member, `query=${tag}`))).toEqual([mine.id]);
+      expect(ids(await list(outsider, `query=${tag}`))).toEqual([]);
+    });
+
+    it('answers an end user sending query or id with 422 field.unrecognized', async () => {
+      const project = await createProject(prisma);
+      const { authorization } = await signIn('end_user');
+
+      const res = await list(authorization, `query=erp&id=${project.id}`);
+      const blank = await list(authorization, 'query=%20');
+
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        errors: [
+          { pointer: '/query', code: 'field.unrecognized' },
+          { pointer: '/id', code: 'field.unrecognized' },
+        ],
+      });
+      expect(blank.status).toBe(200);
+    });
+
+    it('rejects more than 50 IDs and a search longer than 100 characters with 422', async () => {
+      const { authorization } = await signIn('admin');
+      const tooMany = Array.from({ length: 51 }, () => `id=${randomUUID()}`).join('&');
+
+      const ids51 = await list(authorization, tooMany);
+      const long = await list(authorization, `query=${'a'.repeat(101)}`);
+
+      expect([ids51.status, long.status]).toEqual([422, 422]);
+    });
+  });
+
   describe('allowed actions', () => {
     it.each([
       [
