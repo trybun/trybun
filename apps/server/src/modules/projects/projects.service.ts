@@ -7,6 +7,7 @@ import {
   type CreateProjectDto,
   type EndUserProject,
   type ListMemberCandidatesQuery,
+  type ListProjectMemberAccountsQuery,
   type ListProjectMembersQuery,
   type ListProjectsQuery,
   type MemberCandidatePage,
@@ -16,6 +17,7 @@ import {
   projectActionSchema,
   type ProjectMemberRole,
   type ProjectMember,
+  type ProjectMemberAccountPage,
   type ProjectMemberPage,
   type ProjectPage,
   type ProjectResponse,
@@ -26,6 +28,7 @@ import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
+import { teamRolesFrom } from '../../platform/authorization/project-roles.js';
 import { reasonCode } from '../../platform/authorization/prisma-record-access.js';
 import { decodeCursor, toPage } from '../../platform/database/cursor.js';
 import {
@@ -426,6 +429,55 @@ export class ProjectsService {
       row.user.displayName,
       row.user.id,
     ]);
+  }
+
+  /**
+   * The members of several projects (§7.5): the distinct team accounts with a team role in the
+   * given projects – without `projectId`, in every project whose members the principal may read –
+   * sorted by display name. The personal access of an end user (`end_user`, §7.3) is left out, as
+   * only team roles can be assigned (§3.2); deactivated accounts stay, so former assignees can be
+   * found. A project the principal cannot read contributes nothing; an account without that read
+   * rule at all (an end user) gets `404`.
+   */
+  async listMemberAccounts(
+    principal: UserPrincipal,
+    query: ListProjectMemberAccountsQuery,
+  ): Promise<ProjectMemberAccountPage> {
+    const ability = this.abilities.forPrincipal(principal);
+    if (!ability.can('read_members', PROJECT)) {
+      throw new AppError('request.not_found');
+    }
+    const after = decodeCursor(query.cursor, accountSortKeySchema);
+    const rows = await this.prisma.user.findMany({
+      where: {
+        AND: [
+          {
+            kind: 'team',
+            projectMemberships: {
+              some: {
+                AND: [
+                  { project: accessibleBy(ability, 'read_members').ofType(PROJECT) },
+                  { role: { in: teamRolesFrom('developer') } },
+                  query.projectId === undefined ? {} : { projectId: { in: query.projectId } },
+                ],
+              },
+            },
+          },
+          query.userId === undefined ? {} : { id: { in: query.userId } },
+          accountsMatching(query.query),
+          accountsAfter(after),
+        ],
+      },
+      select: ACCOUNT_SELECT,
+      orderBy: ACCOUNT_ORDER,
+      take: query.limit + 1,
+    });
+    return toPage(
+      rows,
+      query.limit,
+      (row): ProjectAccount => row,
+      (row) => [row.displayName, row.id],
+    );
   }
 
   /**
