@@ -13,6 +13,7 @@ import {
   ComboboxItem,
   ComboboxList,
   ComboboxPopupInput,
+  ComboboxStatus,
   ComboboxTrigger,
 } from './combobox.js';
 
@@ -144,7 +145,7 @@ function ProjectPicker({
   status,
   ...args
 }: ComponentProps<typeof Combobox> & {
-  /** Shown above the list instead of the empty message: loading or an error. */
+  /** Shown above the list instead of the empty message: loading (`ComboboxStatus`) or an error. */
   status?: ReactNode;
 }) {
   return (
@@ -152,7 +153,7 @@ function ProjectPicker({
       <ComboboxTrigger render={<Button variant="outline" />} aria-label="Project">
         Project
       </ComboboxTrigger>
-      <ComboboxContent className="w-72">
+      <ComboboxContent aria-label="Project" className="w-72">
         <ComboboxPopupInput aria-label="Search projects" placeholder="Search projects…" />
         {status ?? <ComboboxEmpty>No projects match.</ComboboxEmpty>}
         <ComboboxList aria-label="Projects">
@@ -185,8 +186,12 @@ export const Picker: Story = {
       ['QM150 · Quality management'],
       expect.anything(),
     );
-    // A click toggles the value and keeps the popup open for further choices.
-    await expect(screen.getByRole('listbox', { name: 'Projects' })).toBeVisible();
+    // A click toggles the value and keeps the popup open for further choices (a closing popup
+    // would still be visible while it fades out, so by the state of the trigger).
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(screen.getByRole('dialog', { name: 'Project' })).not.toHaveAttribute(
+      'data-closed',
+    );
   },
 };
 
@@ -230,7 +235,7 @@ export const PickerKeyboard: Story = {
       ['DOC · Documentation', 'API · Public API'],
       expect.anything(),
     );
-    await expect(listbox).toBeVisible();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await userEvent.keyboard('{Enter}');
     await waitFor(() =>
       expect(option('API · Public API')).toHaveAttribute('aria-selected', 'false'),
@@ -259,14 +264,7 @@ export const PickerOpen: Story = {
 export const PickerLoading: Story = {
   args: { items: [], defaultOpen: true },
   render: (args: ComponentProps<typeof Combobox>) => (
-    <ProjectPicker
-      {...args}
-      status={
-        <div role="status" className="px-2 py-3 text-center text-sm text-muted-foreground">
-          Loading projects…
-        </div>
-      }
-    />
+    <ProjectPicker {...args} status={<ComboboxStatus>Loading projects…</ComboboxStatus>} />
   ),
   play: async () => {
     await expect(await screen.findByRole('status')).toHaveTextContent('Loading projects…');

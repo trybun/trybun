@@ -43,7 +43,9 @@ function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
 /**
  * The button that opens the list when the input sits in the popup (`ComboboxPopupInput`). Render
  * it as a `Button` (`render={<Button variant="outline" />}`); it gets the focus back on close.
- * Base UI gives it the `combobox` role, which takes no name from its content: pass `aria-label`.
+ * Base UI gives it the `combobox` role, which takes no name from its content: pass an
+ * `aria-label` that contains the visible text (WCAG 2.5.3), or `aria-labelledby`. The popup then
+ * has the `dialog` role and needs a name too – `aria-label` on `ComboboxContent`.
  */
 function ComboboxTrigger(props: ComboboxPrimitive.Trigger.Props) {
   return <ComboboxPrimitive.Trigger data-slot="combobox-trigger" {...props} />;
@@ -118,7 +120,8 @@ function ComboboxItem({ className, children, ...props }: ComboboxPrimitive.Item.
  * The search input at the top of `ComboboxContent`. Base UI moves the focus into it when the
  * popup opens with a mouse or the keyboard – on touch it focuses the popup instead, so the
  * on-screen keyboard does not cover the list until the person taps the input. It needs an
- * accessible name (`aria-label`).
+ * accessible name (`aria-label`). Unlike `ComboboxInput`, `className` goes to the input itself:
+ * there is no button beside it.
  */
 function ComboboxPopupInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
   return (
@@ -151,7 +154,7 @@ function ComboboxCheckboxItem({ className, children, ...props }: ComboboxPrimiti
     <ComboboxPrimitive.Item
       data-slot="combobox-checkbox-item"
       className={cn(
-        'group/combobox-checkbox-item relative flex min-h-11 w-full cursor-default items-center gap-2 rounded-md py-1 pr-2 pl-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground xl:pointer-fine:min-h-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+        'group/combobox-checkbox-item relative flex min-h-11 w-full cursor-default items-center gap-2 rounded-md px-2 py-1 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground xl:pointer-fine:min-h-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
         className,
       )}
       {...props}
@@ -167,6 +170,24 @@ function ComboboxCheckboxItem({ className, children, ...props }: ComboboxPrimiti
       </span>
       {children}
     </ComboboxPrimitive.Item>
+  );
+}
+
+/**
+ * A polite live region in the popup for what the list cannot say itself: loading, "type to find
+ * more". Keep it mounted and change only its children, so screen readers announce each change;
+ * it hides itself while empty. An error with an action is an `Alert` instead.
+ */
+function ComboboxStatus({ className, ...props }: ComboboxPrimitive.Status.Props) {
+  return (
+    <ComboboxPrimitive.Status
+      data-slot="combobox-status"
+      className={cn(
+        'px-2 py-3 text-center text-sm text-muted-foreground empty:hidden empty:p-0',
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
@@ -193,5 +214,6 @@ export {
   ComboboxList,
   ComboboxItem,
   ComboboxCheckboxItem,
+  ComboboxStatus,
   ComboboxEmpty,
 };
