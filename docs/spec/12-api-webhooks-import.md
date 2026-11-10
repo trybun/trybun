@@ -6,6 +6,7 @@
 - **OpenAPI documentation** generated automatically from the code and published with the API.
 - Conventions (Rule 1):
   - cursor-based pagination,
+  - search and lookup in lists: a list a picker chooses from may accept `query` – a case-insensitive substring of the named fields, taken literally (`_` and `%` are no wildcards), at most 100 characters (`LIST_SEARCH_QUERY_MAX_LENGTH`), a blank one is no search – and a repeated ID parameter (at most 50 values, `MAX_TICKET_FILTER_VALUES`) that keeps only those records – `id` of `GET /projects` and `GET /organizations`, `projectId` and `userId` of `GET /project-members`, so a picker names its chosen values in one request. Both only narrow the visibility rules: an invisible record is simply absent. Today: `GET /projects` (`query` searches key and name), `GET /organizations` (name) and `GET /project-members` (display name and GitHub login, [§7.5](07-users-organizations-permissions.md#75-permission-matrix)); the parameters are for team accounts – an end user sending them to `GET /projects` gets `422 field.unrecognized` ([§8.1](08-team-views.md)),
   - errors in the *Problem Details* format (RFC 9457) with stable error codes, the same as in the internal API ([§17.2](17-conventions.md)),
   - rate limits with information in response headers,
   - support for the `Idempotency-Key` header when creating resources, so a retried request does not create a duplicate.

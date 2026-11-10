@@ -28,6 +28,7 @@ import { reasonCode } from '../../platform/authorization/prisma-record-access.js
 import { Clock } from '../../platform/clock/clock.js';
 import { decodeCursor, toPage } from '../../platform/database/cursor.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { containsText } from '../../platform/database/text-search.js';
 import { AppError } from '../../platform/errors/app-error.js';
 import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { ADMINISTRATION } from '../administration/administration.abilities.js';
@@ -266,10 +267,7 @@ export class UsersService {
           search === undefined
             ? {}
             : {
-                OR: [
-                  { displayName: { contains: search, mode: 'insensitive' } },
-                  { email: { contains: search, mode: 'insensitive' } },
-                ],
+                OR: [{ displayName: containsText(search) }, { email: containsText(search) }],
               },
           usersAfter(after),
         ],

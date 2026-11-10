@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { OutboxModule } from '../../platform/outbox/outbox.module.js';
 import { AuditLogEntriesModule } from '../audit-log-entries/audit-log-entries.module.js';
 import { InvitationRevocationsModule } from '../invitations/invitation-revocations.module.js';
+import { ProjectMembersController } from './project-members.controller.js';
 import { ProjectsController } from './projects.controller.js';
 import { ProjectsService } from './projects.service.js';
 
@@ -11,7 +12,7 @@ import { ProjectsService } from './projects.service.js';
  */
 @Module({
   imports: [AuditLogEntriesModule, InvitationRevocationsModule, OutboxModule],
-  controllers: [ProjectsController],
+  controllers: [ProjectsController, ProjectMembersController],
   providers: [ProjectsService],
   exports: [ProjectsService],
 })

@@ -7,6 +7,7 @@ import {
   type CreateProjectDto,
   type EndUserProject,
   type ListMemberCandidatesQuery,
+  type ListProjectMemberAccountsQuery,
   type ListProjectMembersQuery,
   type ListProjectsQuery,
   type MemberCandidatePage,
@@ -16,15 +17,18 @@ import {
   projectActionSchema,
   type ProjectMemberRole,
   type ProjectMember,
+  type ProjectMemberAccountPage,
   type ProjectMemberPage,
   type ProjectPage,
   type ProjectResponse,
+  TEAM_PROJECT_LIST_PARAMETERS,
   type UpdateProjectDto,
 } from '@trybun/contracts/projects';
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserPrincipal } from '../../platform/authentication/principal.js';
 import { AbilityFactory, type AppAbility } from '../../platform/authorization/ability-factory.js';
+import { teamRolesFrom } from '../../platform/authorization/project-roles.js';
 import { reasonCode } from '../../platform/authorization/prisma-record-access.js';
 import { decodeCursor, toPage } from '../../platform/database/cursor.js';
 import {
@@ -34,9 +38,11 @@ import {
   versionedWhere,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { containsText } from '../../platform/database/text-search.js';
 import { isForeignKeyViolation } from '../../platform/database/foreign-key-violation.js';
 import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
+import { assertNoTeamParameters } from '../../platform/http/team-parameters.js';
 import { OutboxService } from '../../platform/outbox/outbox.service.js';
 import { AuditLogEntriesService } from '../audit-log-entries/audit-log-entries.service.js';
 import { InvitationRevocationsService } from '../invitations/invitation-revocations.service.js';
@@ -173,14 +179,11 @@ function accountsAfter(after: z.infer<typeof accountSortKeySchema> | null): Pris
 
 /** The accounts whose display name or GitHub login contains the search text, if there is one. */
 function accountsMatching(search: string | undefined): Prisma.UserWhereInput {
-  if (search === undefined || search === '') {
+  if (search === undefined) {
     return {};
   }
   return {
-    OR: [
-      { displayName: { contains: search, mode: 'insensitive' } },
-      { githubLogin: { contains: search, mode: 'insensitive' } },
-    ],
+    OR: [{ displayName: containsText(search) }, { githubLogin: containsText(search) }],
   };
 }
 
@@ -208,8 +211,15 @@ export class ProjectsService {
     private readonly outbox: OutboxService,
   ) {}
 
-  /** The projects in one state the principal can see, sorted by name. */
+  /**
+   * The projects in one state the principal can see, sorted by name. A team account may search
+   * them by key and name (`query`) and keep only the given ones (`id`) – the pickers of the ticket
+   * list filters (§8.1); both only narrow the `read` filter, so an invisible project is absent.
+   */
   async list(principal: UserPrincipal, query: ListProjectsQuery): Promise<ProjectPage> {
+    if (principal.userKind === 'end_user') {
+      assertNoTeamParameters(query, TEAM_PROJECT_LIST_PARAMETERS);
+    }
     const ability = this.abilities.forPrincipal(principal);
     const after = decodeCursor(query.cursor, projectSortKeySchema);
     const rows = await this.prisma.project.findMany({
@@ -217,6 +227,10 @@ export class ProjectsService {
         AND: [
           accessibleBy(ability, 'read').ofType(PROJECT),
           { state: query.state },
+          query.id === undefined ? {} : { id: { in: query.id } },
+          query.query === undefined
+            ? {}
+            : { OR: [{ key: containsText(query.query) }, { name: containsText(query.query) }] },
           after === null
             ? {}
             : { OR: [{ name: { gt: after[0] } }, { name: after[0], id: { gt: after[1] } }] },
@@ -415,6 +429,55 @@ export class ProjectsService {
       row.user.displayName,
       row.user.id,
     ]);
+  }
+
+  /**
+   * The members of several projects (§7.5): the distinct team accounts with a team role in the
+   * given projects – without `projectId`, in every project whose members the principal may read –
+   * sorted by display name. The personal access of an end user (`end_user`, §7.3) is left out, as
+   * only team roles can be assigned (§3.2); deactivated accounts stay, so former assignees can be
+   * found. A project the principal cannot read contributes nothing; an account without that read
+   * rule at all (an end user) gets `404`.
+   */
+  async listMemberAccounts(
+    principal: UserPrincipal,
+    query: ListProjectMemberAccountsQuery,
+  ): Promise<ProjectMemberAccountPage> {
+    const ability = this.abilities.forPrincipal(principal);
+    if (!ability.can('read_members', PROJECT)) {
+      throw new AppError('request.not_found');
+    }
+    const after = decodeCursor(query.cursor, accountSortKeySchema);
+    const rows = await this.prisma.user.findMany({
+      where: {
+        AND: [
+          {
+            kind: 'team',
+            projectMemberships: {
+              some: {
+                AND: [
+                  { project: accessibleBy(ability, 'read_members').ofType(PROJECT) },
+                  { role: { in: teamRolesFrom('developer') } },
+                  query.projectId === undefined ? {} : { projectId: { in: query.projectId } },
+                ],
+              },
+            },
+          },
+          query.userId === undefined ? {} : { id: { in: query.userId } },
+          accountsMatching(query.query),
+          accountsAfter(after),
+        ],
+      },
+      select: ACCOUNT_SELECT,
+      orderBy: ACCOUNT_ORDER,
+      take: query.limit + 1,
+    });
+    return toPage(
+      rows,
+      query.limit,
+      (row): ProjectAccount => row,
+      (row) => [row.displayName, row.id],
+    );
   }
 
   /**

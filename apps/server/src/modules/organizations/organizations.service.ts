@@ -28,6 +28,7 @@ import {
   versionedWhere,
 } from '../../platform/database/optimistic-locking.js';
 import { PrismaService, type Transaction } from '../../platform/database/prisma.service.js';
+import { containsText } from '../../platform/database/text-search.js';
 import { isForeignKeyViolation } from '../../platform/database/foreign-key-violation.js';
 import { isUniqueViolation } from '../../platform/database/unique-violation.js';
 import { AppError } from '../../platform/errors/app-error.js';
@@ -178,8 +179,10 @@ export class OrganizationsService {
 
   /**
    * The organizations in one state, sorted by name (§7.3); `projectId` keeps those with its
-   * access. Every one for the Administrator; for another team member only the ID and the name of
-   * those with access to one of their projects (S1-13 Q6); `404` for everyone else (§7.5).
+   * access, `query` those whose name contains it and `id` the given ones (the pickers of the ticket
+   * list filters, §8.1), all inside the read rule. Every one for the Administrator; for another
+   * team member only the ID and the name of those with access to one of their projects (S1-13 Q6);
+   * `404` for everyone else (§7.5).
    */
   async list(principal: UserPrincipal, query: ListOrganizationsQuery): Promise<OrganizationPage> {
     const ability = this.abilities.forPrincipal(principal);
@@ -193,6 +196,8 @@ export class OrganizationsService {
         accessibleBy(ability, canReadAll ? 'read' : READ_NAME).ofType(ORGANIZATION),
         { state: query.state },
         query.projectId === undefined ? {} : { projects: { some: { projectId: query.projectId } } },
+        query.id === undefined ? {} : { id: { in: query.id } },
+        query.query === undefined ? {} : { name: containsText(query.query) },
         after === null
           ? {}
           : { OR: [{ name: { gt: after[0] } }, { name: after[0], id: { gt: after[1] } }] },

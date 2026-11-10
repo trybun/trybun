@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/project-members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ProjectMembersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations": {
         parameters: {
             query?: never;
@@ -1223,6 +1239,8 @@ export interface operations {
                 cursor?: string;
                 limit?: number;
                 state?: "active" | "archived";
+                query?: string;
+                id?: string | string[];
             };
             header?: never;
             path?: never;
@@ -1654,6 +1672,39 @@ export interface operations {
             };
         };
     };
+    ProjectMembersController_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                projectId?: string | string[];
+                userId?: string | string[];
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            displayName: string | null;
+                            githubLogin: string | null;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
     OrganizationsController_list: {
         parameters: {
             query?: {
@@ -1661,6 +1712,8 @@ export interface operations {
                 limit?: number;
                 state?: "active" | "archived";
                 projectId?: string;
+                query?: string;
+                id?: string | string[];
             };
             header?: never;
             path?: never;

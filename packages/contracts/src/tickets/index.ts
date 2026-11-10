@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { errorCodeSchema } from '../errors/index.js';
-import { pageQuerySchema, pageSchema } from '../pagination/index.js';
+import { oneOrMore, pageQuerySchema, pageSchema } from '../pagination/index.js';
 import { PROJECT_KEY_PATTERN } from '../projects/index.js';
 
 /** `ticket.type` (§3.2): empty until triage for tickets of end users. */
@@ -386,18 +386,8 @@ export type TicketParams = z.infer<typeof ticketParamsSchema>;
 export const ticketInvolvementSchema = z.enum(['mine']);
 export type TicketInvolvement = z.infer<typeof ticketInvolvementSchema>;
 
-/** The largest number of values of one filter of the ticket list (S1-13). */
-export const MAX_TICKET_FILTER_VALUES = 50;
-
-/**
- * A query parameter with one or more values (S1-13): repeated (`status=new&status=triage`) or
- * once; the values of one filter are combined with OR.
- */
-function oneOrMore<Item extends z.ZodType>(item: Item) {
-  return z
-    .union([item, z.array(item).min(1).max(MAX_TICKET_FILTER_VALUES)])
-    .transform((value): z.output<Item>[] => (Array.isArray(value) ? value : [value]));
-}
+/** Shared with the lookups of other lists; re-exported for the imports of the ticket filters. */
+export { MAX_TICKET_FILTER_VALUES } from '../pagination/index.js';
 
 /** The value of a filter that matches tickets without the field: no type, no organization. */
 export const TICKET_FILTER_NONE = 'none';

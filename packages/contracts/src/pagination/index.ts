@@ -25,3 +25,33 @@ export const pageQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(DEFAULT_PAGE_LIMIT),
 });
 export type PageQuery = z.infer<typeof pageQuerySchema>;
+
+/**
+ * The largest number of values of one multi-valued query parameter: a filter of the ticket list
+ * (S1-13) or the IDs of a lookup of a list (`id`, `projectId`, `userId`).
+ */
+export const MAX_TICKET_FILTER_VALUES = 50;
+
+/**
+ * A query parameter with one or more values (S1-13): repeated (`status=new&status=triage`) or
+ * once; the values of one parameter are combined with OR.
+ */
+export function oneOrMore<Item extends z.ZodType>(item: Item) {
+  return z
+    .union([item, z.array(item).min(1).max(MAX_TICKET_FILTER_VALUES)])
+    .transform((value): z.output<Item>[] => (Array.isArray(value) ? value : [value]));
+}
+
+/** The longest search text of a list (`query`): the pickers of members, projects, organizations. */
+export const LIST_SEARCH_QUERY_MAX_LENGTH = 100;
+
+/**
+ * The search text of a list (`query`): trimmed; a blank one is no search. The list keeps the
+ * records whose searched fields contain it, ignoring case, taken literally (no wildcards).
+ */
+export const listSearchQuerySchema = z
+  .string()
+  .trim()
+  .max(LIST_SEARCH_QUERY_MAX_LENGTH)
+  .transform((value) => (value === '' ? undefined : value))
+  .optional();
