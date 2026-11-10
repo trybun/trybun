@@ -8,7 +8,7 @@ Wybierz **Zgłoszenia** w nawigacji głównej, aby otworzyć listę zgłoszeń w
 
 ## Tabela i karty
 
-Na tablecie i komputerze lista jest tabelą z kolumnami **ID** (identyfikator), **Tytuł**, **Status**, **Priorytet**, **Typ**, **Przypisany**, **Projekt**, **Organizacja** i **Zaktualizowano** (jak dawno zgłoszenie się zmieniło). Na tablecie kolumny **Typ**, **Projekt** i **Organizacja** są ukryte, a typ jest pokazany pod identyfikatorem w kolumnie **ID**; kolumna **Organizacja** pojawia się dopiero, gdy istnieją organizacje.
+Na tablecie i komputerze lista jest tabelą z kolumnami **ID** (identyfikator), **Tytuł**, **Status**, **Priorytet**, **Typ**, **Przypisany**, **Projekt**, **Organizacja** i **Zaktualizowano** (jak dawno zgłoszenie się zmieniło). Na tablecie kolumny **Typ**, **Projekt** i **Organizacja** są ukryte, a typ jest pokazany pod tytułem; kolumna **Organizacja** pojawia się dopiero, gdy istnieją organizacje.
 
 Na telefonie każde zgłoszenie jest kartą z identyfikatorem i typem (na przykład `ERP-12 · Błąd`), tytułem, statusem, priorytetem i osobą przypisaną oraz polem wyboru, które je zaznacza.
 

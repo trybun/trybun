@@ -100,7 +100,7 @@ describe('TicketList', () => {
     });
   });
 
-  it('shows the type next to the identifier on a card and below it in the ID cell (§8.1)', async () => {
+  it('shows the type next to the identifier on a card and below the title in the table (§8.1)', async () => {
     answerList([ticket(1), ticket(2, { type: null })]);
     renderInApp(
       <TicketList
@@ -117,12 +117,13 @@ describe('TicketList', () => {
     expect(within(cards).getByRole('link', { name: 'ERP-2 Not set Ticket 2' })).toBeDefined();
     expect(within(cards).getAllByText('·')[0]?.getAttribute('aria-hidden')).toBe('true');
 
-    // The table: the ID cell shows the type below the identifier (hidden from `xl` on by CSS,
-    // checked in E2E), and the type column stays.
+    // The table: the title cell shows the type below the title (hidden from `xl` on by CSS,
+    // checked in E2E), the ID cell only the identifier, and the type column stays.
     const rows = within(screen.getByRole('table')).getAllByRole('row');
-    const idCell = (row: HTMLElement) => within(row).getAllByRole('cell')[1];
-    expect(idCell(rows[1]!)?.textContent).toBe('ERP-1Bug');
-    expect(idCell(rows[2]!)?.textContent).toBe('ERP-2Not set');
+    const cell = (row: HTMLElement, index: number) => within(row).getAllByRole('cell')[index];
+    expect(cell(rows[1]!, 1)?.textContent).toBe('ERP-1');
+    expect(cell(rows[1]!, 2)?.textContent).toBe('Ticket 1Bug');
+    expect(cell(rows[2]!, 2)?.textContent).toBe('Ticket 2Not set');
     expect(within(rows[2]!).getAllByText('Not set')).toHaveLength(2);
   });
 

@@ -17,6 +17,14 @@ const DESKTOP_BREAKPOINT_PX = 1280;
 /** A critical bug of the demo dataset. */
 const SAFARI_TITLE = 'Sign-in page crashes on Safari';
 
+/** A question of the demo dataset. */
+const QUESTION_TITLE = 'How do I change the e-mail address of my account?';
+
+/** Text matched literally inside a regular expression. */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** The API through the BFF as the signed-in team member, with the `Origin` of changes (§14.4). */
 function teamApi(baseURL: string): Promise<APIRequestContext> {
   return request.newContext({
@@ -94,6 +102,7 @@ test.describe('the ticket list', () => {
   // The type on phone cards and tablets (§8.1, .ai/specs/implemented/2026-11-10-ticket-type-on-cards.md).
   for (const { url, title, type } of [
     { url: '/tickets?type=bug&priority=critical', title: SAFARI_TITLE, type: 'Bug' },
+    { url: '/tickets?type=question', title: QUESTION_TITLE, type: 'Question' },
     { url: '/tickets?view=pending_sharing_approvals', title: PENDING_TITLE, type: 'Not set' },
   ]) {
     test(`shows the type "${type}" on every device`, async ({ page }, testInfo) => {
@@ -102,7 +111,7 @@ test.describe('the ticket list', () => {
       if (width < TABLET_BREAKPOINT_PX) {
         // The card: `<identifier> · <type>` on one line; the separator is not in the link's name.
         const link = page.getByRole('link', {
-          name: new RegExp(`^[A-Z]+-\\d+ ${type} ${title}$`),
+          name: new RegExp(`^[A-Z]+-\\d+ ${type} ${escapeRegExp(title)}$`),
         });
         await expect(link).toBeVisible();
         const line = link.locator('> span').first();
@@ -118,18 +127,20 @@ test.describe('the ticket list', () => {
         const table = page.getByRole('table');
         const row = table.getByRole('row').filter({ has: page.getByRole('link', { name: title }) });
         const idCell = row.getByRole('cell').nth(1);
+        const titleCell = row.getByRole('cell').nth(2);
         const isDesktop = width >= DESKTOP_BREAKPOINT_PX;
         await expect(table.getByRole('columnheader', { name: 'Type' })).toBeVisible({
           visible: isDesktop,
         });
         if (isDesktop) {
-          // The type column, and only the identifier in the ID cell.
-          await expect(idCell.getByText(/^[A-Z]+-\d+$/)).toBeVisible();
-          await expect(idCell.getByText(type, { exact: true })).toBeHidden();
+          // The type column, and only the identifier and the title in their cells.
+          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
+          await expect(titleCell.getByText(type, { exact: true })).toBeHidden();
           await expect(row.getByRole('cell', { name: type, exact: true })).toBeVisible();
         } else {
-          // The type below the identifier on one line; the table still fits without scrolling.
-          const typeLine = idCell.getByText(type, { exact: true });
+          // The type below the title on one line; the table still fits without scrolling.
+          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
+          const typeLine = titleCell.getByText(type, { exact: true });
           await expect(typeLine).toBeVisible();
           expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
           const overflow = await page
@@ -143,7 +154,7 @@ test.describe('the ticket list', () => {
   }
 
   // The longest type labels are Polish („Funkcjonalność”, „Nie ustawiono”): on the narrowest
-  // tablet they wrap in the ID cell instead of widening the table (§8.1).
+  // tablet they stay on one line below the title and do not widen the table (§8.1).
   test.describe('in Polish on the narrowest tablet', () => {
     test.use({ locale: 'pl-PL', viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
 
@@ -159,14 +170,16 @@ test.describe('the ticket list', () => {
         type: 'Nie ustawiono',
       },
     ]) {
-      test(`wraps the type "${type}" instead of scrolling the table`, async ({ page }) => {
+      test(`shows the type "${type}" without scrolling the table`, async ({ page }) => {
         test.skip(test.info().project.name !== 'tablet', 'one tablet width');
         await page.goto(url);
         const row = page
           .getByRole('table')
           .getByRole('row')
           .filter({ has: page.getByRole('link', { name: title }) });
-        await expect(row.getByRole('cell').nth(1).getByText(type, { exact: true })).toBeVisible();
+        const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
+        await expect(typeLine).toBeVisible();
+        expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
         const overflow = await page
           .locator('[data-slot=table-container]')
           .evaluate((container) => container.scrollWidth - container.clientWidth);
