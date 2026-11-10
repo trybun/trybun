@@ -261,14 +261,11 @@ describe('TicketList', () => {
 
     // The next page is on its way (the stand-in answers later, unrecorded): the rows stay, the
     // results are marked busy.
-    await waitFor(() =>
-      expect(fake.client.GET).toHaveBeenLastCalledWith(
-        '/api/v1/tickets',
-        expect.objectContaining({
-          params: { query: expect.objectContaining({ priority: ['high', 'low'] }) },
-        }),
-      ),
-    );
+    await waitFor(() => {
+      const [path, init] = fake.client.GET.mock.lastCall ?? [];
+      expect(path).toBe('/api/v1/tickets');
+      expect(init).toMatchObject({ params: { query: { priority: ['high', 'low'] } } });
+    });
     expect(screen.getAllByRole('link', { name: 'Ticket 1' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('table').closest('[aria-busy]')?.getAttribute('aria-busy')).toBe(
       'true',

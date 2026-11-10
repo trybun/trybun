@@ -188,9 +188,11 @@ describe('TicketFilterBar (#279)', () => {
           .map((option) => option.textContent),
       ).toEqual(['QM150 · Quality management', 'Unknown', 'ERP · ERP system', 'QM1 · Quality one']),
     );
-    const [first, second] = within(listbox).getAllByRole('option');
-    expect(first.getAttribute('aria-selected')).toBe('true');
-    expect(second.getAttribute('aria-selected')).toBe('true');
+    expect(
+      within(listbox)
+        .getAllByRole('option')
+        .map((option) => option.getAttribute('aria-selected')),
+    ).toEqual(['true', 'true', 'false', 'false']);
   });
 
   it('removes a filter with the × of its chip', async () => {
