@@ -3,7 +3,7 @@ title: Change many tickets at once
 description: Change the status, the priority or the assignee of up to 100 tickets of the list in one step.
 ---
 
-1. Select **Tickets** in the main navigation. Choose a view or select **Filter** to list the tickets you want to change ([ticket list](../reference/ticket-list.md)).
+1. Select **Tickets** in the main navigation. Choose a view or select **Add filter** to list the tickets you want to change ([ticket list](../reference/ticket-list.md)).
 2. Select the checkbox of each ticket – on a phone, the checkbox on its card. The checkbox in the heading of the table selects every loaded ticket; select **Show more** first to load more. You can select at most 100 tickets.
 3. In the bar that shows how many tickets are selected, choose the change:
    - **Status**, then the new status. For **Rejected**, enter the **Reason**: it is used for every selected ticket and added to each of them as your public comment. **Duplicate** is not offered.

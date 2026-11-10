@@ -32,7 +32,11 @@ When you change a filter, no view is marked any longer: the list shows **Custom 
 
 ## Filters
 
-Select **Filter** to choose the filters – on a phone they open at the bottom of the screen. Each filter can have several values: a ticket matches when it has one of the values of a filter, and all filters together.
+Select **Add filter** and choose a field – on a phone the fields open at the bottom of the screen. The field opens its own list of values with a search box on top: type part of a name – for a project also part of its key – to narrow the list, and select the values you want. Each value you select or clear applies at once, and the list stays open for further choices; close it with Esc, by selecting outside it, or – on a phone – with **Done**, and use **Filters** there to go back to the fields.
+
+The values you chose are listed first. Projects, organizations and people are searched among all you can see; when more exist than the list shows, it says "Type to find more".
+
+Each filter can have several values: a ticket matches when it has one of the values of a filter, and all filters together.
 
 | Filter | Values |
 |---|---|
@@ -41,11 +45,11 @@ Select **Filter** to choose the filters – on a phone they open at the bottom o
 | **Type** | **Bug**, **Feature**, **Task**, **Question**, **Not set** |
 | **Status** | The statuses, grouped as in the ticket view; **Open** selects every status that is not closed |
 | **Priority** | **Low**, **Normal**, **High**, **Critical** |
-| **Assignee** | **Me**, **Unassigned**, and the members of the projects chosen in **Project** |
+| **Assignee** | **Me**, **Unassigned**, and the members of the projects chosen in **Project** – choose a project first to find people |
 | **Source** | **User** (from the portal), **Developer** (the team), and **Integration** once a ticket comes from one |
 | **Sharing request** | **Pending**, **Refused** |
 
-The active filters are shown as chips above the list, for example "Status: New, Triage". Select **×** on a chip to remove that filter, or **Clear filters** to remove all of them; without filters the list shows every ticket you can see.
+The active filters are shown as chips next to **Add filter**, with the first value and how many more, for example "Status: New +1". Select a chip to change its values, its **×** to remove that filter, or **Clear filters** to remove all of them; without filters the list shows every ticket you can see.
 
 The view, the filters and the order are part of the address of the page, so they survive a reload and you can share them as a link – for example `/tickets?view=triage`. A list without any filter has the address `/tickets?view=custom`. When a link names something you cannot see – for example a project you are no longer a member of – its chip shows "Unknown" and matches no ticket; remove it, and the other values still apply.
 

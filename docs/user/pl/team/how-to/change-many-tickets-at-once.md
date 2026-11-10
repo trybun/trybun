@@ -3,7 +3,7 @@ title: Zmień wiele zgłoszeń naraz
 description: Zmień status, priorytet albo osobę przypisaną nawet 100 zgłoszeń z listy w jednym kroku.
 ---
 
-1. Wybierz **Zgłoszenia** w nawigacji głównej. Wybierz widok albo **Filtruj**, aby wyświetlić zgłoszenia, które chcesz zmienić ([lista zgłoszeń](../reference/ticket-list.md)).
+1. Wybierz **Zgłoszenia** w nawigacji głównej. Wybierz widok albo **Dodaj filtr**, aby wyświetlić zgłoszenia, które chcesz zmienić ([lista zgłoszeń](../reference/ticket-list.md)).
 2. Zaznacz pole wyboru każdego zgłoszenia – na telefonie pole wyboru na jego karcie. Pole wyboru w nagłówku tabeli zaznacza wszystkie wczytane zgłoszenia; aby wczytać więcej, najpierw wybierz **Pokaż więcej**. Możesz zaznaczyć najwyżej 100 zgłoszeń.
 3. Na pasku, który pokazuje liczbę zaznaczonych zgłoszeń, wybierz zmianę:
    - **Status**, a potem nowy status. Dla **Odrzucone** wpisz **Powód**: zostanie użyty dla każdego zaznaczonego zgłoszenia i dodany do każdego z nich jako Twój komentarz publiczny. **Duplikat** nie jest dostępny.
