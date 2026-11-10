@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { MEMBER_CANDIDATE_QUERY_MAX_LENGTH } from '@trybun/contracts/projects';
+import { LIST_SEARCH_QUERY_MAX_LENGTH } from '@trybun/contracts/pagination';
 import type { Ticket } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import {
@@ -173,7 +173,7 @@ export function AssigneePicker({
             search={{
               label: t('view.searchPeople'),
               value: search,
-              maxLength: MEMBER_CANDIDATE_QUERY_MAX_LENGTH,
+              maxLength: LIST_SEARCH_QUERY_MAX_LENGTH,
               onValueChange: setSearch,
             }}
             empty={
@@ -220,7 +220,7 @@ export function AssigneePicker({
       <ComboboxInput
         aria-label={label}
         placeholder={currentName}
-        maxLength={MEMBER_CANDIDATE_QUERY_MAX_LENGTH}
+        maxLength={LIST_SEARCH_QUERY_MAX_LENGTH}
       />
       <ComboboxContent>
         <ComboboxEmpty>{t('view.noPeople')}</ComboboxEmpty>

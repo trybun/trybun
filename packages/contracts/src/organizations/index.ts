@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { pageQuerySchema, pageSchema } from '../pagination/index.js';
+import {
+  listSearchQuerySchema,
+  oneOrMore,
+  pageQuerySchema,
+  pageSchema,
+} from '../pagination/index.js';
 import { projectStateSchema } from '../projects/index.js';
 import { emailSchema, userStateSchema } from '../users/index.js';
 
@@ -111,15 +116,18 @@ export type OrganizationParams = z.infer<typeof organizationParamsSchema>;
 
 /**
  * `GET /api/v1/organizations`: the organizations in one state, sorted by name; `projectId` keeps
- * those that may access the project (the project settings, §7.3). The Administrator reads every
- * organization; another team member only the names of those with access to one of their projects
- * (S1-13 Q6).
+ * those that may access the project (the project settings, §7.3), `query` searches the name and
+ * `id` keeps only the given organizations (the pickers of the ticket list filters, §8.1); all are
+ * combined with AND. The Administrator reads every organization; another team member only the
+ * names of those with access to one of their projects (S1-13 Q6).
  */
 export const listOrganizationsQuerySchema = pageQuerySchema.extend({
   state: organizationStateSchema.default('active'),
   projectId: z.uuid().optional(),
+  query: listSearchQuerySchema,
+  id: oneOrMore(z.uuid()).optional(),
 });
-export type ListOrganizationsQuery = z.infer<typeof listOrganizationsQuerySchema>;
+export type ListOrganizationsQuery = z.output<typeof listOrganizationsQuerySchema>;
 
 /**
  * An organization as a team member reads it for the filters of the team views (S1-13 Q6): only its

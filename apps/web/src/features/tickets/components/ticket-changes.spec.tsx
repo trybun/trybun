@@ -458,7 +458,7 @@ describe('assignee', () => {
     renderView();
 
     const input = await screen.findByRole('combobox', { name: 'Assignee' });
-    // The longest search the server accepts (`MEMBER_CANDIDATE_QUERY_MAX_LENGTH`).
+    // The longest search the server accepts (`LIST_SEARCH_QUERY_MAX_LENGTH`).
     expect(input.getAttribute('maxlength')).toBe('100');
     await user.clear(input);
     await user.type(input, 'ja');

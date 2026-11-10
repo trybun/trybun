@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createProjectSchema,
   listMemberCandidatesQuerySchema,
+  listProjectMemberAccountsQuerySchema,
   listProjectMembersQuerySchema,
   listProjectsQuerySchema,
   projectActionSchema,
@@ -10,6 +11,8 @@ import {
   projectStateSchema,
   updateProjectSchema,
 } from './index.js';
+
+const ID = '0190a7e4-3c1e-7a00-8000-000000000001';
 
 describe('project enums', () => {
   it.each([
@@ -87,6 +90,19 @@ describe('list queries', () => {
     expect(listProjectsQuerySchema.parse({})).toEqual({ state: 'active', limit: 50 });
   });
 
+  it('searches projects by a trimmed text and ignores a blank one', () => {
+    expect(listProjectsQuerySchema.parse({ query: ' qm1 ' }).query).toBe('qm1');
+    expect(listProjectsQuerySchema.parse({ query: '  ' }).query).toBeUndefined();
+  });
+
+  it('reads one or more project IDs and rejects more than 50', () => {
+    expect(listProjectsQuerySchema.parse({ id: ID }).id).toEqual([ID]);
+    expect(listProjectsQuerySchema.parse({ id: [ID, ID] }).id).toEqual([ID, ID]);
+    expect(listProjectsQuerySchema.safeParse({ id: Array<string>(51).fill(ID) }).success).toBe(
+      false,
+    );
+  });
+
   it('trims the search text of the member picker', () => {
     expect(listMemberCandidatesQuerySchema.parse({ query: ' anna ' })).toMatchObject({
       query: 'anna',
@@ -110,6 +126,25 @@ describe('listProjectMembersQuerySchema', () => {
     expect(listProjectMembersQuerySchema.parse({ query: ' anna ' })).toMatchObject({
       query: 'anna',
     });
+  });
+});
+
+describe('listProjectMemberAccountsQuerySchema', () => {
+  it('reads one or more projects and accounts', () => {
+    expect(
+      listProjectMemberAccountsQuerySchema.parse({ projectId: ID, userId: [ID, ID] }),
+    ).toEqual({ projectId: [ID], userId: [ID, ID], limit: 50 });
+  });
+
+  it('reads every project without projectId and ignores a blank query', () => {
+    expect(listProjectMemberAccountsQuerySchema.parse({ query: ' ' })).toEqual({ limit: 50 });
+  });
+
+  it.each(['projectId', 'userId'])('rejects more than 50 values of %s', (key) => {
+    expect(
+      listProjectMemberAccountsQuerySchema.safeParse({ [key]: Array<string>(51).fill(ID) })
+        .success,
+    ).toBe(false);
   });
 });
 

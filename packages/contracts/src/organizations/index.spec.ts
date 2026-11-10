@@ -60,8 +60,23 @@ describe('updateOrganizationSchema', () => {
 });
 
 describe('listOrganizationsQuerySchema', () => {
+  const id = '0190a7e4-3c1e-7a00-8000-000000000001';
+
   it('lists active organizations by default', () => {
-    expect(listOrganizationsQuerySchema.parse({}).state).toBe('active');
+    expect(listOrganizationsQuerySchema.parse({})).toEqual({ state: 'active', limit: 50 });
+  });
+
+  it('searches organizations by a trimmed text and ignores a blank one', () => {
+    expect(listOrganizationsQuerySchema.parse({ query: ' acme ' }).query).toBe('acme');
+    expect(listOrganizationsQuerySchema.parse({ query: '' }).query).toBeUndefined();
+  });
+
+  it('reads one or more organization IDs and rejects more than 50', () => {
+    expect(listOrganizationsQuerySchema.parse({ id }).id).toEqual([id]);
+    expect(listOrganizationsQuerySchema.parse({ id: [id, id] }).id).toEqual([id, id]);
+    expect(listOrganizationsQuerySchema.safeParse({ id: Array<string>(51).fill(id) }).success).toBe(
+      false,
+    );
   });
 });
 

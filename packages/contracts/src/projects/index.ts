@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { pageQuerySchema, pageSchema } from '../pagination/index.js';
+import {
+  listSearchQuerySchema,
+  oneOrMore,
+  pageQuerySchema,
+  pageSchema,
+} from '../pagination/index.js';
 
 /** `project.state` (§7.3): an archived project is read-only until it is unarchived. */
 export const projectStateSchema = z.enum(['active', 'archived']);
@@ -119,11 +124,26 @@ export type ProjectResponse = z.infer<typeof projectResponseSchema>;
 export const projectParamsSchema = z.object({ projectId: z.uuid() });
 export type ProjectParams = z.infer<typeof projectParamsSchema>;
 
-/** `GET /api/v1/projects`: the projects in one state, sorted by name. */
+/**
+ * `GET /api/v1/projects`: the projects in one state, sorted by name. `query` searches the key and
+ * the name, `id` keeps only the given projects – the pickers of the ticket list filters and the
+ * names of their chosen values (§8.1); both for team accounts only (`TEAM_PROJECT_LIST_PARAMETERS`).
+ */
 export const listProjectsQuerySchema = pageQuerySchema.extend({
   state: projectStateSchema.default('active'),
+  query: listSearchQuerySchema,
+  id: oneOrMore(z.uuid()).optional(),
 });
-export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
+export type ListProjectsQuery = z.output<typeof listProjectsQuerySchema>;
+
+/**
+ * The parameters of `GET /api/v1/projects` that only team accounts may send: an end user sending
+ * one gets `422 field.unrecognized`, as with the ticket filters (§8.1).
+ */
+export const TEAM_PROJECT_LIST_PARAMETERS = [
+  'query',
+  'id',
+] as const satisfies readonly (keyof ListProjectsQuery)[];
 
 export const projectPageSchema = pageSchema(projectResponseSchema);
 export type ProjectPage = z.infer<typeof projectPageSchema>;
@@ -151,9 +171,6 @@ export type ProjectMember = z.infer<typeof projectMemberSchema>;
 export const projectMemberParamsSchema = z.object({ projectId: z.uuid(), userId: z.uuid() });
 export type ProjectMemberParams = z.infer<typeof projectMemberParamsSchema>;
 
-/** The longest search text of the member picker. */
-export const MEMBER_CANDIDATE_QUERY_MAX_LENGTH = 100;
-
 /**
  * `GET /api/v1/projects/{projectId}/members`, sorted by display name; `role` filters.
  * `assignable=true` keeps the members who can be assigned to the project's tickets (active team
@@ -163,9 +180,9 @@ export const MEMBER_CANDIDATE_QUERY_MAX_LENGTH = 100;
 export const listProjectMembersQuerySchema = pageQuerySchema.extend({
   role: projectRoleSchema.optional(),
   assignable: z.stringbool().optional(),
-  query: z.string().trim().max(MEMBER_CANDIDATE_QUERY_MAX_LENGTH).optional(),
+  query: listSearchQuerySchema,
 });
-export type ListProjectMembersQuery = z.infer<typeof listProjectMembersQuerySchema>;
+export type ListProjectMembersQuery = z.output<typeof listProjectMembersQuerySchema>;
 
 export const projectMemberPageSchema = pageSchema(projectMemberSchema);
 export type ProjectMemberPage = z.infer<typeof projectMemberPageSchema>;
@@ -186,9 +203,26 @@ export type ChangeProjectMemberRoleDto = z.infer<typeof changeProjectMemberRoleS
  * members of the project, searched by display name and GitHub login.
  */
 export const listMemberCandidatesQuerySchema = pageQuerySchema.extend({
-  query: z.string().trim().max(MEMBER_CANDIDATE_QUERY_MAX_LENGTH).optional(),
+  query: listSearchQuerySchema,
 });
-export type ListMemberCandidatesQuery = z.infer<typeof listMemberCandidatesQuerySchema>;
+export type ListMemberCandidatesQuery = z.output<typeof listMemberCandidatesQuerySchema>;
 
 export const memberCandidatePageSchema = pageSchema(projectAccountSchema);
 export type MemberCandidatePage = z.infer<typeof memberCandidatePageSchema>;
+
+/**
+ * `GET /api/v1/project-members`: the distinct team accounts with a team role in the given projects
+ * – or, without `projectId`, in every project whose members the principal may read – sorted by
+ * display name (§7.5). `userId` keeps only the given accounts, `query` searches display name and
+ * GitHub login: the Assignee picker of the ticket list filters and the names of its chosen values
+ * (§8.1). Deactivated accounts stay, so former assignees can be found.
+ */
+export const listProjectMemberAccountsQuerySchema = pageQuerySchema.extend({
+  projectId: oneOrMore(z.uuid()).optional(),
+  userId: oneOrMore(z.uuid()).optional(),
+  query: listSearchQuerySchema,
+});
+export type ListProjectMemberAccountsQuery = z.output<typeof listProjectMemberAccountsQuerySchema>;
+
+export const projectMemberAccountPageSchema = pageSchema(projectAccountSchema);
+export type ProjectMemberAccountPage = z.infer<typeof projectMemberAccountPageSchema>;
