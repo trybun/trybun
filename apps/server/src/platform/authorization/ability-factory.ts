@@ -1,4 +1,11 @@
-import { type Ability, AbilityBuilder } from '@casl/ability';
+import {
+  type Ability,
+  AbilityBuilder,
+  type Container,
+  type ForcedSubject,
+  type SubjectResolverFactory,
+  type SubjectType,
+} from '@casl/ability';
 import { createPrismaAbility, type PrismaQueryOf, type Subjects } from '@casl/prisma/runtime';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
@@ -103,7 +110,28 @@ export type PrismaQuery = PrismaQueryOf<Prisma.TypeMap>;
  * The CASL ability of a principal (§18.3): actions are the snake_case codes of `@trybun/contracts`.
  * The same rules check actions on records and build the filters of queries (`accessibleBy`).
  */
-export type AppAbility = Ability<[string, AppSubject], PrismaQuery>;
+export type AppAbility = Ability<[string, AppSubject], PrismaQuery, AppSubjectResolver>;
+
+/**
+ * Resolves the subject type of a record only from its `__caslSubjectType__` tag, set by
+ * `subject()` and `Subjects<>` (§18.3). CASL's default resolver also reads a `kind` or
+ * `__typename` field as the tag, so records with a `kind` field of their own
+ * (`UserRuleRecord`, `CommentRuleRecord`) would widen the subject types to `string` and
+ * `accessibleBy(...).ofType()` would accept no model.
+ */
+export type AppSubjectResolver = Container<AppSubjectResolverFactory>;
+
+type TagOf<S> = S extends ForcedSubject<infer Name extends string> ? Name : never;
+
+interface AppSubjectResolverFactory extends SubjectResolverFactory {
+  produce: AppSubjectResolution<Extract<this[0], AppSubject>, this[1]>;
+}
+
+type AppSubjectResolution<S extends AppSubject, Name> = {
+  subject: S;
+  subjectType: Extract<S, SubjectType> | TagOf<S>;
+  instance: Extract<S, ForcedSubject<Name>>;
+};
 
 /**
  * The rules a feature module defines in its `<feature>.abilities.ts` (§18.3), given the current
