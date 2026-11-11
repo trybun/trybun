@@ -20,6 +20,12 @@ export function messagesOf(locale: Locale): Messages {
  */
 export const NARROWEST_TABLET = { width: 768, height: 1024 } as const;
 
+/**
+ * A large tablet, e.g. an iPad in landscape: from `lg` to `xl` the table shows four narrow columns
+ * whose labels are not limited in width (§8.1).
+ */
+export const LARGE_TABLET = { width: 1024, height: 768 } as const;
+
 /** How far an element scrolls sideways: 0 when its content fits. */
 export function horizontalOverflow(element: Locator): Promise<number> {
   return element.evaluate((node) => node.scrollWidth - node.clientWidth);

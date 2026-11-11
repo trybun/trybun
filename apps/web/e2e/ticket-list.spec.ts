@@ -1,10 +1,11 @@
 import { type APIRequestContext, expect, type Page, request, test } from '@playwright/test';
-import { predefinedViewSchema } from '../src/features/tickets/ticket-list.js';
+import { predefinedViewSchema, type TicketListView } from '../src/features/tickets/ticket-list.js';
 import { seriousViolations } from './accessibility.js';
 import {
   ALL_LOCALES,
   horizontalOverflow,
   messagesOf,
+  LARGE_TABLET,
   NARROWEST_TABLET,
   pageOverflow,
 } from './locales.js';
@@ -22,6 +23,13 @@ const PENDING_TITLE = 'Show the delivery date on the order page';
 
 /** The `xl` breakpoint of Tailwind (80rem): the table shows the type column from it on. */
 const DESKTOP_BREAKPOINT_PX = 1280;
+
+/**
+ * The languages whose type labels fit on one line below the title at the 112 px of the title
+ * column (§8.1, Q2 and Q4 of the ticket-type-on-cards change specification); in another language a
+ * longer label may wrap in the cell, and only the overflow is checked.
+ */
+const ONE_LINE_TYPE_LOCALES: ReadonlySet<string> = new Set(['en', 'pl']);
 
 /** A critical bug of the demo dataset. */
 const SAFARI_TITLE = 'Sign-in page crashes on Safari';
@@ -89,11 +97,22 @@ async function createTicket(api: APIRequestContext, projectId: string, title: st
  * the table – from the tablet width on – fits the content area without hiding a column or a row
  * action behind horizontal scrolling, and the cards of phones keep their 44 px touch target.
  */
-async function expectListFits(page: Page, url: string, heading: string, empty: string) {
-  await page.goto(url);
+async function expectListFits(
+  page: Page,
+  view: TicketListView,
+  heading: string,
+  empty: string,
+): Promise<void> {
+  await page.goto(`/tickets?view=${view}`);
   await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
   const tickets = page.getByRole('main').locator('a[href^="/tickets/"]').filter({ visible: true });
-  await expect(tickets.first().or(page.getByText(empty, { exact: true }))).toBeVisible();
+  // The person's own empty filter lists every ticket of the demo dataset, so the check never
+  // passes on an empty list there; the other views may be emptied by tests running in parallel.
+  await expect(
+    view === 'custom'
+      ? tickets.first()
+      : tickets.first().or(page.getByText(empty, { exact: true })),
+  ).toBeVisible();
   expect(await pageOverflow(page), 'the page scrolls sideways').toBe(0);
   if ((page.viewportSize()?.width ?? 0) >= TABLET_BREAKPOINT_PX) {
     const container = page.locator('[data-slot=table-container]');
@@ -131,60 +150,6 @@ test.describe('the ticket list', () => {
     expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
   });
 
-  // The type on phone cards and tablets (§8.1, .ai/specs/implemented/2026-11-10-ticket-type-on-cards.md).
-  for (const { url, title, type } of [
-    { url: '/tickets?type=bug&priority=critical', title: SAFARI_TITLE, type: 'Bug' },
-    { url: '/tickets?type=question', title: QUESTION_TITLE, type: 'Question' },
-    { url: '/tickets?view=pending_sharing_approvals', title: PENDING_TITLE, type: 'Not set' },
-  ]) {
-    test(`shows the type "${type}" on every device`, async ({ page }, testInfo) => {
-      await page.goto(url);
-      const width = page.viewportSize()?.width ?? 0;
-      if (width < TABLET_BREAKPOINT_PX) {
-        // The card: `<identifier> · <type>` on one line; the separator is not in the link's name.
-        const link = page.getByRole('link', {
-          name: new RegExp(`^[A-Z]+-\\d+ ${type} ${escapeRegExp(title)}$`),
-        });
-        await expect(link).toBeVisible();
-        const line = link.locator('> span').first();
-        await expect(line).toHaveText(new RegExp(`^[A-Z]+-\\d+ · ${type}$`));
-        const lineBox = await line.boundingBox();
-        expect(lineBox?.height, 'one line').toBeLessThan(20);
-        // With a one-line title the link keeps the 44 px of S1-13.
-        const titleBox = await link.locator('> span').last().boundingBox();
-        if ((titleBox?.height ?? 0) < 30) {
-          expect((await link.boundingBox())?.height, 'the card keeps its height').toBe(44);
-        }
-      } else {
-        const table = page.getByRole('table');
-        const row = table.getByRole('row').filter({ has: page.getByRole('link', { name: title }) });
-        const idCell = row.getByRole('cell').nth(1);
-        const titleCell = row.getByRole('cell').nth(2);
-        const isDesktop = width >= DESKTOP_BREAKPOINT_PX;
-        await expect(table.getByRole('columnheader', { name: 'Type' })).toBeVisible({
-          visible: isDesktop,
-        });
-        if (isDesktop) {
-          // The type column, and only the identifier and the title in their cells.
-          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
-          await expect(titleCell.getByText(type, { exact: true })).toBeHidden();
-          await expect(row.getByRole('cell', { name: type, exact: true })).toBeVisible();
-        } else {
-          // The type below the title on one line; the table still fits without scrolling.
-          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
-          const typeLine = titleCell.getByText(type, { exact: true });
-          await expect(typeLine).toBeVisible();
-          expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
-          const overflow = await page
-            .locator('[data-slot=table-container]')
-            .evaluate((container) => container.scrollWidth - container.clientWidth);
-          expect(overflow).toBeLessThanOrEqual(0);
-        }
-      }
-      expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
-    });
-  }
-
   // Width-sensitive checks in every language of the catalogues (#295): translations are often
   // longer than English, so each runs per locale – on the device of the project and, in the
   // tablet project, at the narrowest tablet width as well (§2.9).
@@ -197,9 +162,90 @@ test.describe('the ticket list', () => {
 
       for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
         test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
-          await expectListFits(page, `/tickets?view=${view}`, list.title, list.empty[view]);
+          await expectListFits(page, view, list.title, list.empty[view]);
         });
       }
+
+      // The type on phone cards and tablets (§8.1,
+      // .ai/specs/implemented/2026-11-10-ticket-type-on-cards.md).
+      for (const { url, title, type } of [
+        {
+          url: '/tickets?type=bug&priority=critical',
+          title: SAFARI_TITLE,
+          type: messages.tickets.types.bug,
+        },
+        {
+          url: '/tickets?type=question',
+          title: QUESTION_TITLE,
+          type: messages.tickets.types.question,
+        },
+        {
+          url: '/tickets?view=pending_sharing_approvals',
+          title: PENDING_TITLE,
+          type: messages.tickets.view.notSet,
+        },
+      ]) {
+        test(`shows the type "${type}" on every device`, async ({ page }, testInfo) => {
+          await page.goto(url);
+          const width = page.viewportSize()?.width ?? 0;
+          if (width < TABLET_BREAKPOINT_PX) {
+            // The card: `<identifier> · <type>` on one line; the separator is not in the link's
+            // name.
+            const link = page.getByRole('link', {
+              name: new RegExp(`^[A-Z]+-\\d+ ${escapeRegExp(type)} ${escapeRegExp(title)}$`),
+            });
+            await expect(link).toBeVisible();
+            const line = link.locator('> span').first();
+            await expect(line).toHaveText(new RegExp(`^[A-Z]+-\\d+ · ${escapeRegExp(type)}$`));
+            const lineBox = await line.boundingBox();
+            expect(lineBox?.height, 'one line').toBeLessThan(20);
+            // With a one-line title the link keeps the 44 px of S1-13.
+            const titleBox = await link.locator('> span').last().boundingBox();
+            if ((titleBox?.height ?? 0) < 30) {
+              expect((await link.boundingBox())?.height, 'the card keeps its height').toBe(44);
+            }
+          } else {
+            const table = page.getByRole('table');
+            const row = table
+              .getByRole('row')
+              .filter({ has: page.getByRole('link', { name: title }) });
+            const idCell = row.getByRole('cell').nth(1);
+            const titleCell = row.getByRole('cell').nth(2);
+            const isDesktop = width >= DESKTOP_BREAKPOINT_PX;
+            await expect(
+              table.getByRole('columnheader', { name: list.columns.type, exact: true }),
+            ).toBeVisible({ visible: isDesktop });
+            await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
+            if (isDesktop) {
+              // The type column, and only the identifier and the title in their cells.
+              await expect(titleCell.getByText(type, { exact: true })).toBeHidden();
+              await expect(row.getByRole('cell', { name: type, exact: true })).toBeVisible();
+            } else {
+              // The type below the title; the table still fits without scrolling.
+              const typeLine = titleCell.getByText(type, { exact: true });
+              await expect(typeLine).toBeVisible();
+              if (ONE_LINE_TYPE_LOCALES.has(locale)) {
+                expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+              }
+              expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
+            }
+          }
+          expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
+        });
+      }
+
+      // A large tablet, e.g. an iPad in landscape: between `lg` and `xl` the labels keep their
+      // words, so the table must fit there without the limits of the narrower widths.
+      test.describe('on a large tablet', () => {
+        test.use({ viewport: LARGE_TABLET });
+
+        for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
+          test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
+            test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+            await expectListFits(page, view, list.title, list.empty[view]);
+          });
+        }
+      });
 
       test.describe('on the narrowest tablet', () => {
         test.use({ viewport: NARROWEST_TABLET });
@@ -207,11 +253,11 @@ test.describe('the ticket list', () => {
         for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
           test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
             test.skip(test.info().project.name !== 'tablet', 'one tablet width');
-            await expectListFits(page, `/tickets?view=${view}`, list.title, list.empty[view]);
+            await expectListFits(page, view, list.title, list.empty[view]);
           });
         }
 
-        // The type labels stay on one line below the title and do not widen the table (§8.1).
+        // The type labels below the title do not widen the table (§8.1).
         for (const { url, title, type } of [
           {
             url: '/tickets?type=feature',
@@ -233,7 +279,9 @@ test.describe('the ticket list', () => {
               .filter({ has: page.getByRole('link', { name: title }) });
             const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
             await expect(typeLine).toBeVisible();
-            expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+            if (ONE_LINE_TYPE_LOCALES.has(locale)) {
+              expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+            }
             expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
           });
         }

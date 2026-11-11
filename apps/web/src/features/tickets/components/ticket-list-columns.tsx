@@ -73,7 +73,7 @@ export const NARROW_LABEL_CLASS =
  * precise pointer (§2.9, `cn` keeps the size's `xl:pointer-fine:h-7`, hence its `h-auto`).
  */
 export const SORT_BUTTON_CLASS =
-  'h-auto min-h-11 py-1 text-left xl:pointer-fine:h-auto xl:pointer-fine:min-h-7 xl:pointer-fine:py-1 max-lg:w-max max-lg:max-w-25 max-lg:whitespace-normal max-lg:hyphens-auto max-lg:wrap-anywhere xl:max-2xl:w-max xl:max-2xl:max-w-25 xl:max-2xl:whitespace-normal xl:max-2xl:hyphens-auto xl:max-2xl:wrap-anywhere';
+  'h-auto min-h-11 py-1 text-left xl:pointer-fine:h-auto xl:pointer-fine:min-h-7 max-lg:w-max max-lg:max-w-25 max-lg:whitespace-normal max-lg:hyphens-auto max-lg:wrap-anywhere xl:max-2xl:w-max xl:max-2xl:max-w-25 xl:max-2xl:whitespace-normal xl:max-2xl:hyphens-auto xl:max-2xl:wrap-anywhere';
 
 /** Whether one more ticket may be selected (§8.1): at most 100 at once. */
 export function canSelectMore(selection: RowSelectionState): boolean {
