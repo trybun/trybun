@@ -53,6 +53,8 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const emptyRegion = () => document.querySelector('[data-slot="combobox-empty"]') as HTMLElement;
+
 export const Default: Story = {
   play: async ({ canvas, userEvent }) => {
     const input = canvas.getByRole('combobox', { name: 'Time zone' });
@@ -103,6 +105,28 @@ export const Empty: Story = {
   args: { defaultOpen: true, defaultInputValue: 'Atlantis' },
   play: async () => {
     await expect(await screen.findByText('No time zone found.')).toBeVisible();
+  },
+};
+
+// The empty message is a live region: it is in the accessibility tree, without height, before
+// its text appears, so a search without matches is announced.
+export const EmptyAnnounced: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const input = canvas.getByRole('combobox', { name: 'Time zone' });
+    await userEvent.click(input);
+    await screen.findAllByRole('option');
+    const region = emptyRegion();
+    await expect(region).toHaveAttribute('role', 'status');
+    await expect(region).toHaveAttribute('aria-live', 'polite');
+    await expect(region).toBeEmptyDOMElement();
+    await expect(getComputedStyle(region).display).not.toBe('none');
+    await expect(region.getBoundingClientRect().height).toBe(0);
+    await userEvent.type(input, 'atlantis');
+    await waitFor(() => expect(region).toHaveTextContent('No time zone found.'));
+    // The same element announces the text: the region was not replaced when it was filled.
+    await expect(emptyRegion()).toBe(region);
+    await expect(screen.getByRole('status')).toHaveTextContent('No time zone found.');
+    await waitFor(() => expect(region).toBeVisible());
   },
 };
 
@@ -201,6 +225,11 @@ export const Picker: Story = {
     await expect(status).toHaveAttribute('role', 'status');
     await expect(status).toBeEmptyDOMElement();
     await expect(getComputedStyle(status).display).not.toBe('none');
+    const empty = emptyRegion();
+    await expect(empty).toHaveAttribute('role', 'status');
+    await expect(empty).toBeEmptyDOMElement();
+    await expect(getComputedStyle(empty).display).not.toBe('none');
+    await expect(empty.getBoundingClientRect().height).toBe(0);
   },
 };
 

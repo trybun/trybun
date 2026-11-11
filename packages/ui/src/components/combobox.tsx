@@ -190,15 +190,16 @@ function ComboboxStatus({ className, ...props }: ComboboxPrimitive.Status.Props)
   );
 }
 
-/** Shown instead of the list when no item matches the input. */
+/**
+ * Shown instead of the list when no item matches the input. Base UI renders it as a polite live
+ * region and fills it only while nothing matches; like `ComboboxStatus` it stays displayed while
+ * empty, with no height, so its text is announced when it appears (no `empty:hidden`).
+ */
 function ComboboxEmpty({ className, ...props }: ComboboxPrimitive.Empty.Props) {
   return (
     <ComboboxPrimitive.Empty
       data-slot="combobox-empty"
-      className={cn(
-        'px-2 py-3 text-center text-sm text-muted-foreground empty:hidden empty:p-0',
-        className,
-      )}
+      className={cn('px-2 py-3 text-center text-sm text-muted-foreground empty:p-0', className)}
       {...props}
     />
   );
