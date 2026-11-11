@@ -39,7 +39,7 @@ export const SORT_OF_COLUMN: Readonly<Partial<Record<string, TicketListSort>>> =
  * identifier wraps, so the table fits the content area from the tablet width on and nothing –
  * above all the row actions in the title cell – hides behind horizontal scrolling. The title
  * takes the remaining width. Tablets hide type, project and organization; they are shown from
- * the desktop width on.
+ * the desktop width on. Until then the title cell shows the type below the title.
  */
 export const COLUMN_CLASS: Readonly<Partial<Record<string, string>>> = {
   title: 'w-full min-w-28 whitespace-normal',
@@ -156,13 +156,21 @@ export function useTicketColumns(organizationsExist: boolean) {
         helper.accessor('title', {
           id: 'title',
           header: () => t('columns.title'),
+          // Tablets hide the type column, so the title cell shows the type below the title until
+          // the desktop width (§8.1). The title column takes the free width and is at least 112 px
+          // wide, so the type neither widens the table nor breaks within a word.
           cell: ({ row }) => (
-            <Link
-              href={ticketHref(row.original)}
-              className="line-clamp-2 font-medium hover:underline focus-visible:underline"
-            >
-              {row.original.title}
-            </Link>
+            <div className="flex flex-col gap-0.5">
+              <Link
+                href={ticketHref(row.original)}
+                className="line-clamp-2 font-medium hover:underline focus-visible:underline"
+              >
+                {row.original.title}
+              </Link>
+              <span className="text-xs wrap-break-word text-muted-foreground xl:hidden">
+                {labels.type(row.original)}
+              </span>
+            </div>
           ),
         }),
         helper.accessor('status', {

@@ -11,6 +11,20 @@ const TABLET_BREAKPOINT_PX = 768;
 /** A pending sharing request of the demo dataset, in the Customer portal (S1-11). */
 const PENDING_TITLE = 'Show the delivery date on the order page';
 
+/** The `xl` breakpoint of Tailwind (80rem): the table shows the type column from it on. */
+const DESKTOP_BREAKPOINT_PX = 1280;
+
+/** A critical bug of the demo dataset. */
+const SAFARI_TITLE = 'Sign-in page crashes on Safari';
+
+/** A question of the demo dataset. */
+const QUESTION_TITLE = 'How do I change the e-mail address of my account?';
+
+/** Text matched literally inside a regular expression. */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** The API through the BFF as the signed-in team member, with the `Origin` of changes (§14.4). */
 function teamApi(baseURL: string): Promise<APIRequestContext> {
   return request.newContext({
@@ -83,6 +97,95 @@ test.describe('the ticket list', () => {
       expect(overflow).toBeLessThanOrEqual(0);
     }
     expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
+  });
+
+  // The type on phone cards and tablets (§8.1, .ai/specs/implemented/2026-11-10-ticket-type-on-cards.md).
+  for (const { url, title, type } of [
+    { url: '/tickets?type=bug&priority=critical', title: SAFARI_TITLE, type: 'Bug' },
+    { url: '/tickets?type=question', title: QUESTION_TITLE, type: 'Question' },
+    { url: '/tickets?view=pending_sharing_approvals', title: PENDING_TITLE, type: 'Not set' },
+  ]) {
+    test(`shows the type "${type}" on every device`, async ({ page }, testInfo) => {
+      await page.goto(url);
+      const width = page.viewportSize()?.width ?? 0;
+      if (width < TABLET_BREAKPOINT_PX) {
+        // The card: `<identifier> · <type>` on one line; the separator is not in the link's name.
+        const link = page.getByRole('link', {
+          name: new RegExp(`^[A-Z]+-\\d+ ${type} ${escapeRegExp(title)}$`),
+        });
+        await expect(link).toBeVisible();
+        const line = link.locator('> span').first();
+        await expect(line).toHaveText(new RegExp(`^[A-Z]+-\\d+ · ${type}$`));
+        const lineBox = await line.boundingBox();
+        expect(lineBox?.height, 'one line').toBeLessThan(20);
+        // With a one-line title the link keeps the 44 px of S1-13.
+        const titleBox = await link.locator('> span').last().boundingBox();
+        if ((titleBox?.height ?? 0) < 30) {
+          expect((await link.boundingBox())?.height, 'the card keeps its height').toBe(44);
+        }
+      } else {
+        const table = page.getByRole('table');
+        const row = table.getByRole('row').filter({ has: page.getByRole('link', { name: title }) });
+        const idCell = row.getByRole('cell').nth(1);
+        const titleCell = row.getByRole('cell').nth(2);
+        const isDesktop = width >= DESKTOP_BREAKPOINT_PX;
+        await expect(table.getByRole('columnheader', { name: 'Type' })).toBeVisible({
+          visible: isDesktop,
+        });
+        if (isDesktop) {
+          // The type column, and only the identifier and the title in their cells.
+          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
+          await expect(titleCell.getByText(type, { exact: true })).toBeHidden();
+          await expect(row.getByRole('cell', { name: type, exact: true })).toBeVisible();
+        } else {
+          // The type below the title on one line; the table still fits without scrolling.
+          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
+          const typeLine = titleCell.getByText(type, { exact: true });
+          await expect(typeLine).toBeVisible();
+          expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+          const overflow = await page
+            .locator('[data-slot=table-container]')
+            .evaluate((container) => container.scrollWidth - container.clientWidth);
+          expect(overflow).toBeLessThanOrEqual(0);
+        }
+      }
+      expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
+    });
+  }
+
+  // The longest type labels are Polish („Funkcjonalność”, „Nie ustawiono”): on the narrowest
+  // tablet they stay on one line below the title and do not widen the table (§8.1).
+  test.describe('in Polish on the narrowest tablet', () => {
+    test.use({ locale: 'pl-PL', viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
+
+    for (const { url, title, type } of [
+      {
+        url: '/tickets?type=feature',
+        title: 'Export the invoice list to CSV',
+        type: 'Funkcjonalność',
+      },
+      {
+        url: '/tickets?view=pending_sharing_approvals',
+        title: PENDING_TITLE,
+        type: 'Nie ustawiono',
+      },
+    ]) {
+      test(`shows the type "${type}" without scrolling the table`, async ({ page }) => {
+        test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+        await page.goto(url);
+        const row = page
+          .getByRole('table')
+          .getByRole('row')
+          .filter({ has: page.getByRole('link', { name: title }) });
+        const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
+        await expect(typeLine).toBeVisible();
+        expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+        const overflow = await page
+          .locator('[data-slot=table-container]')
+          .evaluate((container) => container.scrollWidth - container.clientWidth);
+        expect(overflow).toBeLessThanOrEqual(0);
+      });
+    }
   });
 
   test('keeps the filters in the URL and leaves the view when a filter changes', async ({

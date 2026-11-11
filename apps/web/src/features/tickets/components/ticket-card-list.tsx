@@ -11,12 +11,15 @@ import {
   TicketCheckbox,
   type TicketTable,
   ticketHref,
+  useTicketFieldLabels,
 } from './ticket-list-columns.js';
 
 /**
  * The list as cards on phones (§2.9, S1-13 Q14): one card per row of the same row model and
- * selection as the table, with the identifier, the title (two lines at most), the status, the
- * priority, the assignee and a 44 px checkbox – always visible, never a long press (Rule 9).
+ * selection as the table, with the identifier and the type ("Not set" without one) on one line,
+ * the title (two lines at most), the status, the priority, the assignee and a 44 px checkbox –
+ * always visible, never a long press (Rule 9). The separator is hidden from assistive technology,
+ * so the link's name is the identifier, the type and the title (§8.1).
  */
 export function TicketCardList({
   table,
@@ -25,6 +28,7 @@ export function TicketCardList({
   table: TicketTable;
   rowActions?: (ticket: TicketListItem) => ReactNode;
 }) {
+  const labels = useTicketFieldLabels();
   return (
     <ul className="flex flex-col gap-2">
       {table.getRowModel().rows.map((row) => {
@@ -44,7 +48,12 @@ export function TicketCardList({
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-2 py-1">
               <Link href={ticketHref(ticket)} className="flex min-h-11 flex-col gap-0.5">
-                <span className="font-mono text-xs text-muted-foreground">{ticket.identifier}</span>
+                <span className="text-xs text-muted-foreground">
+                  <span className="font-mono">{ticket.identifier}</span>{' '}
+                  <span aria-hidden="true">·</span> <span>{labels.type(ticket)}</span>
+                </span>{' '}
+                {/* The space separates the type and the title in the link's name; a flex
+                    container does not render it. */}
                 <span className="line-clamp-2 font-medium">{ticket.title}</span>
               </Link>
               <div className="flex flex-wrap items-center gap-2 text-sm">

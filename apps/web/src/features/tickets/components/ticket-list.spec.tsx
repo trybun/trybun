@@ -100,6 +100,33 @@ describe('TicketList', () => {
     });
   });
 
+  it('shows the type next to the identifier on a card and below the title in the table (§8.1)', async () => {
+    answerList([ticket(1), ticket(2, { type: null })]);
+    renderInApp(
+      <TicketList
+        state={stateOfView('my_open_tickets')}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    // The cards of phones: the separator is hidden, so the link's name is the identifier, the
+    // type and the title, in this order.
+    const cards = await screen.findByRole('list');
+    expect(within(cards).getByRole('link', { name: 'ERP-1 Bug Ticket 1' })).toBeDefined();
+    expect(within(cards).getByRole('link', { name: 'ERP-2 Not set Ticket 2' })).toBeDefined();
+    expect(within(cards).getAllByText('·')[0]?.getAttribute('aria-hidden')).toBe('true');
+
+    // The table: the title cell shows the type below the title (hidden from `xl` on by CSS,
+    // checked in E2E), the ID cell only the identifier, and the type column stays.
+    const rows = within(screen.getByRole('table')).getAllByRole('row');
+    const cell = (row: HTMLElement, index: number) => within(row).getAllByRole('cell')[index];
+    expect(cell(rows[1]!, 1)?.textContent).toBe('ERP-1');
+    expect(cell(rows[1]!, 2)?.textContent).toBe('Ticket 1Bug');
+    expect(cell(rows[2]!, 2)?.textContent).toBe('Ticket 2Not set');
+    expect(within(rows[2]!).getAllByText('Not set')).toHaveLength(2);
+  });
+
   it('names the view in its empty state and offers Clear filters for own filters', async () => {
     answerList([]);
     renderInApp(
