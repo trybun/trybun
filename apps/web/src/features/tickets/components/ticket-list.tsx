@@ -115,6 +115,15 @@ function TicketViewPicker({
   );
 }
 
+/**
+ * A sharing action shrinks and wraps its label between words – within a word only when one word
+ * is wider than the title cell – so in every language it stays inside the cell instead of drawing
+ * over the Status column (#296); a `Button` does not shrink by default. Its height follows the
+ * lines, also at the compact desktop size, as the time zone button of the account settings does.
+ */
+const SHARING_ACTION_CLASS =
+  'h-auto min-h-11 shrink py-2 text-center whitespace-normal wrap-anywhere xl:pointer-fine:h-auto xl:pointer-fine:min-h-7 xl:pointer-fine:py-1';
+
 /** The actions on a pending sharing request (S1-13 Q11), by its `allowedActions`. */
 function SharingActions({ ticket }: { ticket: TicketListItem }) {
   const t = useTranslations('tickets.list.sharing');
@@ -126,7 +135,7 @@ function SharingActions({ ticket }: { ticket: TicketListItem }) {
         <Button
           type="button"
           size="sm"
-          className="h-auto min-h-11 whitespace-normal xl:pointer-fine:min-h-7"
+          className={SHARING_ACTION_CLASS}
           onClick={() => setDialog('approve')}
         >
           {t('approve')}
@@ -137,7 +146,7 @@ function SharingActions({ ticket }: { ticket: TicketListItem }) {
           type="button"
           size="sm"
           variant="outline"
-          className="h-auto min-h-11 whitespace-normal xl:pointer-fine:min-h-7"
+          className={SHARING_ACTION_CLASS}
           onClick={() => setDialog('refuse')}
         >
           {t('refuse')}
