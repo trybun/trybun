@@ -1,5 +1,14 @@
-import { type APIRequestContext, expect, request, test } from '@playwright/test';
+import { type APIRequestContext, expect, type Page, request, test } from '@playwright/test';
+import { predefinedViewSchema, type TicketListView } from '../src/features/tickets/ticket-list.js';
 import { seriousViolations } from './accessibility.js';
+import {
+  ALL_LOCALES,
+  horizontalOverflow,
+  messagesOf,
+  LARGE_TABLET,
+  NARROWEST_TABLET,
+  pageOverflow,
+} from './locales.js';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
@@ -14,6 +23,13 @@ const PENDING_TITLE = 'Show the delivery date on the order page';
 
 /** The `xl` breakpoint of Tailwind (80rem): the table shows the type column from it on. */
 const DESKTOP_BREAKPOINT_PX = 1280;
+
+/**
+ * The languages whose type labels fit on one line below the title at the 112 px of the title
+ * column (§8.1, Q2 and Q4 of the ticket-type-on-cards change specification); in another language a
+ * longer label may wrap in the cell, and only the overflow is checked.
+ */
+const ONE_LINE_TYPE_LOCALES: ReadonlySet<string> = new Set(['en', 'pl']);
 
 /** A critical bug of the demo dataset. */
 const SAFARI_TITLE = 'Sign-in page crashes on Safari';
@@ -76,6 +92,40 @@ async function createTicket(api: APIRequestContext, projectId: string, title: st
   return (await response.json()) as TicketReply;
 }
 
+/**
+ * Checks that a view of the list fits its width (S1-13, §2.9): the page never scrolls sideways,
+ * the table – from the tablet width on – fits the content area without hiding a column or a row
+ * action behind horizontal scrolling, and the cards of phones keep their 44 px touch target.
+ */
+async function expectListFits(
+  page: Page,
+  view: TicketListView,
+  heading: string,
+  empty: string,
+): Promise<void> {
+  await page.goto(`/tickets?view=${view}`);
+  await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+  const tickets = page.getByRole('main').locator('a[href^="/tickets/"]').filter({ visible: true });
+  // The person's own empty filter lists every ticket of the demo dataset, so the check never
+  // passes on an empty list there; the other views may be emptied by tests running in parallel.
+  await expect(
+    view === 'custom'
+      ? tickets.first()
+      : tickets.first().or(page.getByText(empty, { exact: true })),
+  ).toBeVisible();
+  expect(await pageOverflow(page), 'the page scrolls sideways').toBe(0);
+  if ((page.viewportSize()?.width ?? 0) >= TABLET_BREAKPOINT_PX) {
+    const container = page.locator('[data-slot=table-container]');
+    if ((await container.count()) > 0) {
+      expect(await horizontalOverflow(container), 'the table scrolls sideways').toBe(0);
+    }
+  } else {
+    for (const card of await tickets.all()) {
+      await expectTouchTarget(card, minimumTargetSize(test.info()));
+    }
+  }
+}
+
 // The team's ticket list of S1-13 on phone, tablet and desktop, with axe (§13.4).
 test.describe('the ticket list', () => {
   test('renders as cards on a phone and as a table from the tablet width on', async ({
@@ -100,134 +150,175 @@ test.describe('the ticket list', () => {
     expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
   });
 
-  // The type on phone cards and tablets (§8.1, .ai/specs/implemented/2026-11-10-ticket-type-on-cards.md).
-  for (const { url, title, type } of [
-    { url: '/tickets?type=bug&priority=critical', title: SAFARI_TITLE, type: 'Bug' },
-    { url: '/tickets?type=question', title: QUESTION_TITLE, type: 'Question' },
-    { url: '/tickets?view=pending_sharing_approvals', title: PENDING_TITLE, type: 'Not set' },
-  ]) {
-    test(`shows the type "${type}" on every device`, async ({ page }, testInfo) => {
-      await page.goto(url);
-      const width = page.viewportSize()?.width ?? 0;
-      if (width < TABLET_BREAKPOINT_PX) {
-        // The card: `<identifier> · <type>` on one line; the separator is not in the link's name.
-        const link = page.getByRole('link', {
-          name: new RegExp(`^[A-Z]+-\\d+ ${type} ${escapeRegExp(title)}$`),
+  // Width-sensitive checks in every language of the catalogues (#295): translations are often
+  // longer than English, so each runs per locale – on the device of the project and, in the
+  // tablet project, at the narrowest tablet width as well (§2.9).
+  for (const locale of ALL_LOCALES) {
+    const messages = messagesOf(locale);
+    const list = messages.tickets.list;
+
+    test.describe(`in ${locale}`, () => {
+      test.use({ locale });
+
+      for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
+        test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
+          await expectListFits(page, view, list.title, list.empty[view]);
         });
-        await expect(link).toBeVisible();
-        const line = link.locator('> span').first();
-        await expect(line).toHaveText(new RegExp(`^[A-Z]+-\\d+ · ${type}$`));
-        const lineBox = await line.boundingBox();
-        expect(lineBox?.height, 'one line').toBeLessThan(20);
-        // With a one-line title the link keeps the 44 px of S1-13.
-        const titleBox = await link.locator('> span').last().boundingBox();
-        if ((titleBox?.height ?? 0) < 30) {
-          expect((await link.boundingBox())?.height, 'the card keeps its height').toBe(44);
-        }
-      } else {
-        const table = page.getByRole('table');
-        const row = table.getByRole('row').filter({ has: page.getByRole('link', { name: title }) });
-        const idCell = row.getByRole('cell').nth(1);
-        const titleCell = row.getByRole('cell').nth(2);
-        const isDesktop = width >= DESKTOP_BREAKPOINT_PX;
-        await expect(table.getByRole('columnheader', { name: 'Type' })).toBeVisible({
-          visible: isDesktop,
-        });
-        if (isDesktop) {
-          // The type column, and only the identifier and the title in their cells.
-          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
-          await expect(titleCell.getByText(type, { exact: true })).toBeHidden();
-          await expect(row.getByRole('cell', { name: type, exact: true })).toBeVisible();
-        } else {
-          // The type below the title on one line; the table still fits without scrolling.
-          await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
-          const typeLine = titleCell.getByText(type, { exact: true });
-          await expect(typeLine).toBeVisible();
-          expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
-          const overflow = await page
-            .locator('[data-slot=table-container]')
-            .evaluate((container) => container.scrollWidth - container.clientWidth);
-          expect(overflow).toBeLessThanOrEqual(0);
-        }
       }
-      expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
-    });
-  }
 
-  // The longest type labels are Polish („Funkcjonalność”, „Nie ustawiono”): on the narrowest
-  // tablet they stay on one line below the title and do not widen the table (§8.1).
-  test.describe('in Polish on the narrowest tablet', () => {
-    test.use({ locale: 'pl-PL', viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
+      // The type on phone cards and tablets (§8.1,
+      // .ai/specs/implemented/2026-11-10-ticket-type-on-cards.md).
+      for (const { url, title, type } of [
+        {
+          url: '/tickets?type=bug&priority=critical',
+          title: SAFARI_TITLE,
+          type: messages.tickets.types.bug,
+        },
+        {
+          url: '/tickets?type=question',
+          title: QUESTION_TITLE,
+          type: messages.tickets.types.question,
+        },
+        {
+          url: '/tickets?view=pending_sharing_approvals',
+          title: PENDING_TITLE,
+          type: messages.tickets.view.notSet,
+        },
+      ]) {
+        test(`shows the type "${type}" on every device`, async ({ page }, testInfo) => {
+          await page.goto(url);
+          const width = page.viewportSize()?.width ?? 0;
+          if (width < TABLET_BREAKPOINT_PX) {
+            // The card: `<identifier> · <type>` on one line; the separator is not in the link's
+            // name.
+            const link = page.getByRole('link', {
+              name: new RegExp(`^[A-Z]+-\\d+ ${escapeRegExp(type)} ${escapeRegExp(title)}$`),
+            });
+            await expect(link).toBeVisible();
+            const line = link.locator('> span').first();
+            await expect(line).toHaveText(new RegExp(`^[A-Z]+-\\d+ · ${escapeRegExp(type)}$`));
+            const lineBox = await line.boundingBox();
+            expect(lineBox?.height, 'one line').toBeLessThan(20);
+            // With a one-line title the link keeps the 44 px of S1-13.
+            const titleBox = await link.locator('> span').last().boundingBox();
+            if ((titleBox?.height ?? 0) < 30) {
+              expect((await link.boundingBox())?.height, 'the card keeps its height').toBe(44);
+            }
+          } else {
+            const table = page.getByRole('table');
+            const row = table
+              .getByRole('row')
+              .filter({ has: page.getByRole('link', { name: title }) });
+            const idCell = row.getByRole('cell').nth(1);
+            const titleCell = row.getByRole('cell').nth(2);
+            const isDesktop = width >= DESKTOP_BREAKPOINT_PX;
+            await expect(
+              table.getByRole('columnheader', { name: list.columns.type, exact: true }),
+            ).toBeVisible({ visible: isDesktop });
+            await expect(idCell).toHaveText(/^[A-Z]+-\d+$/);
+            if (isDesktop) {
+              // The type column, and only the identifier and the title in their cells.
+              await expect(titleCell.getByText(type, { exact: true })).toBeHidden();
+              await expect(row.getByRole('cell', { name: type, exact: true })).toBeVisible();
+            } else {
+              // The type below the title; the table still fits without scrolling.
+              const typeLine = titleCell.getByText(type, { exact: true });
+              await expect(typeLine).toBeVisible();
+              if (ONE_LINE_TYPE_LOCALES.has(locale)) {
+                expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+              }
+              expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
+            }
+          }
+          expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
+        });
+      }
 
-    for (const { url, title, type } of [
-      {
-        url: '/tickets?type=feature',
-        title: 'Export the invoice list to CSV',
-        type: 'Funkcjonalność',
-      },
-      {
-        url: '/tickets?view=pending_sharing_approvals',
-        title: PENDING_TITLE,
-        type: 'Nie ustawiono',
-      },
-    ]) {
-      test(`shows the type "${type}" without scrolling the table`, async ({ page }) => {
-        test.skip(test.info().project.name !== 'tablet', 'one tablet width');
-        await page.goto(url);
-        const row = page
-          .getByRole('table')
-          .getByRole('row')
-          .filter({ has: page.getByRole('link', { name: title }) });
-        const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
-        await expect(typeLine).toBeVisible();
-        expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
-        const overflow = await page
-          .locator('[data-slot=table-container]')
-          .evaluate((container) => container.scrollWidth - container.clientWidth);
-        expect(overflow).toBeLessThanOrEqual(0);
-      });
-    }
-  });
+      // A large tablet, e.g. an iPad in landscape: between `lg` and `xl` the labels keep their
+      // words, so the table must fit there without the limits of the narrower widths.
+      test.describe('on a large tablet', () => {
+        test.use({ viewport: LARGE_TABLET });
 
-  // The sharing actions wrap their labels inside the title cell, which is at least 112 px wide on
-  // the narrowest tablet: a longer translation never draws over the Status column (#296).
-  for (const { locale, approve, refuse } of [
-    { locale: 'en-US', approve: 'Approve sharing', refuse: 'Refuse sharing' },
-    { locale: 'pl-PL', approve: 'Zatwierdź udostępnienie', refuse: 'Odmów udostępnienia' },
-  ]) {
-    test.describe(`in ${locale} on the narrowest tablet`, () => {
-      test.use({ locale, viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
-
-      test('keeps the sharing actions inside the title cell', async ({ page }) => {
-        test.skip(test.info().project.name !== 'tablet', 'one tablet width');
-        await page.goto('/tickets?view=pending_sharing_approvals');
-        const row = page
-          .getByRole('table')
-          .getByRole('row')
-          .filter({ has: page.getByRole('link', { name: PENDING_TITLE }) });
-        const titleCell = row.getByRole('cell').nth(2);
-        const titleBox = await titleCell.boundingBox();
-        const statusBox = await row.getByRole('cell').nth(3).boundingBox();
-        for (const name of [approve, refuse]) {
-          const action = titleCell.getByRole('button', { name });
-          await expectTouchTarget(action, minimumTargetSize(test.info()));
-          const box = await action.boundingBox();
-          expect(box?.x, name).toBeGreaterThanOrEqual(titleBox?.x ?? Infinity);
-          expect((box?.x ?? Infinity) + (box?.width ?? 0), name).toBeLessThanOrEqual(
-            Math.min((titleBox?.x ?? 0) + (titleBox?.width ?? 0), statusBox?.x ?? 0),
-          );
+        for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
+          test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
+            test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+            await expectListFits(page, view, list.title, list.empty[view]);
+          });
         }
-        const overflow = await page
-          .locator('[data-slot=table-container]')
-          .evaluate((container) => container.scrollWidth - container.clientWidth);
-        expect(overflow).toBeLessThanOrEqual(0);
+      });
 
-        // A wrapped action still opens its confirmation dialog. A click on the server-rendered
-        // button before the hydration does nothing, so it is repeated.
-        await expect(async () => {
-          await titleCell.getByRole('button', { name: approve }).click({ timeout: 2_000 });
-          await expect(page.getByRole('dialog')).toBeVisible({ timeout: 2_000 });
-        }).toPass();
+      test.describe('on the narrowest tablet', () => {
+        test.use({ viewport: NARROWEST_TABLET });
+
+        for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
+          test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
+            test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+            await expectListFits(page, view, list.title, list.empty[view]);
+          });
+        }
+
+        // The type labels below the title do not widen the table (§8.1).
+        for (const { url, title, type } of [
+          {
+            url: '/tickets?type=feature',
+            title: 'Export the invoice list to CSV',
+            type: messages.tickets.types.feature,
+          },
+          {
+            url: '/tickets?view=pending_sharing_approvals',
+            title: PENDING_TITLE,
+            type: messages.tickets.view.notSet,
+          },
+        ]) {
+          test(`shows the type "${type}" without scrolling the table`, async ({ page }) => {
+            test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+            await page.goto(url);
+            const row = page
+              .getByRole('table')
+              .getByRole('row')
+              .filter({ has: page.getByRole('link', { name: title }) });
+            const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
+            await expect(typeLine).toBeVisible();
+            if (ONE_LINE_TYPE_LOCALES.has(locale)) {
+              expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+            }
+            expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
+          });
+        }
+
+        // The sharing actions wrap their labels inside the title cell, which is at least 112 px
+        // wide on the narrowest tablet: a longer translation never draws over the Status column
+        // (#296).
+        test('keeps the sharing actions inside the title cell', async ({ page }) => {
+          test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+          await page.goto('/tickets?view=pending_sharing_approvals');
+          const row = page
+            .getByRole('table')
+            .getByRole('row')
+            .filter({ has: page.getByRole('link', { name: PENDING_TITLE }) });
+          const titleCell = row.getByRole('cell').nth(2);
+          const titleBox = await titleCell.boundingBox();
+          const statusBox = await row.getByRole('cell').nth(3).boundingBox();
+          for (const name of [list.sharing.approve, list.sharing.refuse]) {
+            const action = titleCell.getByRole('button', { name });
+            await expectTouchTarget(action, minimumTargetSize(test.info()));
+            const box = await action.boundingBox();
+            expect(box?.x, name).toBeGreaterThanOrEqual(titleBox?.x ?? Infinity);
+            expect((box?.x ?? Infinity) + (box?.width ?? 0), name).toBeLessThanOrEqual(
+              Math.min((titleBox?.x ?? 0) + (titleBox?.width ?? 0), statusBox?.x ?? 0),
+            );
+          }
+          expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
+
+          // A wrapped action still opens its confirmation dialog. A click on the server-rendered
+          // button before the hydration does nothing, so it is repeated.
+          await expect(async () => {
+            await titleCell
+              .getByRole('button', { name: list.sharing.approve })
+              .click({ timeout: 2_000 });
+            await expect(page.getByRole('dialog')).toBeVisible({ timeout: 2_000 });
+          }).toPass();
+        });
       });
     });
   }
