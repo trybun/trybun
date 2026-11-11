@@ -54,6 +54,11 @@ export const Default: Story = {
     await userEvent.click(canvas.getByRole('combobox', { name: 'Priority' }));
     await userEvent.click(await screen.findByRole('option', { name: 'High' }));
     await expect(canvas.getByRole('combobox', { name: 'Priority' })).toHaveTextContent('High');
+    // Base UI drops `aria-controls` from the trigger as soon as the popup closes, but the listbox
+    // stays mounted until it unmounts after the close. Without that link axe no longer treats it
+    // as the combobox popup and reports the unnamed listbox (`aria-input-field-name`, #288), so
+    // the accessibility check waits for the closed state.
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
   },
 };
 
