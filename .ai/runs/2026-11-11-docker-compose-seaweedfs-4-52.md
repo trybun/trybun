@@ -45,4 +45,4 @@ Update `chrislusf/seaweedfs` from 4.51 to 4.52 everywhere the repository pins it
 
 ### Phase 2: Make the supply-chain check green
 
-- [ ] 2.1 Pin the SeaweedFS Testcontainers image to the 4.52 digest of compose.yaml
+- [x] 2.1 Pin the SeaweedFS Testcontainers image to the 4.52 digest of compose.yaml — 4af3fe9
