@@ -256,6 +256,7 @@ Keyboard shortcuts remain a desktop accelerator; every action they trigger is al
 ### Verification
 
 - E2E tests ([§2.14](#214-agent-workflow)) run the key user paths (the user paths of the key pages above, plus the paths named in the "Done when" criteria of the implementation plan) on **phone, tablet and desktop** viewports (Playwright device profiles, e.g. a current iPhone, an Android phone and an iPad).
+- Width-sensitive E2E checks – no horizontal scrolling of a page or a table, the height of cards, labels kept on one line where the specification requires it, touch targets – run in **every language of the message catalogues** ([§13.1](13-non-functional.md)), taken from the catalogues rather than listed in the tests, so a new language is checked without changing them, and on tablets also at the **narrowest tablet width** (768 px), not only at the width of the tablet device profile. Translations are often longer than English, so a layout that fits in English can break in another language.
 - Every UI component in the component catalog (Rule 6) is shown in phone, tablet and desktop viewports.
 
 ## 2.10 Rule 10 – Dependencies are monitored and kept up to date

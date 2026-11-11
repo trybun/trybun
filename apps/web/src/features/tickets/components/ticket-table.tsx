@@ -19,6 +19,8 @@ import { MAX_BULK_CHANGE_TICKETS } from '../ticket-list.js';
 import {
   COLUMN_CLASS,
   SORT_OF_COLUMN,
+  NARROW_LABEL_CLASS,
+  SORT_BUTTON_CLASS,
   TicketCheckbox,
   type TicketTable as TicketTableInstance,
 } from './ticket-list-columns.js';
@@ -94,9 +96,15 @@ export function TicketTable({
                   {header.column.id === 'select' ? (
                     <SelectAllCheckbox table={table} />
                   ) : direction === undefined ? (
-                    <table.FlexRender header={header} />
+                    <span className={NARROW_LABEL_CLASS}>
+                      <table.FlexRender header={header} />
+                    </span>
                   ) : (
-                    <TableSortButton type="button" onClick={() => onSort(header.column.id)}>
+                    <TableSortButton
+                      type="button"
+                      className={SORT_BUTTON_CLASS}
+                      onClick={() => onSort(header.column.id)}
+                    >
                       <table.FlexRender header={header} />
                     </TableSortButton>
                   )}

@@ -1,5 +1,13 @@
-import { type APIRequestContext, expect, request, test } from '@playwright/test';
+import { type APIRequestContext, expect, type Page, request, test } from '@playwright/test';
+import { predefinedViewSchema } from '../src/features/tickets/ticket-list.js';
 import { seriousViolations } from './accessibility.js';
+import {
+  ALL_LOCALES,
+  horizontalOverflow,
+  messagesOf,
+  NARROWEST_TABLET,
+  pageOverflow,
+} from './locales.js';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
@@ -74,6 +82,29 @@ async function createTicket(api: APIRequestContext, projectId: string, title: st
   const response = await api.post('/api/v1/tickets', { data: { projectId, title } });
   expect(response.status()).toBe(201);
   return (await response.json()) as TicketReply;
+}
+
+/**
+ * Checks that a view of the list fits its width (S1-13, §2.9): the page never scrolls sideways,
+ * the table – from the tablet width on – fits the content area without hiding a column or a row
+ * action behind horizontal scrolling, and the cards of phones keep their 44 px touch target.
+ */
+async function expectListFits(page: Page, url: string, heading: string, empty: string) {
+  await page.goto(url);
+  await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+  const tickets = page.getByRole('main').locator('a[href^="/tickets/"]').filter({ visible: true });
+  await expect(tickets.first().or(page.getByText(empty, { exact: true }))).toBeVisible();
+  expect(await pageOverflow(page), 'the page scrolls sideways').toBe(0);
+  if ((page.viewportSize()?.width ?? 0) >= TABLET_BREAKPOINT_PX) {
+    const container = page.locator('[data-slot=table-container]');
+    if ((await container.count()) > 0) {
+      expect(await horizontalOverflow(container), 'the table scrolls sideways').toBe(0);
+    }
+  } else {
+    for (const card of await tickets.all()) {
+      await expectTouchTarget(card, minimumTargetSize(test.info()));
+    }
+  }
 }
 
 // The team's ticket list of S1-13 on phone, tablet and desktop, with axe (§13.4).
@@ -154,80 +185,92 @@ test.describe('the ticket list', () => {
     });
   }
 
-  // The longest type labels are Polish („Funkcjonalność”, „Nie ustawiono”): on the narrowest
-  // tablet they stay on one line below the title and do not widen the table (§8.1).
-  test.describe('in Polish on the narrowest tablet', () => {
-    test.use({ locale: 'pl-PL', viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
+  // Width-sensitive checks in every language of the catalogues (#295): translations are often
+  // longer than English, so each runs per locale – on the device of the project and, in the
+  // tablet project, at the narrowest tablet width as well (§2.9).
+  for (const locale of ALL_LOCALES) {
+    const messages = messagesOf(locale);
+    const list = messages.tickets.list;
 
-    for (const { url, title, type } of [
-      {
-        url: '/tickets?type=feature',
-        title: 'Export the invoice list to CSV',
-        type: 'Funkcjonalność',
-      },
-      {
-        url: '/tickets?view=pending_sharing_approvals',
-        title: PENDING_TITLE,
-        type: 'Nie ustawiono',
-      },
-    ]) {
-      test(`shows the type "${type}" without scrolling the table`, async ({ page }) => {
-        test.skip(test.info().project.name !== 'tablet', 'one tablet width');
-        await page.goto(url);
-        const row = page
-          .getByRole('table')
-          .getByRole('row')
-          .filter({ has: page.getByRole('link', { name: title }) });
-        const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
-        await expect(typeLine).toBeVisible();
-        expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
-        const overflow = await page
-          .locator('[data-slot=table-container]')
-          .evaluate((container) => container.scrollWidth - container.clientWidth);
-        expect(overflow).toBeLessThanOrEqual(0);
-      });
-    }
-  });
+    test.describe(`in ${locale}`, () => {
+      test.use({ locale });
 
-  // The sharing actions wrap their labels inside the title cell, which is at least 112 px wide on
-  // the narrowest tablet: a longer translation never draws over the Status column (#296).
-  for (const { locale, approve, refuse } of [
-    { locale: 'en-US', approve: 'Approve sharing', refuse: 'Refuse sharing' },
-    { locale: 'pl-PL', approve: 'Zatwierdź udostępnienie', refuse: 'Odmów udostępnienia' },
-  ]) {
-    test.describe(`in ${locale} on the narrowest tablet`, () => {
-      test.use({ locale, viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
+      for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
+        test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
+          await expectListFits(page, `/tickets?view=${view}`, list.title, list.empty[view]);
+        });
+      }
 
-      test('keeps the sharing actions inside the title cell', async ({ page }) => {
-        test.skip(test.info().project.name !== 'tablet', 'one tablet width');
-        await page.goto('/tickets?view=pending_sharing_approvals');
-        const row = page
-          .getByRole('table')
-          .getByRole('row')
-          .filter({ has: page.getByRole('link', { name: PENDING_TITLE }) });
-        const titleCell = row.getByRole('cell').nth(2);
-        const titleBox = await titleCell.boundingBox();
-        const statusBox = await row.getByRole('cell').nth(3).boundingBox();
-        for (const name of [approve, refuse]) {
-          const action = titleCell.getByRole('button', { name });
-          await expectTouchTarget(action, minimumTargetSize(test.info()));
-          const box = await action.boundingBox();
-          expect(box?.x, name).toBeGreaterThanOrEqual(titleBox?.x ?? Infinity);
-          expect((box?.x ?? Infinity) + (box?.width ?? 0), name).toBeLessThanOrEqual(
-            Math.min((titleBox?.x ?? 0) + (titleBox?.width ?? 0), statusBox?.x ?? 0),
-          );
+      test.describe('on the narrowest tablet', () => {
+        test.use({ viewport: NARROWEST_TABLET });
+
+        for (const view of [...predefinedViewSchema.options, 'custom'] as const) {
+          test(`fits the view "${view}" without horizontal scrolling`, async ({ page }) => {
+            test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+            await expectListFits(page, `/tickets?view=${view}`, list.title, list.empty[view]);
+          });
         }
-        const overflow = await page
-          .locator('[data-slot=table-container]')
-          .evaluate((container) => container.scrollWidth - container.clientWidth);
-        expect(overflow).toBeLessThanOrEqual(0);
 
-        // A wrapped action still opens its confirmation dialog. A click on the server-rendered
-        // button before the hydration does nothing, so it is repeated.
-        await expect(async () => {
-          await titleCell.getByRole('button', { name: approve }).click({ timeout: 2_000 });
-          await expect(page.getByRole('dialog')).toBeVisible({ timeout: 2_000 });
-        }).toPass();
+        // The type labels stay on one line below the title and do not widen the table (§8.1).
+        for (const { url, title, type } of [
+          {
+            url: '/tickets?type=feature',
+            title: 'Export the invoice list to CSV',
+            type: messages.tickets.types.feature,
+          },
+          {
+            url: '/tickets?view=pending_sharing_approvals',
+            title: PENDING_TITLE,
+            type: messages.tickets.view.notSet,
+          },
+        ]) {
+          test(`shows the type "${type}" without scrolling the table`, async ({ page }) => {
+            test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+            await page.goto(url);
+            const row = page
+              .getByRole('table')
+              .getByRole('row')
+              .filter({ has: page.getByRole('link', { name: title }) });
+            const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
+            await expect(typeLine).toBeVisible();
+            expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+            expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
+          });
+        }
+
+        // The sharing actions wrap their labels inside the title cell, which is at least 112 px
+        // wide on the narrowest tablet: a longer translation never draws over the Status column
+        // (#296).
+        test('keeps the sharing actions inside the title cell', async ({ page }) => {
+          test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+          await page.goto('/tickets?view=pending_sharing_approvals');
+          const row = page
+            .getByRole('table')
+            .getByRole('row')
+            .filter({ has: page.getByRole('link', { name: PENDING_TITLE }) });
+          const titleCell = row.getByRole('cell').nth(2);
+          const titleBox = await titleCell.boundingBox();
+          const statusBox = await row.getByRole('cell').nth(3).boundingBox();
+          for (const name of [list.sharing.approve, list.sharing.refuse]) {
+            const action = titleCell.getByRole('button', { name });
+            await expectTouchTarget(action, minimumTargetSize(test.info()));
+            const box = await action.boundingBox();
+            expect(box?.x, name).toBeGreaterThanOrEqual(titleBox?.x ?? Infinity);
+            expect((box?.x ?? Infinity) + (box?.width ?? 0), name).toBeLessThanOrEqual(
+              Math.min((titleBox?.x ?? 0) + (titleBox?.width ?? 0), statusBox?.x ?? 0),
+            );
+          }
+          expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
+
+          // A wrapped action still opens its confirmation dialog. A click on the server-rendered
+          // button before the hydration does nothing, so it is repeated.
+          await expect(async () => {
+            await titleCell
+              .getByRole('button', { name: list.sharing.approve })
+              .click({ timeout: 2_000 });
+            await expect(page.getByRole('dialog')).toBeVisible({ timeout: 2_000 });
+          }).toPass();
+        });
       });
     });
   }

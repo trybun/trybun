@@ -52,6 +52,29 @@ export const COLUMN_CLASS: Readonly<Partial<Record<string, string>>> = {
   updated: 'whitespace-normal',
 };
 
+/**
+ * A label of a narrow column (#295). The title column takes all free width, so every other column
+ * is only as wide as its longest unbreakable word – a translation such as „Oczekuje na
+ * zgłaszającego” or „Zaktualizowano” widened the table at 768 px, and at 1280 px once the
+ * organization column shows. Where the columns would not fit otherwise – the tablet widths below
+ * `lg` (four narrow columns) and the desktop widths from `xl` to `2xl` (seven) – the label is at
+ * most 84 px wide, with the cell's padding 100 px, so the table fits in every language, and a
+ * longer word wraps (hyphenated where the browser knows the page's language, else at any
+ * character) instead of widening the table. `w-max` keeps a short label on one line: the cell is
+ * as wide as its label up to the limit. In between and from `2xl` on the labels keep their words.
+ */
+export const NARROW_LABEL_CLASS =
+  'max-lg:block max-lg:w-max max-lg:max-w-21 max-lg:hyphens-auto max-lg:wrap-anywhere xl:max-2xl:block xl:max-2xl:w-max xl:max-2xl:max-w-21 xl:max-2xl:hyphens-auto xl:max-2xl:wrap-anywhere';
+
+/**
+ * A sort button of a column header, limited like `NARROW_LABEL_CLASS` (its negative margin overlaps
+ * the cell's padding, so the column stays at most 100 px wide): the label wraps inside the button,
+ * which grows with its lines and keeps its touch target – 44 px, compact on a desktop with a
+ * precise pointer (§2.9, `cn` keeps the size's `xl:pointer-fine:h-7`, hence its `h-auto`).
+ */
+export const SORT_BUTTON_CLASS =
+  'h-auto min-h-11 py-1 text-left xl:pointer-fine:h-auto xl:pointer-fine:min-h-7 xl:pointer-fine:py-1 max-lg:w-max max-lg:max-w-25 max-lg:whitespace-normal max-lg:hyphens-auto max-lg:wrap-anywhere xl:max-2xl:w-max xl:max-2xl:max-w-25 xl:max-2xl:whitespace-normal xl:max-2xl:hyphens-auto xl:max-2xl:wrap-anywhere';
+
 /** Whether one more ticket may be selected (§8.1): at most 100 at once. */
 export function canSelectMore(selection: RowSelectionState): boolean {
   return Object.keys(selection).length < MAX_BULK_CHANGE_TICKETS;
@@ -158,7 +181,8 @@ export function useTicketColumns(organizationsExist: boolean) {
           header: () => t('columns.title'),
           // Tablets hide the type column, so the title cell shows the type below the title until
           // the desktop width (§8.1). The title column takes the free width and is at least 112 px
-          // wide, so the type neither widens the table nor breaks within a word.
+          // wide, so the type stays on one line in English and Polish; a longer translation wraps
+          // in the cell instead of widening the table (#295).
           cell: ({ row }) => (
             <div className="flex flex-col gap-0.5">
               <Link
@@ -167,7 +191,7 @@ export function useTicketColumns(organizationsExist: boolean) {
               >
                 {row.original.title}
               </Link>
-              <span className="text-xs wrap-break-word text-muted-foreground xl:hidden">
+              <span className="text-xs wrap-anywhere hyphens-auto text-muted-foreground xl:hidden">
                 {labels.type(row.original)}
               </span>
             </div>
@@ -176,41 +200,65 @@ export function useTicketColumns(organizationsExist: boolean) {
         helper.accessor('status', {
           id: 'status',
           header: () => t('columns.status'),
-          cell: ({ row }) => <StatusBadge ticket={row.original} />,
+          cell: ({ row }) => (
+            <span className={NARROW_LABEL_CLASS}>
+              <StatusBadge ticket={row.original} />
+            </span>
+          ),
         }),
         helper.accessor('priority', {
           id: 'priority',
           header: () => t('columns.priority'),
-          cell: ({ row }) => <PriorityBadge ticket={row.original} />,
+          cell: ({ row }) => (
+            <span className={NARROW_LABEL_CLASS}>
+              <PriorityBadge ticket={row.original} />
+            </span>
+          ),
         }),
         helper.accessor('type', {
           id: 'type',
           header: () => t('columns.type'),
-          cell: ({ row }) => labels.type(row.original),
+          cell: ({ row }) => (
+            <span className={NARROW_LABEL_CLASS}>{labels.type(row.original)}</span>
+          ),
         }),
         helper.accessor('assignee', {
           id: 'assignee',
           header: () => t('columns.assignee'),
-          cell: ({ row }) => <PersonName person={row.original.assignee} />,
+          cell: ({ row }) => (
+            <span className={NARROW_LABEL_CLASS}>
+              <PersonName person={row.original.assignee} />
+            </span>
+          ),
         }),
         helper.accessor((ticket) => ticket.project.key, {
           id: 'project',
           header: () => t('columns.project'),
-          cell: ({ row }) => row.original.project.name,
+          cell: ({ row }) => (
+            <span className={NARROW_LABEL_CLASS}>{row.original.project.name}</span>
+          ),
         }),
         ...(organizationsExist
           ? [
               helper.accessor((ticket) => ticket.organization?.name ?? '', {
                 id: 'organization',
                 header: () => t('columns.organization'),
-                cell: ({ row }) => row.original.organization?.name ?? '',
+                cell: ({ row }) => (
+                  <span className={NARROW_LABEL_CLASS}>
+                    {row.original.organization?.name ?? ''}
+                  </span>
+                ),
               }),
             ]
           : []),
         helper.accessor('updatedAt', {
           id: 'updated',
           header: () => t('columns.updated'),
-          cell: ({ row }) => <UpdatedTime ticket={row.original} />,
+          cell: ({ row }) => (
+            <span className={NARROW_LABEL_CLASS}>
+              <UpdatedTime ticket={row.original} />
+            </span>
+          ),
         }),
       ]),
     [t, labels, organizationsExist],

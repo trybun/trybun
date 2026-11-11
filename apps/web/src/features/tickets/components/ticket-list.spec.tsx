@@ -154,6 +154,48 @@ describe('TicketList', () => {
     });
   });
 
+  it('limits the labels of the narrow columns, so a long translation wraps (#295)', async () => {
+    answerList([ticket(1, { status: 'waiting_for_requester', assignee: null })]);
+    renderInApp(
+      <TicketList state={stateOfView('custom')} currentUserId={ME} organizationsExist={false} />,
+    );
+
+    await screen.findAllByRole('link', { name: 'Ticket 1' });
+    const table = screen.getByRole('table');
+    const row = within(table).getAllByRole('row')[1]!;
+    const classesOf = (element: Element | null | undefined) =>
+      (element?.getAttribute('class') ?? '').split(' ');
+    // Status, priority, type, assignee, project and last update: a label at most 84 px wide on
+    // tablets and narrow desktops that wraps a long word instead of widening the table; the size
+    // of the layout is checked in E2E.
+    for (const text of ['Waiting for requester', 'High', 'Bug', 'Unassigned', 'ERP system']) {
+      const label = within(row).getAllByText(text).at(-1)?.closest('.max-lg\\:max-w-21');
+      expect(classesOf(label), text).toEqual(
+        expect.arrayContaining([
+          'max-lg:w-max',
+          'max-lg:wrap-anywhere',
+          'max-lg:hyphens-auto',
+          'xl:max-2xl:max-w-21',
+          'xl:max-2xl:wrap-anywhere',
+        ]),
+      );
+    }
+    expect(classesOf(row.querySelector('time')?.parentElement)).toContain('max-lg:max-w-21');
+    // The sort buttons of the headers wrap too and keep their touch target.
+    for (const name of ['ID', 'Status', 'Priority', 'Updated']) {
+      expect(classesOf(within(table).getByRole('button', { name })), name).toEqual(
+        expect.arrayContaining([
+          'min-h-11',
+          'xl:pointer-fine:h-auto',
+          'max-lg:max-w-25',
+          'max-lg:whitespace-normal',
+          'max-lg:wrap-anywhere',
+          'xl:max-2xl:max-w-25',
+        ]),
+      );
+    }
+  });
+
   it('reports a conflict of a bulk change per ticket and keeps that ticket selected (§8.1)', async () => {
     const events = userEvent.setup();
     const [first, second] = [ticket(1), ticket(2)];
