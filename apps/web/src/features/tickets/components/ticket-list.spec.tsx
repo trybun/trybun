@@ -260,6 +260,14 @@ describe('TicketList', () => {
     expect(within(titleCell!).getByRole('button', { name: 'Approve sharing' })).toBeDefined();
     expect(within(table).getAllByRole('button', { name: 'Approve sharing' })).toHaveLength(1);
     expect(within(table).getAllByRole('button', { name: 'Refuse sharing' })).toHaveLength(1);
+    // The actions shrink and wrap their labels inside the cell in every language (#296).
+    for (const name of ['Approve sharing', 'Refuse sharing']) {
+      const action = within(titleCell!).getByRole('button', { name });
+      expect(action.className.split(' ')).toEqual(
+        expect.arrayContaining(['shrink', 'whitespace-normal', 'wrap-anywhere']),
+      );
+      expect(action.className.split(' ')).not.toContain('shrink-0');
+    }
   });
 
   it('keeps the rows of the last filters while the next ones load (#279)', async () => {

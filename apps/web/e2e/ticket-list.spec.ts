@@ -1,6 +1,7 @@
 import { type APIRequestContext, expect, request, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
+import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 /**
  * `TABLET_MEDIA_QUERY` of `@trybun/ui` (48rem): below it the bulk pickers are bottom sheets, and
@@ -187,6 +188,49 @@ test.describe('the ticket list', () => {
       });
     }
   });
+
+  // The sharing actions wrap their labels inside the title cell, which is at least 112 px wide on
+  // the narrowest tablet: a longer translation never draws over the Status column (#296).
+  for (const { locale, approve, refuse } of [
+    { locale: 'en-US', approve: 'Approve sharing', refuse: 'Refuse sharing' },
+    { locale: 'pl-PL', approve: 'Zatwierdź udostępnienie', refuse: 'Odmów udostępnienia' },
+  ]) {
+    test.describe(`in ${locale} on the narrowest tablet`, () => {
+      test.use({ locale, viewport: { width: TABLET_BREAKPOINT_PX, height: 1024 } });
+
+      test('keeps the sharing actions inside the title cell', async ({ page }) => {
+        test.skip(test.info().project.name !== 'tablet', 'one tablet width');
+        await page.goto('/tickets?view=pending_sharing_approvals');
+        const row = page
+          .getByRole('table')
+          .getByRole('row')
+          .filter({ has: page.getByRole('link', { name: PENDING_TITLE }) });
+        const titleCell = row.getByRole('cell').nth(2);
+        const titleBox = await titleCell.boundingBox();
+        const statusBox = await row.getByRole('cell').nth(3).boundingBox();
+        for (const name of [approve, refuse]) {
+          const action = titleCell.getByRole('button', { name });
+          await expectTouchTarget(action, minimumTargetSize(test.info()));
+          const box = await action.boundingBox();
+          expect(box?.x, name).toBeGreaterThanOrEqual(titleBox?.x ?? Infinity);
+          expect((box?.x ?? Infinity) + (box?.width ?? 0), name).toBeLessThanOrEqual(
+            Math.min((titleBox?.x ?? 0) + (titleBox?.width ?? 0), statusBox?.x ?? 0),
+          );
+        }
+        const overflow = await page
+          .locator('[data-slot=table-container]')
+          .evaluate((container) => container.scrollWidth - container.clientWidth);
+        expect(overflow).toBeLessThanOrEqual(0);
+
+        // A wrapped action still opens its confirmation dialog. A click on the server-rendered
+        // button before the hydration does nothing, so it is repeated.
+        await expect(async () => {
+          await titleCell.getByRole('button', { name: approve }).click({ timeout: 2_000 });
+          await expect(page.getByRole('dialog')).toBeVisible({ timeout: 2_000 });
+        }).toPass();
+      });
+    });
+  }
 
   test('keeps the filters in the URL and leaves the view when a filter changes', async ({
     page,
