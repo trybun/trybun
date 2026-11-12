@@ -235,8 +235,9 @@ export function TicketList({
         />
         <TicketSortSelect sorting={sorting} onSortingChange={(next) => go({ ...state, ...next })} />
       </div>
+      {/* Rendered with the page from the address, so a note rather than a live region. */}
       {filtersOverLimit.map((key) => (
-        <p key={key} role="status" className="text-sm text-muted-foreground">
+        <p key={key} className="text-sm text-muted-foreground">
           {tf('overLimit', { filter: tf(`names.${key}`), count: MAX_TICKET_FILTER_VALUES })}
         </p>
       ))}

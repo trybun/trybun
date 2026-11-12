@@ -132,12 +132,13 @@ export function TicketFilterPicker({
   const isLoading = page !== null && page.isPending && page.fetchStatus !== 'idle';
   const isEmpty =
     search.trim() !== '' && options.length === 0 && !isLoading && page?.isError !== true;
-  const status = isFull
-    ? tf('limitReached', { count: MAX_TICKET_FILTER_VALUES })
-    : isLoading
-      ? tf('loading')
-      : isEmpty
-        ? tf(`noMatches.${field}`, { query: search.trim() })
+  // A search that is loading or found nothing says so first, also when the filter is full.
+  const status = isLoading
+    ? tf('loading')
+    : isEmpty
+      ? tf(`noMatches.${field}`, { query: search.trim() })
+      : isFull
+        ? tf('limitReached', { count: MAX_TICKET_FILTER_VALUES })
         : page?.data?.hasMore === true
           ? tf('typeToFindMore')
           : '';
