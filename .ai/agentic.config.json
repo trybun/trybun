@@ -17,7 +17,7 @@
     "enabled": true,
     "pipeline": ["review", "changes-requested", "qa", "qa-failed", "merge-queue", "blocked", "do-not-merge"],
     "category": ["bug", "feature", "refactor", "security", "dependencies", "documentation"],
-    "meta": ["needs-qa", "skip-qa", "qa-approved", "qa-self-verified", "in-progress", "ci-monitoring"],
+    "meta": ["needs-qa", "skip-qa", "qa-approved", "qa-self-verified", "in-progress", "claim-reset", "ci-monitoring"],
     "priority": ["priority-low", "priority-medium", "priority-high", "priority-extreme"],
     "risk": ["risk-low", "risk-medium", "risk-high"]
   },
@@ -38,5 +38,32 @@
   "discovery": {
     "enabled": true,
     "roles": { "domainExpert": false, "designer": false }
+  },
+  "autofix": {
+    "label": "cez-autofix",
+    "eligibility": { "lookbackDays": 30, "analyzeLimit": 100, "limit": 20, "excludeLabels": ["blocked", "do-not-fix"] }
+  },
+  "automerge": {
+    "label": "automerge",
+    "mode": "prepare-to-merge",
+    "requireIndependentReview": false,
+    "defaultToHumanQa": false,
+    "humanOnlyLabels": [],
+    "humanOnlyAuthors": [],
+    "complexQa": "always",
+    "windowMinutes": 120,
+    "maxAttempts": 3,
+    "eligibility": {
+      "tiers": [["qa-approved"], ["ai-judgment"], ["security", "small"], ["trusted-author"], ["fixes-issue"]],
+      "smallPrFileLimit": 10,
+      "aiJudgment": { "staleAfterDays": 7 },
+      "securityLabels": ["security"],
+      "trustedAuthors": [],
+      "excludeAuthorAssociations": ["first-time-contributor", "outside-collaborator", "none"],
+      "excludeLabels": ["do-not-merge", "blocked", "qa-failed"],
+      "lookbackDays": 30,
+      "analyzeLimit": 100,
+      "limit": 20
+    }
   }
 }

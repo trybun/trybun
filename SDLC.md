@@ -91,7 +91,7 @@ Pipeline labels are mutually exclusive: a PR carries at most one, and it names w
 |---|---|---|---|
 | Pipeline | `review`, `changes-requested`, `qa`, `qa-failed`, `merge-queue`, `blocked`, `do-not-merge` | one at a time | Workflow state |
 | Category | `bug`, `feature`, `refactor`, `security`, `dependencies`, `documentation` | additive | Kind of change |
-| Meta | `needs-qa`, `skip-qa`, `qa-approved`, `qa-self-verified`, `in-progress`, `ci-monitoring` | additive | Process signals |
+| Meta | `needs-qa`, `skip-qa`, `qa-approved`, `qa-self-verified`, `in-progress`, `claim-reset`, `ci-monitoring` | additive | Process signals |
 | Priority | `priority-low`, `priority-medium`, `priority-high`, `priority-extreme` | one at a time; unset = medium | Urgency of the work |
 | Risk | `risk-low`, `risk-medium`, `risk-high` | one at a time; unset = medium | Blast radius of the change |
 
@@ -121,7 +121,69 @@ When signals conflict, pick the higher label and say why in the label comment. A
 | Shared contract surfaces | the consuming side exercised, per `BACKWARD_COMPATIBILITY.md` |
 | Any `risk-high` | `needs-qa` when user-facing; no self-QA; `om-code-review` blocks without the evidence above unless a maintainer waives it on the PR |
 
-One label lives outside this taxonomy: `do-not-close`, applied by humans to issues that housekeeping skills must never auto-close. Skills only ever read it.
+Two labels live outside this taxonomy, and only humans decide them (the automerge signal labels below are applied only by `om-auto-merge-buddy`):
+
+- `do-not-close` — on issues that housekeeping skills must never auto-close. Skills only ever read it.
+- `automerge` — on a PR the human wants merged without further attention. A human applies it directly, or `om-auto-merge-triage` applies it to the PRs a human confirms from its ranked proposal (eligibility rules: `automerge.eligibility`). Its AI judgment prioritizes important fixes close to merge, inspecting older PRs with screenshots and requested changes. Requested changes must be bounded and pass that judgment before any tier can propose the PR; review, QA and CI remain required. `om-auto-merge-buddy` works these PRs one at a time within a time window (default 2 hours). It resumes due tracked work from local `.ai/meta/merge-buddy.json`, prefers current-user assigned actionable work when tracking is nonempty, and assigns/verifies the current user at the first actionable step. Empty/reset scheduling keeps the global queue; live `in-progress` claims remain protected. Readiness is three signals, each recorded as a label that only this skill applies:
+  - `automerge-signal-1-cr` — `om-auto-review-pr` approved the current head; independent native approval is additional only when the resolved policy requires it.
+  - `automerge-signal-2-qa` — QA is not required (`skip-qa`, or no `needs-qa`), or `qa-approved` is pinned to the current head by its `QA head:` line. Only `om-auto-qa-pr` may apply it through self-QA, on `risk-high` only under the explicit invocation-scoped risk override below.
+  - `automerge-signal-3-ci` — every check on the current head finished green, with no conflicts.
+
+  On its first visit to a PR, when no signal is recorded yet, the buddy derives the initial signals from the PR's real state: its labels, reviews and comments, and its CI checks on the current head. It then starts from the first signal still missing, so review, QA or CI work already done is not repeated. A missing signal is produced by `om-auto-review-pr --autofix`, `om-auto-qa-pr`, or `om-auto-fix-pr`, each run with `--orchestrated` so the buddy alone owns the claim and the labels. CI that is still running is parked under `ci-monitoring` and checked again later. A PR that cannot be fixed within the attempt limit is parked under `automerge-blocked`; remove that label to retry. A fork PR is carried forward to a credited replacement that keeps the label. In `prepare-to-merge` mode, a PR with all three signals gets `merge-queue`. In `prepare-and-merge` mode (the missing-config default) it is squash-merged, bypassing other labels and host merge rules, because the three signals are the gate. Removing `automerge` stops the automation.
+
+**This repository runs the queue in `prepare-to-merge` mode** (`automerge.mode` in `.ai/agentic.config.json`): `om-auto-merge-buddy` never merges. A PR with all three signals gets `merge-queue`, and a human merges it as before. Switching to `prepare-and-merge` is a maintainer decision that changes the config and this paragraph together.
+
+Mode and independent review come from `.ai/agentic.config.json`:
+`automerge.mode` defaults to `prepare-and-merge`, and
+`automerge.requireIndependentReview` defaults to `false`. Explicit `--mode`,
+`--require-independent-review` or `--skip-independent-review` override current
+config; conflicting review flags/invalid values stop. Automatic code review and
+actionable inherited objections remain required. Default mode does not wait
+for native approval or a stale requested-changes state after objections are
+resolved. Strict policy needs fresh nonauthor/nonautomation human native
+approval on the current head before either prepare mode finishes, with no
+newer standing requested-changes verdict; missing approval waits without
+repeating automated stages or consuming attempts. Recheck policy/evidence at
+every entrance and final guard; saved status/scheduler policy is never authority.
+Standalone skills keep their existing review gates. `automerge.defaultToHumanQa`
+defaults false: missing mandatory local QA approval/testable gaps schedule real
+`om-auto-qa-pr --orchestrated` for coverage/legitimate self-sign-off, reusing
+current covered evidence. True prefers human approval; explicit `--human-qa` or
+`--auto-qa` overrides config. Only verified ineligibility/blockers or explicit
+human routing wait for a human; no preference fabricates approval labels.
+
+### Explicit automerge risk override
+
+`om-auto-merge-buddy --force` records the operator’s explicit exception on the
+PR and run for this invocation only. It waives the risk-high integration-evidence
+requirement and risk-high self-QA exclusion; the QA skill must still complete
+real verification, attach screenshots and pin its sign-off to the tested head.
+Full review, actual correctness/security findings, the configured validation
+gate, required QA, CI, conflicts and the merge head guard remain. It does not
+change risk labels or authorize claim takeover. The buddy passes the separate
+`--skip-risk-checks` flag to orchestrated stages. Without `--force`, even on
+resume, strict gates apply and override-derived review/QA approvals cannot be
+reused as ordinary approvals. Standalone skill defaults are unchanged.
+
+The independent `--skip-pre-existing-ci-errors` flag permits only an individual
+completed CI failure proved identical on the exact current target SHA, using
+matching workflow/job context, unchanged relevant CI definitions and actual
+matching diagnostic/root cause. Record both runs, SHAs and the proof; pending,
+new, unreadable or unknown failures are not waived. The flag is invocation-only,
+never enabled by `--force`; later strict runs and target advances/reruns require
+fresh CI evaluation. A waived failure stays visibly failed, not green. Local
+validation and all other gates remain unchanged.
+
+For human-authorized automerge PRs, signal 2 also accepts a trusted completed
+`om-auto-qa-pr` PASS on the unchanged head, independently of manual-approval
+labels or self-QA eligibility, including evidence-only and risk-high reports
+with disclosed coverage limitations. Trust requires same-author starter,
+report and completion history from an account with write access; resolve legacy
+short `Verified` SHAs uniquely to the exact current head. Keep limitations
+visible, add no `qa-approved`/`qa-self-verified`, and skip duplicate QA attempts.
+Newer trusted FAIL, revocation/deletion or head changes invalidate this evidence.
+This automerge signal exception leaves standalone QA and other merge skills'
+manual-approval gates unchanged.
 
 ## The QA gate
 
@@ -138,7 +200,17 @@ The one hard rule of this process: **a PR carrying `needs-qa` must not merge unt
 
 ## The claim protocol
 
-Before mutating an issue or PR, an agent claims it with all three signals: it assigns itself, adds the `in-progress` label, and posts a claim comment saying what it is doing. Any agent that finds an existing claim backs off instead of colliding. A PR carrying `in-progress` is also skipped by the merge tooling.
+Before mutating an issue or PR, read **get-lock** as well as assignees, `in-progress` and live claim comments. GitHub, GitLab and Forgejo use atomic **acquire-lock**: create the descriptor's reserved ref exactly once, pointing to a unique metadata commit carrying the owner/run/item. Only that creator proceeds. Same-login bots still compete; an existing ref blocks even before comments or labels exist. The winner retains a claim comment with legacy prefix plus `Claim-Run`, `Claim-Actor`, `Claim-State`, `Claim-Lock` and `Claim-Lock-SHA`. Claim/comment ids are additional audit evidence. Assign when supported, then verify `in-progress` as the mandatory second check; confirmed unassignable bots omit only assignment.
+
+Only trackers explicitly lacking an atomic primitive use comment-first election: fresh complete reads select the lowest live creation-order candidate, and losers withdraw their own candidate without labels or work. Git-host permissions, API or transport failures and missing operations block acquisition; never silently downgrade GitHub/GitLab/Forgejo to comment mode. Linear/Jira issues retain comment election; their GitHub PRs delegate atomic operations. Upgrade installed claimers/descriptors together. Non-atomic providers retain safe complete-list/edit fallback for older descriptors.
+
+Chains pass the same run id, comment id and exact lock SHA and retain ownership through handoffs. Before each phase/mutation/publication re-read ownership and reset history. At completion, clean only owned labels/assignments, mark the original comment released, then **release-lock** last. Git hosts delete through an explicit expected-SHA Git lease, so delayed cleanup cannot delete a successor. This is metadata housekeeping, not publication of staged project work.
+
+**Recover in the GitHub UI:** stop the stalled runner and delegated workers, then add the human-only `claim-reset` label. The next invocation audits the human label event and conditionally retires only the exact old lock whose server creation time predates it. Recovery still competes for a new create-only lock; a changed SHA stops recovery. Removing `in-progress` alone does not clear a lock. The label may remain as a breadcrumb; remove/reapply for a later reset. Historical resets survive label removal. Reset/stale/force recovery never waives live local leases, QA or merge gates and cannot cancel a command already executing. Non-GitHub issue providers without an audit report unsupported UI recovery.
+
+GitHub/Forgejo reserve `refs/om-locks/{kind}-{number}`; GitLab reserves `refs/heads/om-locks/{kind}-{number}`. GitLab/Forgejo have no authenticated ref-creation timestamp (`createdAt: null`); client `metadataCreatedAt` never authorizes time-based/UI recovery. Those paths block without a server audit; explicit force still requires stopped workers and exact-SHA deletion. Lock pushes may trigger CI/hooks; reserve/filter their namespaces through reviewed repository policy.
+
+Normal Git-host acquisition is atomic; recovery relies on correct liveness decisions and cooperative boundary checks. Comment fallback retains an eventual-visibility race that can duplicate work. See the tracker contracts for **get-lock**, **acquire-lock**, **release-lock**, **get-claim-reset**, **claim-winner** and **withdraw-claim**.
 
 `in-progress` means **actively working**. Once an agent's work is finished and fully reported — labels applied, review submitted, comments posted — it swaps `in-progress` for `ci-monitoring` if it still intends to report the CI outcome. `ci-monitoring` is **not** a claim and blocks nobody: it says only that the CI-result follow-up comment is still owed, so another agent or a human may act on the PR freely. That distinction matters because CI runs long: an agent that reported its work and then died while watching a run leaves an honest, self-describing state instead of a lock nobody holds. The label comes off when the follow-up lands, or when the agent gives up waiting at `ci.maxWaitMinutes` and says so.
 
@@ -182,3 +254,15 @@ The product-layer blocks between `<!-- discovery:start -->` and `<!-- discovery:
 The design contract the Design and Review stages read is set up once: `om-ux-setup` extracts it from the repository and is re-run when the design system changes.
 
 Per-skill deviations — extra review rules, a different PR body template, an added gate step — belong in a repo-local skill of the same name at `.ai/skills/<skill-name>/SKILL.md`, which takes precedence over the installed skill (and can `@`-import or reference it to extend rather than replace it); local rules win, but a repo-local skill cannot grant what the installed skill's safety rules forbid.
+
+## Human-confirmed issue autofix queue
+
+`om-auto-issue-triage` proposes useful open issues with decided scope and bounded
+work. It applies `autofix.label` (default `cez-autofix`) only to issues a human
+confirms after seeing evidence. It skips active/uncertain claims, preserves
+assignees, rechecks current state and verifies label read-back. The label may
+trigger the repository's existing worker; this skill does not install or invoke
+one. Implementation remains `om-auto-fix-issue` or the existing worker, with all
+normal specification, code-review, QA and CI gates unchanged.
+
+Nothing in this repository reacts to `cez-autofix` today (cezar 0.19.0 has no worker for it): a queued issue waits until a human or an agent runs `om-auto-fix-issue <number>` on it.
