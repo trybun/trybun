@@ -2,7 +2,10 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { getTranslations } from 'next-intl/server';
 import { TicketList } from '../../../features/tickets/components/ticket-list.js';
 import { ticketListInfiniteQueryOptions } from '../../../features/tickets/queries.js';
-import { parseTicketListSearchParams } from '../../../features/tickets/ticket-list.js';
+import {
+  filtersOverLimit,
+  parseTicketListSearchParams,
+} from '../../../features/tickets/ticket-list.js';
 import { currentUserQueryOptions } from '../../../features/users/queries.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../lib/auth/session.js';
@@ -18,7 +21,8 @@ export default async function TicketsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const state = parseTicketListSearchParams(await searchParams);
+  const params = await searchParams;
+  const state = parseTicketListSearchParams(params);
   await requireSession();
   const [t, client] = await Promise.all([getTranslations('tickets.list'), getServerApiClient()]);
   const queryClient = getServerQueryClient();
@@ -37,6 +41,7 @@ export default async function TicketsPage({
           state={state}
           currentUserId={user?.id ?? ''}
           organizationsExist={user?.organizationsExist === true}
+          filtersOverLimit={filtersOverLimit(params)}
         />
       </HydrationBoundary>
     </div>

@@ -2,12 +2,13 @@
 
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useTable } from '@tanstack/react-table';
-import type {
-  BulkChangeResult,
-  BulkTicketChange,
-  TicketListFilters,
-  TicketListItem,
-  TicketListItemResponse,
+import {
+  type BulkChangeResult,
+  type BulkTicketChange,
+  MAX_TICKET_FILTER_VALUES,
+  type TicketListFilters,
+  type TicketListItem,
+  type TicketListItemResponse,
 } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import {
@@ -29,6 +30,7 @@ import { ticketListInfiniteQueryOptions } from '../queries.js';
 import {
   predefinedViewSchema,
   stateOfView,
+  type TicketListFilterKey,
   type TicketListSorting,
   type TicketListState,
   type TicketListView,
@@ -57,6 +59,7 @@ function isTeamItem(item: TicketListItemResponse): item is TicketListItem {
 }
 
 const NO_ITEMS: TicketListItem[] = [];
+const NO_FILTER_KEYS: readonly TicketListFilterKey[] = [];
 
 /** The open result dialog of a bulk change. */
 interface BulkOutcome {
@@ -193,17 +196,21 @@ type TicketListQuery = ReturnType<typeof useTicketListQuery>;
  * The team's ticket list (§8.1, S1-13): the view picker, the filter bar and the tickets. The
  * filter bar stays mounted across a change of the address, so an open picker stays open while its
  * changes apply (#279); the tickets render anew for every address, which clears the selection
- * (Q17). All state but the selection lives in the URL (§18.5).
+ * (Q17). All state but the selection lives in the URL (§18.5). A filter of the address that kept
+ * only its first values (`filtersOverLimit`) is named below the filter bar (#291).
  */
 export function TicketList({
   state,
   currentUserId,
   organizationsExist,
+  filtersOverLimit = NO_FILTER_KEYS,
 }: {
   state: TicketListState;
   currentUserId: string;
   organizationsExist: boolean;
+  filtersOverLimit?: readonly TicketListFilterKey[];
 }) {
+  const tf = useTranslations('tickets.list.filters');
   const router = useRouter();
   const go = (next: TicketListState) => router.replace(ticketListHref(next), { scroll: false });
   const tickets = useTicketListQuery(state);
@@ -228,6 +235,11 @@ export function TicketList({
         />
         <TicketSortSelect sorting={sorting} onSortingChange={(next) => go({ ...state, ...next })} />
       </div>
+      {filtersOverLimit.map((key) => (
+        <p key={key} role="status" className="text-sm text-muted-foreground">
+          {tf('overLimit', { filter: tf(`names.${key}`), count: MAX_TICKET_FILTER_VALUES })}
+        </p>
+      ))}
       <TicketResults
         key={ticketListHref(state)}
         state={state}

@@ -36,7 +36,7 @@ Gdy zmienisz filtr, żaden widok nie jest już zaznaczony: lista pokazuje **Filt
 
 Wybierz **Dodaj filtr** i wybierz pole – na telefonie pola otwierają się na dole ekranu. Pole otwiera własną listę wartości z polem wyszukiwania u góry: wpisz fragment nazwy – w przypadku projektu także fragment jego klucza – aby zawęzić listę, i wybierz potrzebne wartości. Każda zaznaczona lub odznaczona wartość działa od razu, a lista zostaje otwarta na kolejne wybory; zamknij ją klawiszem Esc, wybierając miejsce poza nią albo – na telefonie – przyciskiem **Gotowe**, a przyciskiem **Filtry** wróć tam do listy pól.
 
-Wybrane wartości są na początku listy. Projekty, organizacje i osoby są wyszukiwane spośród wszystkich, które widzisz; gdy jest ich więcej, niż pokazuje lista, widać „Wpisz, aby znaleźć więcej”.
+Wybrane wartości są na początku listy. Projekty, organizacje i osoby są wyszukiwane spośród wszystkich, które widzisz; gdy jest ich więcej, niż pokazuje lista, widać „Wpisz, aby znaleźć więcej”. Jeden filtr przyjmuje do 50 wartości: gdy wybierzesz 50, pozostałe wartości są wyłączone, a lista pokazuje „Do 50 wartości w jednym filtrze” – odznacz jedną, aby wybrać inną. Link z większą liczbą wartości używa pierwszych 50, a lista to pisze.
 
 Każdy filtr może mieć kilka wartości: zgłoszenie pasuje, gdy ma jedną z wartości filtru, i to dla wszystkich filtrów naraz.
 

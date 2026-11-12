@@ -36,7 +36,7 @@ When you change a filter, no view is marked any longer: the list shows **Custom 
 
 Select **Add filter** and choose a field – on a phone the fields open at the bottom of the screen. The field opens its own list of values with a search box on top: type part of a name – for a project also part of its key – to narrow the list, and select the values you want. Each value you select or clear applies at once, and the list stays open for further choices; close it with Esc, by selecting outside it, or – on a phone – with **Done**, and use **Filters** there to go back to the fields.
 
-The values you chose are listed first. Projects, organizations and people are searched among all you can see; when more exist than the list shows, it says "Type to find more".
+The values you chose are listed first. Projects, organizations and people are searched among all you can see; when more exist than the list shows, it says "Type to find more". One filter takes up to 50 values: once you choose 50, the other values are disabled and the list says "Up to 50 values per filter" – clear one to choose another. A link with more values uses the first 50, and the list says so.
 
 Each filter can have several values: a ticket matches when it has one of the values of a filter, and all filters together.
 

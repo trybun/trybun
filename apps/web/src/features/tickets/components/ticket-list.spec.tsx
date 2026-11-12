@@ -142,6 +142,24 @@ describe('TicketList', () => {
     expect(replace).toHaveBeenCalledWith('/tickets?view=custom', { scroll: false });
   });
 
+  it('says which filter of the address kept only its first 50 values (#291)', async () => {
+    answerList([ticket(1)]);
+    renderInApp(
+      <TicketList
+        state={stateOfView('custom')}
+        currentUserId={ME}
+        organizationsExist={false}
+        filtersOverLimit={['projectId']}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        'Project: only the first 50 values are used – a filter takes up to 50 values.',
+      ),
+    ).toBeDefined();
+  });
+
   it('sorts by a column header through the URL', async () => {
     answerList([ticket(1)]);
     renderInApp(

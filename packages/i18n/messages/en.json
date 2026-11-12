@@ -593,6 +593,8 @@
         "chooseProjects": "Choose projects to filter by their people.",
         "loading": "Loading…",
         "typeToFindMore": "Type to find more",
+        "limitReached": "Up to {count} values per filter",
+        "overLimit": "{filter}: only the first {count} values are used – a filter takes up to {count} values.",
         "loadFailed": "The options could not be loaded.",
         "retry": "Try again",
         "names": {
