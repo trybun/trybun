@@ -593,6 +593,8 @@
         "chooseProjects": "Wybierz projekty, aby filtrować według ich osób.",
         "loading": "Wczytywanie…",
         "typeToFindMore": "Wpisz, aby znaleźć więcej",
+        "limitReached": "Do {count} wartości w jednym filtrze",
+        "overLimit": "{filter}: użyto tylko pierwszych {count} wartości – filtr przyjmuje do {count} wartości.",
         "loadFailed": "Nie udało się wczytać opcji.",
         "retry": "Spróbuj ponownie",
         "names": {

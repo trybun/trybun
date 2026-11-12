@@ -199,6 +199,30 @@ describe('TicketFilterBar (#279)', () => {
     ).toEqual(['true', 'true', 'false', 'false']);
   });
 
+  it('disables the values not chosen once a filter has 50 and says why (#291)', async () => {
+    answerLists();
+    const events = userEvent.setup();
+    const chosen = Array.from({ length: 49 }, (_, index) => uuid(1000 + index));
+    const onChange = renderBar({ projectId: chosen });
+
+    await events.click(await screen.findByRole('button', { name: /^Change filter Project/ }));
+    const listbox = await screen.findByRole('listbox', { name: 'Project' });
+    await events.click(await within(listbox).findByRole('option', { name: 'ERP · ERP system' }));
+
+    expect(onChange).toHaveBeenLastCalledWith({ projectId: [...chosen, uuid(1)] });
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toContain('Up to 50 values per filter'),
+    );
+    const other = within(listbox).getByRole('option', { name: 'QM1 · Quality one' });
+    expect(other.getAttribute('aria-disabled')).toBe('true');
+    await events.click(other);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    // A chosen value can still be cleared, which frees a place again.
+    await events.click(within(listbox).getByRole('option', { name: 'ERP · ERP system' }));
+    expect(onChange).toHaveBeenLastCalledWith({ projectId: chosen });
+    await waitFor(() => expect(other.getAttribute('aria-disabled')).not.toBe('true'));
+  });
+
   it('removes a filter with the × of its chip', async () => {
     answerLists();
     const events = userEvent.setup();

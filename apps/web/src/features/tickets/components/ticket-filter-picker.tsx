@@ -1,6 +1,9 @@
 'use client';
 
-import { LIST_SEARCH_QUERY_MAX_LENGTH } from '@trybun/contracts/pagination';
+import {
+  LIST_SEARCH_QUERY_MAX_LENGTH,
+  MAX_TICKET_FILTER_VALUES,
+} from '@trybun/contracts/pagination';
 import type { TicketListFilters } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import {
@@ -42,7 +45,8 @@ function matches(option: FilterOption, search: string) {
  * Projects, organizations and people are searched on the server – the first page per state,
  * narrowed as the person types (deferred) – and the fixed fields filter their few options here.
  * Status has the shortcut **Open** (the non-terminal statuses); Assignee offers **Me** and
- * **Unassigned** first and its people only for the chosen projects (S1-13 Q7).
+ * **Unassigned** first and its people only for the chosen projects (S1-13 Q7). Once a filter has
+ * its largest number of values, the options not chosen are disabled and the status says why (#291).
  */
 export function TicketFilterPicker({
   field,
@@ -102,6 +106,7 @@ export function TicketFilterPicker({
     });
   const isChosen = (option: FilterOption) =>
     values.includes(option.value) && !isFirstOption(option.value);
+  const isFull = values.length >= MAX_TICKET_FILTER_VALUES;
   const fixed: FilterGroup[] = fixedGroups
     .map((group) => ({
       label: group.label,
@@ -127,19 +132,26 @@ export function TicketFilterPicker({
   const isLoading = page !== null && page.isPending && page.fetchStatus !== 'idle';
   const isEmpty =
     search.trim() !== '' && options.length === 0 && !isLoading && page?.isError !== true;
+  // A search that is loading or found nothing says so first, also when the filter is full.
   const status = isLoading
     ? tf('loading')
     : isEmpty
       ? tf(`noMatches.${field}`, { query: search.trim() })
-      : page?.data?.hasMore === true
-        ? tf('typeToFindMore')
-        : '';
+      : isFull
+        ? tf('limitReached', { count: MAX_TICKET_FILTER_VALUES })
+        : page?.data?.hasMore === true
+          ? tf('typeToFindMore')
+          : '';
   const isOpenChosen =
     values.length === OPEN_TICKET_STATUSES.length &&
     OPEN_TICKET_STATUSES.every((value) => values.includes(value));
 
   const item = (option: FilterOption) => (
-    <ComboboxCheckboxItem key={option.value} value={option.value}>
+    <ComboboxCheckboxItem
+      key={option.value}
+      value={option.value}
+      disabled={isFull && !values.includes(option.value)}
+    >
       <span className="min-w-0 break-words">{option.label}</span>
     </ComboboxCheckboxItem>
   );

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   OPEN_TICKET_STATUSES,
   filtersOfView,
+  filtersOverLimit,
   parseTicketListSearchParams,
   stateOfView,
   ticketListHref,
@@ -54,6 +55,28 @@ describe('parseTicketListSearchParams', () => {
     [{ view: 'unknown' }, 'my_open_tickets', filtersOfView('my_open_tickets'), 'priority', 'desc'],
   ])('reads %j as %s', (params, view, filters, sort, order) => {
     expect(parseTicketListSearchParams(params)).toEqual({ view, filters, sort, order });
+  });
+});
+
+describe('a filter of the URL with more than 50 values (§8.1, #291)', () => {
+  const projects = Array.from(
+    { length: 51 },
+    (_, index) => `0199a3f0-0000-7000-8000-${String(index).padStart(12, '0')}`,
+  );
+
+  it('keeps its first 50 values instead of losing the filter, and is named', () => {
+    const params = { projectId: projects, priority: 'high' };
+    expect(parseTicketListSearchParams(params).filters).toEqual({
+      projectId: projects.slice(0, 50),
+      priority: ['high'],
+    });
+    expect(filtersOverLimit(params)).toEqual(['projectId']);
+  });
+
+  it('names no filter within the limit, an invalid one, or one of a predefined view', () => {
+    expect(filtersOverLimit({ projectId: projects.slice(0, 50) })).toEqual([]);
+    expect(filtersOverLimit({ status: Array<string>(51).fill('closed') })).toEqual([]);
+    expect(filtersOverLimit({ view: 'triage', projectId: projects })).toEqual([]);
   });
 });
 

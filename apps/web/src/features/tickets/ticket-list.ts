@@ -1,4 +1,5 @@
 import {
+  MAX_TICKET_FILTER_VALUES,
   type SortOrder,
   sortOrderSchema,
   TERMINAL_TICKET_STATUSES,
@@ -101,9 +102,37 @@ export interface TicketListState extends TicketListSorting {
 
 const filterParameterSchemas = ticketListFiltersSchema.shape;
 
-/** One filter of the URL; an invalid value drops the filter instead of failing the page. */
+/** Whether a filter parameter of the URL has more values than one filter accepts (§8.1, #291). */
+function isOverLimit(raw: unknown): raw is unknown[] {
+  return Array.isArray(raw) && raw.length > MAX_TICKET_FILTER_VALUES;
+}
+
+/**
+ * One filter of the URL; an invalid value drops the filter instead of failing the page. A filter
+ * with more values than the limit keeps its first ones (§8.1, #291) – the list says so
+ * (`filtersOverLimit`) instead of silently losing the whole filter.
+ */
 function parseFilter(key: TicketListFilterKey, raw: unknown) {
-  return raw === undefined ? undefined : filterParameterSchemas[key].safeParse(raw).data;
+  if (raw === undefined) {
+    return undefined;
+  }
+  const values = isOverLimit(raw) ? raw.slice(0, MAX_TICKET_FILTER_VALUES) : raw;
+  return filterParameterSchemas[key].safeParse(values).data;
+}
+
+/**
+ * The filters of the URL that had more values than one filter accepts and kept only their first
+ * ones (§8.1, #291), in the order of the filter bar; a predefined view ignores filter parameters.
+ */
+export function filtersOverLimit(
+  params: Readonly<Record<string, string | string[] | undefined>>,
+): TicketListFilterKey[] {
+  if (predefinedViewSchema.safeParse(params.view).success) {
+    return [];
+  }
+  return TICKET_LIST_FILTER_KEYS.filter(
+    (key) => isOverLimit(params[key]) && parseFilter(key, params[key]) !== undefined,
+  );
 }
 
 /**
