@@ -134,7 +134,7 @@ test.describe('organizations of the Administrator', () => {
     );
     await expectTouchTarget(organizations.newOrganization, minimumTargetSize(testInfo));
 
-    await organizations.organization('Customer company').click();
+    await organizations.openOrganization('Customer company');
     await expect(organizations.heading).toHaveText('Customer company');
     await expect(organizations.members).toHaveCount(8);
     expect(await seriousViolations(page)).toEqual([]);
@@ -152,7 +152,7 @@ test.describe('organizations of the Administrator', () => {
   test('keeps an organization with tickets', async ({ page }) => {
     const organizations = new OrganizationsPage(page);
     await organizations.goto();
-    await organizations.organization('Customer company').click();
+    await organizations.openOrganization('Customer company');
     await expect(organizations.heading).toHaveText('Customer company');
 
     await expect(page.getByRole('button', { name: 'Delete organization' })).toBeDisabled();

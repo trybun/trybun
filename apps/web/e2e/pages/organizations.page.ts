@@ -33,6 +33,22 @@ export class OrganizationsPage {
     return this.page.getByRole('link', { name: new RegExp(name) });
   }
 
+  /**
+   * Opens the detail of an organization from the list. The server renders the links of the list,
+   * and a click while the list still hydrates navigates nowhere – on the tablet (WebKit) the page
+   * stayed on the list and fetched no detail (#289, like #241) – so the click repeats until the
+   * detail route shows.
+   */
+  async openOrganization(name: string): Promise<void> {
+    const detail = /\/admin\/organizations\/[\da-f-]+$/;
+    await expect(async () => {
+      if (!detail.test(this.page.url())) {
+        await this.organization(name).click({ timeout: 1000 });
+      }
+      await expect(this.page).toHaveURL(detail, { timeout: 1000 });
+    }).toPass();
+  }
+
   /** Waits until the toasts over the Danger zone are gone (`waitForToastsToClose`). */
   waitForToastsToClose(): Promise<void> {
     return waitForToastsToClose(this.page);
