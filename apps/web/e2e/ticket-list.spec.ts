@@ -1,4 +1,11 @@
-import { type APIRequestContext, expect, type Page, request, test } from '@playwright/test';
+import {
+  type APIRequestContext,
+  expect,
+  type Locator,
+  type Page,
+  request,
+  test,
+} from '@playwright/test';
 import { predefinedViewSchema, type TicketListView } from '../src/features/tickets/ticket-list.js';
 import { seriousViolations } from './accessibility.js';
 import {
@@ -40,6 +47,17 @@ const QUESTION_TITLE = 'How do I change the e-mail address of my account?';
 /** Text matched literally inside a regular expression. */
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * The height of an element, to be measured with `expect.poll()` (#322): `boundingBox()` neither
+ * waits nor retries like a web-first assertion, so a single read right after one returned `null`
+ * on the tablet in CI – the element was replaced or not laid out at that moment (.ai/memory/e2e.md,
+ * "Measuring an element"). Until the element is laid out the height reads as infinite, so an upper
+ * bound fails rather than passes.
+ */
+function heightOf(target: Locator): () => Promise<number> {
+  return async () => (await target.boundingBox())?.height ?? Number.POSITIVE_INFINITY;
 }
 
 /** The API through the BFF as the signed-in team member, with the `Origin` of changes (§14.4). */
@@ -197,13 +215,17 @@ test.describe('the ticket list', () => {
             await expect(link).toBeVisible();
             const line = link.locator('> span').first();
             await expect(line).toHaveText(new RegExp(`^[A-Z]+-\\d+ · ${escapeRegExp(type)}$`));
-            const lineBox = await line.boundingBox();
-            expect(lineBox?.height, 'one line').toBeLessThan(20);
-            // With a one-line title the link keeps the 44 px of S1-13.
-            const titleBox = await link.locator('> span').last().boundingBox();
-            if ((titleBox?.height ?? 0) < 30) {
-              expect((await link.boundingBox())?.height, 'the card keeps its height').toBe(44);
-            }
+            await expect.poll(heightOf(line), { message: 'one line' }).toBeLessThan(20);
+            // With a one-line title the link keeps the 44 px of S1-13; both measured on the same
+            // render.
+            const titleLine = link.locator('> span').last();
+            await expect(async () => {
+              const titleHeight = await heightOf(titleLine)();
+              expect(titleHeight, 'the title is laid out').toBeLessThan(Number.POSITIVE_INFINITY);
+              if (titleHeight < 30) {
+                expect(await heightOf(link)(), 'the card keeps its height').toBe(44);
+              }
+            }).toPass();
           } else {
             const table = page.getByRole('table');
             const row = table
@@ -225,7 +247,7 @@ test.describe('the ticket list', () => {
               const typeLine = titleCell.getByText(type, { exact: true });
               await expect(typeLine).toBeVisible();
               if (ONE_LINE_TYPE_LOCALES.has(locale)) {
-                expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+                await expect.poll(heightOf(typeLine), { message: 'one line' }).toBeLessThan(20);
               }
               expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
             }
@@ -280,7 +302,7 @@ test.describe('the ticket list', () => {
             const typeLine = row.getByRole('cell').nth(2).getByText(type, { exact: true });
             await expect(typeLine).toBeVisible();
             if (ONE_LINE_TYPE_LOCALES.has(locale)) {
-              expect((await typeLine.boundingBox())?.height, 'one line').toBeLessThan(20);
+              await expect.poll(heightOf(typeLine), { message: 'one line' }).toBeLessThan(20);
             }
             expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
           });
