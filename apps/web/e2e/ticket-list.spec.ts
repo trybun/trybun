@@ -216,8 +216,8 @@ test.describe('the ticket list', () => {
             const line = link.locator('> span').first();
             await expect(line).toHaveText(new RegExp(`^[A-Z]+-\\d+ · ${escapeRegExp(type)}$`));
             await expect.poll(heightOf(line), { message: 'one line' }).toBeLessThan(20);
-            // With a one-line title the link keeps the 44 px of S1-13; both measured on the same
-            // render.
+            // With a one-line title the link keeps the 44 px of S1-13; both are measured again
+            // together until they agree.
             const titleLine = link.locator('> span').last();
             await expect(async () => {
               const titleHeight = await heightOf(titleLine)();
