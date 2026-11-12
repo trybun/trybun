@@ -9,14 +9,17 @@ export interface SecurityHeadersOptions {
   keycloakOrigin: string;
   /** Whether the web application is served over HTTPS, as in every deployment (§15.8). */
   isHttps: boolean;
-  /** `next dev`: React needs `eval` for its debugging information. */
+  /**
+   * `next dev`: React needs `eval` for its debugging information, and the Next.js dev overlay
+   * injects style elements without the nonce.
+   */
   isDevelopment: boolean;
 }
 
 /**
  * The strict Content Security Policy of the pages (§13.5): scripts only with the nonce of the
  * request (Next.js adds it to its own scripts), everything else from the web application itself,
- * no plugins and no framing.
+ * no plugins and no framing. Only `next dev` relaxes it, for the debugging tools of the framework.
  */
 export function contentSecurityPolicy({
   nonce,
@@ -27,7 +30,8 @@ export function contentSecurityPolicy({
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,
-    `style-src 'self' 'nonce-${nonce}'`,
+    // Browsers ignore 'unsafe-inline' next to a nonce, so development leaves the nonce out.
+    `style-src 'self' ${isDevelopment ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
     // Style attributes cannot run scripts; `next/image` and the positioning of overlays use them.
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob:",

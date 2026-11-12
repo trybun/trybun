@@ -8,6 +8,7 @@ Non-obvious behaviour found when the security baseline was built (S0-14, October
 - Browsers hide the `nonce` attribute after parsing (`script[nonce="…"]` matches nothing); `script.nonce` keeps the value. E2E collects `securitypolicyviolation` events from an init script.
 - **Zod 4 probes `new Function("")`** on the first parse of an object schema; the error is caught, but a strict CSP reports a `script-src eval` violation. `z.config({ jitless: true })` (from `zod/v4/core`) in `src/instrumentation-client.ts` turns off the probe and the JIT in the browser.
 - `next/image` renders `style="color:transparent"`, and Base UI positions overlays with style attributes: `style-src-attr 'unsafe-inline'` keeps them working; style elements still need the nonce.
+- The Next.js dev overlay (`next-devtools`) injects `<style>` elements without the nonce, and browsers ignore `'unsafe-inline'` when a nonce is in the same directive: under `next dev` `style-src` is `'self' 'unsafe-inline'` without the nonce (#316); production keeps the nonce.
 - The proxy matcher excludes `/api/` (the BFF and Auth.js): a proxy buffers request bodies, which would limit uploads through the BFF; it also excludes static files and link prefetches (Next.js CSP guide).
 - `upgrade-insecure-requests` only on HTTPS: on `http://localhost` it would upgrade the requests of the page to `https://localhost`.
 

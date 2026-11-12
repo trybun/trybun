@@ -33,10 +33,13 @@ describe('security headers', () => {
     );
   });
 
-  it('allow eval only in development and upgrade requests only on HTTPS', () => {
+  it('allow eval and inline style elements only in development and upgrade requests only on HTTPS', () => {
     const policy = contentSecurityPolicy({ ...options, isHttps: false, isDevelopment: true });
 
     expect(policy).toContain("'strict-dynamic' 'unsafe-eval';");
+    // The Next.js dev overlay injects style elements without the nonce (#316).
+    expect(policy).toContain("style-src 'self' 'unsafe-inline';");
+    expect(policy).not.toContain("style-src 'self' 'nonce-");
     expect(policy).not.toContain('upgrade-insecure-requests');
   });
 
