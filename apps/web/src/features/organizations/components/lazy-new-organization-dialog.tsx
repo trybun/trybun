@@ -1,9 +1,14 @@
 'use client';
 
+import { Button } from '@trybun/ui/components/button';
+import { PlusIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { lazy, Suspense } from 'react';
 
-// The dialog opens only on request, so its form code loads after the first paint (§18.5); the
-// server renders its button.
+// The dialog opens only on request, so its form code loads after the first paint (§18.5); the server
+// renders its button. The fallback is the same button: React drops the server HTML of a boundary
+// that receives an update before its code has loaded, and without it the button vanished while the
+// page hydrated, moving the list below it under the finger (#308).
 const NewOrganizationDialog = lazy(() =>
   import('./new-organization-dialog.js').then((module) => ({
     default: module.NewOrganizationDialog,
@@ -12,8 +17,16 @@ const NewOrganizationDialog = lazy(() =>
 
 /** The New organization button and dialog, loaded after the first paint. */
 export function LazyNewOrganizationDialog() {
+  const t = useTranslations('organizations.create');
   return (
-    <Suspense>
+    <Suspense
+      fallback={
+        <Button className="w-full md:w-fit">
+          <PlusIcon aria-hidden />
+          {t('open')}
+        </Button>
+      }
+    >
       <NewOrganizationDialog />
     </Suspense>
   );
