@@ -35,7 +35,9 @@ export class ProjectsPage {
   /**
    * Opens the settings of a project from the list. The server renders the links of the list, and a
    * click before the list hydrates navigates nowhere – on the tablet (WebKit) the page stayed on the
-   * list (#241) – so the click repeats until the settings tabs show.
+   * list (#241) – so the click repeats until the settings tabs show. The cause was the New project
+   * button vanishing during the hydration, which moved the list between pointerdown and pointerup
+   * (#308, fixed); the repetition stays until CI confirms the fix.
    */
   async openSettings(name: string): Promise<void> {
     await expect(async () => {

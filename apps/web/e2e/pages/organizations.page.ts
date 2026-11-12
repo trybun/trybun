@@ -37,7 +37,9 @@ export class OrganizationsPage {
    * Opens the detail of an organization from the list. The server renders the links of the list,
    * and a click while the list still hydrates navigates nowhere – on the tablet (WebKit) the page
    * stayed on the list and fetched no detail (#289, like #241) – so the click repeats until the
-   * detail route shows.
+   * detail route shows. The cause was the New organization button vanishing during the hydration,
+   * which moved the list between pointerdown and pointerup (#308, fixed); the repetition stays until
+   * CI confirms the fix.
    */
   async openOrganization(name: string): Promise<void> {
     const detail = /\/admin\/organizations\/[\da-f-]+$/;
