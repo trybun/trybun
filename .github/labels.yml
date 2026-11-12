@@ -58,12 +58,33 @@
 - name: in-progress
   color: c5def5
   description: An automated skill is working on this
+- name: claim-reset
+  color: e4e669
+  description: 'Human-only: retire older stalled claims after stopping the runner'
 - name: ci-monitoring
   color: d4c5f9
   description: Work complete and reported; agent is watching CI results
 - name: do-not-close
   color: c5def5
   description: 'Humans only: never auto-close this issue'
+- name: cez-autofix
+  color: 5319e7
+  description: Human-confirmed issue ready for the configured autofix worker
+- name: automerge
+  color: 5319e7
+  description: 'Human-confirmed: drive this PR to merge once every gate is green'
+- name: automerge-signal-1-cr
+  color: 1d76db
+  description: 'om-auto-merge-buddy: code review signal holds for the current head'
+- name: automerge-signal-2-qa
+  color: 1d76db
+  description: 'om-auto-merge-buddy: QA signal holds for the current head'
+- name: automerge-signal-3-ci
+  color: 1d76db
+  description: 'om-auto-merge-buddy: CI signal holds for the current head'
+- name: automerge-blocked
+  color: b60205
+  description: om-auto-merge-buddy parked this PR; a human removes this label to retry
 - name: priority-low
   color: e4e669
   description: Cosmetic or follow-up work
