@@ -5,14 +5,14 @@ import type { Principal } from '../../platform/authentication/principal.js';
 import type { AbilityRules } from '../../platform/authorization/ability-factory.js';
 import type { RecordDescriptor } from '../../platform/authorization/record-descriptor.js';
 import {
-  commentDeleteConditions,
-  commentReadConditions,
+  commentDeleteCondition,
+  commentReadCondition,
   commentRuleSelect,
 } from '../comments/comments.abilities.js';
 import {
   memberFrom,
-  ticketChangeConditions,
-  ticketReadConditions,
+  ticketChangeCondition,
+  ticketReadCondition,
   ticketRuleSelect,
 } from '../tickets/tickets.abilities.js';
 
@@ -50,19 +50,14 @@ export const attachmentsAbilities: AbilityRules = ({ can }, principal) => {
     can(['read', 'delete'], ATTACHMENT, { commentId: { not: null } });
     return;
   }
-  for (const conditions of commentReadConditions(principal)) {
-    can('read', ATTACHMENT, { comment: { is: conditions } });
-  }
-  for (const conditions of commentDeleteConditions(principal)) {
-    can('delete', ATTACHMENT, { comment: { is: conditions } });
-  }
+  can('read', ATTACHMENT, { comment: { is: commentReadCondition(principal) } });
+  can('delete', ATTACHMENT, { comment: { is: commentDeleteCondition(principal) } });
   // `is`: the in-memory check of a record supports a to-one relation only in this form.
-  for (const conditions of ticketReadConditions(principal)) {
-    can('read', ATTACHMENT, { ticket: { is: conditions } });
-  }
-  for (const conditions of ticketChangeConditions(principal)) {
-    can('delete', ATTACHMENT, { uploadedById: principal.userId, ticket: { is: conditions } });
-  }
+  can('read', ATTACHMENT, { ticket: { is: ticketReadCondition(principal) } });
+  can('delete', ATTACHMENT, {
+    uploadedById: principal.userId,
+    ticket: { is: ticketChangeCondition(principal) },
+  });
   if (principal.userKind === 'team') {
     can('delete', ATTACHMENT, {
       ticket: { is: { project: { is: memberFrom(principal, 'developer') } } },

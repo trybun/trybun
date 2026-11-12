@@ -135,52 +135,63 @@ function ownOrganization(principal: Principal, state?: 'active') {
  * the person still belongs to, archived or not. Own `my_organization` tickets of an organization
  * the person left are not among them.
  */
-function ownTicketConditions(principal: Principal): Prisma.TicketWhereInput[] {
-  return [
-    { requesterId: principal.userId, visibility: { in: ['only_me', 'all_customers'] } },
-    { requesterId: principal.userId, ...ownOrganization(principal) },
-  ];
+function ownTicketCondition(principal: Principal) {
+  return {
+    requesterId: principal.userId,
+    OR: [{ visibility: { in: ['only_me', 'all_customers'] } }, ownOrganization(principal)],
+  } satisfies Prisma.TicketWhereInput;
 }
 
 /**
- * The conditions under which a principal reads a ticket (§7.5), one CASL rule per condition: an
- * end user their own tickets (R1, R2), the `my_organization` tickets of their active organization
- * (R3) and the shared tickets (R4) – the last two only in projects they can read, under each path
- * of access (S1-11 Q2, Q3); a team member the tickets of their projects; the Administrator every
- * ticket. The attachment rules wrap them, so attachments follow every visibility rule of tickets.
+ * The projects an end user reads (§7.3) as one condition of a ticket's project: each path of
+ * access (`endUserProjectAccess`) under a single relation condition.
  */
-export function ticketReadConditions(principal: Principal): Prisma.TicketWhereInput[] {
-  if (principal.userKind !== 'end_user') {
-    return [principal.isAdmin ? {} : { project: { is: memberFrom(principal, 'developer') } }];
-  }
-  const access = endUserProjectAccess(principal);
-  return [
-    ...ownTicketConditions(principal),
-    ...access.map((project) => ({
-      visibility: 'my_organization' as const,
-      ...ownOrganization(principal, 'active'),
-      project: { is: project },
-    })),
-    ...access.map((project) => ({
-      visibility: 'all_customers' as const,
-      project: { is: project },
-    })),
-  ];
+function endUserProjectCondition(principal: Principal) {
+  return {
+    project: { is: { OR: endUserProjectAccess(principal) } },
+  } satisfies Prisma.TicketWhereInput;
 }
 
 /**
- * The conditions under which a principal changes a ticket they read – edits it or adds
- * attachments (§7.5), one rule per condition: an end user only their own tickets (R1, R2) and only
- * while they can still read the project (Q14) – reading a colleague's or a shared ticket gives no
- * change; the team under the read conditions.
+ * The condition under which a principal reads a ticket (§7.5): an end user their own tickets
+ * (R1, R2), the `my_organization` tickets of their active organization (R3) and the shared
+ * tickets (R4) – the last two only in projects they can read, under each path of access (S1-11
+ * Q2, Q3); a team member the tickets of their projects; the Administrator every ticket. The
+ * attachment and comment rules wrap it, so they follow every visibility rule of tickets.
+ *
+ * One condition with `OR` inside each relation, not one rule per combination: every rule repeats
+ * its relation conditions, and `accessibleBy` writes each to-one condition as its own join, so a
+ * product of rules multiplies the joins and the planning time of the query (#321).
  */
-export function ticketChangeConditions(principal: Principal): Prisma.TicketWhereInput[] {
+export function ticketReadCondition(principal: Principal): Prisma.TicketWhereInput {
   if (principal.userKind !== 'end_user') {
-    return ticketReadConditions(principal);
+    return principal.isAdmin ? {} : { project: { is: memberFrom(principal, 'developer') } };
   }
-  return ownTicketConditions(principal).flatMap((own) =>
-    endUserProjectAccess(principal).map((project) => ({ ...own, project: { is: project } })),
-  );
+  return {
+    OR: [
+      ownTicketCondition(principal),
+      {
+        ...endUserProjectCondition(principal),
+        OR: [
+          { visibility: 'my_organization', ...ownOrganization(principal, 'active') },
+          { visibility: 'all_customers' },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * The condition under which a principal changes a ticket they read – edits it or adds
+ * attachments (§7.5): an end user only their own tickets (R1, R2) and only while they can still
+ * read the project (Q14) – reading a colleague's or a shared ticket gives no change; the team
+ * under the read condition.
+ */
+export function ticketChangeCondition(principal: Principal): Prisma.TicketWhereInput {
+  if (principal.userKind !== 'end_user') {
+    return ticketReadCondition(principal);
+  }
+  return { ...ownTicketCondition(principal), ...endUserProjectCondition(principal) };
 }
 
 /**
@@ -274,19 +285,16 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal, now) 
       can([CREATE_TICKET, CREATE_TICKET_ALL_CUSTOMERS], PROJECT, access);
     }
     can(CREATE_TICKET_MY_ORGANIZATION, PROJECT, organizationProjectAccess(principal));
-    for (const conditions of ticketChangeConditions(principal)) {
-      can(['update', 'add_attachment'], TICKET, conditions);
-    }
+    can(['update', 'add_attachment'], TICKET, ticketChangeCondition(principal));
     for (const access of endUserProjectAccess(principal)) {
       requesterVisibilityRules(can, principal, access);
     }
-    for (const conditions of ticketReadConditions(principal)) {
-      can(['read', 'add_comment'], TICKET, conditions);
-      // The author of the description sees its revisions (§7.5, S1-12 Q3).
-      can('read_description_revisions', TICKET, {
-        AND: [conditions, { requesterId: principal.userId }],
-      });
-    }
+    const readable = ticketReadCondition(principal);
+    can(['read', 'add_comment'], TICKET, readable);
+    // The author of the description sees its revisions (§7.5, S1-12 Q3).
+    can('read_description_revisions', TICKET, {
+      AND: [readable, { requesterId: principal.userId }],
+    });
     // The team can always comment; an end user is refused on a closed ticket (§4.3).
     cannot('add_comment', TICKET, commentsClosed(now)).because('ticket.comments_closed');
     can('confirm_resolution', TICKET, { requesterId: principal.userId });
@@ -305,28 +313,25 @@ export const ticketsAbilities: AbilityRules = ({ can, cannot }, principal, now) 
   }
   can([CREATE_TICKET, ASSIGN_TICKETS_SELF], PROJECT, memberFrom(principal, 'developer'));
   can(ASSIGN_TICKETS, PROJECT, memberFrom(principal, 'project_manager'));
-  for (const conditions of ticketReadConditions(principal)) {
-    can(
-      [
-        'read',
-        'update',
-        'update_fields',
-        'assign_self',
-        'change_status',
-        'add_attachment',
-        'add_comment',
-        'add_internal_note',
-        'read_description_revisions',
-        'redact_description',
-      ],
-      TICKET,
-      conditions,
-    );
-  }
+  const readable = ticketReadCondition(principal);
+  can(
+    [
+      'read',
+      'update',
+      'update_fields',
+      'assign_self',
+      'change_status',
+      'add_attachment',
+      'add_comment',
+      'add_internal_note',
+      'read_description_revisions',
+      'redact_description',
+    ],
+    TICKET,
+    readable,
+  );
   can('assign', TICKET, { project: { is: memberFrom(principal, 'project_manager') } });
-  for (const conditions of ticketReadConditions(principal)) {
-    teamVisibilityRules({ can, cannot }, conditions);
-  }
+  teamVisibilityRules({ can, cannot }, readable);
 };
 
 /**
