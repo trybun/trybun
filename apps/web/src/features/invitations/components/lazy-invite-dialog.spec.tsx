@@ -39,9 +39,11 @@ describe('LazyInviteDialog', () => {
     const placeholders = names.map((name) => screen.getByRole('button', { name }));
     const shapes = placeholders.map(({ className, innerHTML }) => ({ className, innerHTML }));
 
+    // Wait for the module itself, not a wall-clock budget: under load its transform can take longer
+    // than the timeout of waitFor (#326).
     await act(async () => {
       chunk.load();
-      await chunk.loaded;
+      await import('./invite-dialog.js');
     });
 
     await waitFor(() => {
