@@ -7,16 +7,25 @@ minimumReleaseAge: 10080
 # Security fixes skip the cooldown (§2.10); each entry pins the exact fixed version and is removed
 # once that version is older than 7 days.
 minimumReleaseAgeExclude:
-  # GHSA-27r3-jxmh-p828, body-parser >=2.0.0 <2.4.0: DoS through trailing bytes after a compressed body (high).
-  - body-parser@2.4.0
-  # GHSA-q7qp-rjg7-q26m, multer >=2.0.0 <2.5.0: DoS through a pending asynchronous fileFilter (high).
-  - multer@2.5.0
+  # GHSA-g3hv-75wg-m249 (minimatch, below): the first eslint-plugin-import-x that accepts minimatch 11,
+  # whose makeRe it no longer imports.
+  - eslint-plugin-import-x@4.18.1
 
 # Security fixes for transitive dependencies pinned to an exact vulnerable version by their parent.
 # Remove an entry once the parent depends on the fixed version.
 overrides:
   # @nestjs/platform-express 12.2.0 still pins multer 2.4.0 (GHSA-q7qp-rjg7-q26m).
   multer@2.4.0: 2.5.0
+  # GHSA-g3hv-75wg-m249, minimatch >=7.0.0 <11.0.1: ReDoS through globparts amplification (moderate).
+  # eslint 10.14, @eslint/config-array, typescript-eslint, @nestjs/cli and ts-morph require ^10; they
+  # use only minimatch() and the Minimatch class, unchanged in 11 (11 removed makeRe, hence
+  # eslint-plugin-import-x 4.18.1). minimatch 9.0.9 came only with glob 10.5.0, overridden below.
+  minimatch@10.2.6: 11.0.4
+  # GHSA-3g3m-2fjr-6pw4, glob >=9.0.0 <=14.0.1: AbortSignal cancellation bypass (moderate).
+  # testcontainers 12.2.1 (archiver-utils: glob.sync) requires glob ^10 and @storybook/react-vite
+  # 10.6.5 (react-docgen-typescript plugin: globSync) requires ^13; both functions are unchanged in 14.
+  glob@10.5.0: 14.0.3
+  glob@13.0.6: 14.0.3
 
 # Dependencies allowed to run install scripts; every other one is refused.
 allowBuilds:
@@ -51,3 +60,8 @@ auditConfig:
     # Development only (ESLint plugins through micromatch); patterns come from the repository's own
     # lint configuration, never from untrusted input.
     - GHSA-vfj7-8cjw-p6xm
+    # deepmerge >=4.2.0 <=4.3.1, prototype poisoning of the object mergeObject() returns (low); no
+    # fixed version (2026-11-12). Development only: @shadcn/registry merges registry JSON in the shadcn
+    # component CLI (Rule 6). @trybun/ui keeps shadcn in dependencies for its stylesheet
+    # (shadcn/tailwind.css, like tw-animate-css), which runs no package code.
+    - GHSA-gcqx-w48m-w2h4
