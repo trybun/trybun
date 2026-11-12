@@ -7,10 +7,6 @@ minimumReleaseAge: 10080
 # Security fixes skip the cooldown (§2.10); each entry pins the exact fixed version and is removed
 # once that version is older than 7 days.
 minimumReleaseAgeExclude:
-  # GHSA-27r3-jxmh-p828, body-parser >=2.0.0 <2.4.0: DoS through trailing bytes after a compressed body (high).
-  - body-parser@2.4.0
-  # GHSA-q7qp-rjg7-q26m, multer >=2.0.0 <2.5.0: DoS through a pending asynchronous fileFilter (high).
-  - multer@2.5.0
   # GHSA-g3hv-75wg-m249 (minimatch, below): the first eslint-plugin-import-x that accepts minimatch 11,
   # whose makeRe it no longer imports.
   - eslint-plugin-import-x@4.18.1
