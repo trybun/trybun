@@ -171,10 +171,14 @@ export function ticketReadCondition(principal: Principal): Prisma.TicketWhereInp
     OR: [
       ownTicketCondition(principal),
       {
-        ...endUserProjectCondition(principal),
-        OR: [
-          { visibility: 'my_organization', ...ownOrganization(principal, 'active') },
-          { visibility: 'all_customers' },
+        AND: [
+          endUserProjectCondition(principal),
+          {
+            OR: [
+              { visibility: 'my_organization', ...ownOrganization(principal, 'active') },
+              { visibility: 'all_customers' },
+            ],
+          },
         ],
       },
     ],
@@ -191,7 +195,7 @@ export function ticketChangeCondition(principal: Principal): Prisma.TicketWhereI
   if (principal.userKind !== 'end_user') {
     return ticketReadCondition(principal);
   }
-  return { ...ownTicketCondition(principal), ...endUserProjectCondition(principal) };
+  return { AND: [ownTicketCondition(principal), endUserProjectCondition(principal)] };
 }
 
 /**

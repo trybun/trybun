@@ -98,7 +98,10 @@ describe('record descriptors', () => {
   });
 });
 
-/** The to-one relation conditions of a filter: `accessibleBy` writes each as its own join. */
+/**
+ * The to-one relation conditions of a filter, an upper bound of its joins: `accessibleBy` writes
+ * each as its own join (those inside a `some` subquery are counted too).
+ */
 function toOneJoins(condition: unknown): number {
   if (typeof condition !== 'object' || condition === null) {
     return 0;
@@ -119,6 +122,7 @@ function toOneJoins(condition: unknown): number {
  * The most to-one joins the `read` filter of a record may need (#321): the planning time of a
  * query grows with its joins, and one rule per combination of conditions once wrote the filter of
  * an end user's attachment with over a hundred joins – 250 ms of planning for 4 ms of execution.
+ * `read` is the action every `accessibleBy` filter of the server uses.
  */
 const MAX_TO_ONE_JOINS = 16;
 
