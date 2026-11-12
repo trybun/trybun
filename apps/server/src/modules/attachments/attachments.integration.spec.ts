@@ -280,35 +280,40 @@ describe('attachments', () => {
   });
 
   describe('invisible attachments (§17.2)', () => {
-    it('answers a user who cannot see the ticket 404, as for an unknown ID', async () => {
-      const { project, requester, ticket } = await setUp();
-      const row = await attachment(requester.user, {
-        ticketId: ticket.id,
-        status: 'available',
-        content: PDF,
-      });
-      // Another requester of the project, and a Developer of another project.
-      const otherRequester = await signIn('end_user', project);
-      const outsider = await signIn('developer', await createProject(prisma));
-      const unknownTicket = randomUUID();
+    type Ids = { attachmentId: string; ticketId: string };
+    const requests: [string, (account: Account, ids: Ids) => request.Test][] = [
+      ['reading', (account, ids) => get(account, `/attachments/${ids.attachmentId}`)],
+      ['downloading', (account, ids) => get(account, `/attachments/${ids.attachmentId}/content`)],
+      ['deleting', (account, ids) => remove(account, ids.attachmentId)],
+      ['listing', (account, ids) => get(account, `/tickets/${ids.ticketId}/attachments`)],
+      ['linking', (account, ids) => link(account, ids.ticketId, [randomUUID()])],
+    ];
 
-      for (const account of [otherRequester, outsider]) {
-        const requests = [
-          (id: string) => get(account, `/attachments/${id}`),
-          (id: string) => get(account, `/attachments/${id}/content`),
-          (id: string) => remove(account, id),
-        ];
-        for (const send of requests) {
-          expect(notFoundBody(await send(row.id))).toEqual(notFoundBody(await send(randomUUID())));
-        }
-        expect(notFoundBody(await get(account, `/tickets/${ticket.id}/attachments`))).toEqual(
-          notFoundBody(await get(account, `/tickets/${unknownTicket}/attachments`)),
+    // One test per account and request (#292): PostgreSQL plans the read filter of an end user,
+    // over a hundred joins, in about 0.3 s, so all of them in one test ran into its 5 s timeout.
+    describe.each([
+      ['another requester of the project', (project: Project) => signIn('end_user', project)],
+      [
+        'a Developer of another project',
+        async () => signIn('developer', await createProject(prisma)),
+      ],
+    ] as const)('for %s, who cannot see the ticket', (_viewer, signInViewer) => {
+      it.each(requests)('answers %s 404, as for an unknown ID', async (_request, send) => {
+        const { project, requester, ticket } = await setUp();
+        const row = await attachment(requester.user, {
+          ticketId: ticket.id,
+          status: 'available',
+          content: PDF,
+        });
+        const account = await signInViewer(project);
+
+        expect(
+          notFoundBody(await send(account, { attachmentId: row.id, ticketId: ticket.id })),
+        ).toEqual(
+          notFoundBody(await send(account, { attachmentId: randomUUID(), ticketId: randomUUID() })),
         );
-        expect(notFoundBody(await link(account, ticket.id, [randomUUID()]))).toEqual(
-          notFoundBody(await link(account, unknownTicket, [randomUUID()])),
-        );
-      }
-      expect(await prisma.attachment.findUnique({ where: { id: row.id } })).not.toBeNull();
+        expect(await prisma.attachment.findUnique({ where: { id: row.id } })).not.toBeNull();
+      });
     });
 
     it("keeps another person's draft invisible: 404 for reading, downloading, deleting and linking", async () => {
