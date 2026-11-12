@@ -4,11 +4,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { Principal } from '../../platform/authentication/principal.js';
 import type { AbilityRules } from '../../platform/authorization/ability-factory.js';
 import type { RecordDescriptor } from '../../platform/authorization/record-descriptor.js';
-import {
-  memberFrom,
-  ticketReadConditions,
-  ticketRuleSelect,
-} from '../tickets/tickets.abilities.js';
+import { memberFrom, ticketReadCondition, ticketRuleSelect } from '../tickets/tickets.abilities.js';
 
 /** The subject of the comments (§18.3). */
 export const COMMENT = 'Comment';
@@ -20,85 +16,79 @@ const ALL_ACTIONS = commentActionSchema.options;
 const ACTIONS_OF_ARCHIVED_PROJECTS: readonly CommentAction[] = ['read', 'read_revisions'];
 
 /**
- * The audience conditions of a public comment for an end user (§5.2), given one condition under
+ * The audience condition of a public comment for an end user (§5.2), given the condition under
  * which they read its ticket: they wrote it, or its audience includes them – every customer for
  * `all_customers`, the members of its organization for `my_organization` (a relation condition,
- * as the principal holds no organization, S1-04 Q2), the requester for `only_me`.
+ * as the principal holds no organization, S1-04 Q2), the requester for `only_me`. One condition
+ * with `OR`, so the ticket's condition is joined once (#321).
  */
-function audienceConditions(
+function audienceCondition(
   principal: Principal,
   ticket: Prisma.TicketWhereInput,
-): Prisma.CommentWhereInput[] {
-  const readable = { kind: 'public' as const, ticket: { is: ticket } };
-  return [
-    { ...readable, authorId: principal.userId },
-    { ...readable, audience: 'all_customers' },
-    {
-      ...readable,
-      audience: 'my_organization',
-      audienceOrganization: { is: { members: { some: { userId: principal.userId } } } },
-    },
-    {
-      kind: 'public',
-      audience: 'only_me',
-      ticket: { is: { AND: [ticket, { requesterId: principal.userId }] } },
-    },
-  ];
+): Prisma.CommentWhereInput {
+  return {
+    kind: 'public',
+    ticket: { is: ticket },
+    OR: [
+      { authorId: principal.userId },
+      { audience: 'all_customers' },
+      {
+        audience: 'my_organization',
+        audienceOrganization: { is: { members: { some: { userId: principal.userId } } } },
+      },
+      { audience: 'only_me', ticket: { is: { requesterId: principal.userId } } },
+    ],
+  };
 }
 
 /**
- * The conditions under which a principal reads a comment (§7.5), one CASL rule per condition: the
- * team every comment and note of the tickets it reads; an end user a public comment of a ticket
- * they read whose audience includes them (`audienceConditions`). Lists and details use the same
- * rules, so a list never shows a comment its detail refuses (§18.3). The attachment rules wrap
- * them, so comment attachments follow the comment's kind and audience (§13.3).
+ * The condition under which a principal reads a comment (§7.5): the team every comment and note
+ * of the tickets it reads; an end user a public comment of a ticket they read whose audience
+ * includes them (`audienceCondition`). Lists and details use the same rules, so a list never
+ * shows a comment its detail refuses (§18.3). The attachment rules wrap it, so comment
+ * attachments follow the comment's kind and audience (§13.3).
  */
-export function commentReadConditions(principal: Principal): Prisma.CommentWhereInput[] {
-  const tickets = ticketReadConditions(principal);
+export function commentReadCondition(principal: Principal): Prisma.CommentWhereInput {
+  const ticket = ticketReadCondition(principal);
   if (principal.userKind !== 'end_user') {
-    return tickets.map((ticket) => ({ ticket: { is: ticket } }));
+    return { ticket: { is: ticket } };
   }
-  return tickets.flatMap((ticket) => audienceConditions(principal, ticket));
+  return audienceCondition(principal, ticket);
 }
 
 /**
- * The conditions under which a principal deletes a comment (§7.5): the author their own, the
+ * The condition under which a principal deletes a comment (§7.5): the author their own, the
  * team – a Developer and above of the project, and the Administrator – any. Also on closed tickets
  * (S1-12 Q12).
  */
-export function commentDeleteConditions(principal: Principal): Prisma.CommentWhereInput[] {
+export function commentDeleteCondition(principal: Principal): Prisma.CommentWhereInput {
   if (principal.userKind !== 'end_user') {
-    return commentReadConditions(principal);
+    return commentReadCondition(principal);
   }
-  return ownCommentConditions(principal);
+  return ownCommentCondition(principal);
 }
 
 /** The own comments of a principal that they still read (§7.5, S1-12 Q12). */
-function ownCommentConditions(principal: Principal): Prisma.CommentWhereInput[] {
-  return ticketReadConditions(principal).map((ticket) => ({
+function ownCommentCondition(principal: Principal): Prisma.CommentWhereInput {
+  return {
     authorId: principal.userId,
-    ticket: { is: ticket },
+    ticket: { is: ticketReadCondition(principal) },
     ...(principal.userKind === 'end_user' ? { kind: 'public' as const } : {}),
-  }));
+  };
 }
 
 /**
  * The rules of comments (§7.5): everyone reads the comments their ticket and the comment's
- * audience allow (`commentReadConditions`) and edits and deletes their own, also on closed
+ * audience allow (`commentReadCondition`) and edits and deletes their own, also on closed
  * tickets (S1-12 Q12); a Developer and above deletes and redacts any comment of their projects and
  * reads every revision, an end user the revisions of their own comments (S1-12 Q3).
  */
 export const commentsAbilities: AbilityRules = ({ can }, principal) => {
-  for (const conditions of commentReadConditions(principal)) {
-    can('read', COMMENT, conditions);
-  }
-  for (const conditions of ownCommentConditions(principal)) {
-    can(['update', 'delete'], COMMENT, conditions);
-  }
+  can('read', COMMENT, commentReadCondition(principal));
+  const own = ownCommentCondition(principal);
+  can(['update', 'delete'], COMMENT, own);
   if (principal.userKind === 'end_user') {
-    for (const conditions of ownCommentConditions(principal)) {
-      can('read_revisions', COMMENT, conditions);
-    }
+    can('read_revisions', COMMENT, own);
     return;
   }
   if (principal.isAdmin) {

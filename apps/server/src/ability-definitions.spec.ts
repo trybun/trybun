@@ -1,5 +1,6 @@
 // The record descriptors select every field the rules and restrictions read (§18.3), so the
 // in-memory check of a record never sees a missing field.
+import { accessibleBy } from '@casl/prisma/runtime';
 import { describe, expect, it } from 'vitest';
 import { buildPrincipal, PRINCIPAL_FIXTURES } from '../test/factories/principal.factory.js';
 import { ABILITY_DEFINITIONS } from './ability-definitions.js';
@@ -94,5 +95,56 @@ describe('record descriptors', () => {
         },
       ),
     ).toEqual(['members.role']);
+  });
+});
+
+/**
+ * The to-one relation conditions of a filter, an upper bound of its joins: `accessibleBy` writes
+ * each as its own join (those inside a `some` subquery are counted too).
+ */
+function toOneJoins(condition: unknown): number {
+  if (typeof condition !== 'object' || condition === null) {
+    return 0;
+  }
+  return Object.entries(condition).reduce(
+    (count, [key, value]) =>
+      count +
+      (key === 'is' || key === 'isNot' ? 1 : 0) +
+      [value]
+        .flat()
+        .map(toOneJoins)
+        .reduce((a, b) => a + b, 0),
+    0,
+  );
+}
+
+/**
+ * The most to-one joins the `read` filter of a record may need (#321): the planning time of a
+ * query grows with its joins, and one rule per combination of conditions once wrote the filter of
+ * an end user's attachment with over a hundred joins – 250 ms of planning for 4 ms of execution.
+ * `read` is the action every `accessibleBy` filter of the server uses.
+ */
+const MAX_TO_ONE_JOINS = 16;
+
+describe('read filters', () => {
+  it.each(PRINCIPAL_FIXTURES)(
+    `stay within ${MAX_TO_ONE_JOINS} to-one joins per subject for the principal %s`,
+    (fixture) => {
+      const ability = abilities.forPrincipal(buildPrincipal(fixture));
+
+      for (const { subject } of ABILITY_DEFINITIONS.records) {
+        const joins = toOneJoins(accessibleBy(ability, 'read').ofType(subject));
+
+        expect(joins, subject).toBeLessThanOrEqual(MAX_TO_ONE_JOINS);
+      }
+    },
+  );
+
+  it('counts the to-one joins of a filter', () => {
+    expect(
+      toOneJoins({
+        OR: [{ ticket: { is: { project: { is: {} } } } }, { comment: { isNot: null } }],
+      }),
+    ).toBe(3);
   });
 });
