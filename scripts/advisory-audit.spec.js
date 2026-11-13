@@ -466,3 +466,40 @@ describe('sync', () => {
     ).toThrow('GITHUB_REPOSITORY');
   });
 });
+
+describe('review follow-ups', () => {
+  const open = (advisories) => ({ number: 7, state: 'open', body: renderReport(advisories) });
+
+  it('writes a range with alternatives unescaped outside the table', () => {
+    const plan = planSync(
+      [advisory({ patched: '^1.2.3 || >=2.0.1' })],
+      open([advisory({ patched: null })]),
+    );
+    expect(plan.comment).toContain('– `^1.2.3 || >=2.0.1`');
+  });
+
+  it('accepts legacy package names with capitals and the info severity', () => {
+    expect(invalidFields([advisory({ package: 'JSONStream', severity: 'info' })])).toEqual([]);
+  });
+
+  it('caps the comment lines', () => {
+    const distinct = 'cfghjmpqrvwx23456789'
+      .split('')
+      .flatMap((a) =>
+        'cfghjmpqrvwx23456789'
+          .split('')
+          .map((b) => advisory({ ghsa: `GHSA-g3hv-75wg-m2${a}${b}` })),
+      );
+    const plan = planSync(distinct, { number: 7, state: 'closed', body: '' });
+    expect(plan.comment.split('\n').filter((line) => line.startsWith('- '))).toHaveLength(201);
+    expect(plan.comment).toContain(`- and ${distinct.length - 200} more`);
+  });
+
+  it('counts a GHSA of several packages as patched only when all have a fix', () => {
+    const mixed = [advisory(), advisory({ package: 'glob', patched: null })];
+    expect(marker(mixed)).toBe('<!-- advisory-audit: GHSA-g3hv-75wg-m249:none -->');
+    const plan = planSync([advisory(), advisory({ package: 'glob' })], open(mixed));
+    expect(plan.action).toBe('update+comment');
+    expect(plan.comment).toContain('Patched version now');
+  });
+});

@@ -16,11 +16,12 @@ export const BODY_LIMIT = 60_000;
 const MAX_PATHS = 5;
 const INVALID = '(invalid)';
 
-const SEVERITIES = ['critical', 'high', 'moderate', 'low'];
+const SEVERITIES = ['critical', 'high', 'moderate', 'low', 'info'];
 // Allowlists, not escaping (spec): a field that fails its pattern is never rendered, so advisory
 // data cannot add Markdown, HTML, links, mentions or cross-references to the issue.
 const GHSA = /^GHSA(-[23456789cfghjmpqrvwx]{4}){3}$/;
-const PACKAGE = /^(@[a-z0-9~-][a-z0-9._~-]*\/)?[a-z0-9~-][a-z0-9._~-]{0,213}$/;
+// Lowercase, except for legacy npm names with capitals (e.g. `JSONStream`).
+const PACKAGE = /^(@[a-z0-9~-][a-z0-9._~-]*\/)?[A-Za-z0-9~-][A-Za-z0-9._~-]{0,213}$/;
 const RANGE = /^[0-9A-Za-z.*+<>=~^| -]{1,256}$/;
 // A dependency path, e.g. `.>@nestjs/core>multer`: the root `.`, workspace folders and packages.
 const PATH_SEGMENT =
@@ -90,9 +91,20 @@ const validPath = (value) =>
   value.split('>').every((segment) => PATH_SEGMENT.test(segment));
 const validSeverity = (value) => typeof value === 'string' && SEVERITIES.includes(value);
 
-/** A field in a code span; `|` written as `\|`, which a GFM table cell needs even there. */
+/** A field in a code span of a table cell; `|` written as `\|`, which a GFM cell needs even there. */
 const code = (pattern, value) =>
   valid(pattern, value) ? `\`${value.replaceAll('|', '\\|')}\`` : INVALID;
+/** A field in a code span outside a table, where a backslash would be shown. */
+const span = (pattern, value) => (valid(pattern, value) ? `\`${value}\`` : INVALID);
+/** Comment lines beyond this are cut, so a comment stays far below GitHub's body limit. */
+const MAX_COMMENT_LINES = 200;
+const capped = (lines) =>
+  lines.length <= MAX_COMMENT_LINES
+    ? lines
+    : [
+        ...lines.slice(0, MAX_COMMENT_LINES),
+        `- and ${lines.length - MAX_COMMENT_LINES} more; the issue body lists the current set.`,
+      ];
 const advisoryLink = (ghsa) => `[${ghsa}](https://github.com/advisories/${ghsa})`;
 const ghsaCell = (ghsa) => (validGhsa(ghsa) ? advisoryLink(ghsa) : INVALID);
 const hasPatch = (advisory) => advisory.patched !== null && advisory.patched !== '';
@@ -135,13 +147,14 @@ export function invalidFields(advisories) {
  * @param {Advisory[]} advisories
  */
 export function marker(advisories) {
-  const entries = [
-    ...new Set(
-      advisories
-        .filter((advisory) => validGhsa(advisory.ghsa))
-        .map((advisory) => `${advisory.ghsa}:${hasPatch(advisory) ? 'patched' : 'none'}`),
-    ),
-  ].sort();
+  // A GHSA of several packages counts as patched only when every one of them has a fix.
+  const patched = new Map();
+  for (const advisory of advisories.filter((entry) => validGhsa(entry.ghsa))) {
+    patched.set(advisory.ghsa, (patched.get(advisory.ghsa) ?? true) && hasPatch(advisory));
+  }
+  const entries = [...patched]
+    .map(([ghsa, fixed]) => `${ghsa}:${fixed ? 'patched' : 'none'}`)
+    .sort();
   return `<!-- advisory-audit: ${entries.join(',')} -->`;
 }
 
@@ -245,7 +258,7 @@ const unique = (list) => [...new Map(list.map((advisory) => [advisory.ghsa, advi
 
 function summarize(advisory) {
   const severity = validSeverity(advisory.severity) ? advisory.severity : INVALID;
-  return `${advisoryLink(advisory.ghsa)} – ${severity}, ${code(PACKAGE, advisory.package)}`;
+  return `${advisoryLink(advisory.ghsa)} – ${severity}, ${span(PACKAGE, advisory.package)}`;
 }
 
 /**
@@ -279,7 +292,7 @@ export function planSync(advisories, issue, options = {}) {
       comment: [
         'Reopened: the advisory audit finds advisories again.',
         '',
-        ...unique(current).map((advisory) => `- ${summarize(advisory)}`),
+        ...capped(unique(current).map((advisory) => `- ${summarize(advisory)}`)),
       ].join('\n'),
     };
   }
@@ -287,17 +300,18 @@ export function planSync(advisories, issue, options = {}) {
   const ids = new Set(current.map((advisory) => advisory.ghsa));
   const added = current.filter((advisory) => !previous.has(advisory.ghsa));
   const gone = [...previous.keys()].filter((ghsa) => !ids.has(ghsa)).sort();
+  const fixed = readMarker(marker(current));
   const patched = current.filter(
-    (advisory) => previous.get(advisory.ghsa) === false && hasPatch(advisory),
+    (advisory) => previous.get(advisory.ghsa) === false && fixed.get(advisory.ghsa) === true,
   );
-  const changes = [
+  const changes = capped([
     ...unique(added).map((advisory) => `- New: ${summarize(advisory)}`),
     ...gone.map((ghsa) => `- Gone: ${advisoryLink(ghsa)}`),
     ...unique(patched).map(
       (advisory) =>
-        `- Patched version now: ${summarize(advisory)} – ${code(RANGE, advisory.patched)}`,
+        `- Patched version now: ${summarize(advisory)} – ${span(RANGE, advisory.patched)}`,
     ),
-  ];
+  ]);
   if (changes.length > 0) {
     return {
       action: 'update+comment',
