@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-12 |
 | Plan task | – (follow-up of #324, #325) |
 | System specification sections | §2.10, §15.4 |
@@ -125,3 +125,4 @@ Also: `README.md` (CI section, next to `image-scan.yml`, Rule 5) and the `pnpm 1
 - 2026-11-12 – Created (autonomous defaults; the reporting channel decided by the maintainer on #327).
 - 2026-11-12 – Specification review: allowlists instead of escaping, REST lookup instead of search, no daily body edit, a comment on reopen and on a newly patched GHSA, the default-branch check; Q6 deferred.
 - 2026-11-13 – Review of the pull request (#331), checked against pnpm 12.13: a failed audit prints nothing to standard output (no `error` object), so the failure fixture is the empty output; `patched_versions: null` is "none"; a `|` in a range is escaped in the table.
+- 2026-11-13 – Implemented (#327): `advisory-audit.yml` and `scripts/advisory-audit.js`; the fixtures were captured from pnpm 12.13 (`minimatch` 10.2.6 and `glob` 11.0.3 in a scratch project), and a dependency path is checked segment by segment (`.`, workspace folders and package names), so a path cannot carry a mention.
