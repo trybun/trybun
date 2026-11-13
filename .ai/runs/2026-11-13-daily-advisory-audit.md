@@ -25,6 +25,8 @@ A daily workflow audits the lockfile of `main` for advisories of every severity 
 
 ## Progress
 
+PR: #332
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Daily advisory audit
@@ -35,3 +37,5 @@ A daily workflow audits the lockfile of `main` for advisories of every severity 
 - [x] 1.4 Specification, README and memory updates; follow-up issue for Q2 and Q6 (#333) — 056f61d
 
 Post-merge (spec step 5, outside this PR): **Run workflow** on a test branch with a known moderate advisory (dry run) and on `main`; record the run links on #327.
+
+Review: one `om-auto-review-pr` pass, no blocker or major; minor findings fixed in 45b5e3b.
