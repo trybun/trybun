@@ -61,6 +61,7 @@ Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2
 - **Small tasks**: one task = one focused PR referencing the spec sections (e.g. `§5.2`); stay in scope, other agents may work in parallel; rebase on `main` before the PR.
 - **Plan first, re-plan when it goes wrong** – don't pile up patches.
 - **Learn from corrections**: a specific pitfall → `.ai/memory/`; a general working rule → propose an `AGENTS.md` change.
+- **Talk to the user in Polish**: the conversation in the session is always in Polish; files, commits, PRs, issues and GitHub comments stay in English (Rule 5).
 - **Recommend when offering choices**: a question to the user with answer options always marks one option as recommended (first, labelled, with a one-sentence reason); no preference → say so and what the choice depends on.
 - **Repeated work** → propose a skill in `.ai/skills/`.
 - **Self-review before the PR**: knowing what you know now, is there a simpler, cleaner solution?
