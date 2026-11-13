@@ -3,8 +3,8 @@
 # left out, and the exceptions of `pnpm-workspace.yaml` for stale entries (`minimumReleaseAgeExclude`
 # older than `minimumReleaseAge`, accepted advisories with a fix or withdrawn), and keeps one tracking
 # issue current – opened or reopened while advisories or stale exceptions remain, closed when both
-# are gone. It never blocks a pull request; a finding keeps the run green, and
-# the run fails only when the audit or the issue cannot be written. **Run workflow** on another
+# are gone. It never blocks a pull request; a finding keeps the run green, and the run fails only
+# when the audit, a lookup of the registry or the advisory API, or the issue cannot be done. **Run workflow** on another
 # branch is a dry run that writes the job summary only. No secrets; no `pnpm install`, so no
 # dependency code runs in the job that holds `issues: write`.
 name: Advisory audit

@@ -1065,3 +1065,82 @@ describe('sync with stale exceptions', () => {
     expect(outcome.writes[0].input.body).toContain('### Stale exceptions');
   });
 });
+
+describe('review follow-ups of the stale exceptions', () => {
+  const sleep = async () => {};
+
+  it('never renders a hostile token of an edited issue body into a comment', () => {
+    const hostile = [
+      'release-age:x`@octocat_[click](//evil.example)_owner/repo#1`:aged',
+      'release-age:x@1.0.0 #1:aged',
+      'release-age:<b>x</b>@1.0.0:aged',
+      'release-age:x@1.0.0:not-pinned',
+      'release-age:x:aged',
+      'ignore-ghsa:GHSA-xxxx-xxxx-xxxx:patched',
+      'other:x@1.0.0:aged',
+    ];
+    const body = `${renderReport([advisory()])}\n<!-- stale-exceptions: ${hostile.join(',')} -->`;
+    expect(readStaleMarker(body)).toEqual(new Set());
+    const plan = planSync([advisory()], { number: 7, state: 'open', body }, { stale: [] });
+    expect(plan.action).toBe('update');
+    expect(readStaleMarker('<!-- stale-exceptions: release-age:x@1.0.0:aged -->')).toEqual(
+      new Set(['release-age:x@1.0.0:aged']),
+    );
+  });
+
+  it('retries a timeout while the registry sends the document', async () => {
+    let calls = 0;
+    const fetch = async () => {
+      calls += 1;
+      return {
+        status: 200,
+        ok: true,
+        json: async () => {
+          if (calls < 2) {
+            throw Object.assign(new Error('aborted'), { name: 'TimeoutError' });
+          }
+          return { time: {} };
+        },
+      };
+    };
+    expect(await registryJson('https://registry.npmjs.org/x', { fetch, sleep })).toEqual({
+      time: {},
+    });
+    expect(calls).toBe(2);
+    await expect(
+      registryJson('https://registry.npmjs.org/x', {
+        fetch: async () => ({ status: 200, ok: true, json: async () => JSON.parse('{') }),
+        sleep,
+      }),
+    ).rejects.toThrow('no valid JSON');
+  });
+
+  it('retries gh on 5xx, 429, a rate limit or a timeout, and keeps its error for the log', async () => {
+    for (const stderr of [
+      'gh: Server Error (HTTP 502)',
+      'gh: Too Many Requests (HTTP 429)',
+      'gh: API rate limit exceeded (HTTP 403)',
+      '',
+    ]) {
+      let calls = 0;
+      const gh = () => {
+        calls += 1;
+        if (calls < 3) {
+          throw Object.assign(new Error('spawnSync gh ETIMEDOUT'), { stderr });
+        }
+        return '{"ghsa_id":"x"}';
+      };
+      expect(await githubAdvisory(gh, 'GHSA-2222-3333-4444', sleep)).toEqual({ ghsa_id: 'x' });
+      expect(calls).toBe(3);
+    }
+    const down = () => {
+      throw Object.assign(new Error('gh failed'), { stderr: 'gh: Server Error (HTTP 503)\nmore' });
+    };
+    await expect(githubAdvisory(down, 'GHSA-2222-3333-4444', sleep)).rejects.toThrow(
+      'could not be reached for GHSA-2222-3333-4444: gh: Server Error (HTTP 503)',
+    );
+    await expect(githubAdvisory(() => 'not json', 'GHSA-2222-3333-4444', sleep)).rejects.toThrow(
+      'no valid JSON',
+    );
+  });
+});

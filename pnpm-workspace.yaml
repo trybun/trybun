@@ -4,8 +4,9 @@ packages:
 
 # Rule 10: a new version is installed only after a 7-day cooldown (in minutes).
 minimumReleaseAge: 10080
-# Security fixes skip the cooldown (§2.10); each entry pins the exact fixed version and is removed
-# once that version is older than 7 days – the daily advisory audit reports it then.
+# Security fixes skip the cooldown (§2.10); each entry pins one exact fixed version (`name@1.2.3`,
+# no `||` alternatives, which the daily advisory audit cannot check) and is removed once that version
+# is older than 7 days – the daily advisory audit reports it then.
 minimumReleaseAgeExclude:
   # GHSA-g3hv-75wg-m249 (minimatch, below): the first eslint-plugin-import-x that accepts minimatch 11,
   # whose makeRe it no longer imports.

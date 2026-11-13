@@ -394,9 +394,40 @@ const SETTING_NAMES = {
   'release-age': 'minimumReleaseAgeExclude',
   'ignore-ghsa': 'auditConfig.ignoreGhsas',
 };
-/** Tokens of the stale marker: only validated entries; `release-age:<entry>:<reason>`. */
-const STALE_TOKEN =
-  /^(release-age:[^,:>\s]+:(aged|not-pinned|not-on-registry)|ignore-ghsa:GHSA(-[23456789cfghjmpqrvwx]{4}){3}:(patched|withdrawn|unknown))$/;
+const REASONS = {
+  'release-age': ['aged', 'not-pinned', 'not-on-registry'],
+  'ignore-ghsa': ['patched', 'withdrawn', 'unknown'],
+};
+
+/**
+ * A token of the stale marker, `<setting>:<entry>:<reason>`, validated as strictly as the entries
+ * it is built from – the issue body can be edited by hand, and a gone token is rendered into a
+ * comment – or `null`. Validated entries hold no `,`, `:` or `>`, so the first and last `:` split it.
+ * @param {string} token
+ * @returns {{ setting: 'release-age' | 'ignore-ghsa', entry: string, reason: string } | null}
+ */
+function parseToken(token) {
+  const first = token.indexOf(':');
+  const last = token.lastIndexOf(':');
+  if (first <= 0 || last <= first) {
+    return null;
+  }
+  const setting = token.slice(0, first);
+  const entry = token.slice(first + 1, last);
+  const reason = token.slice(last + 1);
+  if (!Object.hasOwn(REASONS, setting) || !REASONS[setting].includes(reason)) {
+    return null;
+  }
+  if (setting === 'ignore-ghsa') {
+    return validGhsa(entry) ? { setting, entry, reason } : null;
+  }
+  const exclusion = parseExclusion(entry);
+  // `not-pinned` exactly when the entry has no version.
+  if (!exclusion || (reason === 'not-pinned') !== (exclusion.version === undefined)) {
+    return null;
+  }
+  return { setting, entry, reason };
+}
 const staleToken = (exception) =>
   exception.entry === null ? null : `${exception.setting}:${exception.entry}:${exception.reason}`;
 
@@ -416,7 +447,7 @@ export function staleMarker(stale) {
  */
 export function readStaleMarker(body) {
   const tokens = STALE_MARKER.exec(body)?.[1].split(',') ?? [];
-  return new Set(tokens.filter((token) => STALE_TOKEN.test(token)));
+  return new Set(tokens.filter((token) => parseToken(token) !== null));
 }
 
 function entryCell(exception) {
@@ -456,10 +487,9 @@ function staleReason(exception) {
 const summarizeStale = (exception) =>
   `\`${SETTING_NAMES[exception.setting]}\`: ${entryCell(exception)} – ${staleReason(exception)}`;
 
-/** A gone token, rendered from the token alone (validated by `readStaleMarker`). */
+/** A gone token, rendered from the token alone; only tokens `parseToken` accepts reach it. */
 function summarizeToken(token) {
-  const [setting, ...rest] = token.split(':');
-  const entry = rest.slice(0, -1).join(':');
+  const { setting, entry } = parseToken(token);
   return `\`${SETTING_NAMES[setting]}\`: ${setting === 'ignore-ghsa' ? advisoryLink(entry) : `\`${entry}\``}`;
 }
 
@@ -818,7 +848,11 @@ export function registryJson(url, { fetch, sleep }) {
     }
     try {
       return await response.json();
-    } catch {
+    } catch (error) {
+      // The timeout covers reading the body too; a large package document can run into it.
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        throw retriable(`The registry timed out sending the document for ${url}`);
+      }
       throw new Error(`The registry answered no valid JSON for ${url}`);
     }
   }, sleep);
@@ -841,14 +875,16 @@ export function githubAdvisory(gh, ghsa, sleep) {
     try {
       text = gh(['api', `/advisories/${ghsa}`]);
     } catch (error) {
-      const stderr = String(error?.stderr ?? error?.message ?? '');
+      const stderr = String(error?.stderr || error?.message || '');
       if (/HTTP 404/.test(stderr)) {
         return null;
       }
-      if (/HTTP 4\d\d/.test(stderr) && !/HTTP 429/.test(stderr)) {
-        throw new Error(`The advisory API refused the request for ${ghsa}`);
+      // The first line of gh's error (no token is ever in it), so a failed run can be diagnosed.
+      const detail = (stderr.split('\n').find((line) => line.trim()) ?? '').trim().slice(0, 200);
+      if (/HTTP 4\d\d/.test(stderr) && !/HTTP 429/.test(stderr) && !/rate limit/i.test(stderr)) {
+        throw new Error(`The advisory API refused the request for ${ghsa}: ${detail}`);
       }
-      throw retriable(`The advisory API could not be reached for ${ghsa}`);
+      throw retriable(`The advisory API could not be reached for ${ghsa}: ${detail}`);
     }
     try {
       return JSON.parse(text);
@@ -936,6 +972,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           encoding: 'utf8',
           input,
           maxBuffer: 64 * 1024 * 1024,
+          // A hung call fails (and is retried for an advisory lookup) instead of holding the job.
+          timeout: 120_000,
           stdio: ['pipe', 'pipe', 'pipe'],
         }),
       summary: (text) => {
