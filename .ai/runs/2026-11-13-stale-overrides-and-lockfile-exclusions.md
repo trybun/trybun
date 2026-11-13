@@ -26,14 +26,16 @@ The daily advisory audit also lists, under *Stale exceptions*, `overrides` entri
 
 ## Progress
 
+PR: #343
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Unneeded overrides and exclusions outside the lockfile
 
-- [ ] 1.1 satisfies with its table test
-- [ ] 1.2 Fixtures, parseLockfile and overrides in parseConfig with unit tests
-- [ ] 1.3 checkExceptions: exclusions outside the lockfile and unneeded overrides
-- [ ] 1.4 Rows, marker tokens, footer, sync wiring and the workflow step
-- [ ] 1.5 Remove the multer override; specification, README, memory and pnpm-workspace.yaml updates; spec to implemented
+- [x] 1.1 satisfies with its table test — 33f4b7e
+- [x] 1.2 Fixtures, parseLockfile and overrides in parseConfig with unit tests — 33f4b7e, f653274
+- [x] 1.3 checkExceptions: exclusions outside the lockfile and unneeded overrides — 33f4b7e
+- [x] 1.4 Rows, marker tokens, footer, sync wiring and the workflow step — 33f4b7e
+- [x] 1.5 Remove the multer override; specification, README, memory and pnpm-workspace.yaml updates; spec to implemented — 8a93edb
 
 Post-merge (spec step 6, outside this PR): **Run workflow** on a test branch (dry run) and on `main`; record the run links on #337.
