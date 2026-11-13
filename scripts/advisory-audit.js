@@ -2,14 +2,17 @@
 // `.github/workflows/advisory-audit.yml`: turns the output of `pnpm audit --audit-level low --json`
 // into a report and keeps one tracking issue current – opened or reopened while advisories remain
 // that are not accepted in `auditConfig.ignoreGhsas`, or exceptions of `pnpm-workspace.yaml` are
-// stale (`minimumReleaseAgeExclude` older than `minimumReleaseAge`, an accepted advisory with a fix
-// or withdrawn), closed when both are gone.
+// stale (`minimumReleaseAgeExclude` older than `minimumReleaseAge` or not in the lockfile, an
+// accepted advisory with a fix or withdrawn, an `overrides` key no dependency asks for), closed when
+// both are gone.
 // Usage:
-//   node scripts/advisory-audit.js sync <audit.json> <config.json>
-//     <config.json> is `pnpm config list --json`; job summary, and the tracking issue on a run of the
-//     default branch (GITHUB_*, GH_TOKEN)
+//   node scripts/advisory-audit.js sync <audit.json> <config.json> <lockfile.json>
+//     <config.json> is `pnpm config list --json`, <lockfile.json> is
+//     `pnpm list -r --depth Infinity --lockfile-only --json`; job summary, and the tracking issue on
+//     a run of the default branch (GITHUB_*, GH_TOKEN)
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const ISSUE_TITLE = 'Vulnerability advisories on main';
@@ -188,6 +191,7 @@ export function readMarker(body) {
  * @property {number} minimumReleaseAge minutes
  * @property {string[]} minimumReleaseAgeExclude
  * @property {string[]} ignoreGhsas `auditConfig.ignoreGhsas`, reported by pnpm as `audit.ignore`
+ * @property {string[]} overrides the keys of `overrides`, e.g. `multer@2.4.0`
  * @property {string} registry
  * @property {Map<string, string>} scopes npm scope → its registry
  */
@@ -211,8 +215,8 @@ const stringList = (value, name) => {
 
 /**
  * The settings of `pnpm config list --json` (pnpm 12.13): `minimumReleaseAge`,
- * `minimumReleaseAgeExclude`, `audit.ignore` (`auditConfig.ignoreGhsas`), `registry` and the
- * per-scope `registries`. Anything unexpected throws and fails the run.
+ * `minimumReleaseAgeExclude`, `audit.ignore` (`auditConfig.ignoreGhsas`), `overrides`, `registry`
+ * and the per-scope `registries`. Anything unexpected throws and fails the run.
  * @param {string} text
  * @returns {Config}
  */
@@ -235,6 +239,13 @@ export function parseConfig(text) {
   }
   if (typeof config.registry !== 'string' || !httpsUrl(config.registry)) {
     throw new Error('pnpm config list printed `registry` that is not an https URL');
+  }
+  const overrides = config.overrides ?? {};
+  if (
+    !isObject(overrides) ||
+    !Object.values(overrides).every((replacement) => typeof replacement === 'string')
+  ) {
+    throw new Error('pnpm config list printed `overrides` that is not an object of strings');
   }
   const scopes = new Map();
   const registries = config.registries ?? {};
@@ -262,17 +273,109 @@ export function parseConfig(text) {
       'minimumReleaseAgeExclude',
     ),
     ignoreGhsas: stringList(config.audit?.ignore, 'audit.ignore'),
+    overrides: Object.keys(overrides),
     registry: config.registry,
     scopes,
   };
 }
 
 /**
+ * @typedef {{ kind: 'package', name: string, version: string } | { kind: 'project', path: string }} Dependent
+ *   a package of the registry, or a workspace project by the folder of its `package.json`
+ */
+
+/**
+ * @typedef {object} Lockfile the dependency tree of the committed lockfile
+ * @property {{ has: (entry: string) => boolean }} present every `name@version` it resolves
+ * @property {Map<string, Dependent[]>} dependents package name → the packages and projects that
+ *   depend on it
+ */
+
+const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies'];
+
+/**
+ * The output of `pnpm list -r --depth Infinity --lockfile-only --json` (pnpm 12.13): one entry per
+ * workspace project with its dependency tree. Only `name`, `version` and `path` of a project and the
+ * keys and `version` of the nested dependencies are read; the nested `path` and `resolved` fields
+ * (under `node_modules/.pnpm`, which the job never installs) are ignored. A `link:` dependency is a
+ * workspace project, nested with its own tree, whose ranges come from its `package.json`. A project
+ * outside `root` or anything unexpected throws and fails the run.
+ * @param {string} text
+ * @param {string} root the checkout
+ * @returns {Lockfile}
+ */
+export function parseLockfile(text, root) {
+  let projects;
+  try {
+    projects = JSON.parse(text);
+  } catch {
+    throw new Error('pnpm list printed no valid JSON');
+  }
+  if (!Array.isArray(projects)) {
+    throw new Error('pnpm list printed JSON that is not a list of projects');
+  }
+  const present = new Set();
+  const dependents = new Map();
+  const add = (name, key, dependent) => {
+    if (!dependents.has(name)) {
+      dependents.set(name, new Map());
+    }
+    dependents.get(name).set(key, dependent);
+  };
+  const base = resolve(root);
+  const inside = (folder) => {
+    if (folder !== base && !folder.startsWith(`${base}${sep}`)) {
+      throw new Error('pnpm list printed a project outside the checkout');
+    }
+    return folder;
+  };
+  const walk = (node, key, dependent, folder) => {
+    for (const field of DEPENDENCY_FIELDS) {
+      const children = node[field] ?? {};
+      if (!isObject(children)) {
+        throw new Error(`pnpm list printed \`${field}\` that is not an object`);
+      }
+      for (const [name, child] of Object.entries(children)) {
+        if (!PACKAGE.test(name) || !isObject(child) || typeof child.version !== 'string') {
+          throw new Error('pnpm list printed a dependency that fails its allowlist');
+        }
+        add(name, key, dependent);
+        if (child.version.startsWith('link:')) {
+          // A workspace project, nested with its own tree: its ranges are in its package.json.
+          const linked = inside(resolve(folder, child.version.slice('link:'.length)));
+          walk(child, `project:${linked}`, { kind: 'project', path: linked }, linked);
+          continue;
+        }
+        if (!VERSION.test(child.version)) {
+          continue; // no registry version (e.g. `file:`), so no registry range to read
+        }
+        const entry = `${name}@${child.version}`;
+        present.add(entry);
+        // Every occurrence is walked: the children of one version can differ between places (its
+        // peers), and the walk is linear in the size of the printed tree.
+        walk(child, `package:${entry}`, { kind: 'package', name, version: child.version }, folder);
+      }
+    }
+  };
+  for (const project of projects) {
+    if (!isObject(project) || typeof project.path !== 'string') {
+      throw new Error('pnpm list printed a project without a path');
+    }
+    const folder = inside(resolve(project.path));
+    walk(project, `project:${folder}`, { kind: 'project', path: folder }, folder);
+  }
+  return {
+    present,
+    dependents: new Map([...dependents].map(([name, parents]) => [name, [...parents.values()]])),
+  };
+}
+
+/**
  * @typedef {object} StaleException an exception of `pnpm-workspace.yaml` that is no longer needed;
  *   every field but `reason` holds only validated values
- * @property {'release-age' | 'ignore-ghsa'} setting
+ * @property {'release-age' | 'ignore-ghsa' | 'override'} setting
  * @property {string | null} entry `name[@version]` or a GHSA id; `null` when it fails its allowlist
- * @property {'aged' | 'not-pinned' | 'not-on-registry' | 'patched' | 'withdrawn' | 'unknown' | 'invalid'} reason
+ * @property {'aged' | 'not-pinned' | 'not-on-registry' | 'not-in-lockfile' | 'unused' | 'patched' | 'withdrawn' | 'unknown' | 'invalid'} reason
  * @property {string} [date] `YYYY-MM-DD` of the publication or the withdrawal
  * @property {string} [cooldown] `minimumReleaseAge` in words, e.g. `7 days`
  * @property {{ package: string, version: string }[]} [fixes] the fixed version of each npm package
@@ -288,10 +391,297 @@ function parseExclusion(entry) {
   return { name, version };
 }
 
+/** `major.minor.patch-prerelease` of an exact version; build metadata is ignored, as semver does. */
+function parseSemver(text) {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(text);
+  if (!match) {
+    return null;
+  }
+  return {
+    tuple: [Number(match[1]), Number(match[2]), Number(match[3])],
+    pre: match[4] === undefined ? [] : match[4].split('.'),
+  };
+}
+
+function compareIdentifiers(a, b) {
+  const numeric = /^\d+$/;
+  if (numeric.test(a) && numeric.test(b)) {
+    return Number(a) - Number(b);
+  }
+  if (numeric.test(a) !== numeric.test(b)) {
+    return numeric.test(a) ? -1 : 1;
+  }
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function compareSemver(a, b) {
+  for (let index = 0; index < 3; index += 1) {
+    if (a.tuple[index] !== b.tuple[index]) {
+      return a.tuple[index] - b.tuple[index];
+    }
+  }
+  // A version without a prerelease is higher than the same version with one.
+  if (a.pre.length === 0 || b.pre.length === 0) {
+    return b.pre.length - a.pre.length;
+  }
+  for (let index = 0; index < Math.max(a.pre.length, b.pre.length); index += 1) {
+    if (a.pre[index] === undefined || b.pre[index] === undefined) {
+      return a.pre[index] === undefined ? -1 : 1;
+    }
+    const order = compareIdentifiers(a.pre[index], b.pre[index]);
+    if (order !== 0) {
+      return order;
+    }
+  }
+  return 0;
+}
+
+const semver = (major, minor, patch, pre = []) => ({ tuple: [major, minor, patch], pre });
+/** The lowest version of a release, used for exclusive upper bounds (`<2.0.0-0`), as semver does. */
+const floor = (major, minor, patch) => semver(major, minor, patch, ['0']);
+const PARTIAL =
+  /^(<=|>=|<|>|=|~>|~|\^)?v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
+const isWild = (part) => part === undefined || /^[xX*]$/.test(part);
+
+/** One comparator of a range as primitive comparators `[operator, version]`; `[]` matches any. */
+function expandComparator(text) {
+  const match = PARTIAL.exec(text);
+  if (!match) {
+    return null;
+  }
+  const [, op = '', ...rest] = match;
+  const [majorText, minorText, patchText, preText] = rest;
+  const pre = preText === undefined ? [] : preText.split('.');
+  if (isWild(majorText)) {
+    // `*`, `x`, `>=*`: any version; `<*` and `>*` match nothing.
+    return op === '<' || op === '>' ? [['<', semver(0, 0, 0, ['0'])]] : [];
+  }
+  const major = Number(majorText);
+  const minor = isWild(minorText) ? null : Number(minorText);
+  const patch = minor === null || isWild(patchText) ? null : Number(patchText);
+  const low = semver(major, minor ?? 0, patch ?? 0, patch === null ? [] : pre);
+  // The first version above the partial version: 1 → 2.0.0, 1.2 → 1.3.0, 1.2.3 → none.
+  const next = () => (minor === null ? floor(major + 1, 0, 0) : floor(major, minor + 1, 0));
+  switch (op) {
+    case '^': {
+      let high;
+      if (major > 0 || minor === null) {
+        high = floor(major + 1, 0, 0);
+      } else if (minor > 0 || patch === null) {
+        high = floor(0, minor + 1, 0);
+      } else {
+        high = floor(0, 0, patch + 1);
+      }
+      return [
+        ['>=', low],
+        ['<', high],
+      ];
+    }
+    case '~':
+    case '~>':
+      return [
+        ['>=', low],
+        ['<', next()],
+      ];
+    case '>':
+      // `>1` is `>=2.0.0`: no `-0` here, so a prerelease of 2.0.0 stays outside, as in semver.
+      return patch === null ? [['>=', { ...next(), pre: [] }]] : [['>', low]];
+    case '>=':
+      return [['>=', low]];
+    case '<':
+      return [['<', patch === null ? floor(...low.tuple) : low]];
+    case '<=':
+      return patch === null ? [['<', next()]] : [['<=', low]];
+    default:
+      return patch === null
+        ? [
+            ['>=', low],
+            ['<', next()],
+          ]
+        : [['=', low]];
+  }
+}
+
+const OPERATORS = {
+  '<': (order) => order < 0,
+  '<=': (order) => order <= 0,
+  '>': (order) => order > 0,
+  '>=': (order) => order >= 0,
+  '=': (order) => order === 0,
+};
+/**
+ * A declared spec with a protocol (`npm:`, `catalog:`, `workspace:`, `git+https:`), a URL, a path or
+ * a GitHub shorthand (`user/repo`): no semver range, which never holds a `/`.
+ */
+const NOT_A_RANGE = /^[A-Za-z][A-Za-z0-9+.-]*:|\//;
+/** A spec of the workspace itself; pnpm applies no version override to it. */
+const LOCAL_SPEC = /^(?:workspace|link|file|portal):/;
+/** A dist-tag, e.g. `latest`; tried only after the spec failed to read as a range (`x.x` is one). */
+const DIST_TAG = /^[A-Za-z][A-Za-z0-9._-]*$/;
+const ANY_VERSION = semver(0, 0, 0);
+
+/**
+ * What a declared dependency spec is: a semver `range`, a `local` spec of the workspace, or
+ * `other` (an alias, a catalog entry, a URL, git, a GitHub shorthand, a dist-tag). A spec of range
+ * characters that cannot be read throws, so a gap never flags an entry by mistake.
+ * @param {string} spec
+ * @returns {'range' | 'local' | 'other'}
+ */
+export function specKind(spec) {
+  const text = spec.trim();
+  if (NOT_A_RANGE.test(text)) {
+    return LOCAL_SPEC.test(text) ? 'local' : 'other';
+  }
+  try {
+    if (!RANGE.test(text) && text !== '') {
+      throw new Error('A declared range that cannot be read');
+    }
+    // Every set is read, not only up to the first that matches.
+    for (const part of text.split('||')) {
+      matchesRange(ANY_VERSION, part, {});
+    }
+    return 'range';
+  } catch (error) {
+    if (DIST_TAG.test(text)) {
+      return 'other';
+    }
+    throw error;
+  }
+}
+
+/**
+ * Whether an exact version satisfies a declared npm range, as node-semver does: `||`, hyphen
+ * ranges, x-ranges, `~`, `^`, the comparators, and – unless `includePrerelease` – the prerelease
+ * rule (a prerelease version only satisfies a range with a prerelease on the same
+ * `major.minor.patch`). A spec that is no range never matches; one it cannot read throws.
+ * @param {string} version
+ * @param {string} range
+ * @param {{ includePrerelease?: boolean }} [options]
+ * @returns {boolean}
+ */
+export function satisfies(version, range, options = {}) {
+  const target = parseSemver(version);
+  if (!target) {
+    throw new Error('Not an exact version');
+  }
+  return specKind(range) === 'range' && matchesRange(target, range.trim(), options);
+}
+
+function matchesRange(target, spec, { includePrerelease = false }) {
+  return spec.split('||').some((part) => {
+    const set = part.trim();
+    let comparators;
+    const hyphen = /^(\S+)\s+-\s+(\S+)$/.exec(set);
+    if (hyphen) {
+      const [low, high] = [expandComparator(`>=${hyphen[1]}`), expandComparator(`<=${hyphen[2]}`)];
+      if (!low || !high) {
+        throw new Error('A declared range that cannot be read');
+      }
+      comparators = [...low, ...high];
+    } else {
+      comparators = set
+        .replace(/(<=|>=|<|>|=|~>|~|\^)\s+/g, '$1')
+        .split(/\s+/)
+        .filter(Boolean)
+        .flatMap((text) => {
+          const expanded = expandComparator(text);
+          if (!expanded) {
+            throw new Error('A declared range that cannot be read');
+          }
+          return expanded;
+        });
+    }
+    if (!comparators.every(([op, bound]) => OPERATORS[op](compareSemver(target, bound)))) {
+      return false;
+    }
+    if (target.pre.length === 0 || includePrerelease) {
+      return true;
+    }
+    // A prerelease version only satisfies a set with a prerelease on the same release.
+    return comparators.some(
+      ([, bound]) =>
+        bound.pre.length > 0 && bound.tuple.every((part, index) => part === target.tuple[index]),
+    );
+  });
+}
+
 const isoDay = (value) =>
   typeof value === 'string' && ISO_DATE.test(value) && !Number.isNaN(Date.parse(value))
     ? value.slice(0, 10)
     : null;
+
+/** The registry document URL of a validated package name. */
+function packageUrl(config, name) {
+  const scope = name.startsWith('@') ? name.split('/')[0] : '';
+  const base = config.scopes.get(scope) ?? config.registry;
+  // The npm convention (npm-registry-fetch): only the `/` of a scoped name is escaped; the name
+  // passed its allowlist, so it holds no other character a URL path would change.
+  return new URL(name.replaceAll('/', '%2F'), base.endsWith('/') ? base : `${base}/`).href;
+}
+
+/** The abbreviated package document: `dependencies` and the like of each version, no `time`. */
+export const ABBREVIATED = 'application/vnd.npm.install-v1+json';
+const RANGE_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
+
+/**
+ * Whether any dependent declares a range for `name` that `version` satisfies – then pnpm applies
+ * an `overrides` key `name@version` to it (pnpm 12.13 matches intersecting ranges, so a prerelease
+ * key matches `*` too: no prerelease rule here). A dependent whose range cannot be read from the
+ * registry, or that declares a spec other than a range or a workspace spec (an alias, a catalog
+ * entry, git, a URL, a dist-tag), counts as asking for it, with a line in the log, so an entry is
+ * reported as needed rather than guessed unneeded.
+ */
+async function isRequested(config, name, version, io, documents) {
+  for (const dependent of io.lockfile.dependents.get(name) ?? []) {
+    let declared;
+    if (dependent.kind === 'project') {
+      const manifest = io.manifest(dependent.path);
+      if (!isObject(manifest)) {
+        throw new Error('A package.json of the workspace is not an object');
+      }
+      declared = ['dependencies', 'devDependencies', 'optionalDependencies'].map(
+        (field) => manifest[field],
+      );
+    } else {
+      if (!documents.has(dependent.name)) {
+        documents.set(
+          dependent.name,
+          await io.registryJson(packageUrl(config, dependent.name), ABBREVIATED),
+        );
+      }
+      const document = documents.get(dependent.name);
+      if (document !== null && (!isObject(document) || !isObject(document.versions))) {
+        throw new Error(`The registry answered an unexpected document for ${dependent.name}`);
+      }
+      const release = document?.versions[dependent.version];
+      if (!isObject(release)) {
+        io.log(
+          `${dependent.name}@${dependent.version} is not on the registry; it counts as asking for ${name}@${version}`,
+        );
+        return true;
+      }
+      declared = RANGE_FIELDS.map((field) => release[field]);
+    }
+    for (const ranges of declared) {
+      const range = isObject(ranges) && Object.hasOwn(ranges, name) ? ranges[name] : undefined;
+      if (typeof range !== 'string') {
+        continue;
+      }
+      const kind = specKind(range);
+      if (kind === 'other') {
+        const by = dependent.kind === 'project' ? 'a workspace project' : dependent.name;
+        io.log(
+          `${by} declares ${name} with a spec that is no range; it counts as asking for ${name}@${version}`,
+        );
+        return true;
+      }
+      if (kind === 'range' && satisfies(version, range, { includePrerelease: true })) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 /**
  * The stale exceptions of the settings. Entries are validated before they are used in a URL or an
@@ -300,12 +690,17 @@ const isoDay = (value) =>
  * @param {Config} config
  * @param {{
  *   now: number,
- *   registryJson: (url: string) => Promise<unknown>,
+ *   registryJson: (url: string, accept?: string) => Promise<unknown>,
  *   advisory: (ghsa: string) => Promise<unknown>,
- * }} io `registryJson` and `advisory` answer `null` for a 404
+ *   lockfile: Lockfile,
+ *   manifest: (folder: string) => unknown,
+ *   log?: (text: string) => void,
+ * }} io `registryJson` and `advisory` answer `null` for a 404; `manifest` reads the `package.json`
+ *   of a workspace project
  * @returns {Promise<StaleException[]>}
  */
-export async function checkExceptions(config, { now, registryJson, advisory }) {
+export async function checkExceptions(config, io) {
+  const { now, registryJson, advisory, lockfile } = io;
   const stale = [];
   for (const entry of config.minimumReleaseAgeExclude) {
     const exclusion = parseExclusion(entry);
@@ -317,15 +712,11 @@ export async function checkExceptions(config, { now, registryJson, advisory }) {
       stale.push({ setting: 'release-age', entry, reason: 'not-pinned' });
       continue;
     }
-    const scope = exclusion.name.startsWith('@') ? exclusion.name.split('/')[0] : '';
-    const base = config.scopes.get(scope) ?? config.registry;
-    // The npm convention (npm-registry-fetch): only the `/` of a scoped name is escaped; the name
-    // passed its allowlist, so it holds no other character a URL path would change.
-    const url = new URL(
-      exclusion.name.replaceAll('/', '%2F'),
-      base.endsWith('/') ? base : `${base}/`,
-    );
-    const document = await registryJson(url.href);
+    if (!lockfile.present.has(entry)) {
+      stale.push({ setting: 'release-age', entry, reason: 'not-in-lockfile' });
+      continue;
+    }
+    const document = await registryJson(packageUrl(config, exclusion.name));
     const published =
       isObject(document) && isObject(document.time) ? document.time[exclusion.version] : undefined;
     if (document === null || published === undefined) {
@@ -390,16 +781,32 @@ export async function checkExceptions(config, { now, registryJson, advisory }) {
       });
     }
   }
+  const documents = new Map();
+  const lookups = { ...io, log: io.log ?? (() => {}) };
+  for (const key of config.overrides) {
+    const override = parseExclusion(key);
+    if (!override || override.version === undefined) {
+      // Only a key pinned to the exact vulnerable version can be checked; a range or a parent
+      // selector (`a>b`) fails the allowlist and is shown as `(invalid)`.
+      stale.push({ setting: 'override', entry: override ? key : null, reason: 'not-pinned' });
+      continue;
+    }
+    if (!(await isRequested(config, override.name, override.version, lookups, documents))) {
+      stale.push({ setting: 'override', entry: key, reason: 'unused' });
+    }
+  }
   return stale;
 }
 
 const SETTING_NAMES = {
   'release-age': 'minimumReleaseAgeExclude',
   'ignore-ghsa': 'auditConfig.ignoreGhsas',
+  override: 'overrides',
 };
 const REASONS = {
-  'release-age': ['aged', 'not-pinned', 'not-on-registry'],
+  'release-age': ['aged', 'not-pinned', 'not-on-registry', 'not-in-lockfile'],
   'ignore-ghsa': ['patched', 'withdrawn', 'unknown'],
+  override: ['unused', 'not-pinned'],
 };
 
 /**
@@ -407,7 +814,7 @@ const REASONS = {
  * it is built from – the issue body can be edited by hand, and a gone token is rendered into a
  * comment – or `null`. Validated entries hold no `,`, `:` or `>`, so the first and last `:` split it.
  * @param {string} token
- * @returns {{ setting: 'release-age' | 'ignore-ghsa', entry: string, reason: string } | null}
+ * @returns {{ setting: 'release-age' | 'ignore-ghsa' | 'override', entry: string, reason: string } | null}
  */
 function parseToken(token) {
   const first = token.indexOf(':');
@@ -470,6 +877,10 @@ function staleReason(exception) {
       return 'not pinned to an exact version';
     case 'not-on-registry':
       return 'version not on the registry';
+    case 'not-in-lockfile':
+      return 'version not in the lockfile';
+    case 'unused':
+      return 'no dependency asks for this version';
     case 'patched':
       return `patched: ${exception.fixes
         .map(
@@ -497,17 +908,22 @@ function summarizeToken(token) {
 }
 
 const STALE_FOOTER = [
-  'Remove each entry from `pnpm-workspace.yaml`. For a patched GHSA, first update the dependency or force the fixed version with an `overrides` entry, so the vulnerability audit of pull requests stays green.',
+  'Remove each entry from `pnpm-workspace.yaml`. For a patched GHSA, first update the dependency or force the fixed version with an `overrides` entry, so the vulnerability audit of pull requests stays green. For an `overrides` entry, check that `pnpm install` and `pnpm audit --audit-level high` stay clean after removing it.',
 ].join('\n');
 
 function staleSection(stale) {
   if (stale.length === 0) {
     return [];
   }
-  const order = (exception) =>
-    `${exception.setting === 'ignore-ghsa' ? 0 : 1}${exception.entry ?? '~'}`;
+  // By setting, then by entry, invalid entries last.
+  const rank = { 'ignore-ghsa': 0, 'release-age': 1, override: 2 };
   const rows = [...stale]
-    .sort((a, b) => order(a).localeCompare(order(b), 'en'))
+    .sort(
+      (a, b) =>
+        rank[a.setting] - rank[b.setting] ||
+        (a.entry === null) - (b.entry === null) ||
+        (a.entry ?? '').localeCompare(b.entry ?? '', 'en'),
+    )
     .map(
       (exception) =>
         `| \`${SETTING_NAMES[exception.setting]}\` | ${entryCell(exception)} | ${staleReason(exception)} |`,
@@ -823,18 +1239,19 @@ const retriable = (message) => Object.assign(new Error(message), { retriable: tr
 
 /**
  * The JSON document of a registry URL, `null` for a 404. Redirects are refused; a network error,
- * 429 or 5xx is retried.
+ * 429 or 5xx is retried. `accept` selects the full document (`application/json`, with `time`) or
+ * the abbreviated one (`ABBREVIATED`, much smaller, without `time`).
  * @param {string} url
- * @param {{ fetch: typeof fetch, sleep: (ms: number) => Promise<void> }} io
+ * @param {{ fetch: typeof fetch, sleep: (ms: number) => Promise<void>, accept?: string }} io
  * @returns {Promise<unknown>}
  */
-export function registryJson(url, { fetch, sleep }) {
+export function registryJson(url, { fetch, sleep, accept = 'application/json' }) {
   return withRetries(async () => {
     let response;
     try {
       response = await fetch(url, {
         redirect: 'error',
-        headers: { accept: 'application/json' },
+        headers: { accept },
         signal: AbortSignal.timeout(30_000),
       });
     } catch {
@@ -904,6 +1321,7 @@ export function githubAdvisory(gh, ghsa, sleep) {
  * checked before anything is written, so a failure leaves the issue untouched.
  * @param {string} auditText the output of `pnpm audit --audit-level low --json`
  * @param {string} configText the output of `pnpm config list --json`
+ * @param {string} lockfileText the output of `pnpm list -r --depth Infinity --lockfile-only --json`
  * @param {{
  *   env: Record<string, string | undefined>,
  *   gh: Gh,
@@ -912,12 +1330,16 @@ export function githubAdvisory(gh, ghsa, sleep) {
  *   now: number,
  *   fetch: typeof fetch,
  *   sleep: (ms: number) => Promise<void>,
- * }} io
+ *   root: string,
+ *   readText: (path: string) => string,
+ * }} io `root` is the checkout; `readText` reads a `package.json` of the workspace
  * @returns {Promise<SyncPlan['action'] | 'dry-run'>}
  */
-export async function sync(auditText, configText, { env, gh, summary, log, now, fetch, sleep }) {
+export async function sync(auditText, configText, lockfileText, io) {
+  const { env, gh, summary, log, now, fetch, sleep, root, readText } = io;
   const advisories = parseAudit(auditText);
   const config = parseConfig(configText);
+  const lockfile = parseLockfile(lockfileText, root);
   for (const message of invalidFields(advisories)) {
     log(message);
   }
@@ -927,10 +1349,20 @@ export async function sync(auditText, configText, { env, gh, summary, log, now, 
   }
   const stale = await checkExceptions(config, {
     now,
-    registryJson: (url) => registryJson(url, { fetch, sleep }),
+    registryJson: (url, accept) => registryJson(url, { fetch, sleep, accept }),
     advisory: (ghsa) => githubAdvisory(gh, ghsa, sleep),
+    lockfile,
+    // The folder passed parseLockfile's check: a workspace project inside the checkout.
+    manifest: (folder) => {
+      try {
+        return JSON.parse(readText(join(folder, 'package.json')));
+      } catch {
+        throw new Error('A package.json of the workspace could not be read');
+      }
+    },
+    log,
   });
-  for (const exception of stale.filter((entry) => entry.reason === 'invalid')) {
+  for (const exception of stale.filter((entry) => entry.entry === null)) {
     log(`An entry of ${SETTING_NAMES[exception.setting]} fails its allowlist`);
   }
   const report =
@@ -966,9 +1398,12 @@ export async function sync(auditText, configText, { env, gh, summary, log, now, 
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [command, auditFile, configFile] = process.argv.slice(2);
-  if (command === 'sync' && auditFile && configFile) {
-    await sync(readFileSync(auditFile, 'utf8'), readFileSync(configFile, 'utf8'), {
+  const [command, auditFile, configFile, lockfileFile] = process.argv.slice(2);
+  if (command === 'sync' && auditFile && configFile && lockfileFile) {
+    const read = (file) => readFileSync(file, 'utf8');
+    await sync(read(auditFile), read(configFile), read(lockfileFile), {
+      root: process.cwd(),
+      readText: read,
       env: process.env,
       gh: (args, input) =>
         execFileSync('gh', args, {
@@ -992,7 +1427,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     });
   } else {
-    process.stderr.write('Usage: node scripts/advisory-audit.js sync <audit.json> <config.json>\n');
+    process.stderr.write(
+      'Usage: node scripts/advisory-audit.js sync <audit.json> <config.json> <lockfile.json>\n',
+    );
     process.exit(2);
   }
 }
