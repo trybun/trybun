@@ -61,10 +61,10 @@ describe('InviteDialog', () => {
   async function inviteAdministrator(events: ReturnType<typeof userEvent.setup>) {
     renderInApp(<InviteDialog kind="team" />);
     await events.click(screen.getByRole('button', { name: 'Invite' }));
-    await events.type(
-      await screen.findByRole('textbox', { name: 'E-mail address' }),
-      'new@acme.com',
-    );
+    // Pasted, not typed: key by key re-renders the form per character, which takes most of each
+    // test and passed the 5 s timeout under the load of `pnpm test:coverage` (#319).
+    await events.click(await screen.findByRole('textbox', { name: 'E-mail address' }));
+    await events.paste('new@acme.com');
     await events.click(screen.getByRole('radio', { name: 'The Administrator role' }));
   }
 
@@ -226,10 +226,9 @@ describe('AddMemberDialog', () => {
 
     await events.click(screen.getByRole('button', { name: 'Add member' }));
     await events.click(await screen.findByRole('radio', { name: 'By e-mail address' }));
-    await events.type(
-      await screen.findByRole('textbox', { name: 'E-mail address' }),
-      'new@acme.com',
-    );
+    // Pasted, not typed, like `inviteAdministrator()` above (#319).
+    await events.click(await screen.findByRole('textbox', { name: 'E-mail address' }));
+    await events.paste('new@acme.com');
     await events.click(await screen.findByRole('button', { name: 'Invite' }));
 
     expect(await screen.findByDisplayValue(LINK)).toBeTruthy();
