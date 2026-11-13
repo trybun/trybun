@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-13 |
 | Plan task | – (follow-up of #327, deferred Q2 and Q6) |
 | System specification sections | §2.10 |
-| Related issues / PRs | #333, #327, #332 |
+| Related issues / PRs | #333, #335, #339, #327, #332, #337 |
 
 Extends: `.ai/specs/implemented/2026-11-12-daily-advisory-audit.md`
 
@@ -28,7 +28,7 @@ The channel, decided by the maintainer on #333: the same daily workflow and **th
 
 1. The workflow also writes the effective pnpm settings: `pnpm config list --json > "$RUNNER_TEMP/config.json"` (observed with pnpm 12.13 on this repository: the workspace settings appear as `minimumReleaseAge`, `minimumReleaseAgeExclude`, `audit.ignore` — the accepted GHSAs of `auditConfig.ignoreGhsas` — and `registry`). Still no `pnpm install`, so no dependency code runs in the job.
 2. `node scripts/advisory-audit.js sync <audit.json> <config.json>` checks each exception:
-   - **`minimumReleaseAgeExclude`**: an entry `name@version` is stale when the registry's publish time of that version is at least `minimumReleaseAge` minutes ago. The publish time is `time[version]` of the package document at `new URL(encodeURIComponent(name), base)`, so a scoped name is `%2F`-encoded. `base` is the registry of the name's scope in `registries` when the scope is listed there (e.g. `@jsr` → `https://npm.jsr.io/`), otherwise `registry`. A bare package name without a version is listed as *not pinned*: the convention of `pnpm-workspace.yaml` pins each exclusion to the exact fixed version. A pattern (`@scope/*`) fails the name allowlist and is listed as `(invalid)`.
+   - **`minimumReleaseAgeExclude`**: an entry `name@version` is stale when the registry's publish time of that version is at least `minimumReleaseAge` minutes ago. The publish time is `time[version]` of the package document at `new URL(name.replace('/', '%2F'), base)`: only the `/` of a scoped name is escaped, the npm convention (npm-registry-fetch). `base` is the registry of the name's scope in `registries` when the scope is listed there (e.g. `@jsr` → `https://npm.jsr.io/`), otherwise `registry`. A bare package name without a version is listed as *not pinned*: the convention of `pnpm-workspace.yaml` pins each exclusion to the exact fixed version. A pattern (`@scope/*`) fails the name allowlist and is listed as `(invalid)`.
    - **`auditConfig.ignoreGhsas`**: an entry is stale when its `withdrawn_at` is set, or when the GitHub advisory (`gh api /advisories/{ghsa}`) has **at least one** entry of `vulnerabilities[]` with `package.ecosystem` `npm` and **every** such entry has a non-null `first_patched_version`. This is the rule the tracking issue already uses for "patched". An advisory without any npm entry is listed as *unknown advisory*.
 3. The tracking issue body gets a second section, *Stale exceptions*, after the advisories table: one row per stale entry with the setting, the entry and the reason (`published 2026-11-09, older than 7 days`, `patched: 11.0.1 (minimatch)`, `withdrawn 2026-10-23`, `not pinned`). Its footer says what to do: remove the entry; for a patched GHSA, update the dependency or add an `overrides` entry first. The texts that assume advisories only change with the two sets:
    - The body intro: with stale exceptions but no advisories, one line says that `pnpm audit` finds no advisory that is not accepted.
@@ -63,7 +63,7 @@ No application code, contract, schema or runtime dependency changes. Changed fil
     - **Parsing:** validated npm names, versions and GHSA ids contain neither `,` nor `:` nor `>`, so a token splits unambiguously on its first and last `:`.
     - **Invalid entries:** an entry that failed validation is never written to the marker. It is listed as `(invalid)` and keeps the issue open.
     - Round-trip tests cover scoped names.
-  - `planSync(advisories, stale, issue)` compares both markers to decide on the comment, and `sync(auditText, configText, io)` takes the settings. The existing `planSync` and `sync` tests of `scripts/advisory-audit.spec.js` change with the new arguments: an empty stale set keeps their expectations. A body from before this change has no second marker, which reads as an empty stale set.
+  - `planSync(advisories, issue, { stale })` compares both markers to decide on the comment, and `sync(auditText, configText, io)` takes the settings. The existing `planSync` and `sync` tests of `scripts/advisory-audit.spec.js` change with the new arguments: an empty stale set keeps their expectations. A body from before this change has no second marker, which reads as an empty stale set.
 - `scripts/advisory-audit.spec.js`: unit tests with fixtures. `scripts/fixtures/advisory-audit/config.json` is captured from `pnpm config list --json` of this repository; the advisory API responses are captured from `gh api /advisories/…` for an advisory with a fix (GHSA-g3hv-75wg-m249), one without (GHSA-gcqx-w48m-w2h4) and one withdrawn (GHSA-vfj7-8cjw-p6xm, withdrawn on 2026-10-23).
 
 ## 📝 Edge Cases & Failure Scenarios
@@ -139,3 +139,4 @@ Also: `pnpm-workspace.yaml` (remove the withdrawn GHSA-vfj7-8cjw-p6xm with its c
 - 2026-11-13 – Created (autonomous defaults; the channel and the scope decided by the maintainer on #333).
 - 2026-11-13 – Specification review: registry URL encoding and no redirects, retries before failing, the marker grammar, the advisory API fields, fixture tests as the primary evidence.
 - 2026-11-13 – Review of #335: the withdrawn GHSA-vfj7-8cjw-p6xm is removed in the implementation PR, the marker grammar is corrected, an advisory needs at least one npm entry, the texts of the stale-only and mixed states, the size limit, the scope registries.
+- 2026-11-13 – Implemented (#339): `parseConfig`, `checkExceptions` and the *Stale exceptions* section in `scripts/advisory-audit.js`, the `pnpm config list --json` step in `advisory-audit.yml`; the withdrawn GHSA-vfj7-8cjw-p6xm removed from `auditConfig.ignoreGhsas`. The stale set is passed to `planSync` and `renderReport` as an option, so a body without stale exceptions is unchanged; a scoped name is escaped as npm does (`@scope%2Fname`). Follow-up for unneeded `overrides` and exclusions outside the lockfile: #337.

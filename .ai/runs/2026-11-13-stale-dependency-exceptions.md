@@ -1,6 +1,6 @@
 # Execution plan — Stale exceptions of `pnpm-workspace.yaml` in the daily advisory audit
 
-**Source doc:** `.ai/specs/2026-11-13-stale-dependency-exceptions.md` (spec PR #335, issue #333)
+**Source doc:** `.ai/specs/implemented/2026-11-13-stale-dependency-exceptions.md` (spec PR #335, issue #333)
 **Branch:** `feat/stale-dependency-exceptions` · **Base:** `main`
 
 ## 🎯 Goal
