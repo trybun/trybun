@@ -20,6 +20,7 @@ import {
   registryJson,
   renderReport,
   satisfies,
+  specKind,
   staleMarker,
   sync,
   withRetries,
@@ -1264,6 +1265,30 @@ describe('satisfies', () => {
     expect(satisfies('1.5.0-beta', '^1.2.3')).toBe(false);
     expect(satisfies('2.0.0-alpha', '>1')).toBe(false);
     expect(satisfies('1.0.0-0', '>=1.0.0-0')).toBe(true);
+    // pnpm matches intersecting ranges: without the rule, `*` takes a prerelease too.
+    expect(satisfies('1.0.0-beta.1', '*')).toBe(false);
+    expect(satisfies('1.0.0-beta.1', '*', { includePrerelease: true })).toBe(true);
+    expect(satisfies('1.0.0-beta.1', '^1.0.0', { includePrerelease: true })).toBe(false);
+  });
+
+  it('tells ranges, workspace specs and other specs apart', () => {
+    expect(['^1.2.3', '', 'x', 'X.x', '>= 1 < 2 || 3'].map(specKind)).toEqual(
+      Array(5).fill('range'),
+    );
+    expect(['workspace:*', 'link:../x', 'file:../x', 'portal:../x'].map(specKind)).toEqual(
+      Array(4).fill('local'),
+    );
+    expect(
+      [
+        'catalog:',
+        'npm:glob@^10',
+        'user/repo',
+        'user/repo#v1',
+        'latest',
+        'https://x.example/a.tgz',
+      ].map(specKind),
+    ).toEqual(Array(6).fill('other'));
+    expect(() => specKind('* || >>1')).toThrow('cannot be read');
   });
 
   it('never matches a spec that is no range, and throws on one it cannot read', () => {
@@ -1277,6 +1302,8 @@ describe('satisfies', () => {
       'https://x.example/a.tgz',
       'git+https://x.example/y.git',
       'github:a/b',
+      'user/repo',
+      'user/repo#v1.0.0',
       '../x',
       './x',
     ]) {
@@ -1381,6 +1408,44 @@ describe('checkExceptions with the lockfile', () => {
       documents: { '@nestjs/platform-express': { versions: {} } },
     });
     expect(await checkExceptions(overrides(['multer@2.4.0']), missingVersion)).toEqual([]);
+  });
+
+  it('counts a peer range, a prerelease key matched by `*`, and a spec that is no range as asking', async () => {
+    const parent = (ranges) =>
+      real({
+        documents: {
+          '@nestjs/platform-express': { versions: { '12.3.3': ranges } },
+        },
+      });
+    expect(
+      await checkExceptions(
+        overrides(['multer@2.4.0']),
+        parent({ peerDependencies: { multer: '^2.4.0' } }),
+      ),
+    ).toEqual([]);
+    expect(
+      await checkExceptions(
+        overrides(['multer@2.6.0-beta.1']),
+        parent({ dependencies: { multer: '*' } }),
+      ),
+    ).toEqual([]);
+    const aliased = parent({ dependencies: { multer: 'npm:@x/multer@2' } });
+    expect(await checkExceptions(overrides(['multer@2.4.0']), aliased)).toEqual([]);
+    expect(aliased.logged).toEqual([
+      '@nestjs/platform-express declares multer with a spec that is no range; it counts as asking for multer@2.4.0',
+    ]);
+    const catalog = real({
+      manifests: { [`${ROOT}/apps/server`]: { dependencies: { multer: 'catalog:' } } },
+      documents: { '@nestjs/platform-express': { versions: { '12.3.3': {} } } },
+    });
+    expect(await checkExceptions(overrides(['multer@2.4.0']), catalog)).toEqual([]);
+    const workspace = real({
+      manifests: { [`${ROOT}/apps/server`]: { dependencies: { multer: 'workspace:*' } } },
+      documents: { '@nestjs/platform-express': { versions: { '12.3.3': {} } } },
+    });
+    expect(await checkExceptions(overrides(['multer@2.4.0']), workspace)).toEqual([
+      { setting: 'override', entry: 'multer@2.4.0', reason: 'unused' },
+    ]);
   });
 
   it('lists keys that are not pinned, never sending one anywhere', async () => {

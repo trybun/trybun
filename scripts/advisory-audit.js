@@ -509,44 +509,65 @@ const OPERATORS = {
   '>=': (order) => order >= 0,
   '=': (order) => order === 0,
 };
-/** A declared spec with a protocol, an alias, a URL or a path: no semver range. */
-const NOT_A_RANGE = /^(?:[A-Za-z][A-Za-z0-9+.-]*:|\.{0,2}\/|~\/)/;
+/**
+ * A declared spec with a protocol (`npm:`, `catalog:`, `workspace:`, `git+https:`), a URL, a path or
+ * a GitHub shorthand (`user/repo`): no semver range, which never holds a `/`.
+ */
+const NOT_A_RANGE = /^[A-Za-z][A-Za-z0-9+.-]*:|\//;
+/** A spec of the workspace itself; pnpm applies no version override to it. */
+const LOCAL_SPEC = /^(?:workspace|link|file|portal):/;
 /** A dist-tag, e.g. `latest`; tried only after the spec failed to read as a range (`x.x` is one). */
 const DIST_TAG = /^[A-Za-z][A-Za-z0-9._-]*$/;
+const ANY_VERSION = semver(0, 0, 0);
 
 /**
- * Whether an exact version satisfies a declared npm range, as node-semver does without options:
- * `||`, hyphen ranges, x-ranges, `~`, `^`, the comparators, and the prerelease rule (a prerelease
- * version only satisfies a range with a prerelease on the same `major.minor.patch`). A spec that is
- * no range (`npm:` alias, `workspace:`, a URL, a git or file spec, a dist-tag) never matches, as in
- * pnpm; a spec of range characters it cannot read throws, so a gap never flags an entry by mistake.
- * @param {string} version
- * @param {string} range
- * @returns {boolean}
+ * What a declared dependency spec is: a semver `range`, a `local` spec of the workspace, or
+ * `other` (an alias, a catalog entry, a URL, git, a GitHub shorthand, a dist-tag). A spec of range
+ * characters that cannot be read throws, so a gap never flags an entry by mistake.
+ * @param {string} spec
+ * @returns {'range' | 'local' | 'other'}
  */
-export function satisfies(version, range) {
-  const target = parseSemver(version);
-  if (!target) {
-    throw new Error('Not an exact version');
-  }
-  const spec = range.trim();
-  if (NOT_A_RANGE.test(spec)) {
-    return false;
+export function specKind(spec) {
+  const text = spec.trim();
+  if (NOT_A_RANGE.test(text)) {
+    return LOCAL_SPEC.test(text) ? 'local' : 'other';
   }
   try {
-    if (!RANGE.test(spec) && spec !== '') {
+    if (!RANGE.test(text) && text !== '') {
       throw new Error('A declared range that cannot be read');
     }
-    return matchesRange(target, spec);
+    // Every set is read, not only up to the first that matches.
+    for (const part of text.split('||')) {
+      matchesRange(ANY_VERSION, part, {});
+    }
+    return 'range';
   } catch (error) {
-    if (DIST_TAG.test(spec)) {
-      return false;
+    if (DIST_TAG.test(text)) {
+      return 'other';
     }
     throw error;
   }
 }
 
-function matchesRange(target, spec) {
+/**
+ * Whether an exact version satisfies a declared npm range, as node-semver does: `||`, hyphen
+ * ranges, x-ranges, `~`, `^`, the comparators, and – unless `includePrerelease` – the prerelease
+ * rule (a prerelease version only satisfies a range with a prerelease on the same
+ * `major.minor.patch`). A spec that is no range never matches; one it cannot read throws.
+ * @param {string} version
+ * @param {string} range
+ * @param {{ includePrerelease?: boolean }} [options]
+ * @returns {boolean}
+ */
+export function satisfies(version, range, options = {}) {
+  const target = parseSemver(version);
+  if (!target) {
+    throw new Error('Not an exact version');
+  }
+  return specKind(range) === 'range' && matchesRange(target, range.trim(), options);
+}
+
+function matchesRange(target, spec, { includePrerelease = false }) {
   return spec.split('||').some((part) => {
     const set = part.trim();
     let comparators;
@@ -573,7 +594,7 @@ function matchesRange(target, spec) {
     if (!comparators.every(([op, bound]) => OPERATORS[op](compareSemver(target, bound)))) {
       return false;
     }
-    if (target.pre.length === 0) {
+    if (target.pre.length === 0 || includePrerelease) {
       return true;
     }
     // A prerelease version only satisfies a set with a prerelease on the same release.
@@ -604,9 +625,11 @@ const RANGE_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'
 
 /**
  * Whether any dependent declares a range for `name` that `version` satisfies – then pnpm applies
- * an `overrides` key `name@version` to it (pnpm 12.13 matches intersecting ranges). A dependent
- * whose range cannot be read from the registry counts as asking for it, with a line in the log, so
- * an entry is reported as needed rather than guessed unneeded.
+ * an `overrides` key `name@version` to it (pnpm 12.13 matches intersecting ranges, so a prerelease
+ * key matches `*` too: no prerelease rule here). A dependent whose range cannot be read from the
+ * registry, or that declares a spec other than a range or a workspace spec (an alias, a catalog
+ * entry, git, a URL, a dist-tag), counts as asking for it, with a line in the log, so an entry is
+ * reported as needed rather than guessed unneeded.
  */
 async function isRequested(config, name, version, io, documents) {
   for (const dependent of io.lockfile.dependents.get(name) ?? []) {
@@ -640,8 +663,19 @@ async function isRequested(config, name, version, io, documents) {
       declared = RANGE_FIELDS.map((field) => release[field]);
     }
     for (const ranges of declared) {
-      const range = isObject(ranges) ? ranges[name] : undefined;
-      if (typeof range === 'string' && satisfies(version, range)) {
+      const range = isObject(ranges) && Object.hasOwn(ranges, name) ? ranges[name] : undefined;
+      if (typeof range !== 'string') {
+        continue;
+      }
+      const kind = specKind(range);
+      if (kind === 'other') {
+        const by = dependent.kind === 'project' ? 'a workspace project' : dependent.name;
+        io.log(
+          `${by} declares ${name} with a spec that is no range; it counts as asking for ${name}@${version}`,
+        );
+        return true;
+      }
+      if (kind === 'range' && satisfies(version, range, { includePrerelease: true })) {
         return true;
       }
     }
@@ -780,7 +814,7 @@ const REASONS = {
  * it is built from – the issue body can be edited by hand, and a gone token is rendered into a
  * comment – or `null`. Validated entries hold no `,`, `:` or `>`, so the first and last `:` split it.
  * @param {string} token
- * @returns {{ setting: 'release-age' | 'ignore-ghsa', entry: string, reason: string } | null}
+ * @returns {{ setting: 'release-age' | 'ignore-ghsa' | 'override', entry: string, reason: string } | null}
  */
 function parseToken(token) {
   const first = token.indexOf(':');
