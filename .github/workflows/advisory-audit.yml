@@ -1,7 +1,9 @@
 # Daily advisory audit (§2.10, §15.4): `pnpm audit --audit-level low` checks the committed lockfile
 # of `main` for advisories of every severity, with the accepted risks of `auditConfig.ignoreGhsas`
-# left out, and keeps one tracking issue current – opened or reopened while advisories remain,
-# closed when the audit is clean. It never blocks a pull request; a finding keeps the run green, and
+# left out, and the exceptions of `pnpm-workspace.yaml` for stale entries (`minimumReleaseAgeExclude`
+# older than `minimumReleaseAge`, accepted advisories with a fix or withdrawn), and keeps one tracking
+# issue current – opened or reopened while advisories or stale exceptions remain, closed when both
+# are gone. It never blocks a pull request; a finding keeps the run green, and
 # the run fails only when the audit or the issue cannot be written. **Run workflow** on another
 # branch is a dry run that writes the job summary only. No secrets; no `pnpm install`, so no
 # dependency code runs in the job that holds `issues: write`.
@@ -39,7 +41,11 @@ jobs:
       # output, which is empty on an error (the message stays in this log).
       - name: Audit the lockfile
         run: pnpm audit --audit-level low --json > "$RUNNER_TEMP/audit.json" || true
+      # The effective settings of `pnpm-workspace.yaml`, as pnpm applies them; read by the script to
+      # check the exceptions against the registry's publish dates and the GitHub advisory API.
+      - name: Read the pnpm settings
+        run: pnpm config list --json > "$RUNNER_TEMP/config.json"
       - name: Update the tracking issue
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/advisory-audit.js sync "$RUNNER_TEMP/audit.json"
+        run: node scripts/advisory-audit.js sync "$RUNNER_TEMP/audit.json" "$RUNNER_TEMP/config.json"
