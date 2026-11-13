@@ -26,12 +26,16 @@ The daily advisory audit also reports stale exceptions of `pnpm-workspace.yaml` 
 
 ## Progress
 
+PR: #339
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Stale exceptions in the daily advisory audit
 
-- [ ] 1.1 Fixtures and parseConfig with unit tests
-- [ ] 1.2 checkExceptions with injected lookups and unit tests
-- [ ] 1.3 Stale exceptions section, marker and planSync over both sets
-- [ ] 1.4 sync wiring, registry and advisory lookups, workflow step
-- [ ] 1.5 Remove the withdrawn GHSA; specification, README, memory and pnpm-workspace.yaml updates; spec to implemented
+- [x] 1.1 Fixtures and parseConfig with unit tests — 6822827
+- [x] 1.2 checkExceptions with injected lookups and unit tests — 6822827
+- [x] 1.3 Stale exceptions section, marker and planSync over both sets — 6822827
+- [x] 1.4 sync wiring, registry and advisory lookups, workflow step — 6822827, 3fcbde3
+- [x] 1.5 Remove the withdrawn GHSA; specification, README, memory and pnpm-workspace.yaml updates; spec to implemented — ea7236d
+
+Post-merge (spec step 6, outside this PR): **Run workflow** on a test branch (dry run) and on `main`; record the run links on #333.
