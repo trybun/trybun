@@ -1,6 +1,6 @@
 # Execution plan — Daily advisory audit of `main` with one tracking issue
 
-**Source doc:** `.ai/specs/2026-11-12-daily-advisory-audit.md` (spec PR #331, issue #327)
+**Source doc:** `.ai/specs/implemented/2026-11-12-daily-advisory-audit.md` (spec PR #331, issue #327)
 **Branch:** `feat/daily-advisory-audit` · **Base:** `main`
 
 ## 🎯 Goal
@@ -29,9 +29,9 @@ A daily workflow audits the lockfile of `main` for advisories of every severity 
 
 ### Phase 1: Daily advisory audit
 
-- [ ] 1.1 Fixtures, parseAudit, renderReport and planSync with unit tests
-- [ ] 1.2 sync CLI with job summary and injected-runner unit tests
-- [ ] 1.3 advisory-audit.yml workflow and supply-chain lint
-- [ ] 1.4 Specification, README and memory updates; follow-up issue for Q2 and Q6
+- [x] 1.1 Fixtures, parseAudit, renderReport and planSync with unit tests — f3e92d6
+- [x] 1.2 sync CLI with job summary and injected-runner unit tests — f3e92d6
+- [x] 1.3 advisory-audit.yml workflow and supply-chain lint — 61a0d9d
+- [x] 1.4 Specification, README and memory updates; follow-up issue for Q2 and Q6 (#333) — 056f61d
 
 Post-merge (spec step 5, outside this PR): **Run workflow** on a test branch with a known moderate advisory (dry run) and on `main`; record the run links on #327.
