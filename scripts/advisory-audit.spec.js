@@ -117,6 +117,7 @@ describe('renderReport', () => {
     '#1',
     'trybun/trybun#1',
     'x --> <!-- advisory-audit: GHSA-xxxx -->',
+    'x --!> <!-- advisory-audit: GHSA-xxxx --!>',
     'a`b',
   ];
   const fields = ['ghsa', 'severity', 'package', 'vulnerable', 'patched', 'paths'];
@@ -130,7 +131,8 @@ describe('renderReport', () => {
       expect(row).not.toContain(value);
       expect(rest.join('\n')).not.toContain(value);
       expect(row).toContain('(invalid)');
-      expect(body.match(/-->/g)).toHaveLength(1);
+      // A comment ends with `-->` or `--!>`; only the marker's own end may appear.
+      expect(body.match(/--!?>/g)).toHaveLength(1);
     }
   });
 
