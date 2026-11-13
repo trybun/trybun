@@ -1,0 +1,49 @@
+{
+  "@jsr:registry": "https://npm.jsr.io/",
+  "allowBuilds": {
+    "@parcel/watcher": false,
+    "cpu-features": false,
+    "@swc/core": true,
+    "protobufjs": false,
+    "unrs-resolver": true,
+    "@scarf/scarf": false,
+    "prisma": true,
+    "ssh2": false,
+    "msgpackr-extract": false,
+    "esbuild": false,
+    "@prisma/engines": true
+  },
+  "audit": {
+    "ignore": ["GHSA-vfj7-8cjw-p6xm", "GHSA-gcqx-w48m-w2h4"]
+  },
+  "minimumReleaseAge": 10080,
+  "minimumReleaseAgeExclude": ["eslint-plugin-import-x@4.18.1"],
+  "overrides": {
+    "multer@2.4.0": "2.5.0",
+    "minimatch@10.2.6": "11.0.4",
+    "glob@10.5.0": "14.0.3",
+    "glob@13.0.6": "14.0.3"
+  },
+  "packages": ["apps/*", "packages/*"],
+  "peerDependencyRules": {
+    "allowedVersions": {
+      "@nest-lab/throttler-storage-redis>@nestjs/common": "12",
+      "@nest-lab/throttler-storage-redis>@nestjs/core": "12",
+      "openapi-typescript>typescript": "6"
+    }
+  },
+  "registries": {
+    "https://npm.jsr.io/": {
+      "scopes": ["@jsr"]
+    },
+    "https://npm.pkg.github.com/": {
+      "prefix": "gh"
+    },
+    "https://registry.npmjs.org/": {
+      "scopes": ["@"],
+      "prefix": "npmjs"
+    }
+  },
+  "registry": "https://registry.npmjs.org/",
+  "userAgent": "pnpm/12.13.0 npm/? node/? linux x64"
+}

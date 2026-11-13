@@ -5,14 +5,21 @@ import {
   ISSUE_LABELS,
   ISSUE_TITLE,
   applyPlan,
+  checkExceptions,
   findIssue,
+  githubAdvisory,
   invalidFields,
   marker,
   parseAudit,
+  parseConfig,
   planSync,
   readMarker,
+  readStaleMarker,
+  registryJson,
   renderReport,
+  staleMarker,
   sync,
+  withRetries,
 } from './advisory-audit.js';
 
 // Captured from pnpm 12.13: a scratch project with `minimatch` 10.2.6 and `glob` 11.0.3, the clean
@@ -263,12 +270,19 @@ describe('planSync', () => {
 });
 
 /** A fake `gh` answering from a table, recording every call. */
-function fakeGh({ defaultBranch = 'main', issues = [], created = 9 } = {}) {
+function fakeGh({ defaultBranch = 'main', issues = [], created = 9, advisories = {} } = {}) {
   const calls = [];
   const gh = (args, input) => {
     calls.push({ args, input: input === undefined ? undefined : JSON.parse(input) });
     if (args[0] === 'api' && args[1] === 'repos/trybun/trybun') {
       return `${defaultBranch}\n`;
+    }
+    if (args[0] === 'api' && args[1].startsWith('/advisories/')) {
+      const answer = advisories[args[1].slice('/advisories/'.length)];
+      if (answer === undefined) {
+        throw Object.assign(new Error('gh failed'), { stderr: 'gh: Not Found (HTTP 404)' });
+      }
+      return answer;
     }
     if (args[1] === '--paginate') {
       return issues.map((issue) => `${JSON.stringify(issue)}\n`).join('');
@@ -358,23 +372,40 @@ describe('applyPlan', () => {
   });
 });
 
+const EMPTY_CONFIG = JSON.stringify({ registry: 'https://registry.npmjs.org/' });
+const noNetwork = () => {
+  throw new Error('no network in this test');
+};
+
 describe('sync', () => {
   const env = (fields) => ({ GITHUB_REPOSITORY: 'trybun/trybun', ...fields });
-  const run = (text, fields, options) => {
-    const fake = fakeGh(options);
+  const io = (fake, fields, extra = {}) => {
     const summary = [];
     const log = [];
-    const result = sync(text, {
-      env: env(fields),
-      gh: fake.gh,
-      summary: (line) => summary.push(line),
-      log: (line) => log.push(line),
-    });
+    return {
+      summary,
+      log,
+      io: {
+        env: env(fields),
+        gh: fake.gh,
+        summary: (line) => summary.push(line),
+        log: (line) => log.push(line),
+        now: Date.parse('2026-11-20T00:00:00Z'),
+        fetch: noNetwork,
+        sleep: async () => {},
+        ...extra,
+      },
+    };
+  };
+  const run = async (text, fields, options, config = EMPTY_CONFIG, extra = {}) => {
+    const fake = fakeGh(options);
+    const { summary, log, io: deps } = io(fake, fields, extra);
+    const result = await sync(text, config, deps);
     return { result, summary: summary.join(''), log, writes: fake.writes() };
   };
 
-  it('is a dry run on another branch: the job summary only', () => {
-    const outcome = run(fixture('advisories.json'), {
+  it('is a dry run on another branch: the job summary only', async () => {
+    const outcome = await run(fixture('advisories.json'), {
       GITHUB_EVENT_NAME: 'workflow_dispatch',
       GITHUB_REF: 'refs/heads/test/advisory',
     });
@@ -385,8 +416,8 @@ describe('sync', () => {
     expect(outcome.summary).toContain('Dry run outside the default branch');
   });
 
-  it('writes the issue on a run of the default branch and on a scheduled run', () => {
-    const dispatched = run(fixture('advisories.json'), {
+  it('writes the issue on a run of the default branch and on a scheduled run', async () => {
+    const dispatched = await run(fixture('advisories.json'), {
       GITHUB_EVENT_NAME: 'workflow_dispatch',
       GITHUB_REF: 'refs/heads/main',
     });
@@ -394,7 +425,7 @@ describe('sync', () => {
     expect(dispatched.summary).toContain('Tracking issue: #9 (open).');
     expect(dispatched.writes).toHaveLength(1);
 
-    const scheduled = run(
+    const scheduled = await run(
       fixture('advisories.json'),
       {
         GITHUB_EVENT_NAME: 'schedule',
@@ -405,8 +436,8 @@ describe('sync', () => {
     expect(scheduled.result).toBe('open');
   });
 
-  it('closes the open issue on a clean audit', () => {
-    const outcome = run(
+  it('closes the open issue on a clean audit', async () => {
+    const outcome = await run(
       fixture('clean.json'),
       { GITHUB_EVENT_NAME: 'schedule' },
       {
@@ -420,26 +451,26 @@ describe('sync', () => {
     expect(outcome.summary).toContain('Tracking issue: #4 (close).');
   });
 
-  it('reports a clean audit without an issue', () => {
-    const outcome = run(fixture('clean.json'), { GITHUB_EVENT_NAME: 'schedule' });
+  it('reports a clean audit without an issue', async () => {
+    const outcome = await run(fixture('clean.json'), { GITHUB_EVENT_NAME: 'schedule' });
     expect(outcome.result).toBe('none');
-    expect(outcome.summary).toContain('No tracking issue: the audit is clean.');
+    expect(outcome.summary).toContain(
+      'No tracking issue: the audit is clean and no exception is stale.',
+    );
   });
 
-  it('fails a failed audit before touching anything', () => {
+  it('fails a failed audit or unreadable settings before touching anything', async () => {
     const fake = fakeGh();
-    expect(() =>
-      sync(fixture('failed.json'), {
-        env: env({ GITHUB_EVENT_NAME: 'schedule' }),
-        gh: fake.gh,
-        summary: () => {},
-        log: () => {},
-      }),
-    ).toThrow('no result');
+    await expect(
+      sync(fixture('failed.json'), EMPTY_CONFIG, io(fake, { GITHUB_EVENT_NAME: 'schedule' }).io),
+    ).rejects.toThrow('no result');
+    await expect(
+      sync(fixture('clean.json'), '', io(fake, { GITHUB_EVENT_NAME: 'schedule' }).io),
+    ).rejects.toThrow('no valid JSON');
     expect(fake.calls).toEqual([]);
   });
 
-  it('logs the fields that fail their allowlist and rejects a malformed repository', () => {
+  it('logs the fields that fail their allowlist and rejects a malformed repository', async () => {
     const text = JSON.stringify({
       advisories: {
         1: {
@@ -453,19 +484,18 @@ describe('sync', () => {
       },
       metadata: {},
     });
-    const outcome = run(text, {
+    const outcome = await run(text, {
       GITHUB_EVENT_NAME: 'workflow_dispatch',
       GITHUB_REF: 'refs/heads/x',
     });
     expect(outcome.log).toContain('GHSA-g3hv-75wg-m249: package fails its allowlist');
-    expect(() =>
-      sync(fixture('clean.json'), {
+    const bad = io(fakeGh(), {});
+    await expect(
+      sync(fixture('clean.json'), EMPTY_CONFIG, {
+        ...bad.io,
         env: { GITHUB_REPOSITORY: 'a/b c' },
-        gh: fakeGh().gh,
-        summary: () => {},
-        log: () => {},
       }),
-    ).toThrow('GITHUB_REPOSITORY');
+    ).rejects.toThrow('GITHUB_REPOSITORY');
   });
 });
 
@@ -503,5 +533,614 @@ describe('review follow-ups', () => {
     const plan = planSync([advisory(), advisory({ package: 'glob' })], open(mixed));
     expect(plan.action).toBe('update+comment');
     expect(plan.comment).toContain('Patched version now');
+  });
+});
+
+// Captured from `pnpm config list --json` of this repository (pnpm 12.13), before the withdrawn
+// GHSA-vfj7-8cjw-p6xm was removed, and from `gh api /advisories/…`.
+const CONFIG = fixture('config.json');
+const ADVISORY_API = Object.fromEntries(
+  ['GHSA-g3hv-75wg-m249', 'GHSA-gcqx-w48m-w2h4', 'GHSA-vfj7-8cjw-p6xm'].map((ghsa) => [
+    ghsa,
+    fixture(`advisory-${ghsa}.json`),
+  ]),
+);
+const NOW = Date.parse('2026-11-20T00:00:00Z');
+const DAY = 24 * 60 * 60 * 1000;
+
+/** Lookups answering from tables, recording what was asked. */
+function lookups({ times = {}, advisories = {} } = {}) {
+  const asked = [];
+  return {
+    asked,
+    now: NOW,
+    registryJson: async (url) => {
+      asked.push(url);
+      const name = decodeURIComponent(new URL(url).pathname.split('/').pop());
+      return name in times ? { time: times[name] } : null;
+    },
+    advisory: async (ghsa) => {
+      asked.push(ghsa);
+      return ghsa in advisories ? advisories[ghsa] : null;
+    },
+  };
+}
+const config = (fields = {}) => ({
+  ...parseConfig(JSON.stringify({ registry: 'https://registry.npmjs.org/' })),
+  ...fields,
+});
+const vulnerability = (name, fixed) => ({
+  package: { ecosystem: 'npm', name },
+  first_patched_version: fixed,
+});
+
+describe('parseConfig', () => {
+  it('reads the settings of real pnpm output', () => {
+    const parsed = parseConfig(CONFIG);
+    expect(parsed).toMatchObject({
+      minimumReleaseAge: 10080,
+      minimumReleaseAgeExclude: ['eslint-plugin-import-x@4.18.1'],
+      ignoreGhsas: ['GHSA-vfj7-8cjw-p6xm', 'GHSA-gcqx-w48m-w2h4'],
+      registry: 'https://registry.npmjs.org/',
+    });
+    expect(parsed.scopes).toEqual(new Map([['@jsr', 'https://npm.jsr.io/']]));
+  });
+
+  it('reads absent settings as none', () => {
+    expect(parseConfig(EMPTY_CONFIG)).toEqual({
+      minimumReleaseAge: 0,
+      minimumReleaseAgeExclude: [],
+      ignoreGhsas: [],
+      registry: 'https://registry.npmjs.org/',
+      scopes: new Map(),
+    });
+  });
+
+  it('fails on anything unexpected', () => {
+    const registry = 'https://registry.npmjs.org/';
+    const bad = [
+      ['[]', 'not an object'],
+      [{ registry, minimumReleaseAge: -1 }, 'minimumReleaseAge'],
+      [{ registry, minimumReleaseAge: '10080' }, 'minimumReleaseAge'],
+      [{ registry, minimumReleaseAgeExclude: 'x' }, 'minimumReleaseAgeExclude'],
+      [{ registry, audit: { ignore: [1] } }, 'audit.ignore'],
+      [{ registry, audit: [] }, '`audit`'],
+      [{ registry: 'http://registry.npmjs.org/' }, '`registry`'],
+      [{}, '`registry`'],
+      [{ registry, registries: { 'http://x.example/': { scopes: ['@x'] } } }, 'https URL'],
+      [{ registry, registries: { 'https://x.example/': { scopes: ['x'] } } }, 'npm scope'],
+    ];
+    for (const [value, message] of bad) {
+      expect(() => parseConfig(typeof value === 'string' ? value : JSON.stringify(value))).toThrow(
+        message,
+      );
+    }
+  });
+});
+
+describe('checkExceptions', () => {
+  const cooldown = { minimumReleaseAge: 10080 };
+
+  it('flags an exclusion older than minimumReleaseAge, not a younger one', async () => {
+    const io = lookups({
+      times: {
+        old: { '1.0.0': new Date(NOW - 8 * DAY).toISOString() },
+        young: { '1.0.0': new Date(NOW - 6 * DAY).toISOString() },
+        edge: { '1.0.0': new Date(NOW - 7 * DAY).toISOString() },
+      },
+    });
+    const stale = await checkExceptions(
+      config({ ...cooldown, minimumReleaseAgeExclude: ['old@1.0.0', 'young@1.0.0', 'edge@1.0.0'] }),
+      io,
+    );
+    expect(stale).toEqual([
+      {
+        setting: 'release-age',
+        entry: 'old@1.0.0',
+        reason: 'aged',
+        date: '2026-11-12',
+        cooldown: '7 days',
+      },
+      {
+        setting: 'release-age',
+        entry: 'edge@1.0.0',
+        reason: 'aged',
+        date: '2026-11-13',
+        cooldown: '7 days',
+      },
+    ]);
+  });
+
+  it('flags no exclusion by age when minimumReleaseAge is 0', async () => {
+    const io = lookups({ times: { old: { '1.0.0': '2020-01-01T00:00:00.000Z' } } });
+    expect(await checkExceptions(config({ minimumReleaseAgeExclude: ['old@1.0.0'] }), io)).toEqual(
+      [],
+    );
+  });
+
+  it('flags unpinned, unpublished and invalid exclusions, never sending an invalid one', async () => {
+    const io = lookups({ times: { known: { '1.0.0': '2026-11-19T00:00:00.000Z' } } });
+    const stale = await checkExceptions(
+      config({
+        ...cooldown,
+        minimumReleaseAgeExclude: [
+          'bare',
+          'missing@1.0.0',
+          'known@2.0.0',
+          '@scope/*',
+          'x@^1.0.0',
+          'evil@1.0.0 #1 @maintainer',
+          '../../x@1.0.0',
+        ],
+      }),
+      io,
+    );
+    expect(stale.map(({ entry, reason }) => [entry, reason])).toEqual([
+      ['bare', 'not-pinned'],
+      ['missing@1.0.0', 'not-on-registry'],
+      ['known@2.0.0', 'not-on-registry'],
+      [null, 'invalid'],
+      [null, 'invalid'],
+      [null, 'invalid'],
+      [null, 'invalid'],
+    ]);
+    expect(io.asked).toEqual([
+      'https://registry.npmjs.org/missing',
+      'https://registry.npmjs.org/known',
+    ]);
+  });
+
+  it('asks the registry of the scope, with the name encoded', async () => {
+    const io = lookups();
+    await checkExceptions(
+      config({
+        scopes: new Map([['@jsr', 'https://npm.jsr.io/']]),
+        minimumReleaseAgeExclude: ['@jsr/std__fs@1.0.0', '@nestjs/core@12.2.0'],
+      }),
+      io,
+    );
+    expect(io.asked).toEqual([
+      'https://npm.jsr.io/@jsr%2Fstd__fs',
+      'https://registry.npmjs.org/@nestjs%2Fcore',
+    ]);
+  });
+
+  it('flags accepted advisories that are patched, withdrawn or unknown (real API answers)', async () => {
+    const io = lookups({
+      advisories: Object.fromEntries(
+        Object.entries(ADVISORY_API).map(([ghsa, text]) => [ghsa, JSON.parse(text)]),
+      ),
+    });
+    const stale = await checkExceptions(
+      config({
+        ignoreGhsas: [
+          'GHSA-g3hv-75wg-m249',
+          'GHSA-gcqx-w48m-w2h4',
+          'GHSA-vfj7-8cjw-p6xm',
+          'GHSA-2222-3333-4444',
+          'not-a-ghsa',
+        ],
+      }),
+      io,
+    );
+    expect(stale).toEqual([
+      {
+        setting: 'ignore-ghsa',
+        entry: 'GHSA-g3hv-75wg-m249',
+        reason: 'patched',
+        fixes: [{ package: 'minimatch', version: '11.0.1' }],
+      },
+      {
+        setting: 'ignore-ghsa',
+        entry: 'GHSA-vfj7-8cjw-p6xm',
+        reason: 'withdrawn',
+        date: '2026-10-23',
+      },
+      { setting: 'ignore-ghsa', entry: 'GHSA-2222-3333-4444', reason: 'unknown' },
+      { setting: 'ignore-ghsa', entry: null, reason: 'invalid' },
+    ]);
+    expect(io.asked).not.toContain('not-a-ghsa');
+  });
+
+  it('flags a GHSA of several packages only when all are patched, and one without npm packages as unknown', async () => {
+    const answers = {
+      'GHSA-2222-3333-4444': {
+        withdrawn_at: null,
+        vulnerabilities: [vulnerability('a', '1.0.1'), vulnerability('b', null)],
+      },
+      'GHSA-2222-3333-5555': {
+        withdrawn_at: null,
+        vulnerabilities: [{ package: { ecosystem: 'pip', name: 'x' }, first_patched_version: '1' }],
+      },
+      'GHSA-2222-3333-6666': {
+        withdrawn_at: null,
+        vulnerabilities: [vulnerability('a', '1.0.1'), vulnerability('b', '2.0.0')],
+      },
+    };
+    const stale = await checkExceptions(
+      config({ ignoreGhsas: Object.keys(answers) }),
+      lookups({ advisories: answers }),
+    );
+    expect(stale.map(({ entry, reason }) => [entry, reason])).toEqual([
+      ['GHSA-2222-3333-5555', 'unknown'],
+      ['GHSA-2222-3333-6666', 'patched'],
+    ]);
+  });
+
+  it('never keeps a hostile package name or version of the advisory API', async () => {
+    const answers = {
+      'GHSA-2222-3333-4444': {
+        withdrawn_at: null,
+        vulnerabilities: [vulnerability('<img src=x>', '1.0.0 @maintainer')],
+      },
+    };
+    const [exception] = await checkExceptions(
+      config({ ignoreGhsas: Object.keys(answers) }),
+      lookups({ advisories: answers }),
+    );
+    expect(exception.fixes).toEqual([{ package: '(invalid)', version: '(invalid)' }]);
+  });
+
+  it('fails on an unexpected answer and passes a lookup error on', async () => {
+    await expect(
+      checkExceptions(
+        config({ ignoreGhsas: ['GHSA-2222-3333-4444'] }),
+        lookups({
+          advisories: { 'GHSA-2222-3333-4444': { withdrawn_at: '@x', vulnerabilities: [] } },
+        }),
+      ),
+    ).rejects.toThrow('withdrawal date');
+    await expect(
+      checkExceptions(
+        config({ ...cooldown, minimumReleaseAgeExclude: ['x@1.0.0'] }),
+        lookups({ times: { x: { '1.0.0': 'yesterday' } } }),
+      ),
+    ).rejects.toThrow('publish time');
+    await expect(
+      checkExceptions(config({ ignoreGhsas: ['GHSA-2222-3333-4444'] }), {
+        ...lookups(),
+        advisory: async () => {
+          throw new Error('API down');
+        },
+      }),
+    ).rejects.toThrow('API down');
+  });
+});
+
+describe('stale exceptions in the report', () => {
+  const aged = {
+    setting: 'release-age',
+    entry: '@nestjs/core@12.2.0',
+    reason: 'aged',
+    date: '2026-11-09',
+    cooldown: '7 days',
+  };
+  const withdrawn = {
+    setting: 'ignore-ghsa',
+    entry: 'GHSA-vfj7-8cjw-p6xm',
+    reason: 'withdrawn',
+    date: '2026-10-23',
+  };
+  const patched = {
+    setting: 'ignore-ghsa',
+    entry: 'GHSA-g3hv-75wg-m249',
+    reason: 'patched',
+    fixes: [{ package: 'minimatch', version: '11.0.1' }],
+  };
+  const invalid = { setting: 'release-age', entry: null, reason: 'invalid' };
+
+  it('keeps the body of advisories alone unchanged', () => {
+    expect(renderReport([advisory()], { stale: [] })).toBe(renderReport([advisory()]));
+    expect(renderReport([advisory()])).not.toContain('stale-exceptions');
+  });
+
+  it('lists the stale exceptions in their own section, after the advisories', () => {
+    const body = renderReport([advisory()], { stale: [aged, withdrawn, patched, invalid] });
+    const lines = body.split('\n');
+    expect(lines[1]).toBe(
+      '<!-- stale-exceptions: ignore-ghsa:GHSA-g3hv-75wg-m249:patched,ignore-ghsa:GHSA-vfj7-8cjw-p6xm:withdrawn,release-age:@nestjs/core@12.2.0:aged -->',
+    );
+    expect(body.indexOf('### Stale exceptions')).toBeGreaterThan(body.indexOf('| [GHSA'));
+    expect(body).toContain('4 exceptions of `pnpm-workspace.yaml` are no longer needed.');
+    expect(body).toContain(
+      '| `auditConfig.ignoreGhsas` | [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) | patched: `11.0.1` (`minimatch`) |',
+    );
+    expect(body).toContain(
+      '| `auditConfig.ignoreGhsas` | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | withdrawn 2026-10-23 |',
+    );
+    expect(body).toContain(
+      '| `minimumReleaseAgeExclude` | `@nestjs/core@12.2.0` | published 2026-11-09, older than 7 days |',
+    );
+    expect(body).toContain('| `minimumReleaseAgeExclude` | (invalid) | fails its allowlist |');
+    expect(body).toContain('no exception is stale');
+  });
+
+  it('says so in one line when only stale exceptions remain', () => {
+    const body = renderReport([], { stale: [aged] });
+    expect(body).toContain('finds no advisory in the committed lockfile');
+    expect(body).not.toContain('| Advisory |');
+    expect(body.split('\n')[0]).toBe('<!-- advisory-audit:  -->');
+  });
+
+  it('round-trips the stale marker, scoped names included, and ignores anything else', () => {
+    const notPinned = { setting: 'release-age', entry: '@scope/name', reason: 'not-pinned' };
+    expect(readStaleMarker(staleMarker([aged, notPinned, withdrawn, invalid]))).toEqual(
+      new Set([
+        'ignore-ghsa:GHSA-vfj7-8cjw-p6xm:withdrawn',
+        'release-age:@nestjs/core@12.2.0:aged',
+        'release-age:@scope/name:not-pinned',
+      ]),
+    );
+    expect(
+      readStaleMarker('<!-- stale-exceptions: release-age:x:maybe,ignore-ghsa:GHSA-x:patched -->'),
+    ).toEqual(new Set());
+    expect(readStaleMarker('no marker')).toEqual(new Set());
+  });
+
+  it('counts the stale section inside the size limit and never cuts it', () => {
+    const paths = Array.from(
+      { length: 5 },
+      (_, index) => `.>${Array(8).fill('p'.repeat(100)).join('>')}${index}`,
+    );
+    const huge = Array.from({ length: 200 }, () => advisory({ paths }));
+    const body = renderReport(huge, { stale: [aged, withdrawn] });
+    expect(body.length).toBeLessThanOrEqual(BODY_LIMIT);
+    expect(body).toContain('more not listed here');
+    expect(body).toContain('`@nestjs/core@12.2.0`');
+    expect(body).toContain('withdrawn 2026-10-23');
+  });
+
+  describe('planSync', () => {
+    const open = (advisories, stale) => ({
+      number: 7,
+      state: 'open',
+      body: renderReport(advisories, { stale }),
+    });
+
+    it('opens the issue for stale exceptions alone and closes it only when both sets are empty', () => {
+      expect(planSync([], undefined, { stale: [aged] })).toMatchObject({ action: 'open' });
+      expect(planSync([], open([], [aged]), { stale: [aged] })).toEqual({ action: 'none' });
+      const close = planSync([], open([], [aged]), { stale: [] });
+      expect(close.action).toBe('close');
+      expect(close.comment).toContain('no exception of `pnpm-workspace.yaml` is stale');
+    });
+
+    it('reopens with both lists', () => {
+      const plan = planSync(
+        [advisory()],
+        { number: 7, state: 'closed', body: '' },
+        { stale: [withdrawn] },
+      );
+      expect(plan.action).toBe('reopen');
+      expect(plan.comment).toContain('finds advisories or stale exceptions again');
+      expect(plan.comment).toContain('- [GHSA-g3hv-75wg-m249]');
+      expect(plan.comment).toContain(
+        '- Stale: `auditConfig.ignoreGhsas`: [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) – withdrawn 2026-10-23',
+      );
+    });
+
+    it('comments on a new and a gone stale exception, e.g. an exclusion replaced by a newer version', () => {
+      const newer = { ...aged, entry: '@nestjs/core@12.2.1' };
+      const plan = planSync([advisory()], open([advisory()], [aged]), { stale: [newer] });
+      expect(plan.action).toBe('update+comment');
+      expect(plan.comment).toBe(
+        [
+          'The stale exceptions changed:',
+          '',
+          '- New stale exception: `minimumReleaseAgeExclude`: `@nestjs/core@12.2.1` – published 2026-11-09, older than 7 days',
+          '- Stale exception gone: `minimumReleaseAgeExclude`: `@nestjs/core@12.2.0`',
+        ].join('\n'),
+      );
+    });
+
+    it('names both kinds of change together, and comments once on a body from before this change', () => {
+      const both = planSync([], open([advisory()], []), { stale: [aged] });
+      expect(both.comment.split('\n')[0]).toBe('The advisories and stale exceptions changed:');
+      const legacy = { number: 7, state: 'open', body: renderReport([advisory()]) };
+      const first = planSync([advisory()], legacy, { stale: [withdrawn] });
+      expect(first.action).toBe('update+comment');
+      expect(first.comment).toContain('- New stale exception:');
+    });
+
+    it('updates without a comment when only an invalid entry appears', () => {
+      const plan = planSync([advisory()], open([advisory()], [aged]), { stale: [aged, invalid] });
+      expect(plan.action).toBe('update');
+    });
+  });
+});
+
+describe('lookups', () => {
+  const sleeps = [];
+  const sleep = async (ms) => {
+    sleeps.push(ms);
+  };
+  const response = (status, body = {}) => ({
+    status,
+    ok: status >= 200 && status < 300,
+    json: async () => body,
+  });
+
+  it('retries a transient failure twice, then gives up', async () => {
+    let calls = 0;
+    const flaky = async () => {
+      calls += 1;
+      if (calls < 3) {
+        throw Object.assign(new Error('x'), { retriable: true });
+      }
+      return 'ok';
+    };
+    expect(await withRetries(flaky, sleep)).toBe('ok');
+    expect(sleeps).toEqual([1000, 2000]);
+    calls = -10;
+    await expect(withRetries(flaky, sleep)).rejects.toThrow('x');
+    await expect(
+      withRetries(async () => {
+        throw new Error('final');
+      }, sleep),
+    ).rejects.toThrow('final');
+  });
+
+  it('reads the registry: 404 as null, retries 5xx, 429 and network errors, refuses redirects', async () => {
+    const options = [];
+    const answers = [response(503), response(429), response(200, { time: {} })];
+    const fetch = async (url, init) => {
+      options.push(init);
+      return answers.shift();
+    };
+    expect(await registryJson('https://registry.npmjs.org/x', { fetch, sleep })).toEqual({
+      time: {},
+    });
+    expect(options[0].redirect).toBe('error');
+    expect(
+      await registryJson('https://registry.npmjs.org/x', {
+        fetch: async () => response(404),
+        sleep,
+      }),
+    ).toBeNull();
+    await expect(
+      registryJson('https://registry.npmjs.org/x', { fetch: async () => response(403), sleep }),
+    ).rejects.toThrow('403');
+    await expect(
+      registryJson('https://registry.npmjs.org/x', {
+        fetch: async () => {
+          throw new TypeError('fetch failed');
+        },
+        sleep,
+      }),
+    ).rejects.toThrow('could not be reached');
+  });
+
+  it('reads an advisory through gh: 404 as null, other client errors fail at once', async () => {
+    const { gh, calls } = fakeGh({ advisories: { 'GHSA-g3hv-75wg-m249': '{"ghsa_id":"x"}' } });
+    expect(await githubAdvisory(gh, 'GHSA-g3hv-75wg-m249', sleep)).toEqual({ ghsa_id: 'x' });
+    expect(calls[0].args).toEqual(['api', '/advisories/GHSA-g3hv-75wg-m249']);
+    expect(await githubAdvisory(gh, 'GHSA-2222-3333-4444', sleep)).toBeNull();
+    const forbidden = () => {
+      throw Object.assign(new Error('gh failed'), { stderr: 'gh: Forbidden (HTTP 403)' });
+    };
+    await expect(githubAdvisory(forbidden, 'GHSA-2222-3333-4444', sleep)).rejects.toThrow(
+      'refused',
+    );
+    expect(() => githubAdvisory(gh, '../x', sleep)).toThrow('Not a GHSA id');
+  });
+});
+
+describe('sync with stale exceptions', () => {
+  const run = async (fields, options = {}) => {
+    const fake = fakeGh({ advisories: ADVISORY_API, ...options });
+    const summary = [];
+    const result = await sync(fixture('clean.json'), CONFIG, {
+      env: { GITHUB_REPOSITORY: 'trybun/trybun', ...fields },
+      gh: fake.gh,
+      summary: (text) => summary.push(text),
+      log: () => {},
+      now: NOW,
+      fetch: async () => ({
+        status: 200,
+        ok: true,
+        json: async () => ({ time: { '4.18.1': '2026-11-09T05:09:07.668Z' } }),
+      }),
+      sleep: async () => {},
+    });
+    return { result, summary: summary.join(''), writes: fake.writes() };
+  };
+
+  it('lists the stale exceptions of the real settings in a dry run', async () => {
+    const outcome = await run({
+      GITHUB_EVENT_NAME: 'workflow_dispatch',
+      GITHUB_REF: 'refs/heads/x',
+    });
+    expect(outcome.result).toBe('dry-run');
+    expect(outcome.writes).toEqual([]);
+    expect(outcome.summary).toContain(
+      '`eslint-plugin-import-x@4.18.1` | published 2026-11-09, older than 7 days',
+    );
+    expect(outcome.summary).toContain('withdrawn 2026-10-23');
+    expect(outcome.summary).not.toContain('GHSA-gcqx-w48m-w2h4');
+  });
+
+  it('opens the tracking issue for stale exceptions on main', async () => {
+    const outcome = await run({ GITHUB_EVENT_NAME: 'schedule' });
+    expect(outcome.result).toBe('open');
+    expect(outcome.writes[0].input.body).toContain('### Stale exceptions');
+  });
+});
+
+describe('review follow-ups of the stale exceptions', () => {
+  const sleep = async () => {};
+
+  it('never renders a hostile token of an edited issue body into a comment', () => {
+    const hostile = [
+      'release-age:x`@octocat_[click](//evil.example)_owner/repo#1`:aged',
+      'release-age:x@1.0.0 #1:aged',
+      'release-age:<b>x</b>@1.0.0:aged',
+      'release-age:x@1.0.0:not-pinned',
+      'release-age:x:aged',
+      'ignore-ghsa:GHSA-xxxx-xxxx-xxxx:patched',
+      'other:x@1.0.0:aged',
+    ];
+    const body = `${renderReport([advisory()])}\n<!-- stale-exceptions: ${hostile.join(',')} -->`;
+    expect(readStaleMarker(body)).toEqual(new Set());
+    const plan = planSync([advisory()], { number: 7, state: 'open', body }, { stale: [] });
+    expect(plan.action).toBe('update');
+    expect(readStaleMarker('<!-- stale-exceptions: release-age:x@1.0.0:aged -->')).toEqual(
+      new Set(['release-age:x@1.0.0:aged']),
+    );
+  });
+
+  it('retries a timeout while the registry sends the document', async () => {
+    let calls = 0;
+    const fetch = async () => {
+      calls += 1;
+      return {
+        status: 200,
+        ok: true,
+        json: async () => {
+          if (calls < 2) {
+            throw Object.assign(new Error('aborted'), { name: 'TimeoutError' });
+          }
+          return { time: {} };
+        },
+      };
+    };
+    expect(await registryJson('https://registry.npmjs.org/x', { fetch, sleep })).toEqual({
+      time: {},
+    });
+    expect(calls).toBe(2);
+    await expect(
+      registryJson('https://registry.npmjs.org/x', {
+        fetch: async () => ({ status: 200, ok: true, json: async () => JSON.parse('{') }),
+        sleep,
+      }),
+    ).rejects.toThrow('no valid JSON');
+  });
+
+  it('retries gh on 5xx, 429, a rate limit or a timeout, and keeps its error for the log', async () => {
+    for (const stderr of [
+      'gh: Server Error (HTTP 502)',
+      'gh: Too Many Requests (HTTP 429)',
+      'gh: API rate limit exceeded (HTTP 403)',
+      '',
+    ]) {
+      let calls = 0;
+      const gh = () => {
+        calls += 1;
+        if (calls < 3) {
+          throw Object.assign(new Error('spawnSync gh ETIMEDOUT'), { stderr });
+        }
+        return '{"ghsa_id":"x"}';
+      };
+      expect(await githubAdvisory(gh, 'GHSA-2222-3333-4444', sleep)).toEqual({ ghsa_id: 'x' });
+      expect(calls).toBe(3);
+    }
+    const down = () => {
+      throw Object.assign(new Error('gh failed'), { stderr: 'gh: Server Error (HTTP 503)\nmore' });
+    };
+    await expect(githubAdvisory(down, 'GHSA-2222-3333-4444', sleep)).rejects.toThrow(
+      'could not be reached for GHSA-2222-3333-4444: gh: Server Error (HTTP 503)',
+    );
+    await expect(githubAdvisory(() => 'not json', 'GHSA-2222-3333-4444', sleep)).rejects.toThrow(
+      'no valid JSON',
+    );
   });
 });

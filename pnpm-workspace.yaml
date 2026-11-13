@@ -4,8 +4,9 @@ packages:
 
 # Rule 10: a new version is installed only after a 7-day cooldown (in minutes).
 minimumReleaseAge: 10080
-# Security fixes skip the cooldown (§2.10); each entry pins the exact fixed version and is removed
-# once that version is older than 7 days.
+# Security fixes skip the cooldown (§2.10); each entry pins one exact fixed version (`name@1.2.3`,
+# no `||` alternatives, which the daily advisory audit cannot check) and is removed once that version
+# is older than 7 days – the daily advisory audit reports it then.
 minimumReleaseAgeExclude:
   # GHSA-g3hv-75wg-m249 (minimatch, below): the first eslint-plugin-import-x that accepts minimatch 11,
   # whose makeRe it no longer imports.
@@ -53,13 +54,10 @@ peerDependencyRules:
     '@nest-lab/throttler-storage-redis>@nestjs/core': '12'
 
 # Accepted risks of the vulnerability audit (Rule 10, §2.10): advisories without a fixed version,
-# each with the reason and the mitigation. Remove an entry as soon as a fixed version exists.
+# each with the reason and the mitigation. Remove an entry as soon as a fixed version exists (or the
+# advisory is withdrawn) – the daily advisory audit reports it then.
 auditConfig:
   ignoreGhsas:
-    # braces <=3.0.3, stack exhaustion through deeply nested patterns; no fixed version (2026-10-21).
-    # Development only (ESLint plugins through micromatch); patterns come from the repository's own
-    # lint configuration, never from untrusted input.
-    - GHSA-vfj7-8cjw-p6xm
     # deepmerge >=4.2.0 <=4.3.1, prototype poisoning of the object mergeObject() returns (low); no
     # fixed version (2026-11-12). Development only: @shadcn/registry merges registry JSON in the shadcn
     # component CLI (Rule 6). @trybun/ui keeps shadcn in dependencies for its stylesheet
