@@ -319,17 +319,27 @@ test.describe('the ticket list', () => {
             .getByRole('row')
             .filter({ has: page.getByRole('link', { name: PENDING_TITLE }) });
           const titleCell = row.getByRole('cell').nth(2);
-          const titleBox = await titleCell.boundingBox();
-          const statusBox = await row.getByRole('cell').nth(3).boundingBox();
-          for (const name of [list.sharing.approve, list.sharing.refuse]) {
-            const action = titleCell.getByRole('button', { name });
+          const actions = [list.sharing.approve, list.sharing.refuse].map(
+            (name) => [name, titleCell.getByRole('button', { name })] as const,
+          );
+          for (const [, action] of actions) {
             await expectTouchTarget(action, minimumTargetSize(test.info()));
-            const box = await action.boundingBox();
-            expect(box?.x, name).toBeGreaterThanOrEqual(titleBox?.x ?? Infinity);
-            expect((box?.x ?? Infinity) + (box?.width ?? 0), name).toBeLessThanOrEqual(
-              Math.min((titleBox?.x ?? 0) + (titleBox?.width ?? 0), statusBox?.x ?? 0),
-            );
           }
+          // The cells and the actions are compared with each other, so they are measured together
+          // and a stale set is measured again as a whole (#329): `boundingBox()` neither waits nor
+          // retries and reads `null` for an element not laid out yet (.ai/memory/e2e.md, "Measuring
+          // an element"). Every fallback makes a `null` read fail, so the block is repeated.
+          await expect(async () => {
+            const titleBox = await titleCell.boundingBox();
+            const statusBox = await row.getByRole('cell').nth(3).boundingBox();
+            for (const [name, action] of actions) {
+              const box = await action.boundingBox();
+              expect(box?.x, name).toBeGreaterThanOrEqual(titleBox?.x ?? Infinity);
+              expect((box?.x ?? Infinity) + (box?.width ?? 0), name).toBeLessThanOrEqual(
+                Math.min((titleBox?.x ?? 0) + (titleBox?.width ?? 0), statusBox?.x ?? 0),
+              );
+            }
+          }).toPass();
           expect(await horizontalOverflow(page.locator('[data-slot=table-container]'))).toBe(0);
 
           // A wrapped action still opens its confirmation dialog. A click on the server-rendered
