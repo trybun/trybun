@@ -321,7 +321,7 @@ export async function checkExceptions(config, { now, registryJson, advisory }) {
     const base = config.scopes.get(scope) ?? config.registry;
     // The npm convention (npm-registry-fetch): only the `/` of a scoped name is escaped; the name
     // passed its allowlist, so it holds no other character a URL path would change.
-    const url = new URL(exclusion.name.replace('/', '%2F'), base.endsWith('/') ? base : `${base}/`);
+    const url = new URL(exclusion.name.replaceAll('/', '%2F'), base.endsWith('/') ? base : `${base}/`);
     const document = await registryJson(url.href);
     const published =
       isObject(document) && isObject(document.time) ? document.time[exclusion.version] : undefined;
