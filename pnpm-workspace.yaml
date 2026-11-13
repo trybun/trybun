@@ -6,17 +6,16 @@ packages:
 minimumReleaseAge: 10080
 # Security fixes skip the cooldown (§2.10); each entry pins one exact fixed version (`name@1.2.3`,
 # no `||` alternatives, which the daily advisory audit cannot check) and is removed once that version
-# is older than 7 days – the daily advisory audit reports it then.
+# is older than 7 days or no longer in the lockfile – the daily advisory audit reports it then.
 minimumReleaseAgeExclude:
   # GHSA-g3hv-75wg-m249 (minimatch, below): the first eslint-plugin-import-x that accepts minimatch 11,
   # whose makeRe it no longer imports.
   - eslint-plugin-import-x@4.18.1
 
-# Security fixes for transitive dependencies pinned to an exact vulnerable version by their parent.
-# Remove an entry once the parent depends on the fixed version.
+# Security fixes for transitive dependencies: each key pins the exact vulnerable version
+# (`name@1.2.3`), which pnpm replaces for every dependent whose range includes it. Remove an entry
+# once no dependent asks for that version any more – the daily advisory audit reports it then.
 overrides:
-  # @nestjs/platform-express 12.2.0 still pins multer 2.4.0 (GHSA-q7qp-rjg7-q26m).
-  multer@2.4.0: 2.5.0
   # GHSA-g3hv-75wg-m249, minimatch >=7.0.0 <11.0.1: ReDoS through globparts amplification (moderate).
   # eslint 10.14, @eslint/config-array, typescript-eslint, @nestjs/cli and ts-morph require ^10; they
   # use only minimatch() and the Minimatch class, unchanged in 11 (11 removed makeRe, hence

@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-13 |
 | Plan task | – (follow-up of #333, deferred Q8 of the stale exceptions specification) |
 | System specification sections | §2.10, §15.4 |
-| Related issues / PRs | #337, #333, #335, #339 |
+| Related issues / PRs | #337, #342, #343, #333, #335, #339 |
 
 Extends: `.ai/specs/implemented/2026-11-13-stale-dependency-exceptions.md`
 
@@ -142,3 +142,4 @@ Also: `README.md` (the CI line of `advisory-audit.yml`, Rule 5), the `pnpm 12 au
 - 2026-11-13 – Created from #337 (autonomous defaults; the lockfile is read with `pnpm list --lockfile-only`, override keys are matched as pnpm 12.13 does).
 - 2026-11-13 – Specification review: peers and unknown parents count as *needed*, the fields read from `pnpm list`, the request count, ranges that include the key but would resolve higher.
 - 2026-11-13 – Review of #342: how *not pinned* keys that fail the allowlist are shown and kept out of the marker, the `accept` option of `registryJson`, and the parent count.
+- 2026-11-13 – Implemented (#343): `satisfies`, `parseLockfile` and the two checks in `scripts/advisory-audit.js`, the `pnpm list` step in `advisory-audit.yml`; the unneeded `multer@2.4.0` override removed. `pnpm list` nests a workspace project under its dependents as a `link:` entry with its own tree, so such an entry counts as that project (its `package.json`), and every occurrence of a package is walked, because its children can differ with its peers.
