@@ -4,9 +4,7 @@
       "findings": [
         {
           "version": "11.0.3",
-          "paths": [
-            ".>glob"
-          ],
+          "paths": [".>glob"],
           "dev": false,
           "optional": false,
           "bundled": false
@@ -26,9 +24,7 @@
       "findings": [
         {
           "version": "11.0.3",
-          "paths": [
-            ".>glob"
-          ],
+          "paths": [".>glob"],
           "dev": false,
           "optional": false,
           "bundled": false
@@ -48,10 +44,7 @@
       "findings": [
         {
           "version": "10.2.6",
-          "paths": [
-            ".>glob>minimatch",
-            ".>minimatch"
-          ],
+          "paths": [".>glob>minimatch", ".>minimatch"],
           "dev": false,
           "optional": false,
           "bundled": false
