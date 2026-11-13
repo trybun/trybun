@@ -1,7 +1,12 @@
 import { expect, type Page, test } from '@playwright/test';
 
-/** The pages of the application: the team views, the help and the first-run wizard (§13.5). */
-const PAGES = ['/', '/help', '/setup'];
+/**
+ * The pages of the application (§13.5): the team views – with the ticket list and a ticket of the
+ * demo dataset, which carry the most UI – the help and the first-run wizard. `next dev` allows
+ * inline styles without the nonce (#317), so only this check catches a style that would be
+ * blocked under `next start`.
+ */
+const PAGES = ['/', '/tickets', '/tickets/CP-3', '/help', '/setup'];
 
 /** Collects the Content Security Policy violations of the page from its first script on. */
 async function recordViolations(page: Page): Promise<() => Promise<string[]>> {
@@ -24,6 +29,8 @@ test.describe('security headers', () => {
       const response = await page.goto(path);
       await page.waitForLoadState('networkidle');
 
+      // The page itself is checked, not a not-found or error page in its place.
+      expect(response?.status()).toBe(200);
       const headers = response?.headers() ?? {};
       const policy = headers['content-security-policy'] ?? '';
       expect(policy).toMatch(/script-src 'self' 'nonce-[A-Za-z0-9+/]+=*' 'strict-dynamic'/);
