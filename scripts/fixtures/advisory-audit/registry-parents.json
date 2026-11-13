@@ -1,0 +1,237 @@
+{
+  "@eslint/config-array": {
+    "name": "@eslint/config-array",
+    "versions": {
+      "0.23.5": {
+        "dependencies": {
+          "@eslint/object-schema": "^3.0.5",
+          "debug": "^4.3.1",
+          "minimatch": "^10.2.4"
+        }
+      }
+    }
+  },
+  "@joshwooding/vite-plugin-react-docgen-typescript": {
+    "name": "@joshwooding/vite-plugin-react-docgen-typescript",
+    "versions": {
+      "0.7.0": {
+        "dependencies": {
+          "glob": "^13.0.1",
+          "react-docgen-typescript": "^2.2.2"
+        },
+        "peerDependencies": {
+          "vite": "^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+          "typescript": ">= 4.3.x"
+        }
+      }
+    }
+  },
+  "@nestjs/cli": {
+    "name": "@nestjs/cli",
+    "versions": {
+      "12.0.11": {
+        "dependencies": {
+          "ora": "9.4.1",
+          "ansis": "4.4.0",
+          "chokidar": "5.0.0",
+          "commander": "15.0.0",
+          "minimatch": "10.2.6",
+          "cli-table3": "0.6.5",
+          "node-emoji": "2.2.0",
+          "typescript": "~6.0.2",
+          "jsonc-parser": "3.3.1",
+          "tsconfig-paths": "4.2.0",
+          "@inquirer/prompts": "8.7.3",
+          "@nestjs/schematics": "^12.0.0",
+          "@angular-devkit/core": "22.2.3",
+          "@angular-devkit/schematics": "22.2.3",
+          "@angular-devkit/schematics-cli": "22.2.3"
+        },
+        "peerDependencies": {
+          "webpack": "^5.105.4",
+          "@swc/cli": "^0.8.0",
+          "@swc/core": "^1.15.18",
+          "ts-loader": "^9.5.4",
+          "@rspack/core": "^1.7.7 || ^2.1.10",
+          "webpack-node-externals": "^3.0.0",
+          "tsconfig-paths-webpack-plugin": "^4.2.0",
+          "fork-ts-checker-webpack-plugin": "^9.1.0"
+        }
+      }
+    }
+  },
+  "@nestjs/platform-express": {
+    "name": "@nestjs/platform-express",
+    "versions": {
+      "12.3.3": {
+        "dependencies": {
+          "cors": "2.8.6",
+          "tslib": "2.9.1",
+          "multer": "2.5.0",
+          "express": "5.3.0",
+          "path-to-regexp": "8.4.2"
+        },
+        "peerDependencies": {
+          "@nestjs/core": "^12.0.0",
+          "@nestjs/common": "^12.0.0"
+        }
+      }
+    }
+  },
+  "@redocly/openapi-core": {
+    "name": "@redocly/openapi-core",
+    "versions": {
+      "1.34.21": {
+        "dependencies": {
+          "js-yaml": "4.3.2",
+          "colorette": "1.4.0",
+          "minimatch": "5.1.9",
+          "pluralize": "8.0.0",
+          "@redocly/ajv": "8.11.2",
+          "js-levenshtein": "1.1.6",
+          "@redocly/config": "0.22.0",
+          "yaml-ast-parser": "0.0.43",
+          "https-proxy-agent": "7.0.6"
+        }
+      }
+    }
+  },
+  "@ts-morph/common": {
+    "name": "@ts-morph/common",
+    "versions": {
+      "0.27.0": {
+        "dependencies": {
+          "fast-glob": "^3.3.3",
+          "minimatch": "^10.0.1",
+          "path-browserify": "^1.0.1"
+        }
+      }
+    }
+  },
+  "@typescript-eslint/typescript-estree": {
+    "name": "@typescript-eslint/typescript-estree",
+    "versions": {
+      "8.72.1": {
+        "dependencies": {
+          "debug": "^4.4.3",
+          "semver": "^7.7.3",
+          "minimatch": "^10.2.2",
+          "tinyglobby": "^0.2.15",
+          "ts-api-utils": "^2.5.0",
+          "@typescript-eslint/types": "8.72.1",
+          "@typescript-eslint/visitor-keys": "8.72.1",
+          "@typescript-eslint/tsconfig-utils": "8.72.1",
+          "@typescript-eslint/project-service": "8.72.1"
+        },
+        "peerDependencies": {
+          "typescript": ">=4.8.4 <6.1.0"
+        }
+      }
+    }
+  },
+  "archiver-utils": {
+    "name": "archiver-utils",
+    "versions": {
+      "5.0.2": {
+        "dependencies": {
+          "glob": "^10.0.0",
+          "graceful-fs": "^4.2.0",
+          "is-stream": "^2.0.1",
+          "lazystream": "^1.0.0",
+          "lodash": "^4.17.15",
+          "normalize-path": "^3.0.0",
+          "readable-stream": "^4.0.0"
+        }
+      }
+    }
+  },
+  "eslint": {
+    "name": "eslint",
+    "versions": {
+      "10.14.0": {
+        "dependencies": {
+          "ajv": "^6.14.0",
+          "debug": "^4.3.2",
+          "espree": "^11.2.0",
+          "ignore": "^5.2.0",
+          "esquery": "^1.7.0",
+          "esutils": "^2.0.2",
+          "find-up": "^5.0.0",
+          "is-glob": "^4.0.0",
+          "minimatch": "^10.2.6",
+          "optionator": "^0.9.3",
+          "cross-spawn": "^7.0.6",
+          "glob-parent": "^6.0.2",
+          "imurmurhash": "^0.1.4",
+          "@eslint/core": "^1.2.1",
+          "eslint-scope": "^9.1.2",
+          "@humanfs/node": "^0.16.8",
+          "@types/estree": "^1.0.6",
+          "fast-deep-equal": "^3.1.3",
+          "natural-compare": "^1.4.0",
+          "file-entry-cache": "11.1.5 || >11.1.6 <12",
+          "@eslint/plugin-kit": "^0.7.3",
+          "eslint-visitor-keys": "^5.0.1",
+          "@eslint/config-array": "^0.23.5",
+          "@humanwhocodes/retry": "^0.4.2",
+          "escape-string-regexp": "^4.0.0",
+          "@eslint/config-helpers": "^0.7.0",
+          "@eslint-community/regexpp": "^4.12.2",
+          "@eslint-community/eslint-utils": "^4.8.0",
+          "@humanwhocodes/module-importer": "^1.0.1",
+          "json-stable-stringify-without-jsonify": "^1.0.1"
+        },
+        "peerDependencies": {
+          "jiti": "*"
+        }
+      }
+    }
+  },
+  "eslint-plugin-import-x": {
+    "name": "eslint-plugin-import-x",
+    "versions": {
+      "4.18.1": {
+        "dependencies": {
+          "debug": "^4.4.1",
+          "semver": "^7.7.2",
+          "is-glob": "^4.0.3",
+          "minimatch": "^9.0.3 || ^10.1.2 || ^11.0.1",
+          "stable-hash-x": "^0.2.0",
+          "unrs-resolver": "^1.9.2",
+          "comment-parser": "^1.4.1",
+          "es-module-lexer": "^3.0.3",
+          "cjs-module-lexer": "^2.2.1",
+          "eslint-import-context": "^0.1.9",
+          "@typescript-eslint/types": "^8.56.0"
+        },
+        "peerDependencies": {
+          "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0",
+          "@typescript-eslint/utils": "^8.56.0",
+          "eslint-import-resolver-node": "*"
+        }
+      }
+    }
+  },
+  "glob": {
+    "name": "glob",
+    "versions": {
+      "14.0.3": {
+        "dependencies": {
+          "minipass": "^7.1.3",
+          "minimatch": "^11.0.2",
+          "path-scurry": "^3.0.0"
+        }
+      }
+    }
+  },
+  "readdir-glob": {
+    "name": "readdir-glob",
+    "versions": {
+      "1.1.3": {
+        "dependencies": {
+          "minimatch": "^5.1.0"
+        }
+      }
+    }
+  }
+}

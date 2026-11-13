@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  ABBREVIATED,
   BODY_LIMIT,
   ISSUE_LABELS,
   ISSUE_TITLE,
@@ -12,11 +13,13 @@ import {
   marker,
   parseAudit,
   parseConfig,
+  parseLockfile,
   planSync,
   readMarker,
   readStaleMarker,
   registryJson,
   renderReport,
+  satisfies,
   staleMarker,
   sync,
   withRetries,
@@ -373,6 +376,7 @@ describe('applyPlan', () => {
 });
 
 const EMPTY_CONFIG = JSON.stringify({ registry: 'https://registry.npmjs.org/' });
+const EMPTY_LOCKFILE = '[]';
 const noNetwork = () => {
   throw new Error('no network in this test');
 };
@@ -393,6 +397,8 @@ describe('sync', () => {
         now: Date.parse('2026-11-20T00:00:00Z'),
         fetch: noNetwork,
         sleep: async () => {},
+        root: '/workspace/trybun',
+        readText: noNetwork,
         ...extra,
       },
     };
@@ -400,7 +406,7 @@ describe('sync', () => {
   const run = async (text, fields, options, config = EMPTY_CONFIG, extra = {}) => {
     const fake = fakeGh(options);
     const { summary, log, io: deps } = io(fake, fields, extra);
-    const result = await sync(text, config, deps);
+    const result = await sync(text, config, EMPTY_LOCKFILE, deps);
     return { result, summary: summary.join(''), log, writes: fake.writes() };
   };
 
@@ -462,11 +468,24 @@ describe('sync', () => {
   it('fails a failed audit or unreadable settings before touching anything', async () => {
     const fake = fakeGh();
     await expect(
-      sync(fixture('failed.json'), EMPTY_CONFIG, io(fake, { GITHUB_EVENT_NAME: 'schedule' }).io),
+      sync(
+        fixture('failed.json'),
+        EMPTY_CONFIG,
+        EMPTY_LOCKFILE,
+        io(fake, { GITHUB_EVENT_NAME: 'schedule' }).io,
+      ),
     ).rejects.toThrow('no result');
     await expect(
-      sync(fixture('clean.json'), '', io(fake, { GITHUB_EVENT_NAME: 'schedule' }).io),
+      sync(
+        fixture('clean.json'),
+        '',
+        EMPTY_LOCKFILE,
+        io(fake, { GITHUB_EVENT_NAME: 'schedule' }).io,
+      ),
     ).rejects.toThrow('no valid JSON');
+    await expect(
+      sync(fixture('clean.json'), EMPTY_CONFIG, '', io(fake, { GITHUB_EVENT_NAME: 'schedule' }).io),
+    ).rejects.toThrow('pnpm list printed no valid JSON');
     expect(fake.calls).toEqual([]);
   });
 
@@ -491,7 +510,7 @@ describe('sync', () => {
     expect(outcome.log).toContain('GHSA-g3hv-75wg-m249: package fails its allowlist');
     const bad = io(fakeGh(), {});
     await expect(
-      sync(fixture('clean.json'), EMPTY_CONFIG, {
+      sync(fixture('clean.json'), EMPTY_CONFIG, EMPTY_LOCKFILE, {
         ...bad.io,
         env: { GITHUB_REPOSITORY: 'a/b c' },
       }),
@@ -548,17 +567,38 @@ const ADVISORY_API = Object.fromEntries(
 const NOW = Date.parse('2026-11-20T00:00:00Z');
 const DAY = 24 * 60 * 60 * 1000;
 
+/** A lockfile that resolves every version, for the checks that come after the lockfile check. */
+const ANY_LOCKFILE = { present: { has: () => true }, dependents: new Map() };
+
 /** Lookups answering from tables, recording what was asked. */
-function lookups({ times = {}, advisories = {} } = {}) {
+function lookups({
+  times = {},
+  advisories = {},
+  documents = {},
+  lockfile = ANY_LOCKFILE,
+  manifests = {},
+} = {}) {
   const asked = [];
+  const logged = [];
   return {
     asked,
+    logged,
     now: NOW,
-    registryJson: async (url) => {
-      asked.push(url);
+    lockfile,
+    // A project without an entry declares nothing.
+    manifest: (folder) => {
+      asked.push(folder);
+      return manifests[folder] ?? {};
+    },
+    registryJson: async (url, accept) => {
+      asked.push(accept ? `${url} (${accept})` : url);
       const name = decodeURIComponent(new URL(url).pathname.split('/').pop());
+      if (accept) {
+        return name in documents ? documents[name] : null;
+      }
       return name in times ? { time: times[name] } : null;
     },
+    log: (line) => logged.push(line),
     advisory: async (ghsa) => {
       asked.push(ghsa);
       return ghsa in advisories ? advisories[ghsa] : null;
@@ -581,6 +621,7 @@ describe('parseConfig', () => {
       minimumReleaseAge: 10080,
       minimumReleaseAgeExclude: ['eslint-plugin-import-x@4.18.1'],
       ignoreGhsas: ['GHSA-vfj7-8cjw-p6xm', 'GHSA-gcqx-w48m-w2h4'],
+      overrides: ['multer@2.4.0', 'minimatch@10.2.6', 'glob@10.5.0', 'glob@13.0.6'],
       registry: 'https://registry.npmjs.org/',
     });
     expect(parsed.scopes).toEqual(new Map([['@jsr', 'https://npm.jsr.io/']]));
@@ -591,6 +632,7 @@ describe('parseConfig', () => {
       minimumReleaseAge: 0,
       minimumReleaseAgeExclude: [],
       ignoreGhsas: [],
+      overrides: [],
       registry: 'https://registry.npmjs.org/',
       scopes: new Map(),
     });
@@ -605,6 +647,8 @@ describe('parseConfig', () => {
       [{ registry, minimumReleaseAgeExclude: 'x' }, 'minimumReleaseAgeExclude'],
       [{ registry, audit: { ignore: [1] } }, 'audit.ignore'],
       [{ registry, audit: [] }, '`audit`'],
+      [{ registry, overrides: ['x'] }, '`overrides`'],
+      [{ registry, overrides: { 'x@1.0.0': { y: '1' } } }, '`overrides`'],
       [{ registry: 'http://registry.npmjs.org/' }, '`registry`'],
       [{}, '`registry`'],
       [{ registry, registries: { 'http://x.example/': { scopes: ['@x'] } } }, 'https URL'],
@@ -1029,18 +1073,23 @@ describe('sync with stale exceptions', () => {
   const run = async (fields, options = {}) => {
     const fake = fakeGh({ advisories: ADVISORY_API, ...options });
     const summary = [];
-    const result = await sync(fixture('clean.json'), CONFIG, {
+    const result = await sync(fixture('clean.json'), CONFIG, fixture('lockfile.json'), {
       env: { GITHUB_REPOSITORY: 'trybun/trybun', ...fields },
       gh: fake.gh,
       summary: (text) => summary.push(text),
       log: () => {},
       now: NOW,
-      fetch: async () => ({
+      fetch: async (url, init) => ({
         status: 200,
         ok: true,
-        json: async () => ({ time: { '4.18.1': '2026-11-09T05:09:07.668Z' } }),
+        json: async () =>
+          init.headers.accept === ABBREVIATED
+            ? REGISTRY_PARENTS[decodeURIComponent(new URL(url).pathname.slice(1))]
+            : { time: { '4.18.1': '2026-11-09T05:09:07.668Z' } },
       }),
       sleep: async () => {},
+      root: '/workspace/trybun',
+      readText: (path) => MANIFESTS[path] ?? '{}',
     });
     return { result, summary: summary.join(''), writes: fake.writes() };
   };
@@ -1057,6 +1106,11 @@ describe('sync with stale exceptions', () => {
     );
     expect(outcome.summary).toContain('withdrawn 2026-10-23');
     expect(outcome.summary).not.toContain('GHSA-gcqx-w48m-w2h4');
+    expect(outcome.summary).toContain(
+      '| `overrides` | `multer@2.4.0` | no dependency asks for this version |',
+    );
+    expect(outcome.summary).not.toContain('`minimatch@10.2.6`');
+    expect(outcome.summary).not.toContain('`glob@');
   });
 
   it('opens the tracking issue for stale exceptions on main', async () => {
@@ -1142,5 +1196,303 @@ describe('review follow-ups of the stale exceptions', () => {
     await expect(githubAdvisory(() => 'not json', 'GHSA-2222-3333-4444', sleep)).rejects.toThrow(
       'no valid JSON',
     );
+  });
+});
+
+// Captured on 2026-11-13: `pnpm list -r --depth Infinity --lockfile-only --json` of this repository,
+// trimmed to the paths to `multer`, `minimatch`, `glob` and `eslint-plugin-import-x` (project paths
+// under `/workspace/trybun`), and the abbreviated registry documents of their parents, trimmed to
+// the locked versions.
+const ROOT = '/workspace/trybun';
+const LOCKFILE = parseLockfile(fixture('lockfile.json'), ROOT);
+const REGISTRY_PARENTS = JSON.parse(fixture('registry-parents.json'));
+const MANIFESTS = {
+  [`${ROOT}/apps/server/package.json`]: JSON.stringify({ dependencies: { multer: '^2.5.0' } }),
+};
+const SERVER = { [`${ROOT}/apps/server`]: { dependencies: { multer: '^2.5.0' } } };
+
+describe('satisfies', () => {
+  // node-semver's documented examples (README, "Advanced Range Syntax"); `pnpm exec node` with
+  // semver 7.8.5 agrees on every row.
+  const table = [
+    ['1.2.3', '^1.2.3', true],
+    ['1.9.9', '^1.2.3', true],
+    ['2.0.0', '^1.2.3', false],
+    ['0.2.9', '^0.2.3', true],
+    ['0.3.0', '^0.2.3', false],
+    ['0.0.3', '^0.0.3', true],
+    ['0.0.4', '^0.0.3', false],
+    ['0.0.9', '^0.0.x', true],
+    ['0.1.0', '^0.0', false],
+    ['1.2.9', '~1.2.3', true],
+    ['1.3.0', '~1.2.3', false],
+    ['1.9.0', '~1', true],
+    ['2.3.4', '1.2.3 - 2.3.4', true],
+    ['2.3.5', '1.2.3 - 2.3.4', false],
+    ['2.3.9', '1.2.3 - 2.3', true],
+    ['2.9.9', '1.2.3 - 2', true],
+    ['1.0.0', '1.x', true],
+    ['1.2.9', '1.2.x', true],
+    ['1.3.0', '1.2.x', false],
+    ['3.0.0', '*', true],
+    ['3.0.0', '', true],
+    ['1.2.0', 'X.x', true],
+    ['1.3.0', '>1.2', true],
+    ['1.2.9', '>1.2', false],
+    ['1.1.9', '<1.2', true],
+    ['1.2.0', '<1.2', false],
+    ['1.2.9', '<=1.2', true],
+    ['1.2.3', '=1.2.3', true],
+    ['1.2.3', 'v1.2.3', true],
+    ['1.9.0', '>= 1.2.3 < 2', true],
+    ['2.0.0', '>=1.2.3 <2.0.0', false],
+    ['2.5.0', '^1.2.3 || ^2.0.0', true],
+    ['10.2.6', '^9.0.3 || ^10.1.2 || ^11.0.1', true],
+    ['10.2.6', '^10.2.4', true],
+    ['10.2.6', '10.2.6', true],
+    ['2.4.0', '2.5.0', false],
+    ['2.4.0', '^2.5.0', false],
+  ];
+  it.each(table)('%s in %j is %s', (version, range, expected) => {
+    expect(satisfies(version, range)).toBe(expected);
+  });
+
+  it('follows the prerelease rule', () => {
+    expect(satisfies('1.2.3-beta.4', '^1.2.3-beta.2')).toBe(true);
+    expect(satisfies('3.4.5-alpha.9', '^1.2.3-beta.2')).toBe(false);
+    expect(satisfies('1.2.3-alpha.7', '>1.2.3-alpha.3')).toBe(true);
+    expect(satisfies('1.5.0-beta', '^1.2.3')).toBe(false);
+    expect(satisfies('2.0.0-alpha', '>1')).toBe(false);
+    expect(satisfies('1.0.0-0', '>=1.0.0-0')).toBe(true);
+  });
+
+  it('never matches a spec that is no range, and throws on one it cannot read', () => {
+    for (const spec of [
+      'latest',
+      'next',
+      'npm:multer@2.4.0',
+      'workspace:*',
+      'link:../x',
+      'file:../x',
+      'https://x.example/a.tgz',
+      'git+https://x.example/y.git',
+      'github:a/b',
+      '../x',
+      './x',
+    ]) {
+      expect(satisfies('2.4.0', spec)).toBe(false);
+    }
+    for (const spec of ['1.2.3.4', '>>1', '^^1', '1.2.3 -', '=>1', '1.2.3 <b>']) {
+      expect(() => satisfies('1.2.3', spec)).toThrow('cannot be read');
+    }
+  });
+});
+
+describe('parseLockfile', () => {
+  it('reads the versions and the dependents of real pnpm output', () => {
+    expect(LOCKFILE.present.has('minimatch@11.0.4')).toBe(true);
+    expect(LOCKFILE.present.has('eslint-plugin-import-x@4.18.1')).toBe(true);
+    expect(LOCKFILE.present.has('multer@2.5.0')).toBe(true);
+    // The override replaced it: the key version itself is never in the lockfile.
+    expect(LOCKFILE.present.has('minimatch@10.2.6')).toBe(false);
+    expect(LOCKFILE.dependents.get('multer')).toEqual([
+      { kind: 'package', name: '@nestjs/platform-express', version: '12.3.3' },
+      { kind: 'project', path: `${ROOT}/apps/server` },
+    ]);
+    expect(LOCKFILE.dependents.get('glob').map((dependent) => dependent.name)).toEqual([
+      'archiver-utils',
+      '@joshwooding/vite-plugin-react-docgen-typescript',
+    ]);
+  });
+
+  it('reads a nested workspace link as a project and fails on anything unexpected', () => {
+    const tree = (dependencies, path = `${ROOT}/apps/web`) =>
+      JSON.stringify([{ name: 'web', path, dependencies }]);
+    const linked = parseLockfile(
+      tree({
+        '@trybun/ui': {
+          version: 'link:../../packages/ui',
+          dependencies: { glob: { version: '14.0.3' }, local: { version: 'file:../x' } },
+        },
+      }),
+      ROOT,
+    );
+    expect(linked.present.has('glob@14.0.3')).toBe(true);
+    expect(linked.dependents.get('glob')).toEqual([
+      { kind: 'project', path: `${ROOT}/packages/ui` },
+    ]);
+    expect([...linked.present]).toEqual(['glob@14.0.3']);
+    expect(() => parseLockfile(tree({ x: { version: 'link:../../../elsewhere' } }), ROOT)).toThrow(
+      'outside the checkout',
+    );
+    expect(() => parseLockfile('{}', ROOT)).toThrow('not a list of projects');
+    expect(() => parseLockfile(JSON.stringify([{ name: 'x' }]), ROOT)).toThrow('without a path');
+    for (const path of ['/elsewhere', `${ROOT}/../x`, `${ROOT}-evil`]) {
+      expect(() => parseLockfile(tree({}, path), ROOT)).toThrow('outside the checkout');
+    }
+    expect(() => parseLockfile(tree({ '../x': { version: '1.0.0' } }), ROOT)).toThrow(
+      'fails its allowlist',
+    );
+    expect(() => parseLockfile(tree([]), ROOT)).toThrow('not an object');
+  });
+});
+
+describe('checkExceptions with the lockfile', () => {
+  const real = (fields = {}) =>
+    lookups({
+      lockfile: LOCKFILE,
+      documents: REGISTRY_PARENTS,
+      manifests: SERVER,
+      ...fields,
+    });
+  const overrides = (keys) => config({ overrides: keys });
+
+  it('flags the override no dependency asks for, and keeps those still asked for (real data)', async () => {
+    const io = real();
+    const stale = await checkExceptions(
+      overrides(['multer@2.4.0', 'minimatch@10.2.6', 'glob@10.5.0', 'glob@13.0.6']),
+      io,
+    );
+    expect(stale).toEqual([{ setting: 'override', entry: 'multer@2.4.0', reason: 'unused' }]);
+    // One abbreviated document per parent name, never the full one.
+    const documents = io.asked.filter((entry) => entry.includes(ABBREVIATED));
+    expect(new Set(documents).size).toBe(documents.length);
+    expect(documents).toContain(
+      `https://registry.npmjs.org/@nestjs%2Fplatform-express (${ABBREVIATED})`,
+    );
+  });
+
+  it('counts the range of a workspace project, and an override of a package gone from the tree', async () => {
+    const io = real({
+      manifests: { [`${ROOT}/apps/server`]: { devDependencies: { multer: '2.4.0' } } },
+    });
+    expect(await checkExceptions(overrides(['multer@2.4.0', 'left-pad@1.3.0']), io)).toEqual([
+      { setting: 'override', entry: 'left-pad@1.3.0', reason: 'unused' },
+    ]);
+  });
+
+  it('counts a parent unknown to the registry as asking for the version, with a log line', async () => {
+    const io = real({ documents: {} });
+    expect(await checkExceptions(overrides(['multer@2.4.0']), io)).toEqual([]);
+    expect(io.logged).toEqual([
+      '@nestjs/platform-express@12.3.3 is not on the registry; it counts as asking for multer@2.4.0',
+    ]);
+    const missingVersion = real({
+      documents: { '@nestjs/platform-express': { versions: {} } },
+    });
+    expect(await checkExceptions(overrides(['multer@2.4.0']), missingVersion)).toEqual([]);
+  });
+
+  it('lists keys that are not pinned, never sending one anywhere', async () => {
+    const io = real();
+    const stale = await checkExceptions(
+      overrides(['multer', 'glob@^10', 'archiver-utils>glob', 'x@1.0.0 #1']),
+      io,
+    );
+    expect(stale).toEqual([
+      { setting: 'override', entry: 'multer', reason: 'not-pinned' },
+      { setting: 'override', entry: null, reason: 'not-pinned' },
+      { setting: 'override', entry: null, reason: 'not-pinned' },
+      { setting: 'override', entry: null, reason: 'not-pinned' },
+    ]);
+    expect(io.asked).toEqual([]);
+  });
+
+  it('fails on a package.json that is not an object', async () => {
+    await expect(
+      checkExceptions(
+        overrides(['multer@2.4.0']),
+        real({ manifests: { [`${ROOT}/apps/server`]: [] } }),
+      ),
+    ).rejects.toThrow('not an object');
+  });
+
+  it('fails on a range it cannot read and on an unexpected document', async () => {
+    const odd = (range) =>
+      real({
+        documents: {
+          ...REGISTRY_PARENTS,
+          '@nestjs/platform-express': {
+            versions: { '12.3.3': { dependencies: { multer: range } } },
+          },
+        },
+      });
+    await expect(checkExceptions(overrides(['multer@2.4.0']), odd('>>2'))).rejects.toThrow(
+      'cannot be read',
+    );
+    await expect(
+      checkExceptions(
+        overrides(['multer@2.4.0']),
+        real({ documents: { '@nestjs/platform-express': [] } }),
+      ),
+    ).rejects.toThrow('unexpected document');
+  });
+
+  it('flags an exclusion whose version is not in the lockfile, without asking the registry', async () => {
+    const io = real({
+      times: { 'eslint-plugin-import-x': { '4.18.1': new Date(NOW - DAY).toISOString() } },
+    });
+    const stale = await checkExceptions(
+      config({
+        minimumReleaseAge: 10080,
+        minimumReleaseAgeExclude: ['minimatch@11.0.1', 'eslint-plugin-import-x@4.18.1'],
+      }),
+      io,
+    );
+    expect(stale).toEqual([
+      { setting: 'release-age', entry: 'minimatch@11.0.1', reason: 'not-in-lockfile' },
+    ]);
+    expect(io.asked).toEqual(['https://registry.npmjs.org/eslint-plugin-import-x']);
+  });
+});
+
+describe('unneeded overrides and exclusions outside the lockfile in the report', () => {
+  const unused = { setting: 'override', entry: 'multer@2.4.0', reason: 'unused' };
+  const bare = { setting: 'override', entry: 'multer', reason: 'not-pinned' };
+  const ranged = { setting: 'override', entry: null, reason: 'not-pinned' };
+  const absent = { setting: 'release-age', entry: '@scope/x@1.2.3', reason: 'not-in-lockfile' };
+
+  it('lists the new rows after the others and keeps invalid keys out of the marker', () => {
+    const body = renderReport([], { stale: [unused, bare, ranged, absent] });
+    expect(body.split('\n')[1]).toBe(
+      '<!-- stale-exceptions: override:multer:not-pinned,override:multer@2.4.0:unused,release-age:@scope/x@1.2.3:not-in-lockfile -->',
+    );
+    const rows = body.split('\n').filter((line) => line.startsWith('| `'));
+    expect(rows).toEqual([
+      '| `minimumReleaseAgeExclude` | `@scope/x@1.2.3` | version not in the lockfile |',
+      '| `overrides` | `multer` | not pinned to an exact version |',
+      '| `overrides` | `multer@2.4.0` | no dependency asks for this version |',
+      '| `overrides` | (invalid) | not pinned to an exact version |',
+    ]);
+    expect(body).toContain('For an `overrides` entry, check that `pnpm install`');
+  });
+
+  it('round-trips the new tokens and rejects malformed ones', () => {
+    expect(readStaleMarker(staleMarker([unused, bare, ranged, absent]))).toEqual(
+      new Set([
+        'override:multer:not-pinned',
+        'override:multer@2.4.0:unused',
+        'release-age:@scope/x@1.2.3:not-in-lockfile',
+      ]),
+    );
+    expect(
+      readStaleMarker(
+        '<!-- stale-exceptions: override:multer:unused,override:multer@2.4.0:not-pinned,override:a>b@1.0.0:unused,override:x@^1:unused -->',
+      ),
+    ).toEqual(new Set());
+  });
+
+  it('comments when an override becomes unneeded and when it is removed', () => {
+    const before = { number: 7, state: 'open', body: renderReport([], { stale: [absent] }) };
+    const plan = planSync([], before, { stale: [absent, unused] });
+    expect(plan.comment).toBe(
+      [
+        'The stale exceptions changed:',
+        '',
+        '- New stale exception: `overrides`: `multer@2.4.0` – no dependency asks for this version',
+      ].join('\n'),
+    );
+    const removed = planSync([], { ...before, body: plan.body }, { stale: [absent] });
+    expect(removed.comment).toContain('- Stale exception gone: `overrides`: `multer@2.4.0`');
   });
 });
