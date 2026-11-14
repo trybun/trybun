@@ -10,6 +10,7 @@ import {
 import type { TicketListItem, TicketListSort } from '@trybun/contracts/tickets';
 import { Badge } from '@trybun/ui/components/badge';
 import { Checkbox } from '@trybun/ui/components/checkbox';
+import { TableCellLabel } from '@trybun/ui/components/table';
 import Link from 'next/link';
 import { useFormatter, useNow, useTranslations } from 'next-intl';
 import { useMemo } from 'react';
@@ -51,29 +52,6 @@ export const COLUMN_CLASS: Readonly<Partial<Record<string, string>>> = {
   organization: 'hidden whitespace-normal xl:table-cell',
   updated: 'whitespace-normal',
 };
-
-/**
- * A label of a narrow column (#295). The title column takes all free width, so every other column
- * is only as wide as its longest unbreakable word – a translation such as „Oczekuje na
- * zgłaszającego” or „Zaktualizowano” widened the table at 768 px, and at 1280 px once the
- * organization column shows. Where the columns would not fit otherwise – the tablet widths below
- * `lg` (four narrow columns) and the desktop widths from `xl` to `2xl` (seven) – the label is at
- * most 84 px wide, with the cell's padding 100 px, so the table fits in every language, and a
- * longer word wraps (hyphenated where the browser knows the page's language, else at any
- * character) instead of widening the table. `w-max` keeps a short label on one line: the cell is
- * as wide as its label up to the limit. In between and from `2xl` on the labels keep their words.
- */
-export const NARROW_LABEL_CLASS =
-  'max-lg:block max-lg:w-max max-lg:max-w-21 max-lg:hyphens-auto max-lg:wrap-anywhere xl:max-2xl:block xl:max-2xl:w-max xl:max-2xl:max-w-21 xl:max-2xl:hyphens-auto xl:max-2xl:wrap-anywhere';
-
-/**
- * A sort button of a column header, limited like `NARROW_LABEL_CLASS` (its negative margin overlaps
- * the cell's padding, so the column stays at most 100 px wide): the label wraps inside the button,
- * which grows with its lines and keeps its touch target – 44 px, compact on a desktop with a
- * precise pointer (§2.9, `cn` keeps the size's `xl:pointer-fine:h-7`, hence its `h-auto`).
- */
-export const SORT_BUTTON_CLASS =
-  'h-auto min-h-11 py-1 text-left xl:pointer-fine:h-auto xl:pointer-fine:min-h-7 max-lg:w-max max-lg:max-w-25 max-lg:whitespace-normal max-lg:hyphens-auto max-lg:wrap-anywhere xl:max-2xl:w-max xl:max-2xl:max-w-25 xl:max-2xl:whitespace-normal xl:max-2xl:hyphens-auto xl:max-2xl:wrap-anywhere';
 
 /** Whether one more ticket may be selected (§8.1): at most 100 at once. */
 export function canSelectMore(selection: RowSelectionState): boolean {
@@ -201,42 +179,38 @@ export function useTicketColumns(organizationsExist: boolean) {
           id: 'status',
           header: () => t('columns.status'),
           cell: ({ row }) => (
-            <span className={NARROW_LABEL_CLASS}>
+            <TableCellLabel>
               <StatusBadge ticket={row.original} />
-            </span>
+            </TableCellLabel>
           ),
         }),
         helper.accessor('priority', {
           id: 'priority',
           header: () => t('columns.priority'),
           cell: ({ row }) => (
-            <span className={NARROW_LABEL_CLASS}>
+            <TableCellLabel>
               <PriorityBadge ticket={row.original} />
-            </span>
+            </TableCellLabel>
           ),
         }),
         helper.accessor('type', {
           id: 'type',
           header: () => t('columns.type'),
-          cell: ({ row }) => (
-            <span className={NARROW_LABEL_CLASS}>{labels.type(row.original)}</span>
-          ),
+          cell: ({ row }) => <TableCellLabel>{labels.type(row.original)}</TableCellLabel>,
         }),
         helper.accessor('assignee', {
           id: 'assignee',
           header: () => t('columns.assignee'),
           cell: ({ row }) => (
-            <span className={NARROW_LABEL_CLASS}>
+            <TableCellLabel>
               <PersonName person={row.original.assignee} />
-            </span>
+            </TableCellLabel>
           ),
         }),
         helper.accessor((ticket) => ticket.project.key, {
           id: 'project',
           header: () => t('columns.project'),
-          cell: ({ row }) => (
-            <span className={NARROW_LABEL_CLASS}>{row.original.project.name}</span>
-          ),
+          cell: ({ row }) => <TableCellLabel>{row.original.project.name}</TableCellLabel>,
         }),
         ...(organizationsExist
           ? [
@@ -244,9 +218,7 @@ export function useTicketColumns(organizationsExist: boolean) {
                 id: 'organization',
                 header: () => t('columns.organization'),
                 cell: ({ row }) => (
-                  <span className={NARROW_LABEL_CLASS}>
-                    {row.original.organization?.name ?? ''}
-                  </span>
+                  <TableCellLabel>{row.original.organization?.name ?? ''}</TableCellLabel>
                 ),
               }),
             ]
@@ -255,9 +227,9 @@ export function useTicketColumns(organizationsExist: boolean) {
           id: 'updated',
           header: () => t('columns.updated'),
           cell: ({ row }) => (
-            <span className={NARROW_LABEL_CLASS}>
+            <TableCellLabel>
               <UpdatedTime ticket={row.original} />
-            </span>
+            </TableCellLabel>
           ),
         }),
       ]),
