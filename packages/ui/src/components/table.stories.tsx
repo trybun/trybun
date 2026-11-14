@@ -375,13 +375,14 @@ const LIMITED_TICKETS = [
 ];
 
 /**
- * A table with a full-width title column and narrow columns in the label limit (§18.6): a long
- * header and long cell labels wrap within 84 px – the sort button within 100 px – instead of
+ * A table with a full-width title column and narrow columns in the label limit (§18.6), set for
+ * the phone and tablet widths and the narrow desktop widths as in the ticket list: a long header
+ * and long cell labels wrap within 84 px – the sort button within 100 px – instead of
  * widening the table, while a short label stays on one line.
  */
 function LabelLimitTable() {
   return (
-    <Table className="table-label-limit-21">
+    <Table className="max-lg:table-label-limit-21 xl:max-2xl:table-label-limit-21">
       <TableCaption>Tickets in the label limit</TableCaption>
       <TableHeader>
         <TableRow>
@@ -390,7 +391,7 @@ function LabelLimitTable() {
             <TableCellLabel>Current status</TableCellLabel>
           </TableHead>
           <TableHead sortDirection="descending" className="whitespace-normal">
-            <TableSortButton>Internationalization</TableSortButton>
+            <TableSortButton>Identification</TableSortButton>
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -425,12 +426,14 @@ async function expectLabelLimit(canvasElement: HTMLElement, minButtonHeight: num
   await expect(short.getBoundingClientRect().height).toBeLessThanOrEqual(
     parseFloat(getComputedStyle(short).lineHeight),
   );
-  const button = within(canvasElement).getByRole('button', { name: 'Internationalization' });
+  const button = within(canvasElement).getByRole('button', { name: 'Identification' });
   const box = button.getBoundingClientRect();
   await expect(box.width).toBeLessThanOrEqual(100);
   await expect(box.height).toBeGreaterThanOrEqual(minButtonHeight);
-  // The long word wraps inside the button instead of overflowing it.
+  // The long word wraps inside the button, which grows with its lines instead of overflowing.
+  await expect(box.height).toBeGreaterThan(minButtonHeight);
   await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+  await expect(button.scrollHeight).toBeLessThanOrEqual(button.clientHeight);
 }
 
 export const LabelLimitPhone: Story = {

@@ -162,7 +162,8 @@
  * the limit, a `TableCellLabel` is at most the given width and a `TableSortButton` that much plus
  * the cell padding it overlaps: a box with `width: max-content` and a `max-width` contributes
  * `min(max-content, limit)`, so a short label stays on one line and a longer one wraps
- * (hyphenated where the browser knows the page's language, else at any character).
+ * (hyphenated where the browser knows the page's language, else at any character). The limit
+ * applies to every label and sort button inside the table, a nested table included.
  */
 @utility table-label-limit-* {
   & [data-slot='table-cell-label'] {
