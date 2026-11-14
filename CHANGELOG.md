@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.5.0](https://github.com/trybun/trybun/compare/v0.4.0...v0.5.0) (2026-11-14)
+
+
+### Added
+
+* add attachments (S1-08) ([#244](https://github.com/trybun/trybun/issues/244)) ([05c15ea](https://github.com/trybun/trybun/commit/05c15eaa37fd6bcc956ba206ec2220b10c18ed48))
+* add comments and internal notes (S1-12) ([#260](https://github.com/trybun/trybun/issues/260)) ([43c1ad9](https://github.com/trybun/trybun/commit/43c1ad994a1a4b71a4ce2393287584f921486886))
+* add the team list view (S1-13) ([#270](https://github.com/trybun/trybun/issues/270)) ([90c27c4](https://github.com/trybun/trybun/commit/90c27c4022b664e63a43815aed8081f80353d706))
+* add ticket visibility and sharing requests (S1-11) ([#257](https://github.com/trybun/trybun/issues/257)) ([6c5d925](https://github.com/trybun/trybun/commit/6c5d92513e3cc8a734794247930c0809b828987d))
+* **deploy:** back up and restore the attachment storage (S1-08) ([#247](https://github.com/trybun/trybun/issues/247)) ([b46c5f4](https://github.com/trybun/trybun/commit/b46c5f4c1c123fb3e9e696a4c10c507ec62cbad7))
+* **deploy:** refuse an impossible restore before it asks and before Trybun stops ([#248](https://github.com/trybun/trybun/issues/248)) ([#255](https://github.com/trybun/trybun/issues/255)) ([d6d85a2](https://github.com/trybun/trybun/commit/d6d85a2bba4b3664359fcfb0a960ceb258bed040))
+* **server:** implement the permission layer (S1-04) ([#225](https://github.com/trybun/trybun/issues/225)) ([21c748c](https://github.com/trybun/trybun/commit/21c748c0d07c8bfc4767fe8747add6b5bb00d8a7))
+* **server:** implement the ticket model (S1-05) ([#226](https://github.com/trybun/trybun/issues/226)) ([99975f0](https://github.com/trybun/trybun/commit/99975f0289fcad6dc1242b859cbc94c78b068a4d))
+* **server:** implement ticket statuses and resolution confirmation (S1-06) ([#231](https://github.com/trybun/trybun/issues/231)) ([8152ff0](https://github.com/trybun/trybun/commit/8152ff045d439d393d78c8756fd1dc438eb5a729))
+* **server:** search and look up projects, organizations and people for the ticket filters ([#284](https://github.com/trybun/trybun/issues/284)) ([1e20e15](https://github.com/trybun/trybun/commit/1e20e157703966e2ab64776a24233124c2a5ceef))
+* **ui:** add a popup search input and checkbox items to Combobox ([#285](https://github.com/trybun/trybun/issues/285)) ([1bcaaaa](https://github.com/trybun/trybun/commit/1bcaaaac6bf69c87ce9a28d8fae8eeb65c354fcb))
+* **ui:** add the GFM editor and the shared Markdown pipeline (S1-07) ([#234](https://github.com/trybun/trybun/issues/234)) ([153a215](https://github.com/trybun/trybun/commit/153a215e1a2bd5001f6bc3b6983f3c617176723b))
+* **ui:** open attachment images in a new tab ([#246](https://github.com/trybun/trybun/issues/246)) ([#253](https://github.com/trybun/trybun/issues/253)) ([5a1fc2a](https://github.com/trybun/trybun/commit/5a1fc2a593ec8114cba64faec58980471ee3ed30))
+* **web:** add the end-user portal (S1-09) ([#240](https://github.com/trybun/trybun/issues/240)) ([9ee9b0e](https://github.com/trybun/trybun/commit/9ee9b0e31cdd4ae80822d6f646a2a703b08f01ef))
+* **web:** add the team ticket view and full form (S1-10) ([#256](https://github.com/trybun/trybun/issues/256)) ([5195c83](https://github.com/trybun/trybun/commit/5195c833e5093df54da2dc684e0261ec9d37833e))
+* **web:** load every option of the ticket list filters ([#276](https://github.com/trybun/trybun/issues/276)) ([faef288](https://github.com/trybun/trybun/commit/faef288b2e65dfe2f2a5667fc737809b09b948b5))
+* **web:** one searchable picker per ticket list filter ([#290](https://github.com/trybun/trybun/issues/290)) ([64f2ec1](https://github.com/trybun/trybun/commit/64f2ec17fc533e6f1453e3e1d0a936a857be35cf))
+* **web:** show the ticket type on phone cards and in the tablet table ([#294](https://github.com/trybun/trybun/issues/294)) ([67b042c](https://github.com/trybun/trybun/commit/67b042c630c2d6fcd30264741d8ebdd2f8c49b9f))
+
+
+### Fixed
+
+* **deploy:** stop the daily backup at its first failing step ([#249](https://github.com/trybun/trybun/issues/249)) ([#250](https://github.com/trybun/trybun/issues/250)) ([3fb894c](https://github.com/trybun/trybun/commit/3fb894c106ed19c5e79329d9113a4e9700f9da41))
+* **deps:** bump @hookform/resolvers from 6.0.0 to 7.0.1 ([#266](https://github.com/trybun/trybun/issues/266)) ([46673c1](https://github.com/trybun/trybun/commit/46673c1c9c6f595c3be3f2d6e4321b19765e1412))
+* **deps:** bump caddy from 2.11.7-alpine to 2.11.7-alpine ([#264](https://github.com/trybun/trybun/issues/264)) ([e68cd78](https://github.com/trybun/trybun/commit/e68cd786d507068e95aac87b798fb0a8f13e3b5b))
+* **deps:** bump chrislusf/seaweedfs from 4.51 to 4.52 in the docker-compose group ([#281](https://github.com/trybun/trybun/issues/281)) ([99a2a95](https://github.com/trybun/trybun/commit/99a2a95a544f36274ff636866d227c6229932f30))
+* **deps:** bump fast-uri from 3.1.8 to 3.1.9 ([#223](https://github.com/trybun/trybun/issues/223)) ([bd019e1](https://github.com/trybun/trybun/commit/bd019e1533197cda6bc75f56a5e724224accf85c))
+* **deps:** bump Node.js to 24.22.1 in the images, CI and local development ([#261](https://github.com/trybun/trybun/issues/261)) ([ac31e07](https://github.com/trybun/trybun/commit/ac31e07b75c5888680dbf8d8f52c9b9aed503c18))
+* **deps:** bump pgvector/pgvector from `9d9c930` to `5895949` in /docker/postgres ([#262](https://github.com/trybun/trybun/issues/262)) ([a044171](https://github.com/trybun/trybun/commit/a044171ca89c730b7dd3013617263d5d8338ad78))
+* **deps:** bump pgvector/pgvector in /docker/postgres ([a044171](https://github.com/trybun/trybun/commit/a044171ca89c730b7dd3013617263d5d8338ad78))
+* **deps:** bump qs from 6.16.0 to 6.17.1 ([#235](https://github.com/trybun/trybun/issues/235)) ([233386e](https://github.com/trybun/trybun/commit/233386e9d6ca2ba7720893fd060bf53b7d41cf9f))
+* **deps:** bump the docker-compose group with 4 updates ([#263](https://github.com/trybun/trybun/issues/263)) ([6596ae3](https://github.com/trybun/trybun/commit/6596ae35351488244ab19d78ce88c60e094cba06))
+* **deps:** bump the npm group across 1 directory with 14 updates ([#298](https://github.com/trybun/trybun/issues/298)) ([ea4b34e](https://github.com/trybun/trybun/commit/ea4b34e086323dc183bb67faa0f06a60b8b69c1b))
+* **deps:** bump the npm group across 1 directory with 39 updates ([#271](https://github.com/trybun/trybun/issues/271)) ([aaa92c0](https://github.com/trybun/trybun/commit/aaa92c07b726de7914e1848d722fe91c4a3cd7cf))
+* **deps:** close the minimatch, glob and deepmerge advisories ([#324](https://github.com/trybun/trybun/issues/324)) ([#325](https://github.com/trybun/trybun/issues/325)) ([4c6b380](https://github.com/trybun/trybun/commit/4c6b38099b5e574bdf9276ecb66b99be331a255e))
+* **deps:** upgrade CASL to 7.1 with a tag-only subject resolver ([#277](https://github.com/trybun/trybun/issues/277)) ([5b64aef](https://github.com/trybun/trybun/commit/5b64aef28e360f2130d0689cc21fc0ea38536415)), closes [#273](https://github.com/trybun/trybun/issues/273)
+* **server:** lock the organization of a new ticket's snapshot (S1-05) ([#228](https://github.com/trybun/trybun/issues/228)) ([6ff9b47](https://github.com/trybun/trybun/commit/6ff9b477baba527a450efeb4db47eb6b4ddad8a1))
+* **server:** plan an end user's record access in milliseconds, not 250 ms ([#321](https://github.com/trybun/trybun/issues/321)) ([#323](https://github.com/trybun/trybun/issues/323)) ([c5db203](https://github.com/trybun/trybun/commit/c5db203272a3e31e8f7f7491f33a14b74c3d278f))
+* **server:** re-check the reason of the unassignment under a lock in every batch ([#229](https://github.com/trybun/trybun/issues/229)) ([#230](https://github.com/trybun/trybun/issues/230)) ([8e8675c](https://github.com/trybun/trybun/commit/8e8675c21085a8816b20374b3281fbbe8c209524))
+* **ui:** keep the empty Combobox message in the accessibility tree ([#287](https://github.com/trybun/trybun/issues/287)) ([#302](https://github.com/trybun/trybun/issues/302)) ([7392c8d](https://github.com/trybun/trybun/commit/7392c8d7a5655c03ef5804867994ea189d9bcd72))
+* **ui:** show tooltips on the Attach files and More formatting buttons ([#245](https://github.com/trybun/trybun/issues/245)) ([#251](https://github.com/trybun/trybun/issues/251)) ([e351f84](https://github.com/trybun/trybun/commit/e351f84a377d8a8edfc2221c1e63a1ccc0a83b52))
+* **web:** allow the dev overlay's style elements under next dev ([#317](https://github.com/trybun/trybun/issues/317)) ([95fdb93](https://github.com/trybun/trybun/commit/95fdb9301efcad56680a415db4c6516c29294ffd))
+* **web:** fit the ticket table in every language and check it per locale ([#295](https://github.com/trybun/trybun/issues/295)) ([#299](https://github.com/trybun/trybun/issues/299)) ([01f988c](https://github.com/trybun/trybun/commit/01f988cd63f085781ba5da2d5661ac86a4ad49e9))
+* **web:** keep the lazy dialog buttons in place while the page hydrates ([#308](https://github.com/trybun/trybun/issues/308)) ([#309](https://github.com/trybun/trybun/issues/309)) ([993d354](https://github.com/trybun/trybun/commit/993d354b1c759066bf3f2ce2f597a4ea2821e149))
+* **web:** keep the sharing actions inside the title cell on tablets ([#296](https://github.com/trybun/trybun/issues/296)) ([#297](https://github.com/trybun/trybun/issues/297)) ([fd85289](https://github.com/trybun/trybun/commit/fd85289cccff493b0dbd79ae5ff16aaea7be6365))
+* **web:** tell the person when a ticket list filter reaches 50 values ([#314](https://github.com/trybun/trybun/issues/314)) ([cb7b0e0](https://github.com/trybun/trybun/commit/cb7b0e09f72ba5c106f99138f33a8b1a4b9d8d7c))
+
 ## [0.4.0](https://github.com/trybun/trybun/compare/v0.3.0...v0.4.0) (2026-11-03)
 
 
