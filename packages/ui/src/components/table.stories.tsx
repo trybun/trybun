@@ -8,6 +8,7 @@ import {
   TableBody,
   TableCaption,
   TableCell,
+  TableCellLabel,
   TableFooter,
   TableHead,
   TableHeader,
@@ -361,4 +362,95 @@ export const Tablet: Story = {
 export const Desktop: Story = {
   render: () => <Overview />,
   globals: viewport('desktop'),
+};
+
+const LIMITED_TICKETS = [
+  { identifier: 'TRY-5', title: 'Export the report as PDF', status: 'New' },
+  {
+    identifier: 'TRY-6',
+    title: 'Log-in fails after a password change',
+    status: 'Waiting for the reporter’s answer',
+  },
+  { identifier: 'TRY-7', title: 'Add a dark theme', status: 'Internationalization' },
+];
+
+/**
+ * A table with a full-width title column and narrow columns in the label limit (§18.6), set for
+ * the phone and tablet widths and the narrow desktop widths as in the ticket list: a long header
+ * and long cell labels wrap within 84 px – the sort button within 100 px – instead of
+ * widening the table, while a short label stays on one line.
+ */
+function LabelLimitTable() {
+  return (
+    <Table className="max-lg:table-label-limit-21 xl:max-2xl:table-label-limit-21">
+      <TableCaption>Tickets in the label limit</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-full min-w-28 whitespace-normal">Title</TableHead>
+          <TableHead className="whitespace-normal">
+            <TableCellLabel>Current status</TableCellLabel>
+          </TableHead>
+          <TableHead sortDirection="descending" className="whitespace-normal">
+            <TableSortButton>Identification</TableSortButton>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {LIMITED_TICKETS.map((ticket) => (
+          <TableRow key={ticket.identifier}>
+            <TableCell className="whitespace-normal">{ticket.title}</TableCell>
+            <TableCell className="whitespace-normal">
+              <TableCellLabel>{ticket.status}</TableCellLabel>
+            </TableCell>
+            <TableCell className="whitespace-normal">
+              <TableCellLabel>{ticket.identifier}</TableCellLabel>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+// The table fits its container in every viewport: the labels stay within the limit, a short one
+// on a single line, and the sort button keeps its touch target (§2.9).
+async function expectLabelLimit(canvasElement: HTMLElement, minButtonHeight: number) {
+  const container = canvasElement.querySelector<HTMLElement>('[data-slot="table-container"]');
+  await expect(container?.scrollWidth).toBeLessThanOrEqual(container?.clientWidth ?? 0);
+  const labels = canvasElement.querySelectorAll<HTMLElement>('[data-slot="table-cell-label"]');
+  for (const label of labels) {
+    await expect(label.getBoundingClientRect().width).toBeLessThanOrEqual(84);
+  }
+  const short = within(canvasElement).getByText('New');
+  await expect(short.getClientRects()).toHaveLength(1);
+  await expect(short.getBoundingClientRect().height).toBeLessThanOrEqual(
+    parseFloat(getComputedStyle(short).lineHeight),
+  );
+  const button = within(canvasElement).getByRole('button', { name: 'Identification' });
+  const box = button.getBoundingClientRect();
+  await expect(box.width).toBeLessThanOrEqual(100);
+  await expect(box.height).toBeGreaterThanOrEqual(minButtonHeight);
+  // The long word wraps inside the button, which grows with its lines instead of overflowing.
+  await expect(box.height).toBeGreaterThan(minButtonHeight);
+  await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+  await expect(button.scrollHeight).toBeLessThanOrEqual(button.clientHeight);
+}
+
+export const LabelLimitPhone: Story = {
+  render: () => <LabelLimitTable />,
+  globals: viewport('phone'),
+  play: async ({ canvasElement }) => expectLabelLimit(canvasElement, 44),
+};
+
+export const LabelLimitTablet: Story = {
+  render: () => <LabelLimitTable />,
+  globals: viewport('tablet'),
+  play: async ({ canvasElement }) => expectLabelLimit(canvasElement, 44),
+};
+
+export const LabelLimitDesktop: Story = {
+  render: () => <LabelLimitTable />,
+  globals: viewport('desktop'),
+  // Compact with a precise pointer on a desktop.
+  play: async ({ canvasElement }) => expectLabelLimit(canvasElement, 28),
 };

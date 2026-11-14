@@ -108,7 +108,9 @@ const SORT_ICONS = {
 
 /**
  * The button of a sortable column header, inside a `TableHead` with `sortDirection`. Its
- * accessible name is the column name; the direction is announced through `aria-sort`.
+ * accessible name is the column name; the direction is announced through `aria-sort`. In the
+ * label limit of the table (`table-label-limit-*`) its label wraps and the button grows with its
+ * lines, keeping its touch target – 44 px, compact on a desktop with a precise pointer (§2.9).
  */
 function TableSortButton({ className, children, ...props }: ComponentProps<typeof Button>) {
   const direction = use(TableSortContext);
@@ -119,7 +121,10 @@ function TableSortButton({ className, children, ...props }: ComponentProps<typeo
       data-direction={direction}
       variant="ghost"
       size="sm"
-      className={cn('-mx-2 px-2 text-sm', className)}
+      className={cn(
+        '-mx-2 h-auto min-h-11 px-2 py-1 text-left text-sm xl:pointer-fine:h-auto xl:pointer-fine:min-h-7',
+        className,
+      )}
       {...props}
     >
       {children}
@@ -142,6 +147,15 @@ function TableCell({ className, ...props }: ComponentProps<'td'>) {
   );
 }
 
+/**
+ * The label of a cell or a header that cannot be sorted in a narrow column: in the label limit of
+ * the table (`table-label-limit-*`) it is at most the limit wide and wraps; elsewhere it is plain
+ * text.
+ */
+function TableCellLabel({ className, ...props }: ComponentProps<'span'>) {
+  return <span data-slot="table-cell-label" className={className} {...props} />;
+}
+
 function TableCaption({ className, ...props }: ComponentProps<'caption'>) {
   return (
     <caption
@@ -160,6 +174,7 @@ export {
   TableHead,
   TableRow,
   TableCell,
+  TableCellLabel,
   TableCaption,
   TableSortButton,
   type TableSortDirection,
