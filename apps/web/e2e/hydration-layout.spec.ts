@@ -1,4 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
+import { OrganizationsPage } from './pages/organizations.page.js';
+import { ProjectsPage } from './pages/projects.page.js';
 import { ADMIN_STORAGE_STATE } from './storage-state.js';
 
 /**
@@ -17,10 +19,13 @@ interface List {
   readonly path: string;
   /** The accessible name of the trigger above the list. */
   readonly trigger: string;
-  /** The CSS selector of the rows; the first visible match is the first row. */
+  /**
+   * The CSS selector of the rows; the first visible match is the first row. The init script runs
+   * in the page, where the locators of the page objects do not exist (§18.7).
+   */
   readonly rows: string;
-  /** The URL of a row's detail, when a row opens one. */
-  readonly detail?: RegExp;
+  /** The link of a seeded row that opens its detail, when a row opens one. */
+  readonly row?: (page: Page) => Locator;
 }
 
 const LISTS: readonly List[] = [
@@ -28,13 +33,13 @@ const LISTS: readonly List[] = [
     path: '/admin/organizations',
     trigger: 'New organization',
     rows: 'main li > a[href^="/admin/organizations/"]',
-    detail: /\/admin\/organizations\/[\da-f-]+$/,
+    row: (page) => new OrganizationsPage(page).organization('Customer company'),
   },
   {
     path: '/projects',
     trigger: 'New project',
     rows: 'main li > a[href^="/projects/"][href$="/settings"]',
-    detail: /\/projects\/[^/]+\/settings$/,
+    row: (page) => new ProjectsPage(page).project('Customer portal'),
   },
   {
     // The cards on phones, the rows of the table from the tablet on; an account opens no detail.
@@ -60,9 +65,13 @@ async function recordLayout(page: Page, list: List): Promise<() => Promise<Sampl
       const samples: { trigger: number | null; row: number | null }[] = [];
       Object.assign(window, { layoutSamples: samples });
       const isVisible = (element: Element) => element.getClientRects().length > 0;
+      // By the accessible name: an invited account's own Invite has the same text but is named
+      // after its address (`aria-label`), and must not stand in for the vanished trigger.
+      const nameOf = (element: Element) =>
+        element.getAttribute('aria-label') ?? element.textContent?.trim();
       const sample = () => {
         const button = [...document.querySelectorAll('main button')].find(
-          (element) => element.textContent?.trim() === trigger && isVisible(element),
+          (element) => nameOf(element) === trigger && isVisible(element),
         );
         const row = [...document.querySelectorAll(rows)].find(isVisible);
         samples.push({
@@ -125,19 +134,20 @@ test.describe('lists while the page hydrates', () => {
       ]);
     });
 
-    const { detail } = list;
-    if (detail !== undefined) {
+    const rowOf = list.row;
+    if (rowOf !== undefined) {
       test(`of ${list.path} open the row tapped during the hydration`, async ({ page }) => {
         await delayChunks(page);
         await page.goto(list.path, { waitUntil: 'domcontentloaded' });
-        const row = page.locator(list.rows).filter({ visible: true }).first();
+        const row = rowOf(page);
         const href = await row.getAttribute('href');
+        expect(href, 'the link of the row').not.toBeNull();
         await page.waitForTimeout(TAP_AFTER_MS);
 
         await row.tap();
 
-        await expect(page).toHaveURL(detail);
-        expect(new URL(page.url()).pathname).toBe(href);
+        // The detail of the tapped row itself, not of the row below it (#308).
+        await expect.poll(() => new URL(page.url()).pathname).toBe(href);
       });
     }
   }
