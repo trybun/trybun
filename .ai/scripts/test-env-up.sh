@@ -11,6 +11,7 @@
 #              Compose project publishes the fixed ports of the infrastructure
 #   2026-11-15 --reset (#352): removes the data volumes of `trybun-test` before the boot, so the
 #              environment starts as empty as CI's E2E job; a boot without it keeps the data
+#              the bootstrap lock is machine-wide (/tmp/trybun-test-env.lock), not per checkout
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -48,7 +49,10 @@ QA_DIR=.ai/qa
 DESCRIPTOR="$QA_DIR/test-env.json"
 CREDENTIALS_FILE="$QA_DIR/test-env.env"
 BUILD_CACHE="$QA_DIR/test-env-build-cache.json"
-LOCK_DIR="$QA_DIR/test-env.lock"
+# One bootstrap at a time on the whole machine, not per checkout: every checkout boots the same
+# Compose project on the same ports, and --reset must never remove the volumes under another
+# checkout's boot (TEST_ENV_LOCK_DIR moves it for the tests of this script).
+LOCK_DIR="${TEST_ENV_LOCK_DIR:-/tmp/$COMPOSE_PROJECT-env.lock}"
 LOG_DIR="$QA_DIR/logs"
 mkdir -p "$QA_DIR" "$LOG_DIR"
 
@@ -136,14 +140,14 @@ if [ "$FORCE" = 0 ] && [ "$RESET" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get
   log "the recorded environment is stale; restarting it"
   sh .ai/scripts/test-env-down.sh --keep-services >/dev/null 2>&1 || true
 fi
+acquire_lock
+START=$(date +%s)
+
 # A reset replaces the running environment of this checkout: its applications use the data.
 if [ "$RESET" = 1 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR")" = running ]; then
   log "stopping the running environment $(json_get runId "$DESCRIPTOR") for the reset"
   sh .ai/scripts/test-env-down.sh --keep-services >/dev/null 2>&1 || true
 fi
-
-acquire_lock
-START=$(date +%s)
 
 # Never take over a server this script did not start (e.g. `pnpm dev`).
 for port in "$WEB_PORT" "$API_PORT"; do

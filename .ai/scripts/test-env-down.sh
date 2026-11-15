@@ -6,6 +6,8 @@
 #              Compose infrastructure when it started it; never removes volumes
 #   2026-10-28 the Compose project `trybun-test` of test-env-up.sh, so `down` never stops an
 #              installation or `pnpm dev` (project `trybun`)
+#   2026-11-15 waits until the applications have exited (#352), so a boot right after finds the
+#              ports free
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
@@ -16,11 +18,28 @@ KEEP_SERVICES=0
 [ "${1:-}" = "--keep-services" ] && KEEP_SERVICES=1
 [ -f "$DESCRIPTOR" ] || { echo "No test environment recorded."; exit 0; }
 json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$DESCRIPTOR" | head -1; }
+PIDS=""
 for key in apiPid workerPid webPid; do
   pid=$(json_get "$key")
   # Each process was started in its own session: stop the whole group (pnpm, node, next).
-  if [ -n "$pid" ]; then kill -- "-$pid" 2>/dev/null || true; fi
+  if [ -n "$pid" ]; then
+    kill -- "-$pid" 2>/dev/null || true
+    PIDS="$PIDS $pid"
+  fi
 done
+# The API closes its HTTP server only after its shutdown hooks: wait until every group has exited,
+# so the ports are free when this returns (a boot right after checks them), then kill what is left.
+waited=0
+while [ "$waited" -lt 30 ]; do
+  running=false
+  for pid in $PIDS; do
+    if kill -0 "-$pid" 2>/dev/null; then running=true; fi
+  done
+  [ "$running" = true ] || break
+  sleep 1
+  waited=$((waited + 1))
+done
+for pid in $PIDS; do kill -s KILL "-$pid" 2>/dev/null || true; done
 if [ "$KEEP_SERVICES" = 0 ] && [ "$(json_get servicesStartedByScript)" = true ]; then
   $COMPOSE down >/dev/null 2>&1 || true
 fi

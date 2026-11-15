@@ -36,21 +36,32 @@ case "$*" in
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
 `,
-  // Nothing serves 3000 and 3001 before the boot; the health checks pass once it has started them.
+  // A port answers while a stubbed application holds it (a file "serving-<port>"); the health
+  // checks pass once the boot has started the applications.
   curl: `#!/bin/sh
 for arg in "$@"; do url=$arg; done
 case "$url" in
   */health/ready | */api/health) exit 0 ;;
   */api/v1/users/me) printf 401 ;;
+  http://localhost:3000/) [ -e "$STUB_DIR/serving-3000" ] || exit 7 ;;
+  http://localhost:3001/) [ -e "$STUB_DIR/serving-3001" ] || exit 7 ;;
   *) exit 7 ;;
 esac
 `,
-  // The API, the Worker and the web application keep running until test-env-down.sh stops them.
+  // The API, the Worker and the web application run until test-env-down.sh stops them; like the
+  // API's shutdown hooks, they keep their port for a moment after SIGTERM.
   pnpm: `#!/bin/sh
 echo "pnpm $*" >>"$STUB_LOG"
 case "$*" in
-  "--filter "*) exec sleep 600 ;;
+  "--filter @trybun/server start") port=3001 ;;
+  "--filter @trybun/web exec next start --port 3000") port=3000 ;;
+  "--filter "*) port=none ;;
+  *) exit 0 ;;
 esac
+echo "$$" >>"$STUB_DIR/pids"
+touch "$STUB_DIR/serving-$port"
+trap 'sleep 1; rm -f "$STUB_DIR/serving-$port"; exit 0' TERM
+while :; do sleep 1; done
 `,
 };
 
@@ -75,12 +86,30 @@ beforeEach(() => {
   const git = (...args) => execFileSync('git', args, { cwd: checkout, stdio: 'ignore' });
   git('init', '-q');
   git('add', '.');
-  git('-c', 'user.name=Test', '-c', 'user.email=test@example.org', 'commit', '-qm', 'test');
+  git(
+    '-c',
+    'user.name=Test',
+    '-c',
+    'user.email=test@example.org',
+    '-c',
+    'commit.gpgsign=false',
+    'commit',
+    '-qm',
+    'test',
+  );
 });
 
 afterEach(() => {
   // Stops the stubbed applications of the last boot (their process groups).
   spawnSync('sh', ['.ai/scripts/test-env-down.sh'], { cwd: checkout, env: environment() });
+  // And any of them a failed boot did not record.
+  for (const pid of readLines(join(folder, 'pids'))) {
+    try {
+      process.kill(-Number(pid), 'SIGKILL');
+    } catch {
+      // Already stopped.
+    }
+  }
   rmSync(folder, { recursive: true, force: true });
 });
 
@@ -89,10 +118,20 @@ function environment() {
     ...process.env,
     PATH: `${join(folder, 'bin')}:${process.env.PATH}`,
     STUB_LOG: join(folder, 'log'),
+    STUB_DIR: folder,
+    TEST_ENV_LOCK_DIR: join(folder, 'test-env.lock'),
     STUB_VOLUMES:
       'trybun-test_postgres-data trybun-test_valkey-data trybun-test_seaweedfs-data ' +
       'trybun-test_clamav-data trybun-dev_postgres-data trybun_postgres-data',
   };
+}
+
+function readLines(path) {
+  try {
+    return readFileSync(path, 'utf8').split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 /** Runs test-env-up.sh and returns the log of the stubs written during this run. */
@@ -104,7 +143,7 @@ function up(...flags) {
     env: environment(),
     timeout: 60_000,
   });
-  const log = readFileSync(join(folder, 'log'), 'utf8').split('\n').filter(Boolean);
+  const log = readLines(join(folder, 'log'));
   return { ...result, log };
 }
 
@@ -164,7 +203,7 @@ describe('test-env-up.sh', () => {
     );
   });
 
-  it('replaces a running environment with a fresh one on --reset', () => {
+  it('replaces a running environment on --reset once its applications have released their ports', () => {
     expect(up().status).toBe(0);
     const before = JSON.parse(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8'));
 
