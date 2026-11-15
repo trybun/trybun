@@ -1,20 +1,21 @@
 'use client';
 
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { Invitation } from '@trybun/contracts/invitations';
 import type { User } from '@trybun/contracts/users';
 import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { type ReactNode, useCallback } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { hasPendingInvitations, userInvitationsQueryOptions } from '../queries.js';
+import { accountsInvitationsQueryOptions, hasPendingInvitations } from '../queries.js';
 import { LazyInviteDialog } from './lazy-invite-dialog.js';
 import { PendingInvitationList } from './pending-invitation-list.js';
 
 /**
  * The pending invitations of an account on the Accounts page (§7.4): target, inviting person and
  * expiry, with **Copy new link** and **Revoke** where allowed. They are read only for an account
- * whose `pendingInvitationCount` says it has some (`hasPendingInvitations`), loaded with the page of
- * accounts (`usersQueryOptions`) so the list never moves the rows below it (#310). An
+ * whose `pendingInvitationCount` says it has some (`hasPendingInvitations`), with those of the other
+ * accounts of its page in one query (`accountsInvitationsQueryOptions`, #357), loaded with the page
+ * of accounts (`usersQueryOptions`) so the list never moves the rows below it (#310). An
  * `invited` account without one – reactivated, or all its invitations expired or revoked – has no
  * working link, so **Invite** is offered for its address right away. Deactivated accounts have
  * none: deactivating revokes them. Nothing is rendered – not even `wrap` – while there is nothing
@@ -22,20 +23,29 @@ import { PendingInvitationList } from './pending-invitation-list.js';
  */
 export function AccountInvitations({
   user,
+  pageAccounts,
   wrap,
 }: {
   user: User;
+  /** The accounts of the page of accounts the account was loaded with, itself included. */
+  pageAccounts: readonly User[];
   /** The element of the list layout around the content, e.g. a row of the table. */
   wrap: (content: ReactNode) => ReactNode;
 }) {
   const t = useTranslations('invitations');
   const isInvitable = user.state === 'invited' || user.state === 'active';
   const hasInvitations = hasPendingInvitations(user);
-  const invitations = useInfiniteQuery({
-    ...userInvitationsQueryOptions(browserApiClient, user.id),
+  const ownInvitations = useCallback(
+    (invitations: Invitation[]) =>
+      invitations.filter((invitation) => invitation.user.id === user.id),
+    [user.id],
+  );
+  const invitations = useQuery({
+    ...accountsInvitationsQueryOptions(browserApiClient, pageAccounts),
     enabled: hasInvitations,
+    select: ownInvitations,
   });
-  const items = invitations.data?.pages.flatMap((page) => page.items) ?? [];
+  const items = invitations.data ?? [];
 
   const targetOf = ({ target }: Invitation) =>
     target.type === 'project'
@@ -54,9 +64,6 @@ export function AccountInvitations({
         invitations={items}
         titleOf={targetOf}
         nameOf={(invitation) => `${invitation.user.email ?? ''}, ${targetOf(invitation)}`}
-        hasNextPage={invitations.hasNextPage}
-        isFetchingNextPage={invitations.isFetchingNextPage}
-        onLoadMore={() => void invitations.fetchNextPage()}
       />,
     );
   }

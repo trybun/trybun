@@ -68,21 +68,26 @@ function invitation(overrides: Partial<Invitation> = {}): Invitation {
   };
 }
 
-/** The pending invitations of the account on the Accounts page, the API answering `items`. */
+/** Another account of the same page of accounts, with an invitation of its own. */
+const OTHER_ID = '0199a3f0-0000-7000-8000-000000000022';
+
+/**
+ * The pending invitations of the account on the Accounts page: the page holds the account and
+ * another one, and the query of the page's invitations (#357) answers `items`.
+ */
 function renderAccount(account: User, items: Invitation[] | null, locale: 'en' | 'pl' = 'en') {
+  const pageAccounts = [account, user({ id: OTHER_ID, email: 'other@customer.example.com' })];
   return render(
     <AccountInvitations
       user={account}
+      pageAccounts={pageAccounts}
       wrap={(content: ReactNode) => <div data-testid="wrap">{content}</div>}
     />,
     {
       locale,
       seed: (client) =>
         items !== null &&
-        client.setQueryData(['invitations', 'list', { userId: USER_ID }], {
-          pages: [{ items, nextCursor: null }],
-          pageParams: [null],
-        }),
+        client.setQueryData(['invitations', 'list', { userId: [USER_ID, OTHER_ID] }], items),
     },
   );
 }
@@ -117,6 +122,22 @@ describe('AccountInvitations', () => {
     // The organization's invitation allows no resending.
     expect(html.match(/Copy new link/g)).toHaveLength(1);
     expect(html).not.toContain('No working invitation link.');
+  });
+
+  it("shows only its own account's invitations of the page's query (#357)", async () => {
+    const html = await renderAccount(user(), [
+      invitation(),
+      invitation({
+        id: '0199a3f0-0000-7000-8000-000000000032',
+        user: { id: OTHER_ID, email: 'other@customer.example.com', displayName: null },
+        target: { type: 'administrator' },
+      }),
+    ]);
+
+    expect(html).toContain('Project Customer portal, End user');
+    expect(html).not.toContain('Administrator role');
+    // All of the account's pending invitations are read, so there is no page to load.
+    expect(html).not.toContain('Show more');
   });
 
   it('names the Administrator role, in Polish too', async () => {
