@@ -5,9 +5,9 @@ import { ADMIN_STORAGE_STATE } from './storage-state.js';
 
 /**
  * The lists under a server-rendered trigger of a lazily loaded dialog, and the buttons of the
- * header's lazily loaded menus, keep their place while the page hydrates (#308, #311, §18.5, Rule 9). The trigger vanished when the page hydrated – its
- * `<Suspense>` had no fallback – so the list moved up between `pointerdown` and `pointerup` and a
- * tap opened nothing or the row below. The defect needs slow chunks, so every chunk is delayed:
+ * header's lazily loaded menus, keep their place while the page hydrates (#308, #311, §18.5,
+ * Rule 9). The trigger vanished when the page hydrated – its `<Suspense>` had no fallback – so the
+ * list moved up between `pointerdown` and `pointerup` and a tap opened nothing or the row below. The defect needs slow chunks, so every chunk is delayed:
  * delaying only the chunks after `load` does not delay the hydration (`.ai/memory/e2e.md`).
  */
 const CHUNK_DELAY_MS = 1500;
