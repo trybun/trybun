@@ -4,10 +4,10 @@ import { ProjectsPage } from './pages/projects.page.js';
 import { ADMIN_STORAGE_STATE } from './storage-state.js';
 
 /**
- * The lists under a server-rendered trigger of a lazily loaded dialog keep their place while the
- * page hydrates (#308, §18.5, Rule 9). The trigger vanished when the page hydrated – its
- * `<Suspense>` had no fallback – so the list moved up between `pointerdown` and `pointerup` and a
- * tap opened nothing or the row below. The defect needs slow chunks, so every chunk is delayed:
+ * The lists under a server-rendered trigger of a lazily loaded dialog, and the buttons of the
+ * header's lazily loaded menus, keep their place while the page hydrates (#308, #311, §18.5,
+ * Rule 9). The trigger vanished when the page hydrated – its `<Suspense>` had no fallback – so the
+ * list moved up between `pointerdown` and `pointerup` and a tap opened nothing or the row below. The defect needs slow chunks, so every chunk is delayed:
  * delaying only the chunks after `load` does not delay the hydration (`.ai/memory/e2e.md`).
  */
 const CHUNK_DELAY_MS = 1500;
@@ -151,4 +151,80 @@ test.describe('lists while the page hydrates', () => {
       });
     }
   }
+});
+
+/**
+ * The buttons of the header the product tours target (§2.4), from left to right: Help and the
+ * account menu (#311).
+ */
+const HEADER_TRIGGERS = ['app-header-help', 'app-header-account-menu'] as const;
+
+/** The `left` of each header trigger, `null` while it is missing. */
+type HeaderSample = Readonly<Record<(typeof HEADER_TRIGGERS)[number], number | null>>;
+
+/** Records the `left` of the header triggers like `recordLayout()`, from the first paint on. */
+async function recordHeader(page: Page): Promise<() => Promise<HeaderSample[]>> {
+  await page.addInitScript((triggers) => {
+    const samples: Record<string, number | null>[] = [];
+    Object.assign(window, { headerSamples: samples });
+    const sample = () => {
+      samples.push(
+        Object.fromEntries(
+          triggers.map((tour) => {
+            const element = document.querySelector(`header [data-tour="${tour}"]`);
+            const isVisible = element !== null && element.getClientRects().length > 0;
+            return [tour, isVisible ? element.getBoundingClientRect().left : null];
+          }),
+        ),
+      );
+    };
+    const everyFrame = () => {
+      sample();
+      requestAnimationFrame(everyFrame);
+    };
+    requestAnimationFrame(() => {
+      new MutationObserver(sample).observe(document, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+      everyFrame();
+    });
+  }, HEADER_TRIGGERS);
+  return () =>
+    page.evaluate(() => (window as unknown as { headerSamples: HeaderSample[] }).headerSamples);
+}
+
+test.describe('header while the page hydrates', () => {
+  test.use({ storageState: ADMIN_STORAGE_STATE });
+
+  test.beforeEach(({ isMobile }) => {
+    test.skip(!isMobile, 'the phone and tablet projects cover the hydration of the header');
+  });
+
+  // The menus load after the first paint (#72); their server-rendered buttons must not vanish
+  // while the page hydrates, or the header items move and a tour loses its target (#311).
+  test('keeps the Help and account buttons in place', async ({ page }) => {
+    await delayChunks(page);
+    const samples = await recordHeader(page);
+
+    await page.goto('/projects', { waitUntil: 'domcontentloaded' });
+    // Every chunk, the lazy menus' too, has loaded and the page has hydrated.
+    await page.waitForLoadState('networkidle');
+
+    const painted = await samples();
+    const first = painted.findIndex((entry) =>
+      HEADER_TRIGGERS.every((tour) => entry[tour] !== null),
+    );
+    expect(first, 'both buttons are painted').toBeGreaterThanOrEqual(0);
+    const shown = painted.slice(first);
+    for (const tour of HEADER_TRIGGERS) {
+      const missing = shown.filter((entry) => entry[tour] === null).length;
+      // Soft, so a run reports each button that moved, not only the first.
+      expect.soft(missing, `samples without ${tour}, of ${shown.length}`).toBe(0);
+      expect
+        .soft([...new Set(shown.map((entry) => entry[tour]))], `left of ${tour}`)
+        .toEqual([shown[0]![tour]]);
+    }
+  });
 });

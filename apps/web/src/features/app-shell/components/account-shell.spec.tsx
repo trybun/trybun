@@ -90,6 +90,7 @@ function shellOf(element: ReactElement) {
         newTicket?: ReactElement;
         isDesktopNavigationCollapsed: boolean;
         navigation: object;
+        accountName: string | undefined;
       }>
     >
   ).props.children;
@@ -164,6 +165,32 @@ describe('AccountShell', () => {
     expect(shell.props.help.props).toMatchObject({
       views: { '/portal': 'end-user/tutorials/getting-started' },
     });
+  });
+
+  // The button of the user menu shows the account before the menu's code has loaded (#311).
+  it.each([
+    ['its display name', developer, 'Dorota Developer'],
+    [
+      'its address without a display name',
+      { ...developer, displayName: null },
+      'developer@example.com',
+    ],
+  ])('gives the user menu the account by %s', async (_, account, accountName) => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    user = account as typeof developer;
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    expect(shellOf(element).props.accountName).toBe(accountName);
+  });
+
+  it('gives the user menu no account when the account cannot be read', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockRejectedValue(new Error('The API is unavailable'));
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    expect(shellOf(element).props.accountName).toBeUndefined();
   });
 
   it('shows only the deactivation notice when the API refuses the account', async () => {

@@ -33,6 +33,7 @@ async function renderShell(locale: 'en' | 'pl' = 'en', isDesktopNavigationCollap
         <AppShell
           navigation={{ shell: 'team', allowedActions: [] }}
           isDesktopNavigationCollapsed={isDesktopNavigationCollapsed}
+          accountName="Dorota Developer"
           help={<button type="button">help-slot</button>}
         >
           <h1>Page</h1>

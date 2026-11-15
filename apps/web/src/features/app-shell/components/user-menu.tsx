@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { LOCALES, type Locale } from '@trybun/i18n/catalogues';
-import { Button } from '@trybun/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@trybun/ui/components/dropdown-menu';
-import { LogOutIcon, SettingsIcon, UserCogIcon, UserIcon } from 'lucide-react';
+import { LogOutIcon, SettingsIcon, UserCogIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -25,6 +24,7 @@ import { useUpdateCurrentUser } from '../../users/mutations.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
 import { PORTAL_SETTINGS_HREF } from '../../portal/hrefs.js';
 import { SETTINGS_HREF } from '../../users/search-params.js';
+import { accountNameOf, UserMenuButton } from './user-menu-button.js';
 
 /**
  * Signs out through Auth.js, which is loaded only then: every byte the shell requests before its
@@ -33,16 +33,6 @@ import { SETTINGS_HREF } from '../../users/search-params.js';
 async function signOutOfSession(): Promise<void> {
   const { signOut } = await import('next-auth/react');
   await signOut({ callbackUrl: '/' });
-}
-
-/** Initials of a name for the avatar: the first letters of its first two words. */
-export function initialsOf(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toLocaleUpperCase())
-    .join('');
 }
 
 /**
@@ -59,32 +49,10 @@ export function UserMenu() {
   const [, startTransition] = useTransition();
   const { data: user } = useQuery(currentUserQueryOptions(browserApiClient));
   const updateCurrentUser = useUpdateCurrentUser();
-  const name = user?.displayName ?? user?.email ?? undefined;
+  const name = accountNameOf(user);
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        // The initials fill the button on desktop; the offset keeps the focus ring apart from them.
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          />
-        }
-        aria-label={t('accountMenu')}
-        data-tour="app-header-account-menu"
-      >
-        {name === undefined ? (
-          <UserIcon aria-hidden />
-        ) : (
-          <span
-            aria-hidden
-            className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
-          >
-            {initialsOf(name)}
-          </span>
-        )}
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger render={<UserMenuButton name={name} />} />
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
           {user !== undefined && (

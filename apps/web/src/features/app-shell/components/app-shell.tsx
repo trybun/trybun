@@ -11,17 +11,21 @@ import { SideNavigation } from './side-navigation.js';
  * choice this browser remembers as `isDesktopNavigationCollapsed`). The same shell serves the team
  * and the end-user portal (§5.7); `navigation` decides which destinations it offers – the global
  * actions of a team account (`allowedActions`, §18.3), or the portal's – and the layout passes it
- * from its prefetched data, so the navigation loads no API client before the first paint.
+ * from its prefetched data, so the navigation loads no API client before the first paint; `accountName` comes the
+ * same way, for the button of the user menu.
  */
 export function AppShell({
   children,
   navigation,
   isDesktopNavigationCollapsed,
+  accountName,
   ...slots
 }: AppHeaderSlots & {
   children: ReactNode;
   navigation: NavigationContext;
   isDesktopNavigationCollapsed: boolean;
+  /** The display name or address of the signed-in account, from its prefetched data. */
+  accountName: string | undefined;
 }) {
   const t = useTranslations('appShell');
   return (
@@ -32,7 +36,11 @@ export function AppShell({
       >
         {t('skipToContent')}
       </a>
-      <AppHeader {...slots} homeHref={navigation.shell === 'portal' ? PORTAL_HREF : '/'} />
+      <AppHeader
+        {...slots}
+        homeHref={navigation.shell === 'portal' ? PORTAL_HREF : '/'}
+        accountName={accountName}
+      />
       <div className="flex flex-1">
         <SideNavigation navigation={navigation} isDesktopCollapsed={isDesktopNavigationCollapsed} />
         <main
