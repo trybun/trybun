@@ -47,7 +47,11 @@ export function usersQueryOptions(client: ApiClient, filters: AccountFilters) {
         }),
       );
       if (page.items.some(hasPendingInvitations)) {
-        await queryClient.prefetchQuery(accountsInvitationsQueryOptions(client, page.items));
+        // Tried once: a failure must not hold the page back, and the rows read it again.
+        await queryClient.prefetchQuery({
+          ...accountsInvitationsQueryOptions(client, page.items),
+          retry: false,
+        });
       }
       return page;
     },

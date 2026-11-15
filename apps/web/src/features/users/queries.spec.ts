@@ -39,21 +39,18 @@ type Query = Record<string, string | string[] | number | undefined>;
 
 /**
  * The API: pages of accounts by cursor, and the invitations of the given accounts – in pages of
- * `invitationPageSize`, or a failure while `failing` is set.
+ * `invitationPageSize`, or a failure with the status `failing` when it is set.
  */
 function api(
   pages: Record<string, User[]>,
-  {
-    failing = false,
-    invitationPageSize = 100,
-  }: { failing?: boolean; invitationPageSize?: number } = {},
+  { failing, invitationPageSize = 100 }: { failing?: number; invitationPageSize?: number } = {},
 ) {
   const GET = vi.fn((path: string, { params }: { params: { query: Query } }) => {
     if (path === '/api/v1/invitations') {
-      if (failing) {
+      if (failing !== undefined) {
         return Promise.resolve({
-          error: { type: 'about:blank', title: 'Too Many Requests', status: 429 },
-          response: new Response(null, { status: 429 }),
+          error: { type: 'about:blank', title: 'Failed', status: failing },
+          response: new Response(null, { status: failing }),
         });
       }
       const all = invitationsOf([params.query.userId ?? []].flat() as string[]);
@@ -182,35 +179,45 @@ describe('usersQueryOptions', () => {
     expect(invitationReads()).toEqual([]);
   });
 
-  it('reads the invitations of the page once more after an invitation changed (#357)', async () => {
-    const first = invitedAccounts(30);
-    const { client, invitationReads } = api({ first });
+  it("reads once per page after revoking an account's last invitation (#357)", async () => {
+    const pages = { first: invitedAccounts(30), second: invitedAccounts(20, 30) };
+    const loaded = { ...pages };
+    const { client, invitationReads } = api(pages);
     const queryClient = new QueryClient(QUERY_CLIENT_CONFIG);
     const accounts = new InfiniteQueryObserver(queryClient, usersQueryOptions(client, {}));
     const unsubscribe = accounts.subscribe(() => {});
     await accounts.refetch();
-    // The rows of the page observe its invitations, as `AccountInvitations` does.
-    const rows = first.map((user) =>
-      new QueryObserver(queryClient, {
-        ...accountsInvitationsQueryOptions(client, first),
-        select: (items) => items.filter((item) => item.user.id === user.id),
-      }).subscribe(() => {}),
+    await accounts.fetchNextPage();
+    // The rows of both pages observe their page's invitations, as `AccountInvitations` does.
+    const rows = [loaded.first, loaded.second].flatMap((page) =>
+      page.map((user) =>
+        new QueryObserver(queryClient, {
+          ...accountsInvitationsQueryOptions(client, page),
+          select: (items) => items.filter((item) => item.user.id === user.id),
+        }).subscribe(() => {}),
+      ),
     );
     const before = invitationReads().length;
 
-    // What the invitation mutations invalidate (`invalidateInvitations`).
+    // The last invitation of the first account is revoked: the API counts none any more, and the
+    // mutation invalidates what `invalidateInvitations` does.
+    pages.first = [{ ...loaded.first[0]!, pendingInvitationCount: 0 }, ...loaded.first.slice(1)];
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['invitations'] }),
       queryClient.invalidateQueries({ queryKey: ['users', 'list'] }),
     ]);
 
-    expect(invitationReads().length - before).toBe(1);
+    // One read per loaded page, under the keys the rows already observe.
+    expect(invitationReads().length - before).toBe(2);
+    expect(queryClient.getQueryCache().findAll({ queryKey: ['invitations', 'list'] })).toHaveLength(
+      2,
+    );
     rows.forEach((stop) => stop());
     unsubscribe();
   });
 
-  it('still returns the page when the invitations cannot be read', async () => {
-    const { client, invitationReads } = api({ first: [account()] }, { failing: true });
+  it.each([429, 500])('still returns the page when the invitations answer %i', async (status) => {
+    const { client, invitationReads } = api({ first: [account()] }, { failing: status });
     const queryClient = new QueryClient(QUERY_CLIENT_CONFIG);
 
     const data = await queryClient.fetchInfiniteQuery(usersQueryOptions(client, {}));
