@@ -12,7 +12,7 @@ The project is delivered with an **AI Engineering** approach: AI agents write th
 - **pnpm** enabled through Corepack: `corepack enable` (the version comes from the `packageManager` field of [`package.json`](package.json))
 - **Docker** with the Compose plugin – runs the infrastructure services and the integration tests (Testcontainers)
 - **Chromium** for the component tests, installed once after `pnpm install`: `pnpm --filter @trybun/ui exec playwright install chromium`
-- **ShellCheck** for `pnpm lint`, which checks the shell scripts (`trybun`, the backup service, the restore test): `apt install shellcheck` (preinstalled on the CI runners)
+- **ShellCheck** for `pnpm lint`, which checks the shell scripts (`trybun`, the backup service, the restore test, the test environment of the QA skills): `apt install shellcheck` (preinstalled on the CI runners)
 
 ## Getting started
 
@@ -48,7 +48,7 @@ Run from the repository root:
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications and generate the Keycloak login theme from the message catalogues |
-| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest, and check the shell scripts (`trybun`, the backup service, the restore test) with ShellCheck |
+| `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest, and check the shell scripts (`trybun`, the backup service, the restore test, the test environment of the QA skills) with ShellCheck |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |

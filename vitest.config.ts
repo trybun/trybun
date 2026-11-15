@@ -25,7 +25,13 @@ export default defineConfig({
       {
         test: {
           name: 'scripts',
-          include: ['scripts/**/*.spec.js', 'deploy/**/*.spec.js', 'docker/**/*.spec.js'],
+          include: [
+            'scripts/**/*.spec.js',
+            'deploy/**/*.spec.js',
+            'docker/**/*.spec.js',
+            // The test environment of the QA skills (#352).
+            '.ai/scripts/**/*.spec.js',
+          ],
         },
       },
     ],

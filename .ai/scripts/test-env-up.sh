@@ -9,6 +9,9 @@
 #              one of an installation (deploy/trybun) and of `pnpm dev`, whose containers, networks
 #              and volumes the test environment must never reuse or stop; refuses while another
 #              Compose project publishes the fixed ports of the infrastructure
+#   2026-11-15 --reset (#352): removes the data volumes of `trybun-test` before the boot, so the
+#              environment starts as empty as CI's E2E job; a boot without it keeps the data
+#              the bootstrap lock is machine-wide (/tmp/trybun-test-env.lock), not per checkout
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -17,6 +20,10 @@ set -eu
 # sync.
 COMPOSE_PROJECT=trybun-test
 COMPOSE="docker compose -p $COMPOSE_PROJECT -f compose.yaml -f compose.dev.yaml"
+# The volumes --reset removes: everything earlier runs left behind – the databases of Trybun and
+# Keycloak (accounts, projects, passwords; both in PostgreSQL), the queued jobs and the attachments.
+# `clamav-data` holds only the virus signatures, which ClamAV would otherwise download again.
+DATA_VOLUMES="postgres-data valkey-data seaweedfs-data"
 # The host ports compose.dev.yaml publishes; .env reaches the infrastructure there.
 INFRA_PORTS="5432 6379 8333 8080 3310 8025 1025"
 WEB_PORT=3000                       # fixed: Keycloak's redirect URIs and the sessions use it
@@ -42,16 +49,21 @@ QA_DIR=.ai/qa
 DESCRIPTOR="$QA_DIR/test-env.json"
 CREDENTIALS_FILE="$QA_DIR/test-env.env"
 BUILD_CACHE="$QA_DIR/test-env-build-cache.json"
-LOCK_DIR="$QA_DIR/test-env.lock"
+# One bootstrap at a time on the whole machine, not per checkout: every checkout boots the same
+# Compose project on the same ports, and --reset must never remove the volumes under another
+# checkout's boot (TEST_ENV_LOCK_DIR moves it for the tests of this script).
+LOCK_DIR="${TEST_ENV_LOCK_DIR:-/tmp/$COMPOSE_PROJECT-env.lock}"
 LOG_DIR="$QA_DIR/logs"
 mkdir -p "$QA_DIR" "$LOG_DIR"
 
 FORCE=0
 FORCE_REBUILD=0
+RESET=0
 for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
     --force-rebuild) FORCE_REBUILD=1 ;;
+    --reset) RESET=1 ;;
     *) echo "Unknown flag: $arg" >&2; exit 2 ;;
   esac
 done
@@ -59,7 +71,9 @@ done
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 log() { printf '[test-env] %s\n' "$*" >&2; }
 json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$2" | head -1; }
-alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
+# Whether a process exists: `ps -p`, not `kill -0`, which fails with EPERM for another user's
+# process (the lock below is shared by the whole machine).
+alive() { [ -n "${1:-}" ] && ps -p "$1" >/dev/null 2>&1; }
 healthy() { curl -fsS --max-time 5 -o /dev/null "$1" 2>/dev/null; }
 
 # --- lock: one bootstrap at a time
@@ -112,8 +126,8 @@ print_result() {
 
 CURRENT_FP=$(fingerprint)
 
-# --- reuse check: attach to a running environment of this checkout
-if [ "$FORCE" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR")" = running ]; then
+# --- reuse check: attach to a running environment of this checkout (never with --reset)
+if [ "$FORCE" = 0 ] && [ "$RESET" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR")" = running ]; then
   api_pid=$(json_get apiPid "$DESCRIPTOR")
   worker_pid=$(json_get workerPid "$DESCRIPTOR")
   web_pid=$(json_get webPid "$DESCRIPTOR")
@@ -128,9 +142,14 @@ if [ "$FORCE" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR
   log "the recorded environment is stale; restarting it"
   sh .ai/scripts/test-env-down.sh --keep-services >/dev/null 2>&1 || true
 fi
-
 acquire_lock
 START=$(date +%s)
+
+# A reset replaces the running environment of this checkout: its applications use the data.
+if [ "$RESET" = 1 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR")" = running ]; then
+  log "stopping the running environment $(json_get runId "$DESCRIPTOR") for the reset"
+  sh .ai/scripts/test-env-down.sh --keep-services >/dev/null 2>&1 || true
+fi
 
 # Never take over a server this script did not start (e.g. `pnpm dev`).
 for port in "$WEB_PORT" "$API_PORT"; do
@@ -155,6 +174,21 @@ done
 if [ ! -f .env ]; then
   cp .env.example .env
   log "created .env from .env.example with its optional services (SeaweedFS and ClamAV for attachments)"
+fi
+
+# --- reset (--reset): the data volumes of this Compose project only, found by their Compose labels;
+# Keycloak imports the development realm again on its first start, the seed below fills the rest
+if [ "$RESET" = 1 ]; then
+  log "resetting the data of the Compose project $COMPOSE_PROJECT ($DATA_VOLUMES)"
+  $COMPOSE down >"$LOG_DIR/reset.log" 2>&1 || { log "stopping the infrastructure failed, see $LOG_DIR/reset.log"; exit 1; }
+  for volume in $DATA_VOLUMES; do
+    name=$(docker volume ls -q --filter "label=com.docker.compose.project=$COMPOSE_PROJECT" \
+      --filter "label=com.docker.compose.volume=$volume") ||
+      { log "listing the volumes of $COMPOSE_PROJECT failed"; exit 1; }
+    [ -n "$name" ] || continue
+    docker volume rm "$name" >>"$LOG_DIR/reset.log" 2>&1 ||
+      { log "removing the volume $name failed, see $LOG_DIR/reset.log"; exit 1; }
+  done
 fi
 SERVICES_STARTED=true
 [ -n "$($COMPOSE ps -q postgres 2>/dev/null)" ] && SERVICES_STARTED=false
@@ -253,7 +287,7 @@ cat > "$DESCRIPTOR" <<EOF
   "platform": "linux",
   "sourceFingerprint": "$CURRENT_FP",
   "startedAt": "$(now)",
-  "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s. Stop with: sh .ai/scripts/test-env-down.sh"
+  "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). Stop with: sh .ai/scripts/test-env-down.sh"
 }
 EOF
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
