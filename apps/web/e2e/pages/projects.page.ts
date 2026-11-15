@@ -33,19 +33,14 @@ export class ProjectsPage {
   }
 
   /**
-   * Opens the settings of a project from the list. The server renders the links of the list, and a
-   * click before the list hydrates navigates nowhere – on the tablet (WebKit) the page stayed on the
-   * list (#241) – so the click repeats until the settings tabs show. The cause was the New project
-   * button vanishing during the hydration, which moved the list between pointerdown and pointerup
-   * (#308, fixed); the repetition stays until CI confirms the fix.
+   * Opens the settings of a project from the list with a single click. The click once navigated
+   * nowhere while the page hydrated (#241): the New project button above the list vanished and
+   * moved the list between pointerdown and pointerup (#308). Its fallback keeps the list in place
+   * (#309), so a click that is lost again fails here instead of being repeated (#312).
    */
   async openSettings(name: string): Promise<void> {
-    await expect(async () => {
-      if (!(await this.settingsTabs.isVisible())) {
-        await this.project(name).click({ timeout: 1000 });
-      }
-      await expect(this.settingsTabs).toBeVisible({ timeout: 1000 });
-    }).toPass();
+    await this.project(name).click();
+    await expect(this.settingsTabs).toBeVisible();
   }
 
   /**
