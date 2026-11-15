@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, screen } from '@testing-library/react';
+import { act, cleanup, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -43,10 +43,16 @@ describe('LazyProductTourMenuItems', () => {
       </LazyHelpMenu>,
     );
 
-    await user.click(await screen.findByRole('button', { name: 'Help' }));
+    // The menu's own trigger, not the fallback of its boundary, which has the same button (#311)
+    // and would stand in for a hidden menu: only the trigger reports the open menu.
+    const trigger = () => screen.getByRole('button', { name: 'Help' });
+    await waitFor(() => {
+      expect(trigger().getAttribute('aria-haspopup')).toBe('menu');
+    });
+    await user.click(trigger());
 
     expect(await screen.findByRole('menuitem', { name: 'Help for this view' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Help' })).toBeTruthy();
+    expect(trigger().getAttribute('aria-expanded')).toBe('true');
     expect(screen.queryByRole('menuitem', { name: 'Take the tour' })).toBeNull();
 
     await act(async () => {
@@ -55,6 +61,6 @@ describe('LazyProductTourMenuItems', () => {
     });
 
     expect(await screen.findByRole('menuitem', { name: 'Take the tour' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Help' })).toBeTruthy();
+    expect(trigger().getAttribute('aria-expanded')).toBe('true');
   });
 });

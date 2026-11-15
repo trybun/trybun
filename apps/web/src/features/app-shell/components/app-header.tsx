@@ -22,9 +22,12 @@ export function AppHeader({
   help,
   notifications,
   homeHref = '/',
+  accountName,
 }: AppHeaderSlots & {
   /** Where the brand leads: the home of the team, or the portal root of end users (§5.7). */
   homeHref?: string;
+  /** The display name or address of the signed-in account, for the button of the user menu. */
+  accountName: string | undefined;
 }) {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center gap-1 border-b border-border bg-background px-2 md:px-4">
@@ -39,7 +42,7 @@ export function AppHeader({
         {search}
         {help}
         {notifications}
-        <LazyUserMenu />
+        <LazyUserMenu accountName={accountName} />
       </div>
     </header>
   );
