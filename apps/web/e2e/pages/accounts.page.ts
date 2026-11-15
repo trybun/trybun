@@ -35,9 +35,13 @@ export class AccountsPage {
     return cards.or(rows).filter({ visible: true });
   }
 
-  /** The visible entry of an account. */
+  /**
+   * The visible entry of an account, by its whole name or address: a part of the text would also
+   * match the entry of another account whose pending invitation names the inviting person
+   * ("Invited by Marek Manager"), shown in the first paint since #310.
+   */
   account(name: string): Locator {
-    return this.entries.filter({ hasText: name });
+    return this.entries.filter({ has: this.page.getByText(name, { exact: true }) });
   }
 
   actionsOf(name: string): Locator {

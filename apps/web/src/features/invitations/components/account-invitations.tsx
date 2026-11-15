@@ -6,14 +6,15 @@ import type { User } from '@trybun/contracts/users';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { userInvitationsQueryOptions } from '../queries.js';
+import { hasPendingInvitations, userInvitationsQueryOptions } from '../queries.js';
 import { LazyInviteDialog } from './lazy-invite-dialog.js';
 import { PendingInvitationList } from './pending-invitation-list.js';
 
 /**
  * The pending invitations of an account on the Accounts page (§7.4): target, inviting person and
- * expiry, with **Copy new link** and **Revoke** where allowed. They are fetched only for an account
- * whose `pendingInvitationCount` says it has some, so the page does not ask for every row. An
+ * expiry, with **Copy new link** and **Revoke** where allowed. They are read only for an account
+ * whose `pendingInvitationCount` says it has some (`hasPendingInvitations`), prefetched by the page
+ * on the server so the list does not move the rows below it after the first paint (#310). An
  * `invited` account without one – reactivated, or all its invitations expired or revoked – has no
  * working link, so **Invite** is offered for its address right away. Deactivated accounts have
  * none: deactivating revokes them. Nothing is rendered – not even `wrap` – while there is nothing
@@ -29,7 +30,7 @@ export function AccountInvitations({
 }) {
   const t = useTranslations('invitations');
   const isInvitable = user.state === 'invited' || user.state === 'active';
-  const hasInvitations = isInvitable && user.pendingInvitationCount > 0;
+  const hasInvitations = hasPendingInvitations(user);
   const invitations = useInfiniteQuery({
     ...userInvitationsQueryOptions(browserApiClient, user.id),
     enabled: hasInvitations,

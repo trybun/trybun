@@ -2,6 +2,10 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
 import { LazyInviteDialog } from '../../../../features/invitations/components/lazy-invite-dialog.js';
+import {
+  hasPendingInvitations,
+  userInvitationsQueryOptions,
+} from '../../../../features/invitations/queries.js';
 import { AccountList } from '../../../../features/users/components/account-list.js';
 import { currentUserQueryOptions, usersQueryOptions } from '../../../../features/users/queries.js';
 import { accountsSearchParamsSchema } from '../../../../features/users/search-params.js';
@@ -28,7 +32,18 @@ export default async function AccountsPage({
   if (user?.allowedActions.includes('open_administration') !== true) {
     notFound();
   }
-  await queryClient.prefetchInfiniteQuery(usersQueryOptions(client, { kind, state, query: '' }));
+  const accountsOptions = usersQueryOptions(client, { kind, state, query: '' });
+  await queryClient.prefetchInfiniteQuery(accountsOptions);
+  // The pending invitations of the first page are part of the first paint: loaded in the browser,
+  // they pushed the rows below them down under the finger (#310, Rule 9).
+  const accounts = queryClient.getQueryData(accountsOptions.queryKey)?.pages[0]?.items ?? [];
+  await Promise.all(
+    accounts
+      .filter(hasPendingInvitations)
+      .map((account) =>
+        queryClient.prefetchInfiniteQuery(userInvitationsQueryOptions(client, account.id)),
+      ),
+  );
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
