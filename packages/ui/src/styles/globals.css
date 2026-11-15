@@ -155,6 +155,33 @@
   scroll-margin-bottom: calc(var(--spacing) * --value(integer) + env(safe-area-inset-bottom, 0px));
 }
 
+/*
+ * The width limit of the narrow columns of a table with a full-width column (§18.6), set on the
+ * `Table`, e.g. `max-lg:table-label-limit-21`. The full-width column leaves every other column
+ * only its min-content width, so a long word – often a translation – would widen the table. In
+ * the limit, a `TableCellLabel` is at most the given width and a `TableSortButton` that much plus
+ * the cell padding it overlaps: a box with `width: max-content` and a `max-width` contributes
+ * `min(max-content, limit)`, so a short label stays on one line and a longer one wraps
+ * (hyphenated where the browser knows the page's language, else at any character). The limit
+ * applies to every label and sort button inside the table, a nested table included.
+ */
+@utility table-label-limit-* {
+  & [data-slot='table-cell-label'] {
+    display: block;
+    width: max-content;
+    max-width: calc(var(--spacing) * --value(integer));
+    hyphens: auto;
+    overflow-wrap: anywhere;
+  }
+  & [data-slot='table-sort-button'] {
+    width: max-content;
+    max-width: calc(var(--spacing) * --value(integer) + var(--spacing) * 4);
+    white-space: normal;
+    hyphens: auto;
+    overflow-wrap: anywhere;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring;

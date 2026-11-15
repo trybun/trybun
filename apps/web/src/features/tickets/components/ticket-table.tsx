@@ -6,6 +6,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableCellLabel,
   TableHead,
   TableHeader,
   TableRow,
@@ -19,8 +20,6 @@ import { MAX_BULK_CHANGE_TICKETS } from '../ticket-list.js';
 import {
   COLUMN_CLASS,
   SORT_OF_COLUMN,
-  NARROW_LABEL_CLASS,
-  SORT_BUTTON_CLASS,
   TicketCheckbox,
   type TicketTable as TicketTableInstance,
 } from './ticket-list-columns.js';
@@ -81,7 +80,11 @@ export function TicketTable({
   rowActions?: (ticket: TicketListItem) => React.ReactNode;
 }) {
   return (
-    <Table>
+    // The narrow columns are limited where they would not fit otherwise (#295): the tablet widths
+    // below `lg` (four narrow columns) and the desktop widths from `xl` to `2xl` (seven). With the
+    // cell padding a column is then at most 100 px wide (44 + 83 + 112 + 4 × 100 ≤ 656 px at
+    // 768 px; 32 + 83 + 112 + 7 × 100 ≤ 992 px at 1280 px), so the table fits in every language.
+    <Table className="max-lg:table-label-limit-21 xl:max-2xl:table-label-limit-21">
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
           <TableRow key={group.id}>
@@ -96,15 +99,11 @@ export function TicketTable({
                   {header.column.id === 'select' ? (
                     <SelectAllCheckbox table={table} />
                   ) : direction === undefined ? (
-                    <span className={NARROW_LABEL_CLASS}>
+                    <TableCellLabel>
                       <table.FlexRender header={header} />
-                    </span>
+                    </TableCellLabel>
                   ) : (
-                    <TableSortButton
-                      type="button"
-                      className={SORT_BUTTON_CLASS}
-                      onClick={() => onSort(header.column.id)}
-                    >
+                    <TableSortButton type="button" onClick={() => onSort(header.column.id)}>
                       <table.FlexRender header={header} />
                     </TableSortButton>
                   )}

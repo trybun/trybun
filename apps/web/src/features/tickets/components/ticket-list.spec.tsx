@@ -181,35 +181,27 @@ describe('TicketList', () => {
     await screen.findAllByRole('link', { name: 'Ticket 1' });
     const table = screen.getByRole('table');
     const row = within(table).getAllByRole('row')[1]!;
-    const classesOf = (element: Element | null | undefined) =>
-      (element?.getAttribute('class') ?? '').split(' ');
-    // Status, priority, type, assignee, project and last update: a label at most 84 px wide on
-    // tablets and narrow desktops that wraps a long word instead of widening the table; the size
-    // of the layout is checked in E2E.
+    // The table limits its narrow columns on tablets and narrow desktops (`table-label-limit-*` of
+    // `@trybun/ui`); the size of the layout is checked in E2E and in the stories of the table.
+    expect(table.getAttribute('class')?.split(' ')).toEqual(
+      expect.arrayContaining(['max-lg:table-label-limit-21', 'xl:max-2xl:table-label-limit-21']),
+    );
+    // Status, priority, type, assignee, project and last update: a label at most 84 px wide that
+    // wraps a long word instead of widening the table.
     for (const text of ['Waiting for requester', 'High', 'Bug', 'Unassigned', 'ERP system']) {
-      const label = within(row).getAllByText(text).at(-1)?.closest('.max-lg\\:max-w-21');
-      expect(classesOf(label), text).toEqual(
-        expect.arrayContaining([
-          'max-lg:w-max',
-          'max-lg:wrap-anywhere',
-          'max-lg:hyphens-auto',
-          'xl:max-2xl:max-w-21',
-          'xl:max-2xl:wrap-anywhere',
-        ]),
-      );
+      const label = within(row)
+        .getAllByText(text)
+        .at(-1)
+        ?.closest('[data-slot="table-cell-label"]');
+      expect(label, text).not.toBeNull();
     }
-    expect(classesOf(row.querySelector('time')?.parentElement)).toContain('max-lg:max-w-21');
+    expect(row.querySelector('time')?.closest('[data-slot="table-cell-label"]')).not.toBeNull();
     // The sort buttons of the headers wrap too and keep their touch target.
     for (const name of ['ID', 'Status', 'Priority', 'Updated']) {
-      expect(classesOf(within(table).getByRole('button', { name })), name).toEqual(
-        expect.arrayContaining([
-          'min-h-11',
-          'xl:pointer-fine:h-auto',
-          'max-lg:max-w-25',
-          'max-lg:whitespace-normal',
-          'max-lg:wrap-anywhere',
-          'xl:max-2xl:max-w-25',
-        ]),
+      const button = within(table).getByRole('button', { name });
+      expect(button.getAttribute('data-slot'), name).toBe('table-sort-button');
+      expect(button.getAttribute('class')?.split(' '), name).toEqual(
+        expect.arrayContaining(['min-h-11', 'xl:pointer-fine:h-auto', 'xl:pointer-fine:min-h-7']),
       );
     }
   });
