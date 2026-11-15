@@ -13,8 +13,8 @@ import { PendingInvitationList } from './pending-invitation-list.js';
 /**
  * The pending invitations of an account on the Accounts page (§7.4): target, inviting person and
  * expiry, with **Copy new link** and **Revoke** where allowed. They are read only for an account
- * whose `pendingInvitationCount` says it has some (`hasPendingInvitations`), prefetched by the page
- * on the server so the list does not move the rows below it after the first paint (#310). An
+ * whose `pendingInvitationCount` says it has some (`hasPendingInvitations`), loaded with the page of
+ * accounts (`usersQueryOptions`) so the list never moves the rows below it (#310). An
  * `invited` account without one – reactivated, or all its invitations expired or revoked – has no
  * working link, so **Invite** is offered for its address right away. Deactivated accounts have
  * none: deactivating revokes them. Nothing is rendered – not even `wrap` – while there is nothing

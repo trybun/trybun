@@ -24,8 +24,8 @@ export function projectInvitationsQueryOptions(client: ApiClient, projectId: str
 /**
  * Whether the Accounts page reads the pending invitations of an account (§7.4): only an invited or
  * active account whose `pendingInvitationCount` says it has some, so the page does not ask for
- * every row. The page prefetches them on the server and `AccountInvitations` reads them in the
- * browser by this one rule, so the list is part of the first paint (#310).
+ * every row. `usersQueryOptions` loads them with each page of accounts and `AccountInvitations`
+ * reads them by this one rule, so an account is shown with its invitations (#310).
  */
 export function hasPendingInvitations(user: User): boolean {
   return (user.state === 'invited' || user.state === 'active') && user.pendingInvitationCount > 0;

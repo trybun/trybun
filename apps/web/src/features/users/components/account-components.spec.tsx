@@ -6,6 +6,7 @@ import type { User, UserAction } from '@trybun/contracts/users';
 import { toast } from '@trybun/ui/components/toast';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
+import { QUERY_CLIENT_CONFIG } from '../../../lib/query-client/query-client-config.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
@@ -201,7 +202,13 @@ describe('AccountList', () => {
       ]),
     );
     fake.on('GET /api/v1/invitations', { data: { items: [], nextCursor: null } });
-    renderInApp(<AccountList />);
+    // The configuration of the application: the invitations the page of accounts brought along are
+    // fresh, so the row does not read them again (#310).
+    const client = new QueryClient({
+      ...QUERY_CLIENT_CONFIG,
+      defaultOptions: { queries: { ...QUERY_CLIENT_CONFIG.defaultOptions?.queries, retry: false } },
+    });
+    renderInApp(<AccountList />, { client });
 
     // The invited account without a pending invitation is offered Invite at once.
     expect((await screen.findAllByText('No working invitation link.')).length).toBeGreaterThan(0);
