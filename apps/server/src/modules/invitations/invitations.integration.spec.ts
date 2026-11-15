@@ -759,6 +759,23 @@ describe('invitations', () => {
       ]);
       expect(resending.status).toBe(404);
     });
+
+    it('lists the invitations of one account', async () => {
+      const { authorization } = await signIn();
+      const [own, other] = await Promise.all([
+        issued(newEmail(), { type: 'administrator' }),
+        issued(newEmail(), { type: 'administrator' }),
+      ]);
+
+      const res = await http()
+        .get('/api/v1/invitations')
+        .query({ userId: own.invitation.user.id })
+        .set('Authorization', authorization);
+
+      expect(res.status).toBe(200);
+      expect((res.body as InvitationPage).items.map(({ id }) => id)).toEqual([own.invitation.id]);
+      expect(other.invitation.user.id).not.toBe(own.invitation.user.id);
+    });
   });
 
   describe('resending and revoking', () => {
