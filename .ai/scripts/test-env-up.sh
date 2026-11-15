@@ -71,7 +71,9 @@ done
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 log() { printf '[test-env] %s\n' "$*" >&2; }
 json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$2" | head -1; }
-alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
+# Whether a process exists: `ps -p`, not `kill -0`, which fails with EPERM for another user's
+# process (the lock below is shared by the whole machine).
+alive() { [ -n "${1:-}" ] && ps -p "$1" >/dev/null 2>&1; }
 healthy() { curl -fsS --max-time 5 -o /dev/null "$1" 2>/dev/null; }
 
 # --- lock: one bootstrap at a time

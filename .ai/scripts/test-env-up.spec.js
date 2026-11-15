@@ -135,13 +135,14 @@ function readLines(path) {
 }
 
 /** Runs test-env-up.sh and returns the log of the stubs written during this run. */
-function up(...flags) {
+function up(...args) {
+  const { timeout = 60_000 } = typeof args.at(-1) === 'object' ? args.pop() : {};
   writeFileSync(join(folder, 'log'), '');
-  const result = spawnSync('sh', ['.ai/scripts/test-env-up.sh', ...flags], {
+  const result = spawnSync('sh', ['.ai/scripts/test-env-up.sh', ...args], {
     cwd: checkout,
     encoding: 'utf8',
     env: environment(),
-    timeout: 60_000,
+    timeout,
   });
   const log = readLines(join(folder, 'log'));
   return { ...result, log };
@@ -189,6 +190,29 @@ describe('test-env-up.sh', () => {
     expect(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8')).toContain(
       'data reset: true',
     );
+  });
+
+  it("waits for a bootstrap of another user's process instead of taking its lock", () => {
+    // PID 1 exists but belongs to root: `kill -0` fails with EPERM for it, `ps -p` finds it.
+    mkdirSync(join(folder, 'test-env.lock'));
+    writeFileSync(join(folder, 'test-env.lock/owner.json'), '{ "pid": "1" }\n');
+
+    const { signal, stderr, log } = up({ timeout: 3_000 });
+
+    expect(signal).toBe('SIGTERM');
+    expect(stderr).not.toContain('removing the stale lock');
+    expect(log).toEqual([]);
+  });
+
+  it('takes over the lock of a bootstrap that no longer runs', () => {
+    const gone = spawnSync('sh', ['-c', 'echo $$']).stdout.toString().trim();
+    mkdirSync(join(folder, 'test-env.lock'));
+    writeFileSync(join(folder, 'test-env.lock/owner.json'), `{ "pid": "${gone}" }\n`);
+
+    const { status, stderr } = up();
+
+    expect(status, stderr).toBe(0);
+    expect(stderr).toContain(`removing the stale lock of PID ${gone}`);
   });
 
   it('reuses a running environment without touching its data', () => {
