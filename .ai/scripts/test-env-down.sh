@@ -30,6 +30,7 @@ done
 # The API closes its HTTP server only after its shutdown hooks: wait until every group has exited,
 # so the ports are free when this returns (a boot right after checks them), then kill what is left.
 waited=0
+running=false
 while [ "$waited" -lt 30 ]; do
   running=false
   for pid in $PIDS; do
@@ -39,7 +40,9 @@ while [ "$waited" -lt 30 ]; do
   sleep 1
   waited=$((waited + 1))
 done
-for pid in $PIDS; do kill -s KILL "-$pid" 2>/dev/null || true; done
+if [ "$running" = true ]; then
+  for pid in $PIDS; do kill -s KILL "-$pid" 2>/dev/null || true; done
+fi
 if [ "$KEEP_SERVICES" = 0 ] && [ "$(json_get servicesStartedByScript)" = true ]; then
   $COMPOSE down >/dev/null 2>&1 || true
 fi
