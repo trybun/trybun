@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Invitation } from '@trybun/contracts/invitations';
 import type { User } from '@trybun/contracts/users';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { accountsInvitationsQueryOptions, hasPendingInvitations } from '../queries.js';
 import { LazyInviteDialog } from './lazy-invite-dialog.js';
@@ -35,15 +35,10 @@ export function AccountInvitations({
   const t = useTranslations('invitations');
   const isInvitable = user.state === 'invited' || user.state === 'active';
   const hasInvitations = hasPendingInvitations(user);
-  const ownInvitations = useCallback(
-    (invitations: Invitation[]) =>
-      invitations.filter((invitation) => invitation.user.id === user.id),
-    [user.id],
-  );
   const invitations = useQuery({
     ...accountsInvitationsQueryOptions(browserApiClient, pageAccounts),
     enabled: hasInvitations,
-    select: ownInvitations,
+    select: (items) => items.filter((invitation) => invitation.user.id === user.id),
   });
   const items = invitations.data ?? [];
 

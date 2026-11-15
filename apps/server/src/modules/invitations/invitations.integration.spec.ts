@@ -773,8 +773,9 @@ describe('invitations', () => {
         .set('Authorization', authorization);
 
       expect(res.status).toBe(200);
-      expect((res.body as InvitationPage).items.map(({ id }) => id)).toEqual([own.invitation.id]);
-      expect(other.invitation.user.id).not.toBe(own.invitation.user.id);
+      const ids = (res.body as InvitationPage).items.map(({ id }) => id);
+      expect(ids).toEqual([own.invitation.id]);
+      expect(ids).not.toContain(other.invitation.id);
     });
 
     it('lists the invitations of several accounts in one request, newest first (#357)', async () => {
