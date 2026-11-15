@@ -6,5 +6,7 @@ apps/web/src/lib/api-client/schema.d.ts
 # Generated: the help content from docs/user (`pnpm help:generate`).
 apps/web/src/features/help/content/
 docs/
-.ai/
+.ai/*
+# Except the tests of the test environment's scripts (#352).
+!.ai/scripts/
 *.md
