@@ -30,9 +30,9 @@
 
 ### Phase 1: The repeated userId of the invitations list
 
-- [ ] 1.1 Characterize listing by one userId
-- [ ] 1.2 Repeated userId in the contract and the service with integration tests
-- [ ] 1.3 Permission-layer row and regenerated OpenAPI client
+- [x] 1.1 Characterize listing by one userId — 46f7daa
+- [x] 1.2 Repeated userId in the contract and the service with integration tests — 5d3a142
+- [x] 1.3 Permission-layer row and regenerated OpenAPI client — dfdd9d3
 
 ### Phase 2: One invitations query per page of accounts
 
