@@ -38,4 +38,4 @@
 
 - [x] 2.1 accountsInvitationsQueryOptions prefetched by usersQueryOptions with unit tests — 0b8e837
 - [x] 2.2 AccountInvitations on the page query, per-account query removed, component tests — 0b8e837
-- [ ] 2.3 Specification updates and the validation gate
+- [x] 2.3 Specification updates and the validation gate — eca5024, d7fa890
