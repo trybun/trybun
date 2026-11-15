@@ -212,7 +212,9 @@ describe('AccountList', () => {
 
     // The invited account without a pending invitation is offered Invite at once.
     expect((await screen.findAllByText('No working invitation link.')).length).toBeGreaterThan(0);
-    await waitFor(() => expect(fake.callsTo('GET /api/v1/invitations')).toHaveLength(1));
+    // Count once every request has settled, so a later read by the row would be caught too.
+    await waitFor(() => expect(client.isFetching()).toBe(0));
+    expect(fake.callsTo('GET /api/v1/invitations')).toHaveLength(1);
     expect(fake.callsTo('GET /api/v1/invitations')[0]!.init).toMatchObject({
       params: { query: { userId: withInvitations } },
     });
