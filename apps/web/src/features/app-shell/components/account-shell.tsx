@@ -25,6 +25,7 @@ import { counterpartOf, type Shell } from '../counterparts.js';
 import { isNavigationCollapsed } from '../navigation-cookie.js';
 import type { NavigationContext } from '../navigation.js';
 import { AppShell } from './app-shell.js';
+import { accountNameOf } from './user-menu-button.js';
 
 /** The side of the web application an account kind works in (§5.7). */
 export function shellOf(kind: UserKind): Shell {
@@ -89,6 +90,7 @@ export async function AccountShell({
           <AppShell
             navigation={navigation}
             isDesktopNavigationCollapsed={isNavigationCollapsedOnDesktop}
+            accountName={accountNameOf(user)}
             newTicket={shell === 'team' ? <NewTicketButton /> : undefined}
             help={
               <LazyHelpMenu views={helpViews}>

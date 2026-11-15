@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@trybun/ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,13 +7,13 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
 } from '@trybun/ui/components/dropdown-menu';
-import { BookOpenIcon, CircleHelpIcon } from 'lucide-react';
+import { BookOpenIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import { APP_HEADER_ICON_CLASS_NAME } from '../../app-shell/components/app-header-icon.js';
 import { helpHref, helpPageOfPath } from '../help-routes.js';
+import { HelpMenuButton } from './help-menu-button.js';
 
 /**
  * The help menu of the header (§2.3, §2.4): the help page of the current view – or the help index
@@ -34,13 +33,7 @@ export function HelpMenu({
   const page = helpPageOfPath(views, pathname);
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon" />}
-        aria-label={t('open')}
-        data-tour="app-header-help"
-      >
-        <CircleHelpIcon aria-hidden className={APP_HEADER_ICON_CLASS_NAME} />
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger render={<HelpMenuButton />} />
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLinkItem render={<Link href={helpHref(page)} />}>
