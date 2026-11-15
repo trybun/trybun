@@ -136,6 +136,24 @@ describe('AccountsPage', () => {
     expect(html).toContain('Project Customer portal, End user');
   });
 
+  it('still renders the accounts when their invitations cannot be read', async () => {
+    accounts = [account()];
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/invitations'
+        ? Promise.resolve({
+            error: { type: 'about:blank', title: 'Too Many Requests', status: 429 },
+            response: new Response(null, { status: 429 }),
+          })
+        : respond(path, ['open_administration']),
+    );
+
+    const html = await render(await AccountsPage({ searchParams: Promise.resolve({}) }));
+
+    // A failed prefetch is not passed to the browser, which reads the invitations itself.
+    expect(html).toContain('invited@customer.example.com');
+    expect(html).not.toContain('Pending invitations of');
+  });
+
   it('shows the not-found page to a person who is not the Administrator', async () => {
     GET.mockImplementation((path: string) => respond(path, ['create_project']));
 
