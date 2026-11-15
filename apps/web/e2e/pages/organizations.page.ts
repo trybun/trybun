@@ -34,21 +34,14 @@ export class OrganizationsPage {
   }
 
   /**
-   * Opens the detail of an organization from the list. The server renders the links of the list,
-   * and a click while the list still hydrates navigates nowhere – on the tablet (WebKit) the page
-   * stayed on the list and fetched no detail (#289, like #241) – so the click repeats until the
-   * detail route shows. The cause was the New organization button vanishing during the hydration,
-   * which moved the list between pointerdown and pointerup (#308, fixed); the repetition stays until
-   * CI confirms the fix.
+   * Opens the detail of an organization from the list with a single click. The click once
+   * navigated nowhere while the page hydrated (#289): the New organization button above the list
+   * vanished and moved the list between pointerdown and pointerup (#308). Its fallback keeps the
+   * list in place (#309), so a click that is lost again fails here instead of being repeated (#312).
    */
   async openOrganization(name: string): Promise<void> {
-    const detail = /\/admin\/organizations\/[\da-f-]+$/;
-    await expect(async () => {
-      if (!detail.test(this.page.url())) {
-        await this.organization(name).click({ timeout: 1000 });
-      }
-      await expect(this.page).toHaveURL(detail, { timeout: 1000 });
-    }).toPass();
+    await this.organization(name).click();
+    await expect(this.page).toHaveURL(/\/admin\/organizations\/[\da-f-]+$/);
   }
 
   /** Waits until the toasts over the Danger zone are gone (`waitForToastsToClose`). */
