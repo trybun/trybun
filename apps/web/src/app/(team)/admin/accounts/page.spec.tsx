@@ -1,5 +1,10 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { Invitation } from '@trybun/contracts/invitations';
+import type { User } from '@trybun/contracts/users';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { createTranslator } from 'next-intl';
+import { createTranslator, NextIntlClientProvider } from 'next-intl';
+import type { ReactElement } from 'react';
+import { prerender } from 'react-dom/static';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
@@ -17,18 +22,77 @@ vi.mock('next-intl/server', () => ({
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
-vi.mock('next/navigation.js', () => ({ notFound }));
+vi.mock('next/navigation.js', () => ({
+  notFound,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
 
 const { default: AccountsPage } = await import('./page.js');
 
+const INVITED_ID = '0199a3f0-0000-7000-8000-000000000021';
+
+function account(overrides: Partial<User> = {}): User {
+  return {
+    id: INVITED_ID,
+    displayName: null,
+    email: 'invited@customer.example.com',
+    kind: 'end_user',
+    state: 'invited',
+    isAdmin: false,
+    githubLogin: null,
+    createdAt: '2026-10-29T09:00:00.000Z',
+    pendingInvitationCount: 1,
+    allowedActions: [],
+    ...overrides,
+  };
+}
+
+const invitation: Invitation = {
+  id: '0199a3f0-0000-7000-8000-000000000030',
+  user: { id: INVITED_ID, email: 'invited@customer.example.com', displayName: null },
+  target: {
+    type: 'project',
+    project: { id: '0199a3f0-0000-7000-8000-000000000010', key: 'CP', name: 'Customer portal' },
+    role: 'end_user',
+    organization: null,
+  },
+  invitedBy: { id: '0199a3f0-0000-7000-8000-000000000001', displayName: 'Ada Admin' },
+  state: 'pending',
+  expiresAt: '2026-11-05T09:00:00.000Z',
+  createdAt: '2026-10-29T09:00:00.000Z',
+  allowedActions: ['resend', 'revoke'],
+};
+
+/** The accounts the API lists: none unless a test says otherwise. */
+let accounts: User[] = [];
+
 function respond(path: string, userActions: string[]) {
   const data =
-    path === '/api/v1/users/me' ? { allowedActions: userActions } : { items: [], nextCursor: null };
+    path === '/api/v1/users/me'
+      ? { allowedActions: userActions }
+      : path === '/api/v1/users'
+        ? { items: accounts, nextCursor: null }
+        : { items: [invitation], nextCursor: null };
   return Promise.resolve({ data, error: undefined, response: new Response(null) });
+}
+
+/**
+ * The server HTML of the page as the browser first paints it: the client components read the
+ * queries the page prefetched, through its `HydrationBoundary` (§18.5, §18.7).
+ */
+async function render(element: ReactElement): Promise<string> {
+  const { prelude } = await prerender(
+    <NextIntlClientProvider locale="en" messages={CATALOGUES.en} timeZone="UTC">
+      <QueryClientProvider client={new QueryClient()}>{element}</QueryClientProvider>
+    </NextIntlClientProvider>,
+  );
+  return new Response(prelude).text();
 }
 
 describe('AccountsPage', () => {
   beforeEach(() => {
+    accounts = [];
+    GET.mockClear();
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
     GET.mockImplementation((path: string) => respond(path, ['open_administration']));
   });
@@ -48,6 +112,46 @@ describe('AccountsPage', () => {
       params: { query },
       signal: expect.anything() as AbortSignal,
     });
+  });
+
+  it('renders the pending invitations of the first page on the server (#310)', async () => {
+    accounts = [
+      account(),
+      account({ id: 'none', email: 'other@customer.example.com', pendingInvitationCount: 0 }),
+      // Deactivating revokes the invitations, whatever the count says.
+      account({ id: 'gone', state: 'deactivated', pendingInvitationCount: 1 }),
+    ];
+
+    const html = await render(
+      await AccountsPage({ searchParams: Promise.resolve({ state: 'invited' }) }),
+    );
+
+    expect(GET).toHaveBeenCalledWith('/api/v1/invitations', {
+      params: { query: { userId: INVITED_ID } },
+      signal: expect.anything() as AbortSignal,
+    });
+    expect(GET.mock.calls.filter(([path]) => path === '/api/v1/invitations')).toHaveLength(1);
+    // In the server HTML, so the list does not push the rows below it down after the first paint.
+    expect(html).toContain('aria-label="Pending invitations of invited@customer.example.com"');
+    expect(html).toContain('Project Customer portal, End user');
+  });
+
+  it('still renders the accounts when their invitations cannot be read', async () => {
+    accounts = [account()];
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/invitations'
+        ? Promise.resolve({
+            error: { type: 'about:blank', title: 'Too Many Requests', status: 429 },
+            response: new Response(null, { status: 429 }),
+          })
+        : respond(path, ['open_administration']),
+    );
+
+    const html = await render(await AccountsPage({ searchParams: Promise.resolve({}) }));
+
+    // A failed prefetch is not passed to the browser, which reads the invitations itself.
+    expect(html).toContain('invited@customer.example.com');
+    expect(html).not.toContain('Pending invitations of');
   });
 
   it('shows the not-found page to a person who is not the Administrator', async () => {

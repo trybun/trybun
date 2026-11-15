@@ -28,6 +28,8 @@ export default async function AccountsPage({
   if (user?.allowedActions.includes('open_administration') !== true) {
     notFound();
   }
+  // The first page comes with the pending invitations of its accounts, so they are part of the
+  // first paint and never push the rows below them down under the finger (#310, Rule 9).
   await queryClient.prefetchInfiniteQuery(usersQueryOptions(client, { kind, state, query: '' }));
   return (
     <div className="flex flex-col gap-6">

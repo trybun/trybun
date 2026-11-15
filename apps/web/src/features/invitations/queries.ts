@@ -1,5 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import type { CreateInvitationDto } from '@trybun/contracts/invitations';
+import type { User } from '@trybun/contracts/users';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
 
 /** The pending invitations of a project, newest first, page by page (§7.4). */
@@ -18,6 +19,16 @@ export function projectInvitationsQueryOptions(client: ApiClient, projectId: str
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor,
   });
+}
+
+/**
+ * Whether the Accounts page reads the pending invitations of an account (§7.4): only an invited or
+ * active account whose `pendingInvitationCount` says it has some, so the page does not ask for
+ * every row. `usersQueryOptions` loads them with each page of accounts and `AccountInvitations`
+ * reads them by this one rule, so an account is shown with its invitations (#310).
+ */
+export function hasPendingInvitations(user: User): boolean {
+  return (user.state === 'invited' || user.state === 'active') && user.pendingInvitationCount > 0;
 }
 
 /** The pending invitations of an account, newest first, page by page (§7.4): the Accounts page. */

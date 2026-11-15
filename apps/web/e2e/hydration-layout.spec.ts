@@ -7,8 +7,11 @@ import { ADMIN_STORAGE_STATE } from './storage-state.js';
  * The lists under a server-rendered trigger of a lazily loaded dialog, and the buttons of the
  * header's lazily loaded menus, keep their place while the page hydrates (#308, #311, §18.5,
  * Rule 9). The trigger vanished when the page hydrated – its `<Suspense>` had no fallback – so the
- * list moved up between `pointerdown` and `pointerup` and a tap opened nothing or the row below. The defect needs slow chunks, so every chunk is delayed:
- * delaying only the chunks after `load` does not delay the hydration (`.ai/memory/e2e.md`).
+ * list moved up between `pointerdown` and `pointerup` and a tap opened nothing or the row below.
+ * The pending invitations of an account, loaded only in the browser, pushed the rows below it down
+ * the same way (#310), so the last row is sampled too. The defect needs slow chunks, so every chunk
+ * is delayed: delaying only the chunks after `load` does not delay the hydration
+ * (`.ai/memory/e2e.md`).
  */
 const CHUNK_DELAY_MS = 1500;
 
@@ -28,6 +31,9 @@ interface List {
   readonly row?: (page: Page) => Locator;
 }
 
+/** The cards of the Accounts page on phones, the rows of its table from the tablet on. */
+const ACCOUNT_ROWS = 'ul[aria-label="Accounts"] > li, main table tr:has(th[scope="row"])';
+
 const LISTS: readonly List[] = [
   {
     path: '/admin/organizations',
@@ -45,24 +51,32 @@ const LISTS: readonly List[] = [
     // The cards on phones, the rows of the table from the tablet on; an account opens no detail.
     path: '/admin/accounts',
     trigger: 'Invite',
-    rows: 'ul[aria-label="Accounts"] > li, main table tr:has(th[scope="row"])',
+    rows: ACCOUNT_ROWS,
+  },
+  {
+    // The demo dataset's invited end user has a pending invitation here (#310).
+    path: '/admin/accounts?state=invited',
+    trigger: 'Invite',
+    rows: ACCOUNT_ROWS,
   },
 ];
 
 interface Sample {
   readonly trigger: number | null;
   readonly row: number | null;
+  /** The last row moves when a row above it grows, e.g. by its pending invitations (#310). */
+  readonly lastRow: number | null;
 }
 
 /**
- * Records the `top` of the trigger and of the first row on every DOM change and every frame from
- * the first paint on – before it, the stylesheets are still loading and the layout is not the
- * one shown.
+ * Records the `top` of the trigger, of the first and of the last row on every DOM change and every
+ * frame from the first paint on – before it, the stylesheets are still loading and the layout is
+ * not the one shown.
  */
 async function recordLayout(page: Page, list: List): Promise<() => Promise<Sample[]>> {
   await page.addInitScript(
     ({ trigger, rows }) => {
-      const samples: { trigger: number | null; row: number | null }[] = [];
+      const samples: { trigger: number | null; row: number | null; lastRow: number | null }[] = [];
       Object.assign(window, { layoutSamples: samples });
       const isVisible = (element: Element) => element.getClientRects().length > 0;
       // By the accessible name: an invited account's own Invite has the same text but is named
@@ -73,10 +87,11 @@ async function recordLayout(page: Page, list: List): Promise<() => Promise<Sampl
         const button = [...document.querySelectorAll('main button')].find(
           (element) => nameOf(element) === trigger && isVisible(element),
         );
-        const row = [...document.querySelectorAll(rows)].find(isVisible);
+        const visibleRows = [...document.querySelectorAll(rows)].filter(isVisible);
         samples.push({
           trigger: button?.getBoundingClientRect().top ?? null,
-          row: row?.getBoundingClientRect().top ?? null,
+          row: visibleRows[0]?.getBoundingClientRect().top ?? null,
+          lastRow: visibleRows.at(-1)?.getBoundingClientRect().top ?? null,
         });
       };
       const everyFrame = () => {
@@ -115,7 +130,9 @@ test.describe('lists while the page hydrates', () => {
   });
 
   for (const list of LISTS) {
-    test(`of ${list.path} keep the trigger and the first row in place`, async ({ page }) => {
+    test(`of ${list.path} keep the trigger, the first and the last row in place`, async ({
+      page,
+    }) => {
       await delayChunks(page);
       const samples = await recordLayout(page, list);
 
@@ -131,6 +148,9 @@ test.describe('lists while the page hydrates', () => {
       expect(missing, `samples without the trigger, of ${shown.length}`).toBe(0);
       expect([...new Set(shown.map((entry) => entry.row))], 'tops of the first row').toEqual([
         shown[0]!.row,
+      ]);
+      expect([...new Set(shown.map((entry) => entry.lastRow))], 'tops of the last row').toEqual([
+        shown[0]!.lastRow,
       ]);
     });
 
