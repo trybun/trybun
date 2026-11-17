@@ -45,4 +45,4 @@ Update `axllent/mailpit` (v1.33.0 → v1.33.1), `chrislusf/seaweedfs` (4.52 → 
 
 ### Phase 2: Make the supply-chain check green
 
-- [ ] 2.1 Pin the SeaweedFS Testcontainers image to the 4.53 digest of compose.yaml
+- [x] 2.1 Pin the SeaweedFS Testcontainers image to the 4.53 digest of compose.yaml — 6516437
