@@ -40,6 +40,7 @@ Update the development dependency `jsdom` of `apps/web` from 30.1.3 to 31.0.0, s
 
 ## Risks
 
+- **Blocked by `main` (2026-11-17):** the required check "E2E and Lighthouse" fails on `main` itself since `a5c676c` (#359): the empty shell's simulated LCP is 2503–2576 ms against the budget of 2500 ms (#372). Two runs on this PR's head failed the same way (2514, 2571 ms) while the first run on 15db6c9 passed. jsdom is a development dependency and does not reach the client bundle, so Step 2.3 waits for #372, then a re-run of the job.
 - jsdom 31 moves focus asynchronously when a focused element becomes non-focusable; a test that relied on the old synchronous focus could become timing-dependent. Mitigation: the full test suite (`pnpm test`, `pnpm test:coverage`) runs locally in addition to CI.
 
 ## Progress
@@ -52,5 +53,6 @@ Update the development dependency `jsdom` of `apps/web` from 30.1.3 to 31.0.0, s
 
 ### Phase 2: Verify the bump
 
-- [ ] 2.1 Check the jsdom 31 breaking changes against the web app's component tests
-- [ ] 2.2 Run the full local validation gate
+- [x] 2.1 Check the jsdom 31 breaking changes against the web app's component tests — 1e5eef7
+- [x] 2.2 Run the full local validation gate — 1e5eef7
+- [ ] 2.3 Get every required check green on the PR head
