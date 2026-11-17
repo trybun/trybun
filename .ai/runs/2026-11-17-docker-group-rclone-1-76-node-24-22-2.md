@@ -56,4 +56,4 @@ Merging PR #362 moves the backup image to `rclone/rclone:1.76.0` and the server 
 
 ### Phase 3: Node.js 24.22.3 security release
 
-- [ ] 3.1 Move the images and .node-version to Node.js 24.22.3
+- [x] 3.1 Move the images and .node-version to Node.js 24.22.3 — d88b18d
