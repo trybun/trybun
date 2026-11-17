@@ -115,7 +115,10 @@ export const userSchema = z.object({
   isAdmin: z.boolean(),
   githubLogin: z.string().nullable(),
   createdAt: z.iso.datetime(),
-  /** The pending invitations of the account the principal sees; listed by `GET /api/v1/invitations?userId=…`. */
+  /**
+   * The pending invitations of the account the principal sees; listed by
+   * `GET /api/v1/invitations?userId=…`, which takes the accounts of a page at once (`userId` repeated).
+   */
   pendingInvitationCount: z.number().int().nonnegative(),
   allowedActions: z.array(userActionSchema),
 });
