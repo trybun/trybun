@@ -29,6 +29,6 @@ Replace the custom `AppSubjectResolver` of `ability-factory.ts` (#273, PR #277) 
 
 ### Phase 1: CASL 7.1.2
 
-- [ ] 1.1 Bump @casl/ability to ^7.1.2 and regenerate the lockfile
-- [ ] 1.2 Replace AppSubjectResolver with TaggedSubject<BuiltinSubjectKey>
-- [ ] 1.3 Update the project memory
+- [x] 1.1 Bump @casl/ability to ^7.1.2 and regenerate the lockfile — c094ad1
+- [x] 1.2 Replace AppSubjectResolver with TaggedSubject<BuiltinSubjectKey> — 1ec76f0
+- [x] 1.3 Update the project memory — d05d57e
