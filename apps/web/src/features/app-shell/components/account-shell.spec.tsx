@@ -81,6 +81,13 @@ function messagesProviderOf(element: ReactElement) {
     .children;
 }
 
+/** The product tour provider inside the texts provider. */
+function toursOf(element: ReactElement) {
+  return messagesProviderOf(element).props.children as ReactElement<{
+    audience: string | undefined;
+  }>;
+}
+
 /** The application shell inside the texts provider and the product tour provider. */
 function shellOf(element: ReactElement) {
   return (
@@ -204,7 +211,7 @@ describe('AccountShell', () => {
 
     const element = await AccountShell({ shell: 'reader', children: <h1>Page</h1> });
 
-    expect(messagesProviderOf(element).props.children.props).toMatchObject({ audience });
+    expect(toursOf(element).props.audience).toBe(audience);
   });
 
   it('gives the product tours no account kind when the account cannot be read', async () => {
@@ -213,8 +220,7 @@ describe('AccountShell', () => {
 
     const element = await TeamLayout({ children: <h1>Page</h1> });
 
-    const tours = messagesProviderOf(element).props.children as ReactElement<{ audience?: string }>;
-    expect(tours.props.audience).toBeUndefined();
+    expect(toursOf(element).props.audience).toBeUndefined();
   });
 
   it('shows only the deactivation notice when the API refuses the account', async () => {
