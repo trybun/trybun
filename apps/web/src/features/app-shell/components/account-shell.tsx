@@ -86,7 +86,7 @@ export async function AccountShell({
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <NextIntlClientProvider messages={messages}>
-        <ProductTourProvider>
+        <ProductTourProvider audience={user?.kind}>
           <AppShell
             navigation={navigation}
             isDesktopNavigationCollapsed={isNavigationCollapsedOnDesktop}

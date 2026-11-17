@@ -193,6 +193,30 @@ describe('AccountShell', () => {
     expect(shellOf(element).props.accountName).toBeUndefined();
   });
 
+  // The tours get the kind as a prop, so the first load of the shell needs no query of the users
+  // feature (Lighthouse budget, §2.9, #372).
+  it.each([
+    ['a team member', developer, 'team'],
+    ['an end user', customer, 'end_user'],
+  ])('gives the product tours the account kind of %s', async (_, account, audience) => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    user = account;
+
+    const element = await AccountShell({ shell: 'reader', children: <h1>Page</h1> });
+
+    expect(messagesProviderOf(element).props.children.props).toMatchObject({ audience });
+  });
+
+  it('gives the product tours no account kind when the account cannot be read', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockRejectedValue(new Error('The API is unavailable'));
+
+    const element = await TeamLayout({ children: <h1>Page</h1> });
+
+    const tours = messagesProviderOf(element).props.children as ReactElement<{ audience?: string }>;
+    expect(tours.props.audience).toBeUndefined();
+  });
+
   it('shows only the deactivation notice when the API refuses the account', async () => {
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
     get.mockResolvedValue({
