@@ -10,12 +10,12 @@ Merging #358 lands the change specification of #357 on `main` in its final state
 
 ## Scope
 
-`.ai/specs/2026-11-15-invitations-of-many-accounts.md` (status, acceptance criteria, changelog, location) and this plan.
+`.ai/specs/2026-11-15-invitations-of-many-accounts.md` (status, acceptance criteria, changelog, location), the `Source doc` line of the #359 plan (`.ai/runs/2026-11-15-invitations-of-many-accounts.md`, which reaches the branch by merging `main`) and this plan.
 
 ## Non-goals
 
 - Any change to the implementation, `docs/spec/` (§7.4, §12.1 and §18.5 were updated by #359) or the requirements of the spec.
-- Merging `main` into the branch: the PR is mergeable (`CLEAN`) and squash-merged, and it touches no file `main` changed since.
+- Any other edit of the #359 plan: it records that run as it happened.
 
 ## Evidence
 
@@ -47,4 +47,5 @@ Merging #358 lands the change specification of #357 on `main` in its final state
 
 ### Phase 2: Land the spec as implemented
 
-- [ ] 2.1 Set the status to implemented, check the verified acceptance criteria, add the changelog entry and move the spec to implemented/
+- [x] 2.1 Set the status to implemented, check the verified acceptance criteria, add the changelog entry and move the spec to implemented/ — 7a3629f
+- [ ] 2.2 Merge main and point the Source doc of the #359 plan to implemented/
