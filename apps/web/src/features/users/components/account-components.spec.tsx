@@ -191,7 +191,7 @@ describe('AccountList', () => {
     expect(screen.getAllByText('Deactivated').length).toBeGreaterThan(0);
   });
 
-  it('asks for the pending invitations only of the accounts that have some', async () => {
+  it('asks once for the pending invitations of a page with accounts that have some (#357)', async () => {
     const withInvitations = '0199a3f0-0000-7000-8000-000000000003';
     fake.on(
       'GET /api/v1/users',
@@ -215,8 +215,13 @@ describe('AccountList', () => {
     // Count once every request has settled, so a later read by the row would be caught too.
     await waitFor(() => expect(client.isFetching()).toBe(0));
     expect(fake.callsTo('GET /api/v1/invitations')).toHaveLength(1);
+    // Keyed by every account of the page, so revoking the last invitation of one keeps the key.
     expect(fake.callsTo('GET /api/v1/invitations')[0]!.init).toMatchObject({
-      params: { query: { userId: withInvitations } },
+      params: {
+        query: {
+          userId: [USER_ID, '0199a3f0-0000-7000-8000-000000000002', withInvitations],
+        },
+      },
     });
   });
 

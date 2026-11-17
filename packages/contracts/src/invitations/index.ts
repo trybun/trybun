@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { pageQuerySchema, pageSchema } from '../pagination/index.js';
+import { oneOrMore, pageQuerySchema, pageSchema } from '../pagination/index.js';
 import { projectMemberRoleSchema } from '../projects/index.js';
 import { emailSchema, languageSchema, passwordSchema, userKindSchema } from '../users/index.js';
 
@@ -118,16 +118,17 @@ export const invitationParamsSchema = z.object({ invitationId: z.uuid() });
 export type InvitationParams = z.infer<typeof invitationParamsSchema>;
 
 /**
- * `GET /api/v1/invitations`: the invitations of a project, an organization or an account, newest
- * first; pending ones by default.
+ * `GET /api/v1/invitations`: the invitations of a project, an organization or accounts, newest
+ * first; pending ones by default. `userId` keeps the invitations of the given accounts (§12.1):
+ * the Accounts page reads those of a page of accounts in one request (#357).
  */
 export const listInvitationsQuerySchema = pageQuerySchema.extend({
   projectId: z.uuid().optional(),
   organizationId: z.uuid().optional(),
-  userId: z.uuid().optional(),
+  userId: oneOrMore(z.uuid()).optional(),
   state: invitationStateSchema.default('pending'),
 });
-export type ListInvitationsQuery = z.infer<typeof listInvitationsQuerySchema>;
+export type ListInvitationsQuery = z.output<typeof listInvitationsQuerySchema>;
 
 export const invitationPageSchema = pageSchema(invitationSchema);
 export type InvitationPage = z.infer<typeof invitationPageSchema>;

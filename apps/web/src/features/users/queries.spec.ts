@@ -1,8 +1,14 @@
-import { InfiniteQueryObserver, QueryClient } from '@tanstack/react-query';
+import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
+import {
+  DEFAULT_PAGE_LIMIT,
+  MAX_PAGE_LIMIT,
+  MAX_TICKET_FILTER_VALUES,
+} from '@trybun/contracts/pagination';
 import type { User } from '@trybun/contracts/users';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../lib/api-client/api-client.js';
 import { QUERY_CLIENT_CONFIG } from '../../lib/query-client/query-client-config.js';
+import { accountsInvitationsQueryOptions } from '../invitations/queries.js';
 import { usersQueryOptions } from './queries.js';
 
 const INVITED_ID = '0199a3f0-0000-7000-8000-000000000021';
@@ -24,31 +30,60 @@ function account(overrides: Partial<User> = {}): User {
   };
 }
 
-const invitations = { items: [{ id: 'invitation' }], nextCursor: null };
+/** The pending invitations the API answers for a page of accounts: one per given account. */
+function invitationsOf(userIds: string[]) {
+  return userIds.map((id) => ({ id: `invitation-${id}`, user: { id } }));
+}
 
-/** The API: two pages of accounts, the invitations of any account, or a failure for `failing`. */
-function api(pages: Record<string, User[]>, failing?: string) {
-  const GET = vi.fn((path: string, { params }: { params: { query: Record<string, string> } }) => {
+type Query = Record<string, string | string[] | number | undefined>;
+
+/**
+ * The API: pages of accounts by cursor, and the invitations of the given accounts – in pages of
+ * `invitationPageSize`, or a failure with the status `failing` when it is set.
+ */
+function api(
+  pages: Record<string, User[]>,
+  { failing, invitationPageSize = 100 }: { failing?: number; invitationPageSize?: number } = {},
+) {
+  const GET = vi.fn((path: string, { params }: { params: { query: Query } }) => {
     if (path === '/api/v1/invitations') {
-      return Promise.resolve(
-        params.query.userId === failing
-          ? {
-              error: { type: 'about:blank', title: 'Too Many Requests', status: 429 },
-              response: new Response(null, { status: 429 }),
-            }
-          : { data: invitations, response: new Response() },
-      );
+      if (failing !== undefined) {
+        return Promise.resolve({
+          error: { type: 'about:blank', title: 'Failed', status: failing },
+          response: new Response(null, { status: failing }),
+        });
+      }
+      const all = invitationsOf([params.query.userId ?? []].flat() as string[]);
+      const from = Number(params.query.cursor ?? 0);
+      const to = from + invitationPageSize;
+      return Promise.resolve({
+        data: { items: all.slice(from, to), nextCursor: to < all.length ? String(to) : null },
+        response: new Response(),
+      });
     }
-    const cursor = params.query.cursor ?? 'first';
+    const cursor = (params.query.cursor as string | undefined) ?? 'first';
     return Promise.resolve({
       data: { items: pages[cursor] ?? [], nextCursor: cursor === 'first' ? 'second' : null },
       response: new Response(),
     });
   });
-  return { client: { GET } as unknown as ApiClient, GET };
+  const invitationReads = () =>
+    GET.mock.calls.filter(([path]) => path === '/api/v1/invitations').map(([, init]) => init);
+  return { client: { GET } as unknown as ApiClient, GET, invitationReads };
 }
 
-const invitationsKey = (userId: string) => ['invitations', 'list', { userId }];
+/** `count` invited accounts, each with one pending invitation, numbered from `from`. */
+function invitedAccounts(count: number, from = 0): User[] {
+  return Array.from({ length: count }, (_, index) =>
+    account({ id: `0199a3f0-0000-7000-8000-${String(from + index).padStart(12, '0')}` }),
+  );
+}
+
+const invitationsKey = (accounts: User[]) => [
+  'invitations',
+  'list',
+  { userId: accounts.map(({ id }) => id) },
+];
 
 describe('usersQueryOptions', () => {
   it('reads the accounts of the filters page by page', async () => {
@@ -64,50 +99,132 @@ describe('usersQueryOptions', () => {
     });
   });
 
+  it('reads the invitations of 50 invited accounts with one request (#357)', async () => {
+    const first = invitedAccounts(50);
+    const { client, GET, invitationReads } = api({ first });
+    const queryClient = new QueryClient(QUERY_CLIENT_CONFIG);
+
+    await queryClient.fetchInfiniteQuery(usersQueryOptions(client, {}));
+
+    // The accounts and their invitations: 2 requests, whatever the number of invited accounts.
+    expect(GET).toHaveBeenCalledTimes(2);
+    expect(invitationReads()).toEqual([
+      {
+        params: { query: { userId: first.map(({ id }) => id), limit: MAX_PAGE_LIMIT } },
+        signal: expect.anything() as AbortSignal,
+      },
+    ]);
+    expect(queryClient.getQueryData(invitationsKey(first))).toEqual(
+      invitationsOf(first.map(({ id }) => id)),
+    );
+  });
+
+  it('fits a page of accounts into one invitations request', () => {
+    expect(DEFAULT_PAGE_LIMIT).toBeLessThanOrEqual(MAX_TICKET_FILTER_VALUES);
+  });
+
+  it('follows the cursor of the invitations beyond one page of them', async () => {
+    const first = invitedAccounts(5);
+    const { client, invitationReads } = api({ first }, { invitationPageSize: 2 });
+    const queryClient = new QueryClient(QUERY_CLIENT_CONFIG);
+
+    await queryClient.fetchInfiniteQuery(usersQueryOptions(client, {}));
+
+    expect(invitationReads().map((init) => init.params.query.cursor)).toEqual([
+      undefined,
+      '2',
+      '4',
+    ]);
+    expect(queryClient.getQueryData(invitationsKey(first))).toHaveLength(5);
+  });
+
   it('brings the pending invitations of every page, Load more too (#310)', async () => {
-    const { client, GET } = api({
-      first: [
-        account(),
-        account({ id: 'none', pendingInvitationCount: 0 }),
-        // Deactivating revokes the invitations, whatever the count says.
-        account({ id: 'gone', state: 'deactivated' }),
-      ],
-      second: [account({ id: LATER_ID, email: 'later@customer.example.com' })],
-    });
+    const first = [
+      account(),
+      account({ id: 'none', pendingInvitationCount: 0 }),
+      // Deactivating revokes the invitations, whatever the count says.
+      account({ id: 'gone', state: 'deactivated' }),
+    ];
+    const second = [account({ id: LATER_ID, email: 'later@customer.example.com' })];
+    const { client, invitationReads } = api({ first, second });
     // The configuration of the application, in which the first page and its invitations stay fresh.
     const queryClient = new QueryClient(QUERY_CLIENT_CONFIG);
     const observer = new InfiniteQueryObserver(queryClient, usersQueryOptions(client, {}));
 
     await observer.refetch();
-    expect(queryClient.getQueryData(invitationsKey(INVITED_ID))).toEqual({
-      pages: [invitations],
-      pageParams: [null],
-    });
-    expect(queryClient.getQueryData(invitationsKey(LATER_ID))).toBeUndefined();
+    // Keyed by every account of the page, so revoking the last invitation of one keeps the key.
+    expect(queryClient.getQueryData(invitationsKey(first))).toBeDefined();
+    expect(queryClient.getQueryData(invitationsKey(second))).toBeUndefined();
 
     // Load more resolves only with the next page's invitations in the cache, so a row it adds is
     // shown with them and does not grow under the rows after it.
     await observer.fetchNextPage();
-    expect(queryClient.getQueryData(invitationsKey(LATER_ID))).toEqual({
-      pages: [invitations],
-      pageParams: [null],
-    });
-    expect(
-      GET.mock.calls.filter(([path]) => path === '/api/v1/invitations').map(([, init]) => init),
-    ).toEqual([
-      { params: { query: { userId: INVITED_ID } }, signal: expect.anything() as AbortSignal },
-      { params: { query: { userId: LATER_ID } }, signal: expect.anything() as AbortSignal },
+    expect(queryClient.getQueryData(invitationsKey(second))).toEqual(invitationsOf([LATER_ID]));
+    expect(invitationReads().map((init) => init.params.query.userId)).toEqual([
+      [INVITED_ID, 'none', 'gone'],
+      [LATER_ID],
     ]);
   });
 
-  it('still returns the page when the invitations of an account cannot be read', async () => {
-    const { client } = api({ first: [account()] }, INVITED_ID);
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  it('reads no invitations for a page without invited accounts', async () => {
+    const { client, invitationReads } = api({
+      first: [
+        account({ pendingInvitationCount: 0 }),
+        account({ id: 'gone', state: 'deactivated' }),
+      ],
+    });
+
+    await new QueryClient().fetchInfiniteQuery(usersQueryOptions(client, {}));
+
+    expect(invitationReads()).toEqual([]);
+  });
+
+  it("reads once per page after revoking an account's last invitation (#357)", async () => {
+    const pages = { first: invitedAccounts(30), second: invitedAccounts(20, 30) };
+    const loaded = { ...pages };
+    const { client, invitationReads } = api(pages);
+    const queryClient = new QueryClient(QUERY_CLIENT_CONFIG);
+    const accounts = new InfiniteQueryObserver(queryClient, usersQueryOptions(client, {}));
+    const unsubscribe = accounts.subscribe(() => {});
+    await accounts.refetch();
+    await accounts.fetchNextPage();
+    // The rows of both pages observe their page's invitations, as `AccountInvitations` does.
+    const rows = [loaded.first, loaded.second].flatMap((page) =>
+      page.map((user) =>
+        new QueryObserver(queryClient, {
+          ...accountsInvitationsQueryOptions(client, page),
+          select: (items) => items.filter((item) => item.user.id === user.id),
+        }).subscribe(() => {}),
+      ),
+    );
+    const before = invitationReads().length;
+
+    // The last invitation of the first account is revoked: the API counts none any more, and the
+    // mutation invalidates what `invalidateInvitations` does.
+    pages.first = [{ ...loaded.first[0]!, pendingInvitationCount: 0 }, ...loaded.first.slice(1)];
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['invitations'] }),
+      queryClient.invalidateQueries({ queryKey: ['users', 'list'] }),
+    ]);
+
+    // One read per loaded page, under the keys the rows already observe.
+    expect(invitationReads().length - before).toBe(2);
+    expect(queryClient.getQueryCache().findAll({ queryKey: ['invitations', 'list'] })).toHaveLength(
+      2,
+    );
+    rows.forEach((stop) => stop());
+    unsubscribe();
+  });
+
+  it.each([429, 500])('still returns the page when the invitations answer %i', async (status) => {
+    const { client, invitationReads } = api({ first: [account()] }, { failing: status });
+    const queryClient = new QueryClient(QUERY_CLIENT_CONFIG);
 
     const data = await queryClient.fetchInfiniteQuery(usersQueryOptions(client, {}));
 
     expect(data.pages[0]?.items.map(({ id }) => id)).toEqual([INVITED_ID]);
-    // Not cached: `AccountInvitations` reads it itself.
-    expect(queryClient.getQueryData(invitationsKey(INVITED_ID))).toBeUndefined();
+    // Tried once, not retried: the rows read it themselves.
+    expect(invitationReads()).toHaveLength(1);
+    expect(queryClient.getQueryState(invitationsKey([account()]))?.status).toBe('error');
   });
 });

@@ -4,6 +4,7 @@ import {
   invitationActionSchema,
   invitationStateSchema,
   invitationTargetTypeSchema,
+  listInvitationsQuerySchema,
 } from './index.js';
 
 describe('invitation enums', () => {
@@ -38,5 +39,21 @@ describe('createInvitationSchema', () => {
     expect(createInvitationSchema.safeParse({ email: 'anna@firma.example', target }).success).toBe(
       valid,
     );
+  });
+});
+
+describe('listInvitationsQuerySchema', () => {
+  const a = '0199a3f0-0000-7000-8000-000000000001';
+  const b = '0199a3f0-0000-7000-8000-000000000002';
+
+  it.each([
+    ['one account', a, [a]],
+    ['repeated accounts', [a, b], [a, b]],
+  ])('reads userId of %s as a list', (_case, userId, expected) => {
+    expect(listInvitationsQuerySchema.parse({ userId }).userId).toEqual(expected);
+  });
+
+  it('reads no userId as no narrowing', () => {
+    expect(listInvitationsQuerySchema.parse({}).userId).toBeUndefined();
   });
 });
