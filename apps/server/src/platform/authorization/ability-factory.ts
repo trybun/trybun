@@ -1,10 +1,8 @@
 import {
   type Ability,
   AbilityBuilder,
-  type Container,
-  type ForcedSubject,
-  type SubjectResolverFactory,
-  type SubjectType,
+  type BuiltinSubjectKey,
+  type TaggedSubject,
 } from '@casl/ability';
 import { createPrismaAbility, type PrismaQueryOf, type Subjects } from '@casl/prisma/runtime';
 import { Inject, Injectable } from '@nestjs/common';
@@ -114,24 +112,12 @@ export type AppAbility = Ability<[string, AppSubject], PrismaQuery, AppSubjectRe
 
 /**
  * Resolves the subject type of a record only from its `__caslSubjectType__` tag, set by
- * `subject()` and `Subjects<>` (§18.3). CASL's default resolver also reads a `kind` or
- * `__typename` field as the tag, so records with a `kind` field of their own
- * (`UserRuleRecord`, `CommentRuleRecord`) would widen the subject types to `string` and
- * `accessibleBy(...).ofType()` would accept no model.
+ * `subject()` and `Subjects<>` (§18.3), with CASL's `TaggedSubject` (stalniy/casl#1359). CASL's
+ * default resolver also reads a `kind` or `__typename` field as the tag, so records with a `kind`
+ * field of their own (`UserRuleRecord`, `CommentRuleRecord`) would widen the subject types to
+ * `string` and `accessibleBy(...).ofType()` would accept no model.
  */
-export type AppSubjectResolver = Container<AppSubjectResolverFactory>;
-
-type TagOf<S> = S extends ForcedSubject<infer Name extends string> ? Name : never;
-
-interface AppSubjectResolverFactory extends SubjectResolverFactory {
-  produce: AppSubjectResolution<Extract<this[0], AppSubject>, this[1]>;
-}
-
-type AppSubjectResolution<S extends AppSubject, Name> = {
-  subject: S;
-  subjectType: Extract<S, SubjectType> | TagOf<S>;
-  instance: Extract<S, ForcedSubject<Name>>;
-};
+export type AppSubjectResolver = TaggedSubject<BuiltinSubjectKey>;
 
 /**
  * The rules a feature module defines in its `<feature>.abilities.ts` (§18.3), given the current
