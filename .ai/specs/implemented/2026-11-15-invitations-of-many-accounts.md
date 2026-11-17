@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-15 |
 | Plan task | – (follow-up of #310) |
 | System specification sections | §7.4, §12.1, §18.5 |
-| Related issues / PRs | #357, #355, #310, #356 |
+| Related issues / PRs | #357, #358, #359, #355, #310, #356 |
 
 ## 📝 TLDR
 
@@ -112,13 +112,13 @@ Q1 was decided by the maintainer before the spec was written; Q2–Q4 were appli
 
 ## Acceptance criteria
 
-- [ ] `GET /api/v1/invitations` accepts `userId` once or repeated (≤ 50 values) and lists the visible invitations of any of the given accounts; more than 50 or a non-UUID value answers `422` (integration tests).
-- [ ] `permission-layer.integration.spec.ts` has a row per principal fixture: listing by account returns exactly the invitations its detail check allows.
-- [ ] One page of 50 invited accounts with at most 100 pending invitations among them costs exactly 2 API requests: the accounts and one invitations read. Load more and a search cost the same per page (unit test of `usersQueryOptions`).
-- [ ] Revoking an invitation, including an account's last one, or copying a new link reads the invitations again with one read per loaded page of accounts, not one per account (component or unit test).
-- [ ] The invitations stay part of the first paint and of every later page; `apps/web/e2e/hydration-layout.spec.ts` stays green (#310).
-- [ ] §7.4, §12.1 and §18.5 updated; OpenAPI document and client regenerated.
-- [ ] Works on phone, tablet and desktop (Rule 9); no visible change, no new texts.
+- [x] `GET /api/v1/invitations` accepts `userId` once or repeated (≤ 50 values) and lists the visible invitations of any of the given accounts; more than 50 or a non-UUID value answers `422` (integration tests).
+- [x] `permission-layer.integration.spec.ts` has a row per principal fixture: listing by account returns exactly the invitations its detail check allows.
+- [x] One page of 50 invited accounts with at most 100 pending invitations among them costs exactly 2 API requests: the accounts and one invitations read. Load more and a search cost the same per page (unit test of `usersQueryOptions`).
+- [x] Revoking an invitation, including an account's last one, or copying a new link reads the invitations again with one read per loaded page of accounts, not one per account (component or unit test).
+- [x] The invitations stay part of the first paint and of every later page; `apps/web/e2e/hydration-layout.spec.ts` stays green (#310).
+- [x] §7.4, §12.1 and §18.5 updated; OpenAPI document and client regenerated.
+- [x] Works on phone, tablet and desktop (Rule 9); no visible change, no new texts.
 
 ## 📋 Implementation Plan
 
@@ -140,3 +140,4 @@ Q1 was decided by the maintainer before the spec was written; Q2–Q4 were appli
 - 2026-11-15 – Specification review: the page query's key covers all accounts of the page, so the last revocation does not start a second read; no retry on a `4xx`; the request count is stated with its conditions.
 - 2026-11-15 – Aligned with the implementation PR #359: the query takes the accounts of the page, and the prefetch sets `retry: false` (an explicit `retry` of the options overrides the default of `prefetchQuery`).
 - 2026-11-17 – Q2–Q4 confirmed by the maintainer (#358).
+- 2026-11-17 – Implemented (#359): the repeated `userId` of `GET /api/v1/invitations` (`oneOrMore`, ≤ 50) and `accountsInvitationsQueryOptions`, one invitations query per page of accounts; §7.4, §12.1 and §18.5 updated. #359 merged before this specification, so the specification PR #358 sets the status and moves the file.
