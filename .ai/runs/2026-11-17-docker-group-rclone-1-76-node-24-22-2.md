@@ -26,7 +26,7 @@ Merging PR #362 moves the backup image to `rclone/rclone:1.76.0` and the server 
 | The goal is the two image updates | PR body and diff (Dependabot) | high |
 | `.node-version` follows a Node.js image bump in the same PR | #261 (`chore(deps): align .node-version with the Node.js 24.22.1 images`), §14.2 (Node.js version pinned in `.node-version`) | high |
 | Node.js 24.22.2 is an LTS (Krypton) release of 2026-10-27, past the 7-day cooldown | `https://nodejs.org/dist/index.json` | high |
-| The images go to 24.22.3 instead: a security release of 2026-11-10 (high: HTTP request smuggling and HTTP/2, TLS server crashes and client certificate bypass, undici and llhttp updates), which Rule 10 takes immediately, without the cooldown that kept Dependabot on 24.22.2 | `https://nodejs.org/dist/index.json` (`security: true`), Node.js blog "November 2026 security releases", §2.10 | high |
+| The images go to 24.22.3 instead: a security release of 2026-11-10 (high-severity fixes of the HTTP, HTTP/2 and TLS servers, among them remote crashes, memory disclosure and a TLS 1.2 renegotiation bypass of client certificate authentication; undici and llhttp updates), which Rule 10 takes immediately, without the cooldown that kept Dependabot on 24.22.2 | `https://nodejs.org/dist/index.json` (`security: true`), Node.js blog "November 2026 security releases", §2.10 | high |
 | rclone 1.76.0 (2026-11-06) needs no change of `backup.sh` | rclone changelog v1.76.0: security fixes; S3 changes are regions, uploads and `--s3-directory-markers`; `rcat`, `cat`, `lsf`, `sync`, `mkdir` and environment remotes unchanged in behaviour for our use | medium |
 
 ## Assumptions
