@@ -50,7 +50,7 @@ Merging PR #362 moves the backup image to `rclone/rclone:1.76.0` and the server 
 
 - [x] 2.1 Merge main into the PR branch — 3db8aff
 - [x] 2.2 Align .node-version with the Node.js 24.22.2 images — ca807e9
-- [ ] 2.3 Build the images and run the validation gate
+- [x] 2.3 Build the images and run the validation gate — f2d28fb
 
 > 2.3 runs after Phase 3, on the final tree (Phase 3 was added after the plan was adopted).
 
