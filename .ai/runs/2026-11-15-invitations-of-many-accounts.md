@@ -1,6 +1,6 @@
 # Execution plan — The pending invitations of a page of accounts in one read
 
-**Source doc:** `.ai/specs/2026-11-15-invitations-of-many-accounts.md` (spec PR #358, issue #357)
+**Source doc:** `.ai/specs/implemented/2026-11-15-invitations-of-many-accounts.md` (spec PR #358, issue #357)
 **Branch:** `feat/invitations-of-many-accounts` · **Base:** `main`
 
 ## 🎯 Goal
