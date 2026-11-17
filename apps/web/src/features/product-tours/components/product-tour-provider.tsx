@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { ProductTourId, ProductTourStatus } from '@trybun/contracts/product-tours';
+import type { UserKind } from '@trybun/contracts/users';
 import { usePathname } from 'next/navigation.js';
 import {
   createContext,
@@ -15,7 +16,6 @@ import {
 } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { matchesView } from '../../help/help-routes.js';
-import { currentUserQueryOptions } from '../../users/queries.js';
 import { useRecordProductTourProgress } from '../mutations.js';
 import {
   findTourTarget,
@@ -68,8 +68,19 @@ function isRendered(target: string): boolean {
  * starts once the view has rendered, when the person has not completed or skipped its current
  * version – on any device, because the progress is stored on the server. Done records
  * `completed`; Skip, Esc, the close button and leaving the view record `skipped`.
+ *
+ * `audience` is the kind of the signed-in account, passed by the layout that prefetched it;
+ * without it (the API could not tell) no tour runs. It is a prop, not the query of the account:
+ * the provider is part of the first load of the shell, and the queries of the users feature would
+ * bring the code of the Accounts page into it (Lighthouse budget, §2.9, #372).
  */
-export function ProductTourProvider({ children }: { children: ReactNode }) {
+export function ProductTourProvider({
+  audience,
+  children,
+}: {
+  audience: UserKind | undefined;
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   // Only in the browser, after hydration: the tip measures the page and the viewport.
   const isHydrated = useSyncExternalStore(
@@ -77,7 +88,6 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
     () => true,
     () => false,
   );
-  const { data: user } = useQuery(currentUserQueryOptions(browserApiClient));
   const { data: progress } = useQuery(productTourProgressQueryOptions(browserApiClient));
   const { mutate: recordProgress } = useRecordProductTourProgress();
   const [started, setStarted] = useState<RunningTour | null>(null);
@@ -87,10 +97,10 @@ export function ProductTourProvider({ children }: { children: ReactNode }) {
   const [previousPathname, setPreviousPathname] = useState(pathname);
 
   const tours =
-    user === undefined
+    audience === undefined
       ? []
       : PRODUCT_TOURS.filter(
-          (tour) => tour.audience === user.kind && matchesView(tour.view, pathname),
+          (tour) => tour.audience === audience && matchesView(tour.view, pathname),
         );
   const dueTour = isHydrated
     ? tours.find((tour) => isTourDue(tour, progress) && !endedTourIds.includes(tour.id))
