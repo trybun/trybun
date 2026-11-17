@@ -1,7 +1,10 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import type { CreateInvitationDto } from '@trybun/contracts/invitations';
+import { MAX_PAGE_LIMIT } from '@trybun/contracts/pagination';
 import type { User } from '@trybun/contracts/users';
+import { allPageItems } from '../../lib/api-client/all-pages.js';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
+import { ApiError } from '../../lib/errors/api-error.js';
 
 /** The pending invitations of a project, newest first, page by page (§7.4). */
 export function projectInvitationsQueryOptions(client: ApiClient, projectId: string) {
@@ -23,29 +26,40 @@ export function projectInvitationsQueryOptions(client: ApiClient, projectId: str
 
 /**
  * Whether the Accounts page reads the pending invitations of an account (§7.4): only an invited or
- * active account whose `pendingInvitationCount` says it has some, so the page does not ask for
- * every row. `usersQueryOptions` loads them with each page of accounts and `AccountInvitations`
+ * active account whose `pendingInvitationCount` says it has some, so a page of accounts without any
+ * reads none. `usersQueryOptions` loads them with each page of accounts and `AccountInvitations`
  * reads them by this one rule, so an account is shown with its invitations (#310).
  */
 export function hasPendingInvitations(user: User): boolean {
   return (user.state === 'invited' || user.state === 'active') && user.pendingInvitationCount > 0;
 }
 
-/** The pending invitations of an account, newest first, page by page (§7.4): the Accounts page. */
-export function userInvitationsQueryOptions(client: ApiClient, userId: string) {
-  return infiniteQueryOptions({
+/**
+ * The pending invitations of the accounts of one page of the Accounts page (§7.4), newest first:
+ * one paged read of `GET /api/v1/invitations` with `userId` repeated (§12.1), whatever the number of
+ * invited accounts (#357). A page of accounts fits the parameter's bound (`DEFAULT_PAGE_LIMIT` ≤
+ * `MAX_TICKET_FILTER_VALUES`). It is keyed by all the accounts of the page, not only those with
+ * invitations, so revoking an account's last one keeps the key: the refetch of the accounts reuses
+ * the read the invalidation started. Each row selects its own account's invitations. A `4xx` is an
+ * answer, not a failure to retry: retrying a `429` would only use up more of the limit (#356).
+ */
+export function accountsInvitationsQueryOptions(client: ApiClient, accounts: readonly User[]) {
+  const userId = accounts.map(({ id }) => id);
+  return queryOptions({
     queryKey: ['invitations', 'list', { userId }],
-    queryFn: ({ pageParam, signal }) =>
-      dataOf(
-        client.GET('/api/v1/invitations', {
-          params: {
-            query: { userId, ...(pageParam === null ? {} : { cursor: pageParam }) },
-          },
-          signal,
-        }),
+    queryFn: ({ signal }) =>
+      allPageItems((cursor) =>
+        dataOf(
+          client.GET('/api/v1/invitations', {
+            params: {
+              query: { userId, limit: MAX_PAGE_LIMIT, ...(cursor === null ? {} : { cursor }) },
+            },
+            signal,
+          }),
+        ),
       ),
-    initialPageParam: null as string | null,
-    getNextPageParam: (page) => page.nextCursor,
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && error.status < 500) && failureCount < 3,
   });
 }
 

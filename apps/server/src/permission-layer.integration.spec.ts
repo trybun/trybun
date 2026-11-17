@@ -7,6 +7,7 @@ import { accessibleBy } from '@casl/prisma/runtime';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { AttachmentPage } from '@trybun/contracts/attachments';
+import type { InvitationPage } from '@trybun/contracts/invitations';
 import { type Project, type ProjectPage, projectActionSchema } from '@trybun/contracts/projects';
 import { type Ticket, ticketActionSchema } from '@trybun/contracts/tickets';
 import request from 'supertest';
@@ -57,8 +58,8 @@ describe('permission layer', () => {
     archivedProject: { id: string };
     organization: { id: string };
     archivedOrganization: { id: string };
-    projectInvitation: { id: string };
-    organizationInvitation: { id: string };
+    projectInvitation: { id: string; userId: string };
+    organizationInvitation: { id: string; userId: string };
     teamTicket: { id: string };
     personalTicket: { id: string };
     organizationTicket: { id: string };
@@ -927,6 +928,32 @@ describe('permission layer', () => {
         expect((res.body as AttachmentPage).items.map(({ id }) => id).sort()).toEqual(
           readable.map(({ id }) => id).sort(),
         );
+      },
+    );
+
+    it.each(PRINCIPAL_FIXTURES)(
+      'lists for %s by account only the invitations its detail check allows',
+      async (fixture) => {
+        const ability = abilities.forPrincipal(principalOf(fixture));
+        // The invited account of both fixture invitations, and an account without invitations.
+        const userIds = [records.projectInvitation.userId, users.end_user_personal.id];
+        const readable = await prisma.invitation.findMany({
+          where: {
+            AND: [accessibleBy(ability, 'read').ofType('Invitation'), { userId: { in: userIds } }],
+          },
+          select: { id: true },
+        });
+
+        const res = await http()
+          .get('/api/v1/invitations')
+          .query({ userId: userIds })
+          .set('Authorization', await authorizationOf(fixture));
+
+        // Without the right to read invitations the list is invisible (404, never 403).
+        const canList = ability.can('read', 'Invitation');
+        expect(res.status).toBe(canList ? 200 : 404);
+        const listed = canList ? (res.body as InvitationPage).items.map(({ id }) => id) : [];
+        expect(listed.sort()).toEqual(readable.map(({ id }) => id).sort());
       },
     );
 

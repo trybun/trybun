@@ -1,7 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import type { UserKind, UserState } from '@trybun/contracts/users';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
-import { hasPendingInvitations, userInvitationsQueryOptions } from '../invitations/queries.js';
+import { accountsInvitationsQueryOptions, hasPendingInvitations } from '../invitations/queries.js';
 
 /** The signed-in account (§18.5): prefetched by the application shell, read by its user menu. */
 export function currentUserQueryOptions(client: ApiClient) {
@@ -23,8 +23,10 @@ export interface AccountFilters {
  * with the pending invitations of its accounts (`hasPendingInvitations`): the query function loads
  * them into the cache before it returns the page, so an account is shown with its invitations and
  * never grows under the rows after it – in the first paint, where the server prefetches the first
- * page, and for the pages of **Load more** and of a search alike (#310, Rule 9). A failed
- * invitation request does not fail the page: `AccountInvitations` then reads it itself.
+ * page, and for the pages of **Load more** and of a search alike (#310, Rule 9). They are one query
+ * per page of accounts (`accountsInvitationsQueryOptions`), so a page costs one read of them however
+ * many accounts are invited (#357). A failed read does not fail the page: the rows of the page then
+ * read it themselves, once.
  */
 export function usersQueryOptions(client: ApiClient, filters: AccountFilters) {
   const { kind, state, query } = filters;
@@ -44,13 +46,13 @@ export function usersQueryOptions(client: ApiClient, filters: AccountFilters) {
           signal,
         }),
       );
-      await Promise.all(
-        page.items
-          .filter(hasPendingInvitations)
-          .map((user) =>
-            queryClient.prefetchInfiniteQuery(userInvitationsQueryOptions(client, user.id)),
-          ),
-      );
+      if (page.items.some(hasPendingInvitations)) {
+        // Tried once: a failure must not hold the page back, and the rows read it again.
+        await queryClient.prefetchQuery({
+          ...accountsInvitationsQueryOptions(client, page.items),
+          retry: false,
+        });
+      }
       return page;
     },
     initialPageParam: null as string | null,

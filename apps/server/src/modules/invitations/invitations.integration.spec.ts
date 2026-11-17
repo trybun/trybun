@@ -759,6 +759,84 @@ describe('invitations', () => {
       ]);
       expect(resending.status).toBe(404);
     });
+
+    it('lists the invitations of one account', async () => {
+      const { authorization } = await signIn();
+      const [own, other] = await Promise.all([
+        issued(newEmail(), { type: 'administrator' }),
+        issued(newEmail(), { type: 'administrator' }),
+      ]);
+
+      const res = await http()
+        .get('/api/v1/invitations')
+        .query({ userId: own.invitation.user.id })
+        .set('Authorization', authorization);
+
+      expect(res.status).toBe(200);
+      const ids = (res.body as InvitationPage).items.map(({ id }) => id);
+      expect(ids).toEqual([own.invitation.id]);
+      expect(ids).not.toContain(other.invitation.id);
+    });
+
+    it('lists the invitations of several accounts in one request, newest first (#357)', async () => {
+      const { authorization } = await signIn();
+      const first = await issued(newEmail(), { type: 'administrator' });
+      const second = await issued(newEmail(), { type: 'administrator' });
+      await issued(newEmail(), { type: 'administrator' });
+
+      const res = await http()
+        .get('/api/v1/invitations')
+        .query({ userId: [first.invitation.user.id, second.invitation.user.id] })
+        .set('Authorization', authorization);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        items: [second.invitation, first.invitation],
+        nextCursor: null,
+      });
+    });
+
+    it('rejects more than 50 accounts and a value that is not an ID with 422', async () => {
+      const { authorization } = await signIn();
+      const ids = (count: number) =>
+        Array.from({ length: count }, () => `userId=${randomUUID()}`).join('&');
+      const list = (query: string) =>
+        http().get(`/api/v1/invitations?${query}`).set('Authorization', authorization);
+
+      const [ids51, ids50, invalid] = await Promise.all([
+        list(ids(51)),
+        list(ids(50)),
+        list(`userId=${randomUUID()}&userId=nope`),
+      ]);
+
+      expect([ids51.status, ids50.status, invalid.status]).toEqual([422, 200, 422]);
+      expect(ids51.body).toMatchObject({ errors: [{ pointer: '/userId' }] });
+    });
+
+    it('shows a Project manager, among the given accounts, only the invitations of their projects', async () => {
+      const [own, other] = await Promise.all([createProject(prisma), createProject(prisma)]);
+      const invited = await createUser(prisma, { kind: 'team', state: 'invited' });
+      const [ownInvitation] = await Promise.all(
+        [own, other].map(({ id }) =>
+          createInvitation(prisma, {
+            userId: invited.id,
+            target: 'project',
+            projectId: id,
+            role: 'developer',
+          }),
+        ),
+      );
+      const elsewhere = await issued(newEmail(), projectTarget({ projectId: other.id }));
+      const { authorization } = await signIn('project_manager', own.id);
+
+      const res = await http()
+        .get('/api/v1/invitations')
+        .query({ userId: [invited.id, elsewhere.invitation.user.id] })
+        .set('Authorization', authorization);
+
+      expect(res.status).toBe(200);
+      expect((res.body as InvitationPage).items.map(({ id }) => id)).toEqual([ownInvitation?.id]);
+    });
   });
 
   describe('resending and revoking', () => {

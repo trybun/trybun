@@ -2154,7 +2154,7 @@ export interface operations {
                 limit?: number;
                 projectId?: string;
                 organizationId?: string;
-                userId?: string;
+                userId?: string | string[];
                 state?: "pending" | "accepted" | "revoked" | "expired";
             };
             header?: never;
