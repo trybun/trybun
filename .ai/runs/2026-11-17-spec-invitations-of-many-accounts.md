@@ -48,4 +48,4 @@ Merging #358 lands the change specification of #357 on `main` in its final state
 ### Phase 2: Land the spec as implemented
 
 - [x] 2.1 Set the status to implemented, check the verified acceptance criteria, add the changelog entry and move the spec to implemented/ — 7a3629f
-- [ ] 2.2 Merge main and point the Source doc of the #359 plan to implemented/
+- [x] 2.2 Merge main and point the Source doc of the #359 plan to implemented/ — b9dbfed
