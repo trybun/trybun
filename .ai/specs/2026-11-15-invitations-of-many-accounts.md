@@ -101,6 +101,8 @@ The contract change is additive and backward-compatible (a single `userId` keeps
 
 ## Resolved assumptions (autonomous defaults)
 
+Q1 was decided by the maintainer before the spec was written; Q2–Q4 were applied as autonomous defaults and **confirmed by the maintainer on 2026-11-17**, after the manual QA of the implementation (#359).
+
 | # | Question | Applied answer | Why |
 |---|---|---|---|
 | Q1 | Embedded invitations in `GET /users`, or several `userId` in `GET /invitations`? | Several `userId`, at most 50 (**decided by the maintainer** on #357, [comment](https://github.com/trybun/trybun/issues/357#issuecomment-6902271849)). | The existing §12.1 lookup pattern (Rule 12); `GET /users` stays lean. |
@@ -137,3 +139,4 @@ The contract change is additive and backward-compatible (a single `userId` keeps
 - 2026-11-15 – Created (#357; Q1 decided by the maintainer, Q2–Q4 autonomous defaults).
 - 2026-11-15 – Specification review: the page query's key covers all accounts of the page, so the last revocation does not start a second read; no retry on a `4xx`; the request count is stated with its conditions.
 - 2026-11-15 – Aligned with the implementation PR #359: the query takes the accounts of the page, and the prefetch sets `retry: false` (an explicit `retry` of the options overrides the default of `prefetchQuery`).
+- 2026-11-17 – Q2–Q4 confirmed by the maintainer (#358).
