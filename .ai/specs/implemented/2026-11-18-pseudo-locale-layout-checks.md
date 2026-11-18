@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-18 |
 | Plan task | – (follow-up of #295 and #299) |
 | System specification sections | §2.9, §13.1, §15.3 |
-| Related issues / PRs | #301, #295, #299 |
+| Related issues / PRs | #301, #377, #378, #295, #299 |
 
 ## 📝 TLDR
 
@@ -151,3 +151,5 @@ None open: each question of the issue is answered below.
 - 2026-11-18 – Created from #301 by `om-auto-write-spec` (autonomous defaults, readiness waived by the maintainer).
 - 2026-11-18 – Aligned with the implementation PR #378: accents within Latin-1, a lightweight `./pseudo` entry next to `./pseudo/messages`, stretching per literal, the language switch unmapped, and the switch in the QA test environment.
 - 2026-11-18 – Specification review of #377: only the texts change, never the request language (`AppConfig.Locale` stays `Locale`); the filter-chip fix of the probe, `catalogueOf`, the printer guard, the Dockerfile guard and the merge order of #377 and #378 are described.
+- 2026-11-18 – Approved by the maintainer through the merge of #377.
+- 2026-11-18 – Implemented (#378): `@trybun/i18n/pseudo` and `./pseudo/messages`, the test-only `TRYBUN_PSEUDO_LOCALE` with its loopback and Compose/image guards, texts-only request configuration, `TEST_LOCALES` in the ticket list E2E, and the filter-chip fix the probe found; §2.9, §13.1 and §15.3 updated.

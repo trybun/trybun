@@ -1,6 +1,6 @@
 # Execution plan: width-sensitive E2E checks in a pseudo-locale
 
-Source doc: .ai/specs/2026-11-18-pseudo-locale-layout-checks.md (spec PR #377)
+Source doc: .ai/specs/implemented/2026-11-18-pseudo-locale-layout-checks.md (spec PR #377)
 Issue: #301
 
 ## Goal
