@@ -28,9 +28,10 @@ export function stretchFactor(length: number): number {
 export const PSEUDO_MARKERS = ['[', ']'] as const;
 
 /**
- * Accented forms of the ASCII letters within Latin-1 (U+00C0–U+00FF), the range of the `latin`
- * subset of the web font, so the stretched text is measured in the font of the product rather
- * than in a fallback font. Letters without a Latin-1 accented form stay as they are.
+ * Accented forms of the ASCII letters within Latin-1 (U+00C0–U+00FF). That range is in the
+ * `latin` subset of the web font, the one `app/layout.tsx` preloads; the other subsets load on
+ * first use. The stretched text is therefore measured without waiting for a subset loaded later.
+ * Letters without a Latin-1 accented form stay as they are.
  */
 const ACCENTED: Readonly<Record<string, string>> = {
   a: 'á',
