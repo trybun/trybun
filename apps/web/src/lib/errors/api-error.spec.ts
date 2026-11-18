@@ -90,6 +90,8 @@ describe('the wait of Retry-After (RFC 9110, section 10.2.3)', () => {
     ['a time that does not exist', 'Wed, 18 Nov 2026 25:00:00 GMT', undefined],
     ['a date in another time zone', 'Wed, 18 Nov 2026 13:00:00 +0100', undefined],
     ['an ISO 8601 date', '2026-11-18T12:01:00Z', undefined],
+    ['the longest wait a date can show', '4320000000000', 4_320_000_000_000],
+    ['a wait no date can show', '99999999999999999999999', undefined],
     ['no header', null, undefined],
     ['a negative number', '-5', undefined],
     ['a fraction', '1.5', undefined],

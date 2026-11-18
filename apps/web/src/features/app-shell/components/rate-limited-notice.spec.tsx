@@ -13,6 +13,11 @@ vi.mock('next-intl/server', () => ({
   getNow: () => Promise.resolve(new Date(NOW)),
 }));
 
+vi.mock('next/headers.js', () => ({
+  headers: () => Promise.resolve(requestHeaders),
+}));
+let requestHeaders = new Headers();
+
 const { RateLimitedNotice } = await import('./rate-limited-notice.js');
 
 async function html(retryAfterSeconds?: number, headingLevel?: 1 | 2): Promise<string> {
@@ -29,13 +34,14 @@ async function html(retryAfterSeconds?: number, headingLevel?: 1 | 2): Promise<s
 describe('RateLimitedNotice', () => {
   beforeEach(() => {
     locale = 'en';
+    requestHeaders = new Headers({ 'x-trybun-request-path': '/admin/accounts?kind=team' });
   });
 
   it('says when to try again, from Retry-After', async () => {
     const page = await html(45);
 
     expect(page).toContain('<h1 class="text-2xl font-bold">Too many requests</h1>');
-    expect(page).toContain('Reload the page in 45 seconds.');
+    expect(page).toContain('Try again in 45 seconds.');
   });
 
   it('says it in Polish', async () => {
@@ -44,13 +50,27 @@ describe('RateLimitedNotice', () => {
     const page = await html(120, 2);
 
     expect(page).toContain('<h2 class="text-xl font-bold">Zbyt wiele żądań</h2>');
-    expect(page).toContain('Odśwież stronę za 2 minuty.');
+    expect(page).toContain('Spróbuj ponownie za 2 minuty.');
   });
 
   it.each([
     ['without Retry-After', undefined],
     ['when there is nothing to wait', 0],
   ])('asks to wait a moment %s', async (_case, seconds) => {
-    expect(await html(seconds)).toContain('Wait a moment and reload the page.');
+    expect(await html(seconds)).toContain('Wait a moment and try again.');
+  });
+
+  it('reloads the address of the page with a touch target of 44 px (Rule 9)', async () => {
+    const page = await html(45);
+
+    expect(page).toMatch(
+      /<a href="\/admin\/accounts\?kind=team" class="[^"]*\bh-11\b[^"]*">Reload page<\/a>/,
+    );
+  });
+
+  it('reloads the start page when the address is unknown (a link prefetch)', async () => {
+    requestHeaders = new Headers();
+
+    expect(await html(45)).toContain('<a href="/"');
   });
 });

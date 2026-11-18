@@ -1,5 +1,4 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import type { CurrentUser } from '@trybun/contracts/users';
 import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
 import { RateLimitedNotice } from '../../../../features/app-shell/components/rate-limited-notice.js';
@@ -7,9 +6,11 @@ import { LazyInviteDialog } from '../../../../features/invitations/components/la
 import { AccountList } from '../../../../features/users/components/account-list.js';
 import { currentUserQueryOptions, usersQueryOptions } from '../../../../features/users/queries.js';
 import { accountsSearchParamsSchema } from '../../../../features/users/search-params.js';
-import { getServerApiClient } from '../../../../lib/api-client/server-api-client.js';
+import {
+  getServerApiClient,
+  readOrRateLimited,
+} from '../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../lib/auth/session.js';
-import { isRateLimited } from '../../../../lib/errors/api-error.js';
 import { getServerQueryClient } from '../../../../lib/query-client/server-query-client.js';
 
 /**
@@ -26,16 +27,13 @@ export default async function AccountsPage({
   await requireSession();
   const [t, client] = await Promise.all([getTranslations('users.accounts'), getServerApiClient()]);
   const queryClient = getServerQueryClient();
-  // A read that throws: a failed one is not a missing permission – the rate limit says so, and
-  // other errors reach the error page (#356).
-  let user: CurrentUser;
-  try {
-    user = await queryClient.fetchQuery(currentUserQueryOptions(client));
-  } catch (error) {
-    if (isRateLimited(error)) {
-      return <RateLimitedNotice error={error} headingLevel={2} />;
-    }
-    throw error;
+  // A failed read is not a missing permission: the rate limit is shown, other errors are thrown
+  // on (#356).
+  const { data: user, rateLimited } = await readOrRateLimited(
+    queryClient.fetchQuery(currentUserQueryOptions(client)),
+  );
+  if (rateLimited !== undefined) {
+    return <RateLimitedNotice error={rateLimited} headingLevel={2} />;
   }
   if (!user.allowedActions.includes('open_administration')) {
     notFound();

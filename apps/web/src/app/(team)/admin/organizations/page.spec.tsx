@@ -18,6 +18,11 @@ vi.mock('next-intl/server', () => ({
   getFormatter: () => Promise.resolve(createFormatter({ locale: 'en', timeZone: 'UTC' })),
   getNow: () => Promise.resolve(new Date('2026-11-18T12:00:00.000Z')),
 }));
+const REQUEST_PATH = '/admin/organizations';
+vi.mock('next/headers.js', () => ({
+  headers: () => Promise.resolve(new Headers({ 'x-trybun-request-path': REQUEST_PATH })),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -138,7 +143,7 @@ describe('OrganizationsPage', () => {
     const element = await OrganizationsPage({ searchParams: Promise.resolve({}) });
 
     expect(notFound).not.toHaveBeenCalled();
-    expect(await html(element)).toContain('Reload the page in 2 minutes.');
+    expect(await html(element)).toContain('Try again in 2 minutes.');
     expect(GET).not.toHaveBeenCalledWith('/api/v1/organizations', expect.anything());
   });
 

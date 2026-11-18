@@ -8,6 +8,12 @@ const UNAVAILABLE_STATUSES = new Set([502, 503, 504]);
 const DELAY_SECONDS = /^\d+$/;
 
 /**
+ * The longest wait read from delay-seconds: half of the 100 000 000 days a `Date` reaches after
+ * 1970, so that the time to try again is always a date that can be shown.
+ */
+const MAX_SECONDS = (100_000_000 / 2) * 24 * 60 * 60;
+
+/**
  * An error response of the API (§17.2, §18.5): its stable code, translated with `errors.<code>`,
  * the invalid fields of a validation error and, when the response says so, the seconds to wait
  * before the next request (`Retry-After` of a `429`, §14.4). Raw server messages are never kept.
@@ -62,7 +68,8 @@ export function retryAfterSecondsOf(value: string | null, now = Date.now()): num
   }
   const trimmed = value.trim();
   if (DELAY_SECONDS.test(trimmed)) {
-    return Number(trimmed);
+    const seconds = Number(trimmed);
+    return seconds <= MAX_SECONDS ? seconds : undefined;
   }
   const date = httpDateOf(trimmed, now);
   return date === undefined ? undefined : Math.max(0, Math.ceil((date - now) / 1000));

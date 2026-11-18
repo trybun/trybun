@@ -22,6 +22,11 @@ vi.mock('next-intl/server', () => ({
   getFormatter: () => Promise.resolve(createFormatter({ locale: 'en', timeZone: 'UTC' })),
   getNow: () => Promise.resolve(new Date('2026-11-18T12:00:00.000Z')),
 }));
+const REQUEST_PATH = '/admin/accounts';
+vi.mock('next/headers.js', () => ({
+  headers: () => Promise.resolve(new Headers({ 'x-trybun-request-path': REQUEST_PATH })),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -178,7 +183,7 @@ describe('AccountsPage', () => {
 
     expect(notFound).not.toHaveBeenCalled();
     expect(html).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
-    expect(html).toContain('Reload the page in 45 seconds.');
+    expect(html).toContain('Try again in 45 seconds.');
     expect(GET).not.toHaveBeenCalledWith('/api/v1/users', expect.anything());
   });
 

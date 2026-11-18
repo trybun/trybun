@@ -1,5 +1,5 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { type Organization, organizationParamsSchema } from '@trybun/contracts/organizations';
+import { organizationParamsSchema } from '@trybun/contracts/organizations';
 import { notFound } from 'next/navigation.js';
 import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
 import { OrganizationDetail } from '../../../../../features/organizations/components/organization-detail.js';
@@ -11,9 +11,9 @@ import { projectsQueryOptions } from '../../../../../features/projects/queries.j
 import {
   dataOrNotFound,
   getServerApiClient,
+  readOrRateLimited,
 } from '../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
-import { isRateLimited } from '../../../../../lib/errors/api-error.js';
 import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
 
 /**
@@ -34,19 +34,15 @@ export default async function OrganizationPage({
   await requireSession();
   const client = await getServerApiClient();
   const queryClient = getServerQueryClient();
-  let organization: Organization;
-  try {
-    organization = await dataOrNotFound(
+  const { data: organization, rateLimited } = await readOrRateLimited(
+    dataOrNotFound(
       client.GET('/api/v1/organizations/{organizationId}', {
         params: { path: { organizationId } },
       }),
-    );
-  } catch (error) {
-    // `notFound()` of a `404` is rethrown with every other error.
-    if (isRateLimited(error)) {
-      return <RateLimitedNotice error={error} headingLevel={2} />;
-    }
-    throw error;
+    ),
+  );
+  if (rateLimited !== undefined) {
+    return <RateLimitedNotice error={rateLimited} headingLevel={2} />;
   }
   queryClient.setQueryData(organizationQueryOptions(client, organizationId).queryKey, organization);
   await Promise.all([

@@ -5,7 +5,7 @@ import createClient from 'openapi-fetch';
 import { cache } from 'react';
 import { getAccessToken } from '../auth/session.js';
 import { getEnv } from '../env/env.js';
-import { ApiError } from '../errors/api-error.js';
+import { ApiError, isRateLimited } from '../errors/api-error.js';
 import { type ApiClient, dataOf } from './api-client.js';
 import type { paths } from './schema.js';
 
@@ -40,6 +40,25 @@ export async function dataOrNotFound<T>(
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       notFound();
+    }
+    throw error;
+  }
+}
+
+/**
+ * A read of a Server Component whose `429` the page shows instead of its content (§14.4, §18.5):
+ * the rate limit is an expected error, returned as a value, as `error.tsx` would receive it
+ * without its code in production. Every other error – `notFound()` of `dataOrNotFound()` too –
+ * is thrown on.
+ */
+export async function readOrRateLimited<T>(
+  read: Promise<T>,
+): Promise<{ data: T; rateLimited?: undefined } | { data?: undefined; rateLimited: ApiError }> {
+  try {
+    return { data: await read };
+  } catch (error) {
+    if (isRateLimited(error)) {
+      return { rateLimited: error };
     }
     throw error;
   }
