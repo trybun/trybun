@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CurrentUser, User } from '@trybun/contracts/users';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
+import { productLocale, PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -30,7 +30,12 @@ function render(
   const queryClient = new QueryClient();
   seed(queryClient);
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale={locale} messages={messagesOf(locale)} timeZone="UTC">
+    // As `lib/i18n/request.ts`: the pseudo-locale changes the texts, never the language.
+    <NextIntlClientProvider
+      locale={productLocale(locale)}
+      messages={messagesOf(locale)}
+      timeZone="UTC"
+    >
       <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>
     </NextIntlClientProvider>,
   );

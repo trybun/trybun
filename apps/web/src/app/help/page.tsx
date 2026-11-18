@@ -1,4 +1,3 @@
-import { productLocale } from '@trybun/i18n/pseudo';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { HelpSearch } from '../../features/help/components/help-search.js';
 import { HelpTopics } from '../../features/help/components/help-topics.js';
@@ -9,9 +8,8 @@ import { requireSession } from '../../lib/auth/session.js';
 /** The help index (§2.3): the search and every help page the reader receives. */
 export default async function HelpPage() {
   await requireSession();
-  // The help pages are in the languages of the product (§2.3).
   const [locale, kind, t] = await Promise.all([
-    getLocale().then(productLocale),
+    getLocale(),
     getHelpReaderKind(),
     getTranslations('help'),
   ]);

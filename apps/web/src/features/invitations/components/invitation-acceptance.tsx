@@ -1,7 +1,6 @@
 'use client';
 
 import { languageSchema } from '@trybun/contracts/users';
-import { productLocale } from '@trybun/i18n/pseudo';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSyncExternalStore } from 'react';
 import type { IdentityProvider } from '../../sessions/keycloak-sign-in.js';
@@ -34,7 +33,7 @@ export function InvitationAcceptance({
   endUserProviders: readonly IdentityProvider[];
 }) {
   const t = useTranslations('invitations.acceptance');
-  const language = languageSchema.parse(productLocale(useLocale()));
+  const language = languageSchema.parse(useLocale());
   const hash = useLocationHash();
   if (hash === undefined) {
     return (
