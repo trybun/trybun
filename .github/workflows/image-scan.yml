@@ -103,7 +103,7 @@ jobs:
           tags: ${{ steps.image.outputs.ref }}
       # The packages stay private until the maintainer makes them public (ADR 0006).
       - if: ${{ matrix.slot != 'main' && steps.image.outputs.ref != '' }}
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -127,7 +127,7 @@ jobs:
         if: ${{ steps.image.outputs.ref == '' }}
         run: |
           echo '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"Trivy","informationUri":"https://github.com/aquasecurity/trivy","rules":[]}},"results":[]}]}' > "$SARIF"
-      - uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: ${{ env.SARIF }}
           category: image-scan/${{ matrix.service }}/${{ matrix.slot }}

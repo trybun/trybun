@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Invitation } from '@trybun/contracts/invitations';
+import { MAX_PAGE_LIMIT } from '@trybun/contracts/pagination';
 import type { User } from '@trybun/contracts/users';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
 import { createTranslator, NextIntlClientProvider } from 'next-intl';
@@ -126,8 +127,9 @@ describe('AccountsPage', () => {
       await AccountsPage({ searchParams: Promise.resolve({ state: 'invited' }) }),
     );
 
+    // One read for the whole page of accounts, keyed by all of them (#357).
     expect(GET).toHaveBeenCalledWith('/api/v1/invitations', {
-      params: { query: { userId: INVITED_ID } },
+      params: { query: { userId: [INVITED_ID, 'none', 'gone'], limit: MAX_PAGE_LIMIT } },
       signal: expect.anything() as AbortSignal,
     });
     expect(GET.mock.calls.filter(([path]) => path === '/api/v1/invitations')).toHaveLength(1);

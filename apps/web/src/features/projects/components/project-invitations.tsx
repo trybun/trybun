@@ -31,9 +31,11 @@ export function ProjectInvitations({ projectId }: { projectId: string }) {
         detailOf={({ target }: Invitation) =>
           target.type === 'project' ? t(`roles.${target.role}`) : undefined
         }
-        hasNextPage={invitations.hasNextPage}
-        isFetchingNextPage={invitations.isFetchingNextPage}
-        onLoadMore={() => void invitations.fetchNextPage()}
+        paging={{
+          hasNextPage: invitations.hasNextPage,
+          isFetchingNextPage: invitations.isFetchingNextPage,
+          onLoadMore: () => void invitations.fetchNextPage(),
+        }}
       />
     </section>
   );
