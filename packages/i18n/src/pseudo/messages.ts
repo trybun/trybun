@@ -8,7 +8,8 @@ import {
   TYPE,
 } from '@formatjs/icu-messageformat-parser';
 import { printAST } from '@formatjs/icu-messageformat-parser/printer.js';
-import type { Messages } from '../catalogues/index.js';
+import { CATALOGUES, type Messages } from '../catalogues/index.js';
+import { isPseudoLocale, type RequestLocale } from './index.js';
 
 /**
  * How much a text of `length` characters grows in translation: the lower bound of each band of
@@ -151,16 +152,51 @@ function stretchElements(elements: MessageFormatElement[], factor: number): Mess
   });
 }
 
-/** One message in the pseudo-locale: accented, stretched and between the markers. */
+/**
+ * The structure of a message without its literal text – arguments with their type and style,
+ * `#`, tags and plural/select options – to prove that printing it again changed nothing else.
+ */
+function structureOf(elements: MessageFormatElement[]): unknown[] {
+  return elements.flatMap((element): unknown[] => {
+    if (isLiteralElement(element)) {
+      return [];
+    }
+    if (isTagElement(element)) {
+      return [{ tag: element.value, children: structureOf(element.children) }];
+    }
+    if (isPluralElement(element) || isSelectElement(element)) {
+      return [
+        {
+          type: element.type,
+          value: element.value,
+          options: Object.entries(element.options)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, option]) => [key, structureOf(option.value)]),
+        },
+      ];
+    }
+    return [{ type: element.type, value: 'value' in element ? element.value : undefined }];
+  });
+}
+
+/**
+ * One message in the pseudo-locale: accented, stretched and between the markers. Throws when the
+ * printer of the ICU parser cannot write it back with the same structure – it loses an argument
+ * after a literal that ends with an apostrophe, `{a}''{b}` – so a message is never silently broken.
+ */
 export function pseudoLocalizeMessage(message: string): string {
   const elements = parse(message);
   const stretched = stretchElements(elements, stretchFactor(literalLength(elements)));
   const [open, close] = PSEUDO_MARKERS;
-  return printAST([
+  const result = printAST([
     { type: TYPE.literal, value: open },
     ...stretched,
     { type: TYPE.literal, value: close },
   ]);
+  if (JSON.stringify(structureOf(parse(result))) !== JSON.stringify(structureOf(elements))) {
+    throw new Error(`The pseudo-locale cannot keep the structure of the message ${message}`);
+  }
+  return result;
 }
 
 function pseudoLocalizeTree(tree: object): object {
@@ -181,4 +217,19 @@ function pseudoLocalizeTree(tree: object): object {
  */
 export function pseudoLocalize(messages: Messages): Messages {
   return pseudoLocalizeTree(messages) as Messages;
+}
+
+let pseudoCatalogue: Messages | undefined;
+
+/**
+ * The catalogue of a request language: the catalogue of a language of the product, or for the
+ * pseudo-locale the English catalogue, pseudo-localized once per process. The one source of the
+ * pseudo messages for the web server and its tests, so they always render the same names.
+ */
+export function catalogueOf(locale: RequestLocale): Messages {
+  if (isPseudoLocale(locale)) {
+    pseudoCatalogue ??= pseudoLocalize(CATALOGUES.en);
+    return pseudoCatalogue;
+  }
+  return CATALOGUES[locale];
 }

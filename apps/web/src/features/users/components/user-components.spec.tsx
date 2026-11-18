@@ -167,5 +167,7 @@ describe('AccountSettingsForm', () => {
     const html = renderForm(currentUser({ language: null }), PSEUDO_LOCALE);
 
     expect(html).toContain(messagesOf(PSEUDO_LOCALE).languages.en);
+    // The pseudo-locale is never a language a person can choose (§13.1).
+    expect(html).not.toContain(PSEUDO_LOCALE);
   });
 });

@@ -52,7 +52,9 @@ const envSchema = z
   .refine(
     (env) =>
       env.TRYBUN_PSEUDO_LOCALE === 'false' ||
-      LOOPBACK_HOSTS.has(new URL(env.NEXTAUTH_URL).hostname),
+      // An invalid NEXTAUTH_URL is reported by its own field; `URL.canParse` keeps this check from
+      // throwing past the list of every invalid variable.
+      (URL.canParse(env.NEXTAUTH_URL) && LOOPBACK_HOSTS.has(new URL(env.NEXTAUTH_URL).hostname)),
     {
       path: ['TRYBUN_PSEUDO_LOCALE'],
       message: 'The pseudo-locale is for tests only: NEXTAUTH_URL must be a loopback address',

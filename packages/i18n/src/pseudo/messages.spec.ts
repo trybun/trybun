@@ -11,7 +11,9 @@ import {
 } from '@formatjs/icu-messageformat-parser';
 import { describe, expect, it } from 'vitest';
 import { CATALOGUES } from '../catalogues/index.js';
+import { PSEUDO_LOCALE } from './index.js';
 import {
+  catalogueOf,
   PSEUDO_MARKERS,
   pseudoLocalize,
   pseudoLocalizeMessage,
@@ -171,6 +173,18 @@ describe('the pseudo-locale', () => {
   });
 });
 
+describe('catalogueOf', () => {
+  it('returns the catalogue of a language of the product as it is', () => {
+    expect(catalogueOf('pl')).toBe(CATALOGUES.pl);
+    expect(catalogueOf('en')).toBe(CATALOGUES.en);
+  });
+
+  it('generates the pseudo-locale once from English', () => {
+    expect(catalogueOf(PSEUDO_LOCALE)).toEqual(pseudoLocalize(CATALOGUES.en));
+    expect(catalogueOf(PSEUDO_LOCALE)).toBe(catalogueOf(PSEUDO_LOCALE));
+  });
+});
+
 describe('stretchFactor', () => {
   it.each([
     [1, 2],
@@ -218,6 +232,10 @@ describe('pseudoLocalizeMessage', () => {
 
   it('leaves the separators between arguments as they are', () => {
     expect(pseudoLocalizeMessage('{a} · {b}')).toBe('[{a} · {b}]');
+  });
+
+  it('refuses a message the ICU printer cannot write back, instead of losing an argument', () => {
+    expect(() => pseudoLocalizeMessage("{a}''{b}")).toThrow(/cannot keep the structure/);
   });
 
   it('keeps quoted ICU syntax quoted', () => {

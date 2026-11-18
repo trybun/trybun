@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
-import { CATALOGUES, LOCALES, type Locale, type Messages } from '@trybun/i18n/catalogues';
-import { isPseudoLocale, PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
-import { pseudoLocalize } from '@trybun/i18n/pseudo/messages';
+import { LOCALES, type Locale, type Messages } from '@trybun/i18n/catalogues';
+import { PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
+import { catalogueOf } from '@trybun/i18n/pseudo/messages';
 
 /**
  * Every language of the catalogues (§13.1). Width-sensitive checks loop over it instead of naming
@@ -20,15 +20,12 @@ export const ALL_LOCALES: readonly Locale[] = LOCALES;
  */
 export const TEST_LOCALES: readonly RequestLocale[] = [...ALL_LOCALES, PSEUDO_LOCALE];
 
-let pseudoMessages: Messages | undefined;
-
-/** The messages of a language, for the names of the elements a test looks up. */
+/**
+ * The messages of a language, for the names of the elements a test looks up – for the
+ * pseudo-locale the same generated messages the web server renders.
+ */
 export function messagesOf(locale: RequestLocale): Messages {
-  if (isPseudoLocale(locale)) {
-    pseudoMessages ??= pseudoLocalize(CATALOGUES.en);
-    return pseudoMessages;
-  }
-  return CATALOGUES[locale];
+  return catalogueOf(locale);
 }
 
 /**

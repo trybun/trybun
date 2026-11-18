@@ -74,6 +74,12 @@ describe('parseEnv', () => {
       );
     });
 
+    it('reports an invalid NEXTAUTH_URL with the other variables instead of throwing', () => {
+      expect(() =>
+        parseEnv({ ...TEST_ENV, NEXTAUTH_URL: 'localhost:3000', TRYBUN_PSEUDO_LOCALE: 'yes' }),
+      ).toThrow(InvalidEnvError);
+    });
+
     it('accepts only true or false', () => {
       expect(() => parseEnv({ ...LOCAL, TRYBUN_PSEUDO_LOCALE: 'yes' })).toThrow(InvalidEnvError);
     });

@@ -1,23 +1,12 @@
-import { CATALOGUES, type Messages } from '@trybun/i18n/catalogues';
-import { isPseudoLocale, type RequestLocale } from '@trybun/i18n/pseudo';
-import { pseudoLocalize } from '@trybun/i18n/pseudo/messages';
+import type { Messages } from '@trybun/i18n/catalogues';
+import type { RequestLocale } from '@trybun/i18n/pseudo';
+import { catalogueOf } from '@trybun/i18n/pseudo/messages';
 
 /** Namespaces only the server uses: e-mails and the Keycloak login theme. */
 const SERVER_NAMESPACES = new Set<string>(['emails', 'keycloak'] satisfies (keyof Messages)[]);
 
 /** The messages of the web application. */
 export type WebMessages = Omit<Messages, 'emails' | 'keycloak'>;
-
-let pseudoMessages: Messages | undefined;
-
-/** The catalogue of a request language; the pseudo-locale is generated once per process. */
-function catalogueOf(locale: RequestLocale): Messages {
-  if (isPseudoLocale(locale)) {
-    pseudoMessages ??= pseudoLocalize(CATALOGUES.en);
-    return pseudoMessages;
-  }
-  return CATALOGUES[locale];
-}
 
 /** The messages of the web application in a language, without the namespaces of the server. */
 export function getWebMessages(locale: RequestLocale): WebMessages {
