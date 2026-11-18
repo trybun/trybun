@@ -270,7 +270,9 @@ export function TicketFilterBar({
                 id={triggerId(key)}
                 render={<Button type="button" variant="secondary" size="sm" />}
                 aria-label={t('change', { filter: labelOf(key), values: valuesOf(key) })}
-                className="min-w-0 pr-1"
+                // `Button` does not shrink by default: a long name is truncated instead of pushing
+                // the × out of a narrow screen (#301).
+                className="min-w-0 shrink pr-1"
                 onClick={openFrom(key)}
               >
                 <span className="truncate">{name}</span>

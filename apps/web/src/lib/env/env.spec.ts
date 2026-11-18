@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OPTIONAL_ENV_KEYS, TEST_ENV } from '../../../test/env.js';
 import { stubIntegrationEnv } from '../../../test/setup/environment.js';
@@ -19,6 +21,7 @@ describe('parseEnv', () => {
       defaultTimeZone: 'UTC',
       attachmentMaxSizeMb: 25,
       isDevelopment: false,
+      isPseudoLocaleEnabled: false,
       endUserIdentityProviders: [],
       keycloak: {
         issuer: 'https://trybun.example.com/auth/realms/trybun',
@@ -42,6 +45,51 @@ describe('parseEnv', () => {
 
   it('recognizes `next dev`', () => {
     expect(parseEnv({ ...TEST_ENV, NODE_ENV: 'development' }).isDevelopment).toBe(true);
+  });
+
+  describe('the pseudo-locale of the tests (§13.1)', () => {
+    const LOCAL = { ...TEST_ENV, NEXTAUTH_URL: 'http://localhost:3000' };
+
+    it('is off by default, also on a loopback address', () => {
+      expect(parseEnv(LOCAL).isPseudoLocaleEnabled).toBe(false);
+    });
+
+    it.each(['http://localhost:3000', 'http://127.0.0.1:3000', 'http://[::1]:3000'])(
+      'is switched on by TRYBUN_PSEUDO_LOCALE on %s',
+      (url) => {
+        expect(
+          parseEnv({ ...TEST_ENV, NEXTAUTH_URL: url, TRYBUN_PSEUDO_LOCALE: 'true' })
+            .isPseudoLocaleEnabled,
+        ).toBe(true);
+      },
+    );
+
+    it('is on under `next dev`', () => {
+      expect(parseEnv({ ...LOCAL, NODE_ENV: 'development' }).isPseudoLocaleEnabled).toBe(true);
+    });
+
+    it('stops the start-up when switched on outside a loopback address', () => {
+      expect(() => parseEnv({ ...TEST_ENV, TRYBUN_PSEUDO_LOCALE: 'true' })).toThrow(
+        /TRYBUN_PSEUDO_LOCALE: The pseudo-locale is for tests only/,
+      );
+    });
+
+    it('reports an invalid NEXTAUTH_URL with the other variables instead of throwing', () => {
+      expect(() =>
+        parseEnv({ ...TEST_ENV, NEXTAUTH_URL: 'localhost:3000', TRYBUN_PSEUDO_LOCALE: 'yes' }),
+      ).toThrow(InvalidEnvError);
+    });
+
+    it('accepts only true or false', () => {
+      expect(() => parseEnv({ ...LOCAL, TRYBUN_PSEUDO_LOCALE: 'yes' })).toThrow(InvalidEnvError);
+    });
+
+    // The production container gets an explicit list of variables, so the switch never reaches
+    // an installation through Compose or the image.
+    it.each(['compose.yaml', 'docker/web/Dockerfile'])('is never set by %s', (file) => {
+      const content = readFileSync(join(import.meta.dirname, '../../../../..', file), 'utf8');
+      expect(content).not.toContain('TRYBUN_PSEUDO_LOCALE');
+    });
   });
 
   it('takes the issuer from the public URL of Keycloak when it is set', () => {

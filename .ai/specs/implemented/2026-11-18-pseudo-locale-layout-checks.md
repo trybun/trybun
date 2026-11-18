@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-18 |
 | Plan task | – (follow-up of #295 and #299) |
 | System specification sections | §2.9, §13.1, §15.3 |
-| Related issues / PRs | #301, #295, #299 |
+| Related issues / PRs | #301, #377, #378, #295, #299 |
 
 ## 📝 TLDR
 
@@ -29,7 +29,7 @@ This is pseudo-localization, the established way to test text expansion before t
 Trybun follows them:
 
 1. **Generation.** `pseudoLocalize(messages)` is a pure, deterministic function in a new entry point, `@trybun/i18n/pseudo/messages`. The tag, its type and the helpers of the web application live in the lightweight `@trybun/i18n/pseudo`, so client components never bundle the generator. It parses every message with `@formatjs/icu-messageformat-parser`, which the package already uses to check the catalogues. It changes **only literal text**, including the literal text inside `plural`/`select` options and rich-text tags, and prints the message again with the parser's `printer`. Argument names, `#`, tag names, the `plural`/`select` keywords, offsets and option keys stay as they are.
-   - The letters that have an accented form within Latin-1 are accented (`a → á`, `e → é`, `n → ñ`, `d → ð`, …), so text that does not come from the catalogues stands out in screenshots. Latin-1 only, because the web font loads only its `latin` subset (`app/layout.tsx`): the stretched text is then measured in the font of the product rather than in a fallback font.
+   - The letters that have an accented form within Latin-1 are accented (`a → á`, `e → é`, `n → ñ`, `d → ð`, …), so text that does not come from the catalogues stands out in screenshots. Latin-1 only, because that range is in the `latin` subset the web font preloads (`app/layout.tsx`); the other subsets, Latin Extended included, load on first use. The stretched text is therefore measured without waiting for a subset loaded later.
    - The factor of a message comes from `L`, the length of its literal text, with arguments counted as zero; for `plural`/`select`, the longest option counts. Every literal of the message that holds a letter grows to `ceil(length × factor)` characters, in every `plural`/`select` option and tag. Literals without a letter, such as the spaces and punctuation between arguments, stay as they are. The factor is the **lower bound of the W3C band**: ≤ 10 characters × 2.0; 11–20 × 1.8; 21–30 × 1.6; 31–50 × 1.4; 51–70 × 1.5; > 70 × 1.3. For example, `Bug` (3) becomes 6 letters and `Pending sharing approvals` (25) becomes 40 characters.
    - The extra characters of a literal are spread over its words in proportion to their length, by repeating their vowels (or the last letter, when a word has none). The number of words, and so the number of places where a line can break, stays as in English. Each word gets longer, the way German and Finnish compounds do.
    - The message starts with `[` and ends with `]`, so a cut-off text shows a missing marker. The markers come on top of the target length, so even the shortest label grows by the full factor.
@@ -151,3 +151,6 @@ None open: each question of the issue is answered below.
 - 2026-11-18 – Created from #301 by `om-auto-write-spec` (autonomous defaults, readiness waived by the maintainer).
 - 2026-11-18 – Aligned with the implementation PR #378: accents within Latin-1, a lightweight `./pseudo` entry next to `./pseudo/messages`, stretching per literal, the language switch unmapped, and the switch in the QA test environment.
 - 2026-11-18 – Specification review of #377: only the texts change, never the request language (`AppConfig.Locale` stays `Locale`); the filter-chip fix of the probe, `catalogueOf`, the printer guard, the Dockerfile guard and the merge order of #377 and #378 are described.
+- 2026-11-18 – Approved by the maintainer through the merge of #377.
+- 2026-11-18 – Implemented (#378): `@trybun/i18n/pseudo` and `./pseudo/messages`, the test-only `TRYBUN_PSEUDO_LOCALE` with its loopback and Compose/image guards, texts-only request configuration, `TEST_LOCALES` in the ticket list E2E, and the filter-chip fix the probe found; §2.9, §13.1 and §15.3 updated.
+- 2026-11-18 – Corrected the reason for Latin-1-only accents (manual QA of #378): the web font declares Latin Extended too; `latin` is the subset it preloads.

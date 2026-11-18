@@ -10,6 +10,7 @@
 - Also translated: public status names and descriptions ([§4.2](04-ticket-lifecycle.md)), e-mails (in the recipient's language), error and warning messages, templates ([§3.4](03-ticket-model.md)), product tours (Rule 4), login screens (Keycloak themes).
 - Content entered by users (tickets, comments) is not translated.
 - Every catalogue has exactly the keys of the English one, with valid ICU messages and the same arguments; CI fails on a missing, extra or malformed translation and on a key used in code that the catalogues do not define.
+- For tests only, a **pseudo-locale `en-XA`** is generated in memory from the English catalogue: accented, stretched, between markers ([§2.9](02-agent-rules.md)). It is not a language of the product. It is not offered by the language switch or the settings, never stored in an account, and never used by the API, e-mails or the Keycloak login theme. The web application accepts it from the `NEXT_LOCALE` cookie or an `Accept-Language` range that is exactly `en-XA`, and only under `next dev` or with `TRYBUN_PSEUDO_LOCALE=true` ([§15.3](15-deployment.md)). It changes only the texts: the language of the request stays English. Help pages, the language of an accepted invitation, Keycloak's `ui_locales`, ticket templates, the language switch and `<html lang>` therefore all see `en`.
 
 ## 13.2 Personal data protection (GDPR)
 

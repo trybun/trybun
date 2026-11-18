@@ -77,6 +77,9 @@ export default defineConfig({
       command: 'pnpm exec next start --port 3000',
       url: 'http://localhost:3000/api/health',
       reuseExistingServer: !isCi,
+      // The pseudo-locale of the width-sensitive checks (§2.9, `e2e/locales.ts`); `next dev`, which
+      // a local run reuses, serves it without the variable.
+      env: { TRYBUN_PSEUDO_LOCALE: 'true' },
     },
   ],
 });

@@ -1,5 +1,6 @@
 import 'server-only';
 import { isLocale } from '@trybun/i18n/catalogues';
+import { productLocale } from '@trybun/i18n/pseudo';
 import { getRequestConfig } from 'next-intl/server';
 import { getRequestLocale } from './locale.js';
 import { getWebMessages } from './messages.js';
@@ -16,5 +17,7 @@ export default getRequestConfig(async ({ locale: requested }) => {
     isLocale(requested) ? requested : getRequestLocale(),
     getRequestTimeZone(),
   ]);
-  return { locale, messages: getWebMessages(locale), timeZone };
+  // The pseudo-locale of the tests changes only the texts (§13.1): every consumer of the language –
+  // help, accounts, Keycloak, templates – keeps a language of the product, English.
+  return { locale: productLocale(locale), messages: getWebMessages(locale), timeZone };
 });

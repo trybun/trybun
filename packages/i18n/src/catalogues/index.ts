@@ -20,26 +20,42 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 /**
+ * The language ranges of an `Accept-Language` header (RFC 9110), lower case, by quality – the
+ * highest first, equal qualities in the order of the header; ranges of quality 0 are left out.
+ */
+export function languageRanges(acceptLanguage: string | null | undefined): string[] {
+  return (
+    (acceptLanguage ?? '')
+      .split(',')
+      .map((part) => {
+        const [range = '', ...parameters] = part.trim().toLowerCase().split(';');
+        const quality = parameters
+          .map((parameter) => /^\s*q=(\S*)\s*$/.exec(parameter)?.[1])
+          .find((value) => value !== undefined);
+        return { range: range.trim(), quality: quality === undefined ? 1 : Number(quality) };
+      })
+      .filter(({ range, quality }) => range !== '' && quality > 0)
+      // A stable sort keeps the order of the header among equal qualities.
+      .sort((a, b) => b.quality - a.quality)
+      .map(({ range }) => range)
+  );
+}
+
+/** The supported language of a language range: its language or primary subtag. */
+export function localeOfRange(range: string): Locale | undefined {
+  const [language] = range.split('-');
+  return isLocale(language) ? language : undefined;
+}
+
+/**
  * The supported language preferred by an `Accept-Language` header (RFC 9110): the first range by
  * quality whose language or primary subtag is supported; `undefined` when none is.
  */
 export function negotiateLocale(acceptLanguage: string | null | undefined): Locale | undefined {
-  const ranges = (acceptLanguage ?? '')
-    .split(',')
-    .map((part) => {
-      const [range = '', ...parameters] = part.trim().toLowerCase().split(';');
-      const quality = parameters
-        .map((parameter) => /^\s*q=(\S*)\s*$/.exec(parameter)?.[1])
-        .find((value) => value !== undefined);
-      return { range: range.trim(), quality: quality === undefined ? 1 : Number(quality) };
-    })
-    .filter(({ range, quality }) => range !== '' && quality > 0)
-    // A stable sort keeps the order of the header among equal qualities.
-    .sort((a, b) => b.quality - a.quality);
-  for (const { range } of ranges) {
-    const [language] = range.split('-');
-    if (isLocale(language)) {
-      return language;
+  for (const range of languageRanges(acceptLanguage)) {
+    const locale = localeOfRange(range);
+    if (locale !== undefined) {
+      return locale;
     }
   }
   return undefined;

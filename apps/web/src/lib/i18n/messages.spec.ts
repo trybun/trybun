@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { PSEUDO_LOCALE } from '@trybun/i18n/pseudo';
+import { pseudoLocalize } from '@trybun/i18n/pseudo/messages';
 import { describe, expect, it } from 'vitest';
 import {
   CLIENT_NAMESPACES,
@@ -20,6 +22,21 @@ describe('getWebMessages', () => {
       expect(messages.signIn).toEqual(CATALOGUES[locale].signIn);
     },
   );
+});
+
+describe('getWebMessages of the pseudo-locale', () => {
+  it('returns the stretched English messages without the server namespaces', () => {
+    const messages = getWebMessages(PSEUDO_LOCALE);
+
+    expect(Object.keys(messages)).not.toContain('emails');
+    expect(Object.keys(messages)).not.toContain('keycloak');
+    expect(messages.signIn).toEqual(pseudoLocalize(CATALOGUES.en).signIn);
+    expect(messages.signIn).not.toEqual(CATALOGUES.en.signIn);
+  });
+
+  it('generates them once', () => {
+    expect(getWebMessages(PSEUDO_LOCALE).app).toBe(getWebMessages(PSEUDO_LOCALE).app);
+  });
 });
 
 describe('pickClientMessages', () => {
