@@ -1,6 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { organizationParamsSchema } from '@trybun/contracts/organizations';
+import { type Organization, organizationParamsSchema } from '@trybun/contracts/organizations';
 import { notFound } from 'next/navigation.js';
+import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
 import { OrganizationDetail } from '../../../../../features/organizations/components/organization-detail.js';
 import {
   organizationMembersQueryOptions,
@@ -12,12 +13,13 @@ import {
   getServerApiClient,
 } from '../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
+import { isRateLimited } from '../../../../../lib/errors/api-error.js';
 import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
 
 /**
  * An organization in the Administrator panel (§7.3). An organization that does not exist – or an
  * address that is not an organization ID, or a person who is not the Administrator – shows the
- * not-found page (§17.2).
+ * not-found page (§17.2); a person over the rate limit is told so (§14.4).
  */
 export default async function OrganizationPage({
   params,
@@ -32,11 +34,20 @@ export default async function OrganizationPage({
   await requireSession();
   const client = await getServerApiClient();
   const queryClient = getServerQueryClient();
-  const organization = await dataOrNotFound(
-    client.GET('/api/v1/organizations/{organizationId}', {
-      params: { path: { organizationId } },
-    }),
-  );
+  let organization: Organization;
+  try {
+    organization = await dataOrNotFound(
+      client.GET('/api/v1/organizations/{organizationId}', {
+        params: { path: { organizationId } },
+      }),
+    );
+  } catch (error) {
+    // `notFound()` of a `404` is rethrown with every other error.
+    if (isRateLimited(error)) {
+      return <RateLimitedNotice error={error} headingLevel={2} />;
+    }
+    throw error;
+  }
   queryClient.setQueryData(organizationQueryOptions(client, organizationId).queryKey, organization);
   await Promise.all([
     queryClient.prefetchInfiniteQuery(organizationMembersQueryOptions(client, organizationId)),
