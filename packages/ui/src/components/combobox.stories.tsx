@@ -172,7 +172,7 @@ function ProjectPicker({
 }: ComponentProps<typeof Combobox> & {
   /** Text of the live region (`ComboboxStatus`, kept mounted), e.g. while a page is loading. */
   loading?: string;
-  /** Shown instead of the empty message when the options could not be loaded. */
+  /** Shown when the options could not be loaded; the empty region stays mounted, but empty. */
   error?: ReactNode;
 }) {
   return (
@@ -183,7 +183,9 @@ function ProjectPicker({
       <ComboboxContent aria-label="Project" className="w-72">
         <ComboboxPopupInput aria-label="Search projects" placeholder="Search projects…" />
         <ComboboxStatus>{loading}</ComboboxStatus>
-        {error ?? (loading ? null : <ComboboxEmpty>No projects match.</ComboboxEmpty>)}
+        {error}
+        {/* Kept mounted in every state, only its text changes, so the message is announced. */}
+        <ComboboxEmpty>{loading || error ? null : 'No projects match.'}</ComboboxEmpty>
         <ComboboxList aria-label="Projects">
           {(item: string) => (
             <ComboboxCheckboxItem key={item} value={item}>
@@ -305,8 +307,16 @@ export const PickerLoading: Story = {
     <ProjectPicker {...args} loading="Loading projects…" />
   ),
   play: async () => {
-    await expect(await screen.findByRole('status')).toHaveTextContent('Loading projects…');
+    await expect(await screen.findByText('Loading projects…')).toHaveAttribute(
+      'data-slot',
+      'combobox-status',
+    );
     await expect(screen.queryByText('No projects match.')).not.toBeInTheDocument();
+    // The empty region stays mounted while loading, so its message is announced when it fills.
+    const empty = emptyRegion();
+    await expect(empty).toHaveAttribute('role', 'status');
+    await expect(empty).toBeEmptyDOMElement();
+    await expect(getComputedStyle(empty).display).not.toBe('none');
   },
 };
 
@@ -339,6 +349,10 @@ export const PickerError: Story = {
       'The projects could not be loaded.',
     );
     await waitFor(() => expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible());
+    const empty = emptyRegion();
+    await expect(empty).toHaveAttribute('role', 'status');
+    await expect(empty).toBeEmptyDOMElement();
+    await expect(getComputedStyle(empty).display).not.toBe('none');
   },
 };
 
