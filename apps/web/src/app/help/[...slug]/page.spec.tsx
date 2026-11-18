@@ -1,8 +1,9 @@
-import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { messagesOf } from '../../../../test/messages.js';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -19,9 +20,9 @@ vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...pr
 
 const { default: HelpTopicPage } = await import('./page.js');
 
-function render(element: ReactElement, locale: 'en' | 'pl') {
+function render(element: ReactElement, locale: RequestLocale) {
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
+    <NextIntlClientProvider locale={locale} messages={messagesOf(locale)} timeZone="UTC">
       {element}
     </NextIntlClientProvider>,
   );
@@ -51,6 +52,18 @@ describe('HelpTopicPage', () => {
     // A relative link to another page leads to its address in the help.
     expect(html).toContain('href="/help/team/explanation/help-for-end-users"');
     expect(requireSession).toHaveBeenCalledWith();
+  });
+
+  it('renders the English page in the pseudo-locale of the tests', async () => {
+    getLocale.mockResolvedValue(PSEUDO_LOCALE);
+    getHelpReaderKind.mockResolvedValue('team');
+
+    const html = render(
+      await HelpTopicPage(params('team', 'tutorials', 'getting-started')),
+      PSEUDO_LOCALE,
+    );
+
+    expect(html).toContain('<h1 class="text-2xl font-bold">Getting started for the team</h1>');
   });
 
   it('never gives an end user a team page', async () => {

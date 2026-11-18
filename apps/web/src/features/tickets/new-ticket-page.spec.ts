@@ -1,9 +1,10 @@
 import { CATALOGUES, type Locale } from '@trybun/i18n/catalogues';
+import { PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 let language: Locale | null = null;
-let requestLocale: Locale = 'en';
+let requestLocale: RequestLocale = 'en';
 const projectPages: Record<string, { items: object[]; nextCursor: string | null }> = {};
 const get = vi.fn((path: string, init: { params?: { query?: { cursor?: string } } }) =>
   Promise.resolve({
@@ -75,6 +76,12 @@ describe('getNewTicketPage', () => {
 
     expect((await getNewTicketPage()).templates).toEqual(CATALOGUES.pl.tickets.templates);
     requestLocale = 'en';
+    expect((await getNewTicketPage()).templates).toEqual(CATALOGUES.en.tickets.templates);
+  });
+
+  it('gives English templates, never stretched ones, in the pseudo-locale of the tests', async () => {
+    requestLocale = PSEUDO_LOCALE;
+
     expect((await getNewTicketPage()).templates).toEqual(CATALOGUES.en.tickets.templates);
   });
 });

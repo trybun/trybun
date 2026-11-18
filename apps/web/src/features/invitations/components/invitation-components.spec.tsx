@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { InvitationToAccept } from '@trybun/contracts/invitations';
-import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { messagesOf } from '../../../../test/messages.js';
 
 vi.mock('next-auth/react', () => ({ signIn: vi.fn(), signOut: vi.fn() }));
 
@@ -23,12 +24,12 @@ function render(
   {
     locale = 'en',
     seed = () => {},
-  }: { locale?: 'en' | 'pl'; seed?: (client: QueryClient) => void } = {},
+  }: { locale?: RequestLocale; seed?: (client: QueryClient) => void } = {},
 ): string {
   const queryClient = new QueryClient();
   seed(queryClient);
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
+    <NextIntlClientProvider locale={locale} messages={messagesOf(locale)} timeZone="UTC">
       <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>
     </NextIntlClientProvider>,
   );
@@ -237,6 +238,12 @@ describe('InvitationAcceptance', () => {
     expect(render(<InvitationAcceptance endUserProviders={[]} />)).toContain(
       'Checking the invitation link…',
     );
+  });
+
+  it('renders in the pseudo-locale of the tests, whose accounts get English', () => {
+    expect(
+      render(<InvitationAcceptance endUserProviders={[]} />, { locale: PSEUDO_LOCALE }),
+    ).toContain(messagesOf(PSEUDO_LOCALE).invitations.acceptance.checking);
   });
 });
 

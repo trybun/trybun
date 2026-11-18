@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CurrentUser, User } from '@trybun/contracts/users';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { messagesOf } from '../../../../test/messages.js';
 
 vi.mock('next/navigation.js', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -23,12 +25,12 @@ function render(
   {
     locale = 'en',
     seed = () => {},
-  }: { locale?: 'en' | 'pl'; seed?: (client: QueryClient) => void } = {},
+  }: { locale?: RequestLocale; seed?: (client: QueryClient) => void } = {},
 ): string {
   const queryClient = new QueryClient();
   seed(queryClient);
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
+    <NextIntlClientProvider locale={locale} messages={messagesOf(locale)} timeZone="UTC">
       <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>
     </NextIntlClientProvider>,
   );
@@ -133,7 +135,7 @@ describe('AccountSettingsForm', () => {
     };
   }
 
-  function renderForm(user: CurrentUser, locale: 'en' | 'pl' = 'en') {
+  function renderForm(user: CurrentUser, locale: RequestLocale = 'en') {
     return render(<AccountSettingsForm systemTimeZone="UTC" />, {
       locale,
       seed: (client) => client.setQueryData(['users', 'me'], user),
@@ -159,5 +161,11 @@ describe('AccountSettingsForm', () => {
 
   it('is translated', () => {
     expect(renderForm(currentUser(), 'pl')).toContain(CATALOGUES.pl.users.settings.save);
+  });
+
+  it('offers English for an account without a language in the pseudo-locale of the tests', () => {
+    const html = renderForm(currentUser({ language: null }), PSEUDO_LOCALE);
+
+    expect(html).toContain(messagesOf(PSEUDO_LOCALE).languages.en);
   });
 });

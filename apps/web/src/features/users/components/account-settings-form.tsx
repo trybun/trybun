@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { LOCALES } from '@trybun/i18n/catalogues';
+import { productLocale } from '@trybun/i18n/pseudo';
 import { type Language, languageSchema, timeZoneSchema } from '@trybun/contracts/users';
 import { Button } from '@trybun/ui/components/button';
 import {
@@ -92,7 +93,7 @@ export function AccountSettingsForm({ systemTimeZone }: { systemTimeZone: string
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema, FORM_ERROR_MAP),
     defaultValues: {
-      language: user?.language ?? languageSchema.parse(locale),
+      language: user?.language ?? languageSchema.parse(productLocale(locale)),
       timeZone: user?.timeZone ?? null,
     },
   });

@@ -18,4 +18,23 @@ describe('resolveLocale', () => {
   ] as const)('%j with default %s → %s', (sources, defaultLanguage, expected) => {
     expect(resolveLocale(sources, defaultLanguage)).toBe(expected);
   });
+
+  describe('with the pseudo-locale of the tests', () => {
+    it.each([
+      [{ cookie: 'en-XA', acceptLanguage: 'pl' }, 'en-XA'],
+      [{ cookie: undefined, acceptLanguage: 'en-XA' }, 'en-XA'],
+      [{ cookie: undefined, acceptLanguage: 'pl,en-XA;q=0.5' }, 'pl'],
+      [{ cookie: 'pl', acceptLanguage: 'en-XA' }, 'pl'],
+    ] as const)('enabled: %j → %s', (sources, expected) => {
+      expect(resolveLocale(sources, 'en', true)).toBe(expected);
+    });
+
+    it.each([
+      [{ cookie: 'en-XA', acceptLanguage: 'pl' }, 'pl'],
+      [{ cookie: undefined, acceptLanguage: 'en-XA' }, 'en'],
+      [{ cookie: 'en-XA', acceptLanguage: null }, 'pl'],
+    ] as const)('disabled: %j → %s', (sources, expected) => {
+      expect(resolveLocale(sources, 'pl')).toBe(expected);
+    });
+  });
 });

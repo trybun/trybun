@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation.js';
+import { productLocale } from '@trybun/i18n/pseudo';
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
 import { HelpArticle } from '../../../features/help/components/help-article.js';
@@ -22,7 +23,7 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ slug
   }
   const slug = parsed.data.slug.join('/');
   await requireSession();
-  const [locale, kind] = await Promise.all([getLocale(), getHelpReaderKind()]);
+  const [locale, kind] = await Promise.all([getLocale().then(productLocale), getHelpReaderKind()]);
   const page = getHelpPage(locale, kind, slug);
   if (page === undefined) {
     notFound();

@@ -1,8 +1,9 @@
-import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { messagesOf } from '../../../test/messages.js';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -18,9 +19,9 @@ vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...pr
 
 const { default: HelpPage } = await import('./page.js');
 
-async function renderPage(locale: 'en' | 'pl') {
+async function renderPage(locale: RequestLocale) {
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC">
+    <NextIntlClientProvider locale={locale} messages={messagesOf(locale)} timeZone="UTC">
       {await HelpPage()}
     </NextIntlClientProvider>,
   );
@@ -53,5 +54,15 @@ describe('HelpPage', () => {
     expect(html).toContain('href="/help/team/tutorials/getting-started"');
     expect(html).toContain('>For the team</h2>');
     expect(html).toContain('>How-to guides</h3>');
+  });
+
+  it('lists the English pages in the pseudo-locale of the tests', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    getLocale.mockResolvedValue(PSEUDO_LOCALE);
+    getHelpReaderKind.mockResolvedValue('team');
+
+    const html = await renderPage(PSEUDO_LOCALE);
+
+    expect(html).toContain('href="/help/team/tutorials/getting-started"');
   });
 });

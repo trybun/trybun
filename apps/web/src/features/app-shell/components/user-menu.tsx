@@ -87,6 +87,7 @@ export function UserMenu() {
         <DropdownMenuGroup>
           <DropdownMenuLabel>{t('language')}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
+            // In the pseudo-locale of the tests no language is checked, so choosing English leaves it.
             value={locale}
             onValueChange={(value: Locale) => {
               // This device switches also when the account cannot be saved, e.g. offline.

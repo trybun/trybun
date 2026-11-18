@@ -1,6 +1,7 @@
 import 'server-only';
 import { MAX_PAGE_LIMIT } from '@trybun/contracts/pagination';
 import { ticketTypeSchema } from '@trybun/contracts/tickets';
+import { productLocale } from '@trybun/i18n/pseudo';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { allPageItems } from '../../lib/api-client/all-pages.js';
 import { dataOf } from '../../lib/api-client/api-client.js';
@@ -27,7 +28,8 @@ export async function getNewTicketPage(): Promise<{
     getServerQueryClient().ensureQueryData(currentUserQueryOptions(client)),
   ]);
   const t = await getTranslations({
-    locale: user.language ?? (await getLocale()),
+    // The templates become the text of a ticket, so never the pseudo-locale of the tests.
+    locale: user.language ?? productLocale(await getLocale()),
     namespace: 'tickets.templates',
   });
   const templates = Object.fromEntries(
