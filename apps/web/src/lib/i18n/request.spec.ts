@@ -49,6 +49,17 @@ describe('the request configuration with the pseudo-locale of the tests (§13.1)
     expect(config.messages?.app).toEqual(catalogueOf('en-XA').app);
   });
 
+  it('gives the real texts of a language passed explicitly, e.g. the ticket templates', async () => {
+    // The templates become the text of a ticket, so never the pseudo-locale (S1-10 Q4).
+    cookie = 'en-XA';
+    acceptLanguage = 'en-XA';
+
+    const config = await getRequestConfig({ locale: 'en', requestLocale: Promise.resolve('en') });
+
+    expect(config.locale).toBe('en');
+    expect(config.messages?.tickets).toEqual(CATALOGUES.en.tickets);
+  });
+
   it('serves a language of the product unchanged', async () => {
     cookie = undefined;
     acceptLanguage = 'pl-PL,pl;q=0.9';
