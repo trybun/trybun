@@ -17,7 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@formatjs/icu-messageformat-parser": "^3.5.22"
+    "@formatjs/icu-messageformat-parser": "^3.5.23"
   },
   "devDependencies": {
     "@trybun/eslint-config": "workspace:*",
