@@ -28,10 +28,10 @@ This is pseudo-localization, the established way to test text expansion before t
 
 Trybun follows them:
 
-1. **Generation.** `pseudoLocalize(messages)` is a pure, deterministic function in a new entry point, `@trybun/i18n/pseudo`. It parses every message with `@formatjs/icu-messageformat-parser`, which the package already uses to check the catalogues. It changes **only literal text**, including the literal text inside `plural`/`select` options and rich-text tags, and prints the message again with the parser's `printer`. Argument names, `#`, tag names, the `plural`/`select` keywords, offsets and option keys stay as they are.
-   - Each ASCII letter is replaced by an accented Latin letter (`a → á`, `e → é`, …), so text that does not come from the catalogues stands out in screenshots.
-   - The message is lengthened to `ceil(L × factor(L))` characters. `L` is the length of its literal text, with arguments counted as zero; for `plural`/`select`, the longest option counts. The factor is the **lower bound of the W3C band**: ≤ 10 characters × 2.0; 11–20 × 1.8; 21–30 × 1.6; 31–50 × 1.4; 51–70 × 1.5; > 70 × 1.3. For example, `Bug` (3) becomes 6 letters and `Pending sharing approvals` (25) becomes 40 characters.
-   - The extra characters are spread over the words of the message in proportion to their length, by repeating their vowels (or the last letter, when a word has none). The number of words, and so the number of places where a line can break, stays as in English. Each word gets longer, the way German and Finnish compounds do.
+1. **Generation.** `pseudoLocalize(messages)` is a pure, deterministic function in a new entry point, `@trybun/i18n/pseudo/messages`. The tag, its type and the helpers of the web application live in the lightweight `@trybun/i18n/pseudo`, so client components never bundle the generator. It parses every message with `@formatjs/icu-messageformat-parser`, which the package already uses to check the catalogues. It changes **only literal text**, including the literal text inside `plural`/`select` options and rich-text tags, and prints the message again with the parser's `printer`. Argument names, `#`, tag names, the `plural`/`select` keywords, offsets and option keys stay as they are.
+   - The letters that have an accented form within Latin-1 are accented (`a → á`, `e → é`, `n → ñ`, `d → ð`, …), so text that does not come from the catalogues stands out in screenshots. Latin-1 only, because the web font loads only its `latin` subset (`app/layout.tsx`): the stretched text is then measured in the font of the product rather than in a fallback font.
+   - The factor of a message comes from `L`, the length of its literal text, with arguments counted as zero; for `plural`/`select`, the longest option counts. Every literal of the message that holds a letter grows to `ceil(length × factor)` characters, in every `plural`/`select` option and tag. Literals without a letter, such as the spaces and punctuation between arguments, stay as they are. The factor is the **lower bound of the W3C band**: ≤ 10 characters × 2.0; 11–20 × 1.8; 21–30 × 1.6; 31–50 × 1.4; 51–70 × 1.5; > 70 × 1.3. For example, `Bug` (3) becomes 6 letters and `Pending sharing approvals` (25) becomes 40 characters.
+   - The extra characters of a literal are spread over its words in proportion to their length, by repeating their vowels (or the last letter, when a word has none). The number of words, and so the number of places where a line can break, stays as in English. Each word gets longer, the way German and Finnish compounds do.
    - The message starts with `[` and ends with `]`, so a cut-off text shows a missing marker. The markers come on top of the target length, so even the shortest label grows by the full factor.
 2. **Not a language of the product.** `PSEUDO_LOCALE = 'en-XA'` is exported next to the function. `en-XA` is a valid BCP 47 tag with a region from the private-use range of ISO 3166 (`XA`–`XZ`), the tag Android and Chromium use. It is **not** in `CATALOGUES` or `LOCALES`, so it never appears in the language switch, the account settings, `TRYBUN_DEFAULT_LANGUAGE`, the API, e-mails or the Keycloak theme. `generate-keycloak-theme.js` reads `messages/*.json`, and the pseudo-locale is generated in memory, never written there.
 3. **Web application, behind a test-only switch.** The web server accepts `en-XA` as the language of a request only when it is enabled:
@@ -46,7 +46,9 @@ Trybun follows them:
    - the language of an invitation acceptance;
    - `ui_locales` for Keycloak;
    - ticket templates;
-   - the selected language in the language switch and the account settings.
+   - the default language of the account settings form.
+
+   The language switch keeps the raw value: in the pseudo-locale no language is checked, so choosing English leaves it.
 
    `<html lang>` and the `Intl` formatting keep `en-XA`. The tag is valid, and ICU falls back to English data for it.
 5. **E2E.** `apps/web/e2e/locales.ts` gains `TEST_LOCALES = [...ALL_LOCALES, PSEUDO_LOCALE]` next to `ALL_LOCALES`. `messagesOf(locale)` returns the pseudo messages for `en-XA`, so tests find elements by their stretched names. Width-sensitive checks loop over `TEST_LOCALES`. Today those are the loops of `ticket-list.spec.ts`: every view, on phone, at 768 px and 1024 px in the tablet project, and on desktop. `ONE_LINE_TYPE_LOCALES` stays `en` and `pl`: a stretched type label is checked for overflow, not failed for wrapping. That is the rule #299 already set for languages that have not been checked yet.
@@ -60,7 +62,7 @@ Trybun follows them:
 
 ## 📝 Architecture
 
-- `packages/i18n`: a new `src/pseudo/index.ts` (`./pseudo` export) with `PSEUDO_LOCALE`, `PseudoLocale`, `stretchFactor(length)` and `pseudoLocalize(messages)`. `@formatjs/icu-messageformat-parser` moves from `devDependencies` to `dependencies`: it is used at runtime now. It is no new package, since `next-intl` already brings it through `intl-messageformat`.
+- `packages/i18n`: `src/pseudo/index.ts` (`./pseudo` export) with `PSEUDO_LOCALE`, `PseudoLocale`, `RequestLocale`, `productLocale` and `negotiateRequestLocale`, and `src/pseudo/messages.ts` (`./pseudo/messages`) with `stretchFactor(length)` and `pseudoLocalize(messages)`. The parsing of `Accept-Language` stays in one place: `languageRanges` of the catalogues. `@formatjs/icu-messageformat-parser` moves from `devDependencies` to `dependencies`: it is used at runtime now. It is no new package, since `next-intl` already brings it through `intl-messageformat`.
 - `apps/web/src/lib/env/env.ts`: `TRYBUN_PSEUDO_LOCALE` → `isPseudoLocaleEnabled` (`true` also under `next dev`), refused unless the host of `NEXTAUTH_URL` is a loopback address.
 - `apps/web/src/lib/i18n/`:
   - `locale.ts` (`RequestLocale`, `resolveLocale` with the switch, `productLocale`);
@@ -72,11 +74,10 @@ Trybun follows them:
   - `features/invitations/components/invitation-acceptance.tsx`;
   - `features/sessions/components/sign-in-redirect.tsx` and `features/sessions/keycloak-sign-in.ts`;
   - `features/tickets/new-ticket-page.ts`;
-  - `features/app-shell/components/user-menu.tsx`;
   - `features/users/components/account-settings-form.tsx`.
 
   The type check lists any others.
-- `apps/web/playwright.config.ts`: `TRYBUN_PSEUDO_LOCALE: 'true'` in the `env` of the `next start` web server.
+- `apps/web/playwright.config.ts`: `TRYBUN_PSEUDO_LOCALE: 'true'` in the `env` of the `next start` web server. `.ai/scripts/test-env-up.sh` sets it too, because the test environment of the QA skills runs `next start` as CI does.
 - `apps/web/e2e/locales.ts` and `ticket-list.spec.ts`: `TEST_LOCALES`, `messagesOf` for the pseudo-locale.
 - Untouched: the API and the Worker, the e-mails, the Keycloak theme, the OpenAPI document, `LOCALES` and the help content.
 
@@ -127,7 +128,7 @@ New glossary terms: none. `en-XA` is a test fixture, not a domain term.
 
 ## Acceptance criteria
 
-- [ ] `pseudoLocalize(CATALOGUES.en)` keeps every key, and every message is valid ICU with the same arguments, plural/select options and tags as English. Each message has the `[` `]` markers, and its text between them has at least `ceil(L × factor(L))` characters (unit tests of `@trybun/i18n`).
+- [ ] `pseudoLocalize(CATALOGUES.en)` keeps every key, and every message is valid ICU with the same arguments, plural/select options and tags as English. Each message has the `[` `]` markers. Every literal with a letter has at least `ceil(length × factor(L))` characters, and every other literal is unchanged (unit tests of `@trybun/i18n`).
 - [ ] The output is deterministic: the same input gives the same messages (unit test).
 - [ ] `en-XA` is not in `LOCALES` or `CATALOGUES`, not in the Keycloak theme output, and not offered by the language switch or the account settings (unit/component tests).
 - [ ] `resolveLocale` returns `en-XA` only with the switch on, from the cookie or an exact `Accept-Language` range ranked by quality; with it off, `en-XA` negotiates to `en` (unit tests).
@@ -142,7 +143,7 @@ New glossary terms: none. `en-XA` is a test fixture, not a domain term.
 
 ### Phase 1 – the pseudo-locale in `@trybun/i18n`
 
-1. Add `src/pseudo/index.ts` with `PSEUDO_LOCALE`, `PseudoLocale`, `stretchFactor` and `pseudoLocalize`, and the `./pseudo` export. Move `@formatjs/icu-messageformat-parser` to `dependencies`. Add unit tests for keys, ICU validity, arguments, markers, length and determinism over the whole English catalogue, plus focused cases for `plural`, `select`, `#`, tags and apostrophes.
+1. Add `src/pseudo/index.ts` and `src/pseudo/messages.ts` with their exports. Move `@formatjs/icu-messageformat-parser` to `dependencies`. Add unit tests for keys, ICU validity, arguments, markers, length and determinism over the whole English catalogue, plus focused cases for `plural`, `select`, `#`, tags and apostrophes.
 
 ### Phase 2 – the web application accepts it behind the switch
 
@@ -158,3 +159,4 @@ New glossary terms: none. `en-XA` is a test fixture, not a domain term.
 ## Changelog
 
 - 2026-11-18 – Created from #301 by `om-auto-write-spec` (autonomous defaults, readiness waived by the maintainer).
+- 2026-11-18 – Aligned with the implementation PR #378: accents within Latin-1, a lightweight `./pseudo` entry next to `./pseudo/messages`, stretching per literal, the language switch unmapped, and the switch in the QA test environment.
