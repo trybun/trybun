@@ -23,6 +23,8 @@ Non-goals (spec): bidi pseudo-locale, pseudo-localized API/e-mail/Keycloak/help 
 
 ## Progress
 
+PR: #378
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: The pseudo-locale in @trybun/i18n
