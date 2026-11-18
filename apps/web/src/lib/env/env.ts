@@ -6,6 +6,9 @@ import { z } from 'zod';
 /** The realm of Trybun in Keycloak (docker/keycloak/realm/trybun.yaml). */
 const KEYCLOAK_REALM = 'trybun';
 
+/** The host names of the loopback interface, as `URL.hostname` writes them. */
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
 /** Whether an optional variable is set; Compose passes an unset one as an empty string. */
 function isSet(value: string | undefined): boolean {
   return value !== undefined && value.trim() !== '';
@@ -40,9 +43,21 @@ const envSchema = z
     // offers a provider only when its client is configured (ADR 0009).
     TRYBUN_MICROSOFT_CLIENT_ID: z.string().optional(),
     TRYBUN_GOOGLE_CLIENT_ID: z.string().optional(),
+    // The pseudo-locale of the tests (§2.9, §13.1): set by the E2E tests for `next start`, never by
+    // `compose.yaml`. Accepted only on a loopback address, where the E2E and QA environments run.
+    TRYBUN_PSEUDO_LOCALE: z.enum(['true', 'false']).default('false'),
     // Set by Next.js: `development` for `next dev`.
     NODE_ENV: z.string().optional(),
   })
+  .refine(
+    (env) =>
+      env.TRYBUN_PSEUDO_LOCALE === 'false' ||
+      LOOPBACK_HOSTS.has(new URL(env.NEXTAUTH_URL).hostname),
+    {
+      path: ['TRYBUN_PSEUDO_LOCALE'],
+      message: 'The pseudo-locale is for tests only: NEXTAUTH_URL must be a loopback address',
+    },
+  )
   .transform((env) => ({
     domain: env.TRYBUN_DOMAIN,
     apiUrl: env.TRYBUN_API_URL,
@@ -57,6 +72,8 @@ const envSchema = z
     defaultTimeZone: env.TRYBUN_DEFAULT_TIME_ZONE,
     attachmentMaxSizeMb: env.TRYBUN_ATTACHMENT_MAX_SIZE_MB,
     isDevelopment: env.NODE_ENV === 'development',
+    // `next dev` offers it too, so a local `pnpm e2e` that reuses `pnpm dev` runs the same checks.
+    isPseudoLocaleEnabled: env.TRYBUN_PSEUDO_LOCALE === 'true' || env.NODE_ENV === 'development',
     endUserIdentityProviders: [
       ...(isSet(env.TRYBUN_MICROSOFT_CLIENT_ID) ? (['microsoft'] as const) : []),
       ...(isSet(env.TRYBUN_GOOGLE_CLIENT_ID) ? (['google'] as const) : []),
