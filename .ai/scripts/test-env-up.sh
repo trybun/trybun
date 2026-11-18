@@ -12,6 +12,8 @@
 #   2026-11-15 --reset (#352): removes the data volumes of `trybun-test` before the boot, so the
 #              environment starts as empty as CI's E2E job; a boot without it keeps the data
 #              the bootstrap lock is machine-wide (/tmp/trybun-test-env.lock), not per checkout
+#   2026-11-18 TRYBUN_PSEUDO_LOCALE=true (#301): the web application serves the pseudo-locale en-XA
+#              of the width-sensitive E2E checks, as playwright.config.ts sets it in CI
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -33,6 +35,9 @@ WEB_HEALTH="$BASE_URL/api/health"
 API_HEALTH="http://localhost:$API_PORT/health/ready"   # checks PostgreSQL too
 # The parallel E2E/QA requests share the seeded accounts, as in playwright.config.ts.
 export TRYBUN_RATE_LIMIT_PER_USER=10000 TRYBUN_RATE_LIMIT_PER_IP=10000
+# The pseudo-locale of the width-sensitive E2E checks (§2.9), as in playwright.config.ts; the web
+# application accepts it on the loopback NEXTAUTH_URL of .env only.
+export TRYBUN_PSEUDO_LOCALE=true
 API_COMMAND="pnpm --filter @trybun/server start"
 # The Worker scans and releases uploaded attachments (S1-08); without it they stay "Checking…".
 WORKER_COMMAND="pnpm --filter @trybun/server start:worker"

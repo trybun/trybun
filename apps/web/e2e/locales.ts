@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { CATALOGUES, LOCALES, type Locale, type Messages } from '@trybun/i18n/catalogues';
+import { isPseudoLocale, PSEUDO_LOCALE, type RequestLocale } from '@trybun/i18n/pseudo';
+import { pseudoLocalize } from '@trybun/i18n/pseudo/messages';
 
 /**
  * Every language of the catalogues (§13.1). Width-sensitive checks loop over it instead of naming
@@ -9,8 +11,23 @@ import { CATALOGUES, LOCALES, type Locale, type Messages } from '@trybun/i18n/ca
  */
 export const ALL_LOCALES: readonly Locale[] = LOCALES;
 
+/**
+ * The languages of the width-sensitive checks (§2.9): every language of the catalogues and the
+ * pseudo-locale `en-XA` – English stretched by the W3C expansion rates (#301) – so a layout that
+ * fits today's translations but not a longer future language fails before that language lands.
+ * The web server serves the pseudo-locale under `next dev` and with `TRYBUN_PSEUDO_LOCALE`
+ * (`playwright.config.ts`). A new width-sensitive check loops over this list.
+ */
+export const TEST_LOCALES: readonly RequestLocale[] = [...ALL_LOCALES, PSEUDO_LOCALE];
+
+let pseudoMessages: Messages | undefined;
+
 /** The messages of a language, for the names of the elements a test looks up. */
-export function messagesOf(locale: Locale): Messages {
+export function messagesOf(locale: RequestLocale): Messages {
+  if (isPseudoLocale(locale)) {
+    pseudoMessages ??= pseudoLocalize(CATALOGUES.en);
+    return pseudoMessages;
+  }
   return CATALOGUES[locale];
 }
 

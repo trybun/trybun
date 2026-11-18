@@ -9,12 +9,12 @@ import {
 import { predefinedViewSchema, type TicketListView } from '../src/features/tickets/ticket-list.js';
 import { seriousViolations } from './accessibility.js';
 import {
-  ALL_LOCALES,
   horizontalOverflow,
   messagesOf,
   LARGE_TABLET,
   NARROWEST_TABLET,
   pageOverflow,
+  TEST_LOCALES,
 } from './locales.js';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
@@ -168,10 +168,10 @@ test.describe('the ticket list', () => {
     expect(await seriousViolations(page), testInfo.project.name).toEqual([]);
   });
 
-  // Width-sensitive checks in every language of the catalogues (#295): translations are often
-  // longer than English, so each runs per locale – on the device of the project and, in the
-  // tablet project, at the narrowest tablet width as well (§2.9).
-  for (const locale of ALL_LOCALES) {
+  // Width-sensitive checks in every language of the catalogues (#295) and in the pseudo-locale
+  // (#301): translations are often longer than English, so each runs per locale – on the device of
+  // the project and, in the tablet project, at the narrowest tablet width as well (§2.9).
+  for (const locale of TEST_LOCALES) {
     const messages = messagesOf(locale);
     const list = messages.tickets.list;
 
