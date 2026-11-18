@@ -36,6 +36,6 @@ Non-goals (spec): bidi pseudo-locale, pseudo-localized API/e-mail/Keycloak/help 
 
 ### Phase 3: E2E in the pseudo-locale
 
-- [ ] 3.1 Run the ticket list checks in TEST_LOCALES (probe)
-- [ ] 3.2 Fix what the probe found
-- [ ] 3.3 Update the specification, memory and .env.example
+- [x] 3.1 Run the ticket list checks in TEST_LOCALES (probe) — cc64a7a
+- [x] 3.2 Fix what the probe found — f4c79cd
+- [x] 3.3 Update the specification, memory and .env.example — e269dbc
