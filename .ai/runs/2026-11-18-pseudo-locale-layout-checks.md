@@ -27,12 +27,12 @@ Non-goals (spec): bidi pseudo-locale, pseudo-localized API/e-mail/Keycloak/help 
 
 ### Phase 1: The pseudo-locale in @trybun/i18n
 
-- [ ] 1.1 Add pseudoLocalize with unit tests
+- [x] 1.1 Add pseudoLocalize with unit tests — afc5527
 
 ### Phase 2: The web application accepts it behind the switch
 
-- [ ] 2.1 Add the test-only switch with its guards
-- [ ] 2.2 Resolve and serve the pseudo-locale, map the consumers
+- [x] 2.1 Add the test-only switch with its guards — 251f6a9
+- [x] 2.2 Resolve and serve the pseudo-locale, map the consumers — d9e086c
 
 ### Phase 3: E2E in the pseudo-locale
 
