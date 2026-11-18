@@ -40,62 +40,47 @@ Trybun follows them:
    - The web server refuses to start with `TRYBUN_PSEUDO_LOCALE=true` unless the host of `NEXTAUTH_URL` is a loopback address (`localhost`, `127.0.0.1`, `::1`). The E2E and QA environments run there, and a real installation never does, so a variable set by mistake (a Compose override, `docker run -e`) stops the start-up with a clear message instead of serving the pseudo-locale.
    - `compose.yaml` passes an explicit list of variables to the `web` container and never lists this one. A unit test reads `compose.yaml` and fails if the variable appears there.
 
-   When enabled, `resolveLocale` takes `en-XA` from the `NEXT_LOCALE` cookie, or from `Accept-Language`. The ranges are taken by quality as today, and a range that is exactly `en-XA` (case-insensitive) selects the pseudo-locale **before** its primary subtag would select `en`. A higher-quality range of another language still wins, so `pl,en-XA;q=0.5` gives `pl`. `getWebMessages('en-XA')` returns `pseudoLocalize(CATALOGUES.en)` without the server namespaces, computed once per server process. All of this code is server-only. The browser receives only the stretched texts of its route (§18.5).
-4. **One type for the request language.** The `Locale` of next-intl's `AppConfig` becomes `RequestLocale = Locale | PseudoLocale`. The type checker then finds every consumer of `useLocale()`/`getLocale()`. Each one that hands the language to something outside the catalogues maps it with `productLocale(locale): Locale` (`en-XA → en`):
-   - help pages and their search index;
-   - the language of an invitation acceptance;
-   - `ui_locales` for Keycloak;
-   - ticket templates;
-   - the default language of the account settings form.
-
-   The language switch keeps the raw value: in the pseudo-locale no language is checked, so choosing English leaves it.
-
-   `<html lang>` and the `Intl` formatting keep `en-XA`. The tag is valid, and ICU falls back to English data for it.
+   When enabled, `resolveLocale` takes `en-XA` from the `NEXT_LOCALE` cookie, or from `Accept-Language`. The ranges are taken by quality as today, and a range that is exactly `en-XA` (case-insensitive) selects the pseudo-locale **before** its primary subtag would select `en`. A higher-quality range of another language still wins, so `pl,en-XA;q=0.5` gives `pl`. `getWebMessages('en-XA')` returns the pseudo catalogue without the server namespaces. `catalogueOf` of `@trybun/i18n/pseudo/messages` generates it once per process and is the one source of it for the web server, its unit tests and the E2E names. All of this code is server-only. The browser receives only the stretched texts of its route (§18.5).
+4. **Only the texts change, never the language.** `request.ts` (`getRequestConfig`) returns the pseudo messages, while `locale` stays `productLocale(requestLocale)`, which is English for `en-XA`. next-intl keeps `locale` and `messages` independent: its configuration may share or merge messages across locales. So `AppConfig.Locale` stays `Locale`, and every `useLocale()`/`getLocale()` consumer receives a language of the product. That covers help pages, the language of an invitation acceptance, Keycloak's `ui_locales`, ticket templates, and the language switch and the settings. No consumer can pass `en-XA` outside the catalogues. This holds by construction, which matters because the type checker alone could not prove it: some consumers take the language as a `string` (`ui_locales`, `KeycloakSignInOptions.locale`), and one checks it only at runtime (`languageSchema.parse` of the invitation acceptance). The cost is accepted: `<html lang>` and `Intl` formatting say `en`, which describes the stretched English text correctly. The language switch shows English as checked.
 5. **E2E.** `apps/web/e2e/locales.ts` gains `TEST_LOCALES = [...ALL_LOCALES, PSEUDO_LOCALE]` next to `ALL_LOCALES`. `messagesOf(locale)` returns the pseudo messages for `en-XA`, so tests find elements by their stretched names. Width-sensitive checks loop over `TEST_LOCALES`. Today those are the loops of `ticket-list.spec.ts`: every view, on phone, at 768 px and 1024 px in the tablet project, and on desktop. `ONE_LINE_TYPE_LOCALES` stays `en` and `pl`: a stretched type label is checked for overflow, not failed for wrapping. That is the rule #299 already set for languages that have not been checked yet.
 
 **Alternatives considered:**
 
 - **A separate Playwright project for the pseudo-locale.** It would run every spec again, not only the width-sensitive ones, and cost about a third more E2E time. `TEST_LOCALES` reuses the loops that already exist. Rejected.
 - **A separate pseudo build of the web application.** The E2E tests and the Lighthouse budget run against the production build (CI comment of the `e2e` job). A second build would test an artifact nobody ships. Rejected in favour of the runtime switch that Firefox and Chromium (`--lang=en-XA`) also use.
+- **`en-XA` as the request language (`AppConfig.Locale = Locale | 'en-XA'`), mapped back to English by each consumer.** It needs a mapping in every consumer that hands the language on (help, invitations, Keycloak, templates, settings). The type checker finds only some of them, so a missed or future `string` consumer could leak `en-XA` to the API or Keycloak. Rejected for the texts-only variant above.
 - **`formatjs compile --pseudo-locale en-XA`.** It requires `--ast` output (next-intl reads message strings), a native binding and a new dependency. Its expansion (doubled vowels, about +30 %) is below the W3C rates for short texts. Rejected.
 - **Committing `en-XA.json` to `messages/`.** It would become a language of the product: the catalogue tests require one catalogue per file, and the Keycloak theme reads every file there. Rejected.
 
 ## 📝 Architecture
 
-- `packages/i18n`: `src/pseudo/index.ts` (`./pseudo` export) with `PSEUDO_LOCALE`, `PseudoLocale`, `RequestLocale`, `productLocale` and `negotiateRequestLocale`, and `src/pseudo/messages.ts` (`./pseudo/messages`) with `stretchFactor(length)` and `pseudoLocalize(messages)`. The parsing of `Accept-Language` stays in one place: `languageRanges` of the catalogues. `@formatjs/icu-messageformat-parser` moves from `devDependencies` to `dependencies`: it is used at runtime now. It is no new package, since `next-intl` already brings it through `intl-messageformat`.
+- `packages/i18n`: `src/pseudo/index.ts` (`./pseudo` export) with `PSEUDO_LOCALE`, `PseudoLocale`, `RequestLocale`, `productLocale` and `negotiateRequestLocale`, and `src/pseudo/messages.ts` (`./pseudo/messages`) with `stretchFactor(length)`, `PSEUDO_MARKERS`, `pseudoLocalizeMessage`, `pseudoLocalize(messages)` and the memoized `catalogueOf(locale)`. The parsing of `Accept-Language` stays in one place: `languageRanges` and `localeOfRange` of the catalogues. `@formatjs/icu-messageformat-parser` moves from `devDependencies` to `dependencies`: it is used at runtime now. It is no new package, since `next-intl` already brings it through `intl-messageformat`.
 - `apps/web/src/lib/env/env.ts`: `TRYBUN_PSEUDO_LOCALE` → `isPseudoLocaleEnabled` (`true` also under `next dev`), refused unless the host of `NEXTAUTH_URL` is a loopback address.
 - `apps/web/src/lib/i18n/`:
-  - `locale.ts` (`RequestLocale`, `resolveLocale` with the switch, `productLocale`);
-  - `messages.ts` (pseudo messages, memoized);
-  - `request.ts`;
-  - `next-intl.d.ts` (`AppConfig.Locale`).
-- Consumers mapped with `productLocale`:
-  - `app/help/page.tsx` and `app/help/[...slug]/page.tsx`;
-  - `features/invitations/components/invitation-acceptance.tsx`;
-  - `features/sessions/components/sign-in-redirect.tsx` and `features/sessions/keycloak-sign-in.ts`;
-  - `features/tickets/new-ticket-page.ts`;
-  - `features/users/components/account-settings-form.tsx`.
-
-  The type check lists any others.
+  - `locale.ts` (`resolveLocale` with the switch, returning a `RequestLocale`);
+  - `messages.ts` (`getWebMessages` over `catalogueOf`);
+  - `request.ts` (pseudo messages, `locale` of the product). `AppConfig.Locale` and every consumer of the language stay unchanged.
+- `apps/web/src/features/tickets/components/ticket-filter-bar.tsx`: the probe of step 4 found that a long filter chip pushed its × 8 px past a 360 px screen. The chip's trigger inherited `shrink-0` from `Button`, so its `min-w-0`/`truncate` never applied; it now shrinks.
+- `apps/web/src/lib/env/env.spec.ts`: the guard test reads `compose.yaml` and `docker/web/Dockerfile`.
 - `apps/web/playwright.config.ts`: `TRYBUN_PSEUDO_LOCALE: 'true'` in the `env` of the `next start` web server. `.ai/scripts/test-env-up.sh` sets it too, because the test environment of the QA skills runs `next start` as CI does.
 - `apps/web/e2e/locales.ts` and `ticket-list.spec.ts`: `TEST_LOCALES`, `messagesOf` for the pseudo-locale.
 - Untouched: the API and the Worker, the e-mails, the Keycloak theme, the OpenAPI document, `LOCALES` and the help content.
 
 ## 📝 UI/UX
 
-People see no change: no new text, no language added to the switch or the settings, and no help or tour change. In the E2E run the pages show accented, stretched text between brackets, e.g. `[Ḃúúúúğ]` for `Bug`. Screenshots of a failing pseudo-locale test therefore show the stretched text and any text that is not translated (no accents).
+The pseudo-locale adds nothing people see: no new text, no language added to the switch or the settings, and no help or tour change. The one visible change is the fix its first run found: on a narrow phone a long filter chip now truncates its name, and its × stays on screen, in every language. In the E2E run the pages show accented, stretched text between brackets, e.g. `[Búúúúg]` for `Bug`. Screenshots of a failing pseudo-locale test therefore show the stretched text and any text that is not translated (no accents).
 
 ## 📝 Edge Cases & Failure Scenarios
 
 - **The switch is off and a browser asks for `en-XA`**: negotiation falls back to `en`, as today. A `NEXT_LOCALE=en-XA` cookie is ignored, as any unknown value is today.
 - **The switch is on and a request asks for `en-XA`**: the API still answers in English, because it does not know the pseudo-locale. Its messages (errors, server-rendered texts) appear unstretched and without accents. This is a known limit, accepted as out of scope, and it does not affect the ticket list checks.
-- **A message the parser cannot print again identically**, e.g. an apostrophe that needs ICU quoting: the unit test parses every pseudo message and compares its arguments with the English ones, so a printing defect fails `pnpm test`, never the E2E run.
+- **A message the parser cannot print again identically**: the printer of `@formatjs/icu-messageformat-parser` loses an argument after a literal that ends with an apostrophe (`{a}''{b}` prints as `{a}'''{b}`). `pseudoLocalizeMessage` compares the structure of the printed message with the source and throws instead of breaking it silently. The catalogue-wide unit test therefore fails `pnpm test` in the PR that adds such a message. A server that still met one would fail its first `en-XA` request with that error.
 - **A pseudo-locale check fails**: the CI job fails like any other E2E failure, with a trace and a screenshot. The fix goes into the layout, not the test. When the fix needs a design decision, the implementation PR stops and asks the maintainer; it never skips the check.
 - **E2E time**: the ticket list loops run for three locales instead of two, about 50 % more time for that file. The other specs are unchanged.
 
 ## 📝 Risks & Impact Review
 
-The change is reversible and test-oriented. People see no change, and the API, schema and permissions are untouched. The new runtime surface is the test-only `TRYBUN_PSEUDO_LOCALE` switch of the web server. The code ships in the image, so the guard is twofold: the web server refuses the switch outside a loopback `NEXTAUTH_URL`, and `compose.yaml` never passes it (unit test). Even when it is on, the pseudo-locale only changes the texts; it grants no access. Changing `AppConfig.Locale` touches the language consumers named above once; the type checker finds them all. The one dependency change is moving an existing dependency from `devDependencies` to `dependencies`.
+The change is reversible and test-oriented. Apart from the filter-chip fix, people see no change, and the API, schema and permissions are untouched. The new runtime surface is the test-only `TRYBUN_PSEUDO_LOCALE` switch of the web server. The code ships in the image, so the guard is twofold: the web server refuses the switch outside a loopback `NEXTAUTH_URL`, and `compose.yaml` never passes it (unit test). Even when it is on, the pseudo-locale only changes the texts; it grants no access, and the language every consumer sees stays a language of the product. The one dependency change is moving an existing dependency from `devDependencies` to `dependencies`.
 
 ## Changes to the system specification
 
@@ -103,7 +88,7 @@ The change is reversible and test-oriented. People see no change, and the API, s
 |---|---|
 | §2.9 | Width-sensitive E2E checks also run in the pseudo-locale `en-XA`: English stretched by the W3C expansion rates (short texts the most) and put between `[` `]`. A failure there **blocks CI** like any other E2E failure. |
 | §13.1 | A pseudo-locale `en-XA`, generated from the English catalogue, exists for tests only. It is not a language of the product: it is not offered in the language switch or the settings, not stored in accounts, not used by the API, e-mails or Keycloak. The web server accepts it only with `TRYBUN_PSEUDO_LOCALE=true` or under `next dev`. |
-| §15.3 | `TRYBUN_PSEUDO_LOCALE` – test-only switch of the web application, default `false`. `compose.yaml` never passes it to the `web` container. |
+| §15.3 | `TRYBUN_PSEUDO_LOCALE` – test-only switch of the web application, default `false`, refused unless `NEXTAUTH_URL` is a loopback address. `compose.yaml` and the `web` image never set it (unit test). |
 
 New glossary terms: none. `en-XA` is a test fixture, not a domain term.
 
@@ -114,6 +99,10 @@ New glossary terms: none. `en-XA` is a test fixture, not a domain term.
 - Pseudo-locale runs of the Storybook story tests of `@trybun/ui`, of the axe-only and functional E2E specs, or of the Lighthouse budget.
 - Width-sensitive checks for other pages than the ticket list. Those that loop over `ALL_LOCALES` later should use `TEST_LOCALES` (recorded in `.ai/memory/e2e.md`), but this change adds none.
 - Offering the pseudo-locale to people in any build.
+
+## Open questions
+
+None open: each question of the issue is answered below.
 
 ## Resolved assumptions (autonomous defaults)
 
@@ -130,10 +119,11 @@ New glossary terms: none. `en-XA` is a test fixture, not a domain term.
 
 - [ ] `pseudoLocalize(CATALOGUES.en)` keeps every key, and every message is valid ICU with the same arguments, plural/select options and tags as English. Each message has the `[` `]` markers. Every literal with a letter has at least `ceil(length × factor(L))` characters, and every other literal is unchanged (unit tests of `@trybun/i18n`).
 - [ ] The output is deterministic: the same input gives the same messages (unit test).
-- [ ] `en-XA` is not in `LOCALES` or `CATALOGUES`, not in the Keycloak theme output, and not offered by the language switch or the account settings (unit/component tests).
+- [ ] `en-XA` is not in `LOCALES` or `CATALOGUES` (unit test). It therefore never reaches, by construction, the Keycloak theme (generated from `messages/*.json`, `locales=en,pl` asserted by `generate-keycloak-theme.spec.js`) or the language switch and the account settings, which list `LOCALES` (the settings test asserts that `en-XA` is absent).
+- [ ] With the pseudo-locale, the request configuration returns the pseudo messages and the product language `en` (unit test).
 - [ ] `resolveLocale` returns `en-XA` only with the switch on, from the cookie or an exact `Accept-Language` range ranked by quality; with it off, `en-XA` negotiates to `en` (unit tests).
 - [ ] The web server refuses `TRYBUN_PSEUDO_LOCALE=true` with a non-loopback `NEXTAUTH_URL` (unit test).
-- [ ] `compose.yaml` does not pass `TRYBUN_PSEUDO_LOCALE` to the `web` container (unit test).
+- [ ] `compose.yaml` and `docker/web/Dockerfile` do not set `TRYBUN_PSEUDO_LOCALE` (unit test).
 - [ ] The width-sensitive E2E checks of the ticket list run in `en-XA` on phone, at 768 px and 1024 px, on the tablet device and on desktop, and pass in CI.
 - [ ] §2.9, §13.1, §15.3, `.env.example` and `.ai/memory/e2e.md` describe the pseudo-locale, how to run it locally (`pnpm dev` + `pnpm e2e`), and that its failure blocks CI.
 - [ ] Works on phone, tablet and desktop (Rule 9). This change is the check itself.
@@ -148,15 +138,16 @@ New glossary terms: none. `en-XA` is a test fixture, not a domain term.
 ### Phase 2 – the web application accepts it behind the switch
 
 2. `env.ts`: `TRYBUN_PSEUDO_LOCALE` → `isPseudoLocaleEnabled` (also `true` under `next dev`). Refuse it outside a loopback `NEXTAUTH_URL`. Add it to `.env.example` as a commented-out, test-only variable. Add the `compose.yaml` guard test. Unit tests.
-3. `locale.ts`/`messages.ts`/`request.ts`/`next-intl.d.ts`: `RequestLocale`, the switch-aware `resolveLocale`, `productLocale`, and the memoized pseudo messages. Map every consumer the type checker reports with `productLocale`. Unit and component tests for resolution with the switch on and off, and for the consumers that pass the language on (help, invitation acceptance, `ui_locales`, templates).
+3. `locale.ts`/`messages.ts`/`request.ts`: the switch-aware `resolveLocale` and the pseudo messages, with `locale` kept a language of the product. Unit tests for resolution with the switch on and off and for the request configuration.
 
 ### Phase 3 – E2E in the pseudo-locale
 
 4. `playwright.config.ts`: `TRYBUN_PSEUDO_LOCALE: 'true'` for `next start`. In `e2e/locales.ts`, add `TEST_LOCALES` and the pseudo `messagesOf`. In `ticket-list.spec.ts`, loop over `TEST_LOCALES`. Run the file on all projects (`--repeat-each 3`) and list every failing check in the PR description: this is the probe.
 5. Fix what the probe found. A fix that stays inside the overflowing component and its Storybook story, with no change of the specified layout (§8.1), is in scope. A fix that needs a layout or design decision stops the PR with a question to the maintainer. It is never resolved by skipping the check or by excluding the pseudo-locale from it.
-6. Documentation: update §2.9, §13.1 and §15.3, `.ai/memory/e2e.md` (the pseudo-locale, `TEST_LOCALES` for new width-sensitive checks, the local run) and the README, if it lists environment variables. Set this specification to `implemented`, add a changelog line and move it to `implemented/`.
+6. Documentation: update §2.9, §13.1 and §15.3, `.ai/memory/e2e.md` (the pseudo-locale, `TEST_LOCALES` for new width-sensitive checks, the local run) and the README, if it lists environment variables. This specification merges first, through #377. #378 then rebases, sets it to `implemented`, adds a changelog line and moves it to `implemented/` before it merges.
 
 ## Changelog
 
 - 2026-11-18 – Created from #301 by `om-auto-write-spec` (autonomous defaults, readiness waived by the maintainer).
 - 2026-11-18 – Aligned with the implementation PR #378: accents within Latin-1, a lightweight `./pseudo` entry next to `./pseudo/messages`, stretching per literal, the language switch unmapped, and the switch in the QA test environment.
+- 2026-11-18 – Specification review of #377: only the texts change, never the request language (`AppConfig.Locale` stays `Locale`); the filter-chip fix of the probe, `catalogueOf`, the printer guard, the Dockerfile guard and the merge order of #377 and #378 are described.
