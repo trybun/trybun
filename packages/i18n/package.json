@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     "./catalogues": "./src/catalogues/index.ts",
-    "./time-zones": "./src/time-zones/index.ts"
+    "./time-zones": "./src/time-zones/index.ts",
+    "./pseudo": "./src/pseudo/index.ts"
   },
   "scripts": {
     "build": "node scripts/generate-keycloak-theme.js",
@@ -14,8 +15,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@formatjs/icu-messageformat-parser": "^3.5.22"
+  },
   "devDependencies": {
-    "@formatjs/icu-messageformat-parser": "^3.5.22",
     "@trybun/eslint-config": "workspace:*",
     "@trybun/tsconfig": "workspace:*",
     "eslint": "^10.14.0",
