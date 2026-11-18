@@ -54,7 +54,11 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
   const [search, setSearch] = useState('');
   const query = useDeferredValue(search.trim());
   const accounts = useInfiniteQuery(usersQueryOptions(browserApiClient, { kind, state, query }));
-  const items = accounts.data?.pages.flatMap((page) => page.items) ?? [];
+  // Each account with the accounts of its page, whose pending invitations are one query (#357).
+  const rows =
+    accounts.data?.pages.flatMap((page) =>
+      page.items.map((user) => ({ user, pageAccounts: page.items })),
+    ) ?? [];
   const nameOf = (user: User) => user.displayName ?? user.email ?? t('noName');
   const filter = (next: AccountsSearchParams) => router.replace(accountsHref(next));
 
@@ -123,12 +127,12 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(accounts.error)}
         </p>
-      ) : accounts.isSuccess && items.length === 0 ? (
+      ) : accounts.isSuccess && rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('empty')}</p>
       ) : (
         <>
           <ul aria-label={t('title')} className="flex flex-col gap-2 md:hidden">
-            {items.map((user) => (
+            {rows.map(({ user, pageAccounts }) => (
               <li
                 key={user.id}
                 className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground"
@@ -144,7 +148,11 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
                   </div>
                   <AccountActions user={user} name={nameOf(user)} />
                 </div>
-                <AccountInvitations user={user} wrap={(content) => content} />
+                <AccountInvitations
+                  user={user}
+                  pageAccounts={pageAccounts}
+                  wrap={(content) => content}
+                />
               </li>
             ))}
           </ul>
@@ -170,7 +178,7 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
               </tr>
             </thead>
             <tbody>
-              {items.map((user) => (
+              {rows.map(({ user, pageAccounts }) => (
                 <Fragment key={user.id}>
                   <tr className="border-b border-border">
                     <th scope="row" className="max-w-48 truncate py-2 pr-3 text-left font-medium">
@@ -190,6 +198,7 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
                   </tr>
                   <AccountInvitations
                     user={user}
+                    pageAccounts={pageAccounts}
                     wrap={(content) => (
                       <tr className="border-b border-border">
                         <td colSpan={5} className="py-2">

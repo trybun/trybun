@@ -281,7 +281,7 @@ export class InvitationsService {
           {
             projectId: query.projectId,
             organizationId: query.organizationId,
-            userId: query.userId,
+            userId: query.userId === undefined ? undefined : { in: query.userId },
           },
           after === null
             ? {}

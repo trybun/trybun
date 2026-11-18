@@ -62,3 +62,11 @@ auditConfig:
     # component CLI (Rule 6). @trybun/ui keeps shadcn in dependencies for its stylesheet
     # (shadcn/tailwind.css, like tw-animate-css), which runs no package code.
     - GHSA-gcqx-w48m-w2h4
+    # picomatch <=4.0.7, ReDoS through single-branch repeated extglobs such as +(*) in a glob
+    # pattern (high); no fixed version (2026-11-17, fix pending in micromatch/picomatch#194).
+    # Development only, and every pattern is the repository's own: ESLint plugins (micromatch,
+    # fast-glob, tinyglobby) match the lint configuration's globs, and the shadcn component CLI
+    # (Rule 6) its own. In @trybun/web, next-intl's message extractor compiles ignore globs through
+    # @parcel/watcher, but next.config.ts enables no extraction. No request or user input becomes a
+    # glob pattern.
+    - GHSA-fc5q-39xc-vjpf

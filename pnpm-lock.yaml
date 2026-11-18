@@ -202,11 +202,11 @@ importers:
         specifier: ^3.1161.0
         version: 3.1161.0(@aws-sdk/client-s3@3.1161.0)
       '@casl/ability':
-        specifier: ^7.1.1
-        version: 7.1.1
+        specifier: ^7.1.2
+        version: 7.1.2
       '@casl/prisma':
         specifier: ^2.2.0
-        version: 2.2.0(@casl/ability@7.1.1)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(typescript@6.0.3))
+        version: 2.2.0(@casl/ability@7.1.2)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(typescript@6.0.3))
       '@nest-lab/throttler-storage-redis':
         specifier: ^1.2.0
         version: 1.2.0(@nestjs/common@12.3.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.3.3)(@nestjs/throttler@6.7.1(@nestjs/common@12.3.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.3.3)(reflect-metadata@0.2.2))(ioredis@6.0.0(supports-color@10.2.2))(reflect-metadata@0.2.2)
@@ -1122,8 +1122,8 @@ packages:
   '@cacheable/utils@2.5.0':
     resolution: {integrity: sha512-buipgOVDkkPXNR5+xBpDw7Zk2n1EvU7qBJCNUcL7rhQ//kfpOXPAvQ511Os0vpLYJ1pZnvudNytkQt2hst3wqA==}
 
-  '@casl/ability@7.1.1':
-    resolution: {integrity: sha512-1WL90aW65z7RyaoFhOrfUua6e8gk5I2DS7WDjTTI5/qtGnFcnesX4LvfXkqO21LexTswLq71s4Lfs93eI45z8A==}
+  '@casl/ability@7.1.2':
+    resolution: {integrity: sha512-7Bnd893os1JQ15U2hUUqFCQyT3HrREmroMaAPCdLkliitLpYi+GY4cyf/1q92IeWLxK0FxECVAMjELX86kxPtA==}
 
   '@casl/prisma@2.2.0':
     resolution: {integrity: sha512-WJjCgxQjp1rQUXnph7J7vkzIUcJ2gcdMlByCp6KSn4vRr0BeD3Yfyxo2KdZsyeAGjJBluUkXM4pYyWKr82TnXw==}
@@ -8721,13 +8721,13 @@ snapshots:
       hashery: 1.5.1
       keyv: 5.6.0
 
-  '@casl/ability@7.1.1':
+  '@casl/ability@7.1.2':
     dependencies:
       '@ucast/mongo2js': 2.0.0
 
-  '@casl/prisma@2.2.0(@casl/ability@7.1.1)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(typescript@6.0.3))':
+  '@casl/prisma@2.2.0(@casl/ability@7.1.2)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@24.19.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(typescript@6.0.3))':
     dependencies:
-      '@casl/ability': 7.1.1
+      '@casl/ability': 7.1.2
       '@prisma/client': 7.10.1(prisma@7.10.1(@types/node@24.19.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@6.0.3))(typescript@6.0.3)
       '@ucast/core': 2.0.0
       '@ucast/js': 4.0.1

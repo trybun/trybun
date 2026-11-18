@@ -31,9 +31,7 @@ export function PendingInvitationList({
   titleOf,
   detailOf,
   nameOf,
-  hasNextPage,
-  isFetchingNextPage,
-  onLoadMore,
+  paging,
   'aria-label': ariaLabel,
 }: {
   invitations: Invitation[];
@@ -43,9 +41,8 @@ export function PendingInvitationList({
   detailOf?: (invitation: Invitation) => string | undefined;
   /** The invitation in the names of its buttons, unique in the list; its address by default. */
   nameOf?: (invitation: Invitation) => string;
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  onLoadMore: () => void;
+  /** The next page of a list read page by page, e.g. a project's; none when all are shown. */
+  paging?: { hasNextPage: boolean; isFetchingNextPage: boolean; onLoadMore: () => void };
   'aria-label'?: string;
 }) {
   const t = useTranslations('invitations.pending');
@@ -134,14 +131,14 @@ export function PendingInvitationList({
           </li>
         ))}
       </ul>
-      {hasNextPage && (
+      {paging?.hasNextPage === true && (
         <Button
           variant="outline"
           className="w-full md:w-fit"
-          disabled={isFetchingNextPage}
-          onClick={onLoadMore}
+          disabled={paging.isFetchingNextPage}
+          onClick={paging.onLoadMore}
         >
-          {isFetchingNextPage ? t('loadingMore') : t('loadMore')}
+          {paging.isFetchingNextPage ? t('loadingMore') : t('loadMore')}
         </Button>
       )}
       {pending !== null && (
