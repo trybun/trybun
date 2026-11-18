@@ -119,8 +119,8 @@ None open: each question of the issue is answered below.
 
 - [ ] `pseudoLocalize(CATALOGUES.en)` keeps every key, and every message is valid ICU with the same arguments, plural/select options and tags as English. Each message has the `[` `]` markers. Every literal with a letter has at least `ceil(length × factor(L))` characters, and every other literal is unchanged (unit tests of `@trybun/i18n`).
 - [ ] The output is deterministic: the same input gives the same messages (unit test).
-- [ ] `en-XA` is not in `LOCALES` or `CATALOGUES` (unit test). It therefore never reaches, by construction, the Keycloak theme (generated from `messages/*.json`, `locales=en,pl` asserted by `generate-keycloak-theme.spec.js`) or the language switch and the account settings, which list `LOCALES` (the settings test asserts that `en-XA` is absent).
-- [ ] With the pseudo-locale, the request configuration returns the pseudo messages and the product language `en` (unit test).
+- [ ] `en-XA` is not in `LOCALES` or `CATALOGUES` (unit test). It therefore never reaches, by construction, the Keycloak theme (generated from `messages/*.json`, `locales=en,pl` asserted by `generate-keycloak-theme.spec.js`) or the language switch and the account settings, which list `LOCALES` and only ever receive a language of the product (`request.spec.ts`).
+- [ ] With the pseudo-locale, the request configuration returns the pseudo messages and the product language `en`, and a language passed explicitly (the ticket templates) gets its real texts (unit tests).
 - [ ] `resolveLocale` returns `en-XA` only with the switch on, from the cookie or an exact `Accept-Language` range ranked by quality; with it off, `en-XA` negotiates to `en` (unit tests).
 - [ ] The web server refuses `TRYBUN_PSEUDO_LOCALE=true` with a non-loopback `NEXTAUTH_URL` (unit test).
 - [ ] `compose.yaml` and `docker/web/Dockerfile` do not set `TRYBUN_PSEUDO_LOCALE` (unit test).
