@@ -47,7 +47,7 @@ Run from the repository root:
 |---|---|
 | `pnpm install` | Install dependencies from the lockfile |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
-| `pnpm build` | Build all applications and generate the Keycloak login theme from the message catalogues |
+| `pnpm build` | Build all applications, generate the Keycloak login theme from the message catalogues and check that Zod stays out of the first load of the application shell |
 | `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest, and check the shell scripts (`trybun`, the backup service, the restore test, the test environment of the QA skills) with ShellCheck |
 | `pnpm lint:spec` | Check that every `§N.M` reference points to an existing section of the specification |
 | `pnpm format` | Format all files with Prettier |
