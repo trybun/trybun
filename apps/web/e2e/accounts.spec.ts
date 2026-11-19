@@ -262,13 +262,20 @@ test.describe('accounts of the Administrator', () => {
     const reads = new BffReads(page, '/api/v1/invitations');
     await accounts.goto('?state=invited');
 
-    // A search typed before the page hydrated is lost, so type until the first page shows.
+    // A search typed before the page hydrated is lost, so type until the first page of the run's
+    // accounts shows: the unfiltered first page has as many rows.
     await expect(async () => {
       await accounts.search.fill('');
       await accounts.search.fill(stamp);
+      await expect(accounts.entries.filter({ hasNotText: stamp })).toHaveCount(0, {
+        timeout: 2_000,
+      });
       await expect(accounts.entries).toHaveCount(DEFAULT_PAGE_LIMIT, { timeout: 2_000 });
     }).toPass();
     await reads.settle();
+    // The search reads the invitations of its first page in one request; a retried fill may
+    // have read them before, so only the last read counts.
+    expect(reads.accountsPerRead().at(-1)).toBe(DEFAULT_PAGE_LIMIT);
     reads.reset();
 
     // Load more reads the invitations of the next page of accounts in one request.
