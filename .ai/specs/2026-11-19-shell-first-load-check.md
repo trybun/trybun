@@ -23,11 +23,14 @@ Today, the only thing that stops client code from reaching the first load of the
 A script, `apps/web/scripts/check-first-load.ts`, runs right after `next build` in the `build` script of `@trybun/web` (`next build && node scripts/check-first-load.ts`). It runs with Node's type stripping, like `generate-help-content.ts`. It does this:
 
 1. It reads the **first load of each guarded layout** from the build output. That is the union of:
-   - `rootMainFiles` and `polyfillFiles` of `.next/build-manifest.json`, which every page loads: the framework, the Turbopack runtime and `instrumentation-client.ts`, which imports `zod/v4/core`;
+   - `rootMainFiles` of `.next/build-manifest.json`, which every page loads: the framework, the Turbopack runtime and `instrumentation-client.ts`, which imports `config` of `zod/v4/core`. Its `polyfillFiles` are left out: Next.js 16 loads them with `noModule` (`app-render.js`), so the browsers of §2.9 never download them;
    - the `entryJSFiles` of the layout in every `page_client-reference-manifest.js` under `.next/server/app/`, which contain the chunks of the root layout and of the layout itself.
 2. The guarded layouts are the layouts of the shell that render the key pages of §2.9: `app/(team)/layout`, `app/(portal)/layout` and `app/help/layout`.
-3. The check **fails** when a chunk of that first load contains `ZodObject`. In Zod 4 that string is the `$constructor` name of `z.object` (and `$ZodObject` of `zod/v4/core`). It is a string literal, so minification keeps it. A failure names the layout and the chunk, and links §18.5, which says how to keep a module out of the first load.
-4. The check also **fails** when a guarded layout has no entry in any manifest, when a listed chunk is missing, or when the manifests cannot be read. A Next.js upgrade that changes this internal build format therefore breaks the build loudly and never passes it silently.
+3. The check **fails** when a chunk of that first load contains the quoted literal `"ZodType"` or `"ZodMiniType"` (any quote character). In Zod 4 these are the `$constructor` names of the base classes that every schema of `zod` and of Zod Mini extends, so any schema in the first load brings one. The marker `ZodObject` would not do: only `z.object` defines that name. It is a string literal, so minification keeps it. The core's `"$ZodType"` does not match. `instrumentation-client.ts` brings it into every page today, together with `"$ZodCheck"`, and the check accepts that, because no schema API comes with it. A failure names the layout and the chunk, and links §18.5, which says how to keep a module out of the first load.
+4. The check never passes silently. It also **fails**:
+   - when a guarded layout has no entry in any manifest;
+   - when a listed chunk is missing, or the manifests cannot be read, so a Next.js upgrade that changes this internal build format breaks the build loudly;
+   - when **no** entry chunk of the whole build matches the marker. The pages with a form load Zod, so no match means that a new Zod version or minifier no longer keeps the marker. This is the positive control of the check.
 5. On success, it prints one line per layout with its number of chunks and their gzip size. The size is information for diagnosis, not a budget.
 
 The CI **Build** job runs `pnpm build`, so it runs the check with no new job or step. So do the E2E job (which builds too), the validation gate of the agent pipeline and every local production build. `pnpm dev` does not run it.
@@ -43,9 +46,9 @@ The CI **Build** job runs `pnpm build`, so it runs the check with no new job or 
 
 Web application only (`apps/web`):
 
-- New `scripts/check-first-load.ts`. A pure `checkFirstLoad({ layouts, rootFiles, manifests, readChunk })` returns the result per layout: its chunks, their gzip size and the chunks that hold a forbidden marker. A thin `main` reads `.next/` and prints the result. A missing layout, chunk or manifest throws. The forbidden marker (`ZodObject`) and the guarded layouts are constants of the script.
+- New `scripts/check-first-load.ts`. A pure `checkFirstLoad({ layouts, rootFiles, manifests, readChunk })` returns the result per layout: its chunks, their gzip size and the chunks that contain Zod. A thin `main` reads `.next/` and prints the result. A missing layout, chunk or manifest throws, and so does a build in which no chunk matches the marker. The marker and the guarded layouts are constants of the script.
 - The manifest files are JavaScript (`globalThis.__RSC_MANIFEST["/(team)/page"] = {…}`). They are evaluated with `node:vm` in an empty context of their own, never `require`d into the process. They are the build's own output.
-- New `scripts/check-first-load.spec.ts` (Vitest, picked up by `scripts/**/*.spec.ts`). It covers a clean first load, Zod in a layout chunk, Zod in a root main file, a missing layout, a missing chunk, and keys from several manifests merged.
+- New `scripts/check-first-load.spec.ts` (Vitest, picked up by `scripts/**/*.spec.ts`). It covers a clean first load, Zod and Zod Mini in a layout chunk, Zod in a root main file, the core's `$ZodType` accepted, nested layouts and pages ignored, keys from several manifests merged, a missing layout, a missing chunk and the positive control.
 - `package.json` of `@trybun/web`: `build` becomes `next build && node scripts/check-first-load.ts`. The Turbo `build` task and its outputs stay as they are.
 
 No change to the API, contracts, the Lighthouse test or its budget.
@@ -53,7 +56,9 @@ No change to the API, contracts, the Lighthouse test or its budget.
 ## 📝 Edge Cases & Failure Scenarios
 
 - **A page legitimately loads Zod** (forms, URL state): pages and nested layouts are not guarded. Only the three shell layouts and the root files are.
-- **Zod mini or the core in the first load**: `zod/v4/core` loaded by `instrumentation-client.ts` today contributes only `config`. A `$ZodObject` in the first load also fails the check, because it brings the schema classes that #372 was about.
+- **Zod Mini or the core in the first load**: Zod Mini fails the check (`"ZodMiniType"`). The core alone, as `instrumentation-client.ts` loads it, passes, because it carries no schema API. A schema built with the core's classes alone (`$ZodObject`) would pass too. Nothing in the web application does that, and §18.5 names the `zod` API as the one to use.
+- **A new Zod version renames its classes, or the minifier stops keeping the literal**: the positive control fails the build, and the marker is updated in the upgrade PR.
+- **Nested layouts and other key pages**: `(portal)/portal/layout` wraps every portal page, and the portal pages load Zod with their forms anyway. The sign-in redirect is a key page of §2.9 but not part of the shell. Both stay outside this check (Non-goals); adding one is a line in `GUARDED_LAYOUTS`.
 - **A Next.js upgrade changes the manifest format or the `[project]/` keys of Turbopack**: the check fails with "layout … not found in any client reference manifest" and the format is updated in the same upgrade PR.
 - **A layout is renamed or moved**: the same failure; the constant is updated with the move.
 
@@ -72,7 +77,7 @@ Low and reversible. The cost of the check is milliseconds after a build. The ris
 ## Non-goals
 
 - Changing the Lighthouse budget or its test.
-- Guarding pages or nested layouts, or libraries other than Zod.
+- Guarding pages or nested layouts (including `(portal)/portal/layout` and the sign-in redirect), or libraries other than Zod.
 - A gzip size budget (Q2).
 
 ## Resolved assumptions (autonomous defaults)
@@ -81,24 +86,25 @@ Low and reversible. The cost of the check is milliseconds after a build. The ris
 |---|---|---|---|
 | Q1 | Script in CI's Build job, or a Vitest test over the build output? | A script run by the web application's `build` script, so the Build job and every local production build run it. | Deterministic everywhere, no new CI step or job, nothing to forget locally. Reversible: moving it to its own step is a one-line change. |
 | Q2 | Also a gzip size budget per layout? | No; the check prints the sizes, and a budget is deferred. | The smallest scope that meets the "Done when" of #374. A budget would make every intended change to the shell a change of §2.9. |
-| Q3 | Which files make up the first load? | `rootMainFiles` and `polyfillFiles` of `build-manifest.json`, plus the layout's `entryJSFiles`. | `instrumentation-client.ts` imports Zod's core and is in the root files, not in `entryJSFiles`. Leaving them out would miss a Zod import there. |
-| Q4 | Which marker identifies Zod? | `ZodObject`. | It is the marker the diagnosis of #372 used. It is a string literal of Zod 4 that minification keeps, and it is absent from today's shell. |
+| Q3 | Which files make up the first load? | `rootMainFiles` of `build-manifest.json`, plus the layout's `entryJSFiles`; not the `noModule` `polyfillFiles`. | `instrumentation-client.ts` imports Zod's core and is in the root files, not in `entryJSFiles`, so leaving them out would miss a Zod import there. The browsers of §2.9 never download the polyfills. |
+| Q4 | Which marker identifies Zod? | The quoted `"ZodType"` or `"ZodMiniType"`, with a positive control over the whole build. | Every schema class of Zod 4 and Zod Mini extends them, while `ZodObject`, the marker of the diagnosis of #372, comes only with `z.object`. Minification keeps the literal. It is absent from today's first load of the shell and present in the chunk with the forms. |
 
 ## Acceptance criteria
 
 - [ ] `pnpm build` (and so the CI **Build** job) fails when Zod reaches the first load of `(team)/layout`, `(portal)/layout` or `help/layout`, and names the layout and the chunk.
-- [ ] It fails when a guarded layout cannot be found in the build output, so it never passes silently.
-- [ ] Built from `c983cc9^` (the commit before #373), the check fails for all three layouts; built from `main`, it passes. Measured while writing this spec: 127.6 KB gzip with Zod before #373, 99.8 KB on `main`.
+- [ ] It fails when a guarded layout cannot be found in the build output, and when no chunk of the build matches the marker, so it never passes silently.
+- [ ] Built from `c983cc9^` (the commit before #373), the check fails for all three layouts; built from `main`, it passes. Measured while writing this spec, as the first load the check reads (root main files and entry chunks): 262.7 KB gzip with Zod before #373, 234.8 KB on `main`.
 - [ ] §2.9, §2.14 and §18.5 name the check; the README and `AGENTS.md` describe `pnpm build` with it.
 
 ## 📋 Implementation Plan
 
 **Phase 1 – the check (one PR)**
 
-1. Add `apps/web/scripts/check-first-load.ts` with the pure `checkFirstLoad` and its unit tests (`check-first-load.spec.ts`): a clean load, Zod in a layout chunk, Zod in a root file, a missing layout, a missing chunk, manifests merged.
+1. Add `apps/web/scripts/check-first-load.ts` with the pure `checkFirstLoad` and its unit tests (`check-first-load.spec.ts`), with fixtures in the shape of the real manifests and minified Zod chunks: the cases listed under Architecture.
 2. Run it from the `build` script of `@trybun/web`. Verify it against a build of `main` (it passes) and of `c983cc9^` (it fails for all three layouts).
 3. Update §2.9, §2.14 and §18.5, the README and `AGENTS.md` (the `pnpm build` row) and `.ai/memory/e2e.md`, then run the validation gate. Setting this spec to `implemented` and moving it to `implemented/` follow once this spec PR and the implementation PR have both merged.
 
 ## Changelog
 
 - 2026-11-19 – Created (autonomous defaults, #374).
+- 2026-11-19 – Specification review: the marker is the base class `"ZodType"`/`"ZodMiniType"` with a positive control over the build instead of `ZodObject`; the `noModule` polyfills are left out of the first load; the nested portal layout and the sign-in redirect are named as non-goals.
