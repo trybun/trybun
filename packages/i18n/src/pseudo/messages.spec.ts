@@ -8,8 +8,10 @@ import {
   isTagElement,
   type MessageFormatElement,
   parse,
+  TYPE,
 } from '@formatjs/icu-messageformat-parser';
-import { describe, expect, it } from 'vitest';
+import type * as Printer from '@formatjs/icu-messageformat-parser/printer.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CATALOGUES } from '../catalogues/index.js';
 import { PSEUDO_LOCALE } from './index.js';
 import {
@@ -19,6 +21,26 @@ import {
   pseudoLocalizeMessage,
   stretchFactor,
 } from './messages.js';
+
+/**
+ * The printer of the ICU parser is a third-party boundary: a test can make it drop the last
+ * argument, the way a printer bug would, to prove the generator refuses instead of breaking.
+ */
+const printer = vi.hoisted(() => ({ dropsLastArgument: false }));
+
+vi.mock('@formatjs/icu-messageformat-parser/printer.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof Printer>();
+  return {
+    ...actual,
+    printAST: (elements: MessageFormatElement[]) => {
+      if (!printer.dropsLastArgument) {
+        return actual.printAST(elements);
+      }
+      const last = elements.findLastIndex((element) => element.type === TYPE.argument);
+      return actual.printAST(elements.filter((_, index) => index !== last));
+    },
+  };
+});
 
 /** The messages of a catalogue by their full dot-separated key. */
 function flatten(tree: object, prefix = ''): Map<string, string> {
@@ -234,8 +256,19 @@ describe('pseudoLocalizeMessage', () => {
     expect(pseudoLocalizeMessage('{a} · {b}')).toBe('[{a} · {b}]');
   });
 
-  it('refuses a message the ICU printer cannot write back, instead of losing an argument', () => {
-    expect(() => pseudoLocalizeMessage("{a}''{b}")).toThrow(/cannot keep the structure/);
+  it('keeps the argument after a literal that ends with an apostrophe', () => {
+    expect(pseudoLocalizeMessage("{a}''{b}")).toBe("[{a}''{b}]");
+  });
+
+  describe('when the ICU printer cannot write a message back', () => {
+    afterEach(() => {
+      printer.dropsLastArgument = false;
+    });
+
+    it('refuses the message instead of losing an argument', () => {
+      printer.dropsLastArgument = true;
+      expect(() => pseudoLocalizeMessage('{a} · {b}')).toThrow(/cannot keep the structure/);
+    });
   });
 
   it('keeps quoted ICU syntax quoted', () => {

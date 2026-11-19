@@ -182,8 +182,9 @@ function structureOf(elements: MessageFormatElement[]): unknown[] {
 
 /**
  * One message in the pseudo-locale: accented, stretched and between the markers. Throws when the
- * printer of the ICU parser cannot write it back with the same structure – it loses an argument
- * after a literal that ends with an apostrophe, `{a}''{b}` – so a message is never silently broken.
+ * printer of the ICU parser cannot write it back with the same structure – a printer bug that loses
+ * an argument, as one did before 3.5.23 after a literal that ends with an apostrophe (`{a}''{b}`) –
+ * so a message is never silently broken.
  */
 export function pseudoLocalizeMessage(message: string): string {
   const elements = parse(message);
