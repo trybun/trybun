@@ -25,7 +25,7 @@ A script, `apps/web/scripts/check-first-load.ts`, runs right after `next build` 
 1. It reads the **first load of each guarded layout** from the build output. That is the union of:
    - `rootMainFiles` of `.next/build-manifest.json`, which every page loads: the framework, the Turbopack runtime and `instrumentation-client.ts`, which imports `config` of `zod/v4/core`. Its `polyfillFiles` are left out: Next.js 16 loads them with `noModule` (`app-render.js`), so the browsers of §2.9 never download them;
    - the `entryJSFiles` of the layout in every `page_client-reference-manifest.js` under `.next/server/app/`, which contain the chunks of the root layout and of the layout itself.
-2. The guarded layouts are the layouts of the shell that render the key pages of §2.9: `app/(team)/layout`, `app/(portal)/layout` and `app/help/layout`.
+2. The guarded layouts are the layouts of the application shell: `app/(team)/layout`, which renders the empty shell of the §2.9 key pages, `app/(portal)/layout` and `app/help/layout`.
 3. The check **fails** when a chunk of that first load contains the quoted literal `"ZodType"` or `"ZodMiniType"` (any quote character). In Zod 4 these are the `$constructor` names of the base classes that every schema of `zod` and of Zod Mini extends, so any schema in the first load brings one. The marker `ZodObject` would not do: only `z.object` defines that name. It is a string literal, so minification keeps it. The core's `"$ZodType"` does not match. `instrumentation-client.ts` brings it into every page today, together with `"$ZodCheck"`, and the check accepts that, because no schema API comes with it. A failure names the layout and the chunk, and links §18.5, which says how to keep a module out of the first load.
 4. The check never passes silently. It also **fails**:
    - when a guarded layout has no entry in any manifest;
@@ -46,9 +46,9 @@ The CI **Build** job runs `pnpm build`, so it runs the check with no new job or 
 
 Web application only (`apps/web`):
 
-- New `scripts/check-first-load.ts`. A pure `checkFirstLoad({ layouts, rootFiles, manifests, readChunk })` returns the result per layout: its chunks, their gzip size and the chunks that contain Zod. A thin `main` reads `.next/` and prints the result. A missing layout, chunk or manifest throws, and so does a build in which no chunk matches the marker. The marker and the guarded layouts are constants of the script.
+- New `scripts/check-first-load.ts`. A pure `checkFirstLoad({ layouts, rootFiles, manifests, readChunk })` returns the result per layout: its chunks, their gzip size and the chunks that contain Zod. A thin `main` finds the manifests under `.next/server/app/` (`clientReferenceManifestFiles`), reads the chunks (`chunkReader`) and prints the result. A missing layout, chunk or manifest throws, and so does a build in which no chunk matches the marker. The layouts are looked up first, so a build without manifests names the missing layout rather than the marker. The marker and the guarded layouts are constants of the script.
 - The manifest files are JavaScript (`globalThis.__RSC_MANIFEST["/(team)/page"] = {…}`). They are evaluated with `node:vm` in an empty context of their own, never `require`d into the process. They are the build's own output.
-- New `scripts/check-first-load.spec.ts` (Vitest, picked up by `scripts/**/*.spec.ts`). It covers a clean first load, Zod and Zod Mini in a layout chunk, Zod in a root main file, the core's `$ZodType` accepted, nested layouts and pages ignored, keys from several manifests merged, a missing layout, a missing chunk and the positive control.
+- New `scripts/check-first-load.spec.ts` (Vitest, picked up by `scripts/**/*.spec.ts`). It covers a clean first load, Zod and Zod Mini in a layout chunk, Zod in a root main file, the core's `$ZodType` accepted, nested layouts and pages ignored, keys from several manifests merged, a missing layout (also with no manifests at all), a missing chunk, the positive control, the manifest evaluated in an isolated context and the search of the manifests in route groups.
 - `package.json` of `@trybun/web`: `build` becomes `next build && node scripts/check-first-load.ts`. The Turbo `build` task and its outputs stay as they are.
 
 No change to the API, contracts, the Lighthouse test or its budget.
@@ -56,7 +56,7 @@ No change to the API, contracts, the Lighthouse test or its budget.
 ## 📝 Edge Cases & Failure Scenarios
 
 - **A page legitimately loads Zod** (forms, URL state): pages and nested layouts are not guarded. Only the three shell layouts and the root files are.
-- **Zod Mini or the core in the first load**: Zod Mini fails the check (`"ZodMiniType"`). The core alone, as `instrumentation-client.ts` loads it, passes, because it carries no schema API. A schema built with the core's classes alone (`$ZodObject`) would pass too. Nothing in the web application does that, and §18.5 names the `zod` API as the one to use.
+- **Zod Mini or the core in the first load**: Zod Mini fails the check (`"ZodMiniType"`). The core alone, as `instrumentation-client.ts` loads it, passes, because it carries no schema API. A schema built with the core's classes alone (`$ZodObject`) would pass too. Nothing in the web application does that: `instrumentation-client.ts` is its only import of `zod/v4/core`, and every schema comes from `zod` (`AGENTS.md`: Zod is the only validation library).
 - **A new Zod version renames its classes, or the minifier stops keeping the literal**: the positive control fails the build, and the marker is updated in the upgrade PR.
 - **Nested layouts and other key pages**: `(portal)/portal/layout` wraps every portal page, and the portal pages load Zod with their forms anyway. The sign-in redirect is a key page of §2.9 but not part of the shell. Both stay outside this check (Non-goals); adding one is a line in `GUARDED_LAYOUTS`.
 - **A Next.js upgrade changes the manifest format or the `[project]/` keys of Turbopack**: the check fails with "layout … not found in any client reference manifest" and the format is updated in the same upgrade PR.
@@ -108,3 +108,4 @@ Low and reversible. The cost of the check is milliseconds after a build. The ris
 
 - 2026-11-19 – Created (autonomous defaults, #374).
 - 2026-11-19 – Specification review: the marker is the base class `"ZodType"`/`"ZodMiniType"` with a positive control over the build instead of `ZodObject`; the `noModule` polyfills are left out of the first load; the nested portal layout and the sign-in redirect are named as non-goals.
+- 2026-11-19 – Specification review of #392: the guarded layouts are described as the application shell (only `(team)` renders a key page); the reason no schema uses the core alone cites `AGENTS.md` and the code instead of §18.5; the architecture matches the implementation of #393 (manifest search, chunk reader, layouts checked before the positive control).
