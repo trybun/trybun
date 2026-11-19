@@ -26,5 +26,5 @@ Non-goals (issue): the server-side first page (invisible to the browser), rate-l
 
 ### Phase 1: The E2E test
 
-- [ ] 1.1 Add the request recorder and the test of the reads per page
-- [ ] 1.2 Record the counting pattern in the project memory
+- [x] 1.1 Add the request recorder and the test of the reads per page — 3b9a3c5
+- [x] 1.2 Record the counting pattern in the project memory — e899dce
