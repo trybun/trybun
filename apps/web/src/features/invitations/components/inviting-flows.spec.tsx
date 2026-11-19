@@ -300,20 +300,77 @@ describe('PendingInvitationList', () => {
     );
   });
 
-  it('shows the error of a refused revocation', async () => {
-    fake.on('POST /api/v1/invitations/{invitationId}/revocation', { status: 500, error: {} });
+  const actions = [
+    {
+      action: 'Revoke',
+      route: 'POST /api/v1/invitations/{invitationId}/revocation',
+      open: 'Revoke the invitation of new@acme.com',
+      confirm: 'Revoke',
+    },
+    {
+      action: 'Copy new link',
+      route: 'POST /api/v1/invitations/{invitationId}/resending',
+      open: 'Copy a new link for new@acme.com',
+      confirm: 'Create new link',
+    },
+  ];
+  const problem = (status: number, code: string) => ({
+    status,
+    error: { type: 'about:blank', title: 'x', status, code },
+  });
+
+  async function confirmRefused(
+    { route, open, confirm }: (typeof actions)[number],
+    reply: { status: number; error: unknown },
+  ) {
+    fake.on(route, reply);
     const events = userEvent.setup();
-    renderList();
+    const { client } = renderList();
+    const listQuery = ['invitations', 'list', { projectId: PROJECT_ID }];
+    client.setQueryData(listQuery, { pages: [], pageParams: [] });
 
+    await events.click(screen.getByRole('button', { name: open }));
     await events.click(
-      screen.getByRole('button', { name: 'Revoke the invitation of new@acme.com' }),
+      within(await screen.findByRole('dialog')).getByRole('button', { name: confirm }),
     );
-    const dialog = await screen.findByRole('dialog');
-    await events.click(within(dialog).getByRole('button', { name: 'Revoke' }));
-
     await waitFor(() =>
       expect(toasts).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' })),
     );
+    return { isListRefreshed: client.getQueryState(listQuery)?.isInvalidated };
+  }
+
+  describe.each(actions)('a refused $action', (action) => {
+    it.each([
+      [
+        'accepted or revoked meanwhile',
+        problem(409, 'invitation.not_pending'),
+        'This invitation was already accepted or revoked.',
+      ],
+      [
+        'no longer visible',
+        problem(404, 'request.not_found'),
+        'This item does not exist or you do not have access to it.',
+      ],
+    ])('closes the confirmation of an invitation %s', async (_, reply, message) => {
+      const { isListRefreshed } = await confirmRefused(action, reply);
+
+      expect(toasts).toHaveBeenCalledWith({ title: message, type: 'error' });
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(isListRefreshed).toBe(true);
+    });
+
+    it('keeps the confirmation open to try again after any other error', async () => {
+      await confirmRefused(action, problem(500, 'server.internal_error'));
+
+      expect(toasts).toHaveBeenCalledWith({
+        title: 'Something went wrong. Try again later.',
+        type: 'error',
+      });
+      expect(screen.getByRole('dialog')).toBeTruthy();
+      expect(
+        within(screen.getByRole('dialog')).getByRole('button', { name: action.confirm }),
+      ).toBeTruthy();
+    });
   });
 
   it('loads more invitations on request', async () => {

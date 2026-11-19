@@ -5,6 +5,7 @@ import { Button } from '@trybun/ui/components/button';
 import { toast } from '@trybun/ui/components/toast';
 import { useFormatter, useTranslations } from 'next-intl';
 import { lazy, Suspense, useState } from 'react';
+import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { useResendInvitation, useRevokeInvitation } from '../mutations.js';
@@ -19,6 +20,16 @@ const InvitationLinkDialog = lazy(() =>
 
 /** An action on an invitation that needs a confirmation first. */
 type PendingAction = { kind: 'resend' | 'revoke'; invitation: Invitation };
+
+/**
+ * Whether the API refused an action because the invitation is no longer pending (§7.4) – accepted
+ * or revoked by someone else – or no longer visible (`404`, §17.2): no retry can succeed then.
+ */
+function isNoLongerPending(error: unknown): boolean {
+  return (
+    error instanceof ApiError && (error.code === 'invitation.not_pending' || error.status === 404)
+  );
+}
 
 /**
  * Pending invitations (§7.4) – of a project in its Members tab, of an account on the Accounts page
@@ -61,6 +72,15 @@ export function PendingInvitationList({
       ? t('invitedByUnknown')
       : t('invitedBy', { name: invitedBy.displayName });
   const showError = (error: unknown) => toast.add({ title: errorMessage(error), type: 'error' });
+  // The refusal of an action that can never succeed – the invitation was accepted or revoked
+  // meanwhile, or is no longer visible – closes its confirmation; the list then refreshes. Any
+  // other error keeps the confirmation open to try again.
+  const showRefusal = (error: unknown) => {
+    if (isNoLongerPending(error)) {
+      setPending(null);
+    }
+    showError(error);
+  };
 
   const confirm = ({ kind, invitation }: PendingAction) => {
     if (kind === 'resend') {
@@ -73,7 +93,7 @@ export function PendingInvitationList({
             expiresAt: resent.invitation.expiresAt,
           });
         },
-        onError: showError,
+        onError: showRefusal,
       });
       return;
     }
@@ -82,7 +102,7 @@ export function PendingInvitationList({
     revoke.mutateAsync(invitation.id).then(() => {
       setPending(null);
       toast.add({ title: t('revoked'), type: 'success' });
-    }, showError);
+    }, showRefusal);
   };
 
   return (

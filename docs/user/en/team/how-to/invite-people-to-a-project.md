@@ -31,6 +31,8 @@ Invitations that have not been accepted yet are listed under **Pending invitatio
 
 An invitation is also revoked when its project is archived or the person's account is deactivated.
 
+If someone else accepted or revoked the invitation while your confirmation was open, Trybun says so, closes the confirmation and removes the invitation from the list.
+
 ## Several invitations of one person
 
 A person can hold invitations to several projects before accepting any. Each link grants only its own project and role. Once the person has an account, a further link works only when they are signed in with that account.
