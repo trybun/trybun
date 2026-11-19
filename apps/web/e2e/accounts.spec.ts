@@ -247,6 +247,8 @@ test.describe('accounts of the Administrator', () => {
       testInfo.project.name !== 'desktop',
       'The request count is the same on every device.',
     );
+    // 51 invitations issued one after another, and every row checked twice.
+    test.slow();
     // One more invited account than a page holds, each with one pending invitation, under an
     // address of this run: the search lists only them on a re-used environment too (e2e.md).
     const stamp = `e2e-page-invitations-${Date.now().toString(36)}`;
