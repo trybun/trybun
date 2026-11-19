@@ -1,5 +1,7 @@
-import { type Browser, devices, expect, test } from '@playwright/test';
+import { type Browser, devices, expect, request, test } from '@playwright/test';
+import { DEFAULT_PAGE_LIMIT } from '@trybun/contracts/pagination';
 import { seriousViolations } from './accessibility.js';
+import { BffReads } from './bff-reads.js';
 import { expectFullContentWidth } from './content-width.js';
 import { AccountsPage } from './pages/accounts.page.js';
 import { AppShellPage } from './pages/app-shell.page.js';
@@ -18,6 +20,35 @@ const END_USERS: Readonly<Record<string, string>> = {
   tablet: 'Walgierz Mierzejewski',
   desktop: 'Daria Rusin',
 };
+
+/**
+ * Invites each address to the Customer portal project as an end user through the BFF (§14.4), as
+ * the Administrator: an invited account with one pending invitation each (§7.4).
+ */
+async function inviteThroughBff(baseURL: string, emails: readonly string[]): Promise<void> {
+  const api = await request.newContext({
+    baseURL,
+    storageState: ADMIN_STORAGE_STATE,
+    extraHTTPHeaders: { Origin: new URL(baseURL).origin },
+  });
+  try {
+    const projects = await api.get('/api/v1/projects', {
+      params: { state: 'active', query: 'Customer portal' },
+    });
+    expect(projects.status()).toBe(200);
+    const { items } = (await projects.json()) as { items: { id: string; name: string }[] };
+    const project = items.find(({ name }) => name === 'Customer portal');
+    expect(project, 'Customer portal').toBeDefined();
+    for (const email of emails) {
+      const created = await api.post('/api/v1/invitations', {
+        data: { email, target: { type: 'project', projectId: project?.id, role: 'end_user' } },
+      });
+      expect(created.status(), email).toBe(201);
+    }
+  } finally {
+    await api.dispose();
+  }
+}
 
 /** A fresh browser of a person who signs in with the seeded password and one-time code. */
 async function signedInDevice(browser: Browser, email: string) {
@@ -204,6 +235,87 @@ test.describe('accounts of the Administrator', () => {
     await expect(
       page.getByRole('dialog', { name: 'Invite' }).getByRole('textbox', { name: 'E-mail address' }),
     ).toHaveValue(email);
+  });
+
+  test('reads the pending invitations once per page of accounts', async ({
+    page,
+    baseURL,
+  }, testInfo) => {
+    // The request count does not depend on the device, and 51 accounts per device would only
+    // slow the suite down.
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'The request count is the same on every device.',
+    );
+    // 51 invitations issued one after another, and every row checked twice.
+    test.slow();
+    // One more invited account than a page holds, each with one pending invitation, under an
+    // address of this run: the search lists only them on a re-used environment too (e2e.md).
+    const stamp = `e2e-page-invitations-${Date.now().toString(36)}`;
+    const emails = Array.from(
+      { length: DEFAULT_PAGE_LIMIT + 1 },
+      (_, index) => `${stamp}-${String(index).padStart(2, '0')}@example.org`,
+    );
+    const target = 'Project Customer portal, End user';
+    await inviteThroughBff(baseURL ?? '', emails);
+    const accounts = new AccountsPage(page);
+    const reads = new BffReads(page, '/api/v1/invitations');
+    await accounts.goto('?state=invited');
+
+    // A search typed before the page hydrated is lost, so type until the first page of the run's
+    // accounts shows: the unfiltered first page has as many rows.
+    await expect(async () => {
+      await accounts.search.fill('');
+      await accounts.search.fill(stamp);
+      await expect(accounts.entries.filter({ hasNotText: stamp })).toHaveCount(0, {
+        timeout: 2_000,
+      });
+      await expect(accounts.entries).toHaveCount(DEFAULT_PAGE_LIMIT, { timeout: 2_000 });
+    }).toPass();
+    await reads.settle();
+    // The search reads the invitations of its first page in one request; a retried fill may
+    // have read them before, so only the last read counts.
+    expect(reads.accountsPerRead().at(-1)).toBe(DEFAULT_PAGE_LIMIT);
+    reads.reset();
+
+    // Load more reads the invitations of the next page of accounts in one request.
+    await page.getByRole('button', { name: 'Load more' }).click();
+    await expect(accounts.entries).toHaveCount(emails.length);
+    await expect(page.getByRole('button', { name: 'Load more' })).toHaveCount(0);
+    await reads.settle();
+    expect(reads.accountsPerRead()).toEqual([1]);
+
+    // Each account lists its own invitation: the list is named by the row's account and the
+    // button by the account of the invitation.
+    const revokeOf = (email: string) =>
+      accounts.invitationsOf(email).getByRole('button', { name: /^Revoke the invitation of / });
+    for (const email of emails) {
+      await expect(revokeOf(email)).toHaveCount(1);
+      await expect(revokeOf(email)).toHaveAccessibleName(
+        `Revoke the invitation of ${email}, ${target}`,
+      );
+    }
+
+    // Revoking one account's only invitation refreshes each loaded page with one read.
+    const [revoked, ...others] = emails as [string, ...string[]];
+    reads.reset();
+    await revokeOf(revoked).click();
+    await page
+      .getByRole('dialog', { name: `Revoke the invitation of ${revoked}?` })
+      .getByRole('button', { name: 'Revoke' })
+      .click();
+    await expect(accounts.toast('Invitation revoked')).toBeVisible();
+    await expect(accounts.invitationsOf(revoked)).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: `Invite ${revoked}` }).filter({ visible: true }),
+    ).toBeVisible();
+    await reads.settle();
+    expect(reads.accountsPerRead().toSorted((a, b) => a - b)).toEqual([1, DEFAULT_PAGE_LIMIT]);
+    for (const email of others) {
+      await expect(revokeOf(email)).toHaveAccessibleName(
+        `Revoke the invitation of ${email}, ${target}`,
+      );
+    }
   });
 
   test('is reached from the sections of the Administrator panel', async ({ page }) => {
