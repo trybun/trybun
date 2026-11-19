@@ -23,6 +23,10 @@ overrides:
   # 10.6.5 (react-docgen-typescript plugin: globSync) requires ^13; both functions are unchanged in 14.
   glob@10.5.0: 14.0.3
   glob@13.0.6: 14.0.3
+  # GHSA-7589-6fvf-x4pw, effect <=3.22.0: ReDoS in the Schema.TemplateLiteral compiled regex (high).
+  # @prisma/config 7.10.1 (prisma, @prisma/client) pins 3.20.0 exactly and uses only Schema and
+  # Either, which are unchanged within 3.x; the next Prisma release, 8, is not allowed (§2.10).
+  effect@3.20.0: 3.22.4
 
 # Dependencies allowed to run install scripts; every other one is refused.
 allowBuilds:
