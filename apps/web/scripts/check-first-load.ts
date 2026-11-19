@@ -2,7 +2,7 @@
 // that every first load of a shell layout carries must not contain Zod. The Lighthouse budget
 // catches such a regression only on some runs, because the simulated LCP moves in steps between
 // runs of one build (#372, #374). Run by the `build` script: `node scripts/check-first-load.ts`.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { runInNewContext } from 'node:vm';
@@ -119,7 +119,8 @@ export function checkFirstLoad({
   });
 }
 
-function clientReferenceManifestFiles(dir: string): string[] {
+/** Every `page_client-reference-manifest.js` under the directory, at any depth. */
+export function clientReferenceManifestFiles(dir: string): string[] {
   return readdirSync(dir, { recursive: true, encoding: 'utf8' })
     .filter((path) => path.endsWith('page_client-reference-manifest.js'))
     .map((path) => join(dir, path));
@@ -166,6 +167,7 @@ function main() {
   if (failures.length > 0) process.exit(1);
 }
 
-if (process.argv[1] === import.meta.filename) {
+// Compared as real paths, so a run through a symbolic link still checks the build.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(import.meta.filename)) {
   main();
 }

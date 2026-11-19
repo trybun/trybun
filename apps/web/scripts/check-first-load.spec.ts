@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   checkFirstLoad,
   chunkReader,
+  clientReferenceManifestFiles,
   GUARDED_LAYOUTS,
   parseBuildManifest,
   parseClientReferenceManifest,
@@ -245,6 +246,27 @@ describe('chunkReader', () => {
       );
     } finally {
       rmSync(buildDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('clientReferenceManifestFiles', () => {
+  it('finds the client reference manifest of every page, in route groups at any depth', () => {
+    const appDir = mkdtempSync(join(tmpdir(), 'check-first-load-'));
+    try {
+      for (const dir of ['(team)/tickets/new', 'help'])
+        mkdirSync(join(appDir, dir), { recursive: true });
+      writeFileSync(join(appDir, '(team)/page_client-reference-manifest.js'), '');
+      writeFileSync(join(appDir, '(team)/tickets/new/page_client-reference-manifest.js'), '');
+      writeFileSync(join(appDir, '(team)/tickets/new/page.js'), '');
+      writeFileSync(join(appDir, 'help/route_client-reference-manifest.js'), '');
+
+      expect(clientReferenceManifestFiles(appDir).sort()).toEqual([
+        join(appDir, '(team)/page_client-reference-manifest.js'),
+        join(appDir, '(team)/tickets/new/page_client-reference-manifest.js'),
+      ]);
+    } finally {
+      rmSync(appDir, { recursive: true, force: true });
     }
   });
 });
