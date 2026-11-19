@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-19 |
 | Plan task | – (follow-up of #373, review nit 3) |
 | System specification sections | §2.9, §2.14, §18.5 |
-| Related issues / PRs | #374, #372, #373, #163 |
+| Related issues / PRs | #374, #392, #393, #372, #373, #163 |
 
 ## 📝 TLDR
 
@@ -109,3 +109,5 @@ Low and reversible. The cost of the check is milliseconds after a build. The ris
 - 2026-11-19 – Created (autonomous defaults, #374).
 - 2026-11-19 – Specification review: the marker is the base class `"ZodType"`/`"ZodMiniType"` with a positive control over the build instead of `ZodObject`; the `noModule` polyfills are left out of the first load; the nested portal layout and the sign-in redirect are named as non-goals.
 - 2026-11-19 – Specification review of #392: the guarded layouts are described as the application shell (only `(team)` renders a key page); the reason no schema uses the core alone cites `AGENTS.md` and the code instead of §18.5; the architecture matches the implementation of #393 (manifest search, chunk reader, layouts checked before the positive control).
+- 2026-11-19 – Approved by the maintainer through the merge of #392.
+- 2026-11-19 – Implemented (#393): `apps/web/scripts/check-first-load.ts` run by the `build` script of `@trybun/web`, with its unit tests; §2.9, §2.14 and §18.5, the README, `AGENTS.md` and `.ai/memory/e2e.md` updated.
