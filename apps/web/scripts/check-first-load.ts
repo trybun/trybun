@@ -9,7 +9,7 @@ import { runInNewContext } from 'node:vm';
 import { gzipSync } from 'node:zlib';
 import { z } from 'zod';
 
-/** The layouts of the shell, which render the key pages of the Lighthouse budget (§2.9). */
+/** The layouts of the application shell, whose first load the empty shell of §2.9 shows. */
 export const GUARDED_LAYOUTS = ['app/(team)/layout', 'app/(portal)/layout', 'app/help/layout'];
 
 /**
@@ -66,9 +66,9 @@ export function parseBuildManifest(source: string): string[] {
 /**
  * The first load of each layout – the files every page loads and the layout's entry chunks in any
  * of the manifests – with its gzip size and the chunks that contain Zod. The check never passes
- * silently: it fails for a layout found in no manifest (a changed build format, a moved layout)
- * and when Zod is in no entry chunk of the build at all, because the pages with a form load it –
- * then the marker no longer identifies Zod.
+ * silently: it fails for a layout found in no manifest (a changed build format, a moved layout),
+ * checked first so that diagnosis names it, and when Zod is in no entry chunk of the build at
+ * all, because the pages with a form load it – then the marker no longer identifies Zod.
  */
 export function checkFirstLoad({
   layouts,
@@ -92,15 +92,7 @@ export function checkFirstLoad({
   };
   const containsZod = (chunk: string) => ZOD_MARKER.test(contentOf(chunk).toString('utf8'));
 
-  const buildChunks = new Set(manifests.flatMap((manifest) => Object.values(manifest).flat()));
-  if (![...buildChunks].some(containsZod)) {
-    throw new Error(
-      `No entry chunk of the build matches ${String(ZOD_MARKER)}, though the pages with a form ` +
-        'load Zod: the marker no longer identifies Zod and needs updating.',
-    );
-  }
-
-  return layouts.map((layout) => {
+  const layoutEntries = layouts.map((layout) => {
     // Turbopack keys a module by its path from the workspace root: `[project]/apps/web/src/app/…`.
     const keySuffix = `/src/${layout}`;
     const entries = manifests.flatMap((manifest) =>
@@ -109,6 +101,18 @@ export function checkFirstLoad({
     if (entries.length === 0) {
       throw new Error(`The layout ${layout} is not in any client reference manifest of the build.`);
     }
+    return { layout, entries };
+  });
+
+  const buildChunks = new Set(manifests.flatMap((manifest) => Object.values(manifest).flat()));
+  if (![...buildChunks].some(containsZod)) {
+    throw new Error(
+      `No entry chunk of the build matches ${String(ZOD_MARKER)}, though the pages with a form ` +
+        'load Zod: the marker no longer identifies Zod and needs updating.',
+    );
+  }
+
+  return layoutEntries.map(({ layout, entries }) => {
     const chunks = [...new Set([...rootFiles, ...entries.flatMap(([, files]) => files)])];
     return {
       layout,

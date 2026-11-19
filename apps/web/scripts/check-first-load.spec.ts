@@ -218,6 +218,17 @@ describe('checkFirstLoad', () => {
     );
   });
 
+  it('names a missing layout before the marker when the build has no manifests at all', () => {
+    expect(() =>
+      checkFirstLoad({
+        layouts: ['app/(team)/layout'],
+        rootFiles: [],
+        manifests: [],
+        readChunk: chunks(files),
+      }),
+    ).toThrow('The layout app/(team)/layout is not in any client reference manifest of the build.');
+  });
+
   it('fails when no chunk of the build matches the marker, so a renamed class never passes', () => {
     expect(() =>
       checkTeamLayout({ ...files, 'static/chunks/form.js': 'var a=r.$constructor("Schema");' }),
