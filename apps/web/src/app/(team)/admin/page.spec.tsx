@@ -1,5 +1,5 @@
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { createTranslator } from 'next-intl';
+import { createFormatter, createTranslator } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { prerender } from 'react-dom/static';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,7 +16,14 @@ let locale: 'en' | 'pl' = 'en';
 vi.mock('next-intl/server', () => ({
   getTranslations: (namespace: 'administration') =>
     Promise.resolve(createTranslator({ locale, messages: CATALOGUES[locale], namespace })),
+  getFormatter: () => Promise.resolve(createFormatter({ locale, timeZone: 'UTC' })),
+  getNow: () => Promise.resolve(new Date('2026-11-18T12:00:00.000Z')),
 }));
+const REQUEST_PATH = '/admin';
+vi.mock('next/headers.js', () => ({
+  headers: () => Promise.resolve(new Headers({ 'x-trybun-request-path': REQUEST_PATH })),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -39,6 +46,7 @@ function ok(data: unknown) {
 describe('Administrator panel', () => {
   beforeEach(() => {
     locale = 'en';
+    notFound.mockClear();
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
   });
 
@@ -128,5 +136,28 @@ describe('Administrator panel', () => {
 
     await expect(GettingStartedPage()).rejects.toThrow('NEXT_NOT_FOUND');
     await expect(AboutPage()).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  it.each([
+    ['the checklist', () => GettingStartedPage()],
+    ['About', () => AboutPage()],
+  ])('tells a person over the rate limit when to try again on %s (#356)', async (_case, page) => {
+    GET.mockReturnValue(
+      Promise.resolve({
+        error: {
+          type: 'about:blank',
+          title: 'Too Many',
+          status: 429,
+          code: 'request.rate_limited',
+        },
+        response: new Response(null, { status: 429, headers: { 'Retry-After': '30' } }),
+      }),
+    );
+
+    const html = await render(await page());
+
+    expect(notFound).not.toHaveBeenCalled();
+    expect(html).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
+    expect(html).toContain('Try again in 30 seconds.');
   });
 });

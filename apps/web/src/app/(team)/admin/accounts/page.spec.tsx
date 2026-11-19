@@ -3,7 +3,7 @@ import type { Invitation } from '@trybun/contracts/invitations';
 import { MAX_PAGE_LIMIT } from '@trybun/contracts/pagination';
 import type { User } from '@trybun/contracts/users';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { createTranslator, NextIntlClientProvider } from 'next-intl';
+import { createFormatter, createTranslator, NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { prerender } from 'react-dom/static';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,7 +19,14 @@ vi.mock('../../../../lib/api-client/server-api-client.js', async (importOriginal
 vi.mock('next-intl/server', () => ({
   getTranslations: (namespace: 'users.accounts') =>
     Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+  getFormatter: () => Promise.resolve(createFormatter({ locale: 'en', timeZone: 'UTC' })),
+  getNow: () => Promise.resolve(new Date('2026-11-18T12:00:00.000Z')),
 }));
+const REQUEST_PATH = '/admin/accounts';
+vi.mock('next/headers.js', () => ({
+  headers: () => Promise.resolve(new Headers({ 'x-trybun-request-path': REQUEST_PATH })),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -94,6 +101,7 @@ describe('AccountsPage', () => {
   beforeEach(() => {
     accounts = [];
     GET.mockClear();
+    notFound.mockClear();
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
     GET.mockImplementation((path: string) => respond(path, ['open_administration']));
   });
@@ -154,6 +162,29 @@ describe('AccountsPage', () => {
     // A failed prefetch is not passed to the browser, which reads the invitations itself.
     expect(html).toContain('invited@customer.example.com');
     expect(html).not.toContain('Pending invitations of');
+  });
+
+  it('tells an Administrator over the rate limit when to try again, not that the page is gone (#356)', async () => {
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/users/me'
+        ? Promise.resolve({
+            error: {
+              type: 'about:blank',
+              title: 'Too Many Requests',
+              status: 429,
+              code: 'request.rate_limited',
+            },
+            response: new Response(null, { status: 429, headers: { 'Retry-After': '45' } }),
+          })
+        : respond(path, ['open_administration']),
+    );
+
+    const html = await render(await AccountsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(notFound).not.toHaveBeenCalled();
+    expect(html).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(GET).not.toHaveBeenCalledWith('/api/v1/users', expect.anything());
   });
 
   it('shows the not-found page to a person who is not the Administrator', async () => {

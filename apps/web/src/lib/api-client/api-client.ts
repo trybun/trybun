@@ -18,5 +18,5 @@ export async function dataOf<T>(
   // The reading of Problem Details (with Zod) is loaded only when a request fails, so that it is
   // not part of the code every page loads first (§2.9).
   const { apiErrorOf } = await import('../errors/api-error.js');
-  throw apiErrorOf(response.status, error);
+  throw apiErrorOf(response.status, error, response.headers);
 }

@@ -26,6 +26,12 @@
     "newTicket": "New ticket",
     "tickets": "Tickets"
   },
+  "rateLimited": {
+    "title": "Too many requests",
+    "text": "You have sent more requests than Trybun allows in a short time. Wait a moment and try again.",
+    "textWithWait": "You have sent more requests than Trybun allows in a short time. Try again {wait}.",
+    "reload": "Reload page"
+  },
   "languages": {
     "en": "English",
     "pl": "Polski"

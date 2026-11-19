@@ -26,6 +26,12 @@
     "newTicket": "Nowe zgłoszenie",
     "tickets": "Zgłoszenia"
   },
+  "rateLimited": {
+    "title": "Zbyt wiele żądań",
+    "text": "Wysłano więcej żądań, niż Trybun pozwala w krótkim czasie. Odczekaj chwilę i spróbuj ponownie.",
+    "textWithWait": "Wysłano więcej żądań, niż Trybun pozwala w krótkim czasie. Spróbuj ponownie {wait}.",
+    "reload": "Odśwież stronę"
+  },
   "languages": {
     "en": "English",
     "pl": "Polski"

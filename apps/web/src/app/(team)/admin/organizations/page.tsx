@@ -1,18 +1,23 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
+import { RateLimitedNotice } from '../../../../features/app-shell/components/rate-limited-notice.js';
 import { LazyNewOrganizationDialog } from '../../../../features/organizations/components/lazy-new-organization-dialog.js';
 import { OrganizationStateTabs } from '../../../../features/organizations/components/organization-state-tabs.js';
 import { organizationsQueryOptions } from '../../../../features/organizations/queries.js';
 import { organizationsSearchParamsSchema } from '../../../../features/organizations/search-params.js';
 import { currentUserQueryOptions } from '../../../../features/users/queries.js';
-import { getServerApiClient } from '../../../../lib/api-client/server-api-client.js';
+import {
+  getServerApiClient,
+  readOrRateLimited,
+} from '../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../lib/query-client/server-query-client.js';
 
 /**
  * The Organizations page of the Administrator panel (§7.3): the active or archived organizations
- * and New organization. Others see the not-found page, as the API answers them with `404`.
+ * and New organization. Others see the not-found page, as the API answers them with `404`; a
+ * person over the rate limit is told so.
  */
 export default async function OrganizationsPage({
   searchParams,
@@ -23,9 +28,15 @@ export default async function OrganizationsPage({
   await requireSession();
   const [t, client] = await Promise.all([getTranslations('organizations'), getServerApiClient()]);
   const queryClient = getServerQueryClient();
-  await queryClient.prefetchQuery(currentUserQueryOptions(client));
-  const user = queryClient.getQueryData(currentUserQueryOptions(client).queryKey);
-  if (user?.allowedActions.includes('open_administration') !== true) {
+  // A failed read is not a missing permission: the rate limit is shown, other errors are thrown
+  // on (#356).
+  const { data: user, rateLimited } = await readOrRateLimited(
+    queryClient.fetchQuery(currentUserQueryOptions(client)),
+  );
+  if (rateLimited !== undefined) {
+    return <RateLimitedNotice error={rateLimited} headingLevel={2} />;
+  }
+  if (!user.allowedActions.includes('open_administration')) {
     notFound();
   }
   await queryClient.prefetchInfiniteQuery(organizationsQueryOptions(client, state));

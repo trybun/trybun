@@ -1,5 +1,6 @@
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { createTranslator } from 'next-intl';
+import { createFormatter, createTranslator } from 'next-intl';
+import { prerender } from 'react-dom/static';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,7 +15,14 @@ vi.mock('../../../../lib/api-client/server-api-client.js', async (importOriginal
 vi.mock('next-intl/server', () => ({
   getTranslations: (namespace: 'organizations') =>
     Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+  getFormatter: () => Promise.resolve(createFormatter({ locale: 'en', timeZone: 'UTC' })),
+  getNow: () => Promise.resolve(new Date('2026-11-18T12:00:00.000Z')),
 }));
+const REQUEST_PATH = '/admin/organizations';
+vi.mock('next/headers.js', () => ({
+  headers: () => Promise.resolve(new Headers({ 'x-trybun-request-path': REQUEST_PATH })),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -64,6 +72,25 @@ function respond(
   });
 }
 
+/** The API's answer to more requests than the rate limit allows, with its `Retry-After` (§14.4). */
+function rateLimited() {
+  return Promise.resolve({
+    error: {
+      type: 'about:blank',
+      title: 'Too Many Requests',
+      status: 429,
+      code: 'request.rate_limited',
+    },
+    response: new Response(null, { status: 429, headers: { 'Retry-After': '120' } }),
+  });
+}
+
+/** The server HTML of a Server Component's element. */
+async function html(element: ReactElement): Promise<string> {
+  const { prelude } = await prerender(element);
+  return new Response(prelude).text();
+}
+
 /** Whether an element tree contains an element of the given type. */
 function contains(node: unknown, type: unknown): boolean {
   if (Array.isArray(node)) {
@@ -78,6 +105,7 @@ function contains(node: unknown, type: unknown): boolean {
 
 describe('OrganizationsPage', () => {
   beforeEach(() => {
+    notFound.mockClear();
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
     GET.mockImplementation((path: string) => respond(path));
   });
@@ -107,6 +135,18 @@ describe('OrganizationsPage', () => {
     expect(contains(element, LazyNewOrganizationDialog)).toBe(false);
   });
 
+  it('tells an Administrator over the rate limit when to try again, not that the page is gone (#356)', async () => {
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/users/me' ? rateLimited() : respond(path),
+    );
+
+    const element = await OrganizationsPage({ searchParams: Promise.resolve({}) });
+
+    expect(notFound).not.toHaveBeenCalled();
+    expect(await html(element)).toContain('Try again in 2 minutes.');
+    expect(GET).not.toHaveBeenCalledWith('/api/v1/organizations', expect.anything());
+  });
+
   it('shows the not-found page to a person who is not the Administrator', async () => {
     GET.mockImplementation((path: string) => respond(path, { userActions: ['create_project'] }));
 
@@ -119,6 +159,7 @@ describe('OrganizationsPage', () => {
 
 describe('OrganizationPage', () => {
   beforeEach(() => {
+    notFound.mockClear();
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
     GET.mockImplementation((path: string) => respond(path));
   });
@@ -145,6 +186,25 @@ describe('OrganizationPage', () => {
     await OrganizationPage({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) });
 
     expect(GET).not.toHaveBeenCalledWith('/api/v1/projects', expect.anything());
+  });
+
+  it('tells a person over the rate limit when to try again, not that the organization is gone (#356)', async () => {
+    GET.mockImplementation(() => rateLimited());
+
+    const element = await OrganizationPage({
+      params: Promise.resolve({ organizationId: ORGANIZATION_ID }),
+    });
+
+    expect(notFound).not.toHaveBeenCalled();
+    expect(await html(element)).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
+  });
+
+  it('passes on an error of the API other than 404 and 429', async () => {
+    GET.mockImplementation(() => respond('', { status: 500 }));
+
+    await expect(
+      OrganizationPage({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) }),
+    ).rejects.toMatchObject({ name: 'ApiError', status: 500 });
   });
 
   it.each([

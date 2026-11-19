@@ -2,6 +2,7 @@ import type { DehydratedState } from '@tanstack/react-query';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ApiError } from '../../../lib/errors/api-error.js';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -239,6 +240,43 @@ describe('AccountShell', () => {
     const element = await TeamLayout({ children: <h1>Page</h1> });
 
     expect((element.type as { name: string }).name).toBe('AccountDeactivatedNotice');
+  });
+
+  it('shows only the notice of the rate limit when the API refuses the account with 429 (#356)', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockResolvedValue({
+      data: undefined,
+      error: {
+        type: 'about:blank',
+        title: 'Too Many Requests',
+        status: 429,
+        code: 'request.rate_limited',
+      },
+      response: new Response(null, { status: 429, headers: { 'Retry-After': '45' } }),
+    } as never);
+
+    const element = (await TeamLayout({ children: <h1>Page</h1> })) as ReactElement<{
+      children: ReactElement<{ error: ApiError }>;
+    }>;
+
+    expect(element.type).toBe('main');
+    const notice = element.props.children;
+    expect((notice.type as { name: string }).name).toBe('RateLimitedNotice');
+    expect(notice.props.error).toMatchObject({ status: 429, retryAfterSeconds: 45 });
+  });
+
+  it('keeps the help readable over the rate limit, as it needs no API', async () => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    get.mockResolvedValue({
+      data: undefined,
+      error: { type: 'about:blank', title: 'Too Many', status: 429, code: 'request.rate_limited' },
+      response: new Response(null, { status: 429 }),
+    } as never);
+
+    const element = await AccountShell({ shell: 'reader', children: <h1>Help</h1> });
+
+    expect(JSON.stringify(element)).toContain('"children":"Help"');
+    expect(element.type).not.toBe('main');
   });
 
   it('sends an end user who opens a team route to its portal counterpart (Q1, Q15)', async () => {

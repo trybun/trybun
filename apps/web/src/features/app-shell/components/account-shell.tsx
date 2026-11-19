@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 import { REQUEST_PATH_HEADER } from '../../../lib/auth/callback-path.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../lib/auth/session.js';
-import { ApiError } from '../../../lib/errors/api-error.js';
+import { ApiError, isRateLimited } from '../../../lib/errors/api-error.js';
 import { pickClientMessages } from '../../../lib/i18n/messages.js';
 import { getServerQueryClient } from '../../../lib/query-client/server-query-client.js';
 import { LazyHelpMenu } from '../../help/components/lazy-help-menu.js';
@@ -25,6 +25,7 @@ import { counterpartOf, type Shell } from '../counterparts.js';
 import { isNavigationCollapsed } from '../navigation-cookie.js';
 import type { NavigationContext } from '../navigation.js';
 import { AppShell } from './app-shell.js';
+import { RateLimitedNotice } from './rate-limited-notice.js';
 import { accountNameOf } from './user-menu-button.js';
 
 /** The side of the web application an account kind works in (§5.7). */
@@ -41,7 +42,7 @@ export function shellOf(kind: UserKind): Shell {
  * reader. The kind decides only the views; the API decides every access (§14.4). The kind also
  * decides the contextual help of the help menu (§2.3) and the tours (§2.4), and the desktop side
  * navigation starts as this browser left it. An account the API refuses sees only a notice with
- * the sign-out.
+ * the sign-out, and a person over the rate limit only the notice of the rate limit.
  */
 export async function AccountShell({
   shell: requestedShell,
@@ -63,6 +64,16 @@ export async function AccountShell({
   const userError = queryClient.getQueryState(userQueryKey)?.error;
   if (userError instanceof ApiError && userError.status === 401) {
     return <AccountDeactivatedNotice />;
+  }
+  // Over the rate limit every read of the request is refused for a while, the page's too: one
+  // message for every page instead of its errors (§14.4, #356). The help needs no API, so it
+  // stays readable while the person waits.
+  if (isRateLimited(userError) && requestedShell !== 'reader') {
+    return (
+      <main className="mx-auto flex max-w-lg flex-col p-4 pt-12">
+        <RateLimitedNotice error={userError} />
+      </main>
+    );
   }
   const user = queryClient.getQueryData(userQueryKey);
   // When the API cannot tell, the requested side is rendered, and the help gives only the pages
