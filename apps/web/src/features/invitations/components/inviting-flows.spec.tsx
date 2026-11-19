@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useQuery } from '@tanstack/react-query';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { toast } from '@trybun/ui/components/toast';
@@ -22,6 +23,7 @@ const { InviteDialog } = await import('./invite-dialog.js');
 const { AddMemberDialog } = await import('../../projects/components/add-member-dialog.js');
 const { ContinueAcceptance } = await import('./continue-acceptance.js');
 const { PendingInvitationList } = await import('./pending-invitation-list.js');
+const { ProjectInvitations } = await import('../../projects/components/project-invitations.js');
 const { PasswordAcceptanceForm } = await import('./password-acceptance-form.js');
 const { writePendingAcceptance, readPendingAcceptance } = await import('../acceptance-state.js');
 
@@ -325,9 +327,7 @@ describe('PendingInvitationList', () => {
   ) {
     fake.on(route, reply);
     const events = userEvent.setup();
-    const { client } = renderList();
-    const listQuery = ['invitations', 'list', { projectId: PROJECT_ID }];
-    client.setQueryData(listQuery, { pages: [], pageParams: [] });
+    renderList();
 
     await events.click(screen.getByRole('button', { name: open }));
     await events.click(
@@ -336,7 +336,6 @@ describe('PendingInvitationList', () => {
     await waitFor(() =>
       expect(toasts).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' })),
     );
-    return { isListRefreshed: client.getQueryState(listQuery)?.isInvalidated };
   }
 
   describe.each(actions)('a refused $action', (action) => {
@@ -352,11 +351,10 @@ describe('PendingInvitationList', () => {
         'This item does not exist or you do not have access to it.',
       ],
     ])('closes the confirmation of an invitation %s', async (_, reply, message) => {
-      const { isListRefreshed } = await confirmRefused(action, reply);
+      await confirmRefused(action, reply);
 
       expect(toasts).toHaveBeenCalledWith({ title: message, type: 'error' });
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-      expect(isListRefreshed).toBe(true);
     });
 
     it('keeps the confirmation open to try again after any other error', async () => {
@@ -373,6 +371,46 @@ describe('PendingInvitationList', () => {
     });
   });
 
+  it('closes only the confirmation of the refused invitation', async () => {
+    // Revoking A is cancelled while it is sent and B's confirmation opened; A's refusal arrives then.
+    const answer = Promise.withResolvers<unknown>();
+    fake.client.POST.mockImplementationOnce(() => answer.promise as never);
+    const other = invitation({
+      id: '0199a3f0-0000-7000-8000-000000000051',
+      user: { id: '0199a3f0-0000-7000-8000-000000000002', email: 'b@acme.com', displayName: null },
+    });
+    const events = userEvent.setup();
+    renderInApp(
+      <PendingInvitationList
+        invitations={[invitation(), other] as never}
+        titleOf={(item) => item.user.email ?? ''}
+      />,
+    );
+
+    await events.click(
+      screen.getByRole('button', { name: 'Revoke the invitation of new@acme.com' }),
+    );
+    await events.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Revoke' }),
+    );
+    await events.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await events.click(screen.getByRole('button', { name: 'Revoke the invitation of b@acme.com' }));
+    expect(await screen.findByRole('dialog', { name: /b@acme\.com/ })).toBeTruthy();
+    answer.resolve({
+      error: problem(409, 'invitation.not_pending').error,
+      response: new Response(null, { status: 409 }),
+    });
+
+    await waitFor(() =>
+      expect(toasts).toHaveBeenCalledWith({
+        title: 'This invitation was already accepted or revoked.',
+        type: 'error',
+      }),
+    );
+    expect(screen.getByRole('dialog', { name: /b@acme\.com/ })).toBeTruthy();
+  });
+
   it('loads more invitations on request', async () => {
     const onLoadMore = vi.fn();
     const events = userEvent.setup();
@@ -381,6 +419,56 @@ describe('PendingInvitationList', () => {
     await events.click(screen.getByRole('button', { name: 'Show more' }));
 
     expect(onLoadMore).toHaveBeenCalled();
+  });
+});
+
+describe('ProjectInvitations', () => {
+  // The invitation is accepted or revoked by someone else while the confirmation is open: the
+  // refused action closes it, and the refreshed list no longer shows the invitation – the last of
+  // the project, so the whole list goes and the refusal must still be reported (#368). The project
+  // of the Members tab is read again too; its answer comes only after the list went.
+  function ProjectRead({ answer }: { answer: Promise<unknown> }) {
+    useQuery({ queryKey: ['projects', 'detail', PROJECT_ID], queryFn: () => answer });
+    return null;
+  }
+
+  it.each([
+    ['Revoke', 'revocation', 'Revoke the invitation of new@acme.com', 'Revoke'],
+    ['Copy new link', 'resending', 'Copy a new link for new@acme.com', 'Create new link'],
+  ])('reports a refused %s and drops the invitation', async (_, path, open, confirm) => {
+    const pages = [[invitation()], []];
+    fake.on('GET /api/v1/invitations', () => ({
+      data: { items: pages.shift() ?? [], nextCursor: null },
+    }));
+    fake.on(`POST /api/v1/invitations/{invitationId}/${path}`, {
+      status: 409,
+      error: { type: 'about:blank', title: 'x', status: 409, code: 'invitation.not_pending' },
+    });
+    const project = Promise.withResolvers<unknown>();
+    const events = userEvent.setup();
+    renderInApp(
+      <>
+        <ProjectInvitations projectId={PROJECT_ID} />
+        <ProjectRead answer={project.promise} />
+      </>,
+    );
+
+    await events.click(await screen.findByRole('button', { name: open }));
+    await events.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: confirm }),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Pending invitations' })).toBeNull(),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    project.resolve({});
+    await waitFor(() =>
+      expect(toasts).toHaveBeenCalledWith({
+        title: 'This invitation was already accepted or revoked.',
+        type: 'error',
+      }),
+    );
   });
 });
 

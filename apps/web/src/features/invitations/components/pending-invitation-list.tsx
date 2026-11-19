@@ -22,12 +22,13 @@ const InvitationLinkDialog = lazy(() =>
 type PendingAction = { kind: 'resend' | 'revoke'; invitation: Invitation };
 
 /**
- * Whether the API refused an action because the invitation is no longer pending (§7.4) – accepted
- * or revoked by someone else – or no longer visible (`404`, §17.2): no retry can succeed then.
+ * Whether the API refused an action that no retry can make succeed: the invitation is no longer
+ * pending (§7.4) – accepted or revoked by someone else – or no longer visible (`404`, §17.2).
  */
-function isNoLongerPending(error: unknown): boolean {
+function isNoLongerActionable(error: unknown): boolean {
   return (
-    error instanceof ApiError && (error.code === 'invitation.not_pending' || error.status === 404)
+    error instanceof ApiError &&
+    (error.code === 'invitation.not_pending' || error.code === 'request.not_found')
   );
 }
 
@@ -72,37 +73,37 @@ export function PendingInvitationList({
       ? t('invitedByUnknown')
       : t('invitedBy', { name: invitedBy.displayName });
   const showError = (error: unknown) => toast.add({ title: errorMessage(error), type: 'error' });
-  // The refusal of an action that can never succeed – the invitation was accepted or revoked
-  // meanwhile, or is no longer visible – closes its confirmation; the list then refreshes. Any
-  // other error keeps the confirmation open to try again.
-  const showRefusal = (error: unknown) => {
-    if (isNoLongerPending(error)) {
-      setPending(null);
-    }
-    showError(error);
-  };
 
   const confirm = ({ kind, invitation }: PendingAction) => {
+    // Closes the confirmation of this invitation, not one opened for another while it was sent.
+    const close = () =>
+      setPending((current) => (current?.invitation.id === invitation.id ? null : current));
+    // A refusal no retry can overcome closes the confirmation, the list then refreshing without the
+    // invitation; any other error keeps it open to try again. The message is shown either way.
+    const refuse = (error: unknown) => {
+      if (isNoLongerActionable(error)) {
+        close();
+      }
+      showError(error);
+    };
+    // Not the callbacks of `mutate`: they never run for an unmounted component, and the refreshed
+    // list removes this one when the invitation was the last – revoked, or refused as no longer
+    // pending – of an account (`pendingInvitationCount` becomes 0) or of a project.
     if (kind === 'resend') {
-      resend.mutate(invitation.id, {
-        onSuccess: (resent) => {
-          setPending(null);
-          setNewLink({
-            email: emailOf(invitation),
-            link: resent.link,
-            expiresAt: resent.invitation.expiresAt,
-          });
-        },
-        onError: showRefusal,
-      });
+      resend.mutateAsync(invitation.id).then((resent) => {
+        close();
+        setNewLink({
+          email: emailOf(invitation),
+          link: resent.link,
+          expiresAt: resent.invitation.expiresAt,
+        });
+      }, refuse);
       return;
     }
-    // Not the callbacks of `mutate`: revoking the last invitation of an account removes this list
-    // (`pendingInvitationCount` becomes 0), and they never run for an unmounted component.
     revoke.mutateAsync(invitation.id).then(() => {
-      setPending(null);
+      close();
       toast.add({ title: t('revoked'), type: 'success' });
-    }, showRefusal);
+    }, refuse);
   };
 
   return (
