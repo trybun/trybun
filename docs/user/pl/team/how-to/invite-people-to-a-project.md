@@ -31,6 +31,8 @@ Zaproszenia, których nikt jeszcze nie przyjął, są w sekcji **Oczekujące zap
 
 Zaproszenie jest odwoływane także wtedy, gdy jego projekt zostanie zarchiwizowany albo konto tej osoby zostanie dezaktywowane.
 
+Jeśli w czasie, gdy potwierdzenie było otwarte, ktoś inny przyjął albo odwołał zaproszenie, Trybun informuje o tym, zamyka potwierdzenie i usuwa zaproszenie z listy.
+
 ## Kilka zaproszeń jednej osoby
 
 Osoba może mieć zaproszenia do kilku projektów, zanim przyjmie którekolwiek. Każdy link daje tylko swój projekt i rolę. Gdy osoba ma już konto, kolejny link działa tylko wtedy, gdy jest zalogowana na to konto.
