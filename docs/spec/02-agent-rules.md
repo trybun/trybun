@@ -252,6 +252,7 @@ Keyboard shortcuts remain a desktop accelerator; every action they trigger is al
   - Stage 0: sign-in redirect (the page of the web application; the Keycloak login screen it leads to is not part of the budget), empty application shell,
   - Stage 1: portal project home, ticket creation form, ticket view (end user and team), team list view, Kanban board,
   - later stages: triage queue, roadmap, Gantt chart, SLA report.
+- The simulated LCP of the budget moves in steps between runs of one build, so it catches growth of the first load only on some runs. Every production build therefore also checks the **first load of the application shell**: the JavaScript that the `(team)`, `(portal)` and `help` layouts bring into the first load of every page under them – the files every page loads and the entry chunks of these layouts – must not contain Zod, which the shell does not need before the first paint; a page may still load it with its own chunks ([§18.5](18-code-patterns.md#185-web-application)). The check (`apps/web/scripts/check-first-load.ts`) runs after `next build` and fails the build, the same way on every run.
 
 ### Verification
 
@@ -469,7 +470,7 @@ Every pull request passes at least the following in CI:
 - accessibility tests with axe ([§13.4](13-non-functional.md)): rule tags `wcag2a`, `wcag2aa`, `wcag21aa`, `wcag22aa`; zero violations of impact `serious` or `critical`,
 - security analysis: dependency review and vulnerability audit (Rule 10), secret scanning, static application security testing (SAST), license check,
 - specification consistency check: links and `§N.M` references (Rule 8),
-- building all applications.
+- building all applications, with the first-load check of the application shell ([§2.9](#29-rule-9--designed-for-phones-and-tablets-from-the-start)).
 
 **Coverage thresholds** (Vitest, V8 coverage; E2E tests are not counted):
 

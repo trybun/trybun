@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "next build",
+    "build": "next build && node scripts/check-first-load.ts",
     "dev": "next dev",
     "lint": "eslint . && pnpm api:generate --check && node scripts/generate-help-content.ts --check",
     "typecheck": "tsc --noEmit",

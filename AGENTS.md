@@ -103,6 +103,6 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 | `pnpm lint:spec` | Specification consistency: `§N.M` references (links: lychee in CI) |
 | `pnpm format` | Format all files with Prettier |
 | `pnpm typecheck` | TypeScript strict type check |
-| `pnpm build` | Build all applications and generate the Keycloak login theme from the message catalogues |
+| `pnpm build` | Build all applications, generate the Keycloak login theme from the message catalogues and check that Zod stays out of the first load of the application shell |
 | `pnpm db:migrate` | Apply database migrations |
 | `pnpm db:seed` | Load the deterministic demo dataset |
