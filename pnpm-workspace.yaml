@@ -7,10 +7,7 @@ minimumReleaseAge: 10080
 # Security fixes skip the cooldown (§2.10); each entry pins one exact fixed version (`name@1.2.3`,
 # no `||` alternatives, which the daily advisory audit cannot check) and is removed once that version
 # is older than 7 days or no longer in the lockfile – the daily advisory audit reports it then.
-minimumReleaseAgeExclude:
-  # GHSA-g3hv-75wg-m249 (minimatch, below): the first eslint-plugin-import-x that accepts minimatch 11,
-  # whose makeRe it no longer imports.
-  - eslint-plugin-import-x@4.18.1
+minimumReleaseAgeExclude: []
 
 # Security fixes for transitive dependencies: each key pins the exact vulnerable version
 # (`name@1.2.3`), which pnpm replaces for every dependent whose range includes it. Remove an entry
@@ -56,17 +53,4 @@ peerDependencyRules:
 # each with the reason and the mitigation. Remove an entry as soon as a fixed version exists (or the
 # advisory is withdrawn) – the daily advisory audit reports it then.
 auditConfig:
-  ignoreGhsas:
-    # deepmerge >=4.2.0 <=4.3.1, prototype poisoning of the object mergeObject() returns (low); no
-    # fixed version (2026-11-12). Development only: @shadcn/registry merges registry JSON in the shadcn
-    # component CLI (Rule 6). @trybun/ui keeps shadcn in dependencies for its stylesheet
-    # (shadcn/tailwind.css, like tw-animate-css), which runs no package code.
-    - GHSA-gcqx-w48m-w2h4
-    # picomatch <=4.0.7, ReDoS through single-branch repeated extglobs such as +(*) in a glob
-    # pattern (high); no fixed version (2026-11-17, fix pending in micromatch/picomatch#194).
-    # Development only, and every pattern is the repository's own: ESLint plugins (micromatch,
-    # fast-glob, tinyglobby) match the lint configuration's globs, and the shadcn component CLI
-    # (Rule 6) its own. In @trybun/web, next-intl's message extractor compiles ignore globs through
-    # @parcel/watcher, but next.config.ts enables no extraction. No request or user input becomes a
-    # glob pattern.
-    - GHSA-fc5q-39xc-vjpf
+  ignoreGhsas: []
