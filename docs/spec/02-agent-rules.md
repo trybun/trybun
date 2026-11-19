@@ -186,7 +186,7 @@ Rule 8 is **subordinate to Rule 1** (specification-as-code, versioned and review
 New functionality and changes of behavior or requirements start with a **change specification** in `.ai/specs/` (pattern used by Cezar and the Open Mercato skills). Details: [`.ai/specs/README.md`](../../.ai/specs/README.md).
 
 - Name: `YYYY-MM-DD-slug.md`, created from `.ai/specs/TEMPLATE.md`.
-- The change specification is proposed in its own pull request. Merging it is the human approval of the change; **implementation never starts while open questions remain unanswered**.
+- The change specification is proposed in its own pull request. **Implementation starts only after that pull request is merged to `main`**: the merge is the maintainer's acceptance of the change – its decisions, its assumptions (including the defaults an agent chose autonomously) and the ADRs it introduces – so no open question remains unanswered when implementation starts. Process: [`SDLC.md`](../../SDLC.md), "Specification before implementation"; lifecycle: [`.ai/specs/README.md`](../../.ai/specs/README.md).
 - The implementation pull request updates the system specification (`docs/spec/`), marks the change specification as `implemented` and moves it to `.ai/specs/implemented/`. Abandoned or superseded specifications go to `.ai/specs/archive/` with the reason.
 - Required for tasks of the implementation plan that deliver functionality; optional for infrastructure tasks; not used for bug fixes, dependency updates and documentation-only changes.
 - The change specification never replaces the system specification: after implementation, `docs/spec/` alone must describe the system completely.
