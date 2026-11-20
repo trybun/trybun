@@ -78,6 +78,20 @@ test.describe('help', () => {
     await expect(new AppShellPage(page).navigation).toBeVisible();
   });
 
+  // The tab names the topic, then the help, after a client-side navigation and a page load (#407).
+  test('names the help and a topic in the tab', async ({ page }) => {
+    const help = new HelpPage(page);
+    await help.goto();
+    await expect(page).toHaveTitle('Help – Trybun');
+
+    await navigateInApp(page, '/help/team/tutorials/getting-started');
+    await expect(help.heading).toHaveText('Getting started for the team');
+    await expect(page).toHaveTitle('Getting started for the team – Help – Trybun');
+
+    await page.reload();
+    await expect(page).toHaveTitle('Getting started for the team – Help – Trybun');
+  });
+
   // The not-found metadata comes from `generateMetadata` of the page, so the tab title is
   // translated after a client-side navigation too (#404).
   test('translates the tab title of a missing topic after a client-side navigation', async ({

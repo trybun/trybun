@@ -118,6 +118,8 @@ test.describe('invitations', () => {
       page.getByRole('heading', { name: 'This invitation link is not valid' }),
     ).toBeVisible();
     await expect(page.getByText('Ask the person who invited you for a new link.')).toBeVisible();
+    // A public page names itself in the tab too (§13.4, #407).
+    await expect(page).toHaveTitle('Accept the invitation – Trybun');
   });
 });
 

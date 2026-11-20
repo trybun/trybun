@@ -294,6 +294,22 @@ test.describe('the portal of an end user with one project', () => {
     await expect(new AppShellPage(page).navigation).toBeVisible();
   });
 
+  // The tab names the ticket after a client-side navigation and a page load alike (§13.4, #407).
+  test('names My tickets and a ticket in the tab', async ({ page }) => {
+    const portal = new PortalPage(page);
+    await page.goto('/portal/tickets');
+    await expect(page).toHaveTitle('My tickets – Trybun');
+
+    await portal.ticket('Wrong VAT rate on the March invoice').click();
+    await expect(page).toHaveURL(/\/portal\/tickets\/CP-\d+$/);
+    const identifier = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+    const title = `${identifier} Wrong VAT rate on the March invoice – Trybun`;
+    await expect(page).toHaveTitle(title);
+
+    await page.reload();
+    await expect(page).toHaveTitle(title);
+  });
+
   // The not-found metadata comes from `generateMetadata` of the page, so the tab title is
   // translated after a client-side navigation too (#404).
   test('translates the tab title of a missing ticket after a client-side navigation', async ({
