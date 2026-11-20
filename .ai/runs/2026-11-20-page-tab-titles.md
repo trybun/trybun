@@ -1,6 +1,6 @@
 # Execution plan – a translated, descriptive tab title for every page
 
-Source doc: .ai/specs/2026-11-20-page-tab-titles.md
+Source doc: .ai/specs/implemented/2026-11-20-page-tab-titles.md
 Issue: #407 · Specification PR: #408 (merged)
 
 ## Goal
@@ -63,6 +63,6 @@ Every page of the web application gets the translated tab title of the specifica
 
 ### Phase 3: end-to-end checks, specification and docs
 
-- [ ] 3.1 E2E `toHaveTitle` per shell
-- [ ] 3.2 Specification, ADR 0015 and memory
-- [ ] 3.3 Change specification implemented
+- [x] 3.1 E2E `toHaveTitle` per shell — 77c3aaa, cb56a21
+- [x] 3.2 Specification, ADR 0015 and memory — 1151ddb, f60d84d
+- [x] 3.3 Change specification implemented — 1496c71
