@@ -10,7 +10,7 @@
 
 ## 📝 TLDR
 
-Every page of the web application has the same tab title, "Trybun", except the not-found page ("Page not found – Trybun", #404). That fails WCAG 2.2 SC 2.4.2 *Page Titled* (Level A). With this change, every page **will** show its own translated title (`error.tsx` keeps a page's title only when its render fails, see Non-goals). The page-specific part comes first and "Trybun" comes last, e.g. "CP-3 Sign-in page crashes on Safari – Trybun" or "Settings – Website – Trybun". One helper of `features/app-shell` builds every title, and the API is read no more often than today.
+Every page of the web application has the same tab title, "Trybun", except the not-found page ("Page not found – Trybun", #404). That fails WCAG 2.2 SC 2.4.2 *Page Titled* (Level A). With this change, every page **will** show its own translated title (`error.tsx` keeps a page's title only when its render fails, see Non-goals). The page-specific part comes first and "Trybun" comes last, e.g. "CP-3 Sign-in page crashes on Safari – Trybun" or "Project settings – Website – Trybun". One helper of `features/app-shell` builds every title, and the API is read no more often than today.
 
 ## 📝 Problem Statement
 
@@ -27,7 +27,10 @@ Today `app/layout.tsx` returns `title: t('title')` ("Trybun"). 12 of the 25 `pag
 
 **`{what the page shows} – {the record or section it belongs to} – Trybun`**: the most specific part comes first and "Trybun" last. Parts are separated by a spaced en dash, as in the existing "Page not found – Trybun".
 
-- The first part is the page's main heading, i.e. what its `h1` says. Inside the Administrator panel it is the section's `h2`, because the panel's `h1` is "Administration". The GOV.UK service manual uses the same rule: "The `<title>` should be based on the `<h1>`" ("Where do you live? - Register to vote - GOV.UK", [Writing for user interfaces](https://www.gov.uk/service-manual/design/writing-for-user-interfaces)). G88 asks for a title that identifies the subject, makes sense out of context and is short; naming the site is optional ([G88](https://www.w3.org/WAI/WCAG22/Techniques/general/G88)).
+- The first part is the page's main heading, i.e. what its `h1` says. Inside the Administrator panel it is the section's `h2`, because the panel's `h1` is "Administration". On a page whose `h1` names its record, the first part is the name of the view, and the record follows:
+  - On the project settings page the `h1` is the project name and the view is its subtitle `projects.settings.title` ("Project settings", `features/projects/components/project-settings.tsx`).
+  - On the resolution confirmation page the `h1` is the ticket title, and the view is a new `tabTitle` entry ("Resolution confirmation" / „Potwierdzenie rozwiązania”).
+- The GOV.UK service manual supports basing the title on the heading: "The `<title>` should be based on the `<h1>`" ("Where do you live? - Register to vote - GOV.UK", [Writing for user interfaces](https://www.gov.uk/service-manual/design/writing-for-user-interfaces)). G88 asks for a title that identifies the subject, makes sense out of context and is short; naming the site is optional ([G88](https://www.w3.org/WAI/WCAG22/Techniques/general/G88)).
 - A record page names its record. A ticket shows its identifier and its title. The maintainer decided this in Q2: the identifier alone did not describe the page well enough. Project, organization and help-topic pages show their name.
 - A middle part appears only where the heading alone is ambiguous across tabs: the project of a project-scoped page, and "Administration" for the sections of the panel.
 
@@ -38,7 +41,7 @@ Today `app/layout.tsx` returns `title: t('title')` ("Trybun"). 12 of the 25 `pag
 | `(team)/tickets/new/page.tsx` | New ticket – Trybun | Nowe zgłoszenie – Trybun |
 | `(team)/tickets/[identifier]/page.tsx` | CP-3 Sign-in page crashes on Safari – Trybun | CP-3 Sign-in page crashes on Safari – Trybun |
 | `(team)/projects/page.tsx` | Projects – Trybun | Projekty – Trybun |
-| `(team)/projects/[projectId]/settings/page.tsx` | Settings – {project} – Trybun | Ustawienia – {project} – Trybun |
+| `(team)/projects/[projectId]/settings/page.tsx` | Project settings – {project} – Trybun | Ustawienia projektu – {project} – Trybun |
 | `(team)/settings/page.tsx`, `(portal)/portal/settings/page.tsx` | {Account settings heading} – Trybun | {its PL heading} – Trybun |
 | `(team)/admin/page.tsx` | {Getting started heading} – Administration – Trybun | … – Administracja – Trybun |
 | `(team)/admin/accounts/page.tsx` | Accounts – Administration – Trybun | Konta – Administracja – Trybun |
@@ -50,7 +53,7 @@ Today `app/layout.tsx` returns `title: t('title')` ("Trybun"). 12 of the 25 `pag
 | `(portal)/portal/projects/[projectId]/tickets/new/page.tsx` | New ticket – {project} – Trybun | Nowe zgłoszenie – {project} – Trybun |
 | `(portal)/portal/tickets/page.tsx` | My tickets – Trybun | Moje zgłoszenia – Trybun |
 | `(portal)/portal/tickets/[identifier]/page.tsx` | CP-3 {title} – Trybun | CP-3 {title} – Trybun |
-| `(portal)/portal/tickets/[identifier]/resolution-confirmation/page.tsx` | {its heading} – CP-3 {title} – Trybun | … |
+| `(portal)/portal/tickets/[identifier]/resolution-confirmation/page.tsx` | Resolution confirmation – CP-3 {title} – Trybun | Potwierdzenie rozwiązania – CP-3 {title} – Trybun |
 | `help/page.tsx` | Help – Trybun | Pomoc – Trybun |
 | `help/[...slug]/page.tsx` | {topic title} – Help – Trybun | {topic title} – Pomoc – Trybun |
 | `invitations/page.tsx` | Accept the invitation – Trybun | Przyjmij zaproszenie – Trybun |
@@ -63,7 +66,7 @@ The braces stand for a heading text that already exists in the catalogues or a v
 
 ### Mechanism
 
-- **`pageTitle(...parts)`** of `features/app-shell` (server-only, beside `notFoundMetadata()`) returns `{ title: { absolute } }`. The absolute string is built with one new catalogue entry, `app.titlePart`: `"{part} – {rest}"`, the same in EN and PL, written PL first. It folds the parts from the right, ending with `app.title`. So `pageTitle(t('settings'), project.name)` gives "Settings – Website – Trybun". The translators own the separator. Record values are message arguments, inserted literally, never parsed as ICU.
+- **`pageTitle(...parts)`** of `features/app-shell` (server-only, beside `notFoundMetadata()`) returns `{ title: { absolute } }`. The absolute string is built with one new catalogue entry, `app.titlePart`: `"{part} – {rest}"`, the same in EN and PL, written PL first. It folds the parts from the right, ending with `app.title`. So `pageTitle(t('settings.title'), project.name)` gives "Project settings – Website – Trybun". The translators own the separator. Record values are message arguments, inserted literally, never parsed as ICU.
 - **Pages without a record** export a `generateMetadata` that calls `pageTitle()` with their translated heading. They read nothing.
 - **Pages with a record** keep their `cache()` loader of ADR 0014. `metadataAfterRead(read, { title, rateLimitedTitle })` takes two title sources:
   - `title: (data) => string[]` gives the parts from the read's data.
@@ -71,7 +74,7 @@ The braces stand for a heading text that already exists in the catalogues or a v
 
   A `notFound()` of the read still reaches the not-found metadata first, and `title` is never called then. So an invisible or missing record never gives its name to the tab (§14.4). On a `429` the function returns `pageTitle(...rateLimitedTitle)`, and the page shows `RateLimitedNotice`. The record is never read a second time.
 
-  For tickets, `rateLimitedTitle` is the identifier from the address, e.g. "CP-3 – Trybun". It reaches the title only after `getTicketPage()` has accepted it: the upper-case canonical form, valid against `ticketIdentifierSchema`, which runs before the API is called. So it is bounded and reveals nothing beyond the person's own input. The resolution confirmation uses "{its heading} – CP-3 – Trybun".
+  For tickets, `rateLimitedTitle` is the identifier from the address, e.g. "CP-3 – Trybun". It reaches the title only after `getTicketPage()` has accepted it: the upper-case canonical form, valid against `ticketIdentifierSchema`, which runs before the API is called. So it is bounded and reveals nothing beyond the person's own input. The resolution confirmation uses "Resolution confirmation – CP-3 – Trybun".
 - **Ticket pages** take the title from the data `getTicketPage()` already reads, through a catalogue entry `tickets.tabTitle`: `"{identifier} {title}"`.
 - **`notFoundMetadata()`** returns `pageTitle(t('tabTitle'))`, and `notFoundPage.tabTitle` drops its own " – Trybun" (EN "Page not found", PL "Nie znaleziono strony"). The visible result is unchanged.
 - **The root layout** keeps `title: t('title')` ("Trybun") as the title of what has none of its own: the `error.tsx` pages (see Non-goals) and the moment before a page's metadata streams in.
@@ -97,7 +100,7 @@ The braces stand for a heading text that already exists in the catalogues or a v
 ## 📝 Edge Cases & Failure Scenarios
 
 - **An invisible or missing record**: the read calls `notFound()` before the title function runs, so the tab shows "Page not found – Trybun". The answer is the same for "does not exist" and "may not see" (§14.4).
-- **A `429` on a record page**: the title without the record ("CP-3 – Trybun", "Settings – Trybun", "Administration – Trybun" for an organization), plus `RateLimitedNotice`. Never "Trybun" alone, never the not-found title.
+- **A `429` on a record page**: the title without the record ("CP-3 – Trybun", "Project settings – Trybun", "Administration – Trybun" for an organization), plus `RateLimitedNotice`. Never "Trybun" alone, never the not-found title.
 - **Other errors**: `metadataAfterRead()` throws them on as today.
   - An error only while the page renders keeps the page's own title over the `error.tsx` content, e.g. "Tickets – Trybun" with "Something went wrong".
   - An error of the read itself (e.g. a `500` of the API) fails the metadata too, so the tab shows the root title "Trybun". See Non-goals.
@@ -158,7 +161,7 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 - [ ] E2E `toHaveTitle`:
   - One page per shell (team ticket, portal ticket, a help topic, a public page), each checked after a page load, after a client-side navigation to it, and after a language switch on it.
   - An unmatched address after a page load, since only a full load reaches it.
-- [ ] §13.1, §13.4, §14.4 and §18.5 updated. [ADR 0015](../../docs/adr/0015-page-titles-through-absolute-metadata.md), added as `proposed` with this specification, is set to `accepted` and listed in the ADR index.
+- [ ] §13.1, §13.4, §14.4 and §18.5 updated. [ADR 0015](../../docs/adr/0015-page-titles-through-absolute-metadata.md), added as `proposed` with this specification, is set to `accepted` in the file and in the ADR index, which already lists it as `proposed`.
 - [ ] Works on phone, tablet and desktop (Rule 9): the E2E projects of all three viewports.
 - [ ] User documentation and product tours: no change. A tab title is standard browser behaviour with nothing to explain, and no tour targets it.
 
@@ -185,4 +188,4 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 
 ## Changelog
 
-- 2026-11-20 – Created (#407). Q1 and Q2 answered by the maintainer; A1–A5 resolved as autonomous defaults for review; ADR 0015 proposed. Revised after an independent review: the `429` title contract, the resolution-confirmation title, the setup title, test scope, and the `error.tsx` compromise.
+- 2026-11-20 – Created (#407). Q1 and Q2 answered by the maintainer; A1–A5 resolved as autonomous defaults for review; ADR 0015 proposed. Revised after an independent review: the `429` title contract, the resolution-confirmation title, the setup title, test scope, and the `error.tsx` compromise. Revised after the review of #408: a page whose `h1` names its record takes the view's name first (project settings, resolution confirmation).
