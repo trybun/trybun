@@ -1,3 +1,5 @@
+import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { createTranslator } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { notFoundResult } from '../../../../../../../../test/factories/not-found.factory.js';
 import { rateLimitedResult } from '../../../../../../../../test/factories/rate-limited.factory.js';
@@ -9,7 +11,10 @@ vi.mock('next/navigation.js', () => ({
   }),
   redirect: vi.fn(),
 }));
-vi.mock('next-intl/server', () => ({ getTranslations: () => Promise.resolve(() => '') }));
+vi.mock('next-intl/server', () => ({
+  getTranslations: (namespace: never) =>
+    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+}));
 const requireSession = vi.fn();
 vi.mock('../../../../../../../lib/auth/session.js', () => ({ requireSession }));
 const GET = vi.fn();
@@ -45,6 +50,14 @@ describe('NewTicketPage of the portal', () => {
 // The not-found reaches the metadata, so the tab shows the translated not-found title after a
 // client-side navigation too (#404).
 describe('generateMetadata of the new ticket page', () => {
+  it('names the view and then the project in the tab', async () => {
+    GET.mockResolvedValue({ data: { id: PROJECT_ID, name: 'Website' }, response: new Response() });
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
+    ).resolves.toEqual({ title: { absolute: 'New ticket – Website – Trybun' } });
+  });
+
   it('is not found for a project the end user cannot read', async () => {
     GET.mockImplementation(notFoundResult);
 
@@ -54,11 +67,11 @@ describe('generateMetadata of the new ticket page', () => {
     expect(requireSession).toHaveBeenCalledOnce();
   });
 
-  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+  it('names the page without the project for a person over the rate limit', async () => {
     GET.mockImplementation(rateLimitedResult);
 
     await expect(
       generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
-    ).resolves.toEqual({});
+    ).resolves.toEqual({ title: { absolute: 'New ticket – Trybun' } });
   });
 });

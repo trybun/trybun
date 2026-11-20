@@ -229,8 +229,10 @@ describe('generateMetadata of the Organizations page', () => {
     GET.mockImplementation((path: string) => respond(path));
   });
 
-  it('keeps the metadata of the layouts for the Administrator', async () => {
-    await expect(organizationsMetadata()).resolves.toEqual({});
+  it('names the section of the Administrator panel in the tab', async () => {
+    await expect(organizationsMetadata()).resolves.toEqual({
+      title: { absolute: 'Organizations – Administration – Trybun' },
+    });
     expect(requireSession).toHaveBeenCalledWith();
   });
 
@@ -240,10 +242,12 @@ describe('generateMetadata of the Organizations page', () => {
     await expect(organizationsMetadata()).rejects.toThrow('NEXT_NOT_FOUND');
   });
 
-  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+  it('names the section for a person over the rate limit too', async () => {
     GET.mockImplementation(() => rateLimited());
 
-    await expect(organizationsMetadata()).resolves.toEqual({});
+    await expect(organizationsMetadata()).resolves.toEqual({
+      title: { absolute: 'Organizations – Administration – Trybun' },
+    });
   });
 });
 
@@ -263,15 +267,15 @@ describe('generateMetadata of the organization page', () => {
     ).rejects.toThrow('NEXT_NOT_FOUND');
   });
 
-  it('keeps the metadata of the layouts for an organization or a person over the rate limit', async () => {
+  it('names the organization in the tab, and only the panel for a person over the rate limit', async () => {
     GET.mockImplementation((path: string) => respond(path));
     await expect(
       organizationMetadata({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) }),
-    ).resolves.toEqual({});
+    ).resolves.toEqual({ title: { absolute: 'Acme – Administration – Trybun' } });
 
     GET.mockImplementation(() => rateLimited());
     await expect(
       organizationMetadata({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) }),
-    ).resolves.toEqual({});
+    ).resolves.toEqual({ title: { absolute: 'Administration – Trybun' } });
   });
 });

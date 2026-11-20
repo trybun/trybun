@@ -318,6 +318,7 @@
     }
   },
   "tickets": {
+    "tabTitle": "{identifier} {title}",
     "statuses": {
       "new": "Nowe",
       "triage": "Do analizy",
@@ -1050,6 +1051,7 @@
       "customer": "Klient"
     },
     "confirmation": {
+      "tabTitle": "Potwierdzenie rozwiązania",
       "other": "Zamiast tego wybierz drugą odpowiedź: {answer}",
       "notPending": "To zgłoszenie nie czeka już na Twoje potwierdzenie.",
       "openTicket": "Otwórz zgłoszenie"

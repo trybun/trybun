@@ -61,27 +61,50 @@ describe('getServerApiClient', () => {
 });
 
 describe('metadataAfterRead', () => {
-  it('keeps the metadata of the layouts for a record the page shows', async () => {
-    await expect(metadataAfterRead(Promise.resolve({ id: 'p1' }))).resolves.toEqual({});
+  const titles = () => ({
+    title: vi.fn((project: { name: string }) =>
+      Promise.resolve({ title: { absolute: `${project.name} – Trybun` } }),
+    ),
+    rateLimitedTitle: vi.fn(() => Promise.resolve({ title: { absolute: 'Projects – Trybun' } })),
   });
 
-  // The not-found reaches the metadata, so Next.js serves the not-found title of the tab (#404).
-  it('throws the not-found of the read on', async () => {
-    const notFound = new Error('NEXT_HTTP_ERROR_FALLBACK;404');
+  it('names the record the page shows in the title of the tab', async () => {
+    const metadata = titles();
 
-    await expect(metadataAfterRead(Promise.reject(notFound))).rejects.toBe(notFound);
+    await expect(
+      metadataAfterRead(Promise.resolve({ name: 'Website' }), metadata),
+    ).resolves.toEqual({ title: { absolute: 'Website – Trybun' } });
+    expect(metadata.title).toHaveBeenCalledWith({ name: 'Website' });
+    expect(metadata.rateLimitedTitle).not.toHaveBeenCalled();
+  });
+
+  // The not-found reaches the metadata, so Next.js serves the not-found title of the tab (#404),
+  // and no part of a record the person may not see reaches it (§14.4).
+  it('throws the not-found of the read on, without a title', async () => {
+    const notFound = new Error('NEXT_HTTP_ERROR_FALLBACK;404');
+    const metadata = titles();
+
+    await expect(metadataAfterRead(Promise.reject(notFound), metadata)).rejects.toBe(notFound);
+    expect(metadata.title).not.toHaveBeenCalled();
+    expect(metadata.rateLimitedTitle).not.toHaveBeenCalled();
   });
 
   // The page shows `RateLimitedNotice` for a `429`, never the not-found page (#356).
-  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+  it('names the page without the record for a person over the rate limit', async () => {
     const rateLimited = new ApiError(429, 'request.rate_limited', [], 30);
+    const metadata = titles();
 
-    await expect(metadataAfterRead(Promise.reject(rateLimited))).resolves.toEqual({});
+    await expect(metadataAfterRead(Promise.reject(rateLimited), metadata)).resolves.toEqual({
+      title: { absolute: 'Projects – Trybun' },
+    });
+    expect(metadata.title).not.toHaveBeenCalled();
   });
 
   it('throws every other error on, as the page does', async () => {
     const error = new ApiError(500, 'server.internal_error');
+    const metadata = titles();
 
-    await expect(metadataAfterRead(Promise.reject(error))).rejects.toBe(error);
+    await expect(metadataAfterRead(Promise.reject(error), metadata)).rejects.toBe(error);
+    expect(metadata.title).not.toHaveBeenCalled();
   });
 });

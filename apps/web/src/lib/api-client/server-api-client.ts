@@ -70,10 +70,21 @@ export async function readOrRateLimited<T>(
  * read of the page – memoized with React `cache()`, so the page and its metadata share one read –
  * and a `notFound()` of the read then reaches the metadata, where Next.js 16 serves the metadata of
  * the `not-found.tsx` for a page load and a client-side navigation alike. A `notFound()` the page
- * calls only while rendering keeps the metadata of its layouts. A `429` keeps them too, as the page
- * shows `RateLimitedNotice`; every other error is thrown on, as the page throws it.
+ * calls only while rendering keeps the metadata of its layouts. Every error other than a `429` is
+ * thrown on, as the page throws it.
+ *
+ * The tab title (§13.4): `title` names the record from the data of the read, and runs only after
+ * the read was found – so an invisible record never reaches the metadata (§14.4); on a `429`,
+ * which the page shows as `RateLimitedNotice`, `rateLimitedTitle` names the page without the
+ * record, which was not read.
  */
-export async function metadataAfterRead(read: Promise<unknown>): Promise<Metadata> {
-  await readOrRateLimited(read);
-  return {};
+export async function metadataAfterRead<T>(
+  read: Promise<T>,
+  {
+    title,
+    rateLimitedTitle,
+  }: { title: (data: T) => Promise<Metadata>; rateLimitedTitle: () => Promise<Metadata> },
+): Promise<Metadata> {
+  const { data, rateLimited } = await readOrRateLimited(read);
+  return rateLimited === undefined ? title(data) : rateLimitedTitle();
 }

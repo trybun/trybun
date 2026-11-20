@@ -200,10 +200,12 @@ describe('AccountsPage', () => {
 // The not-found reaches the metadata, so the tab shows the translated not-found title after a
 // client-side navigation too (#404).
 describe('generateMetadata of the Accounts page', () => {
-  it('keeps the metadata of the layouts for the Administrator', async () => {
+  it('names the section of the Administrator panel in the tab', async () => {
     GET.mockImplementation((path: string) => respond(path, ['open_administration']));
 
-    await expect(generateMetadata()).resolves.toEqual({});
+    await expect(generateMetadata()).resolves.toEqual({
+      title: { absolute: 'Accounts – Administration – Trybun' },
+    });
     expect(requireSession).toHaveBeenCalledWith();
   });
 

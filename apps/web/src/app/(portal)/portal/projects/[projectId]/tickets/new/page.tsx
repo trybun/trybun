@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
 import { RateLimitedNotice } from '../../../../../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../../../../../features/app-shell/page-title.js';
 import { portalProjectHref } from '../../../../../../../features/portal/hrefs.js';
 import { loadPortalProject } from '../../../../../../../features/portal/project-page.js';
 import { NewTicketForm } from '../../../../../../../features/tickets/components/new-ticket-form.js';
@@ -18,7 +19,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ projectId: string }>;
 }): Promise<Metadata> {
-  return metadataAfterRead(loadPortalProject((await params).projectId));
+  const [{ projectId }, t] = await Promise.all([params, getTranslations('portal.newTicket')]);
+  return metadataAfterRead(loadPortalProject(projectId), {
+    title: (project) => pageTitle(t('heading'), project.name),
+    rateLimitedTitle: () => pageTitle(t('heading')),
+  });
 }
 
 /**

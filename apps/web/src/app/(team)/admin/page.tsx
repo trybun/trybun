@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { cache } from 'react';
 import { GettingStartedChecklist } from '../../../features/administration/components/getting-started-checklist.js';
 import { RateLimitedNotice } from '../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../features/app-shell/page-title.js';
 import {
   dataOrNotFound,
   getServerApiClient,
@@ -21,8 +23,10 @@ const loadGettingStarted = cache(async () => {
 });
 
 /** A person who is not the Administrator gets the translated not-found title of the tab (#404). */
-export function generateMetadata(): Promise<Metadata> {
-  return metadataAfterRead(loadGettingStarted());
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('administration');
+  const title = () => pageTitle(t('gettingStarted'), t('title'));
+  return metadataAfterRead(loadGettingStarted(), { title, rateLimitedTitle: title });
 }
 
 /**

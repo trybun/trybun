@@ -318,6 +318,7 @@
     }
   },
   "tickets": {
+    "tabTitle": "{identifier} {title}",
     "statuses": {
       "new": "New",
       "triage": "Triage",
@@ -1050,6 +1051,7 @@
       "customer": "Customer"
     },
     "confirmation": {
+      "tabTitle": "Resolution confirmation",
       "other": "Choose the other answer instead: {answer}",
       "notPending": "This ticket no longer waits for your confirmation.",
       "openTicket": "Open the ticket"

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation.js';
-import { getLocale } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
+import { pageTitle } from '../../../features/app-shell/page-title.js';
 import { HelpArticle } from '../../../features/help/components/help-article.js';
 import { getHelpPage } from '../../../features/help/help-content.js';
 import { getHelpReaderKind } from '../../../features/help/reader.js';
@@ -39,8 +40,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string[] }>;
 }): Promise<Metadata> {
-  await findHelpPage(params);
-  return {};
+  const [page, t] = await Promise.all([findHelpPage(params), getTranslations('help')]);
+  return pageTitle(page.title, t('title'));
 }
 
 /** A help page (§2.3). */

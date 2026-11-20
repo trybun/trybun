@@ -166,13 +166,18 @@ describe('Administrator panel', () => {
 // The not-found reaches the metadata, so the tab shows the translated not-found title after a
 // client-side navigation too (#404).
 describe.each([
-  ['the checklist', gettingStartedMetadata, '/api/v1/administration/getting-started'],
-  ['About', aboutMetadata, '/api/v1/administration/about'],
-])('generateMetadata of %s', (_case, generateMetadata, path) => {
-  it('reads as the page does and keeps the metadata of the layouts', async () => {
+  [
+    'the checklist',
+    gettingStartedMetadata,
+    '/api/v1/administration/getting-started',
+    'Getting started – Administration – Trybun',
+  ],
+  ['About', aboutMetadata, '/api/v1/administration/about', 'About – Administration – Trybun'],
+])('generateMetadata of %s', (_case, generateMetadata, path, title) => {
+  it('reads as the page does and names its section in the tab', async () => {
     GET.mockReturnValue(ok({ items: [] }));
 
-    await expect(generateMetadata()).resolves.toEqual({});
+    await expect(generateMetadata()).resolves.toEqual({ title: { absolute: title } });
     expect(GET).toHaveBeenCalledWith(path);
   });
 
