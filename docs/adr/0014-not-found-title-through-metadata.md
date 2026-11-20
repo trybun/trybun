@@ -34,7 +34,7 @@ How does a not-found page get its translated tab title on every way it is reache
 
 - Good: the title is translated on a page load, a client-side navigation and a language switch alike, with one `<title>` in the document.
 - Good: the read is not repeated – the API log shows one read per request.
-- Bad: every page that can be not found needs its `generateMetadata`; `app/not-found-metadata.spec.ts` fails for a page that calls a not-found read without one.
+- Bad: every page that can be not found needs its `generateMetadata`; `app/not-found-metadata.spec.ts` fails for a page that calls a not-found read without one. Since #407 every page has a `generateMetadata` for its tab title, and `app/page-titles.spec.ts` replaces that scan ([ADR 0015](0015-page-titles-through-absolute-metadata.md)).
 - Bad: when a record disappears in the browser, the content area is empty for the round trip of the refresh before the not-found page shows.
 
 ## Pros and cons of the other options

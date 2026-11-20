@@ -58,7 +58,7 @@ Today `app/layout.tsx` returns `title: t('title')` ("Trybun"). 12 of the 25 `pag
 | `help/[...slug]/page.tsx` | {topic title} – Help – Trybun | {topic title} – Pomoc – Trybun |
 | `invitations/page.tsx` | Accept the invitation – Trybun | Przyjmij zaproszenie – Trybun |
 | `setup/page.tsx` | Setup – Trybun | Konfiguracja – Trybun |
-| `sign-in/page.tsx` | {Sign-in heading} – Trybun | … – Trybun |
+| `sign-in/page.tsx` | Sign in – Trybun (`signIn.tabTitle`) | Logowanie – Trybun |
 | every `not-found.tsx` | Page not found – Trybun | Nie znaleziono strony – Trybun |
 | `(team)/projects/[projectId]/page.tsx` | – (only redirects to `/`, never rendered) | – |
 
@@ -94,13 +94,13 @@ The braces stand for a heading text that already exists in the catalogues or a v
 - `features/app-shell`: `pageTitle()`, beside `notFoundMetadata()` (new code, server-only).
 - `lib/api-client/server-api-client.ts`: `metadataAfterRead()` takes the title function (changed). Its 12 callers pass one.
 - 12 pages gain a `generateMetadata` (none of them reads the API in it); the redirect-only `(team)/projects/[projectId]` needs none. The 12 existing ones return a title. `help/[...slug]` returns the topic title from `findHelpPage()`, which reads bundled content and makes no API call.
-- `@trybun/i18n`: `app.titlePart`, `tickets.tabTitle`, the changed `notFoundPage.tabTitle`, and any missing heading keys, PL first.
+- `@trybun/i18n`: `app.titlePart`, `tickets.tabTitle`, `portal.confirmation.tabTitle`, `setup.tabTitle` and `signIn.tabTitle`, PL first; `notFoundPage.tabTitle` is removed.
 - No API, schema or contract change. Next.js renders the title on the server for a page load, and resolves the metadata again on a client-side navigation and on the `router.refresh()` of a language switch. ADR 0014 verified both paths for the not-found title, so translated titles follow both.
 
 ## 📝 Edge Cases & Failure Scenarios
 
 - **An invisible or missing record**: the read calls `notFound()` before the title function runs, so the tab shows "Page not found – Trybun". The answer is the same for "does not exist" and "may not see" (§14.4).
-- **A `429` on a record page**: the title without the record ("CP-3 – Trybun", "Project settings – Trybun", "Administration – Trybun" for an organization), plus `RateLimitedNotice`. Never "Trybun" alone, never the not-found title.
+- **A `429` on a record page**: the title without the record ("CP-3 – Trybun", "Project settings – Trybun", "Administration – Trybun" for an organization, "Your projects – Trybun" for the project home of the portal, the section it belongs to), plus `RateLimitedNotice`. Never "Trybun" alone, never the not-found title.
 - **Other errors**: `metadataAfterRead()` throws them on as today.
   - An error only while the page renders keeps the page's own title over the `error.tsx` content, e.g. "Tickets – Trybun" with "Something went wrong".
   - An error of the read itself (e.g. a `500` of the API) fails the metadata too, so the tab shows the root title "Trybun". See Non-goals.
@@ -170,7 +170,7 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 ### Phase 1 – the helper and the static pages
 
 1. Add `app.titlePart` (PL, then EN) and `pageTitle()` to `features/app-shell`, with unit tests: one part, two parts, record values with `{`, `$&` and `%s`.
-2. Change `notFoundPage.tabTitle` to the bare text, make `notFoundMetadata()` return `pageTitle(t('tabTitle'))`, and keep the not-found E2E of #406 green.
+2. Remove `notFoundPage.tabTitle`, make `notFoundMetadata()` return `pageTitle(t('title'))` (the heading), and keep the not-found E2E of #406 green.
 3. Add `generateMetadata` with `pageTitle()` to the 12 pages that read nothing for their title, adding the missing heading keys. Add a unit test per page.
 4. Add `app/page-titles.spec.ts`, the scan over every `page.tsx`, and remove the scan it replaces from `not-found-metadata.spec.ts`.
 
