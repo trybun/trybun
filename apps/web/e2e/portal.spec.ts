@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
+import { navigateInApp } from './client-navigation.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { PortalPage } from './pages/portal.page.js';
 import { TicketPage } from './pages/ticket.page.js';
@@ -291,6 +292,19 @@ test.describe('the portal of an end user with one project', () => {
       '/portal',
     );
     await expect(new AppShellPage(page).navigation).toBeVisible();
+  });
+
+  // The not-found metadata comes from `generateMetadata` of the page, so the tab title is
+  // translated after a client-side navigation too (#404).
+  test('translates the tab title of a missing ticket after a client-side navigation', async ({
+    page,
+  }) => {
+    await page.goto('/portal');
+
+    await navigateInApp(page, '/portal/tickets/CP-999999');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+    await expect(page).toHaveTitle('Page not found – Trybun');
   });
 });
 

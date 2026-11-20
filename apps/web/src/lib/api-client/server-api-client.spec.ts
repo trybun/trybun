@@ -10,7 +10,8 @@ for (const [name, value] of Object.entries(TEST_ENV)) {
   vi.stubEnv(name, value);
 }
 
-const { getServerApiClient } = await import('./server-api-client.js');
+const { getServerApiClient, metadataAfterRead } = await import('./server-api-client.js');
+const { ApiError } = await import('../errors/api-error.js');
 
 describe('getServerApiClient', () => {
   const requests: Request[] = [];
@@ -56,5 +57,31 @@ describe('getServerApiClient', () => {
     await (await getServerApiClient()).GET('/api/v1/setup');
 
     expect(requests[0]?.headers.get('x-forwarded-for')).toBe('203.0.113.7');
+  });
+});
+
+describe('metadataAfterRead', () => {
+  it('keeps the metadata of the layouts for a record the page shows', async () => {
+    await expect(metadataAfterRead(Promise.resolve({ id: 'p1' }))).resolves.toEqual({});
+  });
+
+  // The not-found reaches the metadata, so Next.js serves the not-found title of the tab (#404).
+  it('throws the not-found of the read on', async () => {
+    const notFound = new Error('NEXT_HTTP_ERROR_FALLBACK;404');
+
+    await expect(metadataAfterRead(Promise.reject(notFound))).rejects.toBe(notFound);
+  });
+
+  // The page shows `RateLimitedNotice` for a `429`, never the not-found page (#356).
+  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+    const rateLimited = new ApiError(429, 'request.rate_limited', [], 30);
+
+    await expect(metadataAfterRead(Promise.reject(rateLimited))).resolves.toEqual({});
+  });
+
+  it('throws every other error on, as the page does', async () => {
+    const error = new ApiError(500, 'server.internal_error');
+
+    await expect(metadataAfterRead(Promise.reject(error))).rejects.toBe(error);
   });
 });

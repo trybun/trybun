@@ -22,7 +22,7 @@ export default function RootNotFound() {
     <>
       <PublicHeader />
       <main className="mx-auto flex max-w-lg flex-col p-4 pt-12">
-        <NotFoundNotice home="/" withTabTitle={false} />
+        <NotFoundNotice home="/" />
       </main>
     </>
   );

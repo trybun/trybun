@@ -1,14 +1,35 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import type { Metadata } from 'next';
+import { cache } from 'react';
 import { z } from 'zod';
 import { RateLimitedNotice } from '../../../../features/app-shell/components/rate-limited-notice.js';
 import { TeamTicketView } from '../../../../features/tickets/components/team-ticket-view.js';
 import { getTicketPage } from '../../../../features/tickets/ticket-page.js';
-import { readOrRateLimited } from '../../../../lib/api-client/server-api-client.js';
+import {
+  metadataAfterRead,
+  readOrRateLimited,
+} from '../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../lib/auth/session.js';
 import { getEnv } from '../../../../lib/env/env.js';
 import { getServerQueryClient } from '../../../../lib/query-client/server-query-client.js';
 
 const paramsSchema = z.object({ identifier: z.string() });
+
+/** The read of the page, shared with its metadata in one request. */
+const loadTicket = cache(async (identifier: string) => {
+  await requireSession();
+  return getTicketPage(identifier, 'team');
+});
+
+/** A missing or invisible ticket gets the translated not-found title of the tab (#404). */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ identifier: string }>;
+}): Promise<Metadata> {
+  const { identifier } = paramsSchema.parse(await params);
+  return metadataAfterRead(loadTicket(identifier));
+}
 
 /**
  * A ticket in the team ticket view (§3.2, §4.5, change specification of S1-10). The loader sends a
@@ -17,8 +38,7 @@ const paramsSchema = z.object({ identifier: z.string() });
  */
 export default async function TicketPage({ params }: { params: Promise<{ identifier: string }> }) {
   const { identifier } = paramsSchema.parse(await params);
-  await requireSession();
-  const { rateLimited } = await readOrRateLimited(getTicketPage(identifier, 'team'));
+  const { rateLimited } = await readOrRateLimited(loadTicket(identifier));
   if (rateLimited !== undefined) {
     return <RateLimitedNotice error={rateLimited} />;
   }

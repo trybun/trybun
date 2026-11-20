@@ -30,8 +30,9 @@ const notFound = vi.fn(() => {
 vi.mock('next/navigation.js', () => ({ notFound }));
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 
-const { default: GettingStartedPage } = await import('./page.js');
-const { default: AboutPage } = await import('./about/page.js');
+const { default: GettingStartedPage, generateMetadata: gettingStartedMetadata } =
+  await import('./page.js');
+const { default: AboutPage, generateMetadata: aboutMetadata } = await import('./about/page.js');
 
 /** The HTML of a Server Component tree with async children. */
 async function render(element: ReactElement): Promise<string> {
@@ -159,5 +160,30 @@ describe('Administrator panel', () => {
     expect(notFound).not.toHaveBeenCalled();
     expect(html).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
     expect(html).toContain('Try again in 30 seconds.');
+  });
+});
+
+// The not-found reaches the metadata, so the tab shows the translated not-found title after a
+// client-side navigation too (#404).
+describe.each([
+  ['the checklist', gettingStartedMetadata, '/api/v1/administration/getting-started'],
+  ['About', aboutMetadata, '/api/v1/administration/about'],
+])('generateMetadata of %s', (_case, generateMetadata, path) => {
+  it('reads as the page does and keeps the metadata of the layouts', async () => {
+    GET.mockReturnValue(ok({ items: [] }));
+
+    await expect(generateMetadata()).resolves.toEqual({});
+    expect(GET).toHaveBeenCalledWith(path);
+  });
+
+  it('is not found for a person who is not an Administrator', async () => {
+    GET.mockReturnValue(
+      Promise.resolve({
+        error: { type: 'about:blank', title: 'Not Found', status: 404, code: 'request.not_found' },
+        response: new Response(null, { status: 404 }),
+      }),
+    );
+
+    await expect(generateMetadata()).rejects.toThrow('NEXT_NOT_FOUND');
   });
 });

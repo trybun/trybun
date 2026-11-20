@@ -17,7 +17,7 @@ const notFound = vi.fn(() => {
 vi.mock('next/navigation.js', () => ({ notFound }));
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 
-const { default: HelpTopicPage } = await import('./page.js');
+const { default: HelpTopicPage, generateMetadata } = await import('./page.js');
 
 function render(element: ReactElement, locale: 'en' | 'pl') {
   return renderToStaticMarkup(
@@ -71,4 +71,30 @@ describe('HelpTopicPage', () => {
       await expect(HelpTopicPage(params(...slug))).rejects.toThrow('NEXT_NOT_FOUND');
     },
   );
+});
+
+// The not-found reaches the metadata, so the tab shows the translated not-found title after a
+// client-side navigation too (#404).
+describe('generateMetadata of a help page', () => {
+  beforeEach(() => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    getLocale.mockResolvedValue('en');
+  });
+
+  it('keeps the metadata of the layouts for a page the reader receives', async () => {
+    getHelpReaderKind.mockResolvedValue('team');
+
+    await expect(generateMetadata(params('team', 'tutorials', 'getting-started'))).resolves.toEqual(
+      {},
+    );
+  });
+
+  it.each([
+    ['a page for the team, for an end user', ['team', 'tutorials', 'getting-started']],
+    ['an address that is no help page', ['no-such-topic']],
+  ])('is not found for %s', async (_case, slug) => {
+    getHelpReaderKind.mockResolvedValue('end_user');
+
+    await expect(generateMetadata(params(...slug))).rejects.toThrow('NEXT_NOT_FOUND');
+  });
 });

@@ -14,10 +14,13 @@ vi.mock('next-intl/server', () => ({
 }));
 vi.mock('next/image', () => ({ default: (props: ComponentProps<'img'>) => <img {...props} /> }));
 
-const { default: RootNotFound, generateMetadata } = await import('./not-found.js');
-const { default: TeamNotFound } = await import('./(team)/not-found.js');
-const { default: PortalNotFound } = await import('./(portal)/not-found.js');
-const { default: HelpNotFound } = await import('./help/not-found.js');
+const { default: RootNotFound, generateMetadata: rootMetadata } = await import('./not-found.js');
+const { default: TeamNotFound, generateMetadata: teamMetadata } =
+  await import('./(team)/not-found.js');
+const { default: PortalNotFound, generateMetadata: portalMetadata } =
+  await import('./(portal)/not-found.js');
+const { default: HelpNotFound, generateMetadata: helpMetadata } =
+  await import('./help/not-found.js');
 
 /**
  * Renders a not-found page on the server, as Next.js does, under the client messages of the root
@@ -77,6 +80,27 @@ const TAB_TITLES = [
   ['pl', 'Nie znaleziono strony – Trybun'],
 ] as const;
 
+// Next.js reads the metadata of a `not-found.tsx` for an unmatched address and for a page whose
+// `generateMetadata` calls `notFound()` – on a page load, a client-side navigation and a language
+// switch alike, which a `<title>` element of the page would not cover (#404).
+describe.each([
+  ['the root', RootNotFound, rootMetadata],
+  ['the team views', TeamNotFound, teamMetadata],
+  ['the portal', PortalNotFound, portalMetadata],
+  ['the help', HelpNotFound, helpMetadata],
+] as const)('not-found.tsx of %s', (_, page, generateMetadata) => {
+  it.each(TAB_TITLES)(
+    'translates the title of the browser tab in its metadata, without a second title (%s)',
+    async (language, title) => {
+      locale = language;
+
+      expect(await generateMetadata()).toEqual({ title });
+      await renderNotFoundPage(page);
+      expect(document.querySelector('title')).toBeNull();
+    },
+  );
+});
+
 describe('not-found.tsx of the root', () => {
   it('is a page of its own with the header of the public pages, as no shell renders around it', async () => {
     await renderNotFoundPage(RootNotFound);
@@ -84,37 +108,9 @@ describe('not-found.tsx of the root', () => {
     expect(screen.getByRole('banner').textContent).toContain('Trybun');
     expect(screen.getByRole('main').contains(screen.getByRole('heading', { level: 1 }))).toBe(true);
   });
-
-  // Next.js reads the metadata of `app/not-found.tsx` for an unmatched address.
-  it.each(TAB_TITLES)(
-    'translates the title of the browser tab in its metadata, without a second title (%s)',
-    async (language, title) => {
-      locale = language;
-
-      expect(await generateMetadata()).toEqual({ title });
-      await renderNotFoundPage(RootNotFound);
-      expect(document.querySelector('title')).toBeNull();
-    },
-  );
 });
 
 describe('not-found.tsx inside the application shell', () => {
-  // `notFound()` of a page keeps the metadata of its layouts: React moves the element into the
-  // `<head>`, as for the 404 page of Next.js.
-  describe.each([
-    ['the team views', TeamNotFound],
-    ['the portal', PortalNotFound],
-    ['the help', HelpNotFound],
-  ] as const)('of %s', (_, page) => {
-    it.each(TAB_TITLES)('translates the title of the browser tab (%s)', async (language, title) => {
-      locale = language;
-
-      await renderNotFoundPage(page);
-
-      expect(document.querySelector('title')?.textContent).toBe(title);
-    });
-  });
-
   it.each([TeamNotFound, PortalNotFound, HelpNotFound])(
     'adds no header or main area, as the shell around it has them',
     async (page) => {

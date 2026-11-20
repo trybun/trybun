@@ -1,4 +1,16 @@
-import { NotFoundNotice } from '../../features/app-shell/components/not-found-notice.js';
+import type { Metadata } from 'next';
+import {
+  NotFoundNotice,
+  notFoundMetadata,
+} from '../../features/app-shell/components/not-found-notice.js';
+
+/**
+ * The translated tab title: Next.js reads this metadata for a page whose `generateMetadata` calls
+ * `notFound()` (#404).
+ */
+export function generateMetadata(): Promise<Metadata> {
+  return notFoundMetadata();
+}
 
 /**
  * `notFound()` of a team view (§18.5, #401) – a ticket, a project or a record of the

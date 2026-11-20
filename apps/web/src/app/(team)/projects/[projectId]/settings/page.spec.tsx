@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { notFoundResult } from '../../../../../../test/factories/not-found.factory.js';
 import { rateLimitedResult } from '../../../../../../test/factories/rate-limited.factory.js';
 
 vi.mock('server-only', () => ({}));
@@ -14,7 +15,7 @@ vi.mock('../../../../../lib/api-client/server-api-client.js', async (importOrigi
   getServerApiClient: () => Promise.resolve({ GET }),
 }));
 
-const { default: ProjectSettingsPage } = await import('./page.js');
+const { default: ProjectSettingsPage, generateMetadata } = await import('./page.js');
 const { RateLimitedNotice } =
   await import('../../../../../features/app-shell/components/rate-limited-notice.js');
 
@@ -52,5 +53,33 @@ describe('ProjectSettingsPage', () => {
     });
 
     await expect(render()).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+});
+
+// The not-found reaches the metadata, so the tab shows the translated not-found title after a
+// client-side navigation too (#404).
+describe('generateMetadata of the project settings', () => {
+  it('is not found for a project the person cannot see', async () => {
+    GET.mockImplementation(notFoundResult);
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(requireSession).toHaveBeenCalledOnce();
+  });
+
+  it('is not found for an address that is not a project ID, without reading', async () => {
+    await expect(
+      generateMetadata({ params: Promise.resolve({ projectId: 'no-project' }) }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(GET).not.toHaveBeenCalled();
+  });
+
+  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+    GET.mockImplementation(rateLimitedResult);
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
+    ).resolves.toEqual({});
   });
 });

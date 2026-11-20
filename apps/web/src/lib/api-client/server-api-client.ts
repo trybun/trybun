@@ -1,4 +1,5 @@
 import 'server-only';
+import type { Metadata } from 'next';
 import { headers } from 'next/headers.js';
 import { notFound } from 'next/navigation.js';
 import createClient from 'openapi-fetch';
@@ -62,4 +63,17 @@ export async function readOrRateLimited<T>(
     }
     throw error;
   }
+}
+
+/**
+ * The `generateMetadata` of a page that can show the not-found page (§18.5, #404): it awaits the
+ * read of the page – memoized with React `cache()`, so the page and its metadata share one read –
+ * and a `notFound()` of the read then reaches the metadata, where Next.js 16 serves the metadata of
+ * the `not-found.tsx` for a page load and a client-side navigation alike. A `notFound()` the page
+ * calls only while rendering keeps the metadata of its layouts. A `429` keeps them too, as the page
+ * shows `RateLimitedNotice`; every other error is thrown on, as the page throws it.
+ */
+export async function metadataAfterRead(read: Promise<unknown>): Promise<Metadata> {
+  await readOrRateLimited(read);
+  return {};
 }

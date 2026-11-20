@@ -4,8 +4,10 @@ import { buttonVariants } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
 import { ArchiveIcon, PlusIcon } from 'lucide-react';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
+import { cache } from 'react';
 import { z } from 'zod';
 import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
 import { myTicketsHref, newTicketHref } from '../../../../../features/portal/hrefs.js';
@@ -14,6 +16,7 @@ import { MyTicketsList } from '../../../../../features/tickets/components/my-tic
 import { myTicketsQueryOptions } from '../../../../../features/tickets/queries.js';
 import {
   getServerApiClient,
+  metadataAfterRead,
   readOrRateLimited,
 } from '../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
@@ -23,6 +26,28 @@ import { getServerQueryClient } from '../../../../../lib/query-client/server-que
 const PROJECT_HOME_TICKETS = 10;
 
 const paramsSchema = z.object({ projectId: z.uuid() });
+
+/**
+ * The read of the page, shared with its metadata in one request: an address that is not a project
+ * ID and a project the end user cannot read are not found.
+ */
+const loadProject = cache(async (projectId: string) => {
+  const parsed = paramsSchema.safeParse({ projectId });
+  if (!parsed.success) {
+    notFound();
+  }
+  await requireSession();
+  return getPortalProject(parsed.data.projectId);
+});
+
+/** A missing or invisible project gets the translated not-found title of the tab (#404). */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}): Promise<Metadata> {
+  return metadataAfterRead(loadProject((await params).projectId));
+}
 
 /**
  * The project home of the portal (§5.7): the project name, **Create ticket** – the first of the two
@@ -35,14 +60,10 @@ export default async function PortalProjectPage({
 }: {
   params: Promise<{ projectId: string }>;
 }) {
-  const parsed = paramsSchema.safeParse(await params);
-  if (!parsed.success) {
-    notFound();
-  }
-  await requireSession();
+  const { projectId } = await params;
   const [t, { data: project, rateLimited }, client] = await Promise.all([
     getTranslations('portal.projectHome'),
-    readOrRateLimited(getPortalProject(parsed.data.projectId)),
+    readOrRateLimited(loadProject(projectId)),
     getServerApiClient(),
   ]);
   if (rateLimited !== undefined) {

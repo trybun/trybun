@@ -14,7 +14,7 @@ vi.mock('../../../../lib/query-client/server-query-client.js', async () => {
   return { getServerQueryClient: () => client };
 });
 
-const { default: TicketPage } = await import('./page.js');
+const { default: TicketPage, generateMetadata } = await import('./page.js');
 const { TeamTicketView } =
   await import('../../../../features/tickets/components/team-ticket-view.js');
 const { RateLimitedNotice } =
@@ -56,5 +56,33 @@ describe('TicketPage', () => {
     await expect(
       TicketPage({ params: Promise.resolve({ identifier: 'ERP-999' }) }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+});
+
+// The not-found reaches the metadata, so the tab shows the translated not-found title after a
+// client-side navigation too (#404).
+describe('generateMetadata of the ticket page', () => {
+  it('reads the ticket through the shared loader and keeps the metadata of the layouts', async () => {
+    await expect(
+      generateMetadata({ params: Promise.resolve({ identifier: 'ERP-12' }) }),
+    ).resolves.toEqual({});
+    expect(requireSession).toHaveBeenCalledOnce();
+    expect(getTicketPage).toHaveBeenCalledWith('ERP-12', 'team');
+  });
+
+  it('is not found when the loader finds no ticket', async () => {
+    getTicketPage.mockRejectedValueOnce(new Error('NEXT_NOT_FOUND'));
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ identifier: 'ERP-999' }) }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+    getTicketPage.mockRejectedValueOnce(new ApiError(429, 'request.rate_limited', [], 45));
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ identifier: 'ERP-12' }) }),
+    ).resolves.toEqual({});
   });
 });

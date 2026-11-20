@@ -35,7 +35,7 @@ vi.mock('next/navigation.js', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-const { default: AccountsPage } = await import('./page.js');
+const { default: AccountsPage, generateMetadata } = await import('./page.js');
 
 const INVITED_ID = '0199a3f0-0000-7000-8000-000000000021';
 
@@ -194,5 +194,22 @@ describe('AccountsPage', () => {
       'NEXT_NOT_FOUND',
     );
     expect(GET).not.toHaveBeenCalledWith('/api/v1/users', expect.anything());
+  });
+});
+
+// The not-found reaches the metadata, so the tab shows the translated not-found title after a
+// client-side navigation too (#404).
+describe('generateMetadata of the Accounts page', () => {
+  it('keeps the metadata of the layouts for the Administrator', async () => {
+    GET.mockImplementation((path: string) => respond(path, ['open_administration']));
+
+    await expect(generateMetadata()).resolves.toEqual({});
+    expect(requireSession).toHaveBeenCalledWith();
+  });
+
+  it('is not found for a person who is not the Administrator', async () => {
+    GET.mockImplementation((path: string) => respond(path, ['create_project']));
+
+    await expect(generateMetadata()).rejects.toThrow('NEXT_NOT_FOUND');
   });
 });

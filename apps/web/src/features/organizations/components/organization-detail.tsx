@@ -5,10 +5,9 @@ import { Alert, AlertDescription, AlertTitle } from '@trybun/ui/components/alert
 import { Button } from '@trybun/ui/components/button';
 import { ArchiveIcon, ChevronLeftIcon } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { ApiError } from '../../../lib/errors/api-error.js';
+import { useNotFoundOnServer } from '../../app-shell/use-not-found-on-server.js';
 import { organizationQueryOptions } from '../queries.js';
 import { ORGANIZATIONS_HREF } from '../search-params.js';
 import { OrganizationDangerZone } from './organization-danger-zone.js';
@@ -30,10 +29,8 @@ export function OrganizationDetail({ organizationId }: { organizationId: string 
     organizationQueryOptions(browserApiClient, organizationId),
   );
   // The organization was deleted, e.g. by another Administrator.
-  if (error instanceof ApiError && error.status === 404) {
-    notFound();
-  }
-  if (organization === undefined) {
+  const isGone = useNotFoundOnServer(error);
+  if (isGone || organization === undefined) {
     return null;
   }
 

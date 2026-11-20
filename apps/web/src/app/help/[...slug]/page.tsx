@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation.js';
 import { getLocale } from 'next-intl/server';
 import { z } from 'zod';
@@ -12,10 +13,12 @@ const paramsSchema = z.object({
 });
 
 /**
- * A help page (§2.3). A page that does not exist or is not written for the reader's account kind
- * is not found, so an end user never receives a page for the team.
+ * The help page of an address for the reader (§2.3): a page that does not exist or is not written
+ * for the reader's account kind is not found, so an end user never receives a page for the team.
+ * Shared by the page and its metadata; the pages are bundled and the account kind comes from the
+ * account the shell has read, so there is nothing to memoize.
  */
-export default async function HelpTopicPage({ params }: { params: Promise<{ slug: string[] }> }) {
+async function findHelpPage(params: Promise<{ slug: string[] }>) {
   const parsed = paramsSchema.safeParse(await params);
   if (!parsed.success) {
     notFound();
@@ -27,5 +30,20 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ slug
   if (page === undefined) {
     notFound();
   }
-  return <HelpArticle page={page} />;
+  return page;
+}
+
+/** A help page the reader does not receive gets the translated not-found title of the tab (#404). */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string[] }>;
+}): Promise<Metadata> {
+  await findHelpPage(params);
+  return {};
+}
+
+/** A help page (§2.3). */
+export default async function HelpTopicPage({ params }: { params: Promise<{ slug: string[] }> }) {
+  return <HelpArticle page={await findHelpPage(params)} />;
 }
