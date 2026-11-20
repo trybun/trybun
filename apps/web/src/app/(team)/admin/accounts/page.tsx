@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getAdministrator } from '../../../../features/administration/administrator.js';
 import { RateLimitedNotice } from '../../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../../features/app-shell/page-title.js';
 import { LazyInviteDialog } from '../../../../features/invitations/components/lazy-invite-dialog.js';
 import { AccountList } from '../../../../features/users/components/account-list.js';
 import { usersQueryOptions } from '../../../../features/users/queries.js';
@@ -15,8 +16,13 @@ import {
 import { getServerQueryClient } from '../../../../lib/query-client/server-query-client.js';
 
 /** A person who is not the Administrator gets the translated not-found title of the tab (#404). */
-export function generateMetadata(): Promise<Metadata> {
-  return metadataAfterRead(getAdministrator());
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, tAdministration] = await Promise.all([
+    getTranslations('users.accounts'),
+    getTranslations('administration'),
+  ]);
+  const title = () => pageTitle(t('title'), tAdministration('title'));
+  return metadataAfterRead(getAdministrator(), { title, rateLimitedTitle: title });
 }
 
 /**

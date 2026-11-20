@@ -1,13 +1,23 @@
+import { CATALOGUES } from '@trybun/i18n/catalogues';
+import { createTranslator } from 'next-intl';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ticketResponse } from '../../../../../test/factories/ticket.factory.js';
 
 vi.mock('server-only', () => ({}));
+vi.mock('next-intl/server', () => ({
+  getTranslations: (namespace: never) =>
+    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+}));
 
 const requireSession = vi.fn();
 vi.mock('../../../../lib/auth/session.js', () => ({ requireSession }));
 vi.mock('../../../../lib/env/env.js', () => ({ getEnv: () => ({ attachmentMaxSizeMb: 25 }) }));
 const getTicketPage = vi.fn();
-vi.mock('../../../../features/tickets/ticket-page.js', () => ({ getTicketPage }));
+vi.mock('../../../../features/tickets/ticket-page.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getTicketPage,
+}));
 vi.mock('../../../../lib/query-client/server-query-client.js', async () => {
   const { QueryClient } = await import('@tanstack/react-query');
   const client = new QueryClient();
@@ -62,10 +72,12 @@ describe('TicketPage', () => {
 // The not-found reaches the metadata, so the tab shows the translated not-found title after a
 // client-side navigation too (#404).
 describe('generateMetadata of the ticket page', () => {
-  it('reads the ticket through the shared loader and keeps the metadata of the layouts', async () => {
+  it('names the ticket in the tab, read through the shared loader', async () => {
+    getTicketPage.mockResolvedValueOnce(ticketResponse());
+
     await expect(
       generateMetadata({ params: Promise.resolve({ identifier: 'ERP-12' }) }),
-    ).resolves.toEqual({});
+    ).resolves.toEqual({ title: { absolute: 'ERP-12 Invoice totals are wrong – Trybun' } });
     expect(requireSession).toHaveBeenCalledOnce();
     expect(getTicketPage).toHaveBeenCalledWith('ERP-12', 'team');
   });
@@ -78,11 +90,11 @@ describe('generateMetadata of the ticket page', () => {
     ).rejects.toThrow('NEXT_NOT_FOUND');
   });
 
-  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+  it('names only the identifier of the address for a person over the rate limit', async () => {
     getTicketPage.mockRejectedValueOnce(new ApiError(429, 'request.rate_limited', [], 45));
 
     await expect(
       generateMetadata({ params: Promise.resolve({ identifier: 'ERP-12' }) }),
-    ).resolves.toEqual({});
+    ).resolves.toEqual({ title: { absolute: 'ERP-12 – Trybun' } });
   });
 });

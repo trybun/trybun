@@ -118,6 +118,22 @@ test.describe('invitations', () => {
       page.getByRole('heading', { name: 'This invitation link is not valid' }),
     ).toBeVisible();
     await expect(page.getByText('Ask the person who invited you for a new link.')).toBeVisible();
+    // A public page names itself in the tab too (§13.4, #407).
+    await expect(page).toHaveTitle('Accept the invitation – Trybun');
+  });
+});
+
+// A public page has no language switch: the language of the browser translates its tab title.
+test.describe('the acceptance page in the language of the browser', () => {
+  test.use({ locale: 'pl', storageState: { cookies: [], origins: [] } });
+
+  test('names itself in the tab in Polish', async ({ page }) => {
+    await new InvitationPage(page).goto(
+      'https://trybun.example.com/invitations#token=not-a-valid-token',
+    );
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Przyjmij zaproszenie');
+    await expect(page).toHaveTitle('Przyjmij zaproszenie – Trybun');
   });
 });
 

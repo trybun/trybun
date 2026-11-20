@@ -1,6 +1,7 @@
 import 'server-only';
 import { ticketIdentifierSchema } from '@trybun/contracts/tickets';
 import { notFound, redirect } from 'next/navigation.js';
+import { getTranslations } from 'next-intl/server';
 import { getServerApiClient } from '../../lib/api-client/server-api-client.js';
 import { ApiError } from '../../lib/errors/api-error.js';
 import { getServerQueryClient } from '../../lib/query-client/server-query-client.js';
@@ -65,4 +66,14 @@ export async function getTicketPage(
     queryClient.prefetchQuery(projectQueryOptions(client, ticket.projectId)),
   ]);
   return ticket;
+}
+
+/**
+ * The part of the tab title that names a ticket (§13.4): its identifier, then its title, e.g.
+ * "CP-3 Sign-in page crashes on Safari" – the identifier first, so a truncated tab still tells
+ * tickets apart. Only a ticket the reader can see reaches it (`metadataAfterRead()`, §14.4).
+ */
+export async function ticketTitlePart(ticket: { identifier: string; title: string }) {
+  const t = await getTranslations('tickets');
+  return t('tabTitle', { identifier: ticket.identifier, title: ticket.title });
 }

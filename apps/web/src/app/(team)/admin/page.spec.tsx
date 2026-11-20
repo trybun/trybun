@@ -2,7 +2,7 @@ import { CATALOGUES } from '@trybun/i18n/catalogues';
 import { createFormatter, createTranslator } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { prerender } from 'react-dom/static';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -166,13 +166,36 @@ describe('Administrator panel', () => {
 // The not-found reaches the metadata, so the tab shows the translated not-found title after a
 // client-side navigation too (#404).
 describe.each([
-  ['the checklist', gettingStartedMetadata, '/api/v1/administration/getting-started'],
-  ['About', aboutMetadata, '/api/v1/administration/about'],
-])('generateMetadata of %s', (_case, generateMetadata, path) => {
-  it('reads as the page does and keeps the metadata of the layouts', async () => {
+  [
+    'the checklist',
+    gettingStartedMetadata,
+    '/api/v1/administration/getting-started',
+    'Getting started – Administration – Trybun',
+    'Pierwsze kroki – Administracja – Trybun',
+  ],
+  [
+    'About',
+    aboutMetadata,
+    '/api/v1/administration/about',
+    'About – Administration – Trybun',
+    'O systemie – Administracja – Trybun',
+  ],
+])('generateMetadata of %s', (_case, generateMetadata, path, title, polishTitle) => {
+  afterEach(() => {
+    locale = 'en';
+  });
+
+  it('names its section in the language of the Administrator', async () => {
+    locale = 'pl';
     GET.mockReturnValue(ok({ items: [] }));
 
-    await expect(generateMetadata()).resolves.toEqual({});
+    await expect(generateMetadata()).resolves.toEqual({ title: { absolute: polishTitle } });
+  });
+
+  it('reads as the page does and names its section in the tab', async () => {
+    GET.mockReturnValue(ok({ items: [] }));
+
+    await expect(generateMetadata()).resolves.toEqual({ title: { absolute: title } });
     expect(GET).toHaveBeenCalledWith(path);
   });
 

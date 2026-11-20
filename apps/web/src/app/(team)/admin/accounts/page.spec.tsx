@@ -6,7 +6,7 @@ import { CATALOGUES } from '@trybun/i18n/catalogues';
 import { createFormatter, createTranslator, NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { prerender } from 'react-dom/static';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -16,9 +16,12 @@ vi.mock('../../../../lib/api-client/server-api-client.js', async (importOriginal
   ...(await importOriginal<object>()),
   getServerApiClient: () => Promise.resolve({ GET }),
 }));
+let language: 'en' | 'pl' = 'en';
 vi.mock('next-intl/server', () => ({
   getTranslations: (namespace: 'users.accounts') =>
-    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+    Promise.resolve(
+      createTranslator({ locale: language, messages: CATALOGUES[language], namespace }),
+    ),
   getFormatter: () => Promise.resolve(createFormatter({ locale: 'en', timeZone: 'UTC' })),
   getNow: () => Promise.resolve(new Date('2026-11-18T12:00:00.000Z')),
 }));
@@ -96,6 +99,10 @@ async function render(element: ReactElement): Promise<string> {
   );
   return new Response(prelude).text();
 }
+
+afterEach(() => {
+  language = 'en';
+});
 
 describe('AccountsPage', () => {
   beforeEach(() => {
@@ -200,11 +207,22 @@ describe('AccountsPage', () => {
 // The not-found reaches the metadata, so the tab shows the translated not-found title after a
 // client-side navigation too (#404).
 describe('generateMetadata of the Accounts page', () => {
-  it('keeps the metadata of the layouts for the Administrator', async () => {
+  it('names the section of the Administrator panel in the tab', async () => {
     GET.mockImplementation((path: string) => respond(path, ['open_administration']));
 
-    await expect(generateMetadata()).resolves.toEqual({});
+    await expect(generateMetadata()).resolves.toEqual({
+      title: { absolute: 'Accounts – Administration – Trybun' },
+    });
     expect(requireSession).toHaveBeenCalledWith();
+  });
+
+  it('names the section in the language of the Administrator', async () => {
+    language = 'pl';
+    GET.mockImplementation((path: string) => respond(path, ['open_administration']));
+
+    await expect(generateMetadata()).resolves.toEqual({
+      title: { absolute: 'Konta – Administracja – Trybun' },
+    });
   });
 
   it('is not found for a person who is not the Administrator', async () => {

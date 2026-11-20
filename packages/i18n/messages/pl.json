@@ -1,8 +1,10 @@
 {
   "app": {
-    "title": "Trybun"
+    "title": "Trybun",
+    "titlePart": "{part} – {rest}"
   },
   "signIn": {
+    "tabTitle": "Logowanie",
     "redirecting": "Przekierowanie do logowania…",
     "notSetUpTitle": "Trybun nie jest jeszcze skonfigurowany",
     "notSetUpText": "Otwórz link konfiguracyjny wypisany przez <command>./trybun install</command> albo uruchom na serwerze <command>./trybun setup-token</command>, aby otrzymać nowy link.",
@@ -38,7 +40,6 @@
     "tryAgain": "Spróbuj ponownie"
   },
   "notFoundPage": {
-    "tabTitle": "Nie znaleziono strony – Trybun",
     "title": "Nie znaleziono strony",
     "text": "Ta strona nie istnieje albo nie masz do niej dostępu. Jeśli adres został wpisany ręcznie, sprawdź, czy jest poprawny.",
     "home": "Przejdź na stronę główną",
@@ -317,6 +318,7 @@
     }
   },
   "tickets": {
+    "tabTitle": "{identifier} {title}",
     "statuses": {
       "new": "Nowe",
       "triage": "Do analizy",
@@ -950,6 +952,7 @@
   },
   "setup": {
     "title": "Skonfiguruj Trybun",
+    "tabTitle": "Konfiguracja",
     "intro": "Utwórz pierwsze konto Administratora. Uwierzytelnianie dwuskładnikowe skonfigurujesz przy pierwszym logowaniu.",
     "checking": "Sprawdzanie linku konfiguracyjnego…",
     "invalidTitle": "Ten link konfiguracyjny jest nieprawidłowy lub wygasł",
@@ -1048,6 +1051,7 @@
       "customer": "Klient"
     },
     "confirmation": {
+      "tabTitle": "Potwierdzenie rozwiązania",
       "other": "Zamiast tego wybierz drugą odpowiedź: {answer}",
       "notPending": "To zgłoszenie nie czeka już na Twoje potwierdzenie.",
       "openTicket": "Otwórz zgłoszenie"

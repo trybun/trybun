@@ -2,8 +2,10 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { organizationParamsSchema } from '@trybun/contracts/organizations';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation.js';
+import { getTranslations } from 'next-intl/server';
 import { cache } from 'react';
 import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../../../features/app-shell/page-title.js';
 import { OrganizationDetail } from '../../../../../features/organizations/components/organization-detail.js';
 import {
   organizationMembersQueryOptions,
@@ -44,7 +46,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ organizationId: string }>;
 }): Promise<Metadata> {
-  return metadataAfterRead(loadOrganization((await params).organizationId));
+  const [{ organizationId }, t] = await Promise.all([params, getTranslations('administration')]);
+  return metadataAfterRead(loadOrganization(organizationId), {
+    title: (organization) => pageTitle(organization.name, t('title')),
+    rateLimitedTitle: () => pageTitle(t('title')),
+  });
 }
 
 /**

@@ -1,9 +1,10 @@
 # 0015 – The tab title of every page through `title.absolute` of one helper
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-11-20
-- Deciders: the maintainer (`@dtk7c2`), proposed in the change specification of [#407](https://github.com/trybun/trybun/issues/407)
-- Specification: [§13.1](../spec/13-non-functional.md#131-internationalization), [§13.4](../spec/13-non-functional.md), [§18.5](../spec/18-code-patterns.md); change specification [`2026-11-20-page-tab-titles.md`](../../.ai/specs/2026-11-20-page-tab-titles.md)
+- Deciders: the maintainer (`@dtk7c2`), accepted on 2026-11-20 with the change specification of [#407](https://github.com/trybun/trybun/issues/407) ([#408](https://github.com/trybun/trybun/pull/408))
+- Specification: [§13.1](../spec/13-non-functional.md#131-internationalization), [§13.4](../spec/13-non-functional.md), [§18.5](../spec/18-code-patterns.md); change specification [`2026-11-20-page-tab-titles.md`](../../.ai/specs/implemented/2026-11-20-page-tab-titles.md)
+- Pull request: [#410](https://github.com/trybun/trybun/pull/410)
 - Extends: [ADR 0014](0014-not-found-title-through-metadata.md). The not-found title keeps coming from the metadata, and the read of a page keeps running in its `generateMetadata`.
 
 ## Context and problem statement
@@ -28,7 +29,7 @@ How does every page get that title, translated, through one mechanism?
 
 ## Decision outcome
 
-**Option 2.** Every `page.tsx` exports a `generateMetadata` that returns `pageTitle()`. A record page passes a function from its read's data to the title parts through `metadataAfterRead()`, so the not-found check of ADR 0014 runs first. The root layout keeps `title: t('title')` as the title of what has none of its own.
+**Option 2.** Every `page.tsx` exports a `generateMetadata` that returns `pageTitle()`. A record page passes `title` (from its read's data) and `rateLimitedTitle` through `metadataAfterRead()`, both returning `pageTitle()`, so the not-found check of ADR 0014 runs first and `lib/` does not depend on `features/`. The root layout keeps `title: t('title')` as the title of what has none of its own.
 
 ### Consequences
 

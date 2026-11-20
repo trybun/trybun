@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 vi.mock('next-intl/server', () => ({
   getTranslations: () => Promise.resolve((key: string) => key),
 }));

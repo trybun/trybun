@@ -3,8 +3,9 @@ import type { Metadata } from 'next';
 import { cache } from 'react';
 import { z } from 'zod';
 import { RateLimitedNotice } from '../../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../../features/app-shell/page-title.js';
 import { TeamTicketView } from '../../../../features/tickets/components/team-ticket-view.js';
-import { getTicketPage } from '../../../../features/tickets/ticket-page.js';
+import { getTicketPage, ticketTitlePart } from '../../../../features/tickets/ticket-page.js';
 import {
   metadataAfterRead,
   readOrRateLimited,
@@ -21,14 +22,20 @@ const loadTicket = cache(async (identifier: string) => {
   return getTicketPage(identifier, 'team');
 });
 
-/** A missing or invisible ticket gets the translated not-found title of the tab (#404). */
+/**
+ * The tab title names the ticket the reader can see (§13.4); a missing or invisible ticket gets the
+ * translated not-found title (#404), a person over the rate limit the identifier of the address.
+ */
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ identifier: string }>;
 }): Promise<Metadata> {
   const { identifier } = paramsSchema.parse(await params);
-  return metadataAfterRead(loadTicket(identifier));
+  return metadataAfterRead(loadTicket(identifier), {
+    title: async (ticket) => pageTitle(await ticketTitlePart(ticket)),
+    rateLimitedTitle: () => pageTitle(identifier),
+  });
 }
 
 /**

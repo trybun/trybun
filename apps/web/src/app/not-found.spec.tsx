@@ -8,8 +8,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getWebMessages, pickClientMessages } from '../lib/i18n/messages.js';
 
 let locale: Locale = 'en';
+vi.mock('server-only', () => ({}));
 vi.mock('next-intl/server', () => ({
-  getTranslations: (namespace: 'notFoundPage') =>
+  getTranslations: (namespace: 'notFoundPage' | 'app') =>
     Promise.resolve(createTranslator({ locale, messages: CATALOGUES[locale], namespace })),
 }));
 vi.mock('next/image', () => ({ default: (props: ComponentProps<'img'>) => <img {...props} /> }));
@@ -94,7 +95,7 @@ describe.each([
     async (language, title) => {
       locale = language;
 
-      expect(await generateMetadata()).toEqual({ title });
+      expect(await generateMetadata()).toEqual({ title: { absolute: title } });
       await renderNotFoundPage(page);
       expect(document.querySelector('title')).toBeNull();
     },

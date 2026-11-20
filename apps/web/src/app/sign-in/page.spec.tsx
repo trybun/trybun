@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 const redirect = vi.fn((url: string) => {
   throw new Error(`redirect ${url}`);
 });

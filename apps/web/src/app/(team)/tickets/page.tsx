@@ -1,5 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { pageTitle } from '../../../features/app-shell/page-title.js';
 import { TicketList } from '../../../features/tickets/components/ticket-list.js';
 import { ticketListInfiniteQueryOptions } from '../../../features/tickets/queries.js';
 import {
@@ -10,6 +12,11 @@ import { currentUserQueryOptions } from '../../../features/users/queries.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../lib/query-client/server-query-client.js';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('tickets.list');
+  return pageTitle(t('title'));
+}
 
 /**
  * The team's ticket list (§8.1, change specification of S1-13): the tickets of all the person's

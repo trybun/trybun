@@ -1,8 +1,10 @@
 {
   "app": {
-    "title": "Trybun"
+    "title": "Trybun",
+    "titlePart": "{part} – {rest}"
   },
   "signIn": {
+    "tabTitle": "Sign in",
     "redirecting": "Redirecting to the sign-in…",
     "notSetUpTitle": "Trybun is not set up yet",
     "notSetUpText": "Open the setup link printed by <command>./trybun install</command>, or run <command>./trybun setup-token</command> on the server for a new link.",
@@ -38,7 +40,6 @@
     "tryAgain": "Try again"
   },
   "notFoundPage": {
-    "tabTitle": "Page not found – Trybun",
     "title": "Page not found",
     "text": "This page does not exist or is not available to you. If you typed the address, check that it is correct.",
     "home": "Go to the home page",
@@ -317,6 +318,7 @@
     }
   },
   "tickets": {
+    "tabTitle": "{identifier} {title}",
     "statuses": {
       "new": "New",
       "triage": "Triage",
@@ -950,6 +952,7 @@
   },
   "setup": {
     "title": "Set up Trybun",
+    "tabTitle": "Setup",
     "intro": "Create the first Administrator account. You set up two-factor authentication when you sign in for the first time.",
     "checking": "Checking the setup link…",
     "invalidTitle": "This setup link is invalid or has expired",
@@ -1048,6 +1051,7 @@
       "customer": "Customer"
     },
     "confirmation": {
+      "tabTitle": "Resolution confirmation",
       "other": "Choose the other answer instead: {answer}",
       "notPending": "This ticket no longer waits for your confirmation.",
       "openTicket": "Open the ticket"

@@ -1,8 +1,8 @@
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { NextIntlClientProvider } from 'next-intl';
+import { createTranslator, NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -10,7 +10,14 @@ vi.mock('../../../lib/auth/session.js', () => ({ requireSession }));
 const getHelpReaderKind = vi.fn();
 vi.mock('../../../features/help/reader.js', () => ({ getHelpReaderKind }));
 const getLocale = vi.fn();
-vi.mock('next-intl/server', () => ({ getLocale }));
+let language: 'en' | 'pl' = 'en';
+vi.mock('next-intl/server', () => ({
+  getLocale,
+  getTranslations: (namespace: never) =>
+    Promise.resolve(
+      createTranslator({ locale: language, messages: CATALOGUES[language], namespace }),
+    ),
+}));
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -18,6 +25,7 @@ vi.mock('next/navigation.js', () => ({ notFound }));
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 
 const { default: HelpTopicPage, generateMetadata } = await import('./page.js');
+const { getHelpPage } = await import('../../../features/help/help-content.js');
 
 function render(element: ReactElement, locale: 'en' | 'pl') {
   return renderToStaticMarkup(
@@ -28,6 +36,10 @@ function render(element: ReactElement, locale: 'en' | 'pl') {
 }
 
 const params = (...slug: string[]) => ({ params: Promise.resolve({ slug }) });
+
+afterEach(() => {
+  language = 'en';
+});
 
 describe('HelpTopicPage', () => {
   beforeEach(() => {
@@ -81,11 +93,29 @@ describe('generateMetadata of a help page', () => {
     getLocale.mockResolvedValue('en');
   });
 
-  it('keeps the metadata of the layouts for a page the reader receives', async () => {
+  it('names the topic, then the help, in the tab of a page the reader receives', async () => {
     getHelpReaderKind.mockResolvedValue('team');
+    const topic = getHelpPage('en', 'team', 'team/tutorials/getting-started')?.title;
 
+    expect(topic).toBeDefined();
     await expect(generateMetadata(params('team', 'tutorials', 'getting-started'))).resolves.toEqual(
-      {},
+      {
+        title: { absolute: `${topic} – Help – Trybun` },
+      },
+    );
+  });
+
+  it('names the topic and the help in the language of the reader', async () => {
+    language = 'pl';
+    getLocale.mockResolvedValue('pl');
+    getHelpReaderKind.mockResolvedValue('team');
+    const topic = getHelpPage('pl', 'team', 'team/tutorials/getting-started')?.title;
+
+    expect(topic).toBe('Pierwsze kroki dla zespołu');
+    await expect(generateMetadata(params('team', 'tutorials', 'getting-started'))).resolves.toEqual(
+      {
+        title: { absolute: `${topic} – Pomoc – Trybun` },
+      },
     );
   });
 

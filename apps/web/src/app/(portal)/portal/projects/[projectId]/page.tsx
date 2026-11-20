@@ -3,10 +3,11 @@ import { Alert, AlertDescription } from '@trybun/ui/components/alert';
 import { buttonVariants } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
 import { ArchiveIcon, PlusIcon } from 'lucide-react';
-import Link from 'next/link';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../../../features/app-shell/page-title.js';
 import { myTicketsHref, newTicketHref } from '../../../../../features/portal/hrefs.js';
 import { loadPortalProject } from '../../../../../features/portal/project-page.js';
 import { MyTicketsList } from '../../../../../features/tickets/components/my-tickets-list.js';
@@ -27,7 +28,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ projectId: string }>;
 }): Promise<Metadata> {
-  return metadataAfterRead(loadPortalProject((await params).projectId));
+  const [{ projectId }, t] = await Promise.all([params, getTranslations('portal.root')]);
+  return metadataAfterRead(loadPortalProject(projectId), {
+    title: (project) => pageTitle(project.name),
+    rateLimitedTitle: () => pageTitle(t('title')),
+  });
 }
 
 /**

@@ -1,9 +1,11 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation.js';
+import { getTranslations } from 'next-intl/server';
 import { cache } from 'react';
 import { z } from 'zod';
 import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../../../features/app-shell/page-title.js';
 import { organizationsQueryOptions } from '../../../../../features/organizations/queries.js';
 import { ProjectSettings } from '../../../../../features/projects/components/project-settings.js';
 import {
@@ -47,7 +49,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ projectId: string }>;
 }): Promise<Metadata> {
-  return metadataAfterRead(loadProject((await params).projectId));
+  const [{ projectId }, t] = await Promise.all([params, getTranslations('projects')]);
+  return metadataAfterRead(loadProject(projectId), {
+    title: (project) => pageTitle(t('settings.title'), project.name),
+    rateLimitedTitle: () => pageTitle(t('settings.title')),
+  });
 }
 
 /**

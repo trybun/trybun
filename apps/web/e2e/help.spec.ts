@@ -3,6 +3,7 @@ import { seriousViolations } from './accessibility.js';
 import { navigateInApp } from './client-navigation.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { HelpPage } from './pages/help.page.js';
+import { MANAGER_STORAGE_STATE } from './storage-state.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
 
 test.describe('help', () => {
@@ -76,6 +77,30 @@ test.describe('help', () => {
       '/help',
     );
     await expect(new AppShellPage(page).navigation).toBeVisible();
+  });
+
+  // The language switch saves the language of the account; the manager signs in only in the
+  // set-up, so no test that signs in afresh reads it (`settings.spec.ts` reads the developer's).
+  test.describe('as the manager', () => {
+    test.use({ storageState: MANAGER_STORAGE_STATE });
+
+    // The tab names the topic, then the help, after a client-side navigation and a page load (#407).
+    test('names the help and a topic in the tab', async ({ page }) => {
+      const help = new HelpPage(page);
+      await help.goto();
+      await expect(page).toHaveTitle('Help – Trybun');
+
+      await navigateInApp(page, '/help/team/tutorials/getting-started');
+      await expect(help.heading).toHaveText('Getting started for the team');
+      await expect(page).toHaveTitle('Getting started for the team – Help – Trybun');
+
+      await page.reload();
+      await expect(page).toHaveTitle('Getting started for the team – Help – Trybun');
+
+      const menu = await new AppShellPage(page).openAccountMenu();
+      await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
+      await expect(page).toHaveTitle('Pierwsze kroki dla zespołu – Pomoc – Trybun');
+    });
   });
 
   // The not-found metadata comes from `generateMetadata` of the page, so the tab title is

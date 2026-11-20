@@ -234,9 +234,10 @@ test.describe('the portal of an end user with one project', () => {
   test('opens a ticket from the team address with a lower-case identifier', async ({ page }) => {
     const portal = new PortalPage(page);
     await page.goto('/portal/tickets');
-    await portal.ticket('Wrong VAT rate on the March invoice').click();
-    await expect(page).toHaveURL(/\/portal\/tickets\/CP-\d+$/);
-    const identifier = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+    const href =
+      (await portal.ticket('Wrong VAT rate on the March invoice').getAttribute('href')) ?? '';
+    await navigateInApp(page, href);
+    const identifier = href.split('/').at(-1) ?? '';
 
     // The team address goes to the portal (S1-10), and the identifier to its upper case.
     await page.goto(`/tickets/${identifier.toLowerCase()}`);
@@ -292,6 +293,27 @@ test.describe('the portal of an end user with one project', () => {
       '/portal',
     );
     await expect(new AppShellPage(page).navigation).toBeVisible();
+  });
+
+  // The tab names the ticket after a client-side navigation and a page load alike (§13.4, #407).
+  test('names My tickets and a ticket in the tab', async ({ page }) => {
+    const portal = new PortalPage(page);
+    await page.goto('/portal/tickets');
+    await expect(page).toHaveTitle('My tickets – Trybun');
+
+    await portal.ticket('Wrong VAT rate on the March invoice').click();
+    await expect(page).toHaveURL(/\/portal\/tickets\/CP-\d+$/);
+    const identifier = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+    const title = `${identifier} Wrong VAT rate on the March invoice – Trybun`;
+    await expect(page).toHaveTitle(title);
+
+    await page.reload();
+    await expect(page).toHaveTitle(title);
+
+    const menu = await new AppShellPage(page).openAccountMenu();
+    await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
+    await navigateInApp(page, '/portal/tickets');
+    await expect(page).toHaveTitle('Moje zgłoszenia – Trybun');
   });
 
   // The not-found metadata comes from `generateMetadata` of the page, so the tab title is

@@ -1,6 +1,13 @@
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { PublicHeader } from '../../features/app-shell/components/public-header.js';
+import { pageTitle } from '../../features/app-shell/page-title.js';
 import { SetupWizard } from '../../features/setup/components/setup-wizard.js';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('setup');
+  return pageTitle(t('tabTitle'));
+}
 
 /**
  * The first-run wizard (§15.6), outside the team views: it needs no session. The token of the
