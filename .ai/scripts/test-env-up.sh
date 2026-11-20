@@ -138,20 +138,25 @@ fg_signal() {
   if [ -n "$FG_SLEEP" ]; then kill "$FG_SLEEP" 2>/dev/null || true; fi
   if [ -n "$FG_CHILD" ]; then
     # Still booting: the child stops what it started; this layer has nothing of its own. A child
-    # that has just finished its boot exits 0, and its output names the role.
+    # that has just finished its boot exits 0, and its output names the role. FG_CHILD_STATUS
+    # keeps the status of a child the main loop has already reaped.
     if running "$FG_CHILD"; then
       log "signal during the boot; stopping it"
       kill -s TERM "$FG_CHILD" 2>/dev/null || true
     fi
-    child_status=0
-    while alive "$FG_CHILD"; do wait "$FG_CHILD" || child_status=$?; done
+    while alive "$FG_CHILD"; do
+      FG_CHILD_STATUS=0
+      wait "$FG_CHILD" || FG_CHILD_STATUS=$?
+    done
     FG_CHILD=""
-    [ "$child_status" = 0 ] || exit "$child_status"
+    [ "$FG_CHILD_STATUS" = 0 ] || exit "$FG_CHILD_STATUS"
   fi
   [ -n "$FG_ROLE" ] || fg_read_role
   if [ "$FG_ROLE" = owner ] && fg_still_ours; then
     log "closing the owner of environment $FG_RUN; stopping it"
     fg_teardown
+  elif [ "$FG_ROLE" = owner ]; then
+    log "closing the owner of environment $FG_RUN, which was already stopped or replaced"
   else
     log "closing a viewer; the environment keeps running"
   fi
@@ -165,6 +170,7 @@ if [ "$FOREGROUND" = 1 ]; then
   FG_ROLE=""
   FG_RUN=""
   FG_HANDLING=0
+  FG_CHILD_STATUS=0
   child_flags=""
   [ "$FORCE_REBUILD" = 1 ] && child_flags="$child_flags --force-rebuild"
   [ "$RESET" = 1 ] && child_flags="$child_flags --reset"
@@ -176,11 +182,13 @@ if [ "$FOREGROUND" = 1 ]; then
   # shellcheck disable=SC2086 # one flag per word
   sh "$ROOT/.ai/scripts/test-env-up.sh" $child_flags >"$FG_OUT" &
   FG_CHILD=$!
-  child_status=0
-  while alive "$FG_CHILD"; do wait "$FG_CHILD" || child_status=$?; done
+  while alive "$FG_CHILD"; do
+    FG_CHILD_STATUS=0
+    wait "$FG_CHILD" || FG_CHILD_STATUS=$?
+  done
   FG_CHILD=""
   cat "$FG_OUT"
-  [ "$child_status" = 0 ] || exit "$child_status"
+  [ "$FG_CHILD_STATUS" = 0 ] || exit "$FG_CHILD_STATUS"
   fg_read_role
   if [ -z "$FG_ROLE" ] || [ -z "$FG_RUN" ]; then
     log "the boot printed no TEST_ENV_REUSED or TEST_ENV_RUN_ID; see $FG_OUT"
@@ -202,6 +210,8 @@ if [ "$FOREGROUND" = 1 ]; then
   done
   # The applications ended: a crash of this owner's run, or a stop or replacement from elsewhere.
   if [ "$FG_ROLE" = owner ] && fg_still_ours; then
+    # A signal during this teardown must not start a second one or change the exit code.
+    FG_HANDLING=1
     log "an application of environment $FG_RUN exited; stopping the rest (logs in $LOG_DIR)"
     fg_teardown
     exit 1
@@ -257,8 +267,14 @@ WEB_PID=""
 SERVICES_STARTED=false
 # shellcheck disable=SC2016 # expanded by the cleanup shell, from its positional parameters
 CLEANUP='
-  lock=$1 locked=$2 services=$3; shift 3; compose=$1; shift
-  [ "$locked" = 1 ] && printf "{ \"pid\": \"%s\", \"source\": \"test-env-up.sh cleanup\" }\n" "$$" > "$lock/owner.json"
+  lock=$1 locked=$2 boot=$3 services=$4; shift 4; compose=$1; shift
+  owner() { sed -n "s/.*\"pid\": *\"\([0-9]*\)\".*/\1/p" "$lock/owner.json" 2>/dev/null; }
+  # Take the lock over only while it is still the boot'"'"'s, and remove it only while it is ours.
+  if [ "$locked" = 1 ] && [ "$(owner)" = "$boot" ]; then
+    printf "{ \"pid\": \"%s\", \"source\": \"test-env-up.sh cleanup\" }\n" "$$" > "$lock/owner.json"
+  else
+    locked=0
+  fi
   for pid in "$@"; do kill -- "-$pid" 2>/dev/null || true; done
   waited=0
   while [ "$waited" -lt 30 ]; do
@@ -270,7 +286,7 @@ CLEANUP='
   done
   for pid in "$@"; do kill -s KILL "-$pid" 2>/dev/null || true; done
   if [ "$services" = true ]; then $compose down || true; fi
-  [ "$locked" = 1 ] && rm -rf "$lock"
+  if [ "$locked" = 1 ] && [ "$(owner)" = "$$" ]; then rm -rf "$lock"; fi
   echo "[test-env] interrupted boot cleaned up"
 '
 interrupted() {
@@ -278,7 +294,7 @@ interrupted() {
   INTERRUPTED=1
   # A boot that has completed is recorded and kept; only the lock is released (EXIT).
   [ "$BOOTED" = 1 ] && exit "$1"
-  exec >>"$LOG_DIR/foreground.log" 2>&1
+  exec >>"$LOG_DIR/boot-interrupt.log" 2>&1
   log "interrupted (exit $1); stopping what this boot started"
   # Interrupted after the descriptor was written but before the result was printed: nobody was
   # told the environment runs, so it is stopped and recorded as such.
@@ -286,7 +302,7 @@ interrupted() {
   pids=""
   for pid in "$STEP_PID" "$API_PID" "$WORKER_PID" "$WEB_PID"; do [ -n "$pid" ] && pids="$pids $pid"; done
   # shellcheck disable=SC2086 # one PID per word
-  setsid sh -c "$CLEANUP" cleanup "$LOCK_DIR" "$LOCKED" "$SERVICES_STARTED" "$COMPOSE" $pids &
+  setsid sh -c "$CLEANUP" cleanup "$LOCK_DIR" "$LOCKED" "$$" "$SERVICES_STARTED" "$COMPOSE" $pids &
   cleanup_pid=$!
   LOCKED=0
   # A second signal interrupts `wait`; keep waiting until the cleanup has finished.
@@ -449,7 +465,10 @@ until healthy "$API_HEALTH" && healthy "$WEB_HEALTH"; do
     kill -- "-$API_PID" "-$WORKER_PID" "-$WEB_PID" 2>/dev/null || true
     exit 1
   fi
-  sleep 2
+  # In the background, so a signal to this PID alone is handled at once (a trap waits for a
+  # foreground command).
+  sleep 2 &
+  wait "$!" || true
   waited=$((waited + 2))
 done
 

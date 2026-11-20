@@ -366,7 +366,11 @@ describe('test-env-up.sh', () => {
   });
 });
 
-describe('an interrupted boot (#383)', () => {
+// The scripts boot, signal and stop real processes: more time than Vitest's default of 5 s, also
+// under the load of the coverage run.
+const PROCESS_TESTS = { timeout: 60_000 };
+
+describe('an interrupted boot (#383)', PROCESS_TESTS, () => {
   const compose = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml';
 
   async function interruptedClean() {
@@ -448,7 +452,7 @@ describe('an interrupted boot (#383)', () => {
   });
 });
 
-describe('--foreground (#383)', () => {
+describe('--foreground (#383)', PROCESS_TESTS, () => {
   const composeDown = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down';
   const downs = () => readLines(join(folder, 'log')).filter((line) => line === composeDown).length;
   const applications = () => {
@@ -514,6 +518,22 @@ describe('--foreground (#383)', () => {
       await stopped(pids);
     });
 
+    it('keeps exit code 1 when a signal arrives during the teardown after a crash', async () => {
+      // The remaining applications need 4 s to stop, so the signal lands during the teardown.
+      extraEnvironment = { STUB_STOP_SECONDS: '4' };
+      const run = start('--foreground');
+      await run.output(owner);
+      const pids = applications();
+
+      process.kill(-Number(descriptor().app.webPid), 'SIGKILL');
+      await run.output(/an application of environment .* exited/);
+      run.child.kill('SIGTERM');
+
+      expect((await run.exited()).code).toBe(1);
+      await stopped(pids);
+      expect(downs()).toBe(1);
+    });
+
     it('detaches without a second teardown when the environment is stopped by hand', async () => {
       const run = start('--foreground');
       await run.output(owner);
@@ -537,14 +557,14 @@ describe('--foreground (#383)', () => {
       expect(reset.status, reset.stderr).toBe(0);
 
       expect((await run.exited()).code).toBe(0);
-      // It detaches as soon as the replacement stops it, before the new run id is recorded.
-      expect(run.stderr).toMatch(/was stopped elsewhere \(stopping\)|was replaced by /);
+      // Its poll sees the old run stopping, stopped, or already replaced, depending on timing.
+      expect(run.stderr).toMatch(/was stopped elsewhere \((stopping|stopped)\)|was replaced by /);
       expect(descriptor().runId).not.toBe(before);
       expect(descriptor().status).toBe('running');
       for (const pid of applications()) expect(alive(pid), pid).toBe(true);
     });
 
-    it('stops the environment for a signal right after the boot, before the role is set', async () => {
+    it('stops the environment for a signal as soon as the boot result is printed', async () => {
       const run = start('--foreground');
       await run.output(/TEST_ENV_RUN_ID=/);
 
@@ -645,7 +665,7 @@ describe('--foreground (#383)', () => {
   });
 });
 
-describe('test-env-down.sh', () => {
+describe('test-env-down.sh', PROCESS_TESTS, () => {
   it('marks the environment stopping before it signals the applications, stopped once they exit', async () => {
     // The stubbed applications keep their port for 3 s after SIGTERM, as the API does.
     extraEnvironment = { STUB_STOP_SECONDS: '3' };

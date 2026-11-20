@@ -22,7 +22,12 @@ KEEP_SERVICES=0
 json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$DESCRIPTOR" | head -1; }
 # "stopping" before any process is signalled (#383): an attached --foreground owner that sees its
 # processes end then knows they were stopped, not crashed; the reuse check reads only "running".
-set_status() { sed -i.bak "s/\"status\": \"[a-z]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" && rm -f "$DESCRIPTOR.bak"; }
+# A failed update is logged and never stops the teardown.
+set_status() {
+  sed -i.bak "s/\"status\": \"[a-z]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" ||
+    echo "could not mark $DESCRIPTOR $1" >&2
+  rm -f "$DESCRIPTOR.bak"
+}
 set_status stopping
 PIDS=""
 for key in apiPid workerPid webPid; do
