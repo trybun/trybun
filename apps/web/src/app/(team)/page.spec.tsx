@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 const requireSession = vi.fn();
 vi.mock('../../lib/auth/session.js', () => ({ requireSession }));
 vi.mock('next-intl/server', () => ({

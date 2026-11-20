@@ -1,8 +1,10 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { buttonVariants } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { pageTitle } from '../../../../features/app-shell/page-title.js';
 import { newTicketHref } from '../../../../features/portal/hrefs.js';
 import { projectQueryOptions } from '../../../../features/projects/queries.js';
 import { MyTicketsList } from '../../../../features/tickets/components/my-tickets-list.js';
@@ -11,6 +13,11 @@ import { myTicketsSearchParamsSchema } from '../../../../features/tickets/search
 import { getServerApiClient } from '../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../lib/query-client/server-query-client.js';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('portal.myTickets');
+  return pageTitle(t('title'));
+}
 
 /**
  * "My tickets" (§5.7): the tickets the end user requested, across their projects or – with

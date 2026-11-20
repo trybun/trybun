@@ -1,7 +1,14 @@
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { PublicHeader } from '../../features/app-shell/components/public-header.js';
+import { pageTitle } from '../../features/app-shell/page-title.js';
 import { InvitationAcceptance } from '../../features/invitations/components/invitation-acceptance.js';
 import { getEnv } from '../../lib/env/env.js';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('invitations.acceptance');
+  return pageTitle(t('title'));
+}
 
 /**
  * The acceptance page of an invitation (ADR 0009), outside the team views: it needs no session.

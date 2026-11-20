@@ -1,5 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { pageTitle } from '../../../features/app-shell/page-title.js';
 import { LazyNewProjectDialog } from '../../../features/projects/components/lazy-new-project-dialog.js';
 import { ProjectStateTabs } from '../../../features/projects/components/project-state-tabs.js';
 import { projectsQueryOptions } from '../../../features/projects/queries.js';
@@ -8,6 +10,11 @@ import { currentUserQueryOptions } from '../../../features/users/queries.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../lib/query-client/server-query-client.js';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('projects');
+  return pageTitle(t('title'));
+}
 
 /**
  * The Projects page (§7.3): the projects the person can see, active or archived, and – for the

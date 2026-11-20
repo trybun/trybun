@@ -1,11 +1,18 @@
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { RateLimitedNotice } from '../../../../features/app-shell/components/rate-limited-notice.js';
+import { pageTitle } from '../../../../features/app-shell/page-title.js';
 import { TeamTicketForm } from '../../../../features/tickets/components/team-ticket-form.js';
 import { getNewTicketPage } from '../../../../features/tickets/new-ticket-page.js';
 import { newTicketSearchParamsSchema } from '../../../../features/tickets/search-params.js';
 import { readOrRateLimited } from '../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../lib/auth/session.js';
 import { getEnv } from '../../../../lib/env/env.js';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('tickets.form');
+  return pageTitle(t('heading'));
+}
 
 /**
  * The full ticket form of the team (§3.3, change specification of S1-10), opened from the

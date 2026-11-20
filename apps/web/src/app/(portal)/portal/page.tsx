@@ -1,9 +1,11 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { buttonVariants } from '@trybun/ui/components/button';
 import { cn } from '@trybun/ui/lib/utils';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
+import { pageTitle } from '../../../features/app-shell/page-title.js';
 import { PortalProjectList } from '../../../features/portal/components/portal-project-list.js';
 import { myTicketsHref, portalProjectHref } from '../../../features/portal/hrefs.js';
 import { projectsQueryOptions } from '../../../features/projects/queries.js';
@@ -11,6 +13,11 @@ import { myTicketsQueryOptions } from '../../../features/tickets/queries.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../lib/query-client/server-query-client.js';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('portal.root');
+  return pageTitle(t('title'));
+}
 
 /**
  * The portal root (§5.7, Q4): the active projects of the end user. With exactly one, the server

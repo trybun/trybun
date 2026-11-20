@@ -4,6 +4,7 @@
     "titlePart": "{part} – {rest}"
   },
   "signIn": {
+    "tabTitle": "Logowanie",
     "redirecting": "Przekierowanie do logowania…",
     "notSetUpTitle": "Trybun nie jest jeszcze skonfigurowany",
     "notSetUpText": "Otwórz link konfiguracyjny wypisany przez <command>./trybun install</command> albo uruchom na serwerze <command>./trybun setup-token</command>, aby otrzymać nowy link.",
@@ -950,6 +951,7 @@
   },
   "setup": {
     "title": "Skonfiguruj Trybun",
+    "tabTitle": "Konfiguracja",
     "intro": "Utwórz pierwsze konto Administratora. Uwierzytelnianie dwuskładnikowe skonfigurujesz przy pierwszym logowaniu.",
     "checking": "Sprawdzanie linku konfiguracyjnego…",
     "invalidTitle": "Ten link konfiguracyjny jest nieprawidłowy lub wygasł",

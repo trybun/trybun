@@ -4,6 +4,7 @@
     "titlePart": "{part} – {rest}"
   },
   "signIn": {
+    "tabTitle": "Sign in",
     "redirecting": "Redirecting to the sign-in…",
     "notSetUpTitle": "Trybun is not set up yet",
     "notSetUpText": "Open the setup link printed by <command>./trybun install</command>, or run <command>./trybun setup-token</command> on the server for a new link.",
@@ -950,6 +951,7 @@
   },
   "setup": {
     "title": "Set up Trybun",
+    "tabTitle": "Setup",
     "intro": "Create the first Administrator account. You set up two-factor authentication when you sign in for the first time.",
     "checking": "Checking the setup link…",
     "invalidTitle": "This setup link is invalid or has expired",
