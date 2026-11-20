@@ -365,10 +365,11 @@ if [ "$RESET" = 1 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR
   sh .ai/scripts/test-env-down.sh --keep-services >/dev/null 2>&1 || true
 fi
 
-# Never take over a server this script did not start (e.g. `pnpm dev`).
+# Never take over or stop a server this script did not start: the test environment of another
+# checkout (one per machine) or `pnpm dev` – it is another session's work (#383).
 for port in "$WEB_PORT" "$API_PORT"; do
   if curl -s -o /dev/null --max-time 3 "http://localhost:$port/"; then
-    log "port $port is served by a process this script did not start – stop it (e.g. pnpm dev) first"
+    log "port $port is already served – by the test environment of another checkout or by pnpm dev. This checkout never stops it: stop it from where it was started (sh .ai/scripts/test-env-down.sh there), then start again."
     exit 1
   fi
 done
@@ -379,7 +380,7 @@ for port in $INFRA_PORTS; do
   holder=$(docker ps --filter "publish=$port" --format '{{.Names}} {{.Label "com.docker.compose.project"}}' |
     awk -v own="$COMPOSE_PROJECT" '$2 != own { print $1 " (project " ($2 == "" ? "none" : $2) ")"; exit }')
   if [ -n "$holder" ]; then
-    log "port $port is published by $holder – stop it first; the test environment runs as the Compose project $COMPOSE_PROJECT"
+    log "port $port is published by $holder. This checkout never stops it: stop it from where it was started, then start again; the test environment runs as the Compose project $COMPOSE_PROJECT"
     exit 1
   fi
 done

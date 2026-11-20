@@ -624,6 +624,19 @@ describe('--foreground (#383)', () => {
     });
   });
 
+  it('refuses, stopping nothing, when another checkout or pnpm dev serves port 3000', () => {
+    writeFileSync(join(folder, 'serving-3000'), '');
+
+    const run = up('--foreground');
+
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain(
+      'port 3000 is already served – by the test environment of another checkout or by pnpm dev. This checkout never stops it',
+    );
+    expect(run.log.filter((line) => line.endsWith(' down'))).toEqual([]);
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(true);
+  });
+
   it('refuses --force', () => {
     const { status, stderr } = up('--foreground', '--force');
 
