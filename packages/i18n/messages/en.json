@@ -1,6 +1,7 @@
 {
   "app": {
-    "title": "Trybun"
+    "title": "Trybun",
+    "titlePart": "{part} – {rest}"
   },
   "signIn": {
     "redirecting": "Redirecting to the sign-in…",

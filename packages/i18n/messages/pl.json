@@ -1,6 +1,7 @@
 {
   "app": {
-    "title": "Trybun"
+    "title": "Trybun",
+    "titlePart": "{part} – {rest}"
   },
   "signIn": {
     "redirecting": "Przekierowanie do logowania…",
