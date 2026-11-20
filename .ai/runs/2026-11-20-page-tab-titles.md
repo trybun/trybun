@@ -46,6 +46,8 @@ Every page of the web application gets the translated tab title of the specifica
 
 ## Progress
 
+PR: #410
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: the helper and the static pages
