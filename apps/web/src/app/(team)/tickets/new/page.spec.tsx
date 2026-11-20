@@ -2,6 +2,8 @@ import { CATALOGUES } from '@trybun/i18n/catalogues';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 const requireSession = vi.fn();
 vi.mock('../../../../lib/auth/session.js', () => ({ requireSession }));
 vi.mock('../../../../lib/env/env.js', () => ({ getEnv: () => ({ attachmentMaxSizeMb: 25 }) }));
@@ -17,6 +19,9 @@ vi.mock('next-intl/server', () => ({
 const { default: NewTicketPage } = await import('./page.js');
 const { TeamTicketForm } =
   await import('../../../../features/tickets/components/team-ticket-form.js');
+const { RateLimitedNotice } =
+  await import('../../../../features/app-shell/components/rate-limited-notice.js');
+const { ApiError } = await import('../../../../lib/errors/api-error.js');
 
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
 const PROJECTS = [{ id: PROJECT_ID, name: 'ERP', allowedActions: ['read', 'create_ticket'] }];
@@ -61,6 +66,15 @@ describe('NewTicketPage', () => {
       expect(form.props).toMatchObject({ requestedProjectId: undefined });
     },
   );
+
+  it('tells a person over the rate limit when to try again (#382)', async () => {
+    const error = new ApiError(429, 'request.rate_limited', [], 45);
+    getNewTicketPage.mockRejectedValue(error);
+
+    const element = await NewTicketPage({ searchParams: Promise.resolve({}) });
+
+    expect(element).toMatchObject({ type: RateLimitedNotice, props: { error } });
+  });
 
   it('says so when no project allows creating a ticket (Q7)', async () => {
     getNewTicketPage.mockResolvedValue({ projects: [], templates: TEMPLATES });

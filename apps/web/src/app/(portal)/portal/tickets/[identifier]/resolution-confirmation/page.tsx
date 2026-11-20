@@ -2,12 +2,14 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { resolutionAnswerSchema } from '@trybun/contracts/tickets';
 import { redirect } from 'next/navigation.js';
 import { z } from 'zod';
+import { RateLimitedNotice } from '../../../../../../features/app-shell/components/rate-limited-notice.js';
 import {
   portalTicketHref,
   resolutionConfirmationHref,
 } from '../../../../../../features/portal/hrefs.js';
 import { ResolutionConfirmation } from '../../../../../../features/tickets/components/resolution-confirmation.js';
 import { getTicketPage } from '../../../../../../features/tickets/ticket-page.js';
+import { readOrRateLimited } from '../../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../../../lib/query-client/server-query-client.js';
 
@@ -15,7 +17,8 @@ const searchParamsSchema = z.object({ answer: resolutionAnswerSchema.optional().
 
 /**
  * The confirmation page of the resolution answer (§4.3, Q14), for the signed-in requester; S1-15
- * adds the signed token of the e-mail links. Without a valid answer it is the ticket itself.
+ * adds the signed token of the e-mail links. Without a valid answer it is the ticket itself. A
+ * person over the rate limit is told so (§14.4).
  */
 export default async function ResolutionConfirmationPage({
   params,
@@ -30,11 +33,16 @@ export default async function ResolutionConfirmationPage({
   ]);
   await requireSession();
   // A lower-case identifier comes back to this page, upper case, with its answer.
-  await getTicketPage(identifier, 'portal', (canonical) =>
-    answer === undefined
-      ? portalTicketHref(canonical)
-      : resolutionConfirmationHref(canonical, answer),
+  const { rateLimited } = await readOrRateLimited(
+    getTicketPage(identifier, 'portal', (canonical) =>
+      answer === undefined
+        ? portalTicketHref(canonical)
+        : resolutionConfirmationHref(canonical, answer),
+    ),
   );
+  if (rateLimited !== undefined) {
+    return <RateLimitedNotice error={rateLimited} />;
+  }
   if (answer === undefined) {
     redirect(portalTicketHref(identifier));
   }

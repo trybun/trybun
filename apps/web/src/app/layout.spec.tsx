@@ -31,10 +31,14 @@ describe('RootLayout', () => {
     ).toBe('<html lang="pl" class="font-manrope"><head></head><body><main></main></body></html>');
   });
 
-  it('passes only the shared texts to the browser', async () => {
+  it('passes only the shared texts and those of the error page to the browser', async () => {
     renderToStaticMarkup(await RootLayout({ children: <main /> }));
 
-    expect(providedMessages).toHaveBeenCalledWith({ ui: CATALOGUES.pl.ui });
+    expect(providedMessages).toHaveBeenCalledWith({
+      app: CATALOGUES.pl.app,
+      errorPage: CATALOGUES.pl.errorPage,
+      ui: CATALOGUES.pl.ui,
+    });
   });
 
   it('takes the title from the messages', async () => {

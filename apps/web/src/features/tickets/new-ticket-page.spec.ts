@@ -1,11 +1,13 @@
 import { CATALOGUES, type Locale } from '@trybun/i18n/catalogues';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { rateLimitedResult } from '../../../test/factories/rate-limited.factory.js';
 
 vi.mock('server-only', () => ({}));
 let language: Locale | null = null;
 let requestLocale: Locale = 'en';
 const projectPages: Record<string, { items: object[]; nextCursor: string | null }> = {};
-const get = vi.fn((path: string, init: { params?: { query?: { cursor?: string } } }) =>
+type Get = (path: string, init: { params?: { query?: { cursor?: string } } }) => Promise<unknown>;
+const get = vi.fn<Get>((path, init) =>
   Promise.resolve({
     data:
       path === '/api/v1/users/me'
@@ -77,4 +79,21 @@ describe('getNewTicketPage', () => {
     requestLocale = 'en';
     expect((await getNewTicketPage()).templates).toEqual(CATALOGUES.en.tickets.templates);
   });
+
+  it.each(['/api/v1/projects', '/api/v1/users/me'])(
+    'throws the 429 of %s as an ApiError, which the page shows as the rate limit (#382)',
+    async (refused) => {
+      const answer = get.getMockImplementation()!;
+      get.mockImplementation((path, init) =>
+        path === refused ? rateLimitedResult() : answer(path, init),
+      );
+
+      await expect(getNewTicketPage()).rejects.toMatchObject({
+        name: 'ApiError',
+        status: 429,
+        retryAfterSeconds: 45,
+      });
+      get.mockImplementation(answer);
+    },
+  );
 });

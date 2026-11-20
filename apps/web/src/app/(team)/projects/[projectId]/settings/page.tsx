@@ -1,6 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { notFound } from 'next/navigation.js';
 import { z } from 'zod';
+import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
 import { organizationsQueryOptions } from '../../../../../features/organizations/queries.js';
 import { ProjectSettings } from '../../../../../features/projects/components/project-settings.js';
 import {
@@ -12,6 +13,7 @@ import { currentUserQueryOptions } from '../../../../../features/users/queries.j
 import {
   dataOrNotFound,
   getServerApiClient,
+  readOrRateLimited,
 } from '../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
@@ -20,7 +22,8 @@ const paramsSchema = z.object({ projectId: z.uuid() });
 
 /**
  * The settings of a project (§3.1, §7.3, §7.4). A project the person cannot see – or an address
- * that is not a project ID – shows the not-found page (§17.2).
+ * that is not a project ID – shows the not-found page (§17.2); a person over the rate limit is told
+ * so (§14.4).
  */
 export default async function ProjectSettingsPage({
   params,
@@ -38,9 +41,12 @@ export default async function ProjectSettingsPage({
   await requireSession();
   const client = await getServerApiClient();
   const queryClient = getServerQueryClient();
-  const project = await dataOrNotFound(
-    client.GET('/api/v1/projects/{projectId}', { params: { path: { projectId } } }),
+  const { data: project, rateLimited } = await readOrRateLimited(
+    dataOrNotFound(client.GET('/api/v1/projects/{projectId}', { params: { path: { projectId } } })),
   );
+  if (rateLimited !== undefined) {
+    return <RateLimitedNotice error={rateLimited} />;
+  }
   queryClient.setQueryData(projectQueryOptions(client, projectId).queryKey, project);
   await Promise.all([
     project.allowedActions.includes('read_members')
