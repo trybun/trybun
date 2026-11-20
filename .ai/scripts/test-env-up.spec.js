@@ -33,6 +33,9 @@ case "$*" in
     done ;;
   "volume rm "*) ;;
   "ps --filter publish="*) ;;
+  # The infrastructure counts as already running (not started by the boot) while this file exists.
+  "compose -p trybun-test -f compose.yaml -f compose.dev.yaml ps -q postgres")
+    [ ! -e "$STUB_DIR/compose-running" ] || echo postgres-container ;;
   "compose -p trybun-test -f compose.yaml -f compose.dev.yaml "*) ;;
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
@@ -442,6 +445,190 @@ describe('an interrupted boot (#383)', () => {
       expect(group).toBe(pid);
     }
     expect(descriptor().status).toBe('running');
+  });
+});
+
+describe('--foreground (#383)', () => {
+  const composeDown = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down';
+  const downs = () => readLines(join(folder, 'log')).filter((line) => line === composeDown).length;
+  const applications = () => {
+    const { apiPid, workerPid, webPid } = descriptor().app;
+    return [apiPid, workerPid, webPid];
+  };
+  const owner = /attached in the foreground as the owner/;
+  const viewer = /attached in the foreground as a viewer/;
+
+  async function stopped(pids) {
+    await until(
+      () => descriptor().status === 'stopped' && pids.every((pid) => !alive(pid)),
+      20_000,
+      () => `status ${descriptor().status}`,
+    );
+  }
+
+  describe('as the owner of the environment it booted', () => {
+    it.each([
+      ['SIGTERM to its PID', (run) => run.child.kill('SIGTERM')],
+      ['SIGHUP to its process group (a closed terminal)', (run) => run.signalGroup('SIGHUP')],
+    ])('stops the environment on %s', async (_, send) => {
+      const run = start('--foreground');
+      await run.output(owner);
+      expect(run.stdout).toContain('TEST_ENV_REUSED=0');
+      const pids = applications();
+
+      send(run);
+
+      expect((await run.exited()).code).toBe(0);
+      await stopped(pids);
+      expect(downs()).toBe(1);
+    });
+
+    it('leaves the infrastructure running when its boot did not start it', async () => {
+      writeFileSync(join(folder, 'compose-running'), '');
+      const run = start('--foreground');
+      await run.output(owner);
+      const pids = applications();
+
+      run.child.kill('SIGTERM');
+
+      expect((await run.exited()).code).toBe(0);
+      await stopped(pids);
+      expect(downs()).toBe(0);
+    });
+
+    it('holds no bootstrap lock while attached', async () => {
+      const run = start('--foreground');
+      await run.output(owner);
+
+      expect(lockExists()).toBe(false);
+    });
+
+    it('stops the rest and exits 1 when an application crashes', async () => {
+      const run = start('--foreground');
+      await run.output(owner);
+      const pids = applications();
+
+      process.kill(-Number(descriptor().app.webPid), 'SIGKILL');
+
+      expect((await run.exited()).code).toBe(1);
+      await stopped(pids);
+    });
+
+    it('detaches without a second teardown when the environment is stopped by hand', async () => {
+      const run = start('--foreground');
+      await run.output(owner);
+
+      expect(
+        spawnSync('sh', ['.ai/scripts/test-env-down.sh'], { cwd: checkout, env: environment() })
+          .status,
+      ).toBe(0);
+
+      expect((await run.exited()).code).toBe(0);
+      expect(run.stderr).toMatch(/stopped elsewhere/);
+      expect(downs()).toBe(1);
+    });
+
+    it('detaches and leaves its successor alone when another start replaces the environment', async () => {
+      const run = start('--foreground');
+      await run.output(owner);
+      const before = descriptor().runId;
+
+      const reset = up('--reset');
+      expect(reset.status, reset.stderr).toBe(0);
+
+      expect((await run.exited()).code).toBe(0);
+      // It detaches as soon as the replacement stops it, before the new run id is recorded.
+      expect(run.stderr).toMatch(/was stopped elsewhere \(stopping\)|was replaced by /);
+      expect(descriptor().runId).not.toBe(before);
+      expect(descriptor().status).toBe('running');
+      for (const pid of applications()) expect(alive(pid), pid).toBe(true);
+    });
+
+    it('stops the environment for a signal right after the boot, before the role is set', async () => {
+      const run = start('--foreground');
+      await run.output(/TEST_ENV_RUN_ID=/);
+
+      run.child.kill('SIGTERM');
+
+      expect((await run.exited()).code).toBe(0);
+      expect(descriptor().status).toBe('stopped');
+      expect(downs()).toBe(1);
+    });
+
+    it('leaves the cleanup of an interrupted boot to the boot itself', async () => {
+      extraEnvironment = { STUB_BLOCK: 'build' };
+      const run = start('--foreground');
+      await until(
+        () => existsSync(join(folder, 'blocked')),
+        20_000,
+        () => run.stderr,
+      );
+
+      run.child.kill('SIGTERM');
+
+      expect((await run.exited()).code).toBe(143);
+      await until(
+        () => !lockExists(),
+        20_000,
+        () => 'the lock is still held',
+      );
+      for (const pid of readLines(join(folder, 'grandchildren')))
+        expect(alive(pid), pid).toBe(false);
+      expect(existsSync(join(checkout, '.ai/qa/test-env.json'))).toBe(false);
+      expect(downs()).toBe(1);
+    });
+
+    it('finishes the teardown when its process group gets SIGKILL after SIGTERM', async () => {
+      // The applications need 4 s to stop, longer than sv-prepare-qa-tests waits before SIGKILL.
+      extraEnvironment = { STUB_STOP_SECONDS: '4' };
+      const run = start('--foreground');
+      await run.output(owner);
+      const pids = applications();
+
+      run.signalGroup('SIGTERM');
+      await sleep(2_000);
+      run.signalGroup('SIGKILL');
+
+      expect((await run.exited()).signal).toBe('SIGKILL');
+      await stopped(pids);
+    });
+  });
+
+  describe('as a viewer of a running environment', () => {
+    it('stops nothing when its terminal closes', async () => {
+      expect(up().status).toBe(0);
+      const run = start('--foreground');
+      await run.output(viewer);
+      expect(run.stdout).toContain('TEST_ENV_REUSED=1');
+
+      run.signalGroup('SIGHUP');
+
+      expect((await run.exited()).code).toBe(0);
+      expect(descriptor().status).toBe('running');
+      for (const pid of applications()) expect(alive(pid), pid).toBe(true);
+      expect(downs()).toBe(0);
+    });
+
+    it('detaches when the environment is stopped elsewhere', async () => {
+      expect(up().status).toBe(0);
+      const run = start('--foreground');
+      await run.output(viewer);
+
+      expect(
+        spawnSync('sh', ['.ai/scripts/test-env-down.sh'], { cwd: checkout, env: environment() })
+          .status,
+      ).toBe(0);
+
+      expect((await run.exited()).code).toBe(0);
+      expect(run.stderr).toMatch(/stopped elsewhere \((stopping|stopped)\)/);
+    });
+  });
+
+  it('refuses --force', () => {
+    const { status, stderr } = up('--foreground', '--force');
+
+    expect(status).toBe(2);
+    expect(stderr).toContain('--foreground cannot be combined with --force');
   });
 });
 

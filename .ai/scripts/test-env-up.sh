@@ -64,14 +64,22 @@ mkdir -p "$QA_DIR" "$LOG_DIR"
 FORCE=0
 FORCE_REBUILD=0
 RESET=0
+FOREGROUND=0
 for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
     --force-rebuild) FORCE_REBUILD=1 ;;
     --reset) RESET=1 ;;
+    --foreground) FOREGROUND=1 ;;
     *) echo "Unknown flag: $arg" >&2; exit 2 ;;
   esac
 done
+# --force skips the reuse check and then refuses on the occupied ports: it never replaces a running
+# environment, so there is nothing for --foreground to own or watch.
+if [ "$FOREGROUND" = 1 ] && [ "$FORCE" = 1 ]; then
+  echo "--foreground cannot be combined with --force" >&2
+  exit 2
+fi
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 log() { printf '[test-env] %s\n' "$*" >&2; }
@@ -79,7 +87,128 @@ json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$2" | 
 # Whether a process exists: `ps -p`, not `kill -0`, which fails with EPERM for another user's
 # process (the lock below is shared by the whole machine).
 alive() { [ -n "${1:-}" ] && ps -p "$1" >/dev/null 2>&1; }
+# Whether a process runs, not counting an exited child that is not reaped yet (a zombie).
+running() { [ -n "${1:-}" ] && ps -o stat= -p "$1" 2>/dev/null | grep -qv '^Z'; }
 healthy() { curl -fsS --max-time 5 -o /dev/null "$1" 2>/dev/null; }
+set_descriptor_status() {
+  [ -f "$DESCRIPTOR" ] || return 0
+  sed -i.bak "s/\"status\": \"[a-z]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" || true
+  rm -f "$DESCRIPTOR.bak"
+}
+
+# --- --foreground (#383): one start command for cezar Preview, sv-prepare-qa-tests and the QA
+# skills. The boot runs unchanged as a child (this script without the flag), so the lock is held
+# only while it boots; then this process stays attached while the applications live, in one role:
+#   owner  – the child booted (TEST_ENV_REUSED=0): a signal runs test-env-down.sh, a crash too;
+#   viewer – the child reused a running environment: a signal stops nothing.
+# Signals are forwarded as SIGTERM: the child, an asynchronous command of a shell without job
+# control, ignores SIGINT. A teardown runs in its own session and is waited for, so a SIGKILL of
+# this process group a moment later cannot cut it off. Handler output goes to a log, because after
+# SIGHUP the terminal is gone.
+
+# The role the child's output names, once it has exited 0 (also for a signal that arrives before
+# the role is set).
+fg_read_role() {
+  FG_RUN=$(sed -n 's/^TEST_ENV_RUN_ID=//p' "$FG_OUT" | head -1)
+  case "$(sed -n 's/^TEST_ENV_REUSED=//p' "$FG_OUT" | head -1)" in
+    0) FG_ROLE=owner ;;
+    1) FG_ROLE=viewer ;;
+    *) FG_ROLE="" ;;
+  esac
+}
+# Whether the descriptor still records this owner's run as running.
+fg_still_ours() {
+  [ -n "$FG_RUN" ] && [ "$(json_get status "$DESCRIPTOR")" = running ] &&
+    [ "$(json_get runId "$DESCRIPTOR")" = "$FG_RUN" ]
+}
+fg_teardown() {
+  setsid sh "$ROOT/.ai/scripts/test-env-down.sh" >>"$FG_LOG" 2>&1 < /dev/null &
+  teardown_pid=$!
+  while alive "$teardown_pid"; do wait "$teardown_pid" || true; done
+}
+fg_signal() {
+  [ "$FG_HANDLING" = 1 ] && return 0
+  FG_HANDLING=1
+  exec >>"$FG_LOG" 2>&1
+  if [ -n "$FG_SLEEP" ]; then kill "$FG_SLEEP" 2>/dev/null || true; fi
+  if [ -n "$FG_CHILD" ]; then
+    # Still booting: the child stops what it started; this layer has nothing of its own. A child
+    # that has just finished its boot exits 0, and its output names the role.
+    if running "$FG_CHILD"; then
+      log "signal during the boot; stopping it"
+      kill -s TERM "$FG_CHILD" 2>/dev/null || true
+    fi
+    child_status=0
+    while alive "$FG_CHILD"; do wait "$FG_CHILD" || child_status=$?; done
+    FG_CHILD=""
+    [ "$child_status" = 0 ] || exit "$child_status"
+  fi
+  [ -n "$FG_ROLE" ] || fg_read_role
+  if [ "$FG_ROLE" = owner ] && fg_still_ours; then
+    log "closing the owner of environment $FG_RUN; stopping it"
+    fg_teardown
+  else
+    log "closing a viewer; the environment keeps running"
+  fi
+  exit 0
+}
+if [ "$FOREGROUND" = 1 ]; then
+  FG_OUT="$LOG_DIR/foreground-boot.out"
+  FG_LOG="$LOG_DIR/foreground.log"
+  FG_CHILD=""
+  FG_SLEEP=""
+  FG_ROLE=""
+  FG_RUN=""
+  FG_HANDLING=0
+  child_flags=""
+  [ "$FORCE_REBUILD" = 1 ] && child_flags="$child_flags --force-rebuild"
+  [ "$RESET" = 1 ] && child_flags="$child_flags --reset"
+
+  trap 'fg_signal 129' HUP
+  trap 'fg_signal 130' INT
+  trap 'fg_signal 143' TERM
+
+  # shellcheck disable=SC2086 # one flag per word
+  sh "$ROOT/.ai/scripts/test-env-up.sh" $child_flags >"$FG_OUT" &
+  FG_CHILD=$!
+  child_status=0
+  while alive "$FG_CHILD"; do wait "$FG_CHILD" || child_status=$?; done
+  FG_CHILD=""
+  cat "$FG_OUT"
+  [ "$child_status" = 0 ] || exit "$child_status"
+  fg_read_role
+  if [ -z "$FG_ROLE" ] || [ -z "$FG_RUN" ]; then
+    log "the boot printed no TEST_ENV_REUSED or TEST_ENV_RUN_ID; see $FG_OUT"
+    exit 1
+  fi
+  if [ "$FG_ROLE" = owner ]; then
+    log "attached in the foreground as the owner – closing this terminal stops the environment"
+  else
+    log "attached in the foreground as a viewer of an environment started elsewhere – closing this terminal stops nothing"
+  fi
+  fg_api=$(json_get apiPid "$DESCRIPTOR")
+  fg_worker=$(json_get workerPid "$DESCRIPTOR")
+  fg_web=$(json_get webPid "$DESCRIPTOR")
+  while alive "$fg_api" && alive "$fg_worker" && alive "$fg_web"; do
+    sleep 2 &
+    FG_SLEEP=$!
+    wait "$FG_SLEEP" || true
+    FG_SLEEP=""
+  done
+  # The applications ended: a crash of this owner's run, or a stop or replacement from elsewhere.
+  if [ "$FG_ROLE" = owner ] && fg_still_ours; then
+    log "an application of environment $FG_RUN exited; stopping the rest (logs in $LOG_DIR)"
+    fg_teardown
+    exit 1
+  fi
+  current=$(json_get runId "$DESCRIPTOR")
+  if [ -n "$current" ] && [ "$current" != "$FG_RUN" ]; then
+    log "environment $FG_RUN was replaced by $current; detaching"
+  else
+    log "environment $FG_RUN was stopped elsewhere ($(json_get status "$DESCRIPTOR")); detaching"
+  fi
+  exit 0
+fi
 
 # --- lock: one bootstrap at a time
 acquire_lock() {
@@ -146,6 +275,9 @@ interrupted() {
   [ "$BOOTED" = 1 ] && exit "$1"
   exec >>"$LOG_DIR/foreground.log" 2>&1
   log "interrupted (exit $1); stopping what this boot started"
+  # Interrupted after the descriptor was written but before the result was printed: nobody was
+  # told the environment runs, so it is stopped and recorded as such.
+  if [ -n "${RUN_ID:-}" ]; then set_descriptor_status stopping; fi
   pids=""
   for pid in "$STEP_PID" "$API_PID" "$WORKER_PID" "$WEB_PID"; do [ -n "$pid" ] && pids="$pids $pid"; done
   # shellcheck disable=SC2086 # one PID per word
@@ -154,6 +286,7 @@ interrupted() {
   LOCKED=0
   # A second signal interrupts `wait`; keep waiting until the cleanup has finished.
   while alive "$cleanup_pid"; do wait "$cleanup_pid" || true; done
+  if [ -n "${RUN_ID:-}" ]; then set_descriptor_status stopped; fi
   exit "$1"
 }
 
@@ -371,6 +504,6 @@ cat > "$DESCRIPTOR" <<EOF
   "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). Stop with: sh .ai/scripts/test-env-down.sh"
 }
 EOF
-BOOTED=1
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
 print_result 0 "$RUN_ID"
+BOOTED=1
