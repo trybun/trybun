@@ -57,9 +57,9 @@ Every page of the web application gets the translated tab title of the specifica
 
 ### Phase 2: the record pages
 
-- [ ] 2.1 `metadataAfterRead()` with the title sources
-- [ ] 2.2 Ticket pages
-- [ ] 2.3 Project, organization, Administrator and help pages
+- [x] 2.1 `metadataAfterRead()` with the title sources — 02dfa15
+- [x] 2.2 Ticket pages — 02dfa15
+- [x] 2.3 Project, organization, Administrator and help pages — 02dfa15
 
 ### Phase 3: end-to-end checks, specification and docs
 
