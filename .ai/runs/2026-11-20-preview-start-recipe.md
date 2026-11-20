@@ -54,9 +54,9 @@ Issue: #383 (spec PR #415, merged)
 
 ### Phase 2: `--foreground`
 
-- [ ] 2.1 The outer layer and the owner role
-- [ ] 2.2 The viewer role
-- [ ] 2.3 The refusal messages
+- [x] 2.1 The outer layer and the owner role — f1a4c11
+- [x] 2.2 The viewer role — f1a4c11
+- [x] 2.3 The refusal messages — 09fd65d
 
 ### Phase 3: Documentation and verification
 
