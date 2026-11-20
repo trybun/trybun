@@ -10,7 +10,7 @@ Every page of the web application gets the translated tab title of the specifica
 ## Scope
 
 - `apps/web`: `pageTitle()` in `features/app-shell`, `metadataAfterRead()` with `title` and `rateLimitedTitle`, a `generateMetadata` on every `page.tsx` except the redirect-only project page, unit tests per page, the `app/page-titles.spec.ts` scan, and E2E `toHaveTitle` per shell.
-- `@trybun/i18n`: `app.titlePart`, `tickets.tabTitle`, `notFoundPage.tabTitle` without the suffix, and the missing heading keys (PL first).
+- `@trybun/i18n`: `app.titlePart`, `tickets.tabTitle`, `notFoundPage.tabTitle` replaced by the heading, and the missing heading keys (PL first).
 - Specification §13.1, §13.4, §14.4 and §18.5; ADR 0015 accepted; `.ai/memory/toolchain.md`; the change specification moved to `implemented/`.
 
 ## Non-goals
@@ -23,7 +23,7 @@ Every page of the web application gets the translated tab title of the specifica
 ### Phase 1: the helper and the static pages
 
 1. `app.titlePart` and `pageTitle()`, with unit tests (one part, several parts, record values with `{`, `$&` and `%s`).
-2. `notFoundPage.tabTitle` without the suffix; `notFoundMetadata()` returns `pageTitle()`.
+2. `notFoundPage.tabTitle` replaced by the heading; `notFoundMetadata()` returns `pageTitle()`.
 3. `generateMetadata` with `pageTitle()` on the 12 pages that read nothing for their title, with a unit test per page.
 4. `app/page-titles.spec.ts` replaces the scan of `app/not-found-metadata.spec.ts`.
 
