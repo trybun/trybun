@@ -276,6 +276,22 @@ test.describe('the portal of an end user with one project', () => {
 
     await expect(question).toHaveCount(0);
   });
+
+  test('shows the not-found page of the portal for a ticket that does not exist', async ({
+    page,
+  }) => {
+    const response = await page.goto('/portal/tickets/CP-999999');
+
+    expect(response?.status()).toBe(404);
+    // Inside the shell of the portal, with the way back to its home (#401).
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+    await expect(page).toHaveTitle('Page not found – Trybun');
+    await expect(page.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute(
+      'href',
+      '/portal',
+    );
+    await expect(new AppShellPage(page).navigation).toBeVisible();
+  });
 });
 
 test.describe('the portal of an end user with two projects', () => {

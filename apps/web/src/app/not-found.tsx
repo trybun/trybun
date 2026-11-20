@@ -11,10 +11,11 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * An address that matches no route (§18.5, #401) – no page outside the route groups of the
- * application shell calls `notFound()`. It renders below the root layout without a shell, so it is
- * a page of its own with the header of the public pages, like `app/error.tsx`. The home of the
- * team leads an end user on to the portal and a person without a session to the sign-in.
+ * An address that matches no route (§18.5, #401) – every page that calls `notFound()` is inside
+ * a segment with a `not-found.tsx` of its own: `(team)`, `(portal)` or `help`. It renders below
+ * the root layout without a shell, so it is a page of its own with the header of the public pages,
+ * like `app/error.tsx`. The home of the team leads an end user on to the portal and a person
+ * without a session to the sign-in.
  */
 export default function RootNotFound() {
   return (
