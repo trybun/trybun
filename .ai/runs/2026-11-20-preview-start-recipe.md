@@ -48,9 +48,9 @@ Issue: #383 (spec PR #415, merged)
 
 ### Phase 1: The boot path (no flag)
 
-- [ ] 1.1 Characterize the default path and extend the harness
-- [ ] 1.2 `stopping` in test-env-down.sh and the TEST_ENV_RUN_ID line
-- [ ] 1.3 Boot-interrupt cleanup with the long steps in their own sessions
+- [x] 1.1 Characterize the default path and extend the harness — f64408f
+- [x] 1.2 `stopping` in test-env-down.sh and the TEST_ENV_RUN_ID line — bba9ebf
+- [x] 1.3 Boot-interrupt cleanup with the long steps in their own sessions — 59f9f3e
 
 ### Phase 2: `--foreground`
 
