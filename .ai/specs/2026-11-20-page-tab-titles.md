@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-11-20 |
 | Plan task | – (follow-up of #404 / [#406](https://github.com/trybun/trybun/pull/406)) |
 | System specification sections | §13.1, §13.4, §14.4, §18.5 |
@@ -111,7 +111,7 @@ The braces stand for a heading text that already exists in the catalogues or a v
 
 ## 📝 Risks & Impact Review
 
-- **Personal data in the tab title.** A ticket title can contain personal data, and the browser keeps titles in history and may sync them across devices. The maintainer accepted this in Q2. The exposure stays within what the signed-in person sees, the same as the page itself and the notification e-mail. Redacting a title ([title redaction](2026-10-26-title-redaction.md), approved, not yet built) cannot recall browser history. That is the same limit it already accepts for e-mails already sent. Its implementation should name browser history beside e-mails in its warning and help page. This spec cannot change that approved spec, so the PR records it as a follow-up note.
+- **Personal data in the tab title.** A ticket title can contain personal data, and the browser keeps titles in history and may sync them across devices. The maintainer accepted this in Q2. The exposure stays within what the signed-in person sees, the same as the page itself and the notification e-mail. Redacting a title ([title redaction](2026-10-26-title-redaction.md), approved, not yet built) cannot recall browser history. That is the same limit it already accepts for e-mails already sent. Its implementation should name browser history beside e-mails in its warning and help page. This spec cannot change that approved spec, so the amendment is tracked in [#409](https://github.com/trybun/trybun/issues/409).
 - **Broad, mechanical edit** (`risk-high`): 25 pages and the `metadataAfterRead()` contract. A unit scan fails for a page without a title, so a future page cannot ship without one.
 - Easy to reverse: no data, API or persistent state change.
 
@@ -143,11 +143,11 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 
 | # | Question | Default | Rationale |
 |---|---|---|---|
-| A1 | Mechanism of the suffix: `title.template` (named in the Q1 answer) or `title.absolute` from one helper? | `title.absolute` through `pageTitle()`, recorded in ADR 0015 (`proposed`) | Next.js 16.4.5 interprets `$`-patterns of user text in a template and skips the template for the root `not-found.tsx` and below any layout with a plain title. The scheme of Q1 is unchanged; only the mechanism differs. Reversible. |
+| A1 | Mechanism of the suffix: `title.template` (named in the Q1 answer) or `title.absolute` from one helper? | `title.absolute` through `pageTitle()`, recorded in ADR 0015 (`proposed`) | Next.js 16.4.5 interprets `$`-patterns of user text in a template and skips the template for the root `not-found.tsx` and below any layout with a plain title. The scheme of Q1 is unchanged; only the mechanism differs. Reversible. Confirmed by the maintainer on 2026-11-20. |
 | A2 | Middle parts: which pages carry a second part? | Project-scoped pages (the project) and the sections of the Administrator panel ("Administration"); nothing for list filters | The heading alone is ambiguous across tabs only there. GOV.UK bases the title on the `h1` plus the service. Keeps titles short (G88). |
 | A3 | (#407 Q3, non-blocking) Follow a ticket renamed while its page is open? | No: the title refreshes on the next server render | The default of #407 itself. A live update would need a client-side title mechanism (rejected in ADR 0014) or a `router.refresh()` after every edit. |
 | A4 | Title on a `429` of a record page? | The title without the record (the identifier from the address for tickets) | The record was not read. The address is the person's own input and reveals nothing (§14.4). |
-| A5 | Title of `error.tsx`? | The page's own title when only its render fails; "Trybun" when its read fails | A Client Component cannot export metadata, and a second title mechanism is forbidden (Non-goals, recorded compromise). |
+| A5 | Title of `error.tsx`? | The page's own title when only its render fails; "Trybun" when its read fails | A Client Component cannot export metadata, and a second title mechanism is forbidden (Non-goals, recorded compromise). Confirmed by the maintainer on 2026-11-20. |
 
 ## Acceptance criteria
 
@@ -183,9 +183,10 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 ### Phase 3 – end-to-end checks, specification and docs
 
 1. E2E `toHaveTitle` per shell: page load, client-side navigation, language switch, and the unmatched address.
-2. Update §13.1, §13.4, §14.4 and §18.5. Set ADR 0015 to `accepted`.
+2. Update §13.1, §13.4, §14.4 and §18.5. Set ADR 0015 to `accepted`. In `.ai/memory/toolchain.md`, extend the entry on the tab title of `not-found.tsx` with the pitfalls of `title.template` in Next.js 16.4 (`$`-patterns of user text, the skipped leaf layout, the reset by a plain layout title) and a link to ADR 0015.
 3. Set the status to `implemented`, add the changelog entry and move this file to `implemented/`.
 
 ## Changelog
 
 - 2026-11-20 – Created (#407). Q1 and Q2 answered by the maintainer; A1–A5 resolved as autonomous defaults for review; ADR 0015 proposed. Revised after an independent review: the `429` title contract, the resolution-confirmation title, the setup title, test scope, and the `error.tsx` compromise. Revised after the review of #408: a page whose `h1` names its record takes the view's name first (project settings, resolution confirmation).
+- 2026-11-20 – Approved by the maintainer in the session: A1 (ADR 0015) and A5 confirmed, A2–A4 accepted with the merge; the redaction amendment is tracked in #409.
