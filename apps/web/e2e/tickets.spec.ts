@@ -71,24 +71,30 @@ test.describe('the team ticket view', () => {
     await expect(new AppShellPage(page).navigation).toBeVisible();
   });
 
-  // Every page names itself in the tab (§13.4, WCAG 2.2 SC 2.4.2): the most specific part first,
-  // the brand last, translated after a client-side navigation and a language switch (#407).
-  test('names the ticket and the list in the tab after a page load, a navigation and a language switch', async ({
-    page,
-  }) => {
-    const shell = new AppShellPage(page);
-    await new TicketPage(page).goto(IDENTIFIER);
-    await expect(page).toHaveTitle(`${IDENTIFIER} ${TITLE} – Trybun`);
+  // The language switch saves the language of the account; the manager signs in only in the
+  // set-up, so no test that signs in afresh reads it (`settings.spec.ts` reads the developer's).
+  test.describe('as the manager', () => {
+    test.use({ storageState: MANAGER_STORAGE_STATE });
 
-    await navigateInApp(page, '/tickets');
-    await expect(page).toHaveTitle('Tickets – Trybun');
-    await navigateInApp(page, `/tickets/${IDENTIFIER}`);
-    await expect(page).toHaveTitle(`${IDENTIFIER} ${TITLE} – Trybun`);
+    // Every page names itself in the tab (§13.4, WCAG 2.2 SC 2.4.2): the most specific part first,
+    // the brand last, translated after a client-side navigation and a language switch (#407).
+    test('names the ticket and the list in the tab after a page load, a navigation and a language switch', async ({
+      page,
+    }) => {
+      const shell = new AppShellPage(page);
+      await new TicketPage(page).goto(IDENTIFIER);
+      await expect(page).toHaveTitle(`${IDENTIFIER} ${TITLE} – Trybun`);
 
-    const menu = await shell.openAccountMenu();
-    await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
-    await navigateInApp(page, '/tickets');
-    await expect(page).toHaveTitle('Zgłoszenia – Trybun');
+      await navigateInApp(page, '/tickets');
+      await expect(page).toHaveTitle('Tickets – Trybun');
+      await navigateInApp(page, `/tickets/${IDENTIFIER}`);
+      await expect(page).toHaveTitle(`${IDENTIFIER} ${TITLE} – Trybun`);
+
+      const menu = await shell.openAccountMenu();
+      await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
+      await navigateInApp(page, '/tickets');
+      await expect(page).toHaveTitle('Zgłoszenia – Trybun');
+    });
   });
 
   // The not-found metadata comes from `generateMetadata` of the page, so the tab title is

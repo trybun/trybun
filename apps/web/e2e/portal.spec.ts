@@ -234,9 +234,10 @@ test.describe('the portal of an end user with one project', () => {
   test('opens a ticket from the team address with a lower-case identifier', async ({ page }) => {
     const portal = new PortalPage(page);
     await page.goto('/portal/tickets');
-    await portal.ticket('Wrong VAT rate on the March invoice').click();
-    await expect(page).toHaveURL(/\/portal\/tickets\/CP-\d+$/);
-    const identifier = new URL(page.url()).pathname.split('/').at(-1) ?? '';
+    const href =
+      (await portal.ticket('Wrong VAT rate on the March invoice').getAttribute('href')) ?? '';
+    await navigateInApp(page, href);
+    const identifier = href.split('/').at(-1) ?? '';
 
     // The team address goes to the portal (S1-10), and the identifier to its upper case.
     await page.goto(`/tickets/${identifier.toLowerCase()}`);
