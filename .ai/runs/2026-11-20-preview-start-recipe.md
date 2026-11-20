@@ -1,0 +1,64 @@
+# Execution plan: one start command for cezar Preview and the QA skills
+
+Source doc: .ai/specs/2026-11-20-preview-start-recipe.md
+Issue: #383 (spec PR #415, merged)
+
+## Goal
+
+`sh .ai/scripts/test-env-up.sh --foreground` starts the QA test environment and stays attached: as the owner it stops what it booted when its terminal closes, as a viewer it stops nothing. A documented cezar `startApp` recipe uses it, so Preview, `sv-prepare-qa-tests` and `om-prepare-test-env` share one start command.
+
+## Scope
+
+- `.ai/scripts/test-env-up.sh`: the `--foreground` outer layer (owner and viewer), the additive `TEST_ENV_RUN_ID` line, the boot-interrupt cleanup with the long steps in their own sessions, the reworded refusal messages.
+- `.ai/scripts/test-env-down.sh`: `stopping` before it signals the applications.
+- `.ai/scripts/test-env-up.spec.js`: asynchronous harness, blocking-step stub switch, tests for every role and the interrupt cleanup.
+- README subsection, `.ai/memory/e2e.md`, the script `history:` headers, the spec moved to `implemented/`.
+
+## Non-goals
+
+- Changes to cezar, framing the application (§13.5 unchanged), several environments per machine, a `beforeRemove` hook, a PowerShell twin (spec Non-goals).
+
+## Implementation Plan
+
+### Phase 1: The boot path (no flag)
+
+1. Characterize the default path and extend the harness (spec step 1).
+2. `stopping` in `test-env-down.sh` and the `TEST_ENV_RUN_ID` line (spec step 2).
+3. Boot-interrupt cleanup with the long steps in their own sessions (spec step 3).
+
+### Phase 2: `--foreground`
+
+1. The outer layer and the owner role (spec step 4).
+2. The viewer role (spec step 5).
+3. The refusal messages (spec step 6).
+
+### Phase 3: Documentation and verification
+
+1. README subsection, script history headers, memory, spec to `implemented/` (spec step 7).
+2. Full validation gate; the cezar verification of spec step 8 needs the maintainer's word to set the local recipe.
+
+## Risks
+
+- How cezar stops a service and whether it closes terminals before removing a worktree are unverified (spec Risks); the design handles a group `SIGHUP` and a signal to the PID alone.
+- Signal timing in tests: every wait in the tests is bounded, and the stubs keep their port for one second after `SIGTERM`, as the API does.
+
+## Progress
+
+> Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
+
+### Phase 1: The boot path (no flag)
+
+- [ ] 1.1 Characterize the default path and extend the harness
+- [ ] 1.2 `stopping` in test-env-down.sh and the TEST_ENV_RUN_ID line
+- [ ] 1.3 Boot-interrupt cleanup with the long steps in their own sessions
+
+### Phase 2: `--foreground`
+
+- [ ] 2.1 The outer layer and the owner role
+- [ ] 2.2 The viewer role
+- [ ] 2.3 The refusal messages
+
+### Phase 3: Documentation and verification
+
+- [ ] 3.1 README, script history, memory, spec to implemented
+- [ ] 3.2 Full validation gate and verification
