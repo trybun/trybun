@@ -15,8 +15,8 @@ export function getWebMessages(locale: RequestLocale): WebMessages {
   ) as WebMessages;
 }
 
-const ROOT = ['errorPage', 'ui'] as const satisfies (keyof WebMessages)[];
-const SHELL = [...ROOT, 'app', 'appShell', 'help', 'languages', 'productTours'] as const;
+const ROOT = ['app', 'errorPage', 'ui'] as const satisfies (keyof WebMessages)[];
+const SHELL = [...ROOT, 'appShell', 'help', 'languages', 'productTours'] as const;
 const PORTAL = [...SHELL, 'attachments', 'comments', 'errors', 'portal', 'tickets'] as const;
 
 /**
@@ -27,8 +27,9 @@ const PORTAL = [...SHELL, 'attachments', 'comments', 'errors', 'portal', 'ticket
  */
 export const CLIENT_NAMESPACES = {
   /**
-   * `app/layout.tsx`: the components of `@trybun/ui` and the error page of the `error.tsx` files,
-   * as `app/error.tsx` renders above the providers of the route layouts.
+   * `app/layout.tsx`: the components of `@trybun/ui` and the error page of the `error.tsx` files
+   * with the brand of its header, as `app/error.tsx` renders above the providers of the route
+   * layouts.
    */
   root: ROOT,
   /** `app/sign-in/layout.tsx` */

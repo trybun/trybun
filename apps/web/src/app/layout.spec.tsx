@@ -35,6 +35,7 @@ describe('RootLayout', () => {
     renderToStaticMarkup(await RootLayout({ children: <main /> }));
 
     expect(providedMessages).toHaveBeenCalledWith({
+      app: CATALOGUES.pl.app,
       errorPage: CATALOGUES.pl.errorPage,
       ui: CATALOGUES.pl.ui,
     });
