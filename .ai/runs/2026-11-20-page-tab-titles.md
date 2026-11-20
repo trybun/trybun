@@ -50,10 +50,10 @@ Every page of the web application gets the translated tab title of the specifica
 
 ### Phase 1: the helper and the static pages
 
-- [ ] 1.1 `app.titlePart` and `pageTitle()`
-- [ ] 1.2 `notFoundMetadata()` through `pageTitle()`
-- [ ] 1.3 Titles of the pages that read nothing
-- [ ] 1.4 The `page-titles` scan
+- [x] 1.1 `app.titlePart` and `pageTitle()` — 643a5cb
+- [x] 1.2 `notFoundMetadata()` through `pageTitle()` — c56acc1
+- [x] 1.3 Titles of the pages that read nothing — 11405d2
+- [x] 1.4 The `page-titles` scan — 11405d2
 
 ### Phase 2: the record pages
 
