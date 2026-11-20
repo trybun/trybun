@@ -6,7 +6,7 @@
 | Created | 2026-11-20 |
 | Plan task | – (follow-up of #404 / [#406](https://github.com/trybun/trybun/pull/406)) |
 | System specification sections | §13.1, §13.4, §14.4, §18.5 |
-| Related issues / PRs | [#407](https://github.com/trybun/trybun/issues/407), [#406](https://github.com/trybun/trybun/pull/406), [ADR 0014](../../docs/adr/0014-not-found-title-through-metadata.md), [ADR 0015](../../docs/adr/0015-page-titles-through-absolute-metadata.md) (proposed here) |
+| Related issues / PRs | [#407](https://github.com/trybun/trybun/issues/407), [#406](https://github.com/trybun/trybun/pull/406), [ADR 0014](../../../docs/adr/0014-not-found-title-through-metadata.md), [ADR 0015](../../../docs/adr/0015-page-titles-through-absolute-metadata.md) (proposed here) |
 
 ## 📝 TLDR
 
@@ -86,7 +86,7 @@ The braces stand for a heading text that already exists in the catalogues or a v
    - **The template does not reach every page.** It is not applied to a page or `not-found.tsx` in the segment of the layout that defines it ("`title.template` defined in `layout.js` will not apply to a `title` defined in a `page.js` of the same route segment"; `accumulateMetadata()` skips the leaf layout), which is the case for `app/not-found.tsx`. A plain string `title` in any nested layout also resets the template for everything below it (`titleTemplates` is re-read from each segment's resolved title). So the template would be one rule with three exceptions.
 
    `title.absolute` from one helper is one rule without exceptions. The maintainer's Q1 answer, "the suffix via `title.template`", was recorded before this was found; the scheme they chose is kept exactly. See [Resolved assumptions](#resolved-assumptions-autonomous-defaults), A1.
-2. **Identifier only for tickets** ("CP-3 – Trybun"). Rejected by the maintainer in Q2. A ticket title is already copied outside the database by design: the notification e-mail subject (S1-15), and the title-redaction spec lists those copies as a non-goal ([title redaction](2026-10-26-title-redaction.md), Non-goals). The tab shows only what the signed-in person already sees on the page.
+2. **Identifier only for tickets** ("CP-3 – Trybun"). Rejected by the maintainer in Q2. A ticket title is already copied outside the database by design: the notification e-mail subject (S1-15), and the title-redaction spec lists those copies as a non-goal ([title redaction](../2026-10-26-title-redaction.md), Non-goals). The tab shows only what the signed-in person already sees on the page.
 3. **A client component setting `document.title`.** Rejected in ADR 0014 for the same reasons: a refresh of the metadata overwrites it, and it adds a client module to every page.
 
 ## 📝 Architecture
@@ -111,7 +111,7 @@ The braces stand for a heading text that already exists in the catalogues or a v
 
 ## 📝 Risks & Impact Review
 
-- **Personal data in the tab title.** A ticket title can contain personal data, and the browser keeps titles in history and may sync them across devices. The maintainer accepted this in Q2. The exposure stays within what the signed-in person sees, the same as the page itself and the notification e-mail. Redacting a title ([title redaction](2026-10-26-title-redaction.md), approved, not yet built) cannot recall browser history. That is the same limit it already accepts for e-mails already sent. Its implementation should name browser history beside e-mails in its warning and help page. This spec cannot change that approved spec, so the amendment is tracked in [#409](https://github.com/trybun/trybun/issues/409).
+- **Personal data in the tab title.** A ticket title can contain personal data, and the browser keeps titles in history and may sync them across devices. The maintainer accepted this in Q2. The exposure stays within what the signed-in person sees, the same as the page itself and the notification e-mail. Redacting a title ([title redaction](../2026-10-26-title-redaction.md), approved, not yet built) cannot recall browser history. That is the same limit it already accepts for e-mails already sent. Its implementation should name browser history beside e-mails in its warning and help page. This spec cannot change that approved spec, so the amendment is tracked in [#409](https://github.com/trybun/trybun/issues/409).
 - **Broad, mechanical edit** (`risk-high`): 25 pages and the `metadataAfterRead()` contract. A unit scan fails for a page without a title, so a future page cannot ship without one.
 - Easy to reverse: no data, API or persistent state change.
 
@@ -122,7 +122,7 @@ The braces stand for a heading text that already exists in the catalogues or a v
 | §13.4 | New rule: every page has a translated, descriptive title (WCAG 2.2 SC 2.4.2). The scheme is `{page heading} – {record or section} – Trybun`, with the record's identifier and title for tickets. |
 | §13.1 | The tab title is a translated text: built from `app.titlePart` in every locale. |
 | §14.4 | An invisible or missing record gives only the not-found title. The metadata reads the record through the page's read, after its not-found check. |
-| §18.5 | Pattern ([ADR 0015](../../docs/adr/0015-page-titles-through-absolute-metadata.md)): every `page.tsx` exports a `generateMetadata` that returns `pageTitle()` of `features/app-shell`, never a `<title>` element or `title.template`. Record pages pass `title` and `rateLimitedTitle` to `metadataAfterRead()`. `app/page-titles.spec.ts` fails for a page without one. |
+| §18.5 | Pattern ([ADR 0015](../../../docs/adr/0015-page-titles-through-absolute-metadata.md)): every `page.tsx` exports a `generateMetadata` that returns `pageTitle()` of `features/app-shell`, never a `<title>` element or `title.template`. Record pages pass `title` and `rateLimitedTitle` to `metadataAfterRead()`. `app/page-titles.spec.ts` fails for a page without one. |
 
 No new glossary terms.
 
@@ -161,7 +161,7 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 - [x] E2E `toHaveTitle`:
   - One page per shell: the team ticket and list, My tickets and a portal ticket, and a help topic, each after a page load, a client-side navigation and a language switch of the shell; the public invitation page after a page load in English and, as it has no language switch, in the Polish of the browser.
   - An unmatched address after a page load, since only a full load reaches it.
-- [x] §13.1, §13.4, §14.4 and §18.5 updated. [ADR 0015](../../docs/adr/0015-page-titles-through-absolute-metadata.md), added as `proposed` with this specification, is set to `accepted` in the file and in the ADR index, which already lists it as `proposed`.
+- [x] §13.1, §13.4, §14.4 and §18.5 updated. [ADR 0015](../../../docs/adr/0015-page-titles-through-absolute-metadata.md), added as `proposed` with this specification, is set to `accepted` in the file and in the ADR index, which already lists it as `proposed`.
 - [x] Works on phone, tablet and desktop (Rule 9): the E2E projects of all three viewports.
 - [x] User documentation and product tours: no change. A tab title is standard browser behaviour with nothing to explain, and no tour targets it.
 
