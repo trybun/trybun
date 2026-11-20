@@ -15,7 +15,6 @@ vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...pr
 vi.mock('next/navigation.js', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => '/admin/organizations',
-  notFound: vi.fn(),
 }));
 
 const { OrganizationList } = await import('./organization-list.js');

@@ -1,5 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation.js';
+import { cache } from 'react';
 import { z } from 'zod';
 import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
 import { organizationsQueryOptions } from '../../../../../features/organizations/queries.js';
@@ -13,12 +15,40 @@ import { currentUserQueryOptions } from '../../../../../features/users/queries.j
 import {
   dataOrNotFound,
   getServerApiClient,
+  metadataAfterRead,
   readOrRateLimited,
 } from '../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
 
 const paramsSchema = z.object({ projectId: z.uuid() });
+
+/**
+ * The read of the page, shared with its metadata in one request: an address that is not a project
+ * ID and a project the person cannot see are not found.
+ */
+const loadProject = cache(async (projectId: string) => {
+  const parsed = paramsSchema.safeParse({ projectId });
+  if (!parsed.success) {
+    notFound();
+  }
+  await requireSession();
+  const client = await getServerApiClient();
+  return dataOrNotFound(
+    client.GET('/api/v1/projects/{projectId}', {
+      params: { path: { projectId: parsed.data.projectId } },
+    }),
+  );
+});
+
+/** A missing or invisible project gets the translated not-found title of the tab (#404). */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}): Promise<Metadata> {
+  return metadataAfterRead(loadProject((await params).projectId));
+}
 
 /**
  * The settings of a project (§3.1, §7.3, §7.4). A project the person cannot see – or an address
@@ -32,21 +62,14 @@ export default async function ProjectSettingsPage({
   params: Promise<{ projectId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const parsed = paramsSchema.safeParse(await params);
-  if (!parsed.success) {
-    notFound();
-  }
-  const { projectId } = parsed.data;
+  const { projectId } = await params;
   const { tab } = projectSettingsSearchParamsSchema.parse(await searchParams);
-  await requireSession();
-  const client = await getServerApiClient();
-  const queryClient = getServerQueryClient();
-  const { data: project, rateLimited } = await readOrRateLimited(
-    dataOrNotFound(client.GET('/api/v1/projects/{projectId}', { params: { path: { projectId } } })),
-  );
+  const { data: project, rateLimited } = await readOrRateLimited(loadProject(projectId));
   if (rateLimited !== undefined) {
     return <RateLimitedNotice error={rateLimited} />;
   }
+  const client = await getServerApiClient();
+  const queryClient = getServerQueryClient();
   queryClient.setQueryData(projectQueryOptions(client, projectId).queryKey, project);
   await Promise.all([
     project.allowedActions.includes('read_members')

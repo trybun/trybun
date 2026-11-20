@@ -28,8 +28,10 @@ const notFound = vi.fn(() => {
 });
 vi.mock('next/navigation.js', () => ({ notFound }));
 
-const { default: OrganizationsPage } = await import('./page.js');
-const { default: OrganizationPage } = await import('./[organizationId]/page.js');
+const { default: OrganizationsPage, generateMetadata: organizationsMetadata } =
+  await import('./page.js');
+const { default: OrganizationPage, generateMetadata: organizationMetadata } =
+  await import('./[organizationId]/page.js');
 const { LazyNewOrganizationDialog } =
   await import('../../../../features/organizations/components/lazy-new-organization-dialog.js');
 
@@ -216,5 +218,60 @@ describe('OrganizationPage', () => {
     await expect(OrganizationPage({ params: Promise.resolve({ organizationId }) })).rejects.toThrow(
       'NEXT_NOT_FOUND',
     );
+  });
+});
+
+// The not-found reaches the metadata, so the tab shows the translated not-found title after a
+// client-side navigation too (#404).
+describe('generateMetadata of the Organizations page', () => {
+  beforeEach(() => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+    GET.mockImplementation((path: string) => respond(path));
+  });
+
+  it('keeps the metadata of the layouts for the Administrator', async () => {
+    await expect(organizationsMetadata()).resolves.toEqual({});
+    expect(requireSession).toHaveBeenCalledWith();
+  });
+
+  it('is not found for a person who is not the Administrator', async () => {
+    GET.mockImplementation((path: string) => respond(path, { userActions: ['create_project'] }));
+
+    await expect(organizationsMetadata()).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+    GET.mockImplementation(() => rateLimited());
+
+    await expect(organizationsMetadata()).resolves.toEqual({});
+  });
+});
+
+describe('generateMetadata of the organization page', () => {
+  beforeEach(() => {
+    requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
+  });
+
+  it.each([
+    ['an address that is not an organization ID', 'not-a-uuid', 200],
+    ['an organization the person cannot see', ORGANIZATION_ID, 404],
+  ])('is not found for %s', async (_case, organizationId, status) => {
+    GET.mockImplementation(() => respond('', { status }));
+
+    await expect(
+      organizationMetadata({ params: Promise.resolve({ organizationId }) }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  it('keeps the metadata of the layouts for an organization or a person over the rate limit', async () => {
+    GET.mockImplementation((path: string) => respond(path));
+    await expect(
+      organizationMetadata({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) }),
+    ).resolves.toEqual({});
+
+    GET.mockImplementation(() => rateLimited());
+    await expect(
+      organizationMetadata({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) }),
+    ).resolves.toEqual({});
   });
 });

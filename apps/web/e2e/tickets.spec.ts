@@ -1,5 +1,6 @@
 import { type APIRequestContext, devices, expect, request, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
+import { navigateInApp } from './client-navigation.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { TEMPLATES, TicketFormPage } from './pages/ticket-form.page.js';
 import { TicketPage } from './pages/ticket.page.js';
@@ -68,6 +69,29 @@ test.describe('the team ticket view', () => {
       '/',
     );
     await expect(new AppShellPage(page).navigation).toBeVisible();
+  });
+
+  // The not-found metadata comes from `generateMetadata` of the page, so the tab title is
+  // translated after a client-side navigation and a language switch too (#404).
+  test('translates the tab title of a missing ticket after a client-side navigation and a language switch', async ({
+    page,
+  }) => {
+    const shell = new AppShellPage(page);
+    await shell.goto();
+    await expect(shell.heading).toHaveText('Home');
+
+    await navigateInApp(page, '/tickets/CP-999999');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+    await expect(page).toHaveTitle('Page not found – Trybun');
+
+    const menu = await shell.openAccountMenu();
+    await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Nie znaleziono strony' }),
+    ).toBeVisible();
+    await expect(page).toHaveTitle('Nie znaleziono strony – Trybun');
   });
 
   // One person in two fresh browser contexts: the test opens both itself, so it runs in one

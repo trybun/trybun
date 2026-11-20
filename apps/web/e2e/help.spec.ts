@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { seriousViolations } from './accessibility.js';
+import { navigateInApp } from './client-navigation.js';
 import { AppShellPage } from './pages/app-shell.page.js';
 import { HelpPage } from './pages/help.page.js';
 import { expectTouchTarget, minimumTargetSize } from './touch-targets.js';
@@ -75,6 +76,21 @@ test.describe('help', () => {
       '/help',
     );
     await expect(new AppShellPage(page).navigation).toBeVisible();
+  });
+
+  // The not-found metadata comes from `generateMetadata` of the page, so the tab title is
+  // translated after a client-side navigation too (#404).
+  test('translates the tab title of a missing topic after a client-side navigation', async ({
+    page,
+  }) => {
+    const help = new HelpPage(page);
+    await help.goto();
+    await expect(help.heading).toHaveText('Help');
+
+    await navigateInApp(page, '/help/no-such-topic');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+    await expect(page).toHaveTitle('Page not found – Trybun');
   });
 
   test('has touch targets of at least 44 px', async ({ page }) => {

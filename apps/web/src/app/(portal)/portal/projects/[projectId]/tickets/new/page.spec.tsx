@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { notFoundResult } from '../../../../../../../../test/factories/not-found.factory.js';
 import { rateLimitedResult } from '../../../../../../../../test/factories/rate-limited.factory.js';
 
 vi.mock('server-only', () => ({}));
-vi.mock('next/navigation.js', () => ({ notFound: vi.fn(), redirect: vi.fn() }));
+vi.mock('next/navigation.js', () => ({
+  notFound: vi.fn((): never => {
+    throw new Error('NEXT_NOT_FOUND');
+  }),
+  redirect: vi.fn(),
+}));
 vi.mock('next-intl/server', () => ({ getTranslations: () => Promise.resolve(() => '') }));
 const requireSession = vi.fn();
 vi.mock('../../../../../../../lib/auth/session.js', () => ({ requireSession }));
@@ -12,7 +18,7 @@ vi.mock('../../../../../../../lib/api-client/server-api-client.js', async (impor
   getServerApiClient: () => Promise.resolve({ GET }),
 }));
 
-const { default: NewTicketPage } = await import('./page.js');
+const { default: NewTicketPage, generateMetadata } = await import('./page.js');
 const { RateLimitedNotice } =
   await import('../../../../../../../features/app-shell/components/rate-limited-notice.js');
 
@@ -33,5 +39,26 @@ describe('NewTicketPage of the portal', () => {
       type: RateLimitedNotice,
       props: { error: { status: 429, retryAfterSeconds: 45 } },
     });
+  });
+});
+
+// The not-found reaches the metadata, so the tab shows the translated not-found title after a
+// client-side navigation too (#404).
+describe('generateMetadata of the new ticket page', () => {
+  it('is not found for a project the end user cannot read', async () => {
+    GET.mockImplementation(notFoundResult);
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(requireSession).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the metadata of the layouts for a person over the rate limit', async () => {
+    GET.mockImplementation(rateLimitedResult);
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
+    ).resolves.toEqual({});
   });
 });

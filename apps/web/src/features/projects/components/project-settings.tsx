@@ -6,10 +6,10 @@ import { Badge } from '@trybun/ui/components/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trybun/ui/components/tabs';
 import { ArchiveIcon, ChevronLeftIcon } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useRouter } from 'next/navigation.js';
+import { useRouter } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { ApiError } from '../../../lib/errors/api-error.js';
+import { useNotFoundOnServer } from '../../app-shell/use-not-found-on-server.js';
 import { projectQueryOptions } from '../queries.js';
 import {
   type ProjectSettingsTab,
@@ -41,11 +41,9 @@ export function ProjectSettings({
   const router = useRouter();
   const { data: project, error } = useQuery(projectQueryOptions(browserApiClient, projectId));
   // The project became invisible, e.g. a Project manager removed themselves from it.
-  if (error instanceof ApiError && error.status === 404) {
-    notFound();
-  }
+  const isGone = useNotFoundOnServer(error);
   // The settings belong to the team's shape of a project; end users receive their own (Q7).
-  if (project === undefined || !('version' in project)) {
+  if (isGone || project === undefined || !('version' in project)) {
     return null;
   }
   const can = (action: (typeof project.allowedActions)[number]) =>

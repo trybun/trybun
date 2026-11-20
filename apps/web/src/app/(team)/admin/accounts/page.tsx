@@ -1,17 +1,23 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { notFound } from 'next/navigation.js';
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { getAdministrator } from '../../../../features/administration/administrator.js';
 import { RateLimitedNotice } from '../../../../features/app-shell/components/rate-limited-notice.js';
 import { LazyInviteDialog } from '../../../../features/invitations/components/lazy-invite-dialog.js';
 import { AccountList } from '../../../../features/users/components/account-list.js';
-import { currentUserQueryOptions, usersQueryOptions } from '../../../../features/users/queries.js';
+import { usersQueryOptions } from '../../../../features/users/queries.js';
 import { accountsSearchParamsSchema } from '../../../../features/users/search-params.js';
 import {
   getServerApiClient,
+  metadataAfterRead,
   readOrRateLimited,
 } from '../../../../lib/api-client/server-api-client.js';
-import { requireSession } from '../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../lib/query-client/server-query-client.js';
+
+/** A person who is not the Administrator gets the translated not-found title of the tab (#404). */
+export function generateMetadata(): Promise<Metadata> {
+  return metadataAfterRead(getAdministrator());
+}
 
 /**
  * The Accounts page of the Administrator panel (§7.4): every account with its kind, state and the
@@ -24,20 +30,15 @@ export default async function AccountsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { kind, state } = accountsSearchParamsSchema.parse(await searchParams);
-  await requireSession();
-  const [t, client] = await Promise.all([getTranslations('users.accounts'), getServerApiClient()]);
-  const queryClient = getServerQueryClient();
-  // A failed read is not a missing permission: the rate limit is shown, other errors are thrown
-  // on (#356).
-  const { data: user, rateLimited } = await readOrRateLimited(
-    queryClient.fetchQuery(currentUserQueryOptions(client)),
-  );
+  const [t, client, { rateLimited }] = await Promise.all([
+    getTranslations('users.accounts'),
+    getServerApiClient(),
+    readOrRateLimited(getAdministrator()),
+  ]);
   if (rateLimited !== undefined) {
     return <RateLimitedNotice error={rateLimited} headingLevel={2} />;
   }
-  if (!user.allowedActions.includes('open_administration')) {
-    notFound();
-  }
+  const queryClient = getServerQueryClient();
   // The first page comes with the pending invitations of its accounts, so they are part of the
   // first paint and never push the rows below them down under the finger (#310, Rule 9).
   await queryClient.prefetchInfiniteQuery(usersQueryOptions(client, { kind, state, query: '' }));

@@ -1,16 +1,25 @@
-import { notFound, redirect } from 'next/navigation.js';
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
-import { z } from 'zod';
 import { RateLimitedNotice } from '../../../../../../../features/app-shell/components/rate-limited-notice.js';
 import { portalProjectHref } from '../../../../../../../features/portal/hrefs.js';
-import { getPortalProject } from '../../../../../../../features/portal/project-page.js';
+import { loadPortalProject } from '../../../../../../../features/portal/project-page.js';
 import { NewTicketForm } from '../../../../../../../features/tickets/components/new-ticket-form.js';
 import { creationVisibilityOptions } from '../../../../../../../features/tickets/visibility.js';
-import { readOrRateLimited } from '../../../../../../../lib/api-client/server-api-client.js';
-import { requireSession } from '../../../../../../../lib/auth/session.js';
+import {
+  metadataAfterRead,
+  readOrRateLimited,
+} from '../../../../../../../lib/api-client/server-api-client.js';
 import { getEnv } from '../../../../../../../lib/env/env.js';
 
-const paramsSchema = z.object({ projectId: z.uuid() });
+/** A missing or invisible project gets the translated not-found title of the tab (#404). */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}): Promise<Metadata> {
+  return metadataAfterRead(loadPortalProject((await params).projectId));
+}
 
 /**
  * The simplified ticket form as a page, not a dialog (§3.3, Q6): on phones the description needs
@@ -22,14 +31,10 @@ export default async function NewTicketPage({
 }: {
   params: Promise<{ projectId: string }>;
 }) {
-  const parsed = paramsSchema.safeParse(await params);
-  if (!parsed.success) {
-    notFound();
-  }
-  await requireSession();
+  const { projectId } = await params;
   const [t, { data: project, rateLimited }] = await Promise.all([
     getTranslations('portal.newTicket'),
-    readOrRateLimited(getPortalProject(parsed.data.projectId)),
+    readOrRateLimited(loadPortalProject(projectId)),
   ]);
   if (rateLimited !== undefined) {
     return <RateLimitedNotice error={rateLimited} />;

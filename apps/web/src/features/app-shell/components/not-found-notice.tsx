@@ -14,23 +14,16 @@ export type NotFoundHome = '/' | '/portal' | '/help';
  * (§14.4). The link leads to the home of the side the page belongs to. A Server Component, as
  * Next.js sends every `not-found.tsx` with every page of its segment.
  *
- * Inside a route group it also sets the tab title as a `<title>` element, which React moves into
- * the `<head>` – as the 404 page of Next.js sets its own: a page that calls `notFound()` keeps the
- * metadata of its layouts, because Next.js reads the metadata of a `not-found.tsx` only for an
- * unmatched address. `app/not-found.tsx` handles those, so it exports `notFoundMetadata()` instead
- * (`withTabTitle={false}`), which keeps one `<title>` in the document.
+ * The tab title comes from the metadata of each `not-found.tsx` (`notFoundMetadata()`), which
+ * Next.js reads when the metadata hits a not-found: an unmatched address, or a page whose
+ * `generateMetadata` performs its read and calls `notFound()` itself (`metadataAfterRead()`, #404).
+ * So the title is translated on a page load, after a client-side navigation and after a language
+ * switch alike – a `<title>` element here would lose to the metadata title on the last two.
  */
-export async function NotFoundNotice({
-  home,
-  withTabTitle = true,
-}: {
-  home: NotFoundHome;
-  withTabTitle?: boolean;
-}) {
+export async function NotFoundNotice({ home }: { home: NotFoundHome }) {
   const t = await getTranslations('notFoundPage');
   return (
     <div className="flex max-w-lg flex-col items-start gap-3">
-      {withTabTitle && <title>{t('tabTitle')}</title>}
       <h1 className="text-2xl font-bold">{t('title')}</h1>
       <p className="text-muted-foreground">{t('text')}</p>
       <Link href={home} className={buttonVariants()}>
@@ -40,7 +33,7 @@ export async function NotFoundNotice({
   );
 }
 
-/** The tab title of an unmatched address, the `generateMetadata` of `app/not-found.tsx`. */
+/** The translated tab title of a page that is not found, the `generateMetadata` of every `not-found.tsx`. */
 export async function notFoundMetadata(): Promise<Metadata> {
   const t = await getTranslations('notFoundPage');
   return { title: t('tabTitle') };
