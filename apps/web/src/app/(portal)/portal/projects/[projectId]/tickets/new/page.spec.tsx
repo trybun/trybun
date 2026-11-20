@@ -11,9 +11,12 @@ vi.mock('next/navigation.js', () => ({
   }),
   redirect: vi.fn(),
 }));
+let language: 'en' | 'pl' = 'en';
 vi.mock('next-intl/server', () => ({
   getTranslations: (namespace: never) =>
-    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+    Promise.resolve(
+      createTranslator({ locale: language, messages: CATALOGUES[language], namespace }),
+    ),
 }));
 const requireSession = vi.fn();
 vi.mock('../../../../../../../lib/auth/session.js', () => ({ requireSession }));
@@ -30,6 +33,7 @@ const { RateLimitedNotice } =
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
 
 afterEach(() => {
+  language = 'en';
   vi.clearAllMocks();
 });
 
@@ -56,6 +60,15 @@ describe('generateMetadata of the new ticket page', () => {
     await expect(
       generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
     ).resolves.toEqual({ title: { absolute: 'New ticket – Website – Trybun' } });
+  });
+
+  it('names the view in the language of the person', async () => {
+    language = 'pl';
+    GET.mockResolvedValue({ data: { id: PROJECT_ID, name: 'Website' }, response: new Response() });
+
+    await expect(
+      generateMetadata({ params: Promise.resolve({ projectId: PROJECT_ID }) }),
+    ).resolves.toEqual({ title: { absolute: 'Nowe zgłoszenie – Website – Trybun' } });
   });
 
   it('is not found for a project the end user cannot read', async () => {

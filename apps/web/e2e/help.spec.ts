@@ -90,6 +90,10 @@ test.describe('help', () => {
 
     await page.reload();
     await expect(page).toHaveTitle('Getting started for the team – Help – Trybun');
+
+    const menu = await new AppShellPage(page).openAccountMenu();
+    await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
+    await expect(page).toHaveTitle('Pierwsze kroki dla zespołu – Pomoc – Trybun');
   });
 
   // The not-found metadata comes from `generateMetadata` of the page, so the tab title is

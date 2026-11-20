@@ -308,6 +308,11 @@ test.describe('the portal of an end user with one project', () => {
 
     await page.reload();
     await expect(page).toHaveTitle(title);
+
+    const menu = await new AppShellPage(page).openAccountMenu();
+    await menu.getByRole('menuitemradio', { name: 'Polski' }).click();
+    await navigateInApp(page, '/portal/tickets');
+    await expect(page).toHaveTitle('Moje zgłoszenia – Trybun');
   });
 
   // The not-found metadata comes from `generateMetadata` of the page, so the tab title is

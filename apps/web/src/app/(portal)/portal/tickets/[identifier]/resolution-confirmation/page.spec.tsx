@@ -7,9 +7,12 @@ import { ticketResponse } from '../../../../../../../test/factories/ticket.facto
 
 // The route with the shared loader of the ticket pages and the API client it reads with.
 vi.mock('server-only', () => ({}));
+let language: 'en' | 'pl' = 'en';
 vi.mock('next-intl/server', () => ({
   getTranslations: (namespace: never) =>
-    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+    Promise.resolve(
+      createTranslator({ locale: language, messages: CATALOGUES[language], namespace }),
+    ),
 }));
 // The real loader of the ticket pages, replaceable per test for a ticket that is found.
 vi.mock('../../../../../../features/tickets/ticket-page.js', async (importOriginal) => {
@@ -40,6 +43,7 @@ const { RateLimitedNotice } =
   await import('../../../../../../features/app-shell/components/rate-limited-notice.js');
 
 afterEach(() => {
+  language = 'en';
   vi.clearAllMocks();
 });
 
@@ -91,6 +95,20 @@ describe('generateMetadata of ResolutionConfirmationPage', () => {
       }),
     ).resolves.toEqual({
       title: { absolute: 'Resolution confirmation – ERP-12 Invoice totals are wrong – Trybun' },
+    });
+  });
+
+  it('names the ticket in the language of the end user', async () => {
+    language = 'pl';
+    vi.mocked(getTicketPage).mockResolvedValueOnce(ticketResponse());
+
+    await expect(
+      generateMetadata({
+        params: Promise.resolve({ identifier: 'CP-9' }),
+        searchParams: Promise.resolve({ answer: 'solved' }),
+      }),
+    ).resolves.toEqual({
+      title: { absolute: 'Potwierdzenie rozwiązania – ERP-12 Invoice totals are wrong – Trybun' },
     });
   });
 

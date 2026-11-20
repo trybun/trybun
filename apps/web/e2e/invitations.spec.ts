@@ -123,6 +123,20 @@ test.describe('invitations', () => {
   });
 });
 
+// A public page has no language switch: the language of the browser translates its tab title.
+test.describe('the acceptance page in the language of the browser', () => {
+  test.use({ locale: 'pl', storageState: { cookies: [], origins: [] } });
+
+  test('names itself in the tab in Polish', async ({ page }) => {
+    await new InvitationPage(page).goto(
+      'https://trybun.example.com/invitations#token=not-a-valid-token',
+    );
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Przyjmij zaproszenie');
+    await expect(page).toHaveTitle('Przyjmij zaproszenie – Trybun');
+  });
+});
+
 /**
  * The invitation to the Administrator role makes a team member, who signs in with GitHub. The
  * test environment has no GitHub sign-in, so the API refuses it (`invitation.github_sign_in_missing`,

@@ -2,7 +2,7 @@ import { CATALOGUES } from '@trybun/i18n/catalogues';
 import { createTranslator, NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -10,10 +10,13 @@ vi.mock('../../../lib/auth/session.js', () => ({ requireSession }));
 const getHelpReaderKind = vi.fn();
 vi.mock('../../../features/help/reader.js', () => ({ getHelpReaderKind }));
 const getLocale = vi.fn();
+let language: 'en' | 'pl' = 'en';
 vi.mock('next-intl/server', () => ({
   getLocale,
   getTranslations: (namespace: never) =>
-    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+    Promise.resolve(
+      createTranslator({ locale: language, messages: CATALOGUES[language], namespace }),
+    ),
 }));
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
@@ -33,6 +36,10 @@ function render(element: ReactElement, locale: 'en' | 'pl') {
 }
 
 const params = (...slug: string[]) => ({ params: Promise.resolve({ slug }) });
+
+afterEach(() => {
+  language = 'en';
+});
 
 describe('HelpTopicPage', () => {
   beforeEach(() => {
@@ -94,6 +101,20 @@ describe('generateMetadata of a help page', () => {
     await expect(generateMetadata(params('team', 'tutorials', 'getting-started'))).resolves.toEqual(
       {
         title: { absolute: `${topic} – Help – Trybun` },
+      },
+    );
+  });
+
+  it('names the topic and the help in the language of the reader', async () => {
+    language = 'pl';
+    getLocale.mockResolvedValue('pl');
+    getHelpReaderKind.mockResolvedValue('team');
+    const topic = getHelpPage('pl', 'team', 'team/tutorials/getting-started')?.title;
+
+    expect(topic).toBe('Pierwsze kroki dla zespołu');
+    await expect(generateMetadata(params('team', 'tutorials', 'getting-started'))).resolves.toEqual(
+      {
+        title: { absolute: `${topic} – Pomoc – Trybun` },
       },
     );
   });

@@ -2,7 +2,7 @@ import { CATALOGUES } from '@trybun/i18n/catalogues';
 import { createFormatter, createTranslator } from 'next-intl';
 import { prerender } from 'react-dom/static';
 import type { ReactElement } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 const requireSession = vi.fn();
@@ -12,9 +12,12 @@ vi.mock('../../../../lib/api-client/server-api-client.js', async (importOriginal
   ...(await importOriginal<object>()),
   getServerApiClient: () => Promise.resolve({ GET }),
 }));
+let language: 'en' | 'pl' = 'en';
 vi.mock('next-intl/server', () => ({
   getTranslations: (namespace: 'organizations') =>
-    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+    Promise.resolve(
+      createTranslator({ locale: language, messages: CATALOGUES[language], namespace }),
+    ),
   getFormatter: () => Promise.resolve(createFormatter({ locale: 'en', timeZone: 'UTC' })),
   getNow: () => Promise.resolve(new Date('2026-11-18T12:00:00.000Z')),
 }));
@@ -104,6 +107,10 @@ function contains(node: unknown, type: unknown): boolean {
   const element = node as ReactElement<{ children?: unknown }>;
   return element.type === type || contains(element.props.children, type);
 }
+
+afterEach(() => {
+  language = 'en';
+});
 
 describe('OrganizationsPage', () => {
   beforeEach(() => {
@@ -236,6 +243,14 @@ describe('generateMetadata of the Organizations page', () => {
     expect(requireSession).toHaveBeenCalledWith();
   });
 
+  it('names the section in the language of the Administrator', async () => {
+    language = 'pl';
+
+    await expect(organizationsMetadata()).resolves.toEqual({
+      title: { absolute: 'Organizacje – Administracja – Trybun' },
+    });
+  });
+
   it('is not found for a person who is not the Administrator', async () => {
     GET.mockImplementation((path: string) => respond(path, { userActions: ['create_project'] }));
 
@@ -277,5 +292,14 @@ describe('generateMetadata of the organization page', () => {
     await expect(
       organizationMetadata({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) }),
     ).resolves.toEqual({ title: { absolute: 'Administration – Trybun' } });
+  });
+
+  it('names the organization in the language of the Administrator', async () => {
+    language = 'pl';
+    GET.mockImplementation((path: string) => respond(path));
+
+    await expect(
+      organizationMetadata({ params: Promise.resolve({ organizationId: ORGANIZATION_ID }) }),
+    ).resolves.toEqual({ title: { absolute: 'Acme – Administracja – Trybun' } });
   });
 });
