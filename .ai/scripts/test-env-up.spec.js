@@ -38,11 +38,11 @@ case "$*" in
 esac
 `,
   // A port answers while a stubbed application holds it (a file "serving-<port>"); the health
-  // checks pass once the boot has started the applications.
+  // checks pass once the boot has started the applications, unless the file "unhealthy" exists.
   curl: `#!/bin/sh
 for arg in "$@"; do url=$arg; done
 case "$url" in
-  */health/ready | */api/health) exit 0 ;;
+  */health/ready | */api/health) [ ! -e "$STUB_DIR/unhealthy" ] || exit 7 ;;
   */api/v1/users/me) printf 401 ;;
   http://localhost:3000/) [ -e "$STUB_DIR/serving-3000" ] || exit 7 ;;
   http://localhost:3001/) [ -e "$STUB_DIR/serving-3001" ] || exit 7 ;;
@@ -360,6 +360,88 @@ describe('test-env-up.sh', () => {
     const after = JSON.parse(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8'));
     expect(after.app.apiPid).not.toBe(before.app.apiPid);
     expect(() => process.kill(Number(before.app.apiPid), 0)).toThrow();
+  });
+});
+
+describe('an interrupted boot (#383)', () => {
+  const compose = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml';
+
+  async function interruptedClean() {
+    // The cleanup runs in its own session: wait until it has released the lock.
+    await until(
+      () => !lockExists(),
+      20_000,
+      () => 'the lock is still held',
+    );
+    for (const pid of readLines(join(folder, 'grandchildren'))) expect(alive(pid), pid).toBe(false);
+    for (const pid of readLines(join(folder, 'pids'))) expect(alive(pid), pid).toBe(false);
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
+    expect(existsSync(join(checkout, '.ai/qa/test-env.json'))).toBe(false);
+  }
+
+  it.each(['build', 'db:migrate'])(
+    'stops the running %s step with its children, the infrastructure and the lock on SIGTERM to its PID',
+    async (step) => {
+      extraEnvironment = { STUB_BLOCK: step };
+      const run = start();
+      await until(
+        () => existsSync(join(folder, 'blocked')),
+        20_000,
+        () => run.stderr,
+      );
+
+      run.child.kill('SIGTERM');
+
+      expect((await run.exited()).code).toBe(143);
+      await interruptedClean();
+      const log = readLines(join(folder, 'log'));
+      expect(log).toContain(`${compose} down`);
+    },
+  );
+
+  it('stops the started applications while it waits for their health', async () => {
+    writeFileSync(join(folder, 'unhealthy'), '');
+    const run = start();
+    await until(
+      () => existsSync(join(folder, 'serving-3000')),
+      20_000,
+      () => run.stderr,
+    );
+
+    run.child.kill('SIGTERM');
+
+    expect((await run.exited()).code).toBe(143);
+    await interruptedClean();
+  });
+
+  it('finishes its cleanup when the process group gets SIGKILL after SIGTERM', async () => {
+    writeFileSync(join(folder, 'unhealthy'), '');
+    // The applications need 4 s to stop, longer than the caller waits before SIGKILL.
+    extraEnvironment = { STUB_STOP_SECONDS: '4' };
+    const run = start();
+    await until(
+      () => existsSync(join(folder, 'serving-3000')),
+      20_000,
+      () => run.stderr,
+    );
+
+    run.signalGroup('SIGTERM');
+    await sleep(2_000);
+    run.signalGroup('SIGKILL');
+
+    expect((await run.exited()).signal).toBe('SIGKILL');
+    await interruptedClean();
+    expect(readLines(join(folder, 'log'))).toContain(`${compose} down`);
+  });
+
+  it('records each application as the leader of its own process group', () => {
+    expect(up().status).toBe(0);
+    for (const pid of [descriptor().app.apiPid, descriptor().app.webPid]) {
+      // Each application leads its own process group, which test-env-down.sh stops (#410).
+      const group = execFileSync('ps', ['-o', 'pgid=', '-p', pid], { encoding: 'utf8' }).trim();
+      expect(group).toBe(pid);
+    }
+    expect(descriptor().status).toBe('running');
   });
 });
 

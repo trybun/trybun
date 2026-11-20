@@ -96,7 +96,81 @@ acquire_lock() {
     waited=$((waited + 5))
   done
   printf '{ "pid": "%s", "source": "test-env-up.sh", "acquiredAt": "%s" }\n' "$$" "$(now)" > "$LOCK_DIR/owner.json"
-  trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM
+  LOCKED=1
+  trap 'release_lock' EXIT
+  trap 'interrupted 129' HUP
+  trap 'interrupted 130' INT
+  trap 'interrupted 143' TERM
+}
+release_lock() {
+  if [ "$LOCKED" = 1 ]; then rm -rf "$LOCK_DIR"; fi
+  LOCKED=0
+}
+
+# --- interrupted boot (#383): a signal after the lock stops what this boot started so far – the
+# running step, the applications and the Compose infrastructure it brought up – then frees the lock.
+# The cleanup runs in its own session and this shell waits for it, so a SIGKILL of the caller's
+# process group a moment later (e.g. sv-prepare-qa-tests) cannot cut it off; it takes over the lock
+# under its own PID, so no other boot takes the lock as stale while it runs. The output goes to a
+# log: after SIGHUP the terminal is gone, and a failed write must not abort the cleanup.
+LOCKED=0
+BOOTED=0
+INTERRUPTED=0
+STEP_PID=""
+API_PID=""
+WORKER_PID=""
+WEB_PID=""
+SERVICES_STARTED=false
+# shellcheck disable=SC2016 # expanded by the cleanup shell, from its positional parameters
+CLEANUP='
+  lock=$1 locked=$2 services=$3; shift 3; compose=$1; shift
+  [ "$locked" = 1 ] && printf "{ \"pid\": \"%s\", \"source\": \"test-env-up.sh cleanup\" }\n" "$$" > "$lock/owner.json"
+  for pid in "$@"; do kill -- "-$pid" 2>/dev/null || true; done
+  waited=0
+  while [ "$waited" -lt 30 ]; do
+    running=false
+    for pid in "$@"; do kill -0 "-$pid" 2>/dev/null && running=true; done
+    [ "$running" = true ] || break
+    sleep 1
+    waited=$((waited + 1))
+  done
+  for pid in "$@"; do kill -s KILL "-$pid" 2>/dev/null || true; done
+  if [ "$services" = true ]; then $compose down || true; fi
+  [ "$locked" = 1 ] && rm -rf "$lock"
+  echo "[test-env] interrupted boot cleaned up"
+'
+interrupted() {
+  [ "$INTERRUPTED" = 1 ] && return 0
+  INTERRUPTED=1
+  # A boot that has completed is recorded and kept; only the lock is released (EXIT).
+  [ "$BOOTED" = 1 ] && exit "$1"
+  exec >>"$LOG_DIR/foreground.log" 2>&1
+  log "interrupted (exit $1); stopping what this boot started"
+  pids=""
+  for pid in "$STEP_PID" "$API_PID" "$WORKER_PID" "$WEB_PID"; do [ -n "$pid" ] && pids="$pids $pid"; done
+  # shellcheck disable=SC2086 # one PID per word
+  setsid sh -c "$CLEANUP" cleanup "$LOCK_DIR" "$LOCKED" "$SERVICES_STARTED" "$COMPOSE" $pids &
+  cleanup_pid=$!
+  LOCKED=0
+  # A second signal interrupts `wait`; keep waiting until the cleanup has finished.
+  while alive "$cleanup_pid"; do wait "$cleanup_pid" || true; done
+  exit "$1"
+}
+
+# A long boot step in its own session (like start_bg), so the cleanup above can stop the whole
+# step – a killed shell would leave its children (pnpm, next build) running. $1 = command,
+# $2 = log file, $3 = "append" to add to the log.
+run_step() {
+  if [ "${3:-}" = append ]; then
+    setsid sh -c "$1" >>"$2" 2>&1 < /dev/null &
+  else
+    setsid sh -c "$1" >"$2" 2>&1 < /dev/null &
+  fi
+  STEP_PID=$!
+  step_status=0
+  wait "$STEP_PID" || step_status=$?
+  STEP_PID=""
+  return "$step_status"
 }
 
 # --- source fingerprint: the commit, the changes and the untracked files of the checkout
@@ -200,15 +274,15 @@ fi
 SERVICES_STARTED=true
 [ -n "$($COMPOSE ps -q postgres 2>/dev/null)" ] && SERVICES_STARTED=false
 log "starting the infrastructure"
-$COMPOSE up -d --wait >"$LOG_DIR/compose.log" 2>&1
-$COMPOSE wait keycloak-config >>"$LOG_DIR/compose.log" 2>&1
+run_step "$COMPOSE up -d --wait" "$LOG_DIR/compose.log"
+run_step "$COMPOSE wait keycloak-config" "$LOG_DIR/compose.log" append
 
 # --- build cache: install and build only when the sources changed
 REUSED_BUILD=true
 if build_needed; then
   REUSED_BUILD=false
   log "preparing the workspace: $PREP_CHAIN"
-  sh -c "$PREP_CHAIN" >"$LOG_DIR/build.log" 2>&1 || { log "build failed, see $LOG_DIR/build.log"; exit 1; }
+  run_step "$PREP_CHAIN" "$LOG_DIR/build.log" || { log "build failed, see $LOG_DIR/build.log"; exit 1; }
   printf '{ "builtAt": "%s", "sourceFingerprint": "%s", "projectRoot": "%s", "artifactPaths": "%s" }\n' \
     "$(now)" "$CURRENT_FP" "$ROOT" "$ARTIFACTS" > "$BUILD_CACHE"
 else
@@ -217,7 +291,7 @@ fi
 
 # --- database: fresh migrations and the demo dataset on every boot
 log "migrating and seeding the database"
-{ pnpm db:migrate && pnpm db:seed; } >"$LOG_DIR/database.log" 2>&1 ||
+run_step "pnpm db:migrate && pnpm db:seed" "$LOG_DIR/database.log" ||
   { log "migration or seed failed, see $LOG_DIR/database.log"; exit 1; }
 
 # --- app start + health wait
@@ -297,5 +371,6 @@ cat > "$DESCRIPTOR" <<EOF
   "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). Stop with: sh .ai/scripts/test-env-down.sh"
 }
 EOF
+BOOTED=1
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
 print_result 0 "$RUN_ID"
