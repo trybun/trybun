@@ -1,7 +1,8 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import {
   chmodSync,
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -49,9 +50,18 @@ case "$url" in
 esac
 `,
   // The API, the Worker and the web application run until test-env-down.sh stops them; like the
-  // API's shutdown hooks, they keep their port for a moment after SIGTERM.
+  // API's shutdown hooks, they keep their port for a moment after SIGTERM (STUB_STOP_SECONDS, 1 by
+  // default). The boot step named by STUB_BLOCK (e.g. "build") hangs with a grandchild process,
+  // so a test can interrupt the boot while that step runs.
   pnpm: `#!/bin/sh
 echo "pnpm $*" >>"$STUB_LOG"
+if [ -n "\${STUB_BLOCK:-}" ] && [ "$*" = "$STUB_BLOCK" ]; then
+  sleep 300 &
+  echo "$!" >>"$STUB_DIR/grandchildren"
+  touch "$STUB_DIR/blocked"
+  wait
+  exit 0
+fi
 case "$*" in
   "--filter @trybun/server start") port=3001 ;;
   "--filter @trybun/web exec next start --port 3000") port=3000 ;;
@@ -60,15 +70,21 @@ case "$*" in
 esac
 echo "$$" >>"$STUB_DIR/pids"
 touch "$STUB_DIR/serving-$port"
-trap 'sleep 1; rm -f "$STUB_DIR/serving-$port"; exit 0' TERM
+trap 'sleep "\${STUB_STOP_SECONDS:-1}"; rm -f "$STUB_DIR/serving-$port"; exit 0' TERM
 while :; do sleep 1; done
 `,
 };
 
 let folder;
 let checkout;
+/** Variables a test adds to the environment of the script (e.g. STUB_BLOCK). */
+let extraEnvironment;
+/** The scripts start() ran, stopped after each test. */
+let started;
 
 beforeEach(() => {
+  extraEnvironment = {};
+  started = [];
   folder = mkdtempSync(join(tmpdir(), 'trybun-test-env-'));
   checkout = join(folder, 'checkout');
   mkdirSync(join(checkout, '.ai/scripts'), { recursive: true });
@@ -100,12 +116,25 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Ends the scripts a test left attached (their process groups), before their own handlers can
+  // act on what follows.
+  for (const child of started) {
+    try {
+      process.kill(-child.pid, 'SIGKILL');
+    } catch {
+      // Already exited.
+    }
+  }
   // Stops the stubbed applications of the last boot (their process groups).
   spawnSync('sh', ['.ai/scripts/test-env-down.sh'], { cwd: checkout, env: environment() });
-  // And any of them a failed boot did not record.
-  for (const pid of readLines(join(folder, 'pids'))) {
+  // And any of them a failed boot did not record (applications by group, blocked steps by PID).
+  const targets = [
+    ...readLines(join(folder, 'pids')).map((pid) => -Number(pid)),
+    ...readLines(join(folder, 'grandchildren')).map(Number),
+  ];
+  for (const target of targets) {
     try {
-      process.kill(-Number(pid), 'SIGKILL');
+      process.kill(target, 'SIGKILL');
     } catch {
       // Already stopped.
     }
@@ -141,12 +170,84 @@ function up(...args) {
   const result = spawnSync('sh', ['.ai/scripts/test-env-up.sh', ...args], {
     cwd: checkout,
     encoding: 'utf8',
-    env: environment(),
+    env: { ...environment(), ...extraEnvironment },
     timeout,
   });
   const log = readLines(join(folder, 'log'));
   return { ...result, log };
 }
+
+/**
+ * Starts test-env-up.sh in the background in its own process group, as a terminal tab runs it.
+ * `output(pattern)` waits until stdout or stderr matches; `exit` settles with the exit code or
+ * signal. Every wait is bounded.
+ */
+function start(...args) {
+  writeFileSync(join(folder, 'log'), '');
+  const child = spawn('sh', ['.ai/scripts/test-env-up.sh', ...args], {
+    cwd: checkout,
+    env: { ...environment(), ...extraEnvironment },
+    detached: true,
+  });
+  started.push(child);
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', (data) => (stdout += data));
+  child.stderr.on('data', (data) => (stderr += data));
+  const exit = new Promise((resolve) => {
+    child.on('exit', (code, signal) => resolve({ code, signal }));
+  });
+  return {
+    child,
+    exit,
+    get stdout() {
+      return stdout;
+    },
+    get stderr() {
+      return stderr;
+    },
+    /** Sends a signal to the whole process group, like a closed terminal (`SIGHUP`). */
+    signalGroup(signal) {
+      process.kill(-child.pid, signal);
+    },
+    async output(pattern, timeout = 30_000) {
+      await until(
+        () => pattern.test(stdout) || pattern.test(stderr),
+        timeout,
+        () => `no ${pattern} in\n${stdout}\n${stderr}`,
+      );
+    },
+    async exited(timeout = 30_000) {
+      return Promise.race([
+        exit,
+        sleep(timeout).then(() => {
+          throw new Error(`still running after ${timeout} ms\n${stdout}\n${stderr}`);
+        }),
+      ]);
+    },
+  };
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function until(condition, timeout, message) {
+  const deadline = Date.now() + timeout;
+  while (!condition()) {
+    if (Date.now() > deadline) throw new Error(message());
+    await sleep(100);
+  }
+}
+
+const alive = (pid) => {
+  try {
+    process.kill(Number(pid), 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+const descriptor = () => JSON.parse(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8'));
+const lockExists = () => existsSync(join(folder, 'test-env.lock'));
 
 const removed = (log) =>
   log.filter((line) => line.startsWith('docker volume rm ')).map((line) => line.slice(17));
@@ -190,6 +291,18 @@ describe('test-env-up.sh', () => {
     expect(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8')).toContain(
       'data reset: true',
     );
+  });
+
+  it('returns after the boot and after a reuse, leaving the bootstrap lock free', () => {
+    const boot = up();
+    expect(boot.status, boot.stderr).toBe(0);
+    expect(boot.stdout).toMatch(/TEST_ENV_STATUS=running\n(.*\n)*TEST_ENV_REUSED=0\n/);
+    expect(lockExists()).toBe(false);
+
+    const reuse = up();
+    expect(reuse.status, reuse.stderr).toBe(0);
+    expect(reuse.stdout).toContain('TEST_ENV_REUSED=1');
+    expect(lockExists()).toBe(false);
   });
 
   it("waits for a bootstrap of another user's process instead of taking its lock", () => {
