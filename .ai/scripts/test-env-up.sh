@@ -123,9 +123,11 @@ age_seconds() {
   echo $(( $(date -u +%s) - started ))
 }
 
+# $1 = 1 when the running environment was reused, $2 = its run id (TEST_ENV_RUN_ID, #383: the
+# --foreground owner checks it against the descriptor before it tears anything down).
 print_result() {
-  printf 'TEST_ENV_STATUS=running\nTEST_ENV_BASE_URL=%s\nTEST_ENV_DESCRIPTOR=%s\nTEST_ENV_REUSED=%s\n' \
-    "$BASE_URL" "$DESCRIPTOR" "$1"
+  printf 'TEST_ENV_STATUS=running\nTEST_ENV_BASE_URL=%s\nTEST_ENV_DESCRIPTOR=%s\nTEST_ENV_REUSED=%s\nTEST_ENV_RUN_ID=%s\n' \
+    "$BASE_URL" "$DESCRIPTOR" "$1" "$2"
   printf 'BROWSER_PROVIDER=agent-browser\nBROWSER_INSTALLED=%s\n' "$(json_get installed "$DESCRIPTOR")"
 }
 
@@ -141,7 +143,7 @@ if [ "$FORCE" = 0 ] && [ "$RESET" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get
      [ "$(age_seconds "$(json_get startedAt "$DESCRIPTOR")")" -lt "$TTL_SECONDS" ] &&
      [ "$(json_get sourceFingerprint "$DESCRIPTOR")" = "$CURRENT_FP" ]; then
     log "reusing the running environment $(json_get runId "$DESCRIPTOR")"
-    print_result 1
+    print_result 1 "$(json_get runId "$DESCRIPTOR")"
     exit 0
   fi
   log "the recorded environment is stale; restarting it"
@@ -296,4 +298,4 @@ cat > "$DESCRIPTOR" <<EOF
 }
 EOF
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
-print_result 0
+print_result 0 "$RUN_ID"

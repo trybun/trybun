@@ -18,6 +18,10 @@ KEEP_SERVICES=0
 [ "${1:-}" = "--keep-services" ] && KEEP_SERVICES=1
 [ -f "$DESCRIPTOR" ] || { echo "No test environment recorded."; exit 0; }
 json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$DESCRIPTOR" | head -1; }
+# "stopping" before any process is signalled (#383): an attached --foreground owner that sees its
+# processes end then knows they were stopped, not crashed; the reuse check reads only "running".
+set_status() { sed -i.bak "s/\"status\": \"[a-z]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" && rm -f "$DESCRIPTOR.bak"; }
+set_status stopping
 PIDS=""
 for key in apiPid workerPid webPid; do
   pid=$(json_get "$key")
@@ -46,5 +50,5 @@ fi
 if [ "$KEEP_SERVICES" = 0 ] && [ "$(json_get servicesStartedByScript)" = true ]; then
   $COMPOSE down >/dev/null 2>&1 || true
 fi
-sed -i.bak 's/"status": "running"/"status": "stopped"/' "$DESCRIPTOR" && rm -f "$DESCRIPTOR.bak"
+set_status stopped
 echo "TEST_ENV_STATUS=stopped"

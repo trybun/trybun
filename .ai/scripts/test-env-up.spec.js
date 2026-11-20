@@ -305,6 +305,14 @@ describe('test-env-up.sh', () => {
     expect(lockExists()).toBe(false);
   });
 
+  it('prints the run id of the environment it booted or reused', () => {
+    const boot = up();
+    const { runId } = descriptor();
+    expect(boot.stdout).toContain(`TEST_ENV_RUN_ID=${runId}\n`);
+
+    expect(up().stdout).toContain(`TEST_ENV_RUN_ID=${runId}\n`);
+  });
+
   it("waits for a bootstrap of another user's process instead of taking its lock", () => {
     // PID 1 exists but belongs to root: `kill -0` fails with EPERM for it, `ps -p` finds it.
     mkdirSync(join(folder, 'test-env.lock'));
@@ -352,5 +360,29 @@ describe('test-env-up.sh', () => {
     const after = JSON.parse(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8'));
     expect(after.app.apiPid).not.toBe(before.app.apiPid);
     expect(() => process.kill(Number(before.app.apiPid), 0)).toThrow();
+  });
+});
+
+describe('test-env-down.sh', () => {
+  it('marks the environment stopping before it signals the applications, stopped once they exit', async () => {
+    // The stubbed applications keep their port for 3 s after SIGTERM, as the API does.
+    extraEnvironment = { STUB_STOP_SECONDS: '3' };
+    expect(up().status).toBe(0);
+
+    const down = spawn('sh', ['.ai/scripts/test-env-down.sh'], {
+      cwd: checkout,
+      env: { ...environment(), ...extraEnvironment },
+    });
+    const exited = new Promise((resolve) => down.on('exit', resolve));
+    await until(
+      () => descriptor().status === 'stopping',
+      5_000,
+      () => `status ${descriptor().status}`,
+    );
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(true);
+
+    expect(await exited).toBe(0);
+    expect(descriptor().status).toBe('stopped');
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
   });
 });
