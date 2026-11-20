@@ -1,8 +1,8 @@
 # 0014 – The tab title of the not-found page through the metadata of the page
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-11-20
-- Deciders: the maintainer (`@dtk7c2`)
+- Deciders: the maintainer (`@dtk7c2`), accepted on 2026-11-20 in the review of [#406](https://github.com/trybun/trybun/pull/406)
 - Specification: [§13.1](../spec/13-non-functional.md#131-internationalization), [§18.5](../spec/18-code-patterns.md)
 - Pull request: [#406](https://github.com/trybun/trybun/pull/406) (#404); replaces the `<title>` element of #401 ([#403](https://github.com/trybun/trybun/pull/403))
 
