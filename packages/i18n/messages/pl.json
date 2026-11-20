@@ -32,6 +32,11 @@
     "textWithWait": "Wysłano więcej żądań, niż Trybun pozwala w krótkim czasie. Spróbuj ponownie {wait}.",
     "reload": "Odśwież stronę"
   },
+  "errorPage": {
+    "title": "Coś poszło nie tak",
+    "text": "Trybun nie mógł wyświetlić tej strony. Spróbuj ponownie – jeśli to nie pomoże, wróć za chwilę.",
+    "tryAgain": "Spróbuj ponownie"
+  },
   "languages": {
     "en": "English",
     "pl": "Polski"

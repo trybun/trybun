@@ -32,6 +32,11 @@
     "textWithWait": "You have sent more requests than Trybun allows in a short time. Try again {wait}.",
     "reload": "Reload page"
   },
+  "errorPage": {
+    "title": "Something went wrong",
+    "text": "Trybun could not show this page. Try again – if that does not help, come back in a moment.",
+    "tryAgain": "Try again"
+  },
   "languages": {
     "en": "English",
     "pl": "Polski"

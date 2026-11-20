@@ -7,11 +7,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
+import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
 import { myTicketsHref, newTicketHref } from '../../../../../features/portal/hrefs.js';
 import { getPortalProject } from '../../../../../features/portal/project-page.js';
 import { MyTicketsList } from '../../../../../features/tickets/components/my-tickets-list.js';
 import { myTicketsQueryOptions } from '../../../../../features/tickets/queries.js';
-import { getServerApiClient } from '../../../../../lib/api-client/server-api-client.js';
+import {
+  getServerApiClient,
+  readOrRateLimited,
+} from '../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
 
@@ -24,6 +28,7 @@ const paramsSchema = z.object({ projectId: z.uuid() });
  * The project home of the portal (§5.7): the project name, **Create ticket** – the first of the two
  * steps of a new ticket – and "My tickets" of the project. An archived project shows its read-only
  * banner instead of **Create ticket** (§7.3). No search field until the portal search (S2-03, Q5).
+ * A person over the rate limit is told so (§14.4).
  */
 export default async function PortalProjectPage({
   params,
@@ -35,11 +40,14 @@ export default async function PortalProjectPage({
     notFound();
   }
   await requireSession();
-  const [t, project, client] = await Promise.all([
+  const [t, { data: project, rateLimited }, client] = await Promise.all([
     getTranslations('portal.projectHome'),
-    getPortalProject(parsed.data.projectId),
+    readOrRateLimited(getPortalProject(parsed.data.projectId)),
     getServerApiClient(),
   ]);
+  if (rateLimited !== undefined) {
+    return <RateLimitedNotice error={rateLimited} />;
+  }
   const queryClient = getServerQueryClient();
   const ticketsOptions = myTicketsQueryOptions(client, {
     projectId: project.id,

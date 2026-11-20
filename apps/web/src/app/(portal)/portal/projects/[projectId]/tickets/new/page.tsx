@@ -1,10 +1,12 @@
 import { notFound, redirect } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
 import { z } from 'zod';
+import { RateLimitedNotice } from '../../../../../../../features/app-shell/components/rate-limited-notice.js';
 import { portalProjectHref } from '../../../../../../../features/portal/hrefs.js';
 import { getPortalProject } from '../../../../../../../features/portal/project-page.js';
 import { NewTicketForm } from '../../../../../../../features/tickets/components/new-ticket-form.js';
 import { creationVisibilityOptions } from '../../../../../../../features/tickets/visibility.js';
+import { readOrRateLimited } from '../../../../../../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../../../../../../lib/auth/session.js';
 import { getEnv } from '../../../../../../../lib/env/env.js';
 
@@ -13,7 +15,7 @@ const paramsSchema = z.object({ projectId: z.uuid() });
 /**
  * The simplified ticket form as a page, not a dialog (§3.3, Q6): on phones the description needs
  * the full height, and the address survives a reload. A project that takes no tickets (archived)
- * returns to its project home, which says why.
+ * returns to its project home, which says why. A person over the rate limit is told so (§14.4).
  */
 export default async function NewTicketPage({
   params,
@@ -25,10 +27,13 @@ export default async function NewTicketPage({
     notFound();
   }
   await requireSession();
-  const [t, project] = await Promise.all([
+  const [t, { data: project, rateLimited }] = await Promise.all([
     getTranslations('portal.newTicket'),
-    getPortalProject(parsed.data.projectId),
+    readOrRateLimited(getPortalProject(parsed.data.projectId)),
   ]);
+  if (rateLimited !== undefined) {
+    return <RateLimitedNotice error={rateLimited} />;
+  }
   if (!project.allowedActions.includes('create_ticket')) {
     redirect(portalProjectHref(project.id));
   }
