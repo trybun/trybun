@@ -5,13 +5,10 @@ import { cn } from '@trybun/ui/lib/utils';
 import { ArchiveIcon, PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
-import { cache } from 'react';
-import { z } from 'zod';
 import { RateLimitedNotice } from '../../../../../features/app-shell/components/rate-limited-notice.js';
 import { myTicketsHref, newTicketHref } from '../../../../../features/portal/hrefs.js';
-import { getPortalProject } from '../../../../../features/portal/project-page.js';
+import { loadPortalProject } from '../../../../../features/portal/project-page.js';
 import { MyTicketsList } from '../../../../../features/tickets/components/my-tickets-list.js';
 import { myTicketsQueryOptions } from '../../../../../features/tickets/queries.js';
 import {
@@ -19,26 +16,10 @@ import {
   metadataAfterRead,
   readOrRateLimited,
 } from '../../../../../lib/api-client/server-api-client.js';
-import { requireSession } from '../../../../../lib/auth/session.js';
 import { getServerQueryClient } from '../../../../../lib/query-client/server-query-client.js';
 
 /** The number of the project's tickets the project home shows; **Show all** opens the rest. */
 const PROJECT_HOME_TICKETS = 10;
-
-const paramsSchema = z.object({ projectId: z.uuid() });
-
-/**
- * The read of the page, shared with its metadata in one request: an address that is not a project
- * ID and a project the end user cannot read are not found.
- */
-const loadProject = cache(async (projectId: string) => {
-  const parsed = paramsSchema.safeParse({ projectId });
-  if (!parsed.success) {
-    notFound();
-  }
-  await requireSession();
-  return getPortalProject(parsed.data.projectId);
-});
 
 /** A missing or invisible project gets the translated not-found title of the tab (#404). */
 export async function generateMetadata({
@@ -46,7 +27,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ projectId: string }>;
 }): Promise<Metadata> {
-  return metadataAfterRead(loadProject((await params).projectId));
+  return metadataAfterRead(loadPortalProject((await params).projectId));
 }
 
 /**
@@ -63,7 +44,7 @@ export default async function PortalProjectPage({
   const { projectId } = await params;
   const [t, { data: project, rateLimited }, client] = await Promise.all([
     getTranslations('portal.projectHome'),
-    readOrRateLimited(loadProject(projectId)),
+    readOrRateLimited(loadPortalProject(projectId)),
     getServerApiClient(),
   ]);
   if (rateLimited !== undefined) {

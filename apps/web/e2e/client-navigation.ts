@@ -1,6 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 
-/** The router of Next.js in the browser, which it exposes once the page is hydrated. */
+/**
+ * The router of Next.js in the browser, which it exposes once the page is hydrated – "for debugging
+ * purposes" (`next/dist/esm/client/components/app-router-instance.js`, Next.js 16.4): a test aid,
+ * never application code. A Next.js upgrade that drops it fails `navigateInApp()` on its first wait.
+ */
 interface WindowWithRouter {
   next?: { router?: { push(href: string): void } };
 }
