@@ -14,6 +14,11 @@
 #              the bootstrap lock is machine-wide (/tmp/trybun-test-env.lock), not per checkout
 #   2026-11-18 TRYBUN_PSEUDO_LOCALE=true (#301): the web application serves the pseudo-locale en-XA
 #              of the width-sensitive E2E checks, as playwright.config.ts sets it in CI
+#   2026-11-20 --foreground (#383): runs the boot as a child and stays attached as the owner (a
+#              closed terminal or SIGTERM stops what it booted) or a viewer (stops nothing) – the
+#              start command of cezar Preview's startApp recipe and sv-prepare-qa-tests (README);
+#              TEST_ENV_RUN_ID; an interrupted boot stops what it started (steps in their own
+#              sessions, detached cleanup); refusal messages never invite stopping another checkout
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)

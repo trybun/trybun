@@ -1,6 +1,6 @@
 # Execution plan: one start command for cezar Preview and the QA skills
 
-Source doc: .ai/specs/2026-11-20-preview-start-recipe.md
+Source doc: .ai/specs/implemented/2026-11-20-preview-start-recipe.md
 Issue: #383 (spec PR #415, merged)
 
 ## Goal

@@ -8,6 +8,8 @@
 #              installation or `pnpm dev` (project `trybun`)
 #   2026-11-15 waits until the applications have exited (#352), so a boot right after finds the
 #              ports free
+#   2026-11-20 marks the descriptor "stopping" before it signals the applications (#383), so an
+#              attached `test-env-up.sh --foreground` owner tells a stop from a crash
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
