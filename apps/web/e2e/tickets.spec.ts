@@ -60,6 +60,14 @@ test.describe('the team ticket view', () => {
     const response = await new TicketPage(page).goto('CP-999999');
 
     expect(response?.status()).toBe(404);
+    // The translated not-found page inside the shell, never the English page of Next.js (#401).
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+    await expect(page).toHaveTitle('Page not found – Trybun');
+    await expect(page.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute(
+      'href',
+      '/',
+    );
+    await expect(new AppShellPage(page).navigation).toBeVisible();
   });
 
   // One person in two fresh browser contexts: the test opens both itself, so it runs in one

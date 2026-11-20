@@ -63,6 +63,20 @@ test.describe('help', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
+  test('shows the not-found page of the help for a topic that does not exist', async ({ page }) => {
+    const response = await page.goto('/help/no-such-topic');
+
+    expect(response?.status()).toBe(404);
+    // Inside the shell of the reader, with the way back to all help topics (#401).
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+    await expect(page).toHaveTitle('Page not found – Trybun');
+    await expect(page.getByRole('link', { name: 'All help topics' })).toHaveAttribute(
+      'href',
+      '/help',
+    );
+    await expect(new AppShellPage(page).navigation).toBeVisible();
+  });
+
   test('has touch targets of at least 44 px', async ({ page }) => {
     const shell = new AppShellPage(page);
     const help = new HelpPage(page);
