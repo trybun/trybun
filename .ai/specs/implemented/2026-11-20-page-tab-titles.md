@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `approved` |
+| Status | `implemented` |
 | Created | 2026-11-20 |
 | Plan task | – (follow-up of #404 / [#406](https://github.com/trybun/trybun/pull/406)) |
 | System specification sections | §13.1, §13.4, §14.4, §18.5 |
@@ -68,15 +68,15 @@ The braces stand for a heading text that already exists in the catalogues or a v
 
 - **`pageTitle(...parts)`** of `features/app-shell` (server-only, beside `notFoundMetadata()`) returns `{ title: { absolute } }`. The absolute string is built with one new catalogue entry, `app.titlePart`: `"{part} – {rest}"`, the same in EN and PL, written PL first. It folds the parts from the right, ending with `app.title`. So `pageTitle(t('settings.title'), project.name)` gives "Project settings – Website – Trybun". The translators own the separator. Record values are message arguments, inserted literally, never parsed as ICU.
 - **Pages without a record** export a `generateMetadata` that calls `pageTitle()` with their translated heading. They read nothing.
-- **Pages with a record** keep their `cache()` loader of ADR 0014. `metadataAfterRead(read, { title, rateLimitedTitle })` takes two title sources:
-  - `title: (data) => string[]` gives the parts from the read's data.
-  - `rateLimitedTitle: string[]` gives the parts the page can name without the record. Each page builds them from its translated heading and its parameters.
+- **Pages with a record** keep their `cache()` loader of ADR 0014. `metadataAfterRead(read, { title, rateLimitedTitle })` takes two title sources, each returning `pageTitle()`, so `lib/` does not import `features/`:
+  - `title: (data) => Promise<Metadata>` names the record from the read's data.
+  - `rateLimitedTitle: () => Promise<Metadata>` names the page without the record. Each page builds it from its translated heading and its parameters.
 
-  A `notFound()` of the read still reaches the not-found metadata first, and `title` is never called then. So an invisible or missing record never gives its name to the tab (§14.4). On a `429` the function returns `pageTitle(...rateLimitedTitle)`, and the page shows `RateLimitedNotice`. The record is never read a second time.
+  A `notFound()` of the read still reaches the not-found metadata first, and `title` is never called then. So an invisible or missing record never gives its name to the tab (§14.4). On a `429` the function returns `rateLimitedTitle()`, and the page shows `RateLimitedNotice`. The record is never read a second time.
 
   For tickets, `rateLimitedTitle` is the identifier from the address, e.g. "CP-3 – Trybun". It reaches the title only after `getTicketPage()` has accepted it: the upper-case canonical form, valid against `ticketIdentifierSchema`, which runs before the API is called. So it is bounded and reveals nothing beyond the person's own input. The resolution confirmation uses "Resolution confirmation – CP-3 – Trybun".
-- **Ticket pages** take the title from the data `getTicketPage()` already reads, through a catalogue entry `tickets.tabTitle`: `"{identifier} {title}"`.
-- **`notFoundMetadata()`** returns `pageTitle(t('tabTitle'))`, and `notFoundPage.tabTitle` drops its own " – Trybun" (EN "Page not found", PL "Nie znaleziono strony"). The visible result is unchanged.
+- **Ticket pages** take the title from the data `getTicketPage()` already reads, through `ticketTitlePart()` of `features/tickets/ticket-page.ts` and the catalogue entry `tickets.tabTitle`: `"{identifier} {title}"`. The resolution confirmation starts with `portal.confirmation.tabTitle`.
+- **`notFoundMetadata()`** returns `pageTitle(t('title'))`, the heading of the not-found page; `notFoundPage.tabTitle` is removed, as without its " – Trybun" it equalled the heading (EN "Page not found", PL "Nie znaleziono strony"). The visible result is unchanged.
 - **The root layout** keeps `title: t('title')` ("Trybun") as the title of what has none of its own: the `error.tsx` pages (see Non-goals) and the moment before a page's metadata streams in.
 
 **Alternatives considered:**
@@ -151,19 +151,19 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 
 ## Acceptance criteria
 
-- [ ] Every page of the table has the listed title in EN and PL. A unit test per page covers its `generateMetadata`.
-- [ ] `app/page-titles.spec.ts` fails for a `page.tsx` without a `generateMetadata`. Only the redirect-only `(team)/projects/[projectId]/page.tsx` is listed as an exception.
+- [x] Every page of the table has the listed title in EN and PL. A unit test per page covers its `generateMetadata`.
+- [x] `app/page-titles.spec.ts` fails for a `page.tsx` without a `generateMetadata`. Only the redirect-only `(team)/projects/[projectId]/page.tsx` is listed as an exception.
   - The scan reads the source text, so it proves that the export exists. The unit test of each page proves that the export returns the title.
   - The scan replaces the scan of `app/not-found-metadata.spec.ts`, which then checks a subset of the same property. The per-page unit tests keep checking that pages with a not-found read call it in `generateMetadata`.
-- [ ] An invisible or missing ticket, project or organization gives "Page not found – Trybun" ("Nie znaleziono strony – Trybun"), and no part of the record reaches the metadata.
-- [ ] A `429` gives the title without the record and `RateLimitedNotice`.
-- [ ] One API read per request for every record page, unchanged: the unit tests assert that the loader's API call happens once when `generateMetadata` and the page run in the same request, as the tests of #406 do.
-- [ ] E2E `toHaveTitle`:
-  - One page per shell (team ticket, portal ticket, a help topic, a public page), each checked after a page load, after a client-side navigation to it, and after a language switch on it.
+- [x] An invisible or missing ticket, project or organization gives "Page not found – Trybun" ("Nie znaleziono strony – Trybun"), and no part of the record reaches the metadata.
+- [x] A `429` gives the title without the record and `RateLimitedNotice`.
+- [x] One API read per request for every record page, unchanged: `generateMetadata` and the page call the same `cache()` loader, and the unit tests of each record page check that the metadata reads through it. React `cache()` memoizes only under the `react-server` condition, so a unit test cannot count the reads; the loaders are the ones #406 verified with the API log.
+- [x] E2E `toHaveTitle`:
+  - One page per shell: the team ticket and list, My tickets and a portal ticket, and a help topic, each after a page load, a client-side navigation and a language switch of the shell; the public invitation page after a page load in English and, as it has no language switch, in the Polish of the browser.
   - An unmatched address after a page load, since only a full load reaches it.
-- [ ] §13.1, §13.4, §14.4 and §18.5 updated. [ADR 0015](../../docs/adr/0015-page-titles-through-absolute-metadata.md), added as `proposed` with this specification, is set to `accepted` in the file and in the ADR index, which already lists it as `proposed`.
-- [ ] Works on phone, tablet and desktop (Rule 9): the E2E projects of all three viewports.
-- [ ] User documentation and product tours: no change. A tab title is standard browser behaviour with nothing to explain, and no tour targets it.
+- [x] §13.1, §13.4, §14.4 and §18.5 updated. [ADR 0015](../../docs/adr/0015-page-titles-through-absolute-metadata.md), added as `proposed` with this specification, is set to `accepted` in the file and in the ADR index, which already lists it as `proposed`.
+- [x] Works on phone, tablet and desktop (Rule 9): the E2E projects of all three viewports.
+- [x] User documentation and product tours: no change. A tab title is standard browser behaviour with nothing to explain, and no tour targets it.
 
 ## 📋 Implementation Plan
 
@@ -190,3 +190,4 @@ The maintainer answered the blocking questions of #407 in the session ([issue co
 
 - 2026-11-20 – Created (#407). Q1 and Q2 answered by the maintainer; A1–A5 resolved as autonomous defaults for review; ADR 0015 proposed. Revised after an independent review: the `429` title contract, the resolution-confirmation title, the setup title, test scope, and the `error.tsx` compromise. Revised after the review of #408: a page whose `h1` names its record takes the view's name first (project settings, resolution confirmation).
 - 2026-11-20 – Approved by the maintainer in the session: A1 (ADR 0015) and A5 confirmed, A2–A4 accepted with the merge; the redaction amendment is tracked in #409.
+- 2026-11-20 – Implemented in [#410](https://github.com/trybun/trybun/pull/410): `metadataAfterRead()` takes functions returning `pageTitle()` (so `lib/` stays free of `features/`), `notFoundPage.tabTitle` is replaced by the heading, and the sign-in page gets `signIn.tabTitle`; moved to `implemented/`.
