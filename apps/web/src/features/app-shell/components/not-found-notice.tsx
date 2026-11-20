@@ -2,6 +2,7 @@ import { buttonVariants } from '@trybun/ui/components/button';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { pageTitle } from '../page-title.js';
 
 /** The home a not-found page leads back to: the side's root, or the index of the help. */
 export type NotFoundHome = '/' | '/portal' | '/help';
@@ -33,8 +34,11 @@ export async function NotFoundNotice({ home }: { home: NotFoundHome }) {
   );
 }
 
-/** The translated tab title of a page that is not found, the `generateMetadata` of every `not-found.tsx`. */
+/**
+ * The translated tab title of a page that is not found, the `generateMetadata` of every
+ * `not-found.tsx`: its heading, followed by the brand (`pageTitle()`, §13.4).
+ */
 export async function notFoundMetadata(): Promise<Metadata> {
   const t = await getTranslations('notFoundPage');
-  return { title: t('tabTitle') };
+  return pageTitle(t('title'));
 }
