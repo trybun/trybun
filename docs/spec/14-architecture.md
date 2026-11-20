@@ -72,7 +72,7 @@
 
 ## 14.4 Architectural principles
 
-- The frontend contains no permission or visibility logic. Decisions are made only by the API; the frontend only adapts the UI.
+- The frontend contains no permission or visibility logic. Decisions are made only by the API; the frontend only adapts the UI. The metadata of a page follows the same answer: its tab title names a record only after the page's own read of it was found, so a missing or invisible record gives only the not-found title ([§13.4](13-non-functional.md#134-accessibility)).
 - Authentication, 2FA and OAuth are handled by Keycloak. Custom implementations of security mechanisms are forbidden (Rule 1, [§13.5](13-non-functional.md)). API tokens ([§12.2](12-api-webhooks-import.md)) are handled by the system.
 - Database access goes through Prisma. Where the ORM is not sufficient (full-text search, pgvector), only parameterized SQL queries are allowed.
 - Incoming e-mail is handled by an e-mail provider that converts messages into webhooks, not by a self-hosted mail server. Outgoing e-mail uses SMTP, so any provider can be configured.

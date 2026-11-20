@@ -24,4 +24,4 @@ Significant technical decisions of Trybun, in the [MADR](https://adr.github.io/m
 | [0012](0012-web-component-tests.md) | Component tests of the web application in jsdom | accepted |
 | [0013](0013-current-time-in-abilities.md) | The current time in the abilities | accepted |
 | [0014](0014-not-found-title-through-metadata.md) | The tab title of the not-found page through the metadata of the page | accepted |
-| [0015](0015-page-titles-through-absolute-metadata.md) | The tab title of every page through `title.absolute` of one helper | proposed |
+| [0015](0015-page-titles-through-absolute-metadata.md) | The tab title of every page through `title.absolute` of one helper | accepted |
