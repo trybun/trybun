@@ -238,3 +238,26 @@ test.describe('application shell', () => {
     });
   });
 });
+
+// An address that matches no route: the translated not-found page of its own with the header of
+// the public pages, never the English 404 page of Next.js (#401).
+test.describe('not-found page of an unmatched address', () => {
+  test.use({ locale: 'pl' });
+
+  test('says so in the language of the person, with the way back home', async ({
+    page,
+  }, testInfo) => {
+    const response = await page.goto('/no-such-page');
+
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Nie znaleziono strony' }),
+    ).toBeVisible();
+    await expect(page).toHaveTitle('Nie znaleziono strony – Trybun');
+    await expect(page.getByRole('banner')).toContainText('Trybun');
+    const home = page.getByRole('link', { name: 'Przejdź na stronę główną' });
+    await expect(home).toHaveAttribute('href', '/');
+    await expectTouchTarget(home, minimumTargetSize(testInfo), ['height']);
+    expect(await seriousViolations(page)).toEqual([]);
+  });
+});
