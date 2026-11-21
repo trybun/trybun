@@ -1,6 +1,6 @@
 # Execution plan – Sign out on the "Too many requests" notice of the application shell
 
-Source doc: .ai/specs/2026-11-21-rate-limited-sign-out.md
+Source doc: .ai/specs/implemented/2026-11-21-rate-limited-sign-out.md
 Issue: #384 · Specification PR: #421 (merged)
 
 ## Goal
@@ -36,6 +36,8 @@ Over the per-user rate limit, the notice that the application shell shows instea
 
 ## Progress
 
+PR: #424
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: the button in the shell
@@ -45,5 +47,5 @@ Over the per-user rate limit, the notice that the application shell shows instea
 
 ### Phase 2: specification and documentation
 
-- [ ] 2.1 §18.5 and the user documentation
-- [ ] 2.2 Specification implemented
+- [x] 2.1 §18.5 and the user documentation — a8364c8
+- [x] 2.2 Specification implemented — a0b430d
