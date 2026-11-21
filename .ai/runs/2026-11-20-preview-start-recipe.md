@@ -60,9 +60,9 @@ PR: #417
 
 - [x] 2.1 The outer layer and the owner role — f1a4c11
 - [x] 2.2 The viewer role — f1a4c11
-- [x] 2.3 The refusal messages — 09fd65d
+- [x] 2.3 The refusal messages — 5e64379
 
 ### Phase 3: Documentation and verification
 
-- [x] 3.1 README, script history, memory, spec to implemented — 18df781
-- [x] 3.2 Full validation gate and verification — a7b7d5e
+- [x] 3.1 README, script history, memory, spec to implemented — 01a2291
+- [x] 3.2 Full validation gate and verification — 29eeadc
