@@ -47,7 +47,7 @@ The system specification (`docs/spec/`) is the living truth of this repository, 
 - WHEN the person selects **Sign out** on that notice THEN the web session and the Keycloak session end and the start page opens, as with **Sign out** in the account menu.
 - WHEN the notice is shown in Polish THEN the button reads "Wyloguj się".
 
-Frozen by: `apps/web/src/features/app-shell/components/account-shell.spec.tsx` (`shows only the notice of the rate limit when the API refuses the account with 429 (#356)`)
+Frozen by: `apps/web/src/features/app-shell/components/account-shell.spec.tsx` (`shows only the notice of the rate limit, with the sign-out, when the API refuses the account with 429 (#356, #384)`, renamed by the implementation)
 
 The notice that a page shows inside the shell (e.g. a page of the Administrator panel or a ticket page) does not change: `RateLimitedNotice` itself is untouched, and the account menu of the shell is still there.
 
