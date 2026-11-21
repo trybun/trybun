@@ -27,6 +27,8 @@ Select the help icon (question mark) in the header, then **Help for this view**.
 1. Select your account menu (your initials) in the header.
 2. Select **Sign out**.
 
+If you send more requests than Trybun allows in a short time, you see **Too many requests** instead of the page until the block ends, usually after a minute. The header is not shown then, so select **Sign out** on that page.
+
 Trybun also signs you out by itself after 8 hours without activity, and 30 days after you signed in. Then sign in again.
 
 ## Next steps
