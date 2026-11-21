@@ -4,7 +4,7 @@ import type { UserKind } from '@trybun/contracts/users';
 import { headers } from 'next/headers.js';
 import { redirect } from 'next/navigation.js';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { REQUEST_PATH_HEADER } from '../../../lib/auth/callback-path.js';
 import { getServerApiClient } from '../../../lib/api-client/server-api-client.js';
@@ -20,6 +20,7 @@ import { productTourProgressQueryOptions } from '../../product-tours/queries.js'
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { NewTicketButton } from '../../tickets/components/new-ticket-button.js';
 import { AccountDeactivatedNotice } from '../../sessions/components/account-deactivated-notice.js';
+import { SignOutButton } from '../../sessions/components/sign-out-button.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
 import { counterpartOf, type Shell } from '../counterparts.js';
 import { isNavigationCollapsed } from '../navigation-cookie.js';
@@ -42,7 +43,7 @@ export function shellOf(kind: UserKind): Shell {
  * reader. The kind decides only the views; the API decides every access (§14.4). The kind also
  * decides the contextual help of the help menu (§2.3) and the tours (§2.4), and the desktop side
  * navigation starts as this browser left it. An account the API refuses sees only a notice with
- * the sign-out, and a person over the rate limit only the notice of the rate limit.
+ * the sign-out, and a person over the rate limit only the notice of the rate limit with the sign-out.
  */
 export async function AccountShell({
   shell: requestedShell,
@@ -67,11 +68,14 @@ export async function AccountShell({
   }
   // Over the rate limit every read of the request is refused for a while, the page's too: one
   // message for every page instead of its errors (§14.4, #356). The help needs no API, so it
-  // stays readable while the person waits.
+  // stays readable while the person waits. Without the shell there is no account menu, so the
+  // notice offers the sign-out, for a shared computer (#384); the API's limit does not reach it.
   if (isRateLimited(userError) && requestedShell !== 'reader') {
+    const t = await getTranslations('signIn');
     return (
-      <main className="mx-auto flex max-w-lg flex-col p-4 pt-12">
+      <main className="mx-auto flex max-w-lg flex-col items-start gap-3 p-4 pt-12">
         <RateLimitedNotice error={userError} />
+        <SignOutButton label={t('signOut')} variant="outline" />
       </main>
     );
   }

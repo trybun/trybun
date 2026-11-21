@@ -1,6 +1,7 @@
 import type { DehydratedState } from '@tanstack/react-query';
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import type { ReactElement } from 'react';
+import { createTranslator } from 'next-intl';
+import type { ComponentProps, ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiError } from '../../../lib/errors/api-error.js';
 
@@ -65,10 +66,15 @@ const redirect = vi.fn((url: string) => {
 });
 vi.mock('next/navigation.js', () => ({ redirect }));
 
-vi.mock('next-intl/server', () => ({ getMessages: () => Promise.resolve(CATALOGUES.en) }));
+vi.mock('next-intl/server', () => ({
+  getMessages: () => Promise.resolve(CATALOGUES.en),
+  getTranslations: (namespace: 'signIn') =>
+    Promise.resolve(createTranslator({ locale: 'en', messages: CATALOGUES.en, namespace })),
+}));
 
 const { AccountShell } = await import('./account-shell.js');
 const { NewTicketButton } = await import('../../tickets/components/new-ticket-button.js');
+const { SignOutButton } = await import('../../sessions/components/sign-out-button.js');
 
 function TeamLayout({ children }: { children: ReactElement }) {
   return AccountShell({ shell: 'team', children });
@@ -242,7 +248,7 @@ describe('AccountShell', () => {
     expect((element.type as { name: string }).name).toBe('AccountDeactivatedNotice');
   });
 
-  it('shows only the notice of the rate limit when the API refuses the account with 429 (#356)', async () => {
+  it('shows only the notice of the rate limit, with the sign-out, when the API refuses the account with 429 (#356, #384)', async () => {
     requireSession.mockResolvedValue({ expires: '2026-11-03T09:15:00.000Z' });
     get.mockResolvedValue({
       data: undefined,
@@ -256,13 +262,19 @@ describe('AccountShell', () => {
     } as never);
 
     const element = (await TeamLayout({ children: <h1>Page</h1> })) as ReactElement<{
-      children: ReactElement<{ error: ApiError }>;
+      children: [
+        ReactElement<{ error: ApiError }>,
+        ReactElement<ComponentProps<typeof SignOutButton>>,
+      ];
     }>;
 
     expect(element.type).toBe('main');
-    const notice = element.props.children;
+    const [notice, signOut] = element.props.children;
     expect((notice.type as { name: string }).name).toBe('RateLimitedNotice');
     expect(notice.props.error).toMatchObject({ status: 429, retryAfterSeconds: 45 });
+    // Below Reload page, as a secondary button: without the shell there is no account menu (#384).
+    expect(signOut.type).toBe(SignOutButton);
+    expect(signOut.props).toEqual({ label: 'Sign out', variant: 'outline' });
   });
 
   it('keeps the help readable over the rate limit, as it needs no API', async () => {
