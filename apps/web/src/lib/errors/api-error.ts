@@ -1,6 +1,7 @@
 import { problemDetailsSchema } from '@trybun/contracts/problem-details';
 import { ApiError } from './api-error-class.js';
 
+// Import `ApiError` from here; only a module of the first load imports `api-error-class.ts` itself.
 export { ApiError };
 
 /** Statuses of a gateway or proxy in front of an API that is down (Caddy, §15.9). */

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getServerApiClient } from '../../lib/api-client/server-api-client.js';
 import { requireSession } from '../../lib/auth/session.js';
 import { ApiError } from '../../lib/errors/api-error.js';
+import { retryUnlessRefused } from '../../lib/query-client/query-client-config.js';
 import { getServerQueryClient } from '../../lib/query-client/server-query-client.js';
 import { projectQueryOptions } from '../projects/queries.js';
 
@@ -15,7 +16,9 @@ import { projectQueryOptions } from '../projects/queries.js';
 export async function getPortalProject(projectId: string) {
   const queryClient = getServerQueryClient();
   const options = projectQueryOptions(await getServerApiClient(), projectId);
-  await queryClient.prefetchQuery(options);
+  // The page fails without the project, so a failure of the server is tried again here, as in the
+  // browser; a refusal (`404`, `429`) is an answer (§18.5).
+  await queryClient.prefetchQuery({ ...options, retry: retryUnlessRefused });
   const error = queryClient.getQueryState(options.queryKey)?.error;
   if (error instanceof ApiError && error.status === 404) {
     notFound();

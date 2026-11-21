@@ -20,7 +20,9 @@ export function retryUnlessRefused(failureCount: number, error: Error): boolean 
 
 /**
  * The configuration of the query client of the browser. The server keeps the default of TanStack
- * Query and never retries: a failed prefetch is read again by the browser, which shows its error.
+ * Query, no retry, as a failed prefetch is read again by the browser, which shows its error; a
+ * read whose failure fails the page passes `retryUnlessRefused` itself (`getTicketPage`,
+ * `getPortalProject`).
  */
 export const BROWSER_QUERY_CLIENT_CONFIG: QueryClientConfig = {
   ...QUERY_CLIENT_CONFIG,
