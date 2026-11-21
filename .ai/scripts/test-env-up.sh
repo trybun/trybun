@@ -132,8 +132,10 @@ fg_teardown() {
   while alive "$teardown_pid"; do wait "$teardown_pid" || true; done
 }
 fg_signal() {
-  [ "$FG_HANDLING" = 1 ] && return 0
-  FG_HANDLING=1
+  # Ignore further signals from here on: a closed terminal can hang up the group more than once
+  # (the hangup, then the end of its session leader), and the commands below inherit the ignored
+  # disposition, so a later SIGHUP cannot kill the descriptor reads this decision rests on.
+  trap '' HUP INT TERM
   exec >>"$FG_LOG" 2>&1
   if [ -n "$FG_SLEEP" ]; then kill "$FG_SLEEP" 2>/dev/null || true; fi
   if [ -n "$FG_CHILD" ]; then
@@ -169,7 +171,6 @@ if [ "$FOREGROUND" = 1 ]; then
   FG_SLEEP=""
   FG_ROLE=""
   FG_RUN=""
-  FG_HANDLING=0
   FG_CHILD_STATUS=0
   child_flags=""
   [ "$FORCE_REBUILD" = 1 ] && child_flags="$child_flags --force-rebuild"
@@ -197,7 +198,7 @@ if [ "$FOREGROUND" = 1 ]; then
   if [ "$FG_ROLE" = owner ]; then
     log "attached in the foreground as the owner – closing this terminal stops the environment"
   else
-    log "attached in the foreground as a viewer of an environment started elsewhere – closing this terminal stops nothing"
+    log "attached in the foreground as a viewer of an environment started elsewhere – closing this terminal stops nothing; to stop the environment, close the owner's terminal or run: sh .ai/scripts/test-env-down.sh"
   fi
   fg_api=$(json_get apiPid "$DESCRIPTOR")
   fg_worker=$(json_get workerPid "$DESCRIPTOR")
@@ -211,14 +212,14 @@ if [ "$FOREGROUND" = 1 ]; then
   # The applications ended: a crash of this owner's run, or a stop or replacement from elsewhere.
   if [ "$FG_ROLE" = owner ] && fg_still_ours; then
     # A signal during this teardown must not start a second one or change the exit code.
-    FG_HANDLING=1
+    trap '' HUP INT TERM
     log "an application of environment $FG_RUN exited; stopping the rest (logs in $LOG_DIR)"
     fg_teardown
     exit 1
   fi
   current=$(json_get runId "$DESCRIPTOR")
   if [ -n "$current" ] && [ "$current" != "$FG_RUN" ]; then
-    log "environment $FG_RUN was replaced by $current; detaching"
+    log "environment $FG_RUN was replaced by $current; detaching – the new environment keeps running; to stop it, run: sh .ai/scripts/test-env-down.sh"
   else
     log "environment $FG_RUN was stopped elsewhere ($(json_get status "$DESCRIPTOR")); detaching"
   fi
@@ -259,7 +260,6 @@ release_lock() {
 # log: after SIGHUP the terminal is gone, and a failed write must not abort the cleanup.
 LOCKED=0
 BOOTED=0
-INTERRUPTED=0
 STEP_PID=""
 API_PID=""
 WORKER_PID=""
@@ -290,8 +290,8 @@ CLEANUP='
   echo "[test-env] interrupted boot cleaned up"
 '
 interrupted() {
-  [ "$INTERRUPTED" = 1 ] && return 0
-  INTERRUPTED=1
+  # Ignore further signals, as fg_signal does: the cleanup below must not be cut by a second one.
+  trap '' HUP INT TERM
   # A boot that has completed is recorded and kept; only the lock is released (EXIT).
   [ "$BOOTED" = 1 ] && exit "$1"
   exec >>"$LOG_DIR/boot-interrupt.log" 2>&1

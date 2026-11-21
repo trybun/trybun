@@ -406,6 +406,30 @@ describe('an interrupted boot (#383)', PROCESS_TESTS, () => {
     },
   );
 
+  it('finishes its cleanup when a closed terminal keeps hanging up its group', async () => {
+    extraEnvironment = { STUB_BLOCK: 'build' };
+    const run = start();
+    await until(
+      () => existsSync(join(folder, 'blocked')),
+      20_000,
+      () => run.stderr,
+    );
+
+    const deadline = Date.now() + 500;
+    while (Date.now() < deadline) {
+      try {
+        run.signalGroup('SIGHUP');
+      } catch {
+        break; // The group has exited.
+      }
+      await sleep(2);
+    }
+
+    expect((await run.exited()).code).toBe(129);
+    await interruptedClean();
+    expect(readLines(join(folder, 'log'))).toContain(`${compose} down`);
+  });
+
   it('stops the started applications while it waits for their health', async () => {
     writeFileSync(join(folder, 'unhealthy'), '');
     const run = start();
@@ -481,6 +505,30 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
       const pids = applications();
 
       send(run);
+
+      expect((await run.exited()).code).toBe(0);
+      await stopped(pids);
+      expect(downs()).toBe(1);
+    });
+
+    it('stops the environment when a closed terminal delivers SIGHUP more than once', async () => {
+      // A closed terminal tab can hang up the group and then signal it again; the second signal
+      // must not kill the handler's own reads of the descriptor (#383, QA of #417).
+      const run = start('--foreground');
+      await run.output(owner);
+      const pids = applications();
+
+      // Keep hanging up the group for half a second, as a terminal that closes and then loses its
+      // session leader does, so a signal lands while the handler's own commands run.
+      const deadline = Date.now() + 500;
+      while (Date.now() < deadline) {
+        try {
+          run.signalGroup('SIGHUP');
+        } catch {
+          break; // The group has exited.
+        }
+        await sleep(2);
+      }
 
       expect((await run.exited()).code).toBe(0);
       await stopped(pids);
@@ -620,6 +668,10 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
       const run = start('--foreground');
       await run.output(viewer);
       expect(run.stdout).toContain('TEST_ENV_REUSED=1');
+      // The viewer says how the environment is stopped, since closing it does not (QA of #417).
+      expect(run.stderr).toContain(
+        "to stop the environment, close the owner's terminal or run: sh .ai/scripts/test-env-down.sh",
+      );
 
       run.signalGroup('SIGHUP');
 
