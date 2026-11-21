@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { notFoundResult } from '../../../../test/factories/not-found.factory.js';
+import { BROWSER_QUERY_CLIENT_CONFIG } from '../../../lib/query-client/query-client-config.js';
 
 vi.mock('client-only', () => ({}));
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
@@ -28,7 +29,8 @@ describe('ProjectSettings of a project that is gone', () => {
   // server answers the refreshed route with the not-found page and its translated tab title (#404).
   it('refreshes the route and shows nothing of the project', async () => {
     GET.mockImplementation(notFoundResult);
-    const client = new QueryClient();
+    // The client of the application, which shows a `404` at once, without a retry.
+    const client = new QueryClient(BROWSER_QUERY_CLIENT_CONFIG);
 
     const { container } = render(
       <NextIntlClientProvider locale="en" messages={CATALOGUES.en} timeZone="UTC">

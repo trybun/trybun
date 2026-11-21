@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation.js';
 import { getTranslations } from 'next-intl/server';
 import { getServerApiClient } from '../../lib/api-client/server-api-client.js';
 import { ApiError } from '../../lib/errors/api-error.js';
+import { retryUnlessRefused } from '../../lib/query-client/query-client-config.js';
 import { getServerQueryClient } from '../../lib/query-client/server-query-client.js';
 import type { Shell } from '../app-shell/counterparts.js';
 import { referencedAttachmentIds } from '../attachments/markdown-references.js';
@@ -42,7 +43,9 @@ export async function getTicketPage(
   const options = ticketQueryOptions(client, identifier);
   const userOptions = currentUserQueryOptions(client);
   await Promise.all([
-    queryClient.prefetchQuery(options),
+    // The page fails without the ticket, so a failure of the server is tried again here, as in the
+    // browser; a refusal (`404`, `429`) is an answer (§18.5).
+    queryClient.prefetchQuery({ ...options, retry: retryUnlessRefused }),
     shell === 'team' ? queryClient.prefetchQuery(userOptions) : undefined,
   ]);
   const error = queryClient.getQueryState(options.queryKey)?.error;

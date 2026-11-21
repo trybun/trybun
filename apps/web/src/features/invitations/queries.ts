@@ -4,7 +4,6 @@ import { MAX_PAGE_LIMIT } from '@trybun/contracts/pagination';
 import type { User } from '@trybun/contracts/users';
 import { allPageItems } from '../../lib/api-client/all-pages.js';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
-import { ApiError } from '../../lib/errors/api-error.js';
 
 /** The pending invitations of a project, newest first, page by page (§7.4). */
 export function projectInvitationsQueryOptions(client: ApiClient, projectId: string) {
@@ -40,8 +39,9 @@ export function hasPendingInvitations(user: User): boolean {
  * invited accounts (#357). A page of accounts fits the parameter's bound (`DEFAULT_PAGE_LIMIT` ≤
  * `MAX_TICKET_FILTER_VALUES`). It is keyed by all the accounts of the page, not only those with
  * invitations, so revoking an account's last one keeps the key: the refetch of the accounts reuses
- * the read the invalidation started. Each row selects its own account's invitations. A `4xx` is an
- * answer, not a failure to retry: retrying a `429` would only use up more of the limit (#356).
+ * the read the invalidation started. Each row selects its own account's invitations. Like every
+ * refusal, a `4xx` is not retried (`retryUnlessRefused`), as a retried `429` would only use up more
+ * of the limit (#356).
  */
 export function accountsInvitationsQueryOptions(client: ApiClient, accounts: readonly User[]) {
   const userId = accounts.map(({ id }) => id);
@@ -58,8 +58,6 @@ export function accountsInvitationsQueryOptions(client: ApiClient, accounts: rea
           }),
         ),
       ),
-    retry: (failureCount, error) =>
-      !(error instanceof ApiError && error.status < 500) && failureCount < 3,
   });
 }
 

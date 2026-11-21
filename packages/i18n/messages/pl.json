@@ -796,6 +796,7 @@
       "noEmail": "Bez adresu e-mail",
       "actionsOf": "Działania dla: {name}",
       "empty": "Żadne konto nie pasuje do tych filtrów.",
+      "loading": "Wczytywanie kont…",
       "loadMore": "Pokaż więcej",
       "loadingMore": "Wczytywanie…",
       "deactivate": "Dezaktywuj",

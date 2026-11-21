@@ -6,7 +6,11 @@ import type { User, UserAction } from '@trybun/contracts/users';
 import { toast } from '@trybun/ui/components/toast';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
-import { QUERY_CLIENT_CONFIG } from '../../../lib/query-client/query-client-config.js';
+import {
+  BROWSER_QUERY_CLIENT_CONFIG,
+  QUERY_CLIENT_CONFIG,
+} from '../../../lib/query-client/query-client-config.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
@@ -230,6 +234,30 @@ describe('AccountList', () => {
     renderInApp(<AccountList />);
 
     expect(await screen.findByText('No accounts match these filters.')).toBeTruthy();
+  });
+
+  it('says the accounts are loading until a refused read settles, then shows its message (#427)', async () => {
+    let refuse: (result: Awaited<ReturnType<typeof rateLimitedResult>>) => void = () => undefined;
+    const callsBefore = fake.client.GET.mock.calls.length;
+    fake.client.GET.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          refuse = resolve;
+        }),
+    );
+    // The configuration of the application, so the refusal is shown without a retry.
+    renderInApp(<AccountList />, { client: new QueryClient(BROWSER_QUERY_CLIENT_CONFIG) });
+
+    // Never the empty table, which looks like "no accounts".
+    expect(screen.getByRole('status').textContent).toBe('Loading accounts…');
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Accounts' })).toBeNull();
+
+    refuse(await rateLimitedResult());
+    expect((await screen.findByRole('alert')).textContent).toContain('Too many requests.');
+    expect(screen.queryByRole('status')).toBeNull();
+    // Read once: a refusal is not retried.
+    expect(fake.client.GET.mock.calls.length - callsBefore).toBe(1);
   });
 
   it('shows the error of a failed request', async () => {

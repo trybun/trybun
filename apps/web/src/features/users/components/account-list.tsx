@@ -45,7 +45,7 @@ function AccountBadges({ user }: { user: User }) {
  * The accounts of the Accounts page (§7.4): display name, e-mail address, kind, state and the
  * Administrator role, filtered by kind and state and searched by name and address. A table on
  * tablets and desktops, cards on phones (Rule 9); the actions of each account follow its
- * `allowedActions`.
+ * `allowedActions`. While the browser reads the accounts, a status says so in their place (#427).
  */
 export function AccountList({ kind, state }: AccountsSearchParams) {
   const t = useTranslations('users.accounts');
@@ -127,7 +127,13 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(accounts.error)}
         </p>
-      ) : accounts.isSuccess && rows.length === 0 ? (
+      ) : accounts.isPending ? (
+        // Read in the browser – the prefetch of the server failed, or a new search: never the empty
+        // table, which looks like "no accounts" (#427).
+        <p role="status" className="text-sm text-muted-foreground">
+          {t('loading')}
+        </p>
+      ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('empty')}</p>
       ) : (
         <>
