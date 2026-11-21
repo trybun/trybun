@@ -17,18 +17,18 @@ describe('SignOutButton', () => {
     render(<SignOutButton label="Sign out" />);
 
     const button = screen.getByRole('button', { name: 'Sign out' });
-    expect(button.className).toContain('bg-primary');
-    expect(button.className).toContain('h-11');
+    expect(button.className).toMatch(/(^| )bg-primary( |$)/);
+    expect(button.className).toMatch(/(^| )h-11( |$)/);
   });
 
   it('is a secondary button with the outline variant (#384)', () => {
     render(<SignOutButton label="Wyloguj się" variant="outline" />);
 
     const { className } = screen.getByRole('button', { name: 'Wyloguj się' });
-    expect(className).toContain('border-border');
-    expect(className).not.toContain('bg-primary');
+    expect(className).toMatch(/(^| )border-border( |$)/);
+    expect(className).not.toMatch(/(^| )bg-primary( |$)/);
     // The touch target of every button (Rule 9).
-    expect(className).toContain('h-11');
+    expect(className).toMatch(/(^| )h-11( |$)/);
   });
 
   it('ends the session and returns to the start page', async () => {
