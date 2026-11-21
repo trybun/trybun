@@ -26,7 +26,7 @@ views: ['/admin/accounts']
 
 ## Filters and search
 
-Filter by **Kind** and **State**, and search by name or e-mail address. The filters are part of the address of the page, so you can bookmark or share a filtered list. If you send more requests than Trybun allows in a short time, the list shows **Too many requests** with when to try again and **Reload page** in place of the accounts; the filters stay where they are.
+Filter by **Kind** and **State**, and search by name or e-mail address. The filters are part of the address of the page, so you can bookmark or share a filtered list. If you send more requests than Trybun allows in a short time, the list shows **Too many requests**, when to try again and **Reload page** in place of the accounts; the filters stay where they are.
 
 ## Actions
 

@@ -255,7 +255,10 @@ describe('AccountList', () => {
     expect(screen.queryByRole('list', { name: 'Accounts' })).toBeNull();
 
     refuse(await rateLimitedResult());
-    expect((await screen.findByRole('alert')).textContent).toContain('Too many requests');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Too many requests');
+    // The notice with the wait, never only the generic message of the error code (#430).
+    expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
     expect(screen.queryByRole('status')).toBeNull();
     // Read once: a refusal is not retried.
     expect(fake.client.GET.mock.calls.length - callsBefore).toBe(1);
