@@ -68,6 +68,7 @@ No change to the API, the contracts, the rate limits, the message catalogues or 
 
 - Layout, top to bottom: heading "Too many requests", the text with the wait, **Reload page** (main button), **Sign out** (outline button). It works the same from 360 px up (Rule 9): the container is `max-w-lg` and the buttons stay at their own width, as in the deactivated-account notice. Both buttons are 44 px high on touch screens and compact on a desktop with a fine pointer, as every `Button` of `@trybun/ui`.
 - Keyboard and screen reader: tab order follows the visual order (**Reload page** link, then the **Sign out** button). The button is a native `<button>` with a visible text label. No ARIA is needed.
+- Proposal mockup (illustrative, not an accepted design): [`assets/rate-limited-sign-out/mockup-01-shell-notice.png`](assets/rate-limited-sign-out/mockup-01-shell-notice.png), from [`mockup-01-shell-notice.html`](assets/rate-limited-sign-out/mockup-01-shell-notice.html).
 - No product tour and no tour target (Rule 4): a notice someone sees for a minute is not a view to tour.
 
 ## 📝 Edge Cases & Failure Scenarios
