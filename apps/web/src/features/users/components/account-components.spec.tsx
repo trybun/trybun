@@ -232,6 +232,26 @@ describe('AccountList', () => {
     expect(await screen.findByText('No accounts match these filters.')).toBeTruthy();
   });
 
+  it('says the accounts are loading until the read settles, then shows its error (#427)', async () => {
+    let refuse: (reply: { error: unknown; response: Response }) => void = () => undefined;
+    fake.client.GET.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          refuse = resolve;
+        }),
+    );
+    renderInApp(<AccountList />);
+
+    // Never the empty table, which looks like "no accounts".
+    expect(screen.getByRole('status').textContent).toBe('Loading accounts…');
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Accounts' })).toBeNull();
+
+    refuse({ error: {}, response: new Response(null, { status: 429 }) });
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('shows the error of a failed request', async () => {
     fake.on('GET /api/v1/users', { status: 500, error: {} });
     renderInApp(<AccountList />);

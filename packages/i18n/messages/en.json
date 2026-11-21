@@ -796,6 +796,7 @@
       "noEmail": "No e-mail address",
       "actionsOf": "Actions for {name}",
       "empty": "No accounts match these filters.",
+      "loading": "Loading accounts…",
       "loadMore": "Load more",
       "loadingMore": "Loading…",
       "deactivate": "Deactivate",

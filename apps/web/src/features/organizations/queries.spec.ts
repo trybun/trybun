@@ -1,12 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiClient } from '../../lib/api-client/api-client.js';
-import { ApiError } from '../../lib/errors/api-error.js';
-import {
-  organizationMembersQueryOptions,
-  organizationQueryOptions,
-  organizationsQueryOptions,
-} from './queries.js';
+import { organizationMembersQueryOptions, organizationsQueryOptions } from './queries.js';
 
 const ORGANIZATION_ID = '0199a3f0-0000-7000-8000-000000000020';
 const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
@@ -56,15 +51,5 @@ describe('organization queries', () => {
       params: { path: { organizationId: ORGANIZATION_ID }, query: {} },
       signal: expect.anything() as AbortSignal,
     });
-  });
-
-  it.each([
-    [new ApiError(404, 'request.not_found'), false],
-    [new ApiError(503, 'server.unavailable'), true],
-  ])('retries a detail that failed with %o: %s', (error, isRetried) => {
-    const { client: api } = client();
-    const { retry } = organizationQueryOptions(api, ORGANIZATION_ID);
-
-    expect(typeof retry === 'function' && retry(0, error)).toBe(isRetried);
   });
 });

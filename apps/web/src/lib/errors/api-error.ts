@@ -1,5 +1,7 @@
-import type { ErrorCode } from '@trybun/contracts/errors';
-import { type FieldError, problemDetailsSchema } from '@trybun/contracts/problem-details';
+import { problemDetailsSchema } from '@trybun/contracts/problem-details';
+import { ApiError } from './api-error-class.js';
+
+export { ApiError };
 
 /** Statuses of a gateway or proxy in front of an API that is down (Caddy, §15.9). */
 const UNAVAILABLE_STATUSES = new Set([502, 503, 504]);
@@ -12,24 +14,6 @@ const DELAY_SECONDS = /^\d+$/;
  * 1970, so that the time to try again is always a date that can be shown.
  */
 const MAX_SECONDS = (100_000_000 / 2) * 24 * 60 * 60;
-
-/**
- * An error response of the API (§17.2, §18.5): its stable code, translated with `errors.<code>`,
- * the invalid fields of a validation error and, when the response says so, the seconds to wait
- * before the next request (`Retry-After` of a `429`, §14.4). Raw server messages are never kept.
- */
-export class ApiError extends Error {
-  override readonly name = 'ApiError';
-
-  constructor(
-    readonly status: number,
-    readonly code: ErrorCode,
-    readonly fieldErrors: readonly FieldError[] = [],
-    readonly retryAfterSeconds?: number,
-  ) {
-    super(code);
-  }
-}
 
 /** Whether an error is the API's answer to more requests than the rate limit allows (§14.4). */
 export function isRateLimited(error: unknown): error is ApiError {

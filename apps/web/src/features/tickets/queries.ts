@@ -33,11 +33,6 @@ export function myTicketsQueryOptions(
   });
 }
 
-/** Whether a failed read is tried again: a refusal (`4xx`, also `429`) never is, as it would repeat. */
-function retryUnlessRefused(failureCount: number, error: Error) {
-  return !(error instanceof ApiError && error.status < 500) && failureCount < 3;
-}
-
 /**
  * A ticket by its identifier such as `ERP-12` (§3.2, S1-05 Q12): the identifier lookup returns at
  * most the one ticket; an invisible ticket is answered like a missing one, with `404` (§5.3). A
@@ -61,7 +56,6 @@ export function ticketQueryOptions(client: ApiClient, identifier: string) {
         }),
       );
     },
-    retry: retryUnlessRefused,
   });
 }
 
@@ -230,7 +224,6 @@ export function projectFilterSearchQueryOptions(client: ApiClient, search: strin
           ),
         projectRecord,
       ),
-    retry: retryUnlessRefused,
   });
 }
 
@@ -252,7 +245,6 @@ export function organizationFilterSearchQueryOptions(client: ApiClient, search: 
           ),
         organizationRecord,
       ),
-    retry: retryUnlessRefused,
   });
 }
 
@@ -290,7 +282,6 @@ export function assigneeFilterSearchQueryOptions(
       return { records: page.items.map(personRecord), hasMore: page.nextCursor !== null };
     },
     enabled: projectIds.length > 0,
-    retry: retryUnlessRefused,
   });
 }
 
@@ -316,7 +307,6 @@ export function projectFilterNamesQueryOptions(client: ApiClient, ids: readonly 
         )
       ).records,
     enabled: ids.length > 0,
-    retry: retryUnlessRefused,
   });
 }
 
@@ -338,7 +328,6 @@ export function organizationFilterNamesQueryOptions(client: ApiClient, ids: read
         )
       ).records,
     enabled: ids.length > 0,
-    retry: retryUnlessRefused,
   });
 }
 
@@ -360,6 +349,5 @@ export function assigneeFilterNamesQueryOptions(client: ApiClient, ids: readonly
       return page.items.map(personRecord);
     },
     enabled: ids.length > 0,
-    retry: retryUnlessRefused,
   });
 }

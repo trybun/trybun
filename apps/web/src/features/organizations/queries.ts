@@ -1,7 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { isOrganizationSummary, type OrganizationState } from '@trybun/contracts/organizations';
 import { type ApiClient, dataOf } from '../../lib/api-client/api-client.js';
-import { ApiError } from '../../lib/errors/api-error.js';
 
 /**
  * The organizations of one state, page by page (§7.3); with `projectId` only those that may access
@@ -37,7 +36,8 @@ export function organizationsQueryOptions(
 
 /**
  * An organization with its projects and the actions the Administrator may perform on it (§18.3).
- * A `4xx` is an answer, not a failure to retry: a deleted organization shows the not-found page.
+ * Like every refusal, a `4xx` is not retried (`retryUnlessRefused`): a deleted organization shows
+ * the not-found page at once.
  */
 export function organizationQueryOptions(client: ApiClient, organizationId: string) {
   return queryOptions({
@@ -49,8 +49,6 @@ export function organizationQueryOptions(client: ApiClient, organizationId: stri
           signal,
         }),
       ),
-    retry: (failureCount, error) =>
-      !(error instanceof ApiError && error.status < 500) && failureCount < 3,
   });
 }
 

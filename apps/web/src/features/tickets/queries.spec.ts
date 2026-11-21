@@ -113,18 +113,6 @@ describe('ticket filter search (#279)', () => {
     const client = createFakeApiClient().client as unknown as ApiClient;
     expect(assigneeFilterSearchQueryOptions(client, [], '').enabled).toBe(false);
   });
-
-  it('never retries a refused search (429)', async () => {
-    const fake = createFakeApiClient();
-    fake.on('GET /api/v1/projects', {
-      status: 429,
-      error: { type: 'about:blank', title: 'Too many', status: 429, code: 'request.rate_limited' },
-    });
-    const options = projectFilterSearchQueryOptions(fake.client as unknown as ApiClient, 'x');
-
-    await expect(new QueryClient().fetchQuery(options)).rejects.toMatchObject({ status: 429 });
-    expect(fake.callsTo('GET /api/v1/projects')).toHaveLength(2);
-  });
 });
 
 describe('ticket filter names (#279)', () => {
