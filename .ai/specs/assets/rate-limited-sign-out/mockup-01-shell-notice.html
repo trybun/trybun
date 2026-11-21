@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mockup – Sign out on the "Too many requests" notice (illustrative)</title>
+    <style>
+      :root {
+        --ink: #141a2e;
+        --muted: #5a5f6d;
+        --border: #e3e4e6;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        color: var(--ink);
+        background: #f4f4f5;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        padding: 24px;
+      }
+      .frame {
+        width: 360px;
+        min-height: 420px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .caption {
+        padding: 8px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 48px 16px 16px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        border: 1px solid transparent;
+      }
+      .primary {
+        background: var(--ink);
+        color: #fff;
+      }
+      .outline {
+        background: #fff;
+        color: var(--ink);
+        border-color: var(--border);
+      }
+      .new {
+        outline: 2px dashed #d97706;
+        outline-offset: 3px;
+      }
+      .note {
+        padding: 0 24px 24px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <section class="frame" aria-label="Today">
+        <div class="caption">Today – phone, 360 px</div>
+        <main>
+          <h1>Too many requests</h1>
+          <p>You have sent more requests than Trybun allows in a short time. Try again in 45 seconds.</p>
+          <a class="button primary" href="#">Reload page</a>
+        </main>
+      </section>
+      <section class="frame" aria-label="Proposed">
+        <div class="caption">Proposed – phone, 360 px</div>
+        <main>
+          <h1>Too many requests</h1>
+          <p>You have sent more requests than Trybun allows in a short time. Try again in 45 seconds.</p>
+          <a class="button primary" href="#">Reload page</a>
+          <button class="button outline new" type="button">Sign out</button>
+        </main>
+      </section>
+      <section class="frame" aria-label="Proposed in Polish">
+        <div class="caption">Proposed – Polish</div>
+        <main>
+          <h1>Zbyt wiele żądań</h1>
+          <p>Wysłano więcej żądań, niż Trybun pozwala w krótkim czasie. Spróbuj ponownie za 45 sekund.</p>
+          <a class="button primary" href="#">Odśwież stronę</a>
+          <button class="button outline new" type="button">Wyloguj się</button>
+        </main>
+      </section>
+    </div>
+    <p class="note">
+      Illustrative mockup of the notice that the application shell shows over the rate limit (#384). The dashed
+      outline marks the new button; it is not part of the design. Only the shell's notice gets the button; the
+      notices that pages show inside the shell do not change.
+    </p>
+  </body>
+</html>
