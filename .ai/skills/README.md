@@ -29,7 +29,11 @@ which puts the files into `.agents/skills/` (read by Codex) and links them into 
 
 ## Extending an `om-*` skill
 
-A repository extension of an `om-*` skill is `.ai/skills/<skill-name>/SKILL.md`, committed. It replaces the installed skill under the same name – Cezar prefers `.ai/skills/` – so it first loads the installed skill and then adds the rules of this repository, which win where both speak about the same thing. It can never relax the installed skill's safety rules.
+A repository extension of an `om-*` skill is `.ai/skills/<skill-name>/SKILL.md`, committed. It replaces the installed skill under the same name – Cezar prefers `.ai/skills/` – so it first loads the installed skill and then adds the rules of this repository, which win where both speak about the same thing. It can never relax the installed skill's safety rules. It gets no link in `.claude/skills/`: that name is the link of `npx skills` to the installed skill, which applies the extension first.
+
+| Extension | Rules of this repository |
+|---|---|
+| [`om-auto-write-spec`](om-auto-write-spec/SKILL.md) | The commit scope `spec` of §2.14 for its commits and PR title, never `specs` |
 
 ```markdown
 ---
