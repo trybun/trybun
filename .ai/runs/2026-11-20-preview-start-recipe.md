@@ -39,10 +39,14 @@ Issue: #383 (spec PR #415, merged)
 
 ## Risks
 
+- Step 3.2: the full validation gate passed. The cezar check of spec step 8 is the PR's manual QA (`needs-qa`). It needs the project recipe set in the local cezar configuration, at the maintainer's word.
+
 - How cezar stops a service and whether it closes terminals before removing a worktree are unverified (spec Risks); the design handles a group `SIGHUP` and a signal to the PID alone.
 - Signal timing in tests: every wait in the tests is bounded, and the stubs keep their port for one second after `SIGTERM`, as the API does.
 
 ## Progress
+
+PR: #417
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
@@ -60,5 +64,5 @@ Issue: #383 (spec PR #415, merged)
 
 ### Phase 3: Documentation and verification
 
-- [ ] 3.1 README, script history, memory, spec to implemented
-- [ ] 3.2 Full validation gate and verification
+- [x] 3.1 README, script history, memory, spec to implemented — 18df781
+- [x] 3.2 Full validation gate and verification — a7b7d5e
