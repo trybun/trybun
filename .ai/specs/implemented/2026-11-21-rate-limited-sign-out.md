@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `approved` |
+| Status | `implemented` |
 | Created | 2026-11-21 |
 | Plan task | – (follow-up of the QA of #381) |
 | System specification sections | §14.4, §18.5, §7.4 |
-| Related issues / PRs | #384, #421, #356, #381, #382, #400, #423 |
+| Related issues / PRs | #384, #421, #424, #356, #381, #382, #400, #423 |
 
 ## 📝 TLDR
 
@@ -64,7 +64,7 @@ No change to `RateLimitedNotice`, the API, the contracts, the rate limits, the m
 
 - Layout, top to bottom: heading "Too many requests", the text with the wait, **Reload page** (main button), **Sign out** (outline button). It works the same from 360 px up (Rule 9): the container is `max-w-lg` and the buttons stay at their own width, as in the deactivated-account notice. Both buttons are 44 px high on touch screens and compact on a desktop with a fine pointer, as every `Button` of `@trybun/ui`.
 - Keyboard and screen reader: tab order follows the visual order (**Reload page** link, then the **Sign out** button). The button is a native `<button>` with a visible text label. No ARIA is needed.
-- Proposal mockup (illustrative, not an accepted design): [`assets/rate-limited-sign-out/mockup-01-shell-notice.png`](assets/rate-limited-sign-out/mockup-01-shell-notice.png), from [`mockup-01-shell-notice.html`](assets/rate-limited-sign-out/mockup-01-shell-notice.html).
+- Proposal mockup (illustrative, not an accepted design): [`assets/rate-limited-sign-out/mockup-01-shell-notice.png`](../assets/rate-limited-sign-out/mockup-01-shell-notice.png), from [`mockup-01-shell-notice.html`](../assets/rate-limited-sign-out/mockup-01-shell-notice.html).
 - No product tour and no tour target (Rule 4): a notice someone sees for a minute is not a view to tour.
 
 ## 📝 Edge Cases & Failure Scenarios
@@ -127,3 +127,4 @@ Open questions: none blocking. The maintainer confirmed Q1–Q3 in the session o
 - 2026-11-21 – Specification review of #421: `SignOutButton` beside an unchanged `RateLimitedNotice` instead of a slot (Q3); the claim about where **Sign out** cannot be reached narrowed, with `app/error.tsx` as a non-goal; three callers of `signOut()`; the edge case of signing in again during the block; the mock of `getTranslations` in the plan; the documentation sentence explains the notice.
 - 2026-11-21 – Specification review: a component test of `SignOutButton`, the reason for no E2E test, the paths of the notice and the tutorials, the compact buttons on desktop, and the edge cases of Reload and of the page after the sign-out.
 - 2026-11-21 – Approved by the maintainer in the session: Q1–Q3 and manual QA in place of an E2E test confirmed; the error page of the shell filed as #423.
+- 2026-11-21 – Implemented (#424): the optional `variant` of `SignOutButton` with its component test; `SignOutButton` below `RateLimitedNotice` in the `429` branch of `AccountShell`; §18.5 and the getting-started tutorials (EN, PL) updated, the help content regenerated.
