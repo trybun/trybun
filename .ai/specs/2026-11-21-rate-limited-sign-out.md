@@ -118,7 +118,7 @@ Open questions: none blocking.
 **Phase 1 – Sign out on the shell's notice (one PR)**
 
 1. Add the optional `variant` prop to `SignOutButton` with a new component test `sign-out-button.spec.tsx` (jsdom, ADR 0012): the default and the `outline` variant, and a click that calls `signOut({ callbackUrl: '/' })` of a mocked `next-auth/react`.
-2. Render `SignOutButton` after the notice in the `429` branch of `AccountShell`. In `account-shell.spec.tsx`, extend the mock of `next-intl/server` with `getTranslations` (it provides only `getMessages` today, and every test of the file renders `AccountShell`), and extend the `429` test (the characterization test named in the Delta) to assert the children of `main`: the notice, then an element of type `SignOutButton` with the label "Sign out" from `signIn.signOut` and `variant="outline"`. Check that it fails without the change.
+2. Render `SignOutButton` after the notice in the `429` branch of `AccountShell`. In `account-shell.spec.tsx`, extend the mock of `next-intl/server` with `getTranslations` (it provides only `getMessages` today, so the `429` branch would fail on the missing export), and extend the `429` test (the characterization test named in the Delta) to assert the children of `main`: the notice, then an element of type `SignOutButton` with the label "Sign out" from `signIn.signOut` and `variant="outline"`. Check that it fails without the change.
 3. Update §18.5, the getting-started tutorials of `docs/user/` (EN, PL), run `pnpm help:generate`, and run the validation gate (including `pnpm build` with the first-load check). In the implementation PR, set this specification to `implemented`, add its changelog entry and move it to `implemented/`.
 
 ## Changelog
