@@ -14,6 +14,11 @@
 #              the bootstrap lock is machine-wide (/tmp/trybun-test-env.lock), not per checkout
 #   2026-11-18 TRYBUN_PSEUDO_LOCALE=true (#301): the web application serves the pseudo-locale en-XA
 #              of the width-sensitive E2E checks, as playwright.config.ts sets it in CI
+#   2026-11-20 --foreground (#383): runs the boot as a child and stays attached as the owner (a
+#              closed terminal or SIGTERM stops what it booted) or a viewer (stops nothing) – the
+#              start command of cezar Preview's startApp recipe and sv-prepare-qa-tests (README);
+#              TEST_ENV_RUN_ID; an interrupted boot stops what it started (steps in their own
+#              sessions, detached cleanup); refusal messages never invite stopping another checkout
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -64,14 +69,22 @@ mkdir -p "$QA_DIR" "$LOG_DIR"
 FORCE=0
 FORCE_REBUILD=0
 RESET=0
+FOREGROUND=0
 for arg in "$@"; do
   case "$arg" in
     --force) FORCE=1 ;;
     --force-rebuild) FORCE_REBUILD=1 ;;
     --reset) RESET=1 ;;
+    --foreground) FOREGROUND=1 ;;
     *) echo "Unknown flag: $arg" >&2; exit 2 ;;
   esac
 done
+# --force skips the reuse check and then refuses on the occupied ports: it never replaces a running
+# environment, so there is nothing for --foreground to own or watch.
+if [ "$FOREGROUND" = 1 ] && [ "$FORCE" = 1 ]; then
+  echo "--foreground cannot be combined with --force" >&2
+  exit 2
+fi
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 log() { printf '[test-env] %s\n' "$*" >&2; }
@@ -79,7 +92,139 @@ json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$2" | 
 # Whether a process exists: `ps -p`, not `kill -0`, which fails with EPERM for another user's
 # process (the lock below is shared by the whole machine).
 alive() { [ -n "${1:-}" ] && ps -p "$1" >/dev/null 2>&1; }
+# Whether a process runs, not counting an exited child that is not reaped yet (a zombie).
+running() { [ -n "${1:-}" ] && ps -o stat= -p "$1" 2>/dev/null | grep -qv '^Z'; }
 healthy() { curl -fsS --max-time 5 -o /dev/null "$1" 2>/dev/null; }
+set_descriptor_status() {
+  [ -f "$DESCRIPTOR" ] || return 0
+  sed -i.bak "s/\"status\": \"[a-z]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" || true
+  rm -f "$DESCRIPTOR.bak"
+}
+
+# --- --foreground (#383): one start command for cezar Preview, sv-prepare-qa-tests and the QA
+# skills. The boot runs unchanged as a child (this script without the flag), so the lock is held
+# only while it boots; then this process stays attached while the applications live, in one role:
+#   owner  – the child booted (TEST_ENV_REUSED=0): a signal runs test-env-down.sh, a crash too;
+#   viewer – the child reused a running environment: a signal stops nothing.
+# Signals are forwarded as SIGTERM: the child, an asynchronous command of a shell without job
+# control, ignores SIGINT. A teardown runs in its own session and is waited for, so a SIGKILL of
+# this process group a moment later cannot cut it off. Handler output goes to a log, because after
+# SIGHUP the terminal is gone.
+
+# The role the child's output names, once it has exited 0 (also for a signal that arrives before
+# the role is set).
+fg_read_role() {
+  FG_RUN=$(sed -n 's/^TEST_ENV_RUN_ID=//p' "$FG_OUT" | head -1)
+  case "$(sed -n 's/^TEST_ENV_REUSED=//p' "$FG_OUT" | head -1)" in
+    0) FG_ROLE=owner ;;
+    1) FG_ROLE=viewer ;;
+    *) FG_ROLE="" ;;
+  esac
+}
+# Whether the descriptor still records this owner's run as running.
+fg_still_ours() {
+  [ -n "$FG_RUN" ] && [ "$(json_get status "$DESCRIPTOR")" = running ] &&
+    [ "$(json_get runId "$DESCRIPTOR")" = "$FG_RUN" ]
+}
+fg_teardown() {
+  setsid sh "$ROOT/.ai/scripts/test-env-down.sh" >>"$FG_LOG" 2>&1 < /dev/null &
+  teardown_pid=$!
+  while alive "$teardown_pid"; do wait "$teardown_pid" || true; done
+}
+fg_signal() {
+  # Ignore further signals from here on: a closed terminal can hang up the group more than once
+  # (the hangup, then the end of its session leader), and the commands below inherit the ignored
+  # disposition, so a later SIGHUP cannot kill the descriptor reads this decision rests on.
+  trap '' HUP INT TERM
+  exec >>"$FG_LOG" 2>&1
+  if [ -n "$FG_SLEEP" ]; then kill "$FG_SLEEP" 2>/dev/null || true; fi
+  if [ -n "$FG_CHILD" ]; then
+    # Still booting: the child stops what it started; this layer has nothing of its own. A child
+    # that has just finished its boot exits 0, and its output names the role. FG_CHILD_STATUS
+    # keeps the status of a child the main loop has already reaped.
+    if running "$FG_CHILD"; then
+      log "signal during the boot; stopping it"
+      kill -s TERM "$FG_CHILD" 2>/dev/null || true
+    fi
+    while alive "$FG_CHILD"; do
+      FG_CHILD_STATUS=0
+      wait "$FG_CHILD" || FG_CHILD_STATUS=$?
+    done
+    FG_CHILD=""
+    [ "$FG_CHILD_STATUS" = 0 ] || exit "$FG_CHILD_STATUS"
+  fi
+  [ -n "$FG_ROLE" ] || fg_read_role
+  if [ "$FG_ROLE" = owner ] && fg_still_ours; then
+    log "closing the owner of environment $FG_RUN; stopping it"
+    fg_teardown
+  elif [ "$FG_ROLE" = owner ]; then
+    log "closing the owner of environment $FG_RUN, which was already stopped or replaced"
+  else
+    log "closing a viewer; the environment keeps running"
+  fi
+  exit 0
+}
+if [ "$FOREGROUND" = 1 ]; then
+  FG_OUT="$LOG_DIR/foreground-boot.out"
+  FG_LOG="$LOG_DIR/foreground.log"
+  FG_CHILD=""
+  FG_SLEEP=""
+  FG_ROLE=""
+  FG_RUN=""
+  FG_CHILD_STATUS=0
+  child_flags=""
+  [ "$FORCE_REBUILD" = 1 ] && child_flags="$child_flags --force-rebuild"
+  [ "$RESET" = 1 ] && child_flags="$child_flags --reset"
+
+  trap 'fg_signal 129' HUP
+  trap 'fg_signal 130' INT
+  trap 'fg_signal 143' TERM
+
+  # shellcheck disable=SC2086 # one flag per word
+  sh "$ROOT/.ai/scripts/test-env-up.sh" $child_flags >"$FG_OUT" &
+  FG_CHILD=$!
+  while alive "$FG_CHILD"; do
+    FG_CHILD_STATUS=0
+    wait "$FG_CHILD" || FG_CHILD_STATUS=$?
+  done
+  FG_CHILD=""
+  cat "$FG_OUT"
+  [ "$FG_CHILD_STATUS" = 0 ] || exit "$FG_CHILD_STATUS"
+  fg_read_role
+  if [ -z "$FG_ROLE" ] || [ -z "$FG_RUN" ]; then
+    log "the boot printed no TEST_ENV_REUSED or TEST_ENV_RUN_ID; see $FG_OUT"
+    exit 1
+  fi
+  if [ "$FG_ROLE" = owner ]; then
+    log "attached in the foreground as the owner – closing this terminal stops the environment"
+  else
+    log "attached in the foreground as a viewer of an environment started elsewhere – closing this terminal stops nothing; to stop the environment, close the owner's terminal or run: sh .ai/scripts/test-env-down.sh"
+  fi
+  fg_api=$(json_get apiPid "$DESCRIPTOR")
+  fg_worker=$(json_get workerPid "$DESCRIPTOR")
+  fg_web=$(json_get webPid "$DESCRIPTOR")
+  while alive "$fg_api" && alive "$fg_worker" && alive "$fg_web"; do
+    sleep 2 &
+    FG_SLEEP=$!
+    wait "$FG_SLEEP" || true
+    FG_SLEEP=""
+  done
+  # The applications ended: a crash of this owner's run, or a stop or replacement from elsewhere.
+  if [ "$FG_ROLE" = owner ] && fg_still_ours; then
+    # A signal during this teardown must not start a second one or change the exit code.
+    trap '' HUP INT TERM
+    log "an application of environment $FG_RUN exited; stopping the rest (logs in $LOG_DIR)"
+    fg_teardown
+    exit 1
+  fi
+  current=$(json_get runId "$DESCRIPTOR")
+  if [ -n "$current" ] && [ "$current" != "$FG_RUN" ]; then
+    log "environment $FG_RUN was replaced by $current; detaching – the new environment keeps running; to stop it, run: sh .ai/scripts/test-env-down.sh"
+  else
+    log "environment $FG_RUN was stopped elsewhere ($(json_get status "$DESCRIPTOR")); detaching"
+  fi
+  exit 0
+fi
 
 # --- lock: one bootstrap at a time
 acquire_lock() {
@@ -96,7 +241,90 @@ acquire_lock() {
     waited=$((waited + 5))
   done
   printf '{ "pid": "%s", "source": "test-env-up.sh", "acquiredAt": "%s" }\n' "$$" "$(now)" > "$LOCK_DIR/owner.json"
-  trap 'rm -rf "$LOCK_DIR"' EXIT INT TERM
+  LOCKED=1
+  trap 'release_lock' EXIT
+  trap 'interrupted 129' HUP
+  trap 'interrupted 130' INT
+  trap 'interrupted 143' TERM
+}
+release_lock() {
+  if [ "$LOCKED" = 1 ]; then rm -rf "$LOCK_DIR"; fi
+  LOCKED=0
+}
+
+# --- interrupted boot (#383): a signal after the lock stops what this boot started so far – the
+# running step, the applications and the Compose infrastructure it brought up – then frees the lock.
+# The cleanup runs in its own session and this shell waits for it, so a SIGKILL of the caller's
+# process group a moment later (e.g. sv-prepare-qa-tests) cannot cut it off; it takes over the lock
+# under its own PID, so no other boot takes the lock as stale while it runs. The output goes to a
+# log: after SIGHUP the terminal is gone, and a failed write must not abort the cleanup.
+LOCKED=0
+BOOTED=0
+STEP_PID=""
+API_PID=""
+WORKER_PID=""
+WEB_PID=""
+SERVICES_STARTED=false
+# shellcheck disable=SC2016 # expanded by the cleanup shell, from its positional parameters
+CLEANUP='
+  lock=$1 locked=$2 boot=$3 services=$4; shift 4; compose=$1; shift
+  owner() { sed -n "s/.*\"pid\": *\"\([0-9]*\)\".*/\1/p" "$lock/owner.json" 2>/dev/null; }
+  # Take the lock over only while it is still the boot'"'"'s, and remove it only while it is ours.
+  if [ "$locked" = 1 ] && [ "$(owner)" = "$boot" ]; then
+    printf "{ \"pid\": \"%s\", \"source\": \"test-env-up.sh cleanup\" }\n" "$$" > "$lock/owner.json"
+  else
+    locked=0
+  fi
+  for pid in "$@"; do kill -- "-$pid" 2>/dev/null || true; done
+  waited=0
+  while [ "$waited" -lt 30 ]; do
+    running=false
+    for pid in "$@"; do kill -0 "-$pid" 2>/dev/null && running=true; done
+    [ "$running" = true ] || break
+    sleep 1
+    waited=$((waited + 1))
+  done
+  for pid in "$@"; do kill -s KILL "-$pid" 2>/dev/null || true; done
+  if [ "$services" = true ]; then $compose down || true; fi
+  if [ "$locked" = 1 ] && [ "$(owner)" = "$$" ]; then rm -rf "$lock"; fi
+  echo "[test-env] interrupted boot cleaned up"
+'
+interrupted() {
+  # Ignore further signals, as fg_signal does: the cleanup below must not be cut by a second one.
+  trap '' HUP INT TERM
+  # A boot that has completed is recorded and kept; only the lock is released (EXIT).
+  [ "$BOOTED" = 1 ] && exit "$1"
+  exec >>"$LOG_DIR/boot-interrupt.log" 2>&1
+  log "interrupted (exit $1); stopping what this boot started"
+  # Interrupted after the descriptor was written but before the result was printed: nobody was
+  # told the environment runs, so it is stopped and recorded as such.
+  if [ -n "${RUN_ID:-}" ]; then set_descriptor_status stopping; fi
+  pids=""
+  for pid in "$STEP_PID" "$API_PID" "$WORKER_PID" "$WEB_PID"; do [ -n "$pid" ] && pids="$pids $pid"; done
+  # shellcheck disable=SC2086 # one PID per word
+  setsid sh -c "$CLEANUP" cleanup "$LOCK_DIR" "$LOCKED" "$$" "$SERVICES_STARTED" "$COMPOSE" $pids &
+  cleanup_pid=$!
+  LOCKED=0
+  # A second signal interrupts `wait`; keep waiting until the cleanup has finished.
+  while alive "$cleanup_pid"; do wait "$cleanup_pid" || true; done
+  if [ -n "${RUN_ID:-}" ]; then set_descriptor_status stopped; fi
+  exit "$1"
+}
+
+# A long boot step in its own session (like start_bg), so the cleanup above can stop the whole
+# step – a killed shell would leave its children (pnpm, next build) running. $1 = command,
+# $2 = log file, $3 = "append" to add to the log.
+run_step() {
+  if [ "${3:-}" = append ]; then
+    setsid sh -c "$1" >>"$2" 2>&1 < /dev/null &
+  else
+    setsid sh -c "$1" >"$2" 2>&1 < /dev/null &
+  fi
+  STEP_PID=$!
+  step_status=0
+  wait "$STEP_PID" || step_status=$?
+  STEP_PID=""
+  return "$step_status"
 }
 
 # --- source fingerprint: the commit, the changes and the untracked files of the checkout
@@ -123,9 +351,11 @@ age_seconds() {
   echo $(( $(date -u +%s) - started ))
 }
 
+# $1 = 1 when the running environment was reused, $2 = its run id (TEST_ENV_RUN_ID, #383: the
+# --foreground owner checks it against the descriptor before it tears anything down).
 print_result() {
-  printf 'TEST_ENV_STATUS=running\nTEST_ENV_BASE_URL=%s\nTEST_ENV_DESCRIPTOR=%s\nTEST_ENV_REUSED=%s\n' \
-    "$BASE_URL" "$DESCRIPTOR" "$1"
+  printf 'TEST_ENV_STATUS=running\nTEST_ENV_BASE_URL=%s\nTEST_ENV_DESCRIPTOR=%s\nTEST_ENV_REUSED=%s\nTEST_ENV_RUN_ID=%s\n' \
+    "$BASE_URL" "$DESCRIPTOR" "$1" "$2"
   printf 'BROWSER_PROVIDER=agent-browser\nBROWSER_INSTALLED=%s\n' "$(json_get installed "$DESCRIPTOR")"
 }
 
@@ -141,7 +371,7 @@ if [ "$FORCE" = 0 ] && [ "$RESET" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get
      [ "$(age_seconds "$(json_get startedAt "$DESCRIPTOR")")" -lt "$TTL_SECONDS" ] &&
      [ "$(json_get sourceFingerprint "$DESCRIPTOR")" = "$CURRENT_FP" ]; then
     log "reusing the running environment $(json_get runId "$DESCRIPTOR")"
-    print_result 1
+    print_result 1 "$(json_get runId "$DESCRIPTOR")"
     exit 0
   fi
   log "the recorded environment is stale; restarting it"
@@ -156,10 +386,11 @@ if [ "$RESET" = 1 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get status "$DESCRIPTOR
   sh .ai/scripts/test-env-down.sh --keep-services >/dev/null 2>&1 || true
 fi
 
-# Never take over a server this script did not start (e.g. `pnpm dev`).
+# Never take over or stop a server this script did not start: the test environment of another
+# checkout (one per machine) or `pnpm dev` – it is another session's work (#383).
 for port in "$WEB_PORT" "$API_PORT"; do
   if curl -s -o /dev/null --max-time 3 "http://localhost:$port/"; then
-    log "port $port is served by a process this script did not start – stop it (e.g. pnpm dev) first"
+    log "port $port is already served – by the test environment of another checkout or by pnpm dev. This checkout never stops it: stop it from where it was started (sh .ai/scripts/test-env-down.sh there), then start again."
     exit 1
   fi
 done
@@ -170,7 +401,7 @@ for port in $INFRA_PORTS; do
   holder=$(docker ps --filter "publish=$port" --format '{{.Names}} {{.Label "com.docker.compose.project"}}' |
     awk -v own="$COMPOSE_PROJECT" '$2 != own { print $1 " (project " ($2 == "" ? "none" : $2) ")"; exit }')
   if [ -n "$holder" ]; then
-    log "port $port is published by $holder – stop it first; the test environment runs as the Compose project $COMPOSE_PROJECT"
+    log "port $port is published by $holder. This checkout never stops it: stop it from where it was started, then start again; the test environment runs as the Compose project $COMPOSE_PROJECT"
     exit 1
   fi
 done
@@ -198,15 +429,15 @@ fi
 SERVICES_STARTED=true
 [ -n "$($COMPOSE ps -q postgres 2>/dev/null)" ] && SERVICES_STARTED=false
 log "starting the infrastructure"
-$COMPOSE up -d --wait >"$LOG_DIR/compose.log" 2>&1
-$COMPOSE wait keycloak-config >>"$LOG_DIR/compose.log" 2>&1
+run_step "$COMPOSE up -d --wait" "$LOG_DIR/compose.log"
+run_step "$COMPOSE wait keycloak-config" "$LOG_DIR/compose.log" append
 
 # --- build cache: install and build only when the sources changed
 REUSED_BUILD=true
 if build_needed; then
   REUSED_BUILD=false
   log "preparing the workspace: $PREP_CHAIN"
-  sh -c "$PREP_CHAIN" >"$LOG_DIR/build.log" 2>&1 || { log "build failed, see $LOG_DIR/build.log"; exit 1; }
+  run_step "$PREP_CHAIN" "$LOG_DIR/build.log" || { log "build failed, see $LOG_DIR/build.log"; exit 1; }
   printf '{ "builtAt": "%s", "sourceFingerprint": "%s", "projectRoot": "%s", "artifactPaths": "%s" }\n' \
     "$(now)" "$CURRENT_FP" "$ROOT" "$ARTIFACTS" > "$BUILD_CACHE"
 else
@@ -215,7 +446,7 @@ fi
 
 # --- database: fresh migrations and the demo dataset on every boot
 log "migrating and seeding the database"
-{ pnpm db:migrate && pnpm db:seed; } >"$LOG_DIR/database.log" 2>&1 ||
+run_step "pnpm db:migrate && pnpm db:seed" "$LOG_DIR/database.log" ||
   { log "migration or seed failed, see $LOG_DIR/database.log"; exit 1; }
 
 # --- app start + health wait
@@ -234,7 +465,10 @@ until healthy "$API_HEALTH" && healthy "$WEB_HEALTH"; do
     kill -- "-$API_PID" "-$WORKER_PID" "-$WEB_PID" 2>/dev/null || true
     exit 1
   fi
-  sleep 2
+  # In the background, so a signal to this PID alone is handled at once (a trap waits for a
+  # foreground command).
+  sleep 2 &
+  wait "$!" || true
   waited=$((waited + 2))
 done
 
@@ -296,4 +530,5 @@ cat > "$DESCRIPTOR" <<EOF
 }
 EOF
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
-print_result 0
+print_result 0 "$RUN_ID"
+BOOTED=1

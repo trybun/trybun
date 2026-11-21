@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `approved` |
+| Status | `implemented` |
 | Created | 2026-11-20 |
 | Plan task | – (agent tooling) |
 | System specification sections | none (agent tooling outside `docs/spec/`); §13.5 and §14.4 are relied on and left unchanged |
@@ -226,3 +226,5 @@ Confirmed as they stand by the maintainer on 2026-11-20 (in the session, recorde
 - 2026-11-20 – Created (#383), with the maintainer's no-framing decision recorded on the issue.
 - 2026-11-20 – Review of #415: `--foreground` becomes an outer layer that runs the boot as a child, so no long-running process holds the lock. The run id is read from an additive `TEST_ENV_RUN_ID` line. Long boot steps run in their own sessions so an interrupt reaches their children. The interrupt tests block a boot step. `sv-prepare-qa-tests` is checked and verified. Re-review: teardowns are detached, so the `kill -9` of `sv-prepare-qa-tests` cannot cut them off. The child's stdout goes to a file. The handler decides by state. The child is run by its absolute path. `--foreground --force` is rejected.
 - 2026-11-20 – Approved: the maintainer accepted Q1–Q6 and decided the merge in the session.
+- 2026-11-20 – Implemented in #417. One refinement: an owner that a replacement stops detaches as soon as it sees `stopping`, before the new run id is recorded, so it reports "stopped elsewhere" (with the status it saw) rather than the new run id. The no-teardown behaviour is unchanged. The interrupted boot's cleanup logs to `.ai/qa/logs/boot-interrupt.log`, not `foreground.log` (item 7), because it also runs without the flag.
+- 2026-11-21 – Manual QA of #417 (closing the owner's Preview terminal left the environment running): a closed terminal can deliver SIGHUP more than once, and the second one killed the handler's descriptor reads. Both handlers now ignore further signals on entry (`trap '' HUP INT TERM`, inherited by the commands they run). The viewer line, and the line of an owner whose environment was replaced, now say how to stop the environment (`sh .ai/scripts/test-env-down.sh`).
