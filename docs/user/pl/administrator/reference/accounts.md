@@ -26,7 +26,7 @@ views: ['/admin/accounts']
 
 ## Filtry i wyszukiwanie
 
-Filtruj po **Rodzaju** i **Stanie** oraz szukaj po imieniu i nazwisku lub adresie e-mail. Filtry są częścią adresu strony, więc możesz zapisać przefiltrowaną listę w zakładkach lub ją udostępnić.
+Filtruj po **Rodzaju** i **Stanie** oraz szukaj po imieniu i nazwisku lub adresie e-mail. Filtry są częścią adresu strony, więc możesz zapisać przefiltrowaną listę w zakładkach lub ją udostępnić. Gdy wyślesz więcej żądań, niż Trybun pozwala w krótkim czasie, zamiast kont lista pokaże **Zbyt wiele żądań** z informacją, kiedy spróbować ponownie, i przyciskiem **Odśwież stronę**; filtry zostają na miejscu.
 
 ## Działania
 

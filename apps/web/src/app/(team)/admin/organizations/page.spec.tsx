@@ -1,5 +1,5 @@
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { createFormatter, createTranslator } from 'next-intl';
+import { createFormatter, createTranslator, NextIntlClientProvider } from 'next-intl';
 import { prerender } from 'react-dom/static';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -92,7 +92,18 @@ function rateLimited() {
 
 /** The server HTML of a Server Component's element. */
 async function html(element: ReactElement): Promise<string> {
-  const { prelude } = await prerender(element);
+  // The components that read their texts with the hooks of `next-intl` (`RateLimitedMessage`) read
+  // the configuration of the request on the server; here a provider gives it.
+  const { prelude } = await prerender(
+    <NextIntlClientProvider
+      locale={language}
+      messages={CATALOGUES[language]}
+      timeZone="UTC"
+      now={new Date('2026-11-18T12:00:00.000Z')}
+    >
+      {element}
+    </NextIntlClientProvider>,
+  );
   return new Response(prelude).text();
 }
 

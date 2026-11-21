@@ -17,7 +17,9 @@ import { useRouter } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { Fragment, useDeferredValue, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { isRateLimited } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { RateLimitedAlert } from '../../app-shell/components/rate-limited-alert.js';
 import { AccountInvitations } from '../../invitations/components/account-invitations.js';
 import { usersQueryOptions } from '../queries.js';
 import { type AccountsSearchParams, accountsHref } from '../search-params.js';
@@ -123,7 +125,11 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
           </Select>
         </Field>
       </div>
-      {accounts.isError ? (
+      {isRateLimited(accounts.error) ? (
+        // The wait of `Retry-After` and **Reload page**, as the page's own notice says it (#430);
+        // `h3` under the `h2` of the page.
+        <RateLimitedAlert error={accounts.error} headingLevel={3} />
+      ) : accounts.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(accounts.error)}
         </p>

@@ -1,17 +1,11 @@
 import { CATALOGUES } from '@trybun/i18n/catalogues';
-import { createFormatter, createTranslator } from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
 import { prerender } from 'react-dom/static';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../../lib/errors/api-error.js';
 
 let locale: 'en' | 'pl' = 'en';
-const NOW = Date.parse('2026-11-18T12:00:00.000Z');
-vi.mock('next-intl/server', () => ({
-  getTranslations: (namespace: 'rateLimited') =>
-    Promise.resolve(createTranslator({ locale, messages: CATALOGUES[locale], namespace })),
-  getFormatter: () => Promise.resolve(createFormatter({ locale, timeZone: 'UTC' })),
-  getNow: () => Promise.resolve(new Date(NOW)),
-}));
+const NOW = new Date('2026-11-18T12:00:00.000Z');
 
 vi.mock('next/headers.js', () => ({
   headers: () => Promise.resolve(requestHeaders),
@@ -22,11 +16,15 @@ const { RateLimitedNotice } = await import('./rate-limited-notice.js');
 
 async function html(retryAfterSeconds?: number, headingLevel?: 1 | 2): Promise<string> {
   const error = new ApiError(429, 'request.rate_limited', [], retryAfterSeconds);
+  // `RateLimitedMessage` reads its texts with the hooks of `next-intl`, which on the server read
+  // the configuration of the request; here a provider gives them.
   const { prelude } = await prerender(
-    await RateLimitedNotice({
-      error,
-      ...(headingLevel === undefined ? {} : { headingLevel }),
-    }),
+    <NextIntlClientProvider locale={locale} messages={CATALOGUES[locale]} timeZone="UTC" now={NOW}>
+      {await RateLimitedNotice({
+        error,
+        ...(headingLevel === undefined ? {} : { headingLevel }),
+      })}
+    </NextIntlClientProvider>,
   );
   return new Response(prelude).text();
 }
