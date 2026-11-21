@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-11-21 |
 | Plan task | – (follow-up of the QA of #381) |
 | System specification sections | §14.4, §18.5, §7.4 |
-| Related issues / PRs | #384, #356, #381, #382, #400 |
+| Related issues / PRs | #384, #421, #356, #381, #382, #400, #423 |
 
 ## 📝 TLDR
 
@@ -93,7 +93,7 @@ No new glossary terms. User documentation (Rule 3), in EN and PL: the **Sign out
 - The limits and the block duration (§14.4).
 - The notice that pages show inside the shell, including the Administrator panel: it keeps the shell and its account menu, so it gets no extra button.
 - Rendering the header or navigation over the rate limit.
-- **Sign out** on the page of an unexpected error of the shell itself (`app/error.tsx` with `PublicHeader`). That page renders above the providers of the shell and is not about the rate limit (#382). It can be a follow-up issue.
+- **Sign out** on the page of an unexpected error of the shell itself (`app/error.tsx` with `PublicHeader`). That page renders above the providers of the shell and is not about the rate limit (#382). Follow-up: #423.
 
 ## Resolved assumptions (autonomous defaults)
 
@@ -103,7 +103,7 @@ No new glossary terms. User documentation (Rule 3), in EN and PL: the **Sign out
 | Q2 | New message key `rateLimited.signOut`, or reuse `signIn.signOut`? | Reuse `signIn.signOut`. | It is the same action with the same text as on the deactivated-account notice, so no new strings. Both EN and PL exist. |
 | Q3 | How does the shell add the button: a slot, a flag, or beside the notice? | Beside an unchanged `RateLimitedNotice`, in the `<main>` of `AccountShell` (changed in the specification review from the slot the issue suggests). | The same layout with no new prop on a shared component, as `AccountDeactivatedNotice` does it. The pages that render the notice never import `SignOutButton`. |
 
-Open questions: none blocking.
+Open questions: none blocking. The maintainer confirmed Q1–Q3 in the session on 2026-11-21, and with them manual QA in place of an E2E test (Acceptance criteria).
 
 ## Acceptance criteria
 
@@ -126,3 +126,4 @@ Open questions: none blocking.
 - 2026-11-21 – Created (autonomous defaults, #384).
 - 2026-11-21 – Specification review of #421: `SignOutButton` beside an unchanged `RateLimitedNotice` instead of a slot (Q3); the claim about where **Sign out** cannot be reached narrowed, with `app/error.tsx` as a non-goal; three callers of `signOut()`; the edge case of signing in again during the block; the mock of `getTranslations` in the plan; the documentation sentence explains the notice.
 - 2026-11-21 – Specification review: a component test of `SignOutButton`, the reason for no E2E test, the paths of the notice and the tutorials, the compact buttons on desktop, and the edge cases of Reload and of the page after the sign-out.
+- 2026-11-21 – Approved by the maintainer in the session: Q1–Q3 and manual QA in place of an E2E test confirmed; the error page of the shell filed as #423.
