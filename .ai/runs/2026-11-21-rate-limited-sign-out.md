@@ -32,7 +32,7 @@ Over the per-user rate limit, the notice that the application shell shows instea
 ## Risks
 
 - `AccountShell` now calls `getTranslations` only in its `429` branch. The other branches are unchanged, and the full test file guards them.
-- The first load of the shell: `SignOutButton` is already imported through `AccountDeactivatedNotice`. `pnpm build` runs the first-load check.
+- The first load of the shell: `SignOutButton` is already imported through `AccountDeactivatedNotice`. `pnpm build` runs the first-load check. Result: 17 chunks, 234.9 KB gzip for `(team)`, `(portal)` and `help` on both `main` (`0585b57`'s base, `b5df6ad`) and this branch, so no new client JavaScript.
 
 ## Progress
 
