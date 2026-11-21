@@ -40,8 +40,8 @@ Over the per-user rate limit, the notice that the application shell shows instea
 
 ### Phase 1: the button in the shell
 
-- [ ] 1.1 `variant` of `SignOutButton`
-- [ ] 1.2 Sign out in the `429` branch of `AccountShell`
+- [x] 1.1 `variant` of `SignOutButton` — effef56
+- [x] 1.2 Sign out in the `429` branch of `AccountShell` — cd8bb3b
 
 ### Phase 2: specification and documentation
 
