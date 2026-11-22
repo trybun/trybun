@@ -17,13 +17,14 @@ const TOO_LONG = `fix(web): ${'x'.repeat(101 - 'fix(web): '.length)}`;
 let dir;
 let work;
 
-function run(command, args, env = {}) {
+function run(command, args, { env = {}, cwd = work } = {}) {
   const result = spawnSync(command, args, {
-    cwd: work,
+    cwd,
     encoding: 'utf8',
     env: {
-      ...process.env,
-      // Only the repository's own configuration and hooks.
+      // Only the scratch repository and its own configuration and hooks: no GIT_DIR,
+      // GIT_WORK_TREE or GIT_CONFIG_* of a calling Git process.
+      ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))),
       GIT_CONFIG_GLOBAL: '/dev/null',
       GIT_CONFIG_NOSYSTEM: '1',
       GIT_AUTHOR_NAME: 'Ada Lovelace',
@@ -42,7 +43,7 @@ function commit(message, { env, verify = true } = {}) {
   return run(
     'git',
     ['commit', '--allow-empty', '-m', message, ...(verify ? [] : ['--no-verify'])],
-    env,
+    { env },
   );
 }
 
@@ -83,6 +84,23 @@ afterAll(() => {
 describe('scripts/install-git-hooks.js', () => {
   it('turns on the hooks of .githooks/', () => {
     expect(git('config', '--local', 'core.hooksPath').output.trim()).toBe('.githooks');
+  });
+
+  it("keeps the developer's own hooks of .git/hooks/", () => {
+    const other = join(dir, 'other');
+    run('git', ['init', '-q', other]);
+    mkdirSync(join(other, '.git', 'hooks'), { recursive: true });
+    writeFileSync(join(other, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\n', { mode: 0o755 });
+    const { status, output } = run(
+      process.execPath,
+      [join(work, 'scripts', 'install-git-hooks.js')],
+      {
+        cwd: other,
+      },
+    );
+    expect(status).toBe(0);
+    expect(output).toContain('stay in use');
+    expect(run('git', ['config', 'core.hooksPath'], { cwd: other }).output).toBe('');
   });
 });
 

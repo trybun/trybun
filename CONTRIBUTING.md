@@ -21,7 +21,7 @@ Prerequisites, the one-command start (`pnpm install`, `pnpm dev`) and the other 
 ## Commits and branches
 
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org/); the scope comes from the closed list in [§2.14](docs/spec/02-agent-rules.md). The pull request title must be a valid Conventional Commit as well – it becomes the squash commit.
-- `pnpm install` turns on the Git hooks of `.githooks/`: `commit-msg` and `pre-push` check commit messages with the rules of CI, so a wrong message is reworded before the push (`git commit --amend`, or `git rebase -i` with `reword`) instead of force-pushed afterwards. If you already use your own `core.hooksPath`, it is kept – call `.githooks/commit-msg` and `.githooks/pre-push` from your hooks.
+- `pnpm install` turns on the Git hooks of `.githooks/`: `commit-msg` and `pre-push` check commit messages with the rules of CI, so a wrong message is reworded before the push (`git commit --amend`, or `git rebase -i` with `reword`) instead of force-pushed afterwards. If you already use your own hooks (a `core.hooksPath`, or hooks in `.git/hooks/`), they are kept – call `.githooks/commit-msg` and `.githooks/pre-push` from them. The hooks need `node` on the `PATH` of the program that runs Git, which a Git GUI started outside your shell may lack.
 - Breaking changes are marked as described in Rule 11 ([§2.11](docs/spec/02-agent-rules.md)). Never edit versions or `CHANGELOG.md` by hand; release-please does it.
 - Branches, trunk-based flow and merging: [§2.14](docs/spec/02-agent-rules.md).
 
