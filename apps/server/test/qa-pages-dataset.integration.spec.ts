@@ -4,6 +4,7 @@ import { buildDemoDataset, seedDemoData } from '../prisma/demo-dataset.js';
 import {
   addQaPages,
   buildQaPagesDataset,
+  isTestEnvironmentDatabase,
   qaPageId,
   removeQaPages,
 } from '../prisma/qa-pages-dataset.js';
@@ -59,6 +60,18 @@ describe('QA page records', () => {
     }
     return rows;
   }
+
+  it.each([
+    ['postgresql://trybun:trybun@localhost:5432/trybun', true],
+    ['postgres://trybun@127.0.0.1/trybun', true],
+    ['postgresql://trybun@[::1]:5432/trybun', true],
+    ['postgresql://trybun@localhost:5433/trybun', false],
+    ['postgresql://trybun@db.example.org:5432/trybun', false],
+    ['mysql://trybun@localhost:5432/trybun', false],
+    ['not a url', false],
+  ])('treats %s as the database of the test environment: %s', (url, expected) => {
+    expect(isTestEnvironmentDatabase(url)).toBe(expected);
+  });
 
   it('is the same on every build', () => {
     expect(buildQaPagesDataset()).toEqual(buildQaPagesDataset());
@@ -161,8 +174,19 @@ describe('QA page records', () => {
   it('changes nothing when a record outside them refers to one of them', async () => {
     await addQaPages(prisma);
     const added = await snapshot();
-    // A demo ticket marked as a duplicate of a QA page ticket.
-    await createDuplicateRelation(prisma, { id: demoTicket?.id ?? '' }, { id: qaPageId(301) });
+    // A demo end user moved into a QA page organization creates a ticket in a demo project: the
+    // ticket keeps that organization (§3.2).
+    await prisma.organizationMember.update({
+      where: { userId: customer?.id ?? '' },
+      data: { organizationId: qaOrganizationId },
+    });
+    await createTicket(prisma, {
+      projectId: demoProject?.id ?? '',
+      source: 'user',
+      status: 'new',
+      requesterId: customer?.id ?? '',
+      organizationId: qaOrganizationId,
+    });
     const referred = await snapshot();
 
     await expect(removeQaPages(prisma)).rejects.toMatchObject({ code: 'P2003' });

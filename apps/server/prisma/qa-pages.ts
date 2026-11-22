@@ -3,16 +3,26 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '../src/generated/prisma/client.js';
 import { readConfig } from '../src/platform/config/config.module.js';
-import { addQaPages, QA_PAGE_COUNT, removeQaPages } from './qa-pages-dataset.js';
+import {
+  addQaPages,
+  isTestEnvironmentDatabase,
+  QA_PAGE_COUNT,
+  removeQaPages,
+} from './qa-pages-dataset.js';
 
 const action = process.argv[2];
 if (action !== 'add' && action !== 'remove') {
   process.stderr.write('Usage: qa-pages.ts add|remove\n');
   process.exit(2);
 }
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: readConfig().databaseUrl }),
-});
+const { databaseUrl } = readConfig();
+if (!isTestEnvironmentDatabase(databaseUrl)) {
+  process.stderr.write(
+    'DATABASE_URL does not reach the PostgreSQL of the test environment on localhost:5432; nothing was changed.\n',
+  );
+  process.exit(1);
+}
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
 try {
   if (action === 'add') {
     await addQaPages(prisma);

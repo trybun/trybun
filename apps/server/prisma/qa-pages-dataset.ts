@@ -27,6 +27,25 @@ export function qaPageId(n: number): string {
   return `019b8d00-0000-7000-9000-${n.toString(16).padStart(12, '0')}`;
 }
 
+/** The PostgreSQL the QA test environment publishes on the host (`compose.dev.yaml`). */
+const TEST_ENVIRONMENT_DATABASE_PORT = '5432';
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/**
+ * Whether `databaseUrl` reaches the PostgreSQL published on the host port that
+ * `test-env-pages.sh` checks belongs to the Compose project `trybun-test`: a `DATABASE_URL` of
+ * another host or port (exported in the shell, or set in `.env`) never gets the records.
+ */
+export function isTestEnvironmentDatabase(databaseUrl: string): boolean {
+  const url = URL.parse(databaseUrl);
+  return (
+    url !== null &&
+    (url.protocol === 'postgresql:' || url.protocol === 'postgres:') &&
+    LOOPBACK_HOSTS.has(url.hostname) &&
+    (url.port === '' ? '5432' : url.port) === TEST_ENVIRONMENT_DATABASE_PORT
+  );
+}
+
 export interface QaPagesDataset {
   users: Prisma.UserCreateManyInput[];
   organizations: Prisma.OrganizationCreateManyInput[];

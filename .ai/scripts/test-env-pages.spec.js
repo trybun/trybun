@@ -21,12 +21,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 // Each stub logs its arguments; `docker ps --filter publish=5432` answers the Compose project in
-// STUB_HOLDER (none when empty), and pnpm exits with STUB_PNPM_STATUS.
+// STUB_HOLDER (none when empty) or fails with STUB_DOCKER_FAILS, and pnpm exits with STUB_PNPM_STATUS.
 const STUBS = {
   docker: `#!/bin/sh
 echo "docker $*" >>"$STUB_LOG"
 case "$*" in
   "ps --filter publish=5432 --format {{.Label \\"com.docker.compose.project\\"}}")
+    [ -z "\${STUB_DOCKER_FAILS:-}" ] || exit 1
     [ -z "$STUB_HOLDER" ] || echo "$STUB_HOLDER" ;;
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
@@ -107,6 +108,14 @@ describe('test-env-pages.sh', () => {
     expect(result.status).toBe(2);
     expect(result.stderr).toContain('Usage:');
     expect(calls()).toEqual([]);
+  });
+
+  it('refuses when the containers cannot be listed', () => {
+    const result = run(['add'], { STUB_DOCKER_FAILS: '1' });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('listing the containers failed');
+    expect(calls().filter((call) => call.startsWith('pnpm'))).toEqual([]);
   });
 
   it('fails when adding the records fails', () => {
