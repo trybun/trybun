@@ -22,6 +22,8 @@ cp .env.example .env
 pnpm dev
 ```
 
+`pnpm install` also turns on the Git hooks of [`.githooks/`](.githooks) (`core.hooksPath`), which check commit messages before the commit and the push with the rules of CI ([§2.14](docs/spec/02-agent-rules.md)).
+
 `pnpm dev` starts the infrastructure in Docker Compose (`compose.yaml` with `compose.dev.yaml`, Compose project `trybun-dev`: PostgreSQL, Valkey, SeaweedFS, Keycloak, ClamAV and Mailpit, ports bound to `127.0.0.1`), applies the Keycloak configuration, runs the database migrations, loads the demo dataset, and then starts the web application on <http://localhost:3000>, the API on <http://localhost:3001/api/v1> and the Worker. Keycloak answers on <http://localhost:8080/auth>, Mailpit shows all outgoing e-mail on <http://localhost:8025>. When memory is short, remove `clamav` from `COMPOSE_PROFILES` in `.env`. A change of the API or the Worker rebuilds and restarts both ([§15.12](docs/spec/15-deployment.md)); `docker compose -f compose.yaml -f compose.dev.yaml down` stops the infrastructure.
 
 ### Signing in locally
@@ -61,7 +63,7 @@ Run from the repository root:
 
 | Command | Purpose |
 |---|---|
-| `pnpm install` | Install dependencies from the lockfile |
+| `pnpm install` | Install dependencies from the lockfile and turn on the Git hooks of `.githooks/` |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload (variables from `.env` or the environment) |
 | `pnpm build` | Build all applications, generate the Keycloak login theme from the message catalogues and check that Zod stays out of the first load of the application shell |
 | `pnpm lint` | Lint all packages, check the formatting, the Keycloak login theme against the message catalogues, the help content against the user documentation and the Prisma schema mappings, reject Prisma ORM 8 packages in the lockfile, workflow triggers that expose secrets to forks, and actions or images not pinned to a SHA or digest, and check the shell scripts (`trybun`, the backup service, the restore test, the test environment of the QA skills) with ShellCheck |

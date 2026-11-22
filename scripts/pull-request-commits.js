@@ -53,14 +53,33 @@ export function parseLog(output) {
 }
 
 /**
+ * The commits of `git log` for the given revision arguments.
+ * @param {string[]} revisions
+ * @returns {Commit[]}
+ */
+function logCommits(revisions) {
+  const format = ['%H', '%P', '%an', '%ae', '%B'].join('%x00') + '%x1e';
+  return parseLog(
+    execFileSync('git', ['log', `--format=${format}`, ...revisions, '--'], { encoding: 'utf8' }),
+  );
+}
+
+/**
  * The commits reachable from `head` but not from `base`.
  * @param {string} base
  * @param {string} head
  * @returns {Commit[]}
  */
 export function readCommits(base, head) {
-  const format = ['%H', '%P', '%an', '%ae', '%B'].join('%x00') + '%x1e';
-  return parseLog(
-    execFileSync('git', ['log', `--format=${format}`, `${base}..${head}`], { encoding: 'utf8' }),
-  );
+  return logCommits([`${base}..${head}`]);
+}
+
+/**
+ * The commits a push of `head` adds: reachable from `head` but from no remote-tracking branch, so
+ * the commits already published are not checked again (`.githooks/pre-push`).
+ * @param {string} head
+ * @returns {Commit[]}
+ */
+export function readUnpublishedCommits(head) {
+  return logCommits([head, '--not', '--remotes']);
 }
