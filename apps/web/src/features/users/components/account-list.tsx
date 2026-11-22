@@ -47,7 +47,8 @@ function AccountBadges({ user }: { user: User }) {
  * A failed read of the accounts (§18.5): a failure of the first page in place of the rows, a
  * failure of a later page – or of a refetch – below the rows already loaded, above **Load more**
  * (`isLaterPage`), which tries it again and keeps the loaded pages, so a refusal there offers no
- * **Reload page** (#434).
+ * **Reload page** (#434). A refused refetch without a next page then shows only the wait; the next
+ * refetch – on focus, or after a change – reads the accounts again.
  */
 function AccountsError({ error, isLaterPage }: { error: Error; isLaterPage: boolean }) {
   const errorMessage = useErrorMessage();
