@@ -91,7 +91,7 @@ Run from the repository root; local environment: [§15.12](docs/spec/15-deployme
 
 | Command | Purpose |
 |---|---|
-| `pnpm install` | Install dependencies from the lockfile |
+| `pnpm install` | Install dependencies from the lockfile and turn on the Git hooks of `.githooks/` |
 | `pnpm dev` | Start the infrastructure in Docker Compose, apply the migrations and the demo dataset, then the web application, the API and the Worker with hot reload |
 | `pnpm test` | Unit tests, the component tests of `web` (jsdom) and the story tests of `@trybun/ui` (Vitest; Chromium: `pnpm --filter @trybun/ui exec playwright install chromium`) |
 | `pnpm test:integration` | Integration tests (Vitest + Testcontainers; needs Docker) |

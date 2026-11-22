@@ -1,0 +1,10 @@
+#!/bin/sh
+# Commit message check when the commit is made (§2.14): commitlint with `commitlint.config.js`, the
+# rules of the CI job `Commit messages and title`. Turned on by `pnpm install`
+# (`scripts/install-git-hooks.js`); Git runs hooks from the root of the work tree.
+commitlint=node_modules/.bin/commitlint
+if [ ! -x "$commitlint" ]; then
+  echo 'commit-msg: commitlint is not installed in this work tree – run pnpm install.' >&2
+  exit 1
+fi
+exec "$commitlint" --edit "$1"
