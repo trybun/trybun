@@ -401,7 +401,7 @@ function TicketResults({
           </div>
         </>
       )}
-      {tickets.isError && !tickets.isLoadingError && (
+      {tickets.isError && !tickets.isLoadingError && !tickets.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {t('loadFailed')}
         </p>

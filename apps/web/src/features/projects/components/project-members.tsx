@@ -170,7 +170,7 @@ export function ProjectMembers({ project }: { project: Project }) {
         ))}
       </ul>
       {canManage && <ProjectInvitations projectId={project.id} />}
-      {members.isError && (
+      {members.isError && !members.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(members.error)}
         </p>

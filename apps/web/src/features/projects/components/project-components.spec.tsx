@@ -8,7 +8,11 @@ import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { prerender } from 'react-dom/static';
 import { describe, expect, it, vi } from 'vitest';
-import { seedFailedLaterPage } from '../../../../test/query-state.js';
+import {
+  expectInOrder,
+  FAILED_READ_MESSAGE as FAILED,
+  seedFailedLaterPage,
+} from '../../../../test/query-state.js';
 
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 vi.mock('next/navigation.js', () => ({
@@ -96,14 +100,6 @@ async function prerenderToString(element: ReactElement, seed: (client: QueryClie
 }
 
 const page = (items: Project[]) => ({ pages: [{ items, nextCursor: null }], pageParams: [null] });
-
-/** The message of a failed later page, between the rows loaded and **Show more** (#434). */
-const FAILED = 'Something went wrong. Try again later.';
-function expectInOrder(html: string, ...texts: string[]) {
-  const indexes = texts.map((text) => html.indexOf(text));
-  expect(indexes).not.toContain(-1);
-  expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
-}
 
 describe('ProjectList', () => {
   it('lists each project with its key and the person’s role, opening its settings', () => {

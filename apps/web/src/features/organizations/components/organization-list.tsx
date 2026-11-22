@@ -62,7 +62,7 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
           </li>
         ))}
       </ul>
-      {organizations.isError && (
+      {organizations.isError && !organizations.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(organizations.error)}
         </p>

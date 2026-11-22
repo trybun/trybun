@@ -74,7 +74,7 @@ export function MyTicketsList({
           headingLevel={headingLevel}
         />
       )}
-      {tickets.isError && (
+      {tickets.isError && !tickets.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(tickets.error)}
         </p>

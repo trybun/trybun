@@ -97,6 +97,21 @@ describe('TicketAttachments', () => {
     expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Show more files' }));
   });
 
+  it('shows the error of a failed refetch of a ticket without attachments (#434)', async () => {
+    answerAttachments([]);
+    const { client } = renderInApp(<TicketAttachments ticketId={TICKET_ID} />);
+    await waitFor(() =>
+      expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/attachments')).toHaveLength(1),
+    );
+
+    fake.on('GET /api/v1/tickets/{ticketId}/attachments', { status: 500, error: {} });
+    await client.invalidateQueries({ queryKey: ['attachments'] });
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+  });
+
   it('shows nothing for a ticket without attachments', async () => {
     answerAttachments([]);
     const { container } = renderInApp(<TicketAttachments ticketId={TICKET_ID} />);

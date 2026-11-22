@@ -67,7 +67,7 @@ export function ProjectOrganizations({ projectId }: { projectId: string }) {
           </li>
         ))}
       </ul>
-      {pageError !== null && (
+      {pageError !== null && !active.isFetchingNextPage && !archived.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(pageError)}
         </p>

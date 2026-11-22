@@ -143,7 +143,7 @@ export function OrganizationProjects({ organization }: { organization: Organizat
               </Button>
             </div>
           )}
-          {activeProjects.isError && (
+          {activeProjects.isError && !activeProjects.isFetchingNextPage && (
             <p role="alert" className="text-sm text-destructive">
               {errorMessage(activeProjects.error)}
             </p>

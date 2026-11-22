@@ -161,7 +161,7 @@ export function PendingInvitationList({
           </li>
         ))}
       </ul>
-      {paging !== undefined && paging.error !== null && (
+      {paging !== undefined && paging.error !== null && !paging.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(paging.error)}
         </p>

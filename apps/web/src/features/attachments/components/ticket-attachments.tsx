@@ -40,8 +40,9 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
     });
   }
 
-  // Only a failure of the first read replaces the list; a failed **Load more** keeps it (#434).
-  if (attachments.isLoadingError) {
+  // A failure replaces the list only when there is nothing to keep – the first read, or a refetch of
+  // a ticket without attachments; a failed **Load more** keeps the files loaded (#434).
+  if (attachments.isError && items.length === 0) {
     return (
       <p role="alert" className="text-sm text-destructive">
         {errorMessage(attachments.error)}
@@ -81,7 +82,7 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
           );
         })}
       </AttachmentList>
-      {attachments.isError && (
+      {attachments.isError && !attachments.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(attachments.error)}
         </p>

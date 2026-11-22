@@ -200,7 +200,7 @@ export function OrganizationMembers({ organization }: { organization: Organizati
           </li>
         ))}
       </ul>
-      {members.isError && !members.isLoadingError && (
+      {members.isError && !members.isLoadingError && !members.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(members.error)}
         </p>

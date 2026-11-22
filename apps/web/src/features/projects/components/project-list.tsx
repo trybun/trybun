@@ -65,7 +65,7 @@ export function ProjectList({ state }: { state: ProjectState }) {
           </li>
         ))}
       </ul>
-      {projects.isError && (
+      {projects.isError && !projects.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(projects.error)}
         </p>

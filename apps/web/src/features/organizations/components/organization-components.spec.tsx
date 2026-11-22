@@ -10,7 +10,11 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { seedFailedLaterPage } from '../../../../test/query-state.js';
+import {
+  expectInOrder,
+  FAILED_READ_MESSAGE as FAILED,
+  seedFailedLaterPage,
+} from '../../../../test/query-state.js';
 
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 vi.mock('next/navigation.js', () => ({
@@ -103,14 +107,6 @@ function project(id: string, name: string, key: string): Project {
 }
 
 const page = <T,>(items: T[]) => ({ pages: [{ items, nextCursor: null }], pageParams: [null] });
-
-/** The message of a failed later page, between the rows loaded and **Show more** (#434). */
-const FAILED = 'Something went wrong. Try again later.';
-function expectInOrder(html: string, ...texts: string[]) {
-  const indexes = texts.map((text) => html.indexOf(text));
-  expect(indexes).not.toContain(-1);
-  expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
-}
 
 function seedDetail(client: QueryClient, value: Organization) {
   client.setQueryData(['organizations', 'detail', ORGANIZATION_ID], value);
