@@ -1,26 +1,39 @@
+import type { Server } from 'node:http';
+import type { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { ORGANIZATION_MAX_PROJECTS, type Organization } from '@trybun/contracts/organizations';
 import { DEFAULT_PAGE_LIMIT } from '@trybun/contracts/pagination';
+import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildDemoDataset, seedDemoData } from '../prisma/demo-dataset.js';
 import {
   addQaPages,
   buildQaPagesDataset,
   isTestEnvironmentDatabase,
+  QA_PAGE_COUNT,
   qaPageId,
   removeQaPages,
 } from '../prisma/qa-pages-dataset.js';
+import { ApiModule } from '../src/api.module.js';
 import { ATTACHMENT_DELETED } from '../src/modules/attachments/attachments.events.js';
+import type { TrybunConfig } from '../src/platform/config/config.schema.js';
 import { PrismaService } from '../src/platform/database/prisma.service.js';
+import { API_PREFIX } from '../src/platform/http/api-prefix.js';
+import { keycloakJwksHandler, signAccessToken } from './factories/access-token.factory.js';
 import { createAttachment } from './factories/attachment.factory.js';
 import { createComment } from './factories/comment.factory.js';
 import { createInvitation } from './factories/invitation.factory.js';
 import { createProjectMember } from './factories/project-member.factory.js';
 import { createDuplicateRelation, createTicket } from './factories/ticket.factory.js';
+import { mswServer } from './msw/server.js';
 import { integrationConfig } from './setup/config.js';
 import { createOwnDatabase } from './setup/own-database.js';
 
 // The QA page records of the QA test environment (#440). A database of its own: "as it was before"
 // compares every table, which the parallel tests of the shared database change.
 describe('QA page records', () => {
+  let config: TrybunConfig;
+  let app: INestApplication<Server>;
   let prisma: PrismaService;
   const demo = buildDemoDataset();
   const manager = demo.users.find(({ email }) => email === 'manager@example.com');
@@ -31,17 +44,45 @@ describe('QA page records', () => {
   const qaProjectId = qaPageId(201);
 
   beforeAll(async () => {
-    prisma = new PrismaService({ ...integrationConfig(), databaseUrl: await createOwnDatabase() });
+    config = { ...integrationConfig(), databaseUrl: await createOwnDatabase() };
+    const moduleRef = await Test.createTestingModule({
+      imports: [ApiModule.forRoot(config)],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    app.setGlobalPrefix(API_PREFIX);
+    await app.init();
+    prisma = app.get(PrismaService);
   });
 
   beforeEach(async () => {
+    mswServer.use(keycloakJwksHandler(config));
     await removeQaPages(prisma);
     await seedDemoData(prisma);
   });
 
   afterAll(async () => {
-    await prisma.$disconnect();
+    await app.close();
   });
+
+  /** The access token of a demo account; a team member signed in with 2FA (§7.4). */
+  async function signInAs(email: string) {
+    const account = demo.users.find((user) => user.email === email);
+    expect(account?.keycloakUserId).toBeTruthy();
+    const token = await signAccessToken(config, {
+      sub: account?.keycloakUserId ?? '',
+      amr: account?.kind === 'team' ? ['pwd', 'otp'] : ['pwd'],
+    });
+    return `Bearer ${token}`;
+  }
+
+  async function get(authorization: string, path: string, query: Record<string, string> = {}) {
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1${path}`)
+      .query(query)
+      .set('Authorization', authorization);
+    expect({ path, status: res.status }).toEqual({ path, status: 200 });
+    return res.body as unknown;
+  }
 
   /** Every row of every table but the outbox and `except`, as JSON text in a stable order. */
   async function snapshot(except: string[] = []) {
@@ -77,36 +118,73 @@ describe('QA page records', () => {
     expect(buildQaPagesDataset()).toEqual(buildQaPagesDataset());
   });
 
-  it('fills every list it names past one page', async () => {
+  it('gives every list it names a second page for the account the README names', async () => {
     await addQaPages(prisma);
-
-    const counts = {
-      accounts: await prisma.user.count(),
-      organizations: await prisma.organization.count({ where: { state: 'active' } }),
-      projects: await prisma.project.count({ where: { state: 'active' } }),
-      organizationMembers: await prisma.organizationMember.count({
-        where: { organizationId: qaOrganizationId },
-      }),
-      organizationProjects: await prisma.organizationProject.count({
-        where: { organizationId: qaOrganizationId },
-      }),
-      projectMembers: await prisma.projectMember.count({ where: { projectId: qaProjectId } }),
-      projectOrganizations: await prisma.organizationProject.count({
-        where: { projectId: qaProjectId },
-      }),
-      projectTickets: await prisma.ticket.count({ where: { projectId: qaProjectId } }),
-      customersTickets: await prisma.ticket.count({ where: { requesterId: customer?.id } }),
-    };
-    for (const [list, count] of Object.entries(counts)) {
-      expect({ list, secondPage: count > DEFAULT_PAGE_LIMIT }).toEqual({ list, secondPage: true });
+    const administrator = await signInAs('admin@example.com');
+    const requester = await signInAs('customer@customer.example.com');
+    // The request of each list's first page, as its query in apps/web/src/features/*/queries.ts
+    // sends it.
+    const lists: [
+      list: string,
+      authorization: string,
+      path: string,
+      query?: Record<string, string>,
+    ][] = [
+      ['Accounts', administrator, '/users'],
+      ['Organizations', administrator, '/organizations', { state: 'active' }],
+      // Also the picker of the projects of an organization, which loads more of them.
+      ['Projects', administrator, '/projects', { state: 'active' }],
+      [
+        'Members of QA page organization 01',
+        administrator,
+        `/organizations/${qaOrganizationId}/members`,
+      ],
+      ['Members of QA page project 01', administrator, `/projects/${qaProjectId}/members`],
+      [
+        'Organizations of QA page project 01',
+        administrator,
+        '/organizations',
+        { state: 'active', projectId: qaProjectId },
+      ],
+      // The **Custom filter** view with the project as its only filter, in the list's page size.
+      [
+        'Ticket list filtered by QA page project 01',
+        administrator,
+        '/tickets',
+        {
+          projectId: qaProjectId,
+          sort: 'priority',
+          order: 'desc',
+          limit: String(DEFAULT_PAGE_LIMIT),
+        },
+      ],
+      ['My tickets in the portal', requester, '/tickets', { involvement: 'mine' }],
+    ];
+    for (const [list, authorization, path, query] of lists) {
+      const page = (await get(authorization, path, query)) as {
+        items: unknown[];
+        nextCursor: string | null;
+      };
+      expect({ list, items: page.items.length, secondPage: page.nextCursor !== null }).toEqual({
+        list,
+        items: DEFAULT_PAGE_LIMIT,
+        secondPage: true,
+      });
     }
-    // The requester has access to the project of her tickets, so the portal lists them.
-    expect(
-      await prisma.projectMember.findUnique({
-        where: { projectId_userId: { projectId: qaProjectId, userId: customer?.id ?? '' } },
-        select: { role: true },
-      }),
-    ).toEqual({ role: 'end_user' });
+
+    // The Projects of an organization come with it, all of them; **Load more** is that of the
+    // picker of the projects to add – the Projects list above – which the section shows while the
+    // Administrator may add more (organization-projects.tsx).
+    const organization = (await get(
+      administrator,
+      `/organizations/${qaOrganizationId}`,
+    )) as Organization;
+    expect({
+      projects: organization.projects.length,
+      canAdd:
+        organization.allowedActions.includes('manage_projects') &&
+        organization.projects.length < ORGANIZATION_MAX_PROJECTS,
+    }).toEqual({ projects: QA_PAGE_COUNT, canAdd: true });
   });
 
   it('keeps all but the tickets when a boot restores the demo dataset', async () => {
