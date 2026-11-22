@@ -67,6 +67,7 @@ describe('QA page records', () => {
   /** The access token of a demo account; a team member signed in with 2FA (§7.4). */
   async function signInAs(email: string) {
     const account = demo.users.find((user) => user.email === email);
+    expect(account?.keycloakUserId).toBeTruthy();
     const token = await signAccessToken(config, {
       sub: account?.keycloakUserId ?? '',
       amr: account?.kind === 'team' ? ['pwd', 'otp'] : ['pwd'],
@@ -145,6 +146,7 @@ describe('QA page records', () => {
         '/organizations',
         { state: 'active', projectId: qaProjectId },
       ],
+      // The **Custom filter** view with the project as its only filter, in the list's page size.
       [
         'Ticket list filtered by QA page project 01',
         administrator,
