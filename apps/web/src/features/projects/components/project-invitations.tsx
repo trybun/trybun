@@ -34,6 +34,7 @@ export function ProjectInvitations({ projectId }: { projectId: string }) {
         paging={{
           hasNextPage: invitations.hasNextPage,
           isFetchingNextPage: invitations.isFetchingNextPage,
+          error: invitations.error,
           onLoadMore: () => void invitations.fetchNextPage(),
         }}
       />

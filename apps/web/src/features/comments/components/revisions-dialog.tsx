@@ -78,7 +78,7 @@ export function RevisionsDialog({
         {revisions.isSuccess && items.length === 0 && (
           <p className="text-sm text-muted-foreground">{t('history.empty')}</p>
         )}
-        {revisions.isError && (
+        {revisions.isError && !revisions.isFetchingNextPage && (
           <p role="alert" className="text-sm text-destructive">
             {errorMessage(revisions.error)}
           </p>

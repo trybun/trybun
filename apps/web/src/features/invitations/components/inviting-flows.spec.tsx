@@ -245,7 +245,7 @@ describe('PendingInvitationList', () => {
         invitations={[invitation()] as never}
         titleOf={(item) => item.user.email ?? ''}
         detailOf={() => 'Developer'}
-        paging={{ hasNextPage, isFetchingNextPage: false, onLoadMore }}
+        paging={{ hasNextPage, isFetchingNextPage: false, error: null, onLoadMore }}
       />,
     );
   }

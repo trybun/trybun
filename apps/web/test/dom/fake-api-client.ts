@@ -47,3 +47,14 @@ export function createFakeApiClient() {
     },
   };
 }
+
+/**
+ * A route of a list read page by page whose first page answers `items` with a next page and every
+ * later page fails with `500`: a failed **Load more** (#434).
+ */
+export function laterPagesFail(items: readonly unknown[]) {
+  return (init: unknown) =>
+    (init as { params?: { query?: { cursor?: string } } }).params?.query?.cursor === undefined
+      ? { data: { items, nextCursor: 'next' } }
+      : { status: 500, error: {} };
+}

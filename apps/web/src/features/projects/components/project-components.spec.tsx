@@ -8,6 +8,11 @@ import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { prerender } from 'react-dom/static';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  expectInOrder,
+  FAILED_READ_MESSAGE as FAILED,
+  seedFailedLaterPage,
+} from '../../../../test/query-state.js';
 
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 vi.mock('next/navigation.js', () => ({
@@ -109,6 +114,18 @@ describe('ProjectList', () => {
     expect(html).toContain('Customer portal');
     expect(html).toContain('Project manager');
     expect(html).toContain('Administrator');
+  });
+
+  it('keeps the loaded projects when a later page fails, with the error above Show more (#434)', () => {
+    const html = render(<ProjectList state="active" />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['projects', 'list', 'active'],
+        [{ items: [project()], nextCursor: 'next' }],
+      ),
+    );
+
+    expectInOrder(html, 'Customer portal', 'role="alert"', FAILED, 'Show more');
   });
 
   it.each([
@@ -243,6 +260,18 @@ describe('ProjectMembers', () => {
     expect(html).toContain('aria-label="Remove Anna Nowak"');
   });
 
+  it('keeps the loaded members when a later page fails, with the error above Show more (#434)', () => {
+    const html = render(<ProjectMembers project={project()} />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['projects', 'members', PROJECT_ID],
+        [{ ...members, nextCursor: 'next' }],
+      ),
+    );
+
+    expectInOrder(html, 'Anna Nowak', 'role="alert"', FAILED, 'Show more');
+  });
+
   it('renders the Add member button on the server, before its dialog code loads', async () => {
     const html = await prerenderToString(<ProjectMembers project={project()} />, (client) =>
       client.setQueryData(['projects', 'members', PROJECT_ID], {
@@ -345,6 +374,18 @@ describe('ProjectInvitations', () => {
     expect(html).toContain('Inviting person unknown');
   });
 
+  it('keeps the loaded invitations when a later page fails, with the error above Show more (#434)', () => {
+    const html = render(<ProjectInvitations projectId={PROJECT_ID} />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['invitations', 'list', { projectId: PROJECT_ID }],
+        [{ items: [invitation()], nextCursor: 'next' }],
+      ),
+    );
+
+    expectInOrder(html, 'ewa@customer.example.com', 'role="alert"', FAILED, 'Show more');
+  });
+
   it('is not shown without pending invitations', () => {
     expect(renderInvitations([])).toBe('');
   });
@@ -404,6 +445,21 @@ describe('ProjectOrganizations', () => {
     expect(html).toContain('Acme');
     expect(html).toContain('Old Co');
     expect(html.match(/>Archived</g)).toHaveLength(1);
+  });
+
+  it('keeps the loaded organizations when a later page fails, with the error above Show more (#434)', () => {
+    const html = render(<ProjectOrganizations projectId={PROJECT_ID} />, (client) => {
+      seedFailedLaterPage(
+        client,
+        ['organizations', 'list', 'active', PROJECT_ID],
+        [{ items: [organization], nextCursor: 'next' }],
+      );
+      client.setQueryData(['organizations', 'list', 'archived', PROJECT_ID], organizationPage([]));
+    });
+
+    expectInOrder(html, 'Acme', 'role="alert"', FAILED, 'Show more');
+    // Not in place of the rows or their empty state.
+    expect(html.match(/role="alert"/g)).toHaveLength(1);
   });
 
   it('says when no organization may access the project', () => {

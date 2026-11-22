@@ -87,7 +87,8 @@ export function ProjectMembers({ project }: { project: Project }) {
     });
   };
 
-  if (members.isError) {
+  // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
+  if (members.isLoadingError) {
     return (
       <p role="alert" className="text-sm text-destructive">
         {errorMessage(members.error)}
@@ -169,6 +170,11 @@ export function ProjectMembers({ project }: { project: Project }) {
         ))}
       </ul>
       {canManage && <ProjectInvitations projectId={project.id} />}
+      {members.isError && !members.isFetchingNextPage && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(members.error)}
+        </p>
+      )}
       {members.hasNextPage && (
         <Button
           variant="outline"

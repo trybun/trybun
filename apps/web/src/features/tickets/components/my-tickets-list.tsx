@@ -36,7 +36,8 @@ export function MyTicketsList({
   const t = useTranslations('portal.myTickets');
   const errorMessage = useErrorMessage();
   const tickets = useInfiniteQuery(myTicketsQueryOptions(browserApiClient, { projectId, limit }));
-  if (tickets.isError) {
+  // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
+  if (tickets.isLoadingError) {
     return (
       <p role="alert" className="text-sm text-destructive">
         {errorMessage(tickets.error)}
@@ -72,6 +73,11 @@ export function MyTicketsList({
           showsProject={projectId === undefined}
           headingLevel={headingLevel}
         />
+      )}
+      {tickets.isError && !tickets.isFetchingNextPage && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(tickets.error)}
+        </p>
       )}
       {limit === undefined && tickets.hasNextPage && (
         <Button

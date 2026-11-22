@@ -58,7 +58,7 @@ export function TimelineList({
           ),
         )}
       </ol>
-      {timeline.isError && (
+      {timeline.isError && !timeline.isFetchingNextPage && (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(timeline.error)}
         </p>

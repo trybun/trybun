@@ -154,6 +154,11 @@ export function RedactionDialog({
               ))}
             </fieldset>
           )}
+          {revisions.isError && !revisions.isFetchingNextPage && (
+            <p role="alert" className="text-sm text-destructive">
+              {errorMessage(revisions.error)}
+            </p>
+          )}
           {revisions.hasNextPage && (
             // Every earlier version must be listed before a redaction, so the default selection
             // leaves no copy (Q9).
@@ -169,11 +174,6 @@ export function RedactionDialog({
                 {t('history.showMore')}
               </Button>
             </div>
-          )}
-          {revisions.isError && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(revisions.error)}
-            </p>
           )}
           {error !== undefined && (
             <p role="alert" className="text-sm text-destructive">

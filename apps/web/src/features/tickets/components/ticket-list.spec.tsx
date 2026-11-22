@@ -5,7 +5,7 @@ import type { TicketListItem } from '@trybun/contracts/tickets';
 import { TABLET_MEDIA_QUERY } from '@trybun/ui/hooks/use-media-query';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
+import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 import { stateOfView, withFilters } from '../ticket-list.js';
 
@@ -326,6 +326,26 @@ describe('TicketList', () => {
       );
       expect(action.className.split(' ')).not.toContain('shrink-0');
     }
+  });
+
+  it('keeps the loaded rows when Show more fails and shows the error above it (#434)', async () => {
+    fake.on('GET /api/v1/tickets', laterPagesFail([ticket(1)]));
+    fake.on('GET /api/v1/projects', { data: { items: [], nextCursor: null } });
+    const events = userEvent.setup();
+    renderInApp(
+      <TicketList
+        state={stateOfView('my_open_tickets')}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    await events.click(await screen.findByRole('button', { name: 'Show more' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('The tickets could not be loaded.');
+    expect(within(screen.getByRole('table')).getByRole('link', { name: 'Ticket 1' })).toBeDefined();
+    expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Show more' }));
   });
 
   it('keeps the rows of the last filters while the next ones load (#279)', async () => {
