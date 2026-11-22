@@ -10,6 +10,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { seedFailedLaterPage } from '../../../../test/query-state.js';
 
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 vi.mock('next/navigation.js', () => ({
@@ -103,6 +104,14 @@ function project(id: string, name: string, key: string): Project {
 
 const page = <T,>(items: T[]) => ({ pages: [{ items, nextCursor: null }], pageParams: [null] });
 
+/** The message of a failed later page, between the rows loaded and **Show more** (#434). */
+const FAILED = 'Something went wrong. Try again later.';
+function expectInOrder(html: string, ...texts: string[]) {
+  const indexes = texts.map((text) => html.indexOf(text));
+  expect(indexes).not.toContain(-1);
+  expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
+}
+
 function seedDetail(client: QueryClient, value: Organization) {
   client.setQueryData(['organizations', 'detail', ORGANIZATION_ID], value);
   client.setQueryData(['organizations', 'members', ORGANIZATION_ID], {
@@ -145,6 +154,18 @@ describe('OrganizationList', () => {
     expect(html).toContain('2 members');
     expect(html).toContain('No e-mail domains');
     expect(html).toContain('1 member<');
+  });
+
+  it('keeps the loaded organizations when a later page fails, with the error above Show more (#434)', () => {
+    const html = render(<OrganizationList state="active" />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['organizations', 'list', 'active'],
+        [{ items: [organization()], nextCursor: 'next' }],
+      ),
+    );
+
+    expectInOrder(html, 'acme.com, acme.pl', 'role="alert"', FAILED, 'Show more');
   });
 
   it.each([
@@ -280,6 +301,23 @@ describe('OrganizationProjects', () => {
     expect(html).not.toContain('aria-label="Remove Legacy"');
   });
 
+  it('shows the error of a failed later page of the projects to choose above Show more (#434)', () => {
+    const html = render(<OrganizationProjects organization={organization()} />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['projects', 'list', 'active'],
+        [
+          {
+            items: [project('0199a3f0-0000-7000-8000-000000000013', 'ERP', 'ERP')],
+            nextCursor: 'next',
+          },
+        ],
+      ),
+    );
+
+    expectInOrder(html, 'Choose a project', 'role="alert"', FAILED, 'Show more');
+  });
+
   it('says when the organization may access no projects', () => {
     const html = render(
       <OrganizationProjects
@@ -310,6 +348,17 @@ describe('OrganizationMembers', () => {
     expect(html).toContain('aria-label="Remove jan@acme.com"');
     expect(html).toContain('E-mail address');
     expect(html).toContain('Show more');
+  });
+
+  it('keeps the loaded members when a later page fails, with the error above Show more (#434)', () => {
+    const html = render(<OrganizationMembers organization={organization()} />, (client) => {
+      seedDetail(client, organization());
+      seedFailedLaterPage(client, ['organizations', 'members', ORGANIZATION_ID], [members]);
+    });
+
+    expectInOrder(html, 'ewa@acme.com', 'jan@acme.com', 'role="alert"', FAILED, 'Show more');
+    // Not in place of the rows or their empty state.
+    expect(html.match(/role="alert"/g)).toHaveLength(1);
   });
 
   it('shows the members read-only without manage_members', () => {

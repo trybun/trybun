@@ -143,6 +143,11 @@ export function OrganizationProjects({ organization }: { organization: Organizat
               </Button>
             </div>
           )}
+          {activeProjects.isError && (
+            <p role="alert" className="text-sm text-destructive">
+              {errorMessage(activeProjects.error)}
+            </p>
+          )}
           {activeProjects.hasNextPage && (
             <Button
               variant="outline"

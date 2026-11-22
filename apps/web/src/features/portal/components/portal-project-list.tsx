@@ -18,7 +18,8 @@ export function PortalProjectList() {
   const t = useTranslations('portal.root');
   const errorMessage = useErrorMessage();
   const projects = useInfiniteQuery(projectsQueryOptions(browserApiClient, 'active'));
-  if (projects.isError) {
+  // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
+  if (projects.isLoadingError) {
     return (
       <p role="alert" className="text-sm text-destructive">
         {errorMessage(projects.error)}
@@ -41,6 +42,11 @@ export function PortalProjectList() {
           </li>
         ))}
       </ul>
+      {projects.isError && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(projects.error)}
+        </p>
+      )}
       {projects.hasNextPage && (
         <Button
           variant="outline"

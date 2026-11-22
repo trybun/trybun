@@ -40,7 +40,8 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
     });
   }
 
-  if (attachments.isError) {
+  // Only a failure of the first read replaces the list; a failed **Load more** keeps it (#434).
+  if (attachments.isLoadingError) {
     return (
       <p role="alert" className="text-sm text-destructive">
         {errorMessage(attachments.error)}
@@ -80,6 +81,11 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
           );
         })}
       </AttachmentList>
+      {attachments.isError && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(attachments.error)}
+        </p>
+      )}
       {attachments.hasNextPage && (
         <Button
           variant="outline"

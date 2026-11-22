@@ -4,7 +4,7 @@ import { userEvent } from '@testing-library/user-event';
 import type { Attachment } from '@trybun/contracts/attachments';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attachmentResponse } from '../../../../test/factories/attachment.factory.js';
-import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
+import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
@@ -81,6 +81,20 @@ describe('TicketAttachments', () => {
     expect(fake.callsTo('GET /api/v1/tickets/{ticketId}/attachments')[0]?.init).toMatchObject({
       params: { path: { ticketId: TICKET_ID } },
     });
+  });
+
+  it('keeps the loaded files when Show more fails and shows the error above it (#434)', async () => {
+    fake.on('GET /api/v1/tickets/{ticketId}/attachments', laterPagesFail([ATTACHMENTS[0]]));
+    const events = userEvent.setup();
+    renderInApp(<TicketAttachments ticketId={TICKET_ID} />);
+
+    await events.click(await screen.findByRole('button', { name: 'Show more files' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Something went wrong. Try again later.');
+    const section = screen.getByRole('region', { name: 'Attachments' });
+    expect(within(section).getByText('screenshot.png')).toBeDefined();
+    expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Show more files' }));
   });
 
   it('shows nothing for a ticket without attachments', async () => {

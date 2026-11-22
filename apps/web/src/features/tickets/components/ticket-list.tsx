@@ -376,12 +376,13 @@ function TicketResults({
           onClear={() => table.resetRowSelection()}
         />
       )}
-      {tickets.isError && (
+      {/* Only a failure of the first read replaces the rows; a failed **Show more** keeps them (#434). */}
+      {tickets.isLoadingError && (
         <p role="alert" className="text-sm text-destructive">
           {t('loadFailed')}
         </p>
       )}
-      {!tickets.isSuccess ? null : items.length === 0 ? (
+      {tickets.data === undefined ? null : items.length === 0 ? (
         <div className="flex flex-col items-start gap-2">
           <p className="text-muted-foreground">{t(`empty.${state.view}`)}</p>
           {state.view === 'custom' && Object.keys(state.filters).length > 0 && (
@@ -399,6 +400,11 @@ function TicketResults({
             <TicketTable table={table} sorting={sorting} onSort={onSort} rowActions={rowActions} />
           </div>
         </>
+      )}
+      {tickets.isError && !tickets.isLoadingError && (
+        <p role="alert" className="text-sm text-destructive">
+          {t('loadFailed')}
+        </p>
       )}
       {tickets.hasNextPage && (
         <Button

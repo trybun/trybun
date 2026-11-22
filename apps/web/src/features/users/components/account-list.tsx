@@ -44,14 +44,31 @@ function AccountBadges({ user }: { user: User }) {
 }
 
 /**
+ * A failed read of the accounts (§18.5): a failure of the first page in place of the rows, a
+ * failure of a later page – or of a refetch – below the rows already loaded, above **Load more**.
+ */
+function AccountsError({ error }: { error: Error }) {
+  const errorMessage = useErrorMessage();
+  return isRateLimited(error) ? (
+    // The wait of `Retry-After` and **Reload page**, as the page's own notice says it (#430);
+    // `h3` under the `h2` of the page.
+    <RateLimitedAlert error={error} headingLevel={3} />
+  ) : (
+    <p role="alert" className="text-sm text-destructive">
+      {errorMessage(error)}
+    </p>
+  );
+}
+
+/**
  * The accounts of the Accounts page (§7.4): display name, e-mail address, kind, state and the
  * Administrator role, filtered by kind and state and searched by name and address. A table on
  * tablets and desktops, cards on phones (Rule 9); the actions of each account follow its
- * `allowedActions`. While the browser reads the accounts, a status says so in their place (#427).
+ * `allowedActions`. While the browser reads the accounts, a status says so in their place (#427); a
+ * failed **Load more** keeps the accounts already loaded (#434).
  */
 export function AccountList({ kind, state }: AccountsSearchParams) {
   const t = useTranslations('users.accounts');
-  const errorMessage = useErrorMessage();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const query = useDeferredValue(search.trim());
@@ -125,14 +142,10 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
           </Select>
         </Field>
       </div>
-      {isRateLimited(accounts.error) ? (
-        // The wait of `Retry-After` and **Reload page**, as the page's own notice says it (#430);
-        // `h3` under the `h2` of the page.
-        <RateLimitedAlert error={accounts.error} headingLevel={3} />
-      ) : accounts.isError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(accounts.error)}
-        </p>
+      {accounts.isLoadingError ? (
+        // Only a failure of the first read replaces the rows; a failure of a later page keeps the
+        // accounts already loaded and is shown above **Load more** (#434).
+        <AccountsError error={accounts.error} />
       ) : accounts.isPending ? (
         // Read in the browser – the prefetch of the server failed, or a new search: never the empty
         // table, which looks like "no accounts" (#427).
@@ -225,6 +238,7 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
           </table>
         </>
       )}
+      {accounts.isError && !accounts.isLoadingError && <AccountsError error={accounts.error} />}
       {accounts.hasNextPage && (
         <Button
           variant="outline"
