@@ -19,6 +19,8 @@
 #              start command of cezar Preview's startApp recipe and sv-prepare-qa-tests (README);
 #              TEST_ENV_RUN_ID; an interrupted boot stops what it started (steps in their own
 #              sessions, detached cleanup); refusal messages never invite stopping another checkout
+#   2026-11-22 the descriptor's notes name test-env-pages.sh (#440), the opt-in records for a second
+#              page of the lists – a companion script, not part of this generated entrypoint
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -526,7 +528,7 @@ cat > "$DESCRIPTOR" <<EOF
   "platform": "linux",
   "sourceFingerprint": "$CURRENT_FP",
   "startedAt": "$(now)",
-  "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). Stop with: sh .ai/scripts/test-env-down.sh"
+  "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). For a second page of the lists (Load more): sh .ai/scripts/test-env-pages.sh add, and remove afterwards. Stop with: sh .ai/scripts/test-env-down.sh"
 }
 EOF
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
