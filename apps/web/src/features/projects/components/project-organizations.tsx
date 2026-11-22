@@ -23,7 +23,11 @@ export function ProjectOrganizations({ projectId }: { projectId: string }) {
   const archived = useInfiniteQuery(
     organizationsQueryOptions(browserApiClient, 'archived', projectId),
   );
-  const error = active.error ?? archived.error;
+  // A failure of the first read of either state stands in for the rows; a failed **Load more**
+  // keeps them and is shown above its button (#434).
+  const loadError = [active, archived].find((query) => query.isLoadingError)?.error ?? null;
+  const pageError =
+    [active, archived].find((query) => query.isError && !query.isLoadingError)?.error ?? null;
   const items = [active, archived].flatMap(
     (query) => query.data?.pages.flatMap((page) => page.items) ?? [],
   );
@@ -36,9 +40,9 @@ export function ProjectOrganizations({ projectId }: { projectId: string }) {
         </h2>
         <p className="text-sm text-muted-foreground">{t('description')}</p>
       </div>
-      {error !== null ? (
+      {loadError !== null ? (
         <p role="alert" className="text-sm text-destructive">
-          {errorMessage(error)}
+          {errorMessage(loadError)}
         </p>
       ) : (
         active.isSuccess &&
@@ -63,6 +67,11 @@ export function ProjectOrganizations({ projectId }: { projectId: string }) {
           </li>
         ))}
       </ul>
+      {pageError !== null && !active.isFetchingNextPage && !archived.isFetchingNextPage && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(pageError)}
+        </p>
+      )}
       {(active.hasNextPage || archived.hasNextPage) && (
         <Button
           variant="outline"

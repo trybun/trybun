@@ -22,7 +22,8 @@ export function ProjectList({ state }: { state: ProjectState }) {
   const errorMessage = useErrorMessage();
   const projects = useInfiniteQuery(projectsQueryOptions(browserApiClient, state));
 
-  if (projects.isError) {
+  // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
+  if (projects.isLoadingError) {
     return (
       <p role="alert" className="text-sm text-destructive">
         {errorMessage(projects.error)}
@@ -64,6 +65,11 @@ export function ProjectList({ state }: { state: ProjectState }) {
           </li>
         ))}
       </ul>
+      {projects.isError && !projects.isFetchingNextPage && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(projects.error)}
+        </p>
+      )}
       {projects.hasNextPage && (
         <Button
           variant="outline"

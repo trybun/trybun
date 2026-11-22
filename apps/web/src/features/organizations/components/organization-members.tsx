@@ -155,7 +155,9 @@ export function OrganizationMembers({ organization }: { organization: Organizati
           )}
         </form>
       )}
-      {members.isError ? (
+      {/* Only a failure of the first read stands in for the rows; a failed **Load more** is shown
+          above its button (#434). */}
+      {members.isLoadingError ? (
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(members.error)}
         </p>
@@ -198,6 +200,11 @@ export function OrganizationMembers({ organization }: { organization: Organizati
           </li>
         ))}
       </ul>
+      {members.isError && !members.isLoadingError && !members.isFetchingNextPage && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(members.error)}
+        </p>
+      )}
       {members.hasNextPage && (
         <Button
           variant="outline"

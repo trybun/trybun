@@ -21,7 +21,8 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
   const errorMessage = useErrorMessage();
   const organizations = useInfiniteQuery(organizationsQueryOptions(browserApiClient, state));
 
-  if (organizations.isError) {
+  // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
+  if (organizations.isLoadingError) {
     return (
       <p role="alert" className="text-sm text-destructive">
         {errorMessage(organizations.error)}
@@ -61,6 +62,11 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
           </li>
         ))}
       </ul>
+      {organizations.isError && !organizations.isFetchingNextPage && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(organizations.error)}
+        </p>
+      )}
       {organizations.hasNextPage && (
         <Button
           variant="outline"

@@ -5,7 +5,7 @@ import { userEvent } from '@testing-library/user-event';
 import type { User, UserAction } from '@trybun/contracts/users';
 import { toast } from '@trybun/ui/components/toast';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
-import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
+import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import {
   BROWSER_QUERY_CLIENT_CONFIG,
   QUERY_CLIENT_CONFIG,
@@ -322,6 +322,70 @@ describe('AccountList', () => {
           .some((call) => JSON.stringify(call.init).includes('"query":"ann"')),
       ).toBe(true),
     );
+  });
+
+  describe('when Load more fails (#434)', () => {
+    beforeEach(() => fake.on('GET /api/v1/users', laterPagesFail([user()])));
+    // Back to the route table after a test that answers by its own implementation.
+    afterEach(() => fake.client.GET.mockReset());
+
+    it('keeps the loaded accounts and shows the error above Load more', async () => {
+      const events = userEvent.setup();
+      renderInApp(<AccountList />);
+
+      await events.click(await screen.findByRole('button', { name: 'Load more' }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toBe('Something went wrong. Try again later.');
+      // The rows already loaded stay, in both layouts.
+      expect(within(screen.getByRole('list', { name: 'Accounts' })).getByText('anna@acme.com'));
+      expect(within(screen.getByRole('table')).getByText('anna@acme.com'));
+      // Next to the button, which tries the same page again.
+      expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Load more' }));
+    });
+
+    it('takes the error away while Load more reads the page again, so a new failure is announced', async () => {
+      let fail: (reply: unknown) => void = () => undefined;
+      const events = userEvent.setup();
+      renderInApp(<AccountList />);
+      await events.click(await screen.findByRole('button', { name: 'Load more' }));
+      await screen.findByRole('alert');
+
+      fake.client.GET.mockImplementationOnce(
+        () => new Promise((resolve) => (fail = resolve)) as never,
+      );
+      await events.click(screen.getByRole('button', { name: 'Load more' }));
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Loading…' })).toBeDefined();
+
+      fail({ error: {}, response: new Response(null, { status: 500 }) });
+      expect((await screen.findByRole('alert')).textContent).toBe(
+        'Something went wrong. Try again later.',
+      );
+      expect(within(screen.getByRole('table')).getByText('anna@acme.com'));
+    });
+
+    it('shows the wait of a refused later page without Reload page, which would drop the loaded pages', async () => {
+      fake.client.GET.mockImplementation((path: string, init?: unknown) => {
+        const cursor = (init as { params?: { query?: { cursor?: string } } }).params?.query?.cursor;
+        return path === '/api/v1/users' && cursor !== undefined
+          ? rateLimitedResult()
+          : Promise.resolve({
+              data: { items: [user()], nextCursor: 'next' },
+              response: new Response(null),
+            });
+      });
+      const events = userEvent.setup();
+      renderInApp(<AccountList />, { client: new QueryClient(BROWSER_QUERY_CLIENT_CONFIG) });
+
+      await events.click(await screen.findByRole('button', { name: 'Load more' }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toContain('Try again in 45 seconds.');
+      expect(within(alert).queryByRole('link', { name: 'Reload page' })).toBeNull();
+      expect(within(screen.getByRole('table')).getByText('anna@acme.com'));
+      expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Load more' }));
+    });
   });
 
   it('changes the filters through the URL', async () => {

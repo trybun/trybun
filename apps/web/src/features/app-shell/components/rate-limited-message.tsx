@@ -14,6 +14,8 @@ const HEADINGS = {
  * The one presentation of a refusal with `429` (§14.4, §18.5): that the person sent too many
  * requests, when to try again from `Retry-After`, and **Reload page**, which opens `reloadHref`
  * again as a document request – an installed app has no reload button of the browser (Rule 9).
+ * Without `reloadHref` it offers no action: the area it is shown in has its own, e.g. **Load more**
+ * below a failed later page, which keeps the pages loaded (#434).
  * It has no `'use client'` and reads its texts with the hooks of `next-intl`, so the page's notice
  * of the server (`RateLimitedNotice`) and the notice of a refused query in the browser
  * (`RateLimitedAlert`) render the same wording and layout and cannot drift apart (Rule 12).
@@ -25,7 +27,7 @@ export function RateLimitedMessage({
 }: {
   retryAfterSeconds: number | undefined;
   headingLevel: RateLimitedHeadingLevel;
-  reloadHref: string;
+  reloadHref?: string;
 }) {
   const t = useTranslations('rateLimited');
   const format = useFormatter();
@@ -42,9 +44,11 @@ export function RateLimitedMessage({
             })}
       </p>
       {/* A document request, not a client navigation, so that every read of the page is repeated. */}
-      <a href={reloadHref} className={buttonVariants()}>
-        {t('reload')}
-      </a>
+      {reloadHref !== undefined && (
+        <a href={reloadHref} className={buttonVariants()}>
+          {t('reload')}
+        </a>
+      )}
     </div>
   );
 }

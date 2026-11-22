@@ -5,7 +5,7 @@ import type { EndUserTicket } from '@trybun/contracts/tickets';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attachmentResponse } from '../../../../test/factories/attachment.factory.js';
-import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
+import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
@@ -26,6 +26,7 @@ const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
 
 const { MyTicketsList } = await import('./my-tickets-list.js');
+const { PortalProjectList } = await import('../../portal/components/portal-project-list.js');
 const { TicketView } = await import('./ticket-view.js');
 const { ResolutionConfirmation } = await import('./resolution-confirmation.js');
 
@@ -110,6 +111,41 @@ describe('MyTicketsList', () => {
     expect(fake.callsTo('GET /api/v1/tickets')[0]?.init).toMatchObject({
       params: { query: { involvement: 'mine', projectId: PROJECT.id, limit: 10 } },
     });
+  });
+});
+
+describe('when Show more fails (#434)', () => {
+  it('keeps the loaded tickets of My tickets and shows the error above Show more', async () => {
+    fake.on('GET /api/v1/tickets', laterPagesFail([ticket()]));
+    const events = userEvent.setup();
+    renderInApp(<MyTicketsList />);
+
+    await events.click(await screen.findByRole('button', { name: 'Show more tickets' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Something went wrong. Try again later.');
+    expect(screen.getByText('Wrong VAT rate')).toBeDefined();
+    expect(alert.nextElementSibling).toBe(
+      screen.getByRole('button', { name: 'Show more tickets' }),
+    );
+  });
+
+  it('keeps the loaded projects of the portal and shows the error above Show more', async () => {
+    fake.on(
+      'GET /api/v1/projects',
+      laterPagesFail([{ ...PROJECT, state: 'active', allowedActions: ['read'] }]),
+    );
+    const events = userEvent.setup();
+    renderInApp(<PortalProjectList />);
+
+    await events.click(await screen.findByRole('button', { name: 'Show more projects' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Something went wrong. Try again later.');
+    expect(screen.getByRole('link', { name: 'Customer portal' })).toBeDefined();
+    expect(alert.nextElementSibling).toBe(
+      screen.getByRole('button', { name: 'Show more projects' }),
+    );
   });
 });
 

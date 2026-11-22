@@ -53,8 +53,17 @@ export function PendingInvitationList({
   detailOf?: (invitation: Invitation) => string | undefined;
   /** The invitation in the names of its buttons, unique in the list; its address by default. */
   nameOf?: (invitation: Invitation) => string;
-  /** The next page of a list read page by page, e.g. a project's; none when all are shown. */
-  paging?: { hasNextPage: boolean; isFetchingNextPage: boolean; onLoadMore: () => void };
+  /**
+   * The next page of a list read page by page, e.g. a project's; none when all are shown. `error`
+   * is the failure of a later page, shown above **Load more** while the loaded invitations stay
+   * (#434).
+   */
+  paging?: {
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
+    error: Error | null;
+    onLoadMore: () => void;
+  };
   'aria-label'?: string;
 }) {
   const t = useTranslations('invitations.pending');
@@ -152,6 +161,11 @@ export function PendingInvitationList({
           </li>
         ))}
       </ul>
+      {paging !== undefined && paging.error !== null && !paging.isFetchingNextPage && (
+        <p role="alert" className="text-sm text-destructive">
+          {errorMessage(paging.error)}
+        </p>
+      )}
       {paging?.hasNextPage === true && (
         <Button
           variant="outline"
