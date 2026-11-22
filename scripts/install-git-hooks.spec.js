@@ -49,6 +49,12 @@ describe('installGitHooks', () => {
     expect(git).not.toHaveBeenCalledWith(INSTALL);
   });
 
+  it('installs over files Git does not run as hooks', () => {
+    expect(installGitHooks(fakeGit(), () => ['pre-commit.bak', '.DS_Store', 'notes'])).toBe(
+      'installed',
+    );
+  });
+
   it('does nothing without Git or outside a repository', () => {
     const git = vi.fn(() => {
       throw new Error('fatal: not a git repository');

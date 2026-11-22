@@ -5,19 +5,53 @@
 // `core.hooksPath` set to another directory, or active hooks in `.git/hooks/` (which the setting
 // would switch off silently), are kept, and the developer calls `.githooks/` from them.
 import { execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const HOOKS_PATH = '.githooks';
 
+/** The hooks Git runs, by name (githooks(5)). */
+const GIT_HOOKS = new Set([
+  'applypatch-msg',
+  'pre-applypatch',
+  'post-applypatch',
+  'pre-commit',
+  'pre-merge-commit',
+  'prepare-commit-msg',
+  'commit-msg',
+  'post-commit',
+  'pre-rebase',
+  'post-checkout',
+  'post-merge',
+  'pre-push',
+  'pre-receive',
+  'update',
+  'proc-receive',
+  'post-receive',
+  'post-update',
+  'reference-transaction',
+  'push-to-checkout',
+  'pre-auto-gc',
+  'post-rewrite',
+  'sendemail-validate',
+  'fsmonitor-watchman',
+  'p4-changelist',
+  'p4-prepare-changelist',
+  'p4-post-changelist',
+  'p4-pre-submit',
+  'post-index-change',
+]);
+
 /**
  * Sets `core.hooksPath` in the repository's local configuration.
  * @param {(args: string[]) => string} git runs Git and returns its stdout, throws on failure
- * @param {(dir: string) => string[]} listFiles names of the files in a directory, none if missing
+ * @param {(dir: string) => string[]} listExecutables names of the executable files in a directory,
+ * none if it is missing
  * @returns {'installed' | 'no-work-tree' | {kept: string}} the outcome; `kept` names the
  * developer's hooks directory that stays in use
  */
-export function installGitHooks(git, listFiles) {
+export function installGitHooks(git, listExecutables) {
   try {
     if (git(['rev-parse', '--is-inside-work-tree']).trim() !== 'true') {
       return 'no-work-tree';
@@ -33,9 +67,10 @@ export function installGitHooks(git, listFiles) {
     // Not set: `git config` exits with 1.
   }
   if (current === '') {
-    // Git's default hooks directory; the samples Git creates there are inactive.
-    const hooks = git(['rev-parse', '--path-format=absolute', '--git-path', 'hooks']).trim();
-    if (listFiles(hooks).some((name) => !name.endsWith('.sample'))) {
+    // Git's default hooks directory: Git runs an executable file there with a hook's name; the
+    // samples it creates (`*.sample`) and other files are inactive.
+    const hooks = git(['rev-parse', '--git-path', 'hooks']).trim();
+    if (listExecutables(hooks).some((name) => GIT_HOOKS.has(name))) {
       return { kept: hooks };
     }
   } else if (current !== HOOKS_PATH) {
@@ -48,14 +83,25 @@ export function installGitHooks(git, listFiles) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const git = (args) =>
     execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  const listFiles = (dir) => {
+  const listExecutables = (dir) => {
+    let names = [];
     try {
-      return readdirSync(dir);
+      names = readdirSync(dir);
     } catch {
-      return [];
+      // No hooks directory.
     }
+    return names.filter((name) => {
+      // A broken link is not run either.
+      const stats = statSync(join(dir, name), { throwIfNoEntry: false });
+      // Windows has no executable bit; Git for Windows runs any hook file.
+      return (
+        stats !== undefined &&
+        stats.isFile() &&
+        (process.platform === 'win32' || (stats.mode & 0o111) !== 0)
+      );
+    });
   };
-  const outcome = installGitHooks(git, listFiles);
+  const outcome = installGitHooks(git, listExecutables);
   if (outcome === 'no-work-tree') {
     process.stdout.write('Git hooks not installed: no Git work tree.\n');
   } else if (typeof outcome === 'object') {

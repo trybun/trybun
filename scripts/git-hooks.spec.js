@@ -2,7 +2,15 @@
 // `scripts/install-git-hooks.js`, commits through `git commit` and `git merge`, pushes to a bare
 // remote. The verdicts match the CI job `Commit messages and title`.
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -86,18 +94,22 @@ describe('scripts/install-git-hooks.js', () => {
     expect(git('config', '--local', 'core.hooksPath').output.trim()).toBe('.githooks');
   });
 
-  it("keeps the developer's own hooks of .git/hooks/", () => {
+  it("keeps the developer's own hooks of .git/hooks/ and nothing else", () => {
     const other = join(dir, 'other');
     run('git', ['init', '-q', other]);
-    mkdirSync(join(other, '.git', 'hooks'), { recursive: true });
-    writeFileSync(join(other, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\n', { mode: 0o755 });
-    const { status, output } = run(
-      process.execPath,
-      [join(work, 'scripts', 'install-git-hooks.js')],
-      {
-        cwd: other,
-      },
+    // Not run by Git: not executable, or not a hook's name.
+    writeFileSync(join(other, '.git', 'hooks', 'pre-commit'), '#!/bin/sh\n', { mode: 0o644 });
+    writeFileSync(join(other, '.git', 'hooks', 'pre-push.bak'), '#!/bin/sh\n', { mode: 0o755 });
+    mkdirSync(join(other, '.git', 'hooks', 'commit-msg.d'));
+    const script = join(work, 'scripts', 'install-git-hooks.js');
+    expect(run(process.execPath, [script], { cwd: other }).status).toBe(0);
+    expect(run('git', ['config', 'core.hooksPath'], { cwd: other }).output.trim()).toBe(
+      '.githooks',
     );
+    run('git', ['config', '--unset', 'core.hooksPath'], { cwd: other });
+    // Run by Git.
+    chmodSync(join(other, '.git', 'hooks', 'pre-commit'), 0o755);
+    const { status, output } = run(process.execPath, [script], { cwd: other });
     expect(status).toBe(0);
     expect(output).toContain('stay in use');
     expect(run('git', ['config', 'core.hooksPath'], { cwd: other }).output).toBe('');
