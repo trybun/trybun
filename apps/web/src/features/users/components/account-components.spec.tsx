@@ -26,6 +26,7 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 vi.mock('next/navigation.js', () => ({
   useRouter: () => ({ replace, push: vi.fn() }),
   usePathname: () => '/admin/accounts',
+  useSearchParams: () => new URLSearchParams('kind=team'),
 }));
 vi.mock('../../../lib/i18n/change-language.js', () => ({ changeLanguage }));
 vi.mock('../../../lib/i18n/change-time-zone.js', () => ({ changeTimeZone }));
@@ -254,11 +255,38 @@ describe('AccountList', () => {
     expect(screen.queryByRole('list', { name: 'Accounts' })).toBeNull();
 
     refuse(await rateLimitedResult());
-    expect((await screen.findByRole('alert')).textContent).toContain('Too many requests.');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Too many requests');
+    // The notice with the wait, never only the generic message of the error code (#430).
+    expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
     expect(screen.queryByRole('status')).toBeNull();
     // Read once: a refusal is not retried.
     expect(fake.client.GET.mock.calls.length - callsBefore).toBe(1);
   });
+
+  it.each([
+    ['en', 'Too many requests', 'Try again in 45 seconds.', 'Reload page'],
+    ['pl', 'Zbyt wiele żądań', 'Spróbuj ponownie za 45 sekund.', 'Odśwież stronę'],
+  ] as const)(
+    'says in %s when to try again a refused read and offers Reload page (#430)',
+    async (locale, title, wait, reload) => {
+      // The answer of the BFF with its `Retry-After: 45`.
+      fake.client.GET.mockImplementationOnce(() => rateLimitedResult());
+      renderInApp(<AccountList kind="team" />, { locale });
+
+      const alert = await screen.findByRole('alert');
+      // `h3` under the `h2` of the page, inside the `h1` of the Administrator panel.
+      expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe(title);
+      expect(alert.textContent).toContain(wait);
+      // A document request of the same address, with its filters.
+      expect(within(alert).getByRole('link', { name: reload }).getAttribute('href')).toBe(
+        '/admin/accounts?kind=team',
+      );
+      // Only the list is replaced: the filters stay usable.
+      expect(screen.getByRole('searchbox')).toBeTruthy();
+      expect(screen.queryByRole('table')).toBeNull();
+    },
+  );
 
   it('shows the error of a failed request', async () => {
     fake.on('GET /api/v1/users', { status: 500, error: {} });

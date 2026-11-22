@@ -16,7 +16,7 @@ export function getWebMessages(locale: RequestLocale): WebMessages {
 }
 
 const ROOT = ['app', 'errorPage', 'ui'] as const satisfies (keyof WebMessages)[];
-const SHELL = [...ROOT, 'appShell', 'help', 'languages', 'productTours'] as const;
+const SHELL = [...ROOT, 'appShell', 'help', 'languages', 'productTours', 'rateLimited'] as const;
 const PORTAL = [...SHELL, 'attachments', 'comments', 'errors', 'portal', 'tickets'] as const;
 
 /**
@@ -40,7 +40,8 @@ export const CLIENT_NAMESPACES = {
   invitations: [...ROOT, 'errors', 'invitations'],
   /**
    * `AccountShell` of `app/(team)/layout.tsx`, `app/(portal)/layout.tsx` and `app/help/layout.tsx`:
-   * the application shell, its menus and the product tours.
+   * the application shell, its menus, the product tours and the notice of a query refused with
+   * `429` (`RateLimitedAlert`).
    */
   shell: SHELL,
   /** `app/(portal)/portal/layout.tsx`: the portal views and their toasts. */
