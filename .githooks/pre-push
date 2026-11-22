@@ -1,8 +1,8 @@
 #!/bin/sh
-# Commit message check before the push (§2.14): the commits the push adds, with the check of the CI
-# job `Commit messages and title` (`scripts/check-pushed-commits.js`). Turned on by `pnpm install`
-# (`scripts/install-git-hooks.js`); Git runs hooks from the root of the work tree and passes the
-# pushed refs on stdin.
+# Commit checks before the push: the commits the push adds, with the checks of the CI jobs
+# `Commit messages and title` (§2.14) and `DCO sign-off` (§16.3) (`scripts/check-pushed-commits.js`).
+# Turned on by `pnpm install` (`scripts/install-git-hooks.js`); Git runs hooks from the root of the
+# work tree and passes the pushed refs on stdin.
 if [ ! -x node_modules/.bin/commitlint ]; then
   echo 'pre-push: commitlint is not installed in this work tree – run pnpm install.' >&2
   exit 1

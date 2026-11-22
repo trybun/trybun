@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { findDcoProblems } from './check-dco.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { findDcoProblems, reportDcoProblems } from './check-dco.js';
 
 const AUTHOR = { authorName: 'Ada Lovelace', authorEmail: 'ada@example.com' };
 
@@ -63,5 +63,38 @@ describe('findDcoProblems', () => {
         }),
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('reportDcoProblems', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function report(commits) {
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const count = reportDcoProblems(commits);
+    return {
+      count,
+      stdout: stdout.mock.calls.map(([text]) => text).join(''),
+      stderr: stderr.mock.calls.map(([text]) => text).join(''),
+    };
+  }
+
+  it('reports signed-off commits', () => {
+    expect(report([commit('fix: x\n\nSigned-off-by: Ada Lovelace <ada@example.com>')])).toEqual({
+      count: 0,
+      stdout: 'DCO: all 1 commits signed off.\n',
+      stderr: '',
+    });
+  });
+
+  it('names each commit without sign-off and how to add it', () => {
+    const { count, stdout, stderr } = report([commit('fix: x'), commit('fix: y')]);
+    expect(count).toBe(2);
+    expect(stderr.split('\n').filter(Boolean)).toHaveLength(2);
+    expect(stdout).toContain('DCO: 2 commits without sign-off');
+    expect(stdout).toContain('`git rebase --signoff <base>`');
   });
 });
