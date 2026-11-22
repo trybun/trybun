@@ -1,5 +1,7 @@
 // DCO check of pull requests (§16.3): every commit of the pull request has a `Signed-off-by` line
-// with the name and e-mail address of its author. Usage: node scripts/check-dco.js <base> <head>.
+// with the name and e-mail address of its author. The pre-push hook (`.githooks/pre-push`,
+// `scripts/check-pushed-commits.js`) runs the same check before the push.
+// Usage: node scripts/check-dco.js <base> <head>.
 import { fileURLToPath } from 'node:url';
 import { isExemptAuthor, readCommits } from './pull-request-commits.js';
 
@@ -33,13 +35,12 @@ export function findDcoProblems(commits) {
   return problems;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [base, head] = process.argv.slice(2);
-  if (!base || !head) {
-    process.stderr.write('Usage: node scripts/check-dco.js <base> <head>\n');
-    process.exit(2);
-  }
-  const commits = readCommits(base, head);
+/**
+ * Checks the sign-off of the commits and reports the result on stdout and stderr.
+ * @param {import('./pull-request-commits.js').Commit[]} commits
+ * @returns {number} the number of commits without the sign-off of their author
+ */
+export function reportDcoProblems(commits) {
   const problems = findDcoProblems(commits);
   for (const problem of problems) {
     process.stderr.write(`${problem}\n`);
@@ -50,5 +51,14 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       : `DCO: ${problems.length} commits without sign-off. Add it with ` +
           '`git rebase --signoff <base>` and push again (CONTRIBUTING.md).\n',
   );
-  process.exitCode = problems.length === 0 ? 0 : 1;
+  return problems.length;
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const [base, head] = process.argv.slice(2);
+  if (!base || !head) {
+    process.stderr.write('Usage: node scripts/check-dco.js <base> <head>\n');
+    process.exit(2);
+  }
+  process.exitCode = reportDcoProblems(readCommits(base, head)) === 0 ? 0 : 1;
 }

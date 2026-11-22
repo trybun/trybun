@@ -21,7 +21,7 @@ Prerequisites, the one-command start (`pnpm install`, `pnpm dev`) and the other 
 ## Commits and branches
 
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org/); the scope comes from the closed list in [§2.14](docs/spec/02-agent-rules.md). The pull request title must be a valid Conventional Commit as well – it becomes the squash commit.
-- `pnpm install` turns on the Git hooks of `.githooks/`: `commit-msg` and `pre-push` check commit messages with the rules of CI, so a wrong message is reworded before the push (`git commit --amend`, or `git rebase -i` with `reword`) instead of force-pushed afterwards. If you already use your own hooks (a `core.hooksPath`, or hooks in `.git/hooks/`), they are kept – call `.githooks/commit-msg` and `.githooks/pre-push` from them. The hooks need `node` on the `PATH` of the program that runs Git, which a Git GUI started outside your shell may lack.
+- `pnpm install` turns on the Git hooks of `.githooks/`: `commit-msg` and `pre-push` check commit messages, and `pre-push` also the [DCO sign-off](#developer-certificate-of-origin-dco), with the rules of CI, so a wrong message is reworded (`git commit --amend`, or `git rebase -i` with `reword`) and a missing sign-off added before the push instead of force-pushed afterwards. If you already use your own hooks (a `core.hooksPath`, or hooks in `.git/hooks/`), they are kept – call `.githooks/commit-msg` and `.githooks/pre-push` from them. The hooks need `node` on the `PATH` of the program that runs Git, which a Git GUI started outside your shell may lack.
 - Breaking changes are marked as described in Rule 11 ([§2.11](docs/spec/02-agent-rules.md)). Never edit versions or `CHANGELOG.md` by hand; release-please does it.
 - Branches, trunk-based flow and merging: [§2.14](docs/spec/02-agent-rules.md).
 
@@ -37,7 +37,7 @@ Every commit needs a `Signed-off-by` line confirming that you have the right to 
 Signed-off-by: Your Name <your.email@example.com>
 ```
 
-- **Contributors** sign off with their own identity. CI checks every commit of the pull request (job `DCO sign-off`); the sign-off must match the commit's author name and e-mail address. To add a missing sign-off, run `git rebase --signoff origin/main` and push with `--force-with-lease`. No Contributor License Agreement is required.
+- **Contributors** sign off with their own identity. CI checks every commit of the pull request (job `DCO sign-off`); the sign-off must match the commit's author name and e-mail address. The `pre-push` hook runs the same check on the commits you push and stops the push when one lacks it: add it with `git commit --amend --no-edit --signoff` for the last commit or `git rebase --signoff origin/main` for all of them, and push again. A commit pushed without it (for example with `--no-verify`) needs the same rebase and a push with `--force-with-lease`. No Contributor License Agreement is required.
 - **The project's own agents** (run by the maintainer through Cezar) act with the maintainer's account: they commit with the maintainer's identity and add the maintainer's sign-off, and the maintainer is responsible for them ([ADR 0011](docs/adr/0011-maintainer-account-and-workflow-approval.md), [§16.3](docs/spec/16-open-source.md)). Agents of external contributors act from the contributor's own account and fork and sign off with the contributor's identity.
 
 ## AI-assisted contributions

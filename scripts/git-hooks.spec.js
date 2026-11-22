@@ -1,6 +1,6 @@
-// The Git hooks of `.githooks/` end to end (#438): a real repository with the hooks turned on by
-// `scripts/install-git-hooks.js`, commits through `git commit` and `git merge`, pushes to a bare
-// remote. The verdicts match the CI job `Commit messages and title`.
+// The Git hooks of `.githooks/` end to end (#438, #445): a real repository with the hooks turned on
+// by `scripts/install-git-hooks.js`, commits through `git commit` and `git merge`, pushes to a bare
+// remote. The verdicts match the CI jobs `Commit messages and title` and `DCO sign-off`.
 import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
@@ -19,6 +19,10 @@ const ROOT = resolve(import.meta.dirname, '..');
 const DEPENDABOT = {
   GIT_AUTHOR_NAME: 'dependabot[bot]',
   GIT_AUTHOR_EMAIL: '49699333+dependabot[bot]@users.noreply.github.com',
+};
+const RELEASE_APP = {
+  GIT_AUTHOR_NAME: 'trybun-release[bot]',
+  GIT_AUTHOR_EMAIL: '123456789+trybun-release[bot]@users.noreply.github.com',
 };
 const TOO_LONG = `fix(web): ${'x'.repeat(101 - 'fix(web): '.length)}`;
 
@@ -47,10 +51,17 @@ function run(command, args, { env = {}, cwd = work } = {}) {
 
 const git = (...args) => run('git', args);
 
-function commit(message, { env, verify = true } = {}) {
+function commit(message, { env, verify = true, signOff = true } = {}) {
   return run(
     'git',
-    ['commit', '--allow-empty', '-m', message, ...(verify ? [] : ['--no-verify'])],
+    [
+      'commit',
+      '--allow-empty',
+      '-m',
+      message,
+      ...(signOff ? ['--signoff'] : []),
+      ...(verify ? [] : ['--no-verify']),
+    ],
     { env },
   );
 }
@@ -68,6 +79,7 @@ beforeAll(() => {
   cpSync(join(ROOT, 'package.json'), join(work, 'package.json'));
   for (const script of [
     'check-commit-messages.js',
+    'check-dco.js',
     'check-pushed-commits.js',
     'install-git-hooks.js',
     'pull-request-commits.js',
@@ -156,9 +168,12 @@ describe('.githooks/commit-msg', () => {
 });
 
 describe('.githooks/pre-push', () => {
-  it('pushes valid commits and merge commits', () => {
+  it('pushes valid, signed-off commits and merge commits', () => {
     const { status, output } = git('push', 'origin', 'main');
     expect(output).toContain('valid');
+    expect(output).toContain('signed off');
+    expect(git('log', '-1', '--format=%P').output.trim().split(' ')).toHaveLength(2);
+    expect(git('log', '-1', '--format=%B').output).not.toContain('Signed-off-by');
     expect(status).toBe(0);
     expect(remoteHead('main')).toContain(head());
   });
@@ -174,15 +189,69 @@ describe('.githooks/pre-push', () => {
   });
 
   it('pushes once the message is reworded, without a force push', () => {
-    git('commit', '--amend', '--allow-empty', '-q', '-m', 'fix(web): keep the rows');
+    git('commit', '--amend', '--allow-empty', '-q', '--signoff', '-m', 'fix(web): keep the rows');
     expect(git('push', 'origin', 'fix/long').status).toBe(0);
     expect(remoteHead('fix/long')).toContain(head());
   });
 
+  it('stops a push with a commit without the sign-off of its author', () => {
+    git('switch', '-q', '-c', 'fix/unsigned', 'main');
+    commit('fix(web): keep the filter', { signOff: false });
+    const sha = head().slice(0, 12);
+    const { status, output } = git('push', 'origin', 'fix/unsigned');
+    expect(status).not.toBe(0);
+    expect(output).toContain(`${sha} "fix(web): keep the filter": no "Signed-off-by: Ada Lovelace`);
+    expect(output).toContain('git rebase --signoff <base>');
+    expect(output).toContain('Push stopped');
+    expect(remoteHead('fix/unsigned')).toBe('');
+  });
+
+  it('stops a push with the sign-off of someone else than the author', () => {
+    git('commit', '--amend', '--allow-empty', '--no-edit', '-q', '--signoff', '--no-verify');
+    // Signed off by the committer, not by the author.
+    git(
+      'commit',
+      '--amend',
+      '--allow-empty',
+      '--no-edit',
+      '-q',
+      '--no-verify',
+      '--author=Bob <bob@example.com>',
+    );
+    expect(git('push', 'origin', 'fix/unsigned').status).not.toBe(0);
+    expect(remoteHead('fix/unsigned')).toBe('');
+  });
+
+  it('pushes once the commit is signed off, without a force push', () => {
+    git('commit', '--amend', '--allow-empty', '--no-edit', '-q', '--reset-author', '--signoff');
+    const { status, output } = git('push', 'origin', 'fix/unsigned');
+    expect(output).toContain('DCO: all 1 commits signed off');
+    expect(status).toBe(0);
+    expect(remoteHead('fix/unsigned')).toContain(head());
+  });
+
+  it('reports a wrong message and a missing sign-off together', () => {
+    git('switch', '-q', '-c', 'fix/both', 'main');
+    commit(TOO_LONG, { verify: false, signOff: false });
+    const { status, output } = git('push', 'origin', 'fix/both');
+    expect(status).not.toBe(0);
+    expect(output).toContain('header-max-length');
+    expect(output).toContain('DCO: 1 commits without sign-off');
+    expect(output).toContain('reword the commits above');
+    expect(output).toContain('sign off the commits above');
+    expect(remoteHead('fix/both')).toBe('');
+  });
+
   it("pushes Dependabot's commits, as CI does", () => {
     git('switch', '-q', '-c', 'dependabot/x', 'main');
-    commit('fix(deps): Bump x from 1 to 2', { env: DEPENDABOT, verify: false });
+    commit('fix(deps): Bump x from 1 to 2', { env: DEPENDABOT, verify: false, signOff: false });
     expect(git('push', 'origin', 'dependabot/x').status).toBe(0);
+  });
+
+  it("pushes the release app's commits, as CI does", () => {
+    git('switch', '-q', '-c', 'release-please--branches--main', 'main');
+    commit('chore(main): release 1.2.0', { env: RELEASE_APP, signOff: false });
+    expect(git('push', 'origin', 'release-please--branches--main').status).toBe(0);
   });
 
   it('checks only the commits the push adds', () => {
@@ -195,6 +264,7 @@ describe('.githooks/pre-push', () => {
     const { status, output } = git('push', 'origin', 'old');
     expect(status).toBe(0);
     expect(output).toContain('1 of 1 valid');
+    expect(output).toContain('DCO: all 1 commits signed off');
   });
 
   it('deletes a remote branch', () => {
