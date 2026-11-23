@@ -294,19 +294,26 @@ export function InvitationForm({
 /** The error of the read of a picker's list, with a way to read it again (#471). */
 interface PickerReadError {
   error: Error;
+  /**
+   * Whether **Try again** is reading: the alert is gone meanwhile, so that a second failure is
+   * announced again.
+   */
+  isRetrying: boolean;
   retry: () => void;
 }
 
 /**
  * All pages of a list the pickers search in the browser: the lists of the API have no search. A
  * failed page stops the reading and comes back as `readError`, so a failure never reads as fewer
- * items; **Try again** reads the loaded pages again, and the reading of the rest continues.
+ * items; **Try again** reads the failed page again – or the list, when its first page failed – and
+ * the reading of the rest continues.
  */
 function useAllPages<Item>(query: UseInfiniteQueryResult<{ pages: { items: Item[] }[] }>): {
   items: Item[];
   readError: PickerReadError | null;
 } {
-  const { hasNextPage, isFetchingNextPage, isError, fetchNextPage, refetch } = query;
+  const { hasNextPage, isFetchingNextPage, isError, isFetchNextPageError, fetchNextPage, refetch } =
+    query;
   useEffect(() => {
     if (hasNextPage && !isFetchingNextPage && !isError) {
       void fetchNextPage();
@@ -314,7 +321,13 @@ function useAllPages<Item>(query: UseInfiniteQueryResult<{ pages: { items: Item[
   }, [hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
   return {
     items: query.data?.pages.flatMap((page) => page.items) ?? [],
-    readError: query.isError ? { error: query.error, retry: () => void refetch() } : null,
+    readError: query.isError
+      ? {
+          error: query.error,
+          isRetrying: query.isFetching,
+          retry: () => void (isFetchNextPageError ? fetchNextPage() : refetch()),
+        }
+      : null,
   };
 }
 
@@ -425,12 +438,14 @@ function Picker({
         // reads the list again, so it offers no **Reload page**, which would close the dialog
         // (§18.5).
         <div className="flex flex-col items-start gap-2 text-sm">
-          <QueryErrorAlert
-            error={readError.error}
-            message={errorMessage(readError.error)}
-            headingLevel={3}
-            offersReload={false}
-          />
+          {!readError.isRetrying && (
+            <QueryErrorAlert
+              error={readError.error}
+              message={errorMessage(readError.error)}
+              headingLevel={3}
+              offersReload={false}
+            />
+          )}
           <Button type="button" variant="outline" onClick={readError.retry}>
             {t('retry')}
           </Button>

@@ -219,22 +219,11 @@ export function AccountForm({
           render={({ field, fieldState }) => (
             <FieldSet>
               <FieldLegend variant="label">{t('members.candidates')}</FieldLegend>
-              {candidates.isError ? (
-                // A refusal says when to try again, `h3` under the `h2` title of the dialog;
-                // **Try again** searches again, so it offers no **Reload page**, which would close
-                // the dialog (§18.5).
-                <div className="flex flex-col items-start gap-2">
-                  <QueryErrorAlert
-                    error={candidates.error}
-                    message={errorMessage(candidates.error)}
-                    headingLevel={3}
-                    offersReload={false}
-                  />
-                  <Button type="button" variant="outline" onClick={() => void candidates.refetch()}>
-                    {t('members.retry')}
-                  </Button>
-                </div>
-              ) : candidates.isSuccess && items.length === 0 ? (
+              {/* Only a failure of the first search replaces the accounts; a failed search
+                  again (on focus, after the cache time) keeps those shown, and the error follows
+                  them. */}
+              {candidates.isLoadingError ? null : candidates.data !== undefined &&
+                items.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('members.noCandidates')}</p>
               ) : (
                 // The padding keeps the focus ring of the cards inside the scrolling list, which
@@ -264,6 +253,25 @@ export function AccountForm({
                     </FieldLabel>
                   ))}
                 </RadioGroup>
+              )}
+              {candidates.isError && (
+                // A refusal says when to try again, `h3` under the `h2` title of the dialog;
+                // **Try again** searches again, so it offers no **Reload page**, which would close
+                // the dialog (§18.5). The alert is gone while it searches again, so a second
+                // failure is announced again.
+                <div className="flex flex-col items-start gap-2">
+                  {!candidates.isFetching && (
+                    <QueryErrorAlert
+                      error={candidates.error}
+                      message={errorMessage(candidates.error)}
+                      headingLevel={3}
+                      offersReload={false}
+                    />
+                  )}
+                  <Button type="button" variant="outline" onClick={() => void candidates.refetch()}>
+                    {t('members.retry')}
+                  </Button>
+                </div>
               )}
               <FieldError
                 errors={[fieldState.error && { message: errorMessage(fieldState.error.message) }]}

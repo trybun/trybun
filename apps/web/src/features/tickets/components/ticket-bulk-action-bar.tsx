@@ -146,16 +146,21 @@ export function TicketBulkActionBar({
           />
         )}
       </div>
-      {people.isError && (
+      {/* Only while the selection offers the people: a later selection disables the query, which
+          keeps its error. */}
+      {canAssignOthers && people.isError && (
         // A refusal says when to try again, `h2` like the errors of the list; **Try again** reads
         // the people again, so it offers no **Reload page**, which would drop the selection (§18.5).
+        // The alert is gone while they are read again, so a second failure is announced again.
         <div className="flex flex-col items-start gap-2 md:order-last md:basis-full">
-          <QueryErrorAlert
-            error={people.error}
-            message={errorMessage(people.error)}
-            headingLevel={2}
-            offersReload={false}
-          />
+          {!people.isFetching && (
+            <QueryErrorAlert
+              error={people.error}
+              message={errorMessage(people.error)}
+              headingLevel={2}
+              offersReload={false}
+            />
+          )}
           <Button type="button" variant="outline" onClick={() => void people.refetch()}>
             {t('list.bulk.retryPeople')}
           </Button>

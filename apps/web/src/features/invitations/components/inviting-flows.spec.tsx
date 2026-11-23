@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { useQuery } from '@tanstack/react-query';
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { User } from '@trybun/contracts/users';
 import { toast } from '@trybun/ui/components/toast';
@@ -215,6 +215,13 @@ describe('InviteDialog', () => {
     // The failed page is not read again on its own, which would use up the rate limit.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(fake.callsTo('GET /api/v1/organizations')).toHaveLength(2);
+    // **Try again** reads only the failed page again, not the pages loaded before it.
+    await events.tab();
+    await events.keyboard('{Enter}');
+    await waitFor(() => expect(fake.callsTo('GET /api/v1/organizations')).toHaveLength(3));
+    expect(fake.callsTo('GET /api/v1/organizations')[2]!.init).toMatchObject({
+      params: { query: { cursor: 'next' } },
+    });
   });
 });
 
@@ -304,6 +311,24 @@ describe('AddMemberDialog', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
+  it('keeps the accounts shown when a search again fails, with its error below (#471)', async () => {
+    fake.on('GET /api/v1/projects/{projectId}/member-candidates', {
+      data: { items: [candidate], nextCursor: null },
+    });
+    const events = userEvent.setup();
+    const { client } = renderInApp(<AddMemberDialog projectId={PROJECT_ID} />);
+
+    await events.click(screen.getByRole('button', { name: 'Add member' }));
+    await events.click(await screen.findByRole('radio', { name: /Dev Eloper/ }));
+    // The search again on focus, after the cache time, is refused.
+    fake.refuse('GET /api/v1/projects/{projectId}/member-candidates');
+    await act(() => client.refetchQueries());
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Try again in 45 seconds.');
+    expect(screen.getByRole('radio', { name: /Dev Eloper/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveProperty('disabled', false);
+  });
+
   it('shows the error of a refused addition under the form', async () => {
     fake.on('GET /api/v1/projects/{projectId}/member-candidates', {
       data: { items: [candidate], nextCursor: null },
@@ -387,6 +412,56 @@ describe('AccountInvitations', () => {
     expect(
       await screen.findByRole('list', { name: 'Pending invitations of new@acme.com' }),
     ).toBeTruthy();
+  });
+
+  it('announces a failed read once for the page of accounts, and says so at every account (#471)', async () => {
+    const other: User = {
+      ...account,
+      id: '0199a3f0-0000-7000-8000-000000000002',
+      email: 'b@acme.com',
+    };
+    fake.on('GET /api/v1/invitations', { status: 500, error: {} });
+    renderInApp(
+      <>
+        {[account, other].map((user) => (
+          <AccountInvitations
+            key={user.id}
+            user={user}
+            pageAccounts={[account, other]}
+            wrap={(content) => <div data-testid={`wrap-${user.email}`}>{content}</div>}
+          />
+        ))}
+      </>,
+    );
+
+    expect((await screen.findAllByRole('alert')).map((alert) => alert.textContent)).toEqual([
+      'Something went wrong. Try again later.',
+    ]);
+    expect(within(screen.getByTestId('wrap-new@acme.com')).getByRole('alert')).toBeTruthy();
+    expect(
+      within(screen.getByTestId('wrap-b@acme.com')).getByText(
+        'The invitations could not be loaded.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+  });
+
+  it('keeps the invitations shown when a read again fails, with its error below (#471)', async () => {
+    fake.on('GET /api/v1/invitations', { data: { items: [invitation()], nextCursor: null } });
+    const { client } = renderInApp(
+      <AccountInvitations
+        user={account}
+        pageAccounts={[account]}
+        wrap={(content) => <div data-testid="wrap">{content}</div>}
+      />,
+    );
+    await screen.findByRole('list', { name: 'Pending invitations of new@acme.com' });
+
+    fake.refuse('GET /api/v1/invitations');
+    await act(() => client.refetchQueries());
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Try again in 45 seconds.');
+    expect(screen.getByRole('list', { name: 'Pending invitations of new@acme.com' })).toBeTruthy();
   });
 
   it('shows the message of a failed read of the invitations, which never just disappear (#471)', async () => {

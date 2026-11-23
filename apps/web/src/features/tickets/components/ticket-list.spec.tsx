@@ -390,6 +390,33 @@ describe('TicketList', () => {
       expect(await screen.findByRole('option', { name: 'Jan' })).toBeDefined();
     });
 
+    it('drops the error when the selection no longer offers the people', async () => {
+      const other = { id: '0199a3f0-0000-7000-8000-000000000011', key: 'QM', name: 'Quality' };
+      const events = userEvent.setup();
+      answerList([
+        ticket(1),
+        ticket(2, { projectId: other.id, project: other, identifier: 'QM-2' }),
+      ]);
+      fake.refuse('GET /api/v1/projects/{projectId}/members');
+      renderInApp(
+        <TicketList
+          state={stateOfView('my_open_tickets')}
+          currentUserId={ME}
+          organizationsExist={false}
+        />,
+      );
+      await screen.findAllByRole('link', { name: 'Ticket 1' });
+      const table = screen.getByRole('table');
+      await events.click(within(table).getByRole('checkbox', { name: 'Select ERP-1' }));
+      const bar = screen.getByRole('region', { name: 'Bulk actions' });
+      await within(bar).findByRole('alert');
+
+      // A ticket of another project: the bar offers no people, so no error of their read.
+      await events.click(within(table).getByRole('checkbox', { name: 'Select QM-2' }));
+      expect(within(bar).queryByRole('alert')).toBeNull();
+      expect(within(bar).queryByRole('button', { name: 'Try again' })).toBeNull();
+    });
+
     it('shows the message of a failed read in the bar, and keeps Assign to me and Unassigned', async () => {
       const { events, bar } = await selectTicket({ status: 500, error: {} });
 

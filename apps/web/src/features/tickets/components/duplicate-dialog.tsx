@@ -139,14 +139,17 @@ export function DuplicateDialog({
           {isIdentifier && original.isError && (
             // A refusal says when to try again, `h3` under the `h2` title of the dialog; **Try
             // again** looks the original up again, so it offers no **Reload page**, which would
-            // close the dialog (§18.5).
+            // close the dialog (§18.5). The alert is gone while it is read again, so a second
+            // failure is announced again.
             <div className="flex flex-col items-start gap-2">
-              <QueryErrorAlert
-                error={original.error}
-                message={errorMessage(original.error)}
-                headingLevel={3}
-                offersReload={false}
-              />
+              {!original.isFetching && (
+                <QueryErrorAlert
+                  error={original.error}
+                  message={errorMessage(original.error)}
+                  headingLevel={3}
+                  offersReload={false}
+                />
+              )}
               <Button type="button" variant="outline" onClick={() => void original.refetch()}>
                 {t('retry')}
               </Button>

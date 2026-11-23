@@ -122,8 +122,8 @@ export function AssigneePicker({
   disabled: boolean;
   /**
    * The heading level of a refused read below the input from the tablet breakpoint on, which
-   * continues the page around the picker: `3` under the `h2` of the field panel, `2` in the full form. The
-   * bottom sheet has its own `h2` title, so there it is always `3`.
+   * continues the page around the picker: `3` under the `h2` of the field panel, `2` in the full
+   * form. The bottom sheet has its own `h2` title, so there it is always `3`.
    */
   headingLevel: 2 | 3;
   onAssign: (assigneeId: string | null, label: string) => void;
@@ -162,16 +162,19 @@ export function AssigneePicker({
   };
   const label = t('view.fields.assignee');
   // A refusal says when to try again; **Try again** reads the people again, so it offers no
-  // **Reload page**, which would close the picker (§18.5).
+  // **Reload page**, which would close the picker (§18.5). The alert is gone while they are read
+  // again, so a second failure is announced again; the button stays, keeping the focus.
   const readError = (level: 2 | 3, className: string) =>
     members.isError && (
       <div className={cn('flex flex-col gap-2 text-sm', className)}>
-        <QueryErrorAlert
-          error={members.error}
-          message={errorMessage(members.error)}
-          headingLevel={level}
-          offersReload={false}
-        />
+        {!members.isFetching && (
+          <QueryErrorAlert
+            error={members.error}
+            message={errorMessage(members.error)}
+            headingLevel={level}
+            offersReload={false}
+          />
+        )}
         <Button type="button" variant="outline" size="sm" onClick={() => void members.refetch()}>
           {t('view.retry')}
         </Button>
@@ -235,7 +238,9 @@ export function AssigneePicker({
         inputValue={isOpen ? search : currentName}
         onOpenChange={(open) => {
           setIsOpen(open);
-          if (!open) {
+          // Cleared on opening, never on closing: a failed search keeps its error and **Try again**
+          // below the input, which Tab reaches after the list closes (#471).
+          if (open) {
             setSearch('');
           }
         }}

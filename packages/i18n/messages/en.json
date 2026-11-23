@@ -927,7 +927,8 @@
       "loadMore": "Show more",
       "loadingMore": "Loading…",
       "listOf": "Pending invitations of {name}",
-      "retry": "Try again"
+      "retry": "Try again",
+      "loadFailed": "The invitations could not be loaded."
     },
     "acceptance": {
       "title": "Accept the invitation",

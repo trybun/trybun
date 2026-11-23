@@ -469,6 +469,33 @@ describe('assignee', () => {
     expect(await screen.findByRole('option', { name: 'Jan' })).toBeDefined();
   });
 
+  it('keeps the error of a failed typed search after the list closes, and Try again reads it again (#471)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: ANNA }));
+    members(ANNA, JAN);
+    renderView();
+
+    const input = await screen.findByRole('combobox', { name: 'Assignee' });
+    await user.click(input);
+    await screen.findByRole('option', { name: 'Jan' });
+    fake.refuse('GET /api/v1/projects/{projectId}/members');
+    await user.type(input, 'ja');
+    expect(await screen.findByText('The people could not be loaded.')).toBeDefined();
+
+    // Tab closes the list; the error of the search stays, and **Try again** is the next stop.
+    await user.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    expect((await screen.findByRole('alert')).textContent).toContain('Try again in 45 seconds.');
+    fake.answer('GET /api/v1/projects/{projectId}/members');
+    const reads = fake.callsTo('GET /api/v1/projects/{projectId}/members').length;
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    const again = fake.callsTo('GET /api/v1/projects/{projectId}/members');
+    expect(again).toHaveLength(reads + 1);
+    expect(again.at(-1)?.init).toMatchObject({ params: { query: { query: 'ja' } } });
+  });
+
   it('shows the message of a failed read of the people in the bottom sheet, never "No one found." (#471)', async () => {
     viewport.isTablet = false;
     const user = userEvent.setup();

@@ -21,8 +21,9 @@ import { PendingInvitationList } from './pending-invitation-list.js';
  * of accounts (`usersQueryOptions`) so the list never moves the rows below it (#310). An
  * `invited` account without one – reactivated, or all its invitations expired or revoked – has no
  * working link, so **Invite** is offered for its address right away. Deactivated accounts have
- * none: deactivating revokes them. A failed read shows its error with **Try again** in place of
- * the invitations (#471), which never just disappear. Nothing is rendered – not even `wrap` –
+ * none: deactivating revokes them. A failed read shows its error with **Try again** at the first
+ * account of the page with invitations and says so at the others (#471): the invitations never
+ * just disappear. Nothing is rendered – not even `wrap` –
  * while there is nothing to show.
  */
 export function AccountInvitations({
@@ -54,35 +55,63 @@ export function AccountInvitations({
         ? t('targets.organization', { name: target.organization.name })
         : t('targets.administrator');
 
-  if (isInvitable && hasInvitations && invitations.isError) {
-    // A refusal says when to try again, `h3` under the `h2` of the page like the errors of the list;
-    // **Try again** reads the invitations of the page again, so it offers no **Reload page**, which
-    // would drop the accounts loaded with **Load more** (§18.5).
-    return wrap(
+  // One read for the page of accounts (#357): its first account with invitations shows the error
+  // and **Try again**, the others say only that theirs are missing, so one failure is announced
+  // once. A refusal says when to try again, `h3` under the `h2` of the page like the errors of the
+  // list; **Try again** reads the invitations of the page again, so it offers no **Reload page**,
+  // which would drop the accounts loaded with **Load more** (§18.5). The alert is gone while they
+  // are read again, so a second failure is announced again.
+  const isFirstOfPage = pageAccounts.find(hasPendingInvitations)?.id === user.id;
+  const readError =
+    hasInvitations &&
+    invitations.isError &&
+    (isFirstOfPage ? (
       <div className="flex flex-col items-start gap-2">
-        <QueryErrorAlert
-          error={invitations.error}
-          message={errorMessage(invitations.error)}
-          headingLevel={3}
-          offersReload={false}
-        />
+        {!invitations.isFetching && (
+          <QueryErrorAlert
+            error={invitations.error}
+            message={errorMessage(invitations.error)}
+            headingLevel={3}
+            offersReload={false}
+          />
+        )}
         <Button type="button" variant="outline" onClick={() => void invitations.refetch()}>
           {t('pending.retry')}
         </Button>
-      </div>,
-    );
+      </div>
+    ) : (
+      <p className="text-sm text-muted-foreground">{t('pending.loadFailed')}</p>
+    ));
+
+  if (!isInvitable) {
+    return null;
   }
-  if (!isInvitable || (hasInvitations && !invitations.isSuccess)) {
+  // Only a failure of the first read replaces the invitations; a failed read again (on focus, after
+  // the cache time) keeps those shown, and the error follows them.
+  if (invitations.isLoadingError) {
+    return wrap(readError);
+  }
+  if (hasInvitations && invitations.data === undefined) {
     return null;
   }
   if (items.length > 0) {
-    return wrap(
+    const list = (
       <PendingInvitationList
         aria-label={t('pending.listOf', { name: user.email ?? user.displayName ?? '' })}
         invitations={items}
         titleOf={targetOf}
         nameOf={(invitation) => `${invitation.user.email ?? ''}, ${targetOf(invitation)}`}
-      />,
+      />
+    );
+    return wrap(
+      readError === false ? (
+        list
+      ) : (
+        <div className="flex flex-col gap-2">
+          {list}
+          {readError}
+        </div>
+      ),
     );
   }
   if (user.state !== 'invited' || user.email === null) {
