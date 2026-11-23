@@ -10,6 +10,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { apiErrorOf } from '../../../lib/errors/api-error.js';
 import {
   expectInOrder,
   FAILED_READ_MESSAGE as FAILED,
@@ -284,6 +285,21 @@ describe('OrganizationProjects', () => {
     expect(html).not.toContain('Choose a project');
     expect(html).not.toContain('Every active project is already added.');
     expect(html).toContain('aria-label="Remove Customer portal"');
+  });
+
+  it('shows only the error of a failed first read of the projects to choose, never the picker (#428)', () => {
+    const html = render(<OrganizationProjects organization={organization()} />, (client) => {
+      // The read failed already; the section shows that answer instead of reading again.
+      client.setDefaultOptions({ queries: { retryOnMount: false } });
+      client
+        .getQueryCache()
+        .build(client, { queryKey: ['projects', 'list', 'active'] })
+        .setState({ status: 'error', error: apiErrorOf(500, undefined), fetchStatus: 'idle' });
+    });
+
+    expect(html).toContain(`<p role="alert" class="text-sm text-destructive">${FAILED}</p>`);
+    expect(html).not.toContain('Choose a project');
+    expect(html).not.toContain('role="status"');
   });
 
   it('says when every active project is added', () => {

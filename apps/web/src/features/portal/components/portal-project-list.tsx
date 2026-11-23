@@ -29,10 +29,20 @@ export function PortalProjectList() {
     );
   }
   if (projects.isPending) {
-    // Never the empty grid (#428); the page shows the empty state of no projects itself.
+    // Never the empty grid (#428).
     return <LoadingStatus fetchStatus={projects.fetchStatus}>{t('loading')}</LoadingStatus>;
   }
   const items = projects.data.pages.flatMap((page) => page.items);
+  // The page shows the empty state itself when its prefetch read the projects; this one follows a
+  // read of the browser, after a failed prefetch (#428).
+  if (items.length === 0) {
+    return (
+      <div className="flex max-w-prose flex-col gap-1">
+        <p className="font-medium">{t('emptyTitle')}</p>
+        <p className="text-muted-foreground">{t('emptyDescription')}</p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-4">
       <ul className="grid gap-3 md:grid-cols-2">

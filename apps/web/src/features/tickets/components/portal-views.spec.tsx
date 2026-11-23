@@ -161,6 +161,15 @@ describe('PortalProjectList', () => {
     expect(await screen.findByRole('link', { name: 'Customer portal' })).toBeDefined();
     expect(screen.queryByRole('status')).toBeNull();
   });
+
+  it('shows the empty state when the browser reads no projects, after a failed prefetch (#428)', async () => {
+    fake.on('GET /api/v1/projects', { data: { items: [], nextCursor: null } });
+    renderInApp(<PortalProjectList />);
+
+    expect(await screen.findByText("You don't have access to any project yet")).toBeDefined();
+    expect(screen.getByText('Ask the person who invited you to add you to one.')).toBeDefined();
+    expect(screen.queryByRole('list')).toBeNull();
+  });
 });
 
 describe('when Show more fails (#434)', () => {

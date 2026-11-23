@@ -26,7 +26,8 @@ import { OrganizationSection } from './organization-section.js';
 /**
  * The projects an organization may access (§7.3): each with Remove, and a picker of the active
  * projects not yet added, both with `manage_projects`. The whole set is sent. While the browser
- * reads the active projects, a status says so in place of the picker (§18.5, #428).
+ * reads the active projects, a status says so in place of the picker; a failed first read shows only
+ * its error, never the picker without projects (§18.5, #428).
  */
 export function OrganizationProjects({ organization }: { organization: Organization }) {
   const t = useTranslations('organizations.projects');
@@ -106,7 +107,9 @@ export function OrganizationProjects({ organization }: { organization: Organizat
           {activeProjects.isPending ? (
             // Never the picker without projects, which looks like "no projects to add" (#428).
             <LoadingStatus fetchStatus={activeProjects.fetchStatus}>{t('loading')}</LoadingStatus>
-          ) : activeProjects.isSuccess && candidates.length === 0 && !activeProjects.hasNextPage ? (
+          ) : activeProjects.isLoadingError ? null : activeProjects.isSuccess &&
+            candidates.length === 0 &&
+            !activeProjects.hasNextPage ? (
             <p className="text-sm text-muted-foreground">{t('noCandidates')}</p>
           ) : (
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
