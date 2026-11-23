@@ -86,4 +86,24 @@ describe('SetupWizard', () => {
     expect(within(alert).getByRole('button', { name: 'Reload page' })).toBeTruthy();
     expect(within(alert).queryByRole('link')).toBeNull();
   });
+
+  it('says when to try again a refused read of the status, never that it is still checking (#433)', async () => {
+    // The status and the check of the link share one limit (§14.4): the status is refused first.
+    fake.client.GET.mockImplementationOnce(() => rateLimitedResult());
+    renderInApp(<SetupWizard />);
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(screen.queryByText('Checking the setup link…')).toBeNull();
+    expect(within(alert).getByRole('button', { name: 'Reload page' })).toBeTruthy();
+  });
+
+  it('shows the error of any other failed read of the status', async () => {
+    fake.on('GET /api/v1/setup', { status: 500, error: {} });
+    renderInApp(<SetupWizard />);
+
+    expect((await screen.findByRole('alert')).textContent).not.toBe('');
+    expect(screen.queryByText('Checking the setup link…')).toBeNull();
+  });
 });

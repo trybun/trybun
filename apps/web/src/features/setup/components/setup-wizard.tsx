@@ -4,8 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { ApiError, isRateLimited } from '../../../lib/errors/api-error.js';
 import { useLocationHash } from '../../../lib/browser/use-location-hash.js';
+import { ApiError, isRateLimited } from '../../../lib/errors/api-error.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { RateLimitedAlert } from '../../app-shell/components/rate-limited-alert.js';
 import { setupQueryOptions, setupTokenVerificationQueryOptions } from '../queries.js';
 import { setupTokenOf } from '../setup-link.js';
@@ -26,6 +28,7 @@ function useSetupToken(): string | undefined {
  */
 export function SetupWizard() {
   const t = useTranslations('setup');
+  const errorMessage = useErrorMessage();
   const queryClient = useQueryClient();
   const token = useSetupToken();
   const [isCreated, setIsCreated] = useState(false);
@@ -47,6 +50,13 @@ export function SetupWizard() {
     (verification.error instanceof ApiError && verification.error.code === 'setup.completed');
   if (isCompleted) {
     return <SetupMessage title={t('completedTitle')} signIn />;
+  }
+  if (setup.isError) {
+    // Without the status the token is never checked: the failure is shown instead of the check
+    // (#433), a refusal with the wait – the status and the check share one limit (§14.4).
+    return (
+      <QueryErrorAlert error={setup.error} message={errorMessage(setup.error)} headingLevel={2} />
+    );
   }
   if (isRateLimited(verification.error)) {
     // Only a temporary limit, never an invalid link (#433); `h2` under the `h1` of the page, as

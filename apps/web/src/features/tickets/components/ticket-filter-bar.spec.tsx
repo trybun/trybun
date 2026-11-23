@@ -326,9 +326,9 @@ describe('TicketFilterBar (#279)', () => {
     await events.click(await screen.findByRole('button', { name: 'Project' }));
 
     const alert = await screen.findByRole('alert');
-    // The wait, under the `h1` of the Tickets page; **Try again** reads the options again, so the
+    // The wait, `h3` under the `h2` title of the picker; **Try again** reads the options again, so the
     // picker offers no **Reload page**, which would close it.
-    expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
     expect(alert.textContent).toContain('Try again in 45 seconds.');
     expect(alert.textContent).not.toContain('The options could not be loaded.');
     expect(within(alert).queryByRole('link')).toBeNull();
