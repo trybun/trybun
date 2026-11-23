@@ -24,9 +24,11 @@ vi.mock('next/navigation.js', () => ({
   usePathname: () => '/tickets',
   useSearchParams: () => new URLSearchParams('view=triage'),
 }));
-// A tablet: the table, selects instead of bottom sheets (jsdom has no `matchMedia`).
+// A tablet: the table, selects instead of bottom sheets (jsdom has no `matchMedia`); a phone where a
+// test says so.
+const device = vi.hoisted(() => ({ isTablet: true }));
 vi.stubGlobal('matchMedia', (query: string) => ({
-  matches: query === TABLET_MEDIA_QUERY,
+  matches: query === TABLET_MEDIA_QUERY && device.isTablet,
   media: query,
   addEventListener: () => undefined,
   removeEventListener: () => undefined,
@@ -106,6 +108,7 @@ afterEach(() => {
   fake.client.GET.mockImplementation(answerRoute);
   toastAdd.mockClear();
   replace.mockClear();
+  device.isTablet = true;
 });
 
 describe('TicketList', () => {
@@ -388,6 +391,28 @@ describe('TicketList', () => {
       await waitFor(() => expect(within(bar).queryByRole('alert')).toBeNull());
       await events.click(within(bar).getByRole('combobox', { name: 'Assignee' }));
       expect(await screen.findByRole('option', { name: 'Jan' })).toBeDefined();
+    });
+
+    it('shows the error in the sheet of Assignee on phones, never in the fixed bar', async () => {
+      device.isTablet = false;
+      fake.refuse('GET /api/v1/projects/{projectId}/members');
+      const { events, bar } = await selectTicket();
+      await waitFor(() =>
+        expect(fake.callsTo('GET /api/v1/projects/{projectId}/members').length).toBeGreaterThan(0),
+      );
+
+      // The bar keeps its height over the end of the list: its error is hidden below the tablet
+      // breakpoint (jsdom applies no CSS, so the class says it).
+      const inBar = within(bar).getByRole('button', { name: 'Try again' }).parentElement!;
+      expect(inBar.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'md:flex']));
+      await events.click(within(bar).getByRole('button', { name: /^Assignee/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Assignee' });
+      const alert = await within(sheet).findByRole('alert');
+      expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe(
+        'Too many requests',
+      );
+      expect(within(sheet).getByRole('button', { name: 'Try again' })).toBeDefined();
+      expect(within(sheet).getByRole('radio', { name: 'Unassigned' })).toBeDefined();
     });
 
     it('drops the error when the selection no longer offers the people', async () => {
