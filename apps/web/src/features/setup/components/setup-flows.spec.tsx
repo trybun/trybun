@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 
@@ -12,6 +13,10 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
   get browserApiClient() {
     return api.current;
   },
+}));
+vi.mock('next/navigation.js', () => ({
+  usePathname: () => '/setup',
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 
@@ -63,5 +68,22 @@ describe('SetupWizard', () => {
     renderInApp(<SetupWizard />);
 
     expect(await screen.findByRole('heading', { name: 'Trybun is already set up' })).toBeTruthy();
+  });
+
+  it('says when to try again a refused check of the link, never that it is invalid (#433)', async () => {
+    fake.on('GET /api/v1/setup', { data: SETUP });
+    // The answer of the BFF with its `Retry-After: 45`.
+    fake.client.POST.mockImplementationOnce(() => rateLimitedResult());
+    renderInApp(<SetupWizard />);
+
+    const alert = await screen.findByRole('alert');
+    // `h2` under the `h1` of the page, as the setup messages.
+    expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(screen.queryByText('This setup link is invalid or has expired')).toBeNull();
+    // A link to the address would only scroll to the fragment, one without it would lose the
+    // token: **Reload page** reloads the document instead.
+    expect(within(alert).getByRole('button', { name: 'Reload page' })).toBeTruthy();
+    expect(within(alert).queryByRole('link')).toBeNull();
   });
 });

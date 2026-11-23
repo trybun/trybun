@@ -1,25 +1,21 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, useSyncExternalStore } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { ApiError } from '../../../lib/errors/api-error.js';
+import { ApiError, isRateLimited } from '../../../lib/errors/api-error.js';
+import { useLocationHash } from '../../../lib/browser/use-location-hash.js';
+import { RateLimitedAlert } from '../../app-shell/components/rate-limited-alert.js';
 import { setupQueryOptions, setupTokenVerificationQueryOptions } from '../queries.js';
 import { setupTokenOf } from '../setup-link.js';
 import { AdministratorForm } from './administrator-form.js';
 import { SetupMessage } from './setup-message.js';
 
-/** The fragment of the address is known only in the browser; the server renders the check. */
+/** The token of the setup link, in the fragment of the address; `undefined` on the server. */
 function useSetupToken(): string | undefined {
-  return useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener('hashchange', onChange);
-      return () => window.removeEventListener('hashchange', onChange);
-    },
-    () => setupTokenOf(window.location.hash),
-    () => undefined,
-  );
+  const hash = useLocationHash();
+  return hash === undefined ? undefined : setupTokenOf(hash);
 }
 
 /**
@@ -51,6 +47,11 @@ export function SetupWizard() {
     (verification.error instanceof ApiError && verification.error.code === 'setup.completed');
   if (isCompleted) {
     return <SetupMessage title={t('completedTitle')} signIn />;
+  }
+  if (isRateLimited(verification.error)) {
+    // Only a temporary limit, never an invalid link (#433); `h2` under the `h1` of the page, as
+    // the setup messages. **Reload page** keeps the token in the fragment of the address.
+    return <RateLimitedAlert error={verification.error} headingLevel={2} />;
   }
   if (token === '' || verification.isError) {
     return (

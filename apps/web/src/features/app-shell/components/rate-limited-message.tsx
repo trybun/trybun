@@ -26,14 +26,11 @@ const HEADINGS = {
 export function RateLimitedMessage({
   retryAfterSeconds,
   headingLevel,
-  reloadHref,
-  onReload,
+  ...reload
 }: {
   retryAfterSeconds: number | undefined;
   headingLevel: RateLimitedHeadingLevel;
-  reloadHref?: string;
-  onReload?: () => void;
-}) {
+} & ({ reloadHref: string } | { onReload: () => void } | Record<never, never>)) {
   const t = useTranslations('rateLimited');
   const format = useFormatter();
   const now = useNow();
@@ -49,13 +46,13 @@ export function RateLimitedMessage({
             })}
       </p>
       {/* A document request, not a client navigation, so that every read of the page is repeated. */}
-      {reloadHref !== undefined ? (
-        <a href={reloadHref} className={buttonVariants()}>
+      {'reloadHref' in reload ? (
+        <a href={reload.reloadHref} className={buttonVariants()}>
           {t('reload')}
         </a>
       ) : (
-        onReload !== undefined && (
-          <button type="button" className={buttonVariants()} onClick={onReload}>
+        'onReload' in reload && (
+          <button type="button" className={buttonVariants()} onClick={reload.onReload}>
             {t('reload')}
           </button>
         )

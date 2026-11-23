@@ -147,6 +147,29 @@ describe('ProjectList', () => {
     expectInOrder(html, 'Customer portal', 'role="alert"', FAILED, 'Show more');
   });
 
+  it('shows the wait without Reload page above Show more when a later page is refused (#433)', () => {
+    const html = render(<ProjectList state="active" />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['projects', 'list', 'active'],
+        [{ items: [project()], nextCursor: 'next' }],
+        REFUSED,
+      ),
+    );
+
+    // **Show more** tries the page again and keeps the loaded projects (#434).
+    expectInOrder(
+      html,
+      'Customer portal',
+      'Too many requests',
+      'Try again in 45 seconds.',
+      'Show more',
+    );
+    expect(html).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
+  });
+
   it('shows the wait and Reload page in place of the list when its read is refused (#433)', () => {
     const html = render(<ProjectList state="active" />, (client) =>
       seedRefusedFirstRead(client, ['projects', 'list', 'active']),
@@ -301,6 +324,23 @@ describe('ProjectMembers', () => {
     );
 
     expectInOrder(html, 'Anna Nowak', 'role="alert"', FAILED, 'Show more');
+  });
+
+  it('shows the wait without Reload page above Show more when a later page is refused (#433)', () => {
+    const html = render(<ProjectMembers project={project()} />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['projects', 'members', PROJECT_ID],
+        [{ ...members, nextCursor: 'next' }],
+        REFUSED,
+      ),
+    );
+
+    // `h3` under the `h2` of the member list.
+    expectInOrder(html, 'Anna Nowak', 'Too many requests', 'Try again in 45 seconds.', 'Show more');
+    expect(html).toContain('<h3 class="text-lg font-bold">Too many requests</h3>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
   });
 
   it('shows the wait and Reload page in place of the members when their read is refused (#433)', () => {
@@ -503,6 +543,36 @@ describe('ProjectOrganizations', () => {
     expectInOrder(html, 'Acme', 'role="alert"', FAILED, 'Show more');
     // Not in place of the rows or their empty state.
     expect(html.match(/role="alert"/g)).toHaveLength(1);
+  });
+
+  it('shows the wait and Reload page in place of the organizations when their read is refused (#433)', () => {
+    const html = render(<ProjectOrganizations projectId={PROJECT_ID} />, (client) => {
+      seedRefusedFirstRead(client, ['organizations', 'list', 'active', PROJECT_ID]);
+      client.setQueryData(['organizations', 'list', 'archived', PROJECT_ID], organizationPage([]));
+    });
+
+    // `h3` under the `h2` of the section.
+    expect(html).toContain('<h3 class="text-lg font-bold">Too many requests</h3>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(html).toContain('Reload page</a>');
+    expect(html).not.toContain(GENERIC);
+  });
+
+  it('shows the wait without Reload page above Show more when a later page is refused (#433)', () => {
+    const html = render(<ProjectOrganizations projectId={PROJECT_ID} />, (client) => {
+      seedFailedLaterPage(
+        client,
+        ['organizations', 'list', 'active', PROJECT_ID],
+        [{ items: [organization], nextCursor: 'next' }],
+        REFUSED,
+      );
+      client.setQueryData(['organizations', 'list', 'archived', PROJECT_ID], organizationPage([]));
+    });
+
+    expectInOrder(html, 'Acme', 'Too many requests', 'Try again in 45 seconds.', 'Show more');
+    expect(html).toContain('<h3 class="text-lg font-bold">Too many requests</h3>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
   });
 
   it('says when no organization may access the project', () => {

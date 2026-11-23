@@ -9,11 +9,11 @@ import Link from 'next/link';
 import { useFormatter, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { portalTicketHref } from '../../portal/hrefs.js';
 import { myTicketsQueryOptions } from '../queries.js';
 import { PublicStatusBadge } from './public-status-badge.js';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * "My tickets" (§5.7, Q10): the tickets the person requested, those awaiting their reply first

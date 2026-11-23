@@ -16,6 +16,7 @@ import {
 import { cn } from '@trybun/ui/lib/utils';
 import { useTranslations } from 'next-intl';
 import { useDeferredValue, useEffect, useId, useRef, useState } from 'react';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import {
   OPEN_TICKET_STATUSES,
   type TicketListFilterKey,
@@ -222,8 +223,15 @@ export function TicketFilterPicker({
           </p>
         )}
         {page?.isError === true && (
-          <div role="alert" className="flex flex-col items-center gap-2 px-2 py-3 text-sm">
-            <p>{tf('loadFailed')}</p>
+          <div className="flex flex-col items-center gap-2 px-2 py-3 text-sm">
+            {/* A refusal says when to try again (#433); **Retry** below reads the options again,
+                so it offers no **Reload page**, which would close the picker. */}
+            <QueryErrorAlert
+              error={page.error}
+              message={tf('loadFailed')}
+              headingLevel={2}
+              offersReload={false}
+            />
             <Button type="button" variant="outline" size="sm" onClick={() => void page.refetch()}>
               {tf('retry')}
             </Button>

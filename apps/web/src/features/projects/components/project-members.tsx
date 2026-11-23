@@ -20,12 +20,12 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { useChangeProjectMemberRole, useRemoveProjectMember } from '../mutations.js';
 import { projectMembersQueryOptions, projectRoleCountQueryOptions } from '../queries.js';
 import { LazyAddMemberDialog } from './lazy-add-member-dialog.js';
 import { LazyConfirmDialog } from './lazy-confirm-dialog.js';
 import { ProjectInvitations } from './project-invitations.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /** A change of a member that needs a confirmation first. */
 type PendingChange = { kind: 'remove' | 'demote'; member: ProjectMember };

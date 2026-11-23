@@ -42,6 +42,26 @@ function refuse(path: string) {
   );
 }
 
+/** Refuses the later pages of `path` – the reads with a cursor – with `429` (#434). */
+function refuseLaterPages(path: string) {
+  fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+    route === path &&
+    (init as { params: { query: { cursor?: string } } }).params.query.cursor !== undefined
+      ? rateLimitedResult()
+      : answerRoute(route, init),
+  );
+}
+
+/**
+ * The notice of a refused later page (#434): the wait, without **Reload page**, which would drop
+ * the pages loaded; **Show more** tries the page again.
+ */
+function expectLaterPageAlert(alert: HTMLElement, level: number) {
+  expect(within(alert).getByRole('heading', { level }).textContent).toBe('Too many requests');
+  expect(alert.textContent).toContain('Try again in 45 seconds.');
+  expect(within(alert).queryByRole('link')).toBeNull();
+}
+
 /** The notice of a refused read (#433): its heading level, the wait and **Reload page**. */
 function expectRateLimitedAlert(alert: HTMLElement, level: number) {
   expect(within(alert).getByRole('heading', { level }).textContent).toBe('Too many requests');
@@ -302,5 +322,69 @@ describe('when a read is refused with 429 (#433)', () => {
 
     const dialog = within(await screen.findByRole('dialog', { name: 'Redact the comment' }));
     expectRateLimitedAlert(await dialog.findByRole('alert'), 3);
+  });
+
+  describe('of a later page', () => {
+    const revision = (n: number) => ({
+      id: `0199a3f0-0000-7000-8000-0000000006${n.toString().padStart(2, '0')}`,
+      body: `Version ${n}`,
+      mentions: [],
+      author: AUTHOR,
+      writtenAt: '2026-11-09T10:00:00.000Z',
+    });
+    const answerRevisions = () =>
+      fake.on('GET /api/v1/comments/{commentId}/revisions', {
+        data: { items: [revision(1)], nextCursor: 'next' },
+      });
+
+    it('keeps the timeline and shows the wait without Reload page', async () => {
+      const user = userEvent.setup();
+      answer([]);
+      fake.on('GET /api/v1/tickets/{ticketId}/timeline', {
+        data: { items: [{ type: 'comment', comment: teamComment() }], nextCursor: 'next' },
+      });
+      refuseLaterPages('/api/v1/tickets/{ticketId}/timeline');
+      renderTimeline(ticketResponse());
+
+      await user.click(await screen.findByRole('button', { name: 'Show more' }));
+
+      expectLaterPageAlert(await screen.findByRole('alert'), 3);
+      expect(screen.getByText('Checked the logs')).toBeDefined();
+    });
+
+    it('keeps the edit history and shows the wait without Reload page', async () => {
+      const user = userEvent.setup();
+      answer([{ type: 'comment', comment: teamComment({ editedAt: '2026-11-09T11:00:00.000Z' }) }]);
+      answerRevisions();
+      refuseLaterPages('/api/v1/comments/{commentId}/revisions');
+      renderTimeline(ticketResponse());
+
+      const item = within((await screen.findByText('Checked the logs')).closest('li')!);
+      await user.click(item.getByRole('button', { name: 'edited – show the edit history' }));
+      const dialog = within(await screen.findByRole('dialog', { name: 'Edit history' }));
+      await dialog.findByText('Version 1');
+      await user.click(dialog.getByRole('button', { name: 'Show more' }));
+
+      expectLaterPageAlert(await dialog.findByRole('alert'), 3);
+      expect(dialog.getByText('Version 1')).toBeDefined();
+    });
+
+    it('keeps the versions of the redaction and shows the wait without Reload page', async () => {
+      const user = userEvent.setup();
+      answer([{ type: 'comment', comment: teamComment() }]);
+      answerRevisions();
+      refuseLaterPages('/api/v1/comments/{commentId}/revisions');
+      renderTimeline(ticketResponse());
+
+      await user.click(await screen.findByRole('button', { name: 'Actions of the comment' }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Redact' }));
+      const dialog = within(await screen.findByRole('dialog', { name: 'Redact the comment' }));
+      // Each version is listed by its author and time.
+      await dialog.findByText(/Anna/);
+      await user.click(dialog.getByRole('button', { name: 'Show more' }));
+
+      expectLaterPageAlert(await dialog.findByRole('alert'), 3);
+      expect(dialog.getByText(/Anna/)).toBeDefined();
+    });
   });
 });

@@ -7,11 +7,11 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { lazy, Suspense, useState } from 'react';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
+import type { RateLimitedHeadingLevel } from '../../app-shell/components/rate-limited-message.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { useResendInvitation, useRevokeInvitation } from '../mutations.js';
 import type { IssuedInvitation } from './invitation-form.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
-import type { RateLimitedHeadingLevel } from '../../app-shell/components/rate-limited-message.js';
 
 // The new link opens only after a resending, so its dialog code loads then (§18.5).
 const InvitationLinkDialog = lazy(() =>

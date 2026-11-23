@@ -13,10 +13,10 @@ import type { CommentMention } from '@trybun/contracts/comments';
 import { Markdown } from '@trybun/ui/components/markdown';
 import { useFormatter, useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { commentRevisionsQueryOptions, descriptionRevisionsQueryOptions } from '../queries.js';
-import { useMentionedPeople } from '../use-mentioned-people.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
+import { commentRevisionsQueryOptions, descriptionRevisionsQueryOptions } from '../queries.js';
+import { useMentionedPeople } from '../use-mentioned-people.js';
 
 /** The text whose history is shown: a comment or a ticket's description. */
 export type RevisedText = { commentId: string } | { ticketId: string };

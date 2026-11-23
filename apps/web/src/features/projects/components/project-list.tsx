@@ -8,10 +8,10 @@ import { ChevronRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { projectsQueryOptions } from '../queries.js';
-import { projectSettingsHref } from '../search-params.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
+import { projectsQueryOptions } from '../queries.js';
+import { projectSettingsHref } from '../search-params.js';
 
 /**
  * The projects of one state the person can see, sorted by name (§7.3): one row per project with

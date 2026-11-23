@@ -18,10 +18,10 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { useUpdateOrganization } from '../mutations.js';
 import { OrganizationSection } from './organization-section.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * The projects an organization may access (§7.3): each with Remove, and a picker of the active

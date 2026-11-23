@@ -13,6 +13,8 @@ import { ArchiveIcon, ChevronLeftIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useFormatter, useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { MY_TICKETS_HREF } from '../../app-shell/navigation.js';
 import { TicketAttachments } from '../../attachments/components/ticket-attachments.js';
 import { useTicketImageIds } from '../../attachments/use-ticket-image-ids.js';
@@ -25,8 +27,6 @@ import { TicketTitle } from './ticket-title.js';
 import { PortalVisibility } from './portal-visibility.js';
 import { PublicStatusBadge } from './public-status-badge.js';
 import { ResolutionConfirmationPanel } from './resolution-confirmation-panel.js';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * A ticket in the portal (§3.2, §4.2, §4.5): what an end user may see – the identifier, title,

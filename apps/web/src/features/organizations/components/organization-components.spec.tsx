@@ -362,6 +362,34 @@ describe('OrganizationProjects', () => {
     expectInOrder(html, 'Choose a project', 'role="alert"', FAILED, 'Show more');
   });
 
+  it('shows the wait without Reload page above Show more when a later page of the projects to choose is refused (#433)', () => {
+    const html = render(<OrganizationProjects organization={organization()} />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['projects', 'list', 'active'],
+        [
+          {
+            items: [project('0199a3f0-0000-7000-8000-000000000013', 'ERP', 'ERP')],
+            nextCursor: 'next',
+          },
+        ],
+        REFUSED,
+      ),
+    );
+
+    // **Show more** tries the page again and keeps the projects loaded (#434).
+    expectInOrder(
+      html,
+      'Choose a project',
+      'Too many requests',
+      'Try again in 45 seconds.',
+      'Show more',
+    );
+    expect(html).toContain('<h4 class="text-base font-bold">Too many requests</h4>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
+  });
+
   it('shows the wait and Reload page when the read of the projects to choose is refused (#433)', () => {
     const html = render(<OrganizationProjects organization={organization()} />, (client) =>
       seedRefusedFirstRead(client, ['projects', 'list', 'active']),
@@ -415,6 +443,29 @@ describe('OrganizationMembers', () => {
     expectInOrder(html, 'ewa@acme.com', 'jan@acme.com', 'role="alert"', FAILED, 'Show more');
     // Not in place of the rows or their empty state.
     expect(html.match(/role="alert"/g)).toHaveLength(1);
+  });
+
+  it('shows the wait without Reload page above Show more when a later page is refused (#433)', () => {
+    const html = render(<OrganizationMembers organization={organization()} />, (client) => {
+      seedDetail(client, organization());
+      seedFailedLaterPage(
+        client,
+        ['organizations', 'members', ORGANIZATION_ID],
+        [members],
+        REFUSED,
+      );
+    });
+
+    expectInOrder(
+      html,
+      'jan@acme.com',
+      'Too many requests',
+      'Try again in 45 seconds.',
+      'Show more',
+    );
+    expect(html).toContain('<h4 class="text-base font-bold">Too many requests</h4>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
   });
 
   it('shows the wait and Reload page in place of the members when their read is refused (#433)', () => {

@@ -7,9 +7,14 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 import { OPEN_TICKET_STATUSES } from '../ticket-list.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
+vi.mock('next/navigation.js', () => ({
+  usePathname: () => '/tickets',
+  useSearchParams: () => new URLSearchParams(),
+}));
 vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
   get browserApiClient() {
     return api.current;
@@ -306,12 +311,14 @@ describe('TicketFilterBar (#279)', () => {
     expect(await screen.findByRole('button', { name: 'Change filter Project: 2' })).toBeDefined();
   });
 
-  it('offers Try again when the search is refused (429), and tries again on request', async () => {
+  it('says when to try again a refused search (429), and tries again on request (#433)', async () => {
     answerLists();
-    fake.on('GET /api/v1/projects', {
-      status: 429,
-      error: { type: 'about:blank', title: 'Too many', status: 429, code: 'request.rate_limited' },
-    });
+    const callsBefore = fake.client.GET.mock.calls.length;
+    const answer = fake.client.GET.getMockImplementation()!;
+    // The answer of the BFF with its `Retry-After: 45`, for the reads of the projects.
+    fake.client.GET.mockImplementation((path: string, init?: unknown) =>
+      path === '/api/v1/projects' ? rateLimitedResult() : answer(path, init),
+    );
     const events = userEvent.setup();
     renderBar();
 
@@ -319,11 +326,33 @@ describe('TicketFilterBar (#279)', () => {
     await events.click(await screen.findByRole('button', { name: 'Project' }));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('The options could not be loaded.');
+    // The wait, under the `h1` of the Tickets page; **Try again** reads the options again, so the
+    // picker offers no **Reload page**, which would close it.
+    expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(alert.textContent).not.toContain('The options could not be loaded.');
+    expect(within(alert).queryByRole('link')).toBeNull();
     // A refusal is not retried on its own.
-    expect(fake.callsTo('GET /api/v1/projects')).toHaveLength(2);
+    const projectReads = () =>
+      fake.client.GET.mock.calls.slice(callsBefore).filter(([path]) => path === '/api/v1/projects');
+    expect(projectReads()).toHaveLength(2);
+    fake.client.GET.mockImplementation(answer);
+    await events.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('option', { name: 'ERP · ERP system' })).toBeDefined();
+  });
+
+  it('offers Try again when the options cannot be loaded', async () => {
     answerLists();
-    await events.click(within(alert).getByRole('button', { name: 'Try again' }));
+    fake.on('GET /api/v1/projects', { status: 500, error: {} });
+    const events = userEvent.setup();
+    renderBar();
+
+    await events.click(screen.getByRole('button', { name: 'Add filter' }));
+    await events.click(await screen.findByRole('button', { name: 'Project' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe('The options could not be loaded.');
+    answerLists();
+    await events.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('option', { name: 'ERP · ERP system' })).toBeDefined();
   });
 

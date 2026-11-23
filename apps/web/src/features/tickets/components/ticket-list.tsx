@@ -25,6 +25,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useOptimistic, useState, useTransition } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { type TicketVersion, useBulkChangeTickets } from '../mutations.js';
 import { ticketListInfiniteQueryOptions } from '../queries.js';
 import {
@@ -50,7 +51,6 @@ import {
   useTicketColumns,
 } from './ticket-list-columns.js';
 import { TicketTable } from './ticket-table.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 const VIEWS: readonly TicketListView[] = [...predefinedViewSchema.options, 'custom'];
 

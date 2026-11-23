@@ -10,11 +10,11 @@ import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { attachmentStateOf } from '../attachment-state.js';
 import { useDeleteAttachment } from '../mutations.js';
 import { ticketAttachmentsQueryOptions } from '../queries.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * The attachments of a ticket (§3.2, §13.3): name, size, type icon or thumbnail and state, polled

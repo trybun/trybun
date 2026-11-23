@@ -1,23 +1,9 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation.js';
-import { useSyncExternalStore } from 'react';
+import { useLocationHash } from '../../../lib/browser/use-location-hash.js';
 import type { ApiError } from '../../../lib/errors/api-error.js';
 import { type RateLimitedHeadingLevel, RateLimitedMessage } from './rate-limited-message.js';
-
-function subscribeToHash(onChange: () => void) {
-  window.addEventListener('hashchange', onChange);
-  return () => window.removeEventListener('hashchange', onChange);
-}
-
-/** The fragment of the address, which only the browser knows; none on the server. */
-function useLocationHash(): string {
-  return useSyncExternalStore(
-    subscribeToHash,
-    () => window.location.hash,
-    () => '',
-  );
-}
 
 /**
  * Shown by a client component in place of what its query would show when the browser's read is
@@ -42,7 +28,7 @@ export function RateLimitedAlert({
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
-  const hash = useLocationHash();
+  const hash = useLocationHash() ?? '';
   return (
     <div role="alert">
       <RateLimitedMessage

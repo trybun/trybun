@@ -4,10 +4,10 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { Invitation } from '@trybun/contracts/invitations';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { PendingInvitationList } from '../../invitations/components/pending-invitation-list.js';
-import { projectInvitationsQueryOptions } from '../../invitations/queries.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
+import { PendingInvitationList } from '../../invitations/components/pending-invitation-list.js';
+import { projectInvitationsQueryOptions } from '../../invitations/queries.js';
 
 /**
  * The pending invitations of a project in its Members tab (§7.4): address, role, inviting person

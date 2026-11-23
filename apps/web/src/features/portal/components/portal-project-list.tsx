@@ -6,10 +6,10 @@ import { ChevronRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { projectsQueryOptions } from '../../projects/queries.js';
-import { portalProjectHref } from '../hrefs.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
+import { projectsQueryOptions } from '../../projects/queries.js';
+import { portalProjectHref } from '../hrefs.js';
 
 /**
  * The active projects of an end user on the portal root (§5.7): one large card per project,

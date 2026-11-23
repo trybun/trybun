@@ -21,11 +21,11 @@ import { browserApiClient } from '../../../lib/api-client/browser-api-client.js'
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { useAddOrganizationMember, useRemoveOrganizationMember } from '../mutations.js';
 import { organizationMembersQueryOptions } from '../queries.js';
 import { OrganizationSection } from './organization-section.js';
-import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 const addMemberSchema = addOrganizationMemberSchema.pick({ email: true });
 type AddMemberValues = z.infer<typeof addMemberSchema>;
