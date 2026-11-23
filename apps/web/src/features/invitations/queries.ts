@@ -116,7 +116,10 @@ export function projectTargetSearchQueryOptions(client: ApiClient, search: strin
   });
 }
 
-/** The query of one search of a picker of the invitation form. */
+/**
+ * The query of one search of a picker of the invitation form: both factories below share its type
+ * (the key of a search and its first page), so `Picker` takes either.
+ */
 export type TargetSearchQueryOptions = ReturnType<typeof projectTargetSearchQueryOptions>;
 
 /**
