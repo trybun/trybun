@@ -136,7 +136,9 @@ export function AssigneePicker({
   const deferredSearch = useDeferredValue(search.trim());
   const members = useQuery({
     ...assignableMembersQueryOptions(browserApiClient, projectId, deferredSearch),
-    enabled: isOpen,
+    // Only once the deferred search has caught up: on opening, the first render still holds the
+    // search of the last opening, whose failed read would be sent again (#471).
+    enabled: isOpen && deferredSearch === search.trim(),
   });
   const people = members.data?.items.map(({ user }) => user) ?? [];
   const isAssignable = people.some((person) => person.id === me);

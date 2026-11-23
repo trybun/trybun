@@ -80,7 +80,10 @@ export function AccountInvitations({
         </Button>
       </div>
     ) : (
-      <p className="text-sm text-muted-foreground">{t('pending.loadFailed')}</p>
+      // Not below invitations that are still shown: they are there, only not read again.
+      invitations.data === undefined && (
+        <p className="text-sm text-muted-foreground">{t('pending.loadFailed')}</p>
+      )
     ));
 
   if (!isInvitable) {
@@ -88,7 +91,8 @@ export function AccountInvitations({
   }
   // Only a failure of the first read replaces the invitations; a failed read again (on focus, after
   // the cache time) keeps those shown, and the error follows them.
-  if (invitations.isLoadingError) {
+  // The query is shared with the page, so an account without invitations sees its failure too.
+  if (hasInvitations && invitations.isLoadingError) {
     return wrap(readError);
   }
   if (hasInvitations && invitations.data === undefined) {
@@ -104,7 +108,7 @@ export function AccountInvitations({
       />
     );
     return wrap(
-      readError === false ? (
+      !readError ? (
         list
       ) : (
         <div className="flex flex-col gap-2">

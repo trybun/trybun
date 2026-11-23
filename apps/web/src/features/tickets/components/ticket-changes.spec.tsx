@@ -496,6 +496,32 @@ describe('assignee', () => {
     expect(again.at(-1)?.init).toMatchObject({ params: { query: { query: 'ja' } } });
   });
 
+  it('never sends the search of the last opening again when the list opens (#471)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: ANNA }));
+    members(ANNA, JAN);
+    renderView();
+
+    const input = await screen.findByRole('combobox', { name: 'Assignee' });
+    await user.click(input);
+    await screen.findByRole('option', { name: 'Jan' });
+    fake.refuse('GET /api/v1/projects/{projectId}/members');
+    await user.type(input, 'ja');
+    await screen.findByText('The people could not be loaded.');
+    await user.tab();
+    fake.answer('GET /api/v1/projects/{projectId}/members');
+    const reads = fake.callsTo('GET /api/v1/projects/{projectId}/members').length;
+
+    await user.click(input);
+    await screen.findByRole('option', { name: 'Jan' });
+    // Only the search of this opening, which starts empty, is read – never the refused `ja`.
+    const queries = fake
+      .callsTo('GET /api/v1/projects/{projectId}/members')
+      .slice(reads)
+      .map((call) => (call.init as { params: { query: { query?: string } } }).params.query.query);
+    expect(queries).not.toContain('ja');
+  });
+
   it('shows the message of a failed read of the people in the bottom sheet, never "No one found." (#471)', async () => {
     viewport.isTablet = false;
     const user = userEvent.setup();

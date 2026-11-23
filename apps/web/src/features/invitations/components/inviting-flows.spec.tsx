@@ -446,6 +446,38 @@ describe('AccountInvitations', () => {
     expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
   });
 
+  it('leaves the accounts without invitations as they are while the read of the page fails (#471)', async () => {
+    const noLink: User = {
+      ...account,
+      id: '0199a3f0-0000-7000-8000-000000000003',
+      email: 'c@acme.com',
+      pendingInvitationCount: 0,
+    };
+    const active: User = { ...noLink, id: '0199a3f0-0000-7000-8000-000000000004', state: 'active' };
+    const page = [account, noLink, active];
+    fake.on('GET /api/v1/invitations', { status: 500, error: {} });
+    renderInApp(
+      <>
+        {page.map((user) => (
+          <AccountInvitations
+            key={user.id}
+            user={user}
+            pageAccounts={page}
+            wrap={(content) => <div data-testid={`wrap-${user.id}`}>{content}</div>}
+          />
+        ))}
+      </>,
+    );
+
+    await screen.findByRole('alert');
+    // The invited account without a working link is still offered **Invite**; the active one
+    // shows nothing – not even its row.
+    expect(
+      within(screen.getByTestId(`wrap-${noLink.id}`)).getByText('No working invitation link.'),
+    ).toBeTruthy();
+    expect(screen.queryByTestId(`wrap-${active.id}`)).toBeNull();
+  });
+
   it('keeps the invitations shown when a read again fails, with its error below (#471)', async () => {
     fake.on('GET /api/v1/invitations', { data: { items: [invitation()], nextCursor: null } });
     const { client } = renderInApp(
