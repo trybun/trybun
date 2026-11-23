@@ -14,6 +14,7 @@
   },
   "appShell": {
     "skipToContent": "Skip to main content",
+    "waitingForConnection": "You're offline – loading resumes when the connection returns.",
     "mainNavigation": "Main navigation",
     "expandNavigation": "Expand navigation",
     "collapseNavigation": "Collapse navigation",
@@ -107,7 +108,8 @@
       "emptyArchived": "No archived projects.",
       "noRole": "Administrator",
       "loadMore": "Show more",
-      "loadingMore": "Loading…"
+      "loadingMore": "Loading…",
+      "loading": "Loading projects…"
     },
     "roles": {
       "developer": "Developer",
@@ -149,6 +151,7 @@
     "members": {
       "title": "Members",
       "empty": "The project has no members yet.",
+      "loading": "Loading members…",
       "noName": "No name",
       "roleOf": "Role of {name}",
       "add": "Add member",
@@ -215,7 +218,8 @@
       "noDomains": "No e-mail domains",
       "memberCount": "{count, plural, one {# member} other {# members}}",
       "loadMore": "Show more",
-      "loadingMore": "Loading…"
+      "loadingMore": "Loading…",
+      "loading": "Loading organizations…"
     },
     "create": {
       "open": "New organization",
@@ -269,12 +273,14 @@
       "removeOf": "Remove {name}",
       "added": "{name} added",
       "removed": "{name} removed",
-      "loadMore": "Show more projects"
+      "loadMore": "Show more projects",
+      "loading": "Loading projects…"
     },
     "members": {
       "title": "Members",
       "description": "End users of the customer company. A person belongs to one organization at most.",
       "empty": "The organization has no members yet.",
+      "loading": "Loading members…",
       "noName": "No name",
       "noEmail": "No e-mail address",
       "email": "E-mail address",
@@ -566,6 +572,7 @@
       "loadFailed": "The tickets could not be loaded.",
       "showMore": "Show more",
       "loadingMore": "Loading…",
+      "loading": "Loading tickets…",
       "columns": {
         "select": "Select",
         "identifier": "ID",
@@ -1001,7 +1008,8 @@
       "emptyDescription": "Ask the person who invited you to add you to one.",
       "myTickets": "Go to my tickets",
       "loadMore": "Show more projects",
-      "loadingMore": "Loading…"
+      "loadingMore": "Loading…",
+      "loading": "Loading your projects…"
     },
     "projectHome": {
       "createTicket": "Create ticket",
@@ -1028,7 +1036,8 @@
       "empty": "You haven't created any tickets yet.",
       "updated": "Updated {time}",
       "loadMore": "Show more tickets",
-      "loadingMore": "Loading…"
+      "loadingMore": "Loading…",
+      "loading": "Loading your tickets…"
     },
     "ticket": {
       "back": "My tickets",

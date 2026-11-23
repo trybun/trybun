@@ -9,13 +9,15 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { projectsQueryOptions } from '../queries.js';
 import { projectSettingsHref } from '../search-params.js';
 
 /**
  * The projects of one state the person can see, sorted by name (§7.3): one row per project with
  * its name, key and the person's role, opening its settings. Rows are full-width cards with
- * 44 px targets on every device (Rule 9).
+ * 44 px targets on every device (Rule 9). While the browser reads them, a status says so in their
+ * place (§18.5, #428).
  */
 export function ProjectList({ state }: { state: ProjectState }) {
   const t = useTranslations('projects');
@@ -30,8 +32,12 @@ export function ProjectList({ state }: { state: ProjectState }) {
       </p>
     );
   }
-  const items = projects.data?.pages.flatMap((page) => page.items) ?? [];
-  if (projects.isSuccess && items.length === 0) {
+  if (projects.isPending) {
+    // Never the empty list or the empty state, which look like "no projects" (#428).
+    return <LoadingStatus fetchStatus={projects.fetchStatus}>{t('list.loading')}</LoadingStatus>;
+  }
+  const items = projects.data.pages.flatMap((page) => page.items);
+  if (items.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         {state === 'active' ? t('list.emptyActive') : t('list.emptyArchived')}

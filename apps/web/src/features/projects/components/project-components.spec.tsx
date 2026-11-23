@@ -116,6 +116,15 @@ describe('ProjectList', () => {
     expect(html).toContain('Administrator');
   });
 
+  it('says the projects are loading while the browser reads them, never the empty state (#428)', () => {
+    // No data: the prefetch of the server failed, or a first read in the browser.
+    const html = render(<ProjectList state="active" />);
+
+    expect(html).toBe(
+      '<p role="status" class="text-sm text-muted-foreground">Loading projects…</p>',
+    );
+  });
+
   it('keeps the loaded projects when a later page fails, with the error above Show more (#434)', () => {
     const html = render(<ProjectList state="active" />, (client) =>
       seedFailedLaterPage(
@@ -250,6 +259,16 @@ describe('ProjectMembers', () => {
       }),
     );
   }
+
+  it('says the members are loading while the browser reads them, never the empty state (#428)', () => {
+    const html = render(<ProjectMembers project={project()} />);
+
+    expect(html).toContain(
+      '<p role="status" class="text-sm text-muted-foreground">Loading members…</p>',
+    );
+    expect(html).not.toContain('The project has no members yet.');
+    expect(html).toContain('Members');
+  });
 
   it('lets a Project manager change roles and remove members', () => {
     const html = renderMembers(project());

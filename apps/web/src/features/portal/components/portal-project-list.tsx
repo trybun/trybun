@@ -7,12 +7,14 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { portalProjectHref } from '../hrefs.js';
 
 /**
  * The active projects of an end user on the portal root (§5.7): one large card per project,
- * opening its project home – one column on phones, two from the tablet width on (Rule 9).
+ * opening its project home – one column on phones, two from the tablet width on (Rule 9). While the
+ * browser reads them, a status says so in their place (§18.5, #428).
  */
 export function PortalProjectList() {
   const t = useTranslations('portal.root');
@@ -26,7 +28,11 @@ export function PortalProjectList() {
       </p>
     );
   }
-  const items = projects.data?.pages.flatMap((page) => page.items) ?? [];
+  if (projects.isPending) {
+    // Never the empty grid (#428); the page shows the empty state of no projects itself.
+    return <LoadingStatus fetchStatus={projects.fetchStatus}>{t('loading')}</LoadingStatus>;
+  }
+  const items = projects.data.pages.flatMap((page) => page.items);
   return (
     <div className="flex flex-col gap-4">
       <ul className="grid gap-3 md:grid-cols-2">
