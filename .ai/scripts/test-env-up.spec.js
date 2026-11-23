@@ -2,6 +2,7 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import {
   chmodSync,
+  closeSync,
   copyFileSync,
   existsSync,
   mkdirSync,
@@ -761,31 +762,37 @@ exit "$status"
         }
       });
 
-      it.each([1, 2, 3])(
-        'names the stop it read, never a mix of two descriptors (replaced after read %i)',
-        async (read) => {
-          const run = start('--foreground');
-          await run.output(owner);
-          const stopping = { ...descriptor(), status: 'stopping' };
-          const successor = { ...descriptor(), runId: 'successor-run', status: 'running' };
-          writeFileSync(join(folder, 'successor.json'), JSON.stringify(successor, null, 2));
+      // Replaced before its read, it names the successor; after it, the stop it read. Against
+      // separate reads, reads 2 and 3 gave "stopped elsewhere (running)" and read 1 a second read.
+      it.each([
+        [0, /environment \S+ was replaced by successor-run; detaching/],
+        [1, /environment \S+ was stopped elsewhere \(stopping\); detaching/],
+        [2, /environment \S+ was stopped elsewhere \(stopping\); detaching/],
+        [3, /environment \S+ was stopped elsewhere \(stopping\); detaching/],
+      ])('names what one read shows when replaced after read %i', async (read, message) => {
+        const run = start('--foreground');
+        await run.output(owner);
+        const stopping = { ...descriptor(), status: 'stopping' };
+        const successor = { ...descriptor(), runId: 'successor-run', status: 'running' };
+        writeFileSync(join(folder, 'successor.json'), JSON.stringify(successor, null, 2));
+        const path = join(checkout, '.ai/qa/test-env.json');
+        if (read === 0) {
+          renameSync(join(folder, 'successor.json'), path);
+        } else {
           // A stop from elsewhere has begun: the descriptor says "stopping", renamed into place.
-          const path = join(checkout, '.ai/qa/test-env.json');
           writeFileSync(`${path}.spec.tmp`, JSON.stringify(stopping, null, 2));
           renameSync(`${path}.spec.tmp`, path);
           writeFileSync(join(folder, 'swap-after'), `${read}\n`);
+        }
 
-          process.kill(-Number(stopping.app.webPid), 'SIGKILL');
+        process.kill(-Number(stopping.app.webPid), 'SIGKILL');
 
-          expect((await run.exited()).code).toBe(0);
-          expect(run.stderr).toMatch(
-            /environment \S+ was stopped elsewhere \(stopping\); detaching|was replaced by successor-run;/,
-          );
-          expect(run.stderr).not.toMatch(/\(running\)|was replaced by ;/);
-          expect(readLines(join(folder, 'reads'))).toHaveLength(1);
-          expect(downs()).toBe(0);
-        },
-      );
+        expect((await run.exited()).code).toBe(0);
+        expect(run.stderr).toMatch(message);
+        expect(run.stderr).not.toMatch(/\(running\)|was replaced by ;/);
+        if (read > 0) expect(readLines(join(folder, 'reads'))).toHaveLength(1);
+        expect(downs()).toBe(0);
+      });
     });
 
     it('stops the environment for a signal as soon as the boot result is printed', async () => {
@@ -1272,17 +1279,23 @@ describe('the descriptor (#457)', PROCESS_TESTS, () => {
   /**
    * Opens the descriptor as a reader would and returns what that reader gets once `change` has
    * run: a descriptor written in place (`cat >`) gives it the truncated, rewritten file, one
-   * renamed over the old gives it the old file, whole.
+   * renamed over the old gives it the old file, whole. The old `sed -i.bak` of the down renamed
+   * too, so only the boot half fails against the scripts before #457; the moment without a
+   * descriptor between the two renames of `sed -i.bak` is not observable here.
    */
   function readAcross(change) {
     const fd = openSync(path(), 'r');
-    const inode = statSync(path()).ino;
-    const result = change();
-    return {
-      result,
-      read: JSON.parse(readFileSync(fd, 'utf8')),
-      replaced: statSync(path()).ino !== inode,
-    };
+    try {
+      const inode = statSync(path()).ino;
+      const result = change();
+      return {
+        result,
+        read: JSON.parse(readFileSync(fd, 'utf8')),
+        replaced: statSync(path()).ino !== inode,
+      };
+    } finally {
+      closeSync(fd);
+    }
   }
   const leftovers = () =>
     readdirSync(join(checkout, '.ai/qa')).filter((name) => /^test-env\.json./.test(name));
