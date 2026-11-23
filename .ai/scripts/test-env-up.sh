@@ -25,6 +25,10 @@
 #              test-env-down.sh fails, and the cleanup of an interrupted boot records "stop-failed"
 #              instead of "stopped" when its `compose down` fails; a boot after a failed stop keeps
 #              the infrastructure it left running as started by this script, so the next stop ends it
+#   2026-11-23 starts each application with the run id of its boot in its environment
+#              (TEST_ENV_RUN_ID, #453) and records that (app.runIdInEnvironment, additive), so
+#              test-env-down.sh can tell its process groups from those of other programs that reuse
+#              the recorded PIDs after a crash or a reboot
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -490,8 +494,13 @@ run_step "pnpm db:migrate && pnpm db:seed" "$LOG_DIR/database.log" ||
   { log "migration or seed failed, see $LOG_DIR/database.log"; exit 1; }
 
 # --- app start + health wait
+# The run id of this boot, recorded as runId once the applications are healthy. Every process of the
+# applications inherits it as TEST_ENV_RUN_ID (#453): test-env-down.sh signals a recorded process
+# group only while a member still carries it, never a group of another program that the kernel gave
+# a recorded PID to after the applications ended without a stop (a crash, a reboot).
+BOOT_RUN_ID="$(date -u +%Y%m%d%H%M%S)-$$"
 start_bg() { # $1 log name, $2 command – in its own session, so the down script stops the group
-  setsid sh -c "$2" >"$LOG_DIR/$1.log" 2>&1 < /dev/null &
+  setsid env TEST_ENV_RUN_ID="$BOOT_RUN_ID" sh -c "$2" >"$LOG_DIR/$1.log" 2>&1 < /dev/null &
   echo $!
 }
 API_PID=$(start_bg api "$API_COMMAND")
@@ -530,7 +539,8 @@ if sh "$BROWSER_COMMAND" --version >/dev/null 2>&1; then
 fi
 
 ELAPSED=$(( $(date +%s) - START ))
-RUN_ID="$(date -u +%Y%m%d%H%M%S)-$$"
+# Set only here: the cleanup of an interrupted boot reads a set RUN_ID as "the descriptor is written".
+RUN_ID="$BOOT_RUN_ID"
 cat > "$DESCRIPTOR" <<EOF
 {
   "version": 1,
@@ -543,7 +553,7 @@ cat > "$DESCRIPTOR" <<EOF
   "composeProject": "$COMPOSE_PROJECT",
   "startScript": ".ai/scripts/test-env-up.sh",
   "stopScript": ".ai/scripts/test-env-down.sh",
-  "app": { "startCommand": "$API_COMMAND & $WORKER_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "workerPid": "$WORKER_PID", "webPid": "$WEB_PID", "apiUrl": "http://localhost:$API_PORT" },
+  "app": { "startCommand": "$API_COMMAND & $WORKER_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "workerPid": "$WORKER_PID", "webPid": "$WEB_PID", "runIdInEnvironment": true, "apiUrl": "http://localhost:$API_PORT" },
   "services": [
     { "type": "compose", "command": "$COMPOSE", "note": "Compose project $COMPOSE_PROJECT, its own containers and volumes; PostgreSQL 5432, Valkey 6379, SeaweedFS 8333, Keycloak 8080, Mailpit 8025" }
   ],

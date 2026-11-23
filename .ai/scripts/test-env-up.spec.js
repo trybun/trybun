@@ -801,15 +801,16 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
 
   /**
    * Simulates the reuse of the recorded PIDs once the applications have exited (#452): each of
-   * them now leads the process group of an unrelated program. Returns those programs' PIDs.
+   * them now leads the process group of an unrelated program running `command`. Returns those
+   * programs' PIDs.
    */
-  function reuseRecordedPids() {
+  function reuseRecordedPids(command = 'sleep 300') {
     let text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
     const pids = [];
     for (const key of ['apiPid', 'workerPid', 'webPid']) {
       // Started by a shell that exits at once, so the program is not a child of this test, whose
       // event loop – blocked in spawnSync – would leave it a zombie, still "alive", once signalled.
-      const pid = execFileSync('sh', ['-c', 'setsid sleep 300 >/dev/null 2>&1 & echo $!'], {
+      const pid = execFileSync('sh', ['-c', `setsid ${command} >/dev/null 2>&1 & echo $!`], {
         encoding: 'utf8',
       }).trim();
       unrelated.push(Number(pid));
@@ -833,6 +834,201 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       encoding: 'utf8',
       env: environment(),
     });
+
+  const groupAlive = (pid) => alive(-Number(pid));
+  const members = (group) =>
+    execFileSync('ps', ['-e', '-o', 'pid=', '-o', 'pgid='], { encoding: 'utf8' })
+      .split('\n')
+      .map((line) => line.trim().split(/\s+/))
+      .filter(([, pgid]) => pgid === String(group))
+      .map(([pid]) => pid);
+
+  /**
+   * Ends the applications without a stop, as a crash with no --foreground owner or a reboot does
+   * (#453): the descriptor still says "running", and nothing holds their ports any more.
+   */
+  async function endWithoutStop() {
+    const { apiPid, workerPid, webPid } = descriptor().app;
+    for (const pid of [apiPid, workerPid, webPid]) process.kill(-Number(pid), 'SIGKILL');
+    await until(
+      () => [apiPid, workerPid, webPid].every((pid) => !groupAlive(pid)),
+      10_000,
+      () => 'the applications still run',
+    );
+    for (const port of [3000, 3001]) rmSync(join(folder, `serving-${port}`), { force: true });
+    expect(descriptor().status).toBe('running');
+  }
+
+  describe('of a running descriptor whose applications ended without a stop (#453)', () => {
+    it('signals none of the other programs that now lead the recorded process groups', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      const pids = reuseRecordedPids();
+
+      const { status, stdout, stderr } = down();
+
+      expect(status).toBe(0);
+      expect(stdout).toContain('TEST_ENV_STATUS=stopped');
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+      expect(stderr).toContain(`process group ${pids[0]} (apiPid) is not an application`);
+      expect(descriptor().status).toBe('stopped');
+    });
+
+    it('signals none of them when the next boot restarts the stale environment', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      const pids = reuseRecordedPids();
+      // The stubbed health checks still pass, so the reuse check finds the environment stale by its
+      // age instead of by its health, as after a reboot; the restart runs the same down.
+      extraEnvironment = { TEST_ENV_CACHE_TTL_SECONDS: '0' };
+
+      const boot = up();
+
+      expect(boot.status, boot.stderr).toBe(0);
+      expect(boot.stderr).toContain('the recorded environment is stale; restarting it');
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+      expect(descriptor().status).toBe('running');
+      expect(descriptor().app.webPid).not.toBe(pids[2]);
+    });
+
+    it("signals none of them when they carry another boot's run id", async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      // E.g. the environment of another checkout, whose run id starts like this one's.
+      const pids = reuseRecordedPids(`env TEST_ENV_RUN_ID=${descriptor().runId}0 sleep 300`);
+
+      expect(down().status).toBe(0);
+
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+    });
+  });
+
+  /**
+   * Sets startedAt of the descriptor to now (plus `seconds`), as a boot does when it records its
+   * applications.
+   */
+  function recordNow(seconds = 0) {
+    const at = new Date(Date.now() + seconds * 1000).toISOString().replace(/\.\d+Z$/, 'Z');
+    const text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8').replace(
+      /"startedAt": "[^"]*"/,
+      `"startedAt": "${at}"`,
+    );
+    writeFileSync(join(checkout, '.ai/qa/test-env.json'), text);
+  }
+
+  /** Makes the descriptor one of a boot before #453, without app.runIdInEnvironment. */
+  function untagged() {
+    const text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
+    writeFileSync(
+      join(checkout, '.ai/qa/test-env.json'),
+      text.replace('"runIdInEnvironment": true, ', ''),
+    );
+    expect(descriptor().app.runIdInEnvironment).toBeUndefined();
+  }
+
+  it('signals no recorded group without the run id, even one older than the boot (#453)', async () => {
+    expect(up().status).toBe(0);
+    await endWithoutStop();
+    const pids = reuseRecordedPids();
+    // Older than startedAt, as after a backward step of the clock: no proof for a boot since #453.
+    await sleep(2_100);
+    recordNow();
+
+    expect(down().status).toBe(0);
+
+    for (const pid of pids) expect(alive(pid), pid).toBe(true);
+  });
+
+  describe('of an environment booted before #453, whose applications carry no run id', () => {
+    it('stops them, waiting for a process that outlives the leader of its group', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      // Such a boot's applications: a leader `sh -c` that SIGTERM ends at once, and a process of
+      // its group that runs 3 s of shutdown hooks, like the API – started before the boot recorded
+      // them, which is seconds later (the health wait).
+      writeFileSync(
+        join(folder, 'lingering.sh'),
+        'trap "sleep 3; exit 0" TERM\nwhile :; do sleep 1; done\n',
+      );
+      const leaders = reuseRecordedPids(`sh -c "sh ${join(folder, 'lingering.sh')}"`);
+      await sleep(2_100);
+      recordNow();
+      untagged();
+      const processes = leaders.flatMap(members);
+      expect(processes.length).toBeGreaterThan(leaders.length);
+
+      const { status, stdout } = down();
+
+      expect(status).toBe(0);
+      expect(stdout).toContain('TEST_ENV_STATUS=stopped');
+      // Gone when the down returns: it waited for them, not only for the leaders.
+      for (const pid of processes) expect(alive(pid), pid).toBe(false);
+    });
+
+    it('signals none of the programs that started after the boot recorded them', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      let text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
+      text = text.replace('"runIdInEnvironment": true, ', '');
+      writeFileSync(join(checkout, '.ai/qa/test-env.json'), text);
+      const pids = reuseRecordedPids();
+
+      expect(down().status).toBe(0);
+
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+    });
+
+    it('signals none of the programs that started long before the boot recorded them', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      untagged();
+      const pids = reuseRecordedPids();
+      // Longer before than any boot takes (its health wait gives up after 180 s).
+      recordNow(400);
+
+      expect(down().status).toBe(0);
+
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+    });
+
+    it('finishes the stop when processes of a group exit while it lists them', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      // Many short-lived processes: some exit between `ps` and the read of their /proc entry.
+      writeFileSync(
+        join(folder, 'churning.sh'),
+        'for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do\n' +
+          '  (while :; do sleep 0.01; done) &\n' +
+          'done\nwait\n',
+      );
+      const leaders = reuseRecordedPids(`sh ${join(folder, 'churning.sh')}`);
+      await sleep(2_100);
+      recordNow();
+      untagged();
+
+      const { status, stdout, stderr } = down();
+
+      expect(status, stderr).toBe(0);
+      expect(stdout).toContain('TEST_ENV_STATUS=stopped');
+      expect(descriptor().status).toBe('stopped');
+      for (const leader of leaders) expect(groupAlive(leader), leader).toBe(false);
+    });
+  });
+
+  it('stops an application whose group leader has already exited (#453)', () => {
+    expect(up().status).toBe(0);
+    const { webPid } = descriptor().app;
+    const [member] = members(webPid).filter((pid) => pid !== webPid);
+    expect(member).toBeDefined();
+    // The leader `sh -c` ends first, as on SIGTERM; the web application keeps its group and port.
+    process.kill(Number(webPid), 'SIGKILL');
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(true);
+
+    expect(down().status).toBe(0);
+
+    expect(alive(member)).toBe(false);
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
+  });
 
   it('signals no process group on a second down after the applications have stopped (#452)', () => {
     expect(up().status).toBe(0);
