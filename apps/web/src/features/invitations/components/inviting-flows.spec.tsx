@@ -2,9 +2,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
+import type { User } from '@trybun/contracts/users';
 import { toast } from '@trybun/ui/components/toast';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
-import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
+import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
@@ -28,6 +29,7 @@ const { InviteDialog } = await import('./invite-dialog.js');
 const { AddMemberDialog } = await import('../../projects/components/add-member-dialog.js');
 const { ContinueAcceptance } = await import('./continue-acceptance.js');
 const { InvitationOffer } = await import('./invitation-offer.js');
+const { AccountInvitations } = await import('./account-invitations.js');
 const { PendingInvitationList } = await import('./pending-invitation-list.js');
 const { ProjectInvitations } = await import('../../projects/components/project-invitations.js');
 const { PasswordAcceptanceForm } = await import('./password-acceptance-form.js');
@@ -147,6 +149,73 @@ describe('InviteDialog', () => {
 
     expect(await screen.findByText('This person gets an invitation link.')).toBeTruthy();
   });
+
+  it('says when to try again a refused read of the projects, never "No active project matches." (#471)', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ id: PROJECT_ID, key: 'ERP', name: 'ERP system' }], nextCursor: null },
+    });
+    fake.refuse('GET /api/v1/projects');
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog kind="team" />);
+
+    await events.click(screen.getByRole('button', { name: 'Invite' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Project' }));
+
+    // The open list says the projects are missing; Tab closes it, as the list is no stop of Tab
+    // (WAI-ARIA APG), and reaches **Try again** next to the error below the input.
+    expect(await screen.findByText('The projects could not be loaded.')).toBeTruthy();
+    expect(screen.queryByText('No active project matches.')).toBeNull();
+    await events.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    const alert = await screen.findByRole('alert');
+    // `h3` under the `h2` title of the dialog; **Try again** reads the list again, so no **Reload
+    // page**, which would close the dialog.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    fake.answer('GET /api/v1/projects');
+    await events.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    await events.click(screen.getByRole('combobox', { name: 'Project' }));
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+  });
+
+  it('shows the message of a failed read of the organizations (#471)', async () => {
+    fake.on('GET /api/v1/organizations', { status: 500, error: {} });
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+
+    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+    await events.click(await screen.findByRole('radio', { name: 'An organization' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Organization' }));
+
+    expect(await screen.findByText('The organizations could not be loaded.')).toBeTruthy();
+    expect(screen.queryByText('No active organization matches.')).toBeNull();
+    await events.tab();
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
+  it('stops reading the pages of a list at a failed page, and keeps the items found (#471)', async () => {
+    fake.on(
+      'GET /api/v1/organizations',
+      laterPagesFail([{ id: PROJECT_ID, name: 'Acme', state: 'active' }]),
+    );
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+
+    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+    await events.click(await screen.findByRole('radio', { name: 'An organization' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Organization' }));
+
+    expect(await screen.findByText('The organizations could not be loaded.')).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Acme' })).toBeTruthy();
+    // The failed page is not read again on its own, which would use up the rate limit.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(fake.callsTo('GET /api/v1/organizations')).toHaveLength(2);
+  });
 });
 
 describe('AddMemberDialog', () => {
@@ -200,6 +269,41 @@ describe('AddMemberDialog', () => {
     );
   });
 
+  it('says when to try again a refused search of the accounts, and searches again (#471)', async () => {
+    fake.on('GET /api/v1/projects/{projectId}/member-candidates', {
+      data: { items: [candidate], nextCursor: null },
+    });
+    fake.refuse('GET /api/v1/projects/{projectId}/member-candidates');
+    const events = userEvent.setup();
+    renderInApp(<AddMemberDialog projectId={PROJECT_ID} />);
+
+    await events.click(screen.getByRole('button', { name: 'Add member' }));
+
+    const alert = await screen.findByRole('alert');
+    // `h3` under the `h2` title of the dialog; **Try again** searches again, so no **Reload page**.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    expect(screen.queryByText('No active team members match.')).toBeNull();
+    fake.answer('GET /api/v1/projects/{projectId}/member-candidates');
+    await events.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('radio', { name: /Dev Eloper/ })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('shows the message of a failed search of the accounts, never an empty list (#471)', async () => {
+    fake.on('GET /api/v1/projects/{projectId}/member-candidates', { status: 500, error: {} });
+    const events = userEvent.setup();
+    renderInApp(<AddMemberDialog projectId={PROJECT_ID} />);
+
+    await events.click(screen.getByRole('button', { name: 'Add member' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
   it('shows the error of a refused addition under the form', async () => {
     fake.on('GET /api/v1/projects/{projectId}/member-candidates', {
       data: { items: [candidate], nextCursor: null },
@@ -241,6 +345,59 @@ describe('AddMemberDialog', () => {
     await events.click(await screen.findByRole('button', { name: 'Invite' }));
 
     expect(await screen.findByDisplayValue(LINK)).toBeTruthy();
+  });
+});
+
+describe('AccountInvitations', () => {
+  const account: User = {
+    id: '0199a3f0-0000-7000-8000-000000000001',
+    displayName: null,
+    email: 'new@acme.com',
+    kind: 'team',
+    state: 'invited',
+    isAdmin: false,
+    githubLogin: null,
+    createdAt: '2026-10-29T09:30:00.000Z',
+    pendingInvitationCount: 1,
+    allowedActions: [],
+  };
+  const renderAccount = () =>
+    renderInApp(
+      <AccountInvitations
+        user={account}
+        pageAccounts={[account]}
+        wrap={(content) => <div data-testid="wrap">{content}</div>}
+      />,
+    );
+
+  it('says when to try again a refused read of the invitations, and reads them again (#471)', async () => {
+    fake.on('GET /api/v1/invitations', { data: { items: [invitation()], nextCursor: null } });
+    fake.refuse('GET /api/v1/invitations');
+    const events = userEvent.setup();
+    renderAccount();
+
+    const alert = await screen.findByRole('alert');
+    // `h3` under the `h2` of the Accounts page; **Try again** reads the invitations again, so no
+    // **Reload page**, which would drop the accounts loaded with **Load more**.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    fake.answer('GET /api/v1/invitations');
+    await events.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('list', { name: 'Pending invitations of new@acme.com' }),
+    ).toBeTruthy();
+  });
+
+  it('shows the message of a failed read of the invitations, which never just disappear (#471)', async () => {
+    fake.on('GET /api/v1/invitations', { status: 500, error: {} });
+    renderAccount();
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(screen.getByTestId('wrap')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 });
 

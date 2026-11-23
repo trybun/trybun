@@ -418,6 +418,7 @@ function AssigneeField({
               me={me}
               selected={{ value: assigneeId, label }}
               disabled={false}
+              headingLevel={2}
               onAssign={(id, name) => {
                 setChosenName(name);
                 field.onChange(id);

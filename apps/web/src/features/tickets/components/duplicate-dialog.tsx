@@ -19,6 +19,7 @@ import { useDeferredValue, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { useChangeTicketStatus } from '../mutations.js';
 import { projectTicketQueryOptions } from '../queries.js';
 
@@ -39,7 +40,8 @@ function identifierOf(text: string, projectKey: string): string {
  * same project, resolved with the list of the project's tickets and shown with its title before
  * the move is confirmed, then sent as `duplicateOfTicketId`. The errors of S1-06 – the ticket
  * itself, another project – appear on the field. Open while it is rendered; the move is confirmed
- * here, so it has no Undo (Q10). A search by title comes with S2-03.
+ * here, so it has no Undo (Q10). A failed lookup of the original shows its error with **Try again**
+ * (#471), never a field that seems to wait. A search by title comes with S2-03.
  */
 export function DuplicateDialog({
   ticket,
@@ -134,6 +136,22 @@ export function DuplicateDialog({
             )}
             <FieldError errors={[fieldError === undefined ? undefined : { message: fieldError }]} />
           </Field>
+          {isIdentifier && original.isError && (
+            // A refusal says when to try again, `h3` under the `h2` title of the dialog; **Try
+            // again** looks the original up again, so it offers no **Reload page**, which would
+            // close the dialog (§18.5).
+            <div className="flex flex-col items-start gap-2">
+              <QueryErrorAlert
+                error={original.error}
+                message={errorMessage(original.error)}
+                headingLevel={3}
+                offersReload={false}
+              />
+              <Button type="button" variant="outline" onClick={() => void original.refetch()}>
+                {t('retry')}
+              </Button>
+            </div>
+          )}
           {error !== null && !error.isField && (
             <p role="alert" className="text-sm text-destructive">
               {errorMessage(error.code)}

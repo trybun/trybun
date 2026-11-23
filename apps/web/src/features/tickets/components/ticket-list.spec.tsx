@@ -339,6 +339,70 @@ describe('TicketList', () => {
     });
   });
 
+  describe('the people of the bulk Assignee (#471)', () => {
+    const JAN = {
+      id: '0199a3f0-0000-7000-8000-000000000032',
+      displayName: 'Jan',
+      githubLogin: null,
+    };
+    const members = {
+      data: {
+        items: [{ user: JAN, role: 'developer', createdAt: '2026-11-01T09:00:00.000Z' }],
+        nextCursor: null,
+      },
+    };
+
+    /** Selects a ticket, the read of its project's people answering `reply`. */
+    async function selectTicket(reply: Parameters<typeof fake.on>[1] = members) {
+      const events = userEvent.setup();
+      answerList([ticket(1)]);
+      fake.on('GET /api/v1/projects/{projectId}/members', reply);
+      renderInApp(
+        <TicketList
+          state={stateOfView('my_open_tickets')}
+          currentUserId={ME}
+          organizationsExist={false}
+        />,
+      );
+      await screen.findAllByRole('link', { name: 'Ticket 1' });
+      await events.click(
+        within(screen.getByRole('table')).getByRole('checkbox', { name: 'Select ERP-1' }),
+      );
+      return { events, bar: screen.getByRole('region', { name: 'Bulk actions' }) };
+    }
+
+    it('says in the bar when to try again a refused read, and reads the people again', async () => {
+      fake.refuse('GET /api/v1/projects/{projectId}/members');
+      const { events, bar } = await selectTicket();
+
+      const alert = await within(bar).findByRole('alert');
+      // `h2` like the errors of the list; **Try again** reads the people again, so no **Reload
+      // page**, which would drop the selection.
+      expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe(
+        'Too many requests',
+      );
+      expect(alert.textContent).toContain('Try again in 45 seconds.');
+      expect(within(alert).queryByRole('link')).toBeNull();
+      fake.answer('GET /api/v1/projects/{projectId}/members');
+      await events.click(within(bar).getByRole('button', { name: 'Try again' }));
+      await waitFor(() => expect(within(bar).queryByRole('alert')).toBeNull());
+      await events.click(within(bar).getByRole('combobox', { name: 'Assignee' }));
+      expect(await screen.findByRole('option', { name: 'Jan' })).toBeDefined();
+    });
+
+    it('shows the message of a failed read in the bar, and keeps Assign to me and Unassigned', async () => {
+      const { events, bar } = await selectTicket({ status: 500, error: {} });
+
+      expect((await within(bar).findByRole('alert')).textContent).toBe(
+        'Something went wrong. Try again later.',
+      );
+      expect(within(bar).getByRole('button', { name: 'Try again' })).toBeDefined();
+      await events.click(within(bar).getByRole('combobox', { name: 'Assignee' }));
+      const options = await screen.findAllByRole('option');
+      expect(options.map((option) => option.textContent)).toEqual(['Assign to me', 'Unassigned']);
+    });
+  });
+
   it('offers Approve and Refuse sharing in Pending sharing approvals by allowedActions (Q11)', async () => {
     answerList([
       ticket(1, {

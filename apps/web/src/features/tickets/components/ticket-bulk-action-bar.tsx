@@ -6,6 +6,8 @@ import { Button } from '@trybun/ui/components/button';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { assignableMembersQueryOptions } from '../queries.js';
 import type { PickerGroup } from './field-sheet.js';
 import { FieldPicker } from './field-picker.js';
@@ -20,7 +22,9 @@ const NONE = 'none';
  * and **Clear selection** – above the table from the tablet width on, fixed at the bottom with the
  * safe area on phones (§18.6). An action is offered while one selected ticket allows it; tickets
  * that do not are sent anyway and come back as "not permitted" – the UI never derives
- * permissions from results (§18.3).
+ * permissions from results (§18.3). A failed read of the people who can be assigned shows its error
+ * with **Try again** in the bar (#471), outside the list of **Assignee**, which keeps **Assign to
+ * me** and **Unassigned**.
  */
 export function TicketBulkActionBar({
   selected,
@@ -36,6 +40,7 @@ export function TicketBulkActionBar({
   onClear: () => void;
 }) {
   const t = useTranslations('tickets');
+  const errorMessage = useErrorMessage();
   const [isRejecting, setIsRejecting] = useState(false);
   const allows = (...actions: TicketListItem['allowedActions']) =>
     selected.some((ticket) => actions.some((action) => ticket.allowedActions.includes(action)));
@@ -141,6 +146,21 @@ export function TicketBulkActionBar({
           />
         )}
       </div>
+      {people.isError && (
+        // A refusal says when to try again, `h2` like the errors of the list; **Try again** reads
+        // the people again, so it offers no **Reload page**, which would drop the selection (§18.5).
+        <div className="flex flex-col items-start gap-2 md:order-last md:basis-full">
+          <QueryErrorAlert
+            error={people.error}
+            message={errorMessage(people.error)}
+            headingLevel={2}
+            offersReload={false}
+          />
+          <Button type="button" variant="outline" onClick={() => void people.refetch()}>
+            {t('list.bulk.retryPeople')}
+          </Button>
+        </div>
+      )}
       <Button type="button" variant="ghost" onClick={onClear} className="md:ml-auto">
         {t('list.selection.clear')}
       </Button>

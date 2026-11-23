@@ -175,7 +175,8 @@
       "removed": "Usunięto z projektu: {name}",
       "addBy": "Dodaj",
       "addByAccount": "Członka zespołu",
-      "addByEmail": "Po adresie e-mail"
+      "addByEmail": "Po adresie e-mail",
+      "retry": "Spróbuj ponownie"
     },
     "danger": {
       "archive": "Zarchiwizuj projekt",
@@ -471,7 +472,9 @@
       "people": "Osoby",
       "searchPeople": "Szukaj po nazwie lub loginie GitHub",
       "loadingPeople": "Wczytywanie…",
-      "noPeople": "Nikogo nie znaleziono."
+      "noPeople": "Nikogo nie znaleziono.",
+      "retry": "Spróbuj ponownie",
+      "peopleLoadFailed": "Nie udało się wczytać osób."
     },
     "form": {
       "heading": "Nowe zgłoszenie",
@@ -548,7 +551,8 @@
       "originalFound": "{identifier} · {title}",
       "originalNotFound": "W tym projekcie nie ma zgłoszenia {identifier}.",
       "originalInvalid": "Podaj identyfikator, np. ERP-7.",
-      "duplicateConfirm": "Oznacz jako duplikat"
+      "duplicateConfirm": "Oznacz jako duplikat",
+      "retry": "Spróbuj ponownie"
     },
     "list": {
       "title": "Zgłoszenia",
@@ -690,7 +694,8 @@
         },
         "rejectTitle": "Odrzuć {count, plural, one {# zgłoszenie} few {# zgłoszenia} many {# zgłoszeń} other {# zgłoszenia}}",
         "rejectDescription": "Powód zostanie opublikowany zgłaszającemu każdego zgłoszenia.",
-        "rejectConfirm": "Odrzuć zgłoszenia"
+        "rejectConfirm": "Odrzuć zgłoszenia",
+        "retryPeople": "Spróbuj ponownie"
       },
       "sharing": {
         "approve": "Zatwierdź udostępnienie",
@@ -881,7 +886,10 @@
       "inviting": "Zapraszanie…",
       "grant": "Dodaj",
       "granting": "Dodawanie…",
-      "cancel": "Anuluj"
+      "cancel": "Anuluj",
+      "retry": "Spróbuj ponownie",
+      "projectsLoadFailed": "Nie udało się wczytać projektów.",
+      "organizationsLoadFailed": "Nie udało się wczytać organizacji."
     },
     "issued": {
       "title": "Zaproszenie utworzone",
@@ -918,7 +926,8 @@
       "cancel": "Anuluj",
       "loadMore": "Pokaż więcej",
       "loadingMore": "Wczytywanie…",
-      "listOf": "Oczekujące zaproszenia: {name}"
+      "listOf": "Oczekujące zaproszenia: {name}",
+      "retry": "Spróbuj ponownie"
     },
     "acceptance": {
       "title": "Przyjmij zaproszenie",

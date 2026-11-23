@@ -45,6 +45,7 @@ import { browserApiClient } from '../../../lib/api-client/browser-api-client.js'
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import {
   FormFooter,
   InvitationForm,
@@ -158,7 +159,8 @@ export function AddMemberDialog({ projectId }: { projectId: string }) {
 
 /**
  * A search of the active team accounts that are not members – by name or GitHub login, never
- * e-mail – a choice of one of them and of the team role.
+ * e-mail – a choice of one of them and of the team role. A failed search shows its error with
+ * **Try again** in place of the accounts (#471), never an empty list.
  */
 export function AccountForm({
   projectId,
@@ -217,7 +219,22 @@ export function AccountForm({
           render={({ field, fieldState }) => (
             <FieldSet>
               <FieldLegend variant="label">{t('members.candidates')}</FieldLegend>
-              {candidates.isSuccess && items.length === 0 ? (
+              {candidates.isError ? (
+                // A refusal says when to try again, `h3` under the `h2` title of the dialog;
+                // **Try again** searches again, so it offers no **Reload page**, which would close
+                // the dialog (§18.5).
+                <div className="flex flex-col items-start gap-2">
+                  <QueryErrorAlert
+                    error={candidates.error}
+                    message={errorMessage(candidates.error)}
+                    headingLevel={3}
+                    offersReload={false}
+                  />
+                  <Button type="button" variant="outline" onClick={() => void candidates.refetch()}>
+                    {t('members.retry')}
+                  </Button>
+                </div>
+              ) : candidates.isSuccess && items.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('members.noCandidates')}</p>
               ) : (
                 // The padding keeps the focus ring of the cards inside the scrolling list, which

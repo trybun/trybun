@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { rateLimitedResult } from '../factories/rate-limited.factory.js';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type Reply = { status?: number; data?: unknown; error?: unknown };
@@ -10,11 +11,15 @@ type Route = Reply | ((init: unknown) => Reply | Promise<Reply>);
  */
 export function createFakeApiClient() {
   const routes = new Map<string, Route>();
+  const refused = new Set<string>();
   const calls: { method: Method; path: string; init: unknown }[] = [];
 
   const request = (method: Method) =>
     vi.fn((path: string, init?: unknown) => {
       calls.push({ method, path, init });
+      if (refused.has(`${method} ${path}`)) {
+        return rateLimitedResult();
+      }
       const route = routes.get(`${method} ${path}`);
       if (route === undefined) {
         throw new Error(`No route for ${method} ${path}`);
@@ -40,6 +45,17 @@ export function createFakeApiClient() {
       routes.set(route, reply);
     },
     /**
+     * Refuses `route` over the rate limit from now on – `429` with a wait of 45 seconds, the answer
+     * of `rateLimitedResult()` – until `answer()` answers it again (#471).
+     */
+    refuse(route: string) {
+      refused.add(route);
+    },
+    /** Answers `route` again after `refuse()`, with its route of the table. */
+    answer(route: string) {
+      refused.delete(route);
+    },
+    /**
      * Holds the answers of `route` until the returned function answers them with `reply`: a read
      * in flight, e.g. the loading state of a list (#428).
      */
@@ -54,6 +70,7 @@ export function createFakeApiClient() {
     calls,
     reset() {
       routes.clear();
+      refused.clear();
       calls.length = 0;
     },
     /** The requests of one `METHOD /path`. */
