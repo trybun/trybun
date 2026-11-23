@@ -1,10 +1,12 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import {
   chmodSync,
   copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -96,10 +98,17 @@ let checkout;
 let extraEnvironment;
 /** The scripts start() ran, stopped after each test. */
 let started;
+/**
+ * Marks every process of this test (#458): the environment of the scripts and stubs carries it
+ * as SPEC_PROCESS_TAG, which their processes inherit, so the cleanup can tell them from other
+ * programs – a recorded PID may belong to one of them once its process has exited.
+ */
+let tag;
 
 beforeEach(() => {
   extraEnvironment = {};
   started = [];
+  tag = randomUUID();
   folder = mkdtempSync(join(tmpdir(), 'trybun-test-env-'));
   checkout = join(folder, 'checkout');
   mkdirSync(join(checkout, '.ai/scripts'), { recursive: true });
@@ -130,10 +139,22 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await stopProcesses();
+  rmSync(folder, { recursive: true, force: true });
+});
+
+/**
+ * Stops what the test left running, signalling only its own processes (#458): the recorded PIDs
+ * of the stubs (`pids`, `grandchildren`) may belong to other programs by now, so it goes by the
+ * tag in the environment instead.
+ */
+async function stopProcesses() {
   // Ends the scripts a test left attached (their process groups), before their own handlers can
-  // act on what follows.
+  // act on what follows – only while Node has not seen the script exit: until it reaps it, its PID
+  // and the process group it leads belong to no other process.
   for (const child of started) {
+    if (child.exitCode !== null || child.signalCode !== null) continue;
     try {
       process.kill(-child.pid, 'SIGKILL');
     } catch {
@@ -142,24 +163,45 @@ afterEach(() => {
   }
   // Stops the stubbed applications of the last boot (their process groups).
   spawnSync('sh', ['.ai/scripts/test-env-down.sh'], { cwd: checkout, env: environment() });
-  // And any of them a failed boot did not record (applications by group, blocked steps by PID).
-  const targets = [
-    ...readLines(join(folder, 'pids')).map((pid) => -Number(pid)),
-    ...readLines(join(folder, 'grandchildren')).map(Number),
-  ];
-  for (const target of targets) {
-    try {
-      process.kill(target, 'SIGKILL');
-    } catch {
-      // Already stopped.
+  // And anything else of the test, e.g. the applications a failed boot did not record or a step
+  // it left blocked. Repeated, because a process may start another one before its signal.
+  const deadline = Date.now() + 10_000;
+  for (let pids = tagged(); pids.length > 0; pids = tagged()) {
+    if (Date.now() > deadline) throw new Error(`processes of the test still run: ${pids}`);
+    for (const pid of pids) {
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {
+        // Already stopped.
+      }
     }
+    await sleep(50);
   }
-  rmSync(folder, { recursive: true, force: true });
-});
+}
+
+/**
+ * The PIDs of the running processes that carry the tag of this test. A zombie has an empty
+ * environ, and another user's process an unreadable one: neither counts.
+ */
+function tagged() {
+  const entry = `SPEC_PROCESS_TAG=${tag}`;
+  return readdirSync('/proc')
+    .filter((name) => /^\d+$/.test(name))
+    .filter((pid) => {
+      try {
+        return readFileSync(`/proc/${pid}/environ`, 'utf8').split('\0').includes(entry);
+      } catch {
+        // Exited since the listing.
+        return false;
+      }
+    })
+    .map(Number);
+}
 
 function environment() {
   return {
     ...process.env,
+    SPEC_PROCESS_TAG: tag,
     PATH: `${join(folder, 'bin')}:${process.env.PATH}`,
     STUB_LOG: join(folder, 'log'),
     STUB_DIR: folder,
@@ -782,27 +824,10 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
 });
 
 describe('test-env-down.sh', PROCESS_TESTS, () => {
-  /** Process groups of other programs, as the kernel may start them under a recorded PID. */
-  let unrelated;
-
-  beforeEach(() => {
-    unrelated = [];
-  });
-
-  afterEach(() => {
-    for (const pid of unrelated) {
-      try {
-        process.kill(-pid, 'SIGKILL');
-      } catch {
-        // Already stopped.
-      }
-    }
-  });
-
   /**
    * Simulates the reuse of the recorded PIDs once the applications have exited (#452): each of
    * them now leads the process group of an unrelated program running `command`. Returns those
-   * programs' PIDs.
+   * programs' PIDs. They carry the tag of the test only so that its cleanup ends them.
    */
   function reuseRecordedPids(command = 'sleep 300') {
     let text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
@@ -812,8 +837,8 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       // event loop – blocked in spawnSync – would leave it a zombie, still "alive", once signalled.
       const pid = execFileSync('sh', ['-c', `setsid ${command} >/dev/null 2>&1 & echo $!`], {
         encoding: 'utf8',
+        env: { ...process.env, SPEC_PROCESS_TAG: tag },
       }).trim();
-      unrelated.push(Number(pid));
       pids.push(pid);
       // It leads its own group, as an application of the environment did under that PID.
       expect(execFileSync('ps', ['-o', 'pgid=', '-p', pid], { encoding: 'utf8' }).trim()).toBe(pid);
@@ -1169,5 +1194,49 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       for (const pid of pids) expect(alive(pid), pid).toBe(true);
       expect(descriptor().status).toBe('stopped');
     });
+  });
+});
+
+describe('the cleanup after each test (#458)', PROCESS_TESTS, () => {
+  /**
+   * Starts `sleep 300` with `env` as the leader of its own process group, reparented at once
+   * (see reuseRecordedPids), and returns its PID.
+   */
+  const startGroup = (env) =>
+    execFileSync('sh', ['-c', 'setsid sleep 300 >/dev/null 2>&1 & echo $!'], {
+      encoding: 'utf8',
+      env,
+    }).trim();
+
+  it('signals no program that took over a recorded PID, and stops what the test left running', async () => {
+    // Programs that now hold PIDs the test recorded: another program of the same user (no tag)
+    // and a process of a parallel run of the spec (another tag).
+    const untagged = startGroup(process.env);
+    const otherRun = startGroup({ ...process.env, SPEC_PROCESS_TAG: randomUUID() });
+    const leftover = startGroup({ ...process.env, SPEC_PROCESS_TAG: tag });
+    try {
+      writeFileSync(join(folder, 'pids'), `${untagged}\n${otherRun}\n`);
+      writeFileSync(join(folder, 'grandchildren'), `${otherRun}\n${untagged}\n`);
+      // A script start() ran that has exited, whose PID the kernel gave to a program since.
+      started.push({ pid: Number(untagged), exitCode: 0, signalCode: null });
+
+      await stopProcesses();
+
+      expect(alive(untagged), untagged).toBe(true);
+      expect(alive(otherRun), otherRun).toBe(true);
+      await until(
+        () => !alive(leftover),
+        5_000,
+        () => `the leftover ${leftover} still runs`,
+      );
+    } finally {
+      for (const pid of [untagged, otherRun]) {
+        try {
+          process.kill(-Number(pid), 'SIGKILL');
+        } catch {
+          // Already stopped.
+        }
+      }
+    }
   });
 });
