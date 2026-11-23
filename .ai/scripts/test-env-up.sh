@@ -29,6 +29,10 @@
 #              (TEST_ENV_RUN_ID, #453) and records that (app.runIdInEnvironment, additive), so
 #              test-env-down.sh can tell its process groups from those of other programs that reuse
 #              the recorded PIDs after a crash or a reboot
+#   2026-11-23 replaces the descriptor atomically (#457) – written to a temporary file in .ai/qa, then
+#              renamed over it – so no reader sees it truncated, half-written or missing; the
+#              --foreground owner decides from one read of it, never from separate reads that a
+#              replacement can land between
 #   2026-11-23 the reuse check and the watch of --foreground take a recorded application as running
 #              only while test-env-down.sh's identity check confirms it (#456, test-env-processes.sh,
 #              sourced): after a crash or a reboot its PID may belong to another program, so a boot
@@ -71,6 +75,9 @@ ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 QA_DIR=.ai/qa
 DESCRIPTOR="$QA_DIR/test-env.json"
+# Every write of the descriptor goes here first and is then renamed over it (#457): a rename within a
+# directory is atomic, so a reader opens either the old or the new descriptor, whole.
+DESCRIPTOR_TMP="$DESCRIPTOR.$$.tmp"
 CREDENTIALS_FILE="$QA_DIR/test-env.env"
 BUILD_CACHE="$QA_DIR/test-env-build-cache.json"
 # One bootstrap at a time on the whole machine, not per checkout: every checkout boots the same
@@ -102,7 +109,8 @@ fi
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 log() { printf '[test-env] %s\n' "$*" >&2; }
-json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$2" | head -1; }
+# The value of key $1 in file $2, or in standard input without $2.
+json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" ${2+"$2"} | head -1; }
 # Whether a process exists: `ps -p`, not `kill -0`, which fails with EPERM for another user's
 # process (the lock below is shared by the whole machine).
 alive() { [ -n "${1:-}" ] && ps -p "$1" >/dev/null 2>&1; }
@@ -124,8 +132,11 @@ applications_run() {
 }
 set_descriptor_status() {
   [ -f "$DESCRIPTOR" ] || return 0
-  sed -i.bak "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" || true
-  rm -f "$DESCRIPTOR.bak"
+  if sed "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" >"$DESCRIPTOR_TMP" &&
+     mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"; then
+    return 0
+  fi
+  rm -f "$DESCRIPTOR_TMP"
 }
 
 # --- --foreground (#383): one start command for cezar Preview, sv-prepare-qa-tests and the QA
@@ -148,10 +159,17 @@ fg_read_role() {
     *) FG_ROLE="" ;;
   esac
 }
-# Whether the descriptor still records this owner's run as running.
+# One read of the descriptor (#457): every decision below takes its values from the same version of
+# it, so a replacement that lands in between cannot mix the status of one run with the runId of
+# another. Empty values when there is no descriptor.
+fg_read_descriptor() {
+  FG_DESCRIPTOR=$(cat "$DESCRIPTOR" 2>/dev/null || true)
+  FG_STATUS=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get status)
+  FG_CURRENT=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get runId)
+}
+# Whether the last read of the descriptor records this owner's run as running.
 fg_still_ours() {
-  [ -n "$FG_RUN" ] && [ "$(json_get status "$DESCRIPTOR")" = running ] &&
-    [ "$(json_get runId "$DESCRIPTOR")" = "$FG_RUN" ]
+  [ -n "$FG_RUN" ] && [ "$FG_STATUS" = running ] && [ "$FG_CURRENT" = "$FG_RUN" ]
 }
 # Returns the exit status of test-env-down.sh: non-zero when the infrastructure still runs (#449).
 fg_teardown() {
@@ -189,6 +207,7 @@ fg_signal() {
     [ "$FG_CHILD_STATUS" = 0 ] || exit "$FG_CHILD_STATUS"
   fi
   [ -n "$FG_ROLE" ] || fg_read_role
+  fg_read_descriptor
   if [ "$FG_ROLE" = owner ] && fg_still_ours; then
     log "closing the owner of environment $FG_RUN; stopping it"
     if ! fg_teardown; then
@@ -209,6 +228,9 @@ if [ "$FOREGROUND" = 1 ]; then
   FG_SLEEP=""
   FG_ROLE=""
   FG_RUN=""
+  FG_DESCRIPTOR=""
+  FG_STATUS=""
+  FG_CURRENT=""
   FG_CHILD_STATUS=0
   child_flags=""
   [ "$FORCE_REBUILD" = 1 ] && child_flags="$child_flags --force-rebuild"
@@ -233,16 +255,18 @@ if [ "$FOREGROUND" = 1 ]; then
     log "the boot printed no TEST_ENV_REUSED or TEST_ENV_RUN_ID; see $FG_OUT"
     exit 1
   fi
+  # The applications to watch, from one read of the descriptor too, before the attach is reported.
+  fg_read_descriptor
+  fg_api=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get apiPid)
+  fg_worker=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get workerPid)
+  fg_web=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get webPid)
+  fg_tagged=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get runIdInEnvironment)
+  fg_started=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get startedAt)
   if [ "$FG_ROLE" = owner ]; then
     log "attached in the foreground as the owner – closing this terminal stops the environment"
   else
     log "attached in the foreground as a viewer of an environment started elsewhere – closing this terminal stops nothing; to stop the environment, close the owner's terminal or run: sh .ai/scripts/test-env-down.sh"
   fi
-  fg_tagged=$(json_get runIdInEnvironment "$DESCRIPTOR")
-  fg_started=$(json_get startedAt "$DESCRIPTOR")
-  fg_api=$(json_get apiPid "$DESCRIPTOR")
-  fg_worker=$(json_get workerPid "$DESCRIPTOR")
-  fg_web=$(json_get webPid "$DESCRIPTOR")
   # While the applications of this run live (#456): not merely their PIDs, which another program may
   # hold once an application has crashed.
   while applications_run "$FG_RUN" "$fg_tagged" "$fg_started" "$fg_api" "$fg_worker" "$fg_web"; do
@@ -252,6 +276,7 @@ if [ "$FOREGROUND" = 1 ]; then
     FG_SLEEP=""
   done
   # The applications ended: a crash of this owner's run, or a stop or replacement from elsewhere.
+  fg_read_descriptor
   if [ "$FG_ROLE" = owner ] && fg_still_ours; then
     # A signal during this teardown must not start a second one or change the exit code.
     trap '' HUP INT TERM
@@ -259,13 +284,12 @@ if [ "$FOREGROUND" = 1 ]; then
     fg_teardown || log "stopping environment $FG_RUN failed; see $FG_LOG"
     exit 1
   fi
-  current=$(json_get runId "$DESCRIPTOR")
-  if [ -n "$current" ] && [ "$current" != "$FG_RUN" ]; then
-    log "environment $FG_RUN was replaced by $current; detaching – the new environment keeps running; to stop it, run: sh .ai/scripts/test-env-down.sh"
-  elif [ "$(json_get status "$DESCRIPTOR")" = stop-failed ]; then
+  if [ -n "$FG_CURRENT" ] && [ "$FG_CURRENT" != "$FG_RUN" ]; then
+    log "environment $FG_RUN was replaced by $FG_CURRENT; detaching – the new environment keeps running; to stop it, run: sh .ai/scripts/test-env-down.sh"
+  elif [ "$FG_STATUS" = stop-failed ]; then
     log "the stop of environment $FG_RUN elsewhere failed; its infrastructure may still run; detaching"
   else
-    log "environment $FG_RUN was stopped elsewhere ($(json_get status "$DESCRIPTOR")); detaching"
+    log "environment $FG_RUN was stopped elsewhere ($FG_STATUS); detaching"
   fi
   exit 0
 fi
@@ -346,8 +370,14 @@ interrupted() {
   exec >>"$LOG_DIR/boot-interrupt.log" 2>&1
   log "interrupted (exit $1); stopping what this boot started"
   # Interrupted after the descriptor was written but before the result was printed: nobody was
-  # told the environment runs, so it is stopped and recorded as such.
-  if [ -n "${RUN_ID:-}" ]; then set_descriptor_status stopping; fi
+  # told the environment runs, so it is stopped and recorded as such. Interrupted while it was
+  # written: the descriptor still records an earlier run, which this cleanup leaves as it is (#457).
+  rm -f "$DESCRIPTOR_TMP"
+  recorded=false
+  if [ -n "${RUN_ID:-}" ] && [ "$(json_get runId "$DESCRIPTOR" 2>/dev/null)" = "$RUN_ID" ]; then
+    recorded=true
+    set_descriptor_status stopping
+  fi
   pids=""
   for pid in "$STEP_PID" "$API_PID" "$WORKER_PID" "$WEB_PID"; do [ -n "$pid" ] && pids="$pids $pid"; done
   # shellcheck disable=SC2086 # one PID per word
@@ -363,7 +393,7 @@ interrupted() {
     wait "$cleanup_pid" || cleanup_status=$?
   done
   # A failed `compose down` leaves the infrastructure running: never "stopped" (#449).
-  if [ -n "${RUN_ID:-}" ]; then
+  if [ "$recorded" = true ]; then
     if [ "$cleanup_status" = 0 ]; then set_descriptor_status stopped; else set_descriptor_status stop-failed; fi
   fi
   exit "$1"
@@ -564,9 +594,12 @@ if sh "$BROWSER_COMMAND" --version >/dev/null 2>&1; then
 fi
 
 ELAPSED=$(( $(date +%s) - START ))
-# Set only here: the cleanup of an interrupted boot reads a set RUN_ID as "the descriptor is written".
+# Set only here: the cleanup of an interrupted boot reads a set RUN_ID, recorded in the descriptor, as
+# "the descriptor is written".
 RUN_ID="$BOOT_RUN_ID"
-cat > "$DESCRIPTOR" <<EOF
+# Written whole to the temporary file, then renamed over the descriptor (#457): `cat >` on the
+# descriptor itself would truncate it first, and a reader in between would see it empty or cut off.
+cat > "$DESCRIPTOR_TMP" <<EOF
 {
   "version": 1,
   "runId": "$RUN_ID",
@@ -604,6 +637,7 @@ cat > "$DESCRIPTOR" <<EOF
   "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). For a second page of the lists (Load more): sh .ai/scripts/test-env-pages.sh add, and remove afterwards. Stop with: sh .ai/scripts/test-env-down.sh"
 }
 EOF
+mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
 print_result 0 "$RUN_ID"
 BOOTED=1
