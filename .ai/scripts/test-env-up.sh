@@ -40,6 +40,8 @@
 #   2026-11-23 writes the descriptor and marks its status under the lock of .ai/qa (flock, #468), which
 #              test-env-down.sh takes too, and the cleanup of an interrupted boot marks it only while it
 #              still records this boot: neither ever marks a successor's descriptor
+#              the infrastructure of a stop that is still running ("stopping") is this boot's, as after a
+#              failed one: that down leaves it to the boot that replaces its descriptor (#468)
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -89,6 +91,10 @@ BUILD_CACHE="$QA_DIR/test-env-build-cache.json"
 LOCK_DIR="${TEST_ENV_LOCK_DIR:-/tmp/$COMPOSE_PROJECT-env.lock}"
 LOG_DIR="$QA_DIR/logs"
 mkdir -p "$QA_DIR" "$LOG_DIR"
+# Every write of the descriptor holds the lock of .ai/qa (flock of util-linux, as setsid, #468):
+# refuse before anything starts rather than fail at the write, with the applications running.
+command -v flock >/dev/null 2>&1 ||
+  { echo "[test-env] flock (util-linux) is missing: the writes of $DESCRIPTOR need it" >&2; exit 1; }
 
 FORCE=0
 FORCE_REBUILD=0
@@ -532,11 +538,12 @@ fi
 SERVICES_STARTED=true
 [ -n "$($COMPOSE ps -q postgres 2>/dev/null)" ] && SERVICES_STARTED=false
 # The infrastructure a failed stop of this checkout left running (#449) is still this script's: the
-# next stop must take it down rather than leave it as someone else's.
+# next stop must take it down rather than leave it as someone else's. So is the infrastructure of a
+# stop that is still running ("stopping"): that down leaves it to the boot that replaces its
+# descriptor (#468), so this boot's down must stop it.
 if [ "$SERVICES_STARTED" = false ] && [ -f "$DESCRIPTOR" ] &&
-   [ "$(json_get status "$DESCRIPTOR")" = stop-failed ] &&
    [ "$(json_get servicesStartedByScript "$DESCRIPTOR")" = true ]; then
-  SERVICES_STARTED=true
+  case "$(json_get status "$DESCRIPTOR")" in stopping | stop-failed) SERVICES_STARTED=true ;; esac
 fi
 log "starting the infrastructure"
 run_step "$COMPOSE up -d --wait" "$LOG_DIR/compose.log"

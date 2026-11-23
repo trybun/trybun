@@ -48,6 +48,10 @@ json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" ${2+"$2
 # The run this down stops is the one the descriptor records now, read once (#468): its status, run
 # id and PIDs all come from this copy, never from separate reads that a replacement can land between.
 RECORDED=$(cat "$DESCRIPTOR" 2>/dev/null) || { echo "No test environment recorded."; exit 0; }
+# Each status update holds the lock of .ai/qa (flock of util-linux, as setsid in test-env-up.sh,
+# #468): refuse before anything is signalled rather than stop with the descriptor left "running".
+command -v flock >/dev/null 2>&1 ||
+  { echo "[test-env] flock (util-linux) is missing: the status updates of $DESCRIPTOR need it" >&2; exit 1; }
 recorded() { printf '%s\n' "$RECORDED" | json_get "$1"; }
 RUN_ID=$(recorded runId)
 # "stopping" before any process is signalled (#383): an attached --foreground owner that sees its
@@ -142,7 +146,8 @@ if [ "$running" = true ]; then
   done
 fi
 # A boot that replaced the descriptor meanwhile runs on this infrastructure (the same Compose
-# project) and records whether it started it, so its own down decides about it (#468).
+# project), and it took it over as its own: it found it running and this descriptor "stopping" with
+# servicesStartedByScript (test-env-up.sh), so its own down stops it (#468).
 SUCCESSOR=$(json_get runId "$DESCRIPTOR" 2>/dev/null || true)
 [ "$SUCCESSOR" != "$RUN_ID" ] || SUCCESSOR=""
 if [ "$KEEP_SERVICES" = 0 ] && [ "$(recorded servicesStartedByScript)" = true ]; then
