@@ -14,7 +14,8 @@
 #              descriptor "stop-failed", TEST_ENV_STATUS=stop-failed and exit 1 – instead of
 #              "stopped" while the infrastructure keeps running; running it again retries the down
 #   2026-11-23 signals the recorded applications only while the descriptor is not yet "stopped" or
-#              "stop-failed" (#452): after they have exited their PIDs may belong to other processes
+#              "stop-failed" (#452): after they have exited their PIDs may belong to other processes;
+#              such a down keeps that status until its `compose down` has succeeded
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
@@ -37,10 +38,11 @@ set_status() {
 # "stopped" and "stop-failed" are written only after the applications were signalled and have
 # exited, and the kernel may have given their PIDs to other processes since (#452): a later down
 # (a retry after "stop-failed", or a second one) signals no process group; it repeats at most the
-# `compose down`.
+# `compose down`. It also keeps that status meanwhile: a retry cut off during the `compose down`
+# must leave "stop-failed", which the next down and the next boot (servicesStartedByScript) read.
 APP_KEYS="apiPid workerPid webPid"
 case "$(json_get status)" in stopped | stop-failed) APP_KEYS="" ;; esac
-set_status stopping
+if [ -n "$APP_KEYS" ]; then set_status stopping; fi
 PIDS=""
 for key in $APP_KEYS; do
   pid=$(json_get "$key")

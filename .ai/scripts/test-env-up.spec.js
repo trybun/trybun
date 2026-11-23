@@ -37,7 +37,13 @@ case "$*" in
   "compose -p trybun-test -f compose.yaml -f compose.dev.yaml ps -q postgres")
     [ ! -e "$STUB_DIR/compose-running" ] || echo postgres-container ;;
   # \`down\` fails as Compose does without the .env of compose.yaml while this file exists (#449).
+  # ... and hangs while "compose-down-blocks" exists, so a test can cut a stop off during it.
   "compose -p trybun-test -f compose.yaml -f compose.dev.yaml down")
+    if [ -e "$STUB_DIR/compose-down-blocks" ]; then
+      sleep 300 &
+      echo "$!" >>"$STUB_DIR/grandchildren"
+      wait
+    fi
     if [ -e "$STUB_DIR/compose-down-fails" ]; then
       echo 'required variable TRYBUN_S3_ACCESS_KEY_ID is missing a value' >&2
       exit 1
@@ -932,6 +938,39 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       expect(readLines(join(folder, 'log'))).toContain(
         'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down',
       );
+      expect(descriptor().status).toBe('stopped');
+    });
+
+    it('keeps stop-failed while a retry runs the compose down, so a cut-off retry is retried alike (#452)', async () => {
+      const composeDown = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down';
+      expect(down().status).toBe(1);
+      rmSync(join(folder, 'compose-down-fails'));
+      writeFileSync(join(folder, 'compose-down-blocks'), '');
+      writeFileSync(join(folder, 'log'), '');
+      const retry = spawn('sh', ['.ai/scripts/test-env-down.sh'], {
+        cwd: checkout,
+        env: environment(),
+        detached: true,
+        stdio: 'ignore',
+      });
+      const retryExited = new Promise((resolve) => retry.on('exit', resolve));
+      await until(
+        () => readLines(join(folder, 'log')).includes(composeDown),
+        10_000,
+        () => 'the retry did not reach the compose down',
+      );
+
+      const statusDuringRetry = descriptor().status;
+      // Cut off, as a closed terminal or a SIGKILL of the caller would.
+      process.kill(-retry.pid, 'SIGKILL');
+      await retryExited;
+      rmSync(join(folder, 'compose-down-blocks'));
+      expect(statusDuringRetry).toBe('stop-failed');
+      expect(descriptor().status).toBe('stop-failed');
+
+      const pids = reuseRecordedPids();
+      expect(down().status).toBe(0);
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
       expect(descriptor().status).toBe('stopped');
     });
   });
