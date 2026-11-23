@@ -10,10 +10,14 @@
 #              ports free
 #   2026-11-20 marks the descriptor "stopping" before it signals the applications (#383), so an
 #              attached `test-env-up.sh --foreground` owner tells a stop from a crash
+#   2026-11-23 a failed `compose down` (#449) is reported – the cause in .ai/qa/logs/down.log, the
+#              descriptor "stop-failed", TEST_ENV_STATUS=stop-failed and exit 1 – instead of
+#              "stopped" while the infrastructure keeps running; running it again retries the down
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 DESCRIPTOR=.ai/qa/test-env.json
+LOG_DIR=.ai/qa/logs
 # The Compose project of test-env-up.sh (keep in sync): never `trybun`, the project of an installation.
 COMPOSE="docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml"
 KEEP_SERVICES=0
@@ -24,7 +28,7 @@ json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$DESCR
 # processes end then knows they were stopped, not crashed; the reuse check reads only "running".
 # A failed update is logged and never stops the teardown.
 set_status() {
-  sed -i.bak "s/\"status\": \"[a-z]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" ||
+  sed -i.bak "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" ||
     echo "could not mark $DESCRIPTOR $1" >&2
   rm -f "$DESCRIPTOR.bak"
 }
@@ -55,7 +59,17 @@ if [ "$running" = true ]; then
   for pid in $PIDS; do kill -s KILL "-$pid" 2>/dev/null || true; done
 fi
 if [ "$KEEP_SERVICES" = 0 ] && [ "$(json_get servicesStartedByScript)" = true ]; then
-  $COMPOSE down >/dev/null 2>&1 || true
+  mkdir -p "$LOG_DIR"
+  # A failed down leaves the infrastructure running and its ports bound (#449): never "stopped".
+  if ! $COMPOSE down >"$LOG_DIR/down.log" 2>&1; then
+    set_status stop-failed
+    echo "[test-env] stopping the infrastructure failed, see $LOG_DIR/down.log" >&2
+    # Compose reads the required variables of compose.yaml from .env, also for `down`.
+    [ -f .env ] ||
+      echo "[test-env] there is no .env in $ROOT: Compose needs it to read compose.yaml; restore it (cp .env.example .env) and run this script again" >&2
+    echo "TEST_ENV_STATUS=stop-failed"
+    exit 1
+  fi
 fi
 set_status stopped
 echo "TEST_ENV_STATUS=stopped"
