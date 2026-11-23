@@ -158,6 +158,26 @@ describe('TicketList', () => {
     expect(within(rows[2]!).getAllByText('Not set')).toHaveLength(2);
   });
 
+  it('says the tickets are loading until the read settles, never the empty state (#428)', async () => {
+    fake.on('GET /api/v1/projects', { data: { items: [], nextCursor: null } });
+    const answer = fake.hold('GET /api/v1/tickets');
+    renderInApp(
+      <TicketList
+        state={stateOfView('my_open_tickets')}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    expect((await screen.findByRole('status')).textContent).toBe('Loading tickets…');
+    expect(screen.queryByText('No open tickets are assigned to you.')).toBeNull();
+    expect(screen.queryByRole('table')).toBeNull();
+
+    answer({ data: { items: [ticket(1)], nextCursor: null } });
+    await screen.findAllByRole('link', { name: 'Ticket 1' });
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('names the view in its empty state and offers Clear filters for own filters', async () => {
     answerList([]);
     renderInApp(

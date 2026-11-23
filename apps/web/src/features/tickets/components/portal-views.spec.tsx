@@ -3,6 +3,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { EndUserTicket } from '@trybun/contracts/tickets';
 import type { ComponentProps } from 'react';
+import { onlineManager } from '@tanstack/react-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attachmentResponse } from '../../../../test/factories/attachment.factory.js';
 import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
@@ -103,9 +104,38 @@ afterEach(() => {
   fake.reset();
   fake.client.GET.mockImplementation(answerRoute);
   toastAdd.mockClear();
+  onlineManager.setOnline(true);
 });
 
 describe('MyTicketsList', () => {
+  it('says the tickets are loading until the read settles, never the empty state (#428)', async () => {
+    const answer = fake.hold('GET /api/v1/tickets');
+    renderInApp(<MyTicketsList />);
+
+    expect((await screen.findByRole('status')).textContent).toBe('Loading your tickets…');
+    expect(screen.queryByText("You haven't created any tickets yet.")).toBeNull();
+
+    answer({ data: { items: [ticket()], nextCursor: null } });
+    expect(await screen.findByText('Wrong VAT rate')).toBeDefined();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('says the read waits for the connection while the browser is offline (#428)', async () => {
+    fake.on('GET /api/v1/tickets', { data: { items: [ticket()], nextCursor: null } });
+    onlineManager.setOnline(false);
+    renderInApp(<MyTicketsList />);
+
+    // TanStack Query pauses the read until the connection returns.
+    expect((await screen.findByRole('status')).textContent).toBe(
+      "You're offline – loading resumes when the connection returns.",
+    );
+    expect(fake.callsTo('GET /api/v1/tickets')).toHaveLength(0);
+
+    onlineManager.setOnline(true);
+    expect(await screen.findByText('Wrong VAT rate')).toBeDefined();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('lists the tickets awaiting a reply first, under their own heading, with their projects', async () => {
     fake.on('GET /api/v1/tickets', {
       data: {
@@ -159,6 +189,34 @@ describe('MyTicketsList', () => {
       await expectRateLimitedAlert(level, '/portal');
     },
   );
+});
+
+describe('PortalProjectList', () => {
+  it('says the projects are loading until the read settles, never an empty grid (#428)', async () => {
+    const answer = fake.hold('GET /api/v1/projects');
+    renderInApp(<PortalProjectList />);
+
+    expect((await screen.findByRole('status')).textContent).toBe('Loading your projects…');
+    expect(screen.queryByRole('list')).toBeNull();
+
+    answer({
+      data: {
+        items: [{ ...PROJECT, state: 'active', allowedActions: ['read'] }],
+        nextCursor: null,
+      },
+    });
+    expect(await screen.findByRole('link', { name: 'Customer portal' })).toBeDefined();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('shows the empty state when the browser reads no projects, after a failed prefetch (#428)', async () => {
+    fake.on('GET /api/v1/projects', { data: { items: [], nextCursor: null } });
+    renderInApp(<PortalProjectList />);
+
+    expect(await screen.findByText("You don't have access to any project yet")).toBeDefined();
+    expect(screen.getByText('Ask the person who invited you to add you to one.')).toBeDefined();
+    expect(screen.queryByRole('list')).toBeNull();
+  });
 });
 
 describe('when Show more fails (#434)', () => {

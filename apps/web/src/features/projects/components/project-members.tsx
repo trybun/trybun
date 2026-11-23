@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { useChangeProjectMemberRole, useRemoveProjectMember } from '../mutations.js';
 import { projectMembersQueryOptions, projectRoleCountQueryOptions } from '../queries.js';
@@ -34,7 +35,8 @@ type PendingChange = { kind: 'remove' | 'demote'; member: ProjectMember };
  * The Members tab (§7.4): every member with display name, GitHub login and role; with
  * `manage_members` also Add member, the pending invitations, a role selector and Remove per row.
  * End users with personal access (`end_user`) keep their role: a team role is never offered to
- * them. Removing or demoting the last Project manager is confirmed with the warning of §7.4.
+ * them. Removing or demoting the last Project manager is confirmed with the warning of §7.4. While
+ * the browser reads the members, a status says so in their place (§18.5, #428).
  */
 export function ProjectMembers({ project }: { project: Project }) {
   const t = useTranslations('projects');
@@ -107,8 +109,11 @@ export function ProjectMembers({ project }: { project: Project }) {
         </h2>
         {canManage && <LazyAddMemberDialog projectId={project.id} />}
       </div>
-      {members.isSuccess && items.length === 0 && (
-        <p className="text-sm text-muted-foreground">{t('members.empty')}</p>
+      {members.isPending ? (
+        // Never the empty state, which looks like "no members" (#428).
+        <LoadingStatus fetchStatus={members.fetchStatus}>{t('members.loading')}</LoadingStatus>
+      ) : (
+        items.length === 0 && <p className="text-sm text-muted-foreground">{t('members.empty')}</p>
       )}
       <ul className="flex flex-col gap-2">
         {items.map((member) => (

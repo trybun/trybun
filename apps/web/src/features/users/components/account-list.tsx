@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl';
 import { Fragment, useDeferredValue, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { AccountInvitations } from '../../invitations/components/account-invitations.js';
 import { usersQueryOptions } from '../queries.js';
@@ -137,9 +138,7 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
       ) : accounts.isPending ? (
         // Read in the browser – the prefetch of the server failed, or a new search: never the empty
         // table, which looks like "no accounts" (#427).
-        <p role="status" className="text-sm text-muted-foreground">
-          {t('loading')}
-        </p>
+        <LoadingStatus fetchStatus={accounts.fetchStatus}>{t('loading')}</LoadingStatus>
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('empty')}</p>
       ) : (

@@ -2,13 +2,17 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import {
   chmodSync,
+  closeSync,
   copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -20,7 +24,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 // pnpm on PATH (#352): only `--reset` removes the data volumes of the Compose project `trybun-test`.
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
-const SCRIPTS = ['test-env-up.sh', 'test-env-down.sh'];
+const SCRIPTS = ['test-env-up.sh', 'test-env-down.sh', 'test-env-processes.sh'];
+// The env of the system, which the stub below runs.
+const ENV = execFileSync('sh', ['-c', 'command -v env'], { encoding: 'utf8' }).trim();
 
 // Each stub logs its arguments; `docker volume ls` answers from STUB_VOLUMES ("<project>_<volume>").
 const STUBS = {
@@ -89,6 +95,18 @@ echo "$$" >>"$STUB_DIR/pids"
 touch "$STUB_DIR/serving-$port"
 trap 'sleep "\${STUB_STOP_SECONDS:-1}"; rm -f "$STUB_DIR/serving-$port"; exit 0' TERM
 while :; do sleep 1; done
+`,
+  // setsid of test-env-up.sh runs env as the leader of each application's process group. With
+  // STUB_REUSED_LEADER, the leader of the web application runs it as a child and itself becomes
+  // another program without the run id, as the program the kernel gives the recorded PID to once
+  // the application has crashed (#456); a test then ends the application, its child.
+  env: `#!/bin/sh
+case "\${STUB_REUSED_LEADER:-}:$*" in
+  1:*"next start"*)
+    ${ENV} "$@" &
+    exec ${ENV} -u TEST_ENV_RUN_ID sleep 300 ;;
+esac
+exec ${ENV} "$@"
 `,
 };
 
@@ -314,6 +332,13 @@ const alive = (pid) => {
     return false;
   }
 };
+/** The PIDs of the processes of process group `group`. */
+const members = (group) =>
+  execFileSync('ps', ['-e', '-o', 'pid=', '-o', 'pgid='], { encoding: 'utf8' })
+    .split('\n')
+    .map((line) => line.trim().split(/\s+/))
+    .filter(([, pgid]) => pgid === String(group))
+    .map(([pid]) => pid);
 const descriptor = () => JSON.parse(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8'));
 const lockExists = () => existsSync(join(folder, 'test-env.lock'));
 
@@ -683,6 +708,29 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
       await stopped(pids);
     });
 
+    it('stops the rest and exits 1 when an application crashes while another program holds its PID (#456)', async () => {
+      extraEnvironment = { STUB_REUSED_LEADER: '1' };
+      const run = start('--foreground');
+      await run.output(owner);
+      const [api, worker, web] = applications();
+      const application = members(web).filter((pid) => pid !== web);
+      expect(application.length).toBeGreaterThan(0);
+
+      // The web application crashes; its recorded PID stays with a program without the run id.
+      for (const pid of application) {
+        try {
+          process.kill(Number(pid), 'SIGKILL');
+        } catch {
+          // Exited since the listing, e.g. a `sleep 1` of the stub.
+        }
+      }
+
+      expect((await run.exited()).code).toBe(1);
+      expect(run.stderr).toMatch(/an application of environment \S+ exited/);
+      await stopped([api, worker]);
+      expect(alive(web)).toBe(true);
+    });
+
     it('keeps exit code 1 when a signal arrives during the teardown after a crash', async () => {
       // The remaining applications need 4 s to stop, so the signal lands during the teardown.
       extraEnvironment = { STUB_STOP_SECONDS: '4' };
@@ -727,6 +775,68 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
       expect(descriptor().runId).not.toBe(before);
       expect(descriptor().status).toBe('running');
       for (const pid of applications()) expect(alive(pid), pid).toBe(true);
+    });
+
+    // A replacement can land between any two reads of the descriptor (#457). Stubs of `cat` and
+    // `sed` count the reads of it once the file "swap-after" exists and rename the successor's
+    // descriptor over it right after the read that file names, so each case puts the replacement
+    // at another point of the owner's decision.
+    describe('when a replacement lands while it reads the descriptor (#457)', () => {
+      const real = (name) =>
+        execFileSync('sh', ['-c', `command -v ${name}`], { encoding: 'utf8' }).trim();
+
+      beforeEach(() => {
+        const cat = real('cat');
+        for (const name of ['cat', 'sed']) {
+          const stub = `#!/bin/sh
+${real(name)} "$@"
+status=$?
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ -e "$STUB_DIR/swap-after" ]; then
+    echo "${name}" >>"$STUB_DIR/reads"
+    if [ "$(wc -l <"$STUB_DIR/reads")" -eq "$(${cat} "$STUB_DIR/swap-after")" ]; then
+      mv -f "$STUB_DIR/successor.json" .ai/qa/test-env.json
+    fi
+  fi
+done
+exit "$status"
+`;
+          writeFileSync(join(folder, 'bin', name), stub);
+          chmodSync(join(folder, 'bin', name), 0o755);
+        }
+      });
+
+      // Replaced before its read, it names the successor; after it, the stop it read. Against
+      // separate reads, reads 2 and 3 gave "stopped elsewhere (running)" and read 1 a second read.
+      it.each([
+        [0, /environment \S+ was replaced by successor-run; detaching/],
+        [1, /environment \S+ was stopped elsewhere \(stopping\); detaching/],
+        [2, /environment \S+ was stopped elsewhere \(stopping\); detaching/],
+        [3, /environment \S+ was stopped elsewhere \(stopping\); detaching/],
+      ])('names what one read shows when replaced after read %i', async (read, message) => {
+        const run = start('--foreground');
+        await run.output(owner);
+        const stopping = { ...descriptor(), status: 'stopping' };
+        const successor = { ...descriptor(), runId: 'successor-run', status: 'running' };
+        writeFileSync(join(folder, 'successor.json'), JSON.stringify(successor, null, 2));
+        const path = join(checkout, '.ai/qa/test-env.json');
+        if (read === 0) {
+          renameSync(join(folder, 'successor.json'), path);
+        } else {
+          // A stop from elsewhere has begun: the descriptor says "stopping", renamed into place.
+          writeFileSync(`${path}.spec.tmp`, JSON.stringify(stopping, null, 2));
+          renameSync(`${path}.spec.tmp`, path);
+          writeFileSync(join(folder, 'swap-after'), `${read}\n`);
+        }
+
+        process.kill(-Number(stopping.app.webPid), 'SIGKILL');
+
+        expect((await run.exited()).code).toBe(0);
+        expect(run.stderr).toMatch(message);
+        expect(run.stderr).not.toMatch(/\(running\)|was replaced by ;/);
+        if (read > 0) expect(readLines(join(folder, 'reads'))).toHaveLength(1);
+        expect(downs()).toBe(0);
+      });
     });
 
     it('stops the environment for a signal as soon as the boot result is printed', async () => {
@@ -872,12 +982,6 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
     });
 
   const groupAlive = (pid) => alive(-Number(pid));
-  const members = (group) =>
-    execFileSync('ps', ['-e', '-o', 'pid=', '-o', 'pgid='], { encoding: 'utf8' })
-      .split('\n')
-      .map((line) => line.trim().split(/\s+/))
-      .filter(([, pgid]) => pgid === String(group))
-      .map(([pid]) => pid);
 
   /**
    * Ends the applications without a stop, as a crash with no --foreground owner or a reboot does
@@ -910,18 +1014,20 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       expect(descriptor().status).toBe('stopped');
     });
 
-    it('signals none of them when the next boot restarts the stale environment', async () => {
+    it('does not reuse it on the next boot, which restarts it signalling none of them (#456)', async () => {
       expect(up().status).toBe(0);
+      const before = descriptor().runId;
       await endWithoutStop();
       const pids = reuseRecordedPids();
-      // The stubbed health checks still pass, so the reuse check finds the environment stale by its
-      // age instead of by its health, as after a reboot; the restart runs the same down.
-      extraEnvironment = { TEST_ENV_CACHE_TTL_SECONDS: '0' };
 
+      // The stubbed health checks still pass, as when the environment of another checkout answers on
+      // the fixed ports, and the environment is within its TTL and of the same sources.
       const boot = up();
 
       expect(boot.status, boot.stderr).toBe(0);
       expect(boot.stderr).toContain('the recorded environment is stale; restarting it');
+      expect(boot.stdout).toContain('TEST_ENV_REUSED=0');
+      expect(descriptor().runId).not.toBe(before);
       for (const pid of pids) expect(alive(pid), pid).toBe(true);
       expect(descriptor().status).toBe('running');
       expect(descriptor().app.webPid).not.toBe(pids[2]);
@@ -999,6 +1105,21 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       expect(stdout).toContain('TEST_ENV_STATUS=stopped');
       // Gone when the down returns: it waited for them, not only for the leaders.
       for (const pid of processes) expect(alive(pid), pid).toBe(false);
+    });
+
+    it('reuses it while its applications still run (#456)', async () => {
+      expect(up().status).toBe(0);
+      const { runId } = descriptor();
+      // The boot recorded them seconds after starting them (the health wait).
+      await sleep(2_100);
+      recordNow();
+      untagged();
+
+      const reuse = up();
+
+      expect(reuse.status, reuse.stderr).toBe(0);
+      expect(reuse.stdout).toContain('TEST_ENV_REUSED=1');
+      expect(reuse.stdout).toContain(`TEST_ENV_RUN_ID=${runId}\n`);
     });
 
     it('signals none of the programs that started after the boot recorded them', async () => {
@@ -1205,6 +1326,56 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       for (const pid of pids) expect(alive(pid), pid).toBe(true);
       expect(descriptor().status).toBe('stopped');
     });
+  });
+});
+
+describe('the descriptor (#457)', PROCESS_TESTS, () => {
+  const path = () => join(checkout, '.ai/qa/test-env.json');
+  /**
+   * Opens the descriptor as a reader would and returns what that reader gets once `change` has
+   * run: a descriptor written in place (`cat >`) gives it the truncated, rewritten file, one
+   * renamed over the old gives it the old file, whole. The old `sed -i.bak` of the down renamed
+   * too, so only the boot half fails against the scripts before #457; the moment without a
+   * descriptor between the two renames of `sed -i.bak` is not observable here.
+   */
+  function readAcross(change) {
+    const fd = openSync(path(), 'r');
+    try {
+      const inode = statSync(path()).ino;
+      const result = change();
+      return {
+        result,
+        read: JSON.parse(readFileSync(fd, 'utf8')),
+        replaced: statSync(path()).ino !== inode,
+      };
+    } finally {
+      closeSync(fd);
+    }
+  }
+  const leftovers = () =>
+    readdirSync(join(checkout, '.ai/qa')).filter((name) => /^test-env\.json./.test(name));
+
+  it('is replaced, never rewritten in place, by a boot and by each status of a down', () => {
+    const first = up();
+    expect(first.status, first.stderr).toBe(0);
+    const runId = descriptor().runId;
+
+    const stop = readAcross(() =>
+      spawnSync('sh', ['.ai/scripts/test-env-down.sh'], { cwd: checkout, env: environment() }),
+    );
+    expect(stop.result.status, String(stop.result.stderr)).toBe(0);
+    expect(stop.replaced).toBe(true);
+    expect(stop.read).toMatchObject({ runId, status: 'running' });
+    expect(descriptor()).toMatchObject({ runId, status: 'stopped' });
+
+    const boot = readAcross(() => up());
+    expect(boot.result.status, boot.result.stderr).toBe(0);
+    expect(boot.replaced).toBe(true);
+    expect(boot.read).toMatchObject({ runId, status: 'stopped' });
+    expect(descriptor().status).toBe('running');
+    expect(descriptor().runId).not.toBe(runId);
+
+    expect(leftovers()).toEqual([]);
   });
 });
 

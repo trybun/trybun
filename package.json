@@ -11,7 +11,7 @@
     "build": "turbo run build",
     "dev": "docker compose -f compose.yaml -f compose.dev.yaml up -d --wait && docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config && pnpm db:migrate && pnpm db:seed && turbo run dev",
     "prepare": "node scripts/install-git-hooks.js",
-    "lint": "turbo run lint && prettier --check . && node scripts/check-prisma.js && node scripts/check-supply-chain.js && shellcheck deploy/trybun docker/backup/backup.sh scripts/restore-test.sh .ai/scripts/test-env-up.sh .ai/scripts/test-env-down.sh .ai/scripts/test-env-browser.sh .ai/scripts/test-env-pages.sh .githooks/commit-msg .githooks/pre-push",
+    "lint": "turbo run lint && prettier --check . && node scripts/check-prisma.js && node scripts/check-supply-chain.js && shellcheck deploy/trybun docker/backup/backup.sh scripts/restore-test.sh .ai/scripts/test-env-up.sh .ai/scripts/test-env-down.sh .ai/scripts/test-env-processes.sh .ai/scripts/test-env-browser.sh .ai/scripts/test-env-pages.sh .githooks/commit-msg .githooks/pre-push",
     "format": "prettier --write .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && vitest run --project scripts",

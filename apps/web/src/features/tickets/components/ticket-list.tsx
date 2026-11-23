@@ -25,6 +25,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useOptimistic, useState, useTransition } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { type TicketVersion, useBulkChangeTickets } from '../mutations.js';
 import { ticketListInfiniteQueryOptions } from '../queries.js';
@@ -257,7 +258,8 @@ export function TicketList({
 /**
  * The tickets of the list: as a table from the tablet width on and as cards on phones – both from
  * one TanStack Table row model and selection (Q14), switched by CSS so the server's HTML is right
- * on every device – **Show more** (Q19), and the bulk actions with their results (Q1, Q17).
+ * on every device – **Show more** (Q19), and the bulk actions with their results (Q1, Q17). While
+ * the browser reads the first page, a status says so in place of the tickets (§18.5, #428).
  */
 function TicketResults({
   state,
@@ -378,12 +380,14 @@ function TicketResults({
         />
       )}
       {/* Only a failure of the first read replaces the rows; a failed **Show more** keeps them (#434). */}
-      {tickets.isLoadingError && (
+      {tickets.isLoadingError ? (
         // A refusal shows the wait of `Retry-After` (#433), `h2` under the `h1` of the page; the
         // filters above stay usable.
         <QueryErrorAlert error={tickets.error} headingLevel={2} message={t('loadFailed')} />
-      )}
-      {tickets.data === undefined ? null : items.length === 0 ? (
+      ) : tickets.isPending ? (
+        // Never the empty state, which looks like "no tickets" (#428).
+        <LoadingStatus fetchStatus={tickets.fetchStatus}>{t('loading')}</LoadingStatus>
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-start gap-2">
           <p className="text-muted-foreground">{t(`empty.${state.view}`)}</p>
           {state.view === 'custom' && Object.keys(state.filters).length > 0 && (

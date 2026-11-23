@@ -10,6 +10,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ComponentProps, ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { apiErrorOf } from '../../../lib/errors/api-error.js';
 import {
   expectInOrder,
   FAILED_READ_MESSAGE as FAILED,
@@ -171,6 +172,15 @@ describe('OrganizationList', () => {
     expect(html).toContain('1 member<');
   });
 
+  it('says the organizations are loading while the browser reads them, never the empty state (#428)', () => {
+    // No data: the prefetch of the server failed, or a first read in the browser.
+    const html = render(<OrganizationList state="active" />);
+
+    expect(html).toBe(
+      '<p role="status" class="text-sm text-muted-foreground">Loading organizations…</p>',
+    );
+  });
+
   it('keeps the loaded organizations when a later page fails, with the error above Show more (#434)', () => {
     const html = render(<OrganizationList state="active" />, (client) =>
       seedFailedLaterPage(
@@ -313,6 +323,33 @@ describe('OrganizationProjects', () => {
     expect(html).toContain('Add project');
   });
 
+  it('says the projects to choose are loading in place of the picker (#428)', () => {
+    const html = render(<OrganizationProjects organization={organization()} />);
+
+    expect(html).toContain(
+      '<p role="status" class="text-sm text-muted-foreground">Loading projects…</p>',
+    );
+    // Never the picker without projects, which looks like "no projects to add".
+    expect(html).not.toContain('Choose a project');
+    expect(html).not.toContain('Every active project is already added.');
+    expect(html).toContain('aria-label="Remove Customer portal"');
+  });
+
+  it('shows only the error of a failed first read of the projects to choose, never the picker (#428)', () => {
+    const html = render(<OrganizationProjects organization={organization()} />, (client) => {
+      // The read failed already; the section shows that answer instead of reading again.
+      client.setDefaultOptions({ queries: { retryOnMount: false } });
+      client
+        .getQueryCache()
+        .build(client, { queryKey: ['projects', 'list', 'active'] })
+        .setState({ status: 'error', error: apiErrorOf(500, undefined), fetchStatus: 'idle' });
+    });
+
+    expect(html).toContain(`<p role="alert" class="text-sm text-destructive">${FAILED}</p>`);
+    expect(html).not.toContain('Choose a project');
+    expect(html).not.toContain('role="status"');
+  });
+
   it('says when every active project is added', () => {
     const html = render(<OrganizationProjects organization={organization()} />, (client) =>
       client.setQueryData(
@@ -420,6 +457,17 @@ describe('OrganizationMembers', () => {
       seedDetail(client, value),
     );
   }
+
+  it('says the members are loading while the browser reads them, never the empty state (#428)', () => {
+    const html = render(<OrganizationMembers organization={organization()} />);
+
+    expect(html).toContain(
+      '<p role="status" class="text-sm text-muted-foreground">Loading members…</p>',
+    );
+    expect(html).not.toContain('The organization has no members yet.');
+    // The form to add a member stays usable.
+    expect(html).toContain('E-mail address');
+  });
 
   it('lists the members with e-mail address, account state and joined date', () => {
     const html = renderMembers(organization());

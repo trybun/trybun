@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type Reply = { status?: number; data?: unknown; error?: unknown };
-type Route = Reply | ((init: unknown) => Reply);
+type Route = Reply | ((init: unknown) => Reply | Promise<Reply>);
 
 /**
  * A stand-in for the browser API client of `openapi-fetch` (§18.7): answers `METHOD /path` from a
@@ -19,9 +19,12 @@ export function createFakeApiClient() {
       if (route === undefined) {
         throw new Error(`No route for ${method} ${path}`);
       }
-      const { status = 200, data, error } = typeof route === 'function' ? route(init) : route;
-      const response = new Response(null, { status });
-      return Promise.resolve(status >= 400 ? { error, response } : { data, response });
+      return Promise.resolve(typeof route === 'function' ? route(init) : route).then(
+        ({ status = 200, data, error }) => {
+          const response = new Response(null, { status });
+          return status >= 400 ? { error, response } : { data, response };
+        },
+      );
     });
 
   return {
@@ -35,6 +38,18 @@ export function createFakeApiClient() {
     /** Answers `route` (`'POST /api/v1/users/{userId}/deactivation'`) from now on. */
     on(route: string, reply: Route) {
       routes.set(route, reply);
+    },
+    /**
+     * Holds the answers of `route` until the returned function answers them with `reply`: a read
+     * in flight, e.g. the loading state of a list (#428).
+     */
+    hold(route: string) {
+      let answer: (reply: Reply) => void = () => undefined;
+      const held = new Promise<Reply>((resolve) => {
+        answer = resolve;
+      });
+      routes.set(route, () => held);
+      return (reply: Reply) => answer(reply);
     },
     calls,
     reset() {

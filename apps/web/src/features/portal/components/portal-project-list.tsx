@@ -7,13 +7,15 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { portalProjectHref } from '../hrefs.js';
 
 /**
  * The active projects of an end user on the portal root (§5.7): one large card per project,
- * opening its project home – one column on phones, two from the tablet width on (Rule 9).
+ * opening its project home – one column on phones, two from the tablet width on (Rule 9). While the
+ * browser reads them, a status says so in their place (§18.5, #428).
  */
 export function PortalProjectList() {
   const t = useTranslations('portal.root');
@@ -29,7 +31,21 @@ export function PortalProjectList() {
       />
     );
   }
-  const items = projects.data?.pages.flatMap((page) => page.items) ?? [];
+  if (projects.isPending) {
+    // Never the empty grid (#428).
+    return <LoadingStatus fetchStatus={projects.fetchStatus}>{t('loading')}</LoadingStatus>;
+  }
+  const items = projects.data.pages.flatMap((page) => page.items);
+  // The page shows the empty state itself when its prefetch read the projects; this one follows a
+  // read of the browser, after a failed prefetch (#428).
+  if (items.length === 0) {
+    return (
+      <div className="flex max-w-prose flex-col gap-1">
+        <p className="font-medium">{t('emptyTitle')}</p>
+        <p className="text-muted-foreground">{t('emptyDescription')}</p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-4">
       <ul className="grid gap-3 md:grid-cols-2">
