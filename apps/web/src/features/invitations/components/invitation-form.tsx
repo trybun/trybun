@@ -1,12 +1,13 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type UseInfiniteQueryResult, useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   type InvitationTarget,
   type InvitationTargetType,
   invitationTargetTypeSchema,
 } from '@trybun/contracts/invitations';
+import { LIST_SEARCH_QUERY_MAX_LENGTH } from '@trybun/contracts/pagination';
 import { type ProjectMemberRole, projectMemberRoleSchema } from '@trybun/contracts/projects';
 import { emailSchema, type UserKind } from '@trybun/contracts/users';
 import { Button } from '@trybun/ui/components/button';
@@ -39,7 +40,7 @@ import {
   SelectValue,
 } from '@trybun/ui/components/select';
 import { useTranslations } from 'next-intl';
-import { useDeferredValue, useEffect } from 'react';
+import { useDeferredValue, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
@@ -47,10 +48,14 @@ import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
 import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
-import { organizationsQueryOptions } from '../../organizations/queries.js';
-import { projectsQueryOptions } from '../../projects/queries.js';
 import { useCreateInvitation } from '../mutations.js';
-import { invitationPreviewQueryOptions } from '../queries.js';
+import {
+  invitationPreviewQueryOptions,
+  organizationTargetSearchQueryOptions,
+  projectTargetSearchQueryOptions,
+  type TargetOption,
+  type TargetSearchQueryOptions,
+} from '../queries.js';
 import { InvitationPreviewLine } from './invitation-preview-line.js';
 
 /**
@@ -139,6 +144,11 @@ export function InvitationForm({
       organizationId: '',
     },
   });
+  // The chosen project and organization with their names, kept while the other target is shown.
+  const [chosen, setChosen] = useState<{
+    project: TargetOption | null;
+    organization: TargetOption | null;
+  }>({ project: null, organization: null });
   const values = useWatch({ control: form.control }) as InvitationFormValues;
   const target = targetOf(values);
   const deferredEmail = useDeferredValue(values.email);
@@ -234,7 +244,15 @@ export function InvitationForm({
           <Controller
             control={form.control}
             name="projectId"
-            render={({ field }) => <ProjectPicker value={field.value} onChange={field.onChange} />}
+            render={({ field }) => (
+              <ProjectPicker
+                selected={chosen.project}
+                onChange={(choice) => {
+                  setChosen((current) => ({ ...current, project: choice }));
+                  field.onChange(choice.value);
+                }}
+              />
+            )}
           />
         )}
         {values.type === 'project' && (
@@ -256,7 +274,13 @@ export function InvitationForm({
             control={form.control}
             name="organizationId"
             render={({ field }) => (
-              <OrganizationPicker value={field.value} onChange={field.onChange} />
+              <OrganizationPicker
+                selected={chosen.organization}
+                onChange={(choice) => {
+                  setChosen((current) => ({ ...current, organization: choice }));
+                  field.onChange(choice.value);
+                }}
+              />
             )}
           />
         )}
@@ -291,162 +315,154 @@ export function InvitationForm({
   );
 }
 
-/** The error of the read of a picker's list, with a way to read it again (#471). */
-interface PickerReadError {
-  error: Error;
-  /**
-   * Whether **Try again** is reading: the alert is gone meanwhile, so that a second failure is
-   * announced again.
-   */
-  isRetrying: boolean;
-  retry: () => void;
-}
-
-/**
- * All pages of a list the pickers search in the browser: the lists of the API have no search. A
- * failed page stops the reading and comes back as `readError`, so a failure never reads as fewer
- * items; **Try again** reads the failed page again – or the list, when its first page failed – and
- * the reading of the rest continues.
- */
-function useAllPages<Item>(query: UseInfiniteQueryResult<{ pages: { items: Item[] }[] }>): {
-  items: Item[];
-  readError: PickerReadError | null;
-} {
-  const { hasNextPage, isFetchingNextPage, isError, isFetchNextPageError, fetchNextPage, refetch } =
-    query;
-  useEffect(() => {
-    if (hasNextPage && !isFetchingNextPage && !isError) {
-      void fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
-  return {
-    items: query.data?.pages.flatMap((page) => page.items) ?? [],
-    readError: query.isError
-      ? {
-          error: query.error,
-          isRetrying: query.isFetching,
-          retry: () => void (isFetchNextPageError ? fetchNextPage() : refetch()),
-        }
-      : null,
-  };
-}
-
-/** A choice of the active projects, searched by name or key. */
-function ProjectPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+/** A choice of the active projects, searched on the server by key and name (§18.5). */
+function ProjectPicker({
+  selected,
+  onChange,
+}: {
+  selected: TargetOption | null;
+  onChange: (choice: TargetOption) => void;
+}) {
   const t = useTranslations('invitations.form');
-  const projects = useAllPages(useInfiniteQuery(projectsQueryOptions(browserApiClient, 'active')));
   return (
     <Picker
       label={t('project')}
       listLabel={t('projects')}
       empty={t('noProject')}
       loadFailed={t('projectsLoadFailed')}
-      readError={projects.readError}
-      items={projects.items.map((project) => ({
-        value: project.id,
-        label: `${project.name} (${project.key})`,
-      }))}
-      value={value}
+      searchQueryOptions={(search) => projectTargetSearchQueryOptions(browserApiClient, search)}
+      selected={selected}
       onChange={onChange}
     />
   );
 }
 
-/** A choice of the active organizations, searched by name. */
+/** A choice of the active organizations, searched on the server by name (§18.5). */
 function OrganizationPicker({
-  value,
+  selected,
   onChange,
 }: {
-  value: string;
-  onChange: (value: string) => void;
+  selected: TargetOption | null;
+  onChange: (choice: TargetOption) => void;
 }) {
   const t = useTranslations('invitations.form');
-  const organizations = useAllPages(
-    useInfiniteQuery(organizationsQueryOptions(browserApiClient, 'active')),
-  );
   return (
     <Picker
       label={t('organization')}
       listLabel={t('organizations')}
       empty={t('noOrganization')}
       loadFailed={t('organizationsLoadFailed')}
-      readError={organizations.readError}
-      items={organizations.items.map((organization) => ({
-        value: organization.id,
-        label: organization.name,
-      }))}
-      value={value}
+      searchQueryOptions={(search) =>
+        organizationTargetSearchQueryOptions(browserApiClient, search)
+      }
+      selected={selected}
       onChange={onChange}
     />
   );
 }
 
 /**
- * A searchable choice of one item of a list (the Combobox of `@trybun/ui`). A failed read of the
- * list shows its error with **Try again** below the input, and the list says `loadFailed` below the
- * items found so far in place of `empty` (#471): the list of a combobox is no stop of Tab, which
- * closes it (WAI-ARIA APG), so **Try again** follows the input outside it.
+ * A searchable choice of one record of an unbounded list (the Combobox of `@trybun/ui`, §18.5): the
+ * search goes to the server as the person types, deferred while they type, and reads only the
+ * first page of each search – never the whole list (#473). The input shows the chosen record while
+ * the list is closed and the search while it is open, which starts empty. A failed search shows its
+ * error with **Try again** below the input, and the list says `loadFailed` in place of `empty`
+ * (#471): the list of a combobox is no stop of Tab, which closes it (WAI-ARIA APG), so **Try
+ * again** follows the input outside it.
  */
 function Picker({
   label,
   listLabel,
   empty,
   loadFailed,
-  readError,
-  items,
-  value,
+  searchQueryOptions,
+  selected,
   onChange,
 }: {
   label: string;
   listLabel: string;
   empty: string;
-  /** What the list says while its read failed. */
+  /** What the list says while its search failed. */
   loadFailed: string;
-  readError: PickerReadError | null;
-  items: { value: string; label: string }[];
-  value: string;
-  onChange: (value: string) => void;
+  searchQueryOptions: (search: string) => TargetSearchQueryOptions;
+  selected: TargetOption | null;
+  onChange: (choice: TargetOption) => void;
 }) {
   const t = useTranslations('invitations.form');
   const errorMessage = useErrorMessage();
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search.trim());
+  const page = useQuery({ ...searchQueryOptions(deferredSearch), enabled: isOpen });
+  // A search being read, also while it waits for the connection (`fetchStatus: 'paused'`).
+  const isLoading = page.isPending && page.fetchStatus !== 'idle';
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <Combobox
-        items={items}
-        value={items.find((item) => item.value === value) ?? null}
-        onValueChange={(item: { value: string } | null) => onChange(item?.value ?? '')}
+        items={page.data?.options ?? []}
+        value={selected}
+        filter={null}
+        isItemEqualToValue={(item: TargetOption, value: TargetOption) => item.value === value.value}
+        inputValue={isOpen ? search : (selected?.label ?? '')}
+        onOpenChange={(open) => {
+          setIsOpen(open);
+          if (!open) {
+            setSearch('');
+          }
+        }}
+        onInputValueChange={(text, details) => {
+          // Choosing a record writes its name into the input; only typing searches.
+          if (details.reason === 'input-change' || details.reason === 'input-clear') {
+            setSearch(text);
+          }
+        }}
+        onValueChange={(choice: TargetOption | null) => {
+          // Clearing the input keeps the choice (#161): only another choice changes it.
+          if (choice !== null) {
+            onChange(choice);
+          }
+        }}
       >
-        <ComboboxInput />
+        <ComboboxInput placeholder={selected?.label} maxLength={LIST_SEARCH_QUERY_MAX_LENGTH} />
         <ComboboxContent>
-          {/* Mounted in every state, so its text is announced; empty after an error (#303). */}
-          <ComboboxEmpty>{readError === null ? empty : ''}</ComboboxEmpty>
+          {/* Mounted in every state, so its text is announced (#303): nothing matches only once a
+              search has answered, not while it loads nor after a failure. */}
+          <ComboboxEmpty>{page.isPending || page.isError ? '' : empty}</ComboboxEmpty>
           <ComboboxList aria-label={listLabel}>
-            {(item: { value: string; label: string }) => (
-              <ComboboxItem key={item.value} value={item}>
-                {item.label}
+            {(option: TargetOption) => (
+              <ComboboxItem key={option.value} value={option}>
+                {option.label}
               </ComboboxItem>
             )}
           </ComboboxList>
-          {/* A polite live region, filled while the read failed: the rest of the dialog is hidden
-              from assistive technologies while the list is open. */}
-          <ComboboxStatus>{readError === null ? '' : loadFailed}</ComboboxStatus>
+          {/* A polite live region: the rest of the dialog is hidden from assistive technologies
+              while the list is open. */}
+          <ComboboxStatus>
+            {isLoading
+              ? t('loading')
+              : page.isError
+                ? loadFailed
+                : page.data?.hasMore === true
+                  ? t('typeToFindMore')
+                  : ''}
+          </ComboboxStatus>
         </ComboboxContent>
       </Combobox>
-      {readError !== null && (
+      {page.isError && (
         // A refusal says when to try again, `h3` under the `h2` title of the dialog; **Try again**
-        // reads the list again, so it offers no **Reload page**, which would close the dialog
-        // (§18.5).
+        // reads the search again, so it offers no **Reload page**, which would close the dialog
+        // (§18.5). The alert is gone while it reads, so that a second failure is announced again.
         <div className="flex flex-col items-start gap-2 text-sm">
-          {!readError.isRetrying && (
+          {!page.isFetching && (
             <QueryErrorAlert
-              error={readError.error}
-              message={errorMessage(readError.error)}
+              error={page.error}
+              message={errorMessage(page.error)}
               headingLevel={3}
               offersReload={false}
             />
           )}
-          <Button type="button" variant="outline" onClick={readError.retry}>
+          <Button type="button" variant="outline" onClick={() => void page.refetch()}>
             {t('retry')}
           </Button>
         </div>
