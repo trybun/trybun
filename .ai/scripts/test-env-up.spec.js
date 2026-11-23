@@ -1356,6 +1356,63 @@ exec ${sed} "$@"
       await expectSuccessorKept(result);
     });
 
+    it('keeps the descriptor of a real boot that writes it between its check and its rename', async () => {
+      // The applications have ended and the down is under way ("stopping"): a boot neither reuses
+      // nor stops that environment, so it runs through to its final rename of the descriptor.
+      await endWithoutStop();
+      const stopping = readFileSync(path(), 'utf8').replace(
+        '"status": "running"',
+        '"status": "stopping"',
+      );
+      writeFileSync(`${path()}.spec.tmp`, stopping);
+      renameSync(`${path()}.spec.tmp`, path());
+      const before = descriptor().runId;
+      // A stub of sed, on the down's rewrite of the descriptor (inside its lock), starts a real boot
+      // and continues once that boot waits for the lock to rename its descriptor – two temporary
+      // files – or has already renamed it, as it would without the lock.
+      const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+      writeFileSync(
+        join(folder, 'bin', 'sed'),
+        `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/swapped" ]; then
+    echo read >>"$STUB_DIR/reads"
+    if [ "$(wc -l <"$STUB_DIR/reads")" -eq 2 ]; then
+      touch "$STUB_DIR/swapped"
+      sh .ai/scripts/test-env-up.sh >"$STUB_DIR/boot.out" 2>&1 9<&- &
+      waited=0
+      while [ "$waited" -lt 600 ]; do
+        [ "$(ls .ai/qa | grep -c '^test-env\\.json\\..*\\.tmp$')" -ge 2 ] && break
+        grep -q '"runId": "${before}"' .ai/qa/test-env.json || break
+        sleep 0.1
+        waited=$((waited + 1))
+      done
+      sleep 0.5
+    fi
+  fi
+done
+exec ${sed} "$@"
+`,
+      );
+      chmodSync(join(folder, 'bin', 'sed'), 0o755);
+
+      const { code, stderr } = await startDown().exited;
+
+      expect(code, stderr).toBe(0);
+      expect(existsSync(join(folder, 'swapped'))).toBe(true);
+      await until(
+        () =>
+          readLines(join(folder, 'boot.out')).some((line) => line.startsWith('TEST_ENV_RUN_ID=')),
+        30_000,
+        () => readLines(join(folder, 'boot.out')).join('\n'),
+      );
+      const booted = readLines(join(folder, 'boot.out'))
+        .find((line) => line.startsWith('TEST_ENV_RUN_ID='))
+        .slice('TEST_ENV_RUN_ID='.length);
+      expect(booted).not.toBe(before);
+      expect(descriptor()).toMatchObject({ runId: booted, status: 'running' });
+    });
+
     it('takes over the infrastructure as a boot that lands while it stops, so that boot stops it', async () => {
       // The applications have ended and the down still runs: its descriptor says "stopping".
       await endWithoutStop();
