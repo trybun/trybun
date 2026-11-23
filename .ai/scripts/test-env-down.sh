@@ -22,6 +22,8 @@
 #              may have given to other programs; it waits for and kills the processes the groups had
 #              when signalled, by PID and start time, and the groups while they carry the run id, and
 #              names a live group it leaves alone
+#   2026-11-23 the identity check of a recorded process group moves to test-env-processes.sh, which
+#              it sources (#456): test-env-up.sh applies the same check to its reuse check and watch
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
@@ -51,43 +53,14 @@ case "$(json_get status)" in stopped | stop-failed) APP_KEYS="" ;; esac
 if [ -n "$APP_KEYS" ]; then set_status stopping; fi
 # A "running" or "stopping" descriptor cannot tell its applications from other programs either:
 # after a crash with no --foreground owner or a reboot, the kernel may have given the recorded PIDs
-# to them (#453). A recorded group is the environment's only while a member carries the run id of
-# the boot as TEST_ENV_RUN_ID: test-env-up.sh starts every process of the applications with it, they
-# inherit it, and the descriptor says so (runIdInEnvironment) – this holds also after the leader
-# exited first, as `sh -c` does on SIGTERM while the API runs its shutdown hooks. Linux only
-# (/proc), as setsid in test-env-up.sh already is.
+# to them (#453). A recorded group is signalled only while it is the environment's (group_is_ours:
+# a member carries the run id of the boot), the check test-env-up.sh shares (#456).
+# shellcheck source=.ai/scripts/test-env-processes.sh
+. "$ROOT/.ai/scripts/test-env-processes.sh"
 RUN_ID=$(json_get runId)
 TAGGED=$(json_get runIdInEnvironment)
 STARTED_AT=$(json_get startedAt)
-# The start of process $1 in clock ticks since the boot, which no clock change moves; nothing for a
-# zombie (it no longer holds a port) or a missing process – which may have exited a moment after
-# `ps` listed it: never a failure that `set -e` would stop the teardown on.
-ticks() { awk '{ sub(/.*\) /, "") } $1 != "Z" { print $20 }' "/proc/$1/stat" 2>/dev/null || true; }
-members() { ps -e -o pid= -o pgid= | awk -v group="$1" '$2 == group { print $1 }'; }
-ours() {
-  [ -n "$RUN_ID" ] || return 1
-  if [ "$TAGGED" = true ]; then
-    for member in $(members "$1"); do
-      # Unreadable for a zombie and for another user's process.
-      if tr '\0' '\n' 2>/dev/null <"/proc/$member/environ" | grep -Fqx "TEST_ENV_RUN_ID=$RUN_ID"; then
-        return 0
-      fi
-    done
-    return 1
-  fi
-  # A boot before #453 started its applications without the run id. Its leader is still the one it
-  # recorded while it runs and started shortly before startedAt (the boot waits at most 180 s for
-  # their health, and writes the descriptor seconds after starting them): that PID has not been free
-  # since, and after a reboot every process starts later. This reads the wall clock, which a
-  # backward step after the boot would fool, so it stays the fallback of these descriptors only.
-  # btime is whole seconds, so the start comes out up to 1 s early.
-  start=$(ticks "$1")
-  [ -n "$start" ] && [ -n "$STARTED_AT" ] || return 1
-  at=$(date -u -d "$STARTED_AT" +%s 2>/dev/null) || return 1
-  awk -v boot="$(awk '/^btime / { print $2 }' /proc/stat 2>/dev/null)" -v hz="$(getconf CLK_TCK)" \
-    -v start="$start" -v at="$at" \
-    'BEGIN { s = boot + start / hz; exit !(boot > 0 && s <= at - 1 && s >= at - 300) }'
-}
+ours() { group_is_ours "$1" "$RUN_ID" "$TAGGED" "$STARTED_AT"; }
 # Every process of a group that is the environment's, as "<pid>:<start ticks>" from just before it
 # is signalled: the wait and the kill below concern these processes, never a later holder of their
 # PIDs – also the members of a group of a boot before #453 once its leader has exited. Since #453
@@ -99,8 +72,8 @@ for key in $APP_KEYS; do
   pid=$(json_get "$key")
   [ -n "$pid" ] || continue
   if ours "$pid"; then
-    for member in $(members "$pid"); do
-      start=$(ticks "$member")
+    for member in $(group_members "$pid"); do
+      start=$(proc_ticks "$member")
       if [ -n "$start" ]; then MEMBERS="$MEMBERS $member:$start"; fi
     done
     SIGNALLED="$SIGNALLED $pid"
@@ -111,7 +84,7 @@ for key in $APP_KEYS; do
   fi
 done
 # Whether "<pid>:<start ticks>" still runs as that process.
-same() { [ "$(ticks "${1%%:*}")" = "${1#*:}" ]; }
+same() { [ "$(proc_ticks "${1%%:*}")" = "${1#*:}" ]; }
 # Whether recorded group $1 still holds a process carrying the run id (boots since #453 only).
 tagged() { [ "$TAGGED" = true ] && ours "$1"; }
 # The API closes its HTTP server only after its shutdown hooks: wait until every process has exited,
