@@ -33,6 +33,10 @@
 #              renamed over it – so no reader sees it truncated, half-written or missing; the
 #              --foreground owner decides from one read of it, never from separate reads that a
 #              replacement can land between
+#   2026-11-23 the reuse check and the watch of --foreground take a recorded application as running
+#              only while test-env-down.sh's identity check confirms it (#456, test-env-processes.sh,
+#              sourced): after a crash or a reboot its PID may belong to another program, so a boot
+#              reused an environment it never started and an owner missed the crash of its own
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -113,6 +117,19 @@ alive() { [ -n "${1:-}" ] && ps -p "$1" >/dev/null 2>&1; }
 # Whether a process runs, not counting an exited child that is not reaped yet (a zombie).
 running() { [ -n "${1:-}" ] && ps -o stat= -p "$1" 2>/dev/null | grep -qv '^Z'; }
 healthy() { curl -fsS --max-time 5 -o /dev/null "$1" 2>/dev/null; }
+# A recorded application runs only while its process group is the environment's (#456): a live PID
+# alone may belong to another program the kernel gave it to after a crash or a reboot (#453).
+# shellcheck source=.ai/scripts/test-env-processes.sh
+. "$ROOT/.ai/scripts/test-env-processes.sh"
+# Whether the applications recorded as $4, $5 and $6 all run as those of run id $1, whose descriptor
+# has runIdInEnvironment $2 and startedAt $3: each recorded leader still runs, as before #456, and
+# its group is the environment's – while the group exists, the kernel gives its PID to no other
+# process.
+applications_run() {
+  for group in "$4" "$5" "$6"; do
+    running "$group" && group_is_ours "$group" "$1" "$2" "$3" || return 1
+  done
+}
 set_descriptor_status() {
   [ -f "$DESCRIPTOR" ] || return 0
   if sed "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" >"$DESCRIPTOR_TMP" &&
@@ -243,12 +260,16 @@ if [ "$FOREGROUND" = 1 ]; then
   fg_api=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get apiPid)
   fg_worker=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get workerPid)
   fg_web=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get webPid)
+  fg_tagged=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get runIdInEnvironment)
+  fg_started=$(printf '%s\n' "$FG_DESCRIPTOR" | json_get startedAt)
   if [ "$FG_ROLE" = owner ]; then
     log "attached in the foreground as the owner – closing this terminal stops the environment"
   else
     log "attached in the foreground as a viewer of an environment started elsewhere – closing this terminal stops nothing; to stop the environment, close the owner's terminal or run: sh .ai/scripts/test-env-down.sh"
   fi
-  while alive "$fg_api" && alive "$fg_worker" && alive "$fg_web"; do
+  # While the applications of this run live (#456): not merely their PIDs, which another program may
+  # hold once an application has crashed.
+  while applications_run "$FG_RUN" "$fg_tagged" "$fg_started" "$fg_api" "$fg_worker" "$fg_web"; do
     sleep 2 &
     FG_SLEEP=$!
     wait "$FG_SLEEP" || true
@@ -433,7 +454,11 @@ if [ "$FORCE" = 0 ] && [ "$RESET" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get
   api_pid=$(json_get apiPid "$DESCRIPTOR")
   worker_pid=$(json_get workerPid "$DESCRIPTOR")
   web_pid=$(json_get webPid "$DESCRIPTOR")
-  if alive "$api_pid" && alive "$worker_pid" && alive "$web_pid" && healthy "$WEB_HEALTH" && healthy "$API_HEALTH" &&
+  # Its own applications (#456): with their PIDs held by other programs after a crash or a reboot,
+  # the health checks may answer from another checkout's environment on the same ports.
+  if applications_run "$(json_get runId "$DESCRIPTOR")" "$(json_get runIdInEnvironment "$DESCRIPTOR")" \
+       "$(json_get startedAt "$DESCRIPTOR")" "$api_pid" "$worker_pid" "$web_pid" &&
+     healthy "$WEB_HEALTH" && healthy "$API_HEALTH" &&
      [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://localhost:$API_PORT/api/v1/users/me")" = 401 ] &&
      [ "$(age_seconds "$(json_get startedAt "$DESCRIPTOR")")" -lt "$TTL_SECONDS" ] &&
      [ "$(json_get sourceFingerprint "$DESCRIPTOR")" = "$CURRENT_FP" ]; then
