@@ -9,10 +9,11 @@ import Link from 'next/link';
 import { useFormatter, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { portalTicketHref } from '../../portal/hrefs.js';
 import { myTicketsQueryOptions } from '../queries.js';
 import { PublicStatusBadge } from './public-status-badge.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * "My tickets" (§5.7, Q10): the tickets the person requested, those awaiting their reply first
@@ -39,9 +40,11 @@ export function MyTicketsList({
   // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
   if (tickets.isLoadingError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(tickets.error)}
-      </p>
+      <QueryErrorAlert
+        error={tickets.error}
+        message={errorMessage(tickets.error)}
+        headingLevel={headingLevel}
+      />
     );
   }
   const items = tickets.data?.pages.flatMap((page) => page.items) ?? [];
@@ -75,9 +78,12 @@ export function MyTicketsList({
         />
       )}
       {tickets.isError && !tickets.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(tickets.error)}
-        </p>
+        <QueryErrorAlert
+          error={tickets.error}
+          message={errorMessage(tickets.error)}
+          headingLevel={headingLevel}
+          offersReload={false}
+        />
       )}
       {limit === undefined && tickets.hasNextPage && (
         <Button

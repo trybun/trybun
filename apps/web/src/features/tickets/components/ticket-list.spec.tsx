@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 import { stateOfView, withFilters } from '../ticket-list.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
@@ -18,7 +19,11 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
 const replace = vi.hoisted(() => vi.fn());
-vi.mock('next/navigation.js', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ replace, push: vi.fn() }),
+  usePathname: () => '/tickets',
+  useSearchParams: () => new URLSearchParams('view=triage'),
+}));
 // A tablet: the table, selects instead of bottom sheets (jsdom has no `matchMedia`).
 vi.stubGlobal('matchMedia', (query: string) => ({
   matches: query === TABLET_MEDIA_QUERY,
@@ -31,6 +36,31 @@ const { TicketList } = await import('./ticket-list.js');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
+const answerRoute = fake.client.GET.getMockImplementation()!;
+
+/**
+ * Refuses the reads of the tickets – only those of a later page with `laterPages` – with `429` and
+ * its `Retry-After: 45` (§14.4); the projects of the filters answer their route.
+ */
+function refuseTickets({ laterPages = false } = {}) {
+  fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+    route === '/api/v1/tickets' &&
+    (!laterPages ||
+      (init as { params?: { query?: { cursor?: string } } }).params?.query?.cursor !== undefined)
+      ? rateLimitedResult()
+      : answerRoute(route, init),
+  );
+}
+
+/** The notice of a refused read (#433): `h2` under the `h1` of the page, the wait, Reload page. */
+async function expectRateLimitedAlert(reloadHref: string | null) {
+  const alert = await screen.findByRole('alert');
+  expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+  expect(alert.textContent).toContain('Try again in 45 seconds.');
+  expect(alert.textContent).not.toContain('The tickets could not be loaded.');
+  const reload = within(alert).queryByRole('link', { name: 'Reload page' });
+  expect(reload?.getAttribute('href') ?? null).toBe(reloadHref);
+}
 
 const ME = '0199a3f0-0000-7000-8000-000000000031';
 const PROJECT = { id: '0199a3f0-0000-7000-8000-000000000010', key: 'ERP', name: 'ERP system' };
@@ -73,6 +103,7 @@ function answerList(items: TicketListItem[]) {
 afterEach(() => {
   cleanup();
   fake.reset();
+  fake.client.GET.mockImplementation(answerRoute);
   toastAdd.mockClear();
   replace.mockClear();
 });
@@ -346,6 +377,52 @@ describe('TicketList', () => {
     expect(alert.textContent).toBe('The tickets could not be loaded.');
     expect(within(screen.getByRole('table')).getByRole('link', { name: 'Ticket 1' })).toBeDefined();
     expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Show more' }));
+  });
+
+  it('shows the wait and Reload page with the filters of the address for a refused read (#433)', async () => {
+    answerList([]);
+    refuseTickets();
+    renderInApp(
+      <TicketList state={stateOfView('triage')} currentUserId={ME} organizationsExist={false} />,
+    );
+
+    // The query string keeps the view and the filters.
+    await expectRateLimitedAlert('/tickets?view=triage');
+    expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('shows the wait above Show more for a refused later page, without Reload page (#433)', async () => {
+    answerList([]);
+    fake.on('GET /api/v1/tickets', { data: { items: [ticket(1)], nextCursor: 'next' } });
+    refuseTickets({ laterPages: true });
+    const events = userEvent.setup();
+    renderInApp(
+      <TicketList
+        state={stateOfView('my_open_tickets')}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    await events.click(await screen.findByRole('button', { name: 'Show more' }));
+
+    // Show more tries the page again and keeps the loaded rows (#434).
+    await expectRateLimitedAlert(null);
+    expect(within(screen.getByRole('table')).getByRole('link', { name: 'Ticket 1' })).toBeDefined();
+  });
+
+  it('shows its own message for another failure of the first read (#433)', async () => {
+    answerList([]);
+    fake.on('GET /api/v1/tickets', { status: 500, error: {} });
+    renderInApp(
+      <TicketList
+        state={stateOfView('my_open_tickets')}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    expect((await screen.findByRole('alert')).textContent).toBe('The tickets could not be loaded.');
   });
 
   it('keeps the rows of the last filters while the next ones load (#279)', async () => {

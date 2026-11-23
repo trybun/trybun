@@ -25,6 +25,7 @@ import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog
 import { useAddOrganizationMember, useRemoveOrganizationMember } from '../mutations.js';
 import { organizationMembersQueryOptions } from '../queries.js';
 import { OrganizationSection } from './organization-section.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 const addMemberSchema = addOrganizationMemberSchema.pick({ email: true });
 type AddMemberValues = z.infer<typeof addMemberSchema>;
@@ -158,9 +159,11 @@ export function OrganizationMembers({ organization }: { organization: Organizati
       {/* Only a failure of the first read stands in for the rows; a failed **Load more** is shown
           above its button (#434). */}
       {members.isLoadingError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(members.error)}
-        </p>
+        <QueryErrorAlert
+          error={members.error}
+          message={errorMessage(members.error)}
+          headingLevel={4}
+        />
       ) : (
         members.isSuccess &&
         items.length === 0 && <p className="text-sm text-muted-foreground">{t('empty')}</p>
@@ -201,9 +204,12 @@ export function OrganizationMembers({ organization }: { organization: Organizati
         ))}
       </ul>
       {members.isError && !members.isLoadingError && !members.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(members.error)}
-        </p>
+        <QueryErrorAlert
+          error={members.error}
+          message={errorMessage(members.error)}
+          headingLevel={4}
+          offersReload={false}
+        />
       )}
       {members.hasNextPage && (
         <Button

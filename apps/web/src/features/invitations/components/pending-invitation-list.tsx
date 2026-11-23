@@ -10,6 +10,8 @@ import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { useResendInvitation, useRevokeInvitation } from '../mutations.js';
 import type { IssuedInvitation } from './invitation-form.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
+import type { RateLimitedHeadingLevel } from '../../app-shell/components/rate-limited-message.js';
 
 // The new link opens only after a resending, so its dialog code loads then (§18.5).
 const InvitationLinkDialog = lazy(() =>
@@ -56,12 +58,14 @@ export function PendingInvitationList({
   /**
    * The next page of a list read page by page, e.g. a project's; none when all are shown. `error`
    * is the failure of a later page, shown above **Load more** while the loaded invitations stay
-   * (#434).
+   * (#434); `headingLevel` is the level of the heading of its refusal with `429`, continuing the
+   * page around the list (#433).
    */
   paging?: {
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
     error: Error | null;
+    headingLevel: RateLimitedHeadingLevel;
     onLoadMore: () => void;
   };
   'aria-label'?: string;
@@ -162,9 +166,12 @@ export function PendingInvitationList({
         ))}
       </ul>
       {paging !== undefined && paging.error !== null && !paging.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(paging.error)}
-        </p>
+        <QueryErrorAlert
+          error={paging.error}
+          message={errorMessage(paging.error)}
+          headingLevel={paging.headingLevel}
+          offersReload={false}
+        />
       )}
       {paging?.hasNextPage === true && (
         <Button

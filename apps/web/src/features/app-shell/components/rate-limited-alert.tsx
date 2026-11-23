@@ -1,8 +1,23 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation.js';
+import { useSyncExternalStore } from 'react';
 import type { ApiError } from '../../../lib/errors/api-error.js';
 import { type RateLimitedHeadingLevel, RateLimitedMessage } from './rate-limited-message.js';
+
+function subscribeToHash(onChange: () => void) {
+  window.addEventListener('hashchange', onChange);
+  return () => window.removeEventListener('hashchange', onChange);
+}
+
+/** The fragment of the address, which only the browser knows; none on the server. */
+function useLocationHash(): string {
+  return useSyncExternalStore(
+    subscribeToHash,
+    () => window.location.hash,
+    () => '',
+  );
+}
 
 /**
  * Shown by a client component in place of what its query would show when the browser's read is
@@ -12,6 +27,9 @@ import { type RateLimitedHeadingLevel, RateLimitedMessage } from './rate-limited
  * appears after the page has loaded, so it is announced (`role="alert"`, WAI-ARIA). For a refused
  * later page of a list, shown above **Load more**, `offersReload={false}` leaves out **Reload
  * page**, which would drop the pages already loaded: **Load more** tries the page again (#434).
+ * An address with a fragment – the token of an invitation link (ADR 0009) – is reloaded with
+ * `location.reload()`, as a link to it would only scroll to the fragment, and a link without it
+ * would lose the token (#433).
  */
 export function RateLimitedAlert({
   error,
@@ -24,12 +42,17 @@ export function RateLimitedAlert({
 }) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
+  const hash = useLocationHash();
   return (
     <div role="alert">
       <RateLimitedMessage
         retryAfterSeconds={error.retryAfterSeconds}
         headingLevel={headingLevel}
-        reloadHref={!offersReload ? undefined : search === '' ? pathname : `${pathname}?${search}`}
+        {...(!offersReload
+          ? {}
+          : hash !== ''
+            ? { onReload: () => window.location.reload() }
+            : { reloadHref: search === '' ? pathname : `${pathname}?${search}` })}
       />
     </div>
   );

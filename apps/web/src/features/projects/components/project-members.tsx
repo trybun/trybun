@@ -25,6 +25,7 @@ import { projectMembersQueryOptions, projectRoleCountQueryOptions } from '../que
 import { LazyAddMemberDialog } from './lazy-add-member-dialog.js';
 import { LazyConfirmDialog } from './lazy-confirm-dialog.js';
 import { ProjectInvitations } from './project-invitations.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /** A change of a member that needs a confirmation first. */
 type PendingChange = { kind: 'remove' | 'demote'; member: ProjectMember };
@@ -90,9 +91,11 @@ export function ProjectMembers({ project }: { project: Project }) {
   // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
   if (members.isLoadingError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(members.error)}
-      </p>
+      <QueryErrorAlert
+        error={members.error}
+        message={errorMessage(members.error)}
+        headingLevel={2}
+      />
     );
   }
   const items = members.data?.pages.flatMap((page) => page.items) ?? [];
@@ -171,9 +174,12 @@ export function ProjectMembers({ project }: { project: Project }) {
       </ul>
       {canManage && <ProjectInvitations projectId={project.id} />}
       {members.isError && !members.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(members.error)}
-        </p>
+        <QueryErrorAlert
+          error={members.error}
+          message={errorMessage(members.error)}
+          headingLevel={3}
+          offersReload={false}
+        />
       )}
       {members.hasNextPage && (
         <Button

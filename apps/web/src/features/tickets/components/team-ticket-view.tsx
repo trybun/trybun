@@ -8,7 +8,6 @@ import { toast } from '@trybun/ui/components/toast';
 import { ArchiveIcon, CopyIcon } from 'lucide-react';
 import { useFormatter, useNow, useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { TicketAttachments } from '../../attachments/components/ticket-attachments.js';
 import { useTicketImageIds } from '../../attachments/use-ticket-image-ids.js';
 import { projectQueryOptions } from '../../projects/queries.js';
@@ -17,6 +16,8 @@ import { ActivityTimeline } from './activity-timeline.js';
 import { TicketDescription } from './ticket-description.js';
 import { TicketFieldPanel } from './ticket-field-panel.js';
 import { TicketTitle } from './ticket-title.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /** The team's shape of a ticket response (§3.2); the API sends it to every team account. */
 function isTeamTicket(ticket: TicketResponse): ticket is Ticket {
@@ -50,9 +51,7 @@ export function TeamTicketView({
   const imageIds = useTicketImageIds(ticket.data?.id ?? '', ticket.data?.description ?? '');
   if (ticket.isError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(ticket.error)}
-      </p>
+      <QueryErrorAlert error={ticket.error} message={errorMessage(ticket.error)} headingLevel={1} />
     );
   }
   if (ticket.data === undefined || !isTeamTicket(ticket.data)) {

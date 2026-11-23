@@ -7,9 +7,10 @@ import { ChevronRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { organizationsQueryOptions } from '../queries.js';
 import { organizationHref } from '../search-params.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * The organizations of one state, sorted by name (§7.3): one row per organization with its name,
@@ -24,9 +25,11 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
   // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
   if (organizations.isLoadingError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(organizations.error)}
-      </p>
+      <QueryErrorAlert
+        error={organizations.error}
+        message={errorMessage(organizations.error)}
+        headingLevel={3}
+      />
     );
   }
   const items = organizations.data?.pages.flatMap((page) => page.items) ?? [];
@@ -63,9 +66,12 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
         ))}
       </ul>
       {organizations.isError && !organizations.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(organizations.error)}
-        </p>
+        <QueryErrorAlert
+          error={organizations.error}
+          message={errorMessage(organizations.error)}
+          headingLevel={3}
+          offersReload={false}
+        />
       )}
       {organizations.hasNextPage && (
         <Button

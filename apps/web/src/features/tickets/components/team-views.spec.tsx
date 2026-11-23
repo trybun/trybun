@@ -10,6 +10,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
@@ -19,7 +20,11 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
-vi.mock('next/navigation.js', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/tickets/ERP-12',
+  useSearchParams: () => new URLSearchParams(),
+}));
 // The fields adapt to the width (jsdom has no `matchMedia`): a tablet, with selects.
 vi.stubGlobal('matchMedia', (query: string) => ({
   matches: query === TABLET_MEDIA_QUERY,
@@ -140,6 +145,25 @@ afterEach(() => {
 });
 
 describe('TeamTicketView', () => {
+  it('shows the wait and Reload page in place of a ticket whose read is refused (#433)', async () => {
+    const answerRoute = fake.client.GET.getMockImplementation()!;
+    // The answer of the BFF with its `Retry-After: 45`.
+    fake.client.GET.mockImplementationOnce((route: string, init?: unknown) =>
+      route === '/api/v1/tickets' ? rateLimitedResult() : answerRoute(route, init),
+    );
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+
+    const alert = await screen.findByRole('alert');
+    // `h1`, as it stands in for the whole view and its title.
+    expect(within(alert).getByRole('heading', { level: 1 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    // Never only the generic message of the error code.
+    expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
+    expect(within(alert).getByRole('link', { name: 'Reload page' }).getAttribute('href')).toBe(
+      '/tickets/ERP-12',
+    );
+  });
+
   it('shows the header, the rendered description and the fields of the ticket (§3.2)', async () => {
     // Without the actions that change them, the fields are text.
     answer(ticket({ allowedActions: ['read'] }));

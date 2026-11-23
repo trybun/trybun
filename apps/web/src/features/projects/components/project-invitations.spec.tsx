@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { userEvent } from '@testing-library/user-event';
 import type { Invitation } from '@trybun/contracts/invitations';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
+
+const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
+/** The generic message of `request.rate_limited`, never shown alone for a refused read (#433). */
+const GENERIC = 'Too many requests. Wait a moment and try again.';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
@@ -12,11 +18,15 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
   },
 }));
 
+vi.mock('next/navigation.js', () => ({
+  usePathname: () => `/projects/${PROJECT_ID}/settings`,
+  useSearchParams: () => new URLSearchParams('tab=members'),
+}));
+
 const { ProjectInvitations } = await import('./project-invitations.js');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
-const PROJECT_ID = '0199a3f0-0000-7000-8000-000000000010';
 const INVITATIONS = 'GET /api/v1/invitations';
 const QUERY_KEY = ['invitations', 'list', { projectId: PROJECT_ID }];
 
@@ -81,5 +91,37 @@ describe('ProjectInvitations', () => {
 
     await screen.findByRole('alert');
     expect(screen.getByText('ewa@customer.example.com')).toBeDefined();
+  });
+
+  it('shows the wait and Reload page under the heading when the first read is refused (#433)', async () => {
+    fake.client.GET.mockImplementationOnce(() => rateLimitedResult());
+    renderInApp(<ProjectInvitations projectId={PROJECT_ID} />);
+
+    const alert = await screen.findByRole('alert');
+    // `h4` under the `h3` of the section.
+    expect(within(alert).getByRole('heading', { level: 4 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(alert.textContent).not.toContain(GENERIC);
+    // A document request of the same address, with its tab.
+    expect(within(alert).getByRole('link', { name: 'Reload page' }).getAttribute('href')).toBe(
+      `/projects/${PROJECT_ID}/settings?tab=members`,
+    );
+  });
+
+  it('shows the wait above Show more, without Reload page, when a later page is refused (#433)', async () => {
+    fake.on(INVITATIONS, { data: { items: [invitation], nextCursor: 'next' } });
+    renderInApp(<ProjectInvitations projectId={PROJECT_ID} />);
+    await screen.findByText('ewa@customer.example.com');
+
+    fake.client.GET.mockImplementationOnce(() => rateLimitedResult());
+    await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { level: 4 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    // Reload page would drop the invitations loaded; Show more tries the page again (#434).
+    expect(within(alert).queryByRole('link')).toBeNull();
+    expect(screen.getByText('ewa@customer.example.com')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Show more' })).toBeDefined();
   });
 });

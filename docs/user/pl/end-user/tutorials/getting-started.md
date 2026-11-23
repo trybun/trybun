@@ -27,7 +27,7 @@ Wybierz ikonę pomocy (znak zapytania) w nagłówku, a następnie **Pomoc do teg
 1. Wybierz menu konta (Twoje inicjały) w nagłówku.
 2. Wybierz **Wyloguj się**.
 
-Gdy wyślesz więcej żądań, niż Trybun pozwala w krótkim czasie, zamiast strony zobaczysz **Zbyt wiele żądań** z przyciskiem **Odśwież stronę**, aż blokada minie – zwykle po minucie. Nagłówka wtedy nie ma, więc wybierz **Wyloguj się** na tej stronie.
+Gdy wyślesz więcej żądań, niż Trybun pozwala w krótkim czasie, zamiast strony zobaczysz **Zbyt wiele żądań** z przyciskiem **Odśwież stronę**, aż blokada minie – zwykle po minucie. Nagłówka wtedy nie ma, więc wybierz **Wyloguj się** na tej stronie. Jeśli odmowa dotyczy tylko części strony, na przykład listy Twoich zgłoszeń albo historii zgłoszenia, ta część pokazuje **Zbyt wiele żądań**, kiedy spróbować ponownie i **Odśwież stronę**, a reszta strony zostaje.
 
 Trybun wylogowuje Cię także sam po 8 godzinach bez aktywności oraz 30 dni po zalogowaniu. Wtedy zaloguj się ponownie.
 

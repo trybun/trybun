@@ -4,9 +4,10 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { Invitation } from '@trybun/contracts/invitations';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { PendingInvitationList } from '../../invitations/components/pending-invitation-list.js';
 import { projectInvitationsQueryOptions } from '../../invitations/queries.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * The pending invitations of a project in its Members tab (§7.4): address, role, inviting person
@@ -32,9 +33,11 @@ export function ProjectInvitations({ projectId }: { projectId: string }) {
         {t('pending.title')}
       </h3>
       {hasFailedWithNothingLoaded ? (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(invitations.error)}
-        </p>
+        <QueryErrorAlert
+          error={invitations.error}
+          message={errorMessage(invitations.error)}
+          headingLevel={4}
+        />
       ) : (
         <PendingInvitationList
           invitations={items}
@@ -46,6 +49,8 @@ export function ProjectInvitations({ projectId }: { projectId: string }) {
             hasNextPage: invitations.hasNextPage,
             isFetchingNextPage: invitations.isFetchingNextPage,
             error: invitations.error,
+            // Under the `h3` of the section.
+            headingLevel: 4,
             onLoadMore: () => void invitations.fetchNextPage(),
           }}
         />

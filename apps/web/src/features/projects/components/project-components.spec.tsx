@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, type QueryKey } from '@tanstack/react-query';
 import type { Invitation } from '@trybun/contracts/invitations';
 import type { OrganizationSummary } from '@trybun/contracts/organizations';
 import type { Project, ProjectAction, ProjectMemberPage } from '@trybun/contracts/projects';
@@ -13,11 +13,13 @@ import {
   FAILED_READ_MESSAGE as FAILED,
   seedFailedLaterPage,
 } from '../../../../test/query-state.js';
+import { ApiError } from '../../../lib/errors/api-error.js';
 
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 vi.mock('next/navigation.js', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => '/projects',
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const { ProjectList } = await import('./project-list.js');
@@ -77,6 +79,23 @@ const members: ProjectMemberPage = {
   nextCursor: null,
 };
 
+/** A refusal of the rate limit with `Retry-After: 45` (§14.4). */
+const REFUSED = new ApiError(429, 'request.rate_limited', [], 45);
+/** The generic message of `request.rate_limited`, never shown alone for a refused read (#433). */
+const GENERIC = 'Too many requests. Wait a moment and try again.';
+
+/**
+ * Seeds the state a refused first read leaves: no data and the status `error`. The client then
+ * does not read again on mount (`retryOnMount`), which would show the loading state instead.
+ */
+function seedRefusedFirstRead(client: QueryClient, queryKey: QueryKey) {
+  client.setDefaultOptions({ queries: { retryOnMount: false } });
+  client
+    .getQueryCache()
+    .build(client, { queryKey })
+    .setState({ status: 'error', error: REFUSED, fetchStatus: 'idle' });
+}
+
 function render(element: ReactElement, seed: (client: QueryClient) => void = () => {}) {
   const queryClient = new QueryClient();
   seed(queryClient);
@@ -126,6 +145,18 @@ describe('ProjectList', () => {
     );
 
     expectInOrder(html, 'Customer portal', 'role="alert"', FAILED, 'Show more');
+  });
+
+  it('shows the wait and Reload page in place of the list when its read is refused (#433)', () => {
+    const html = render(<ProjectList state="active" />, (client) =>
+      seedRefusedFirstRead(client, ['projects', 'list', 'active']),
+    );
+
+    // `h2` under the `h1` of the page.
+    expect(html).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(html).toContain('<a href="/projects"');
+    expect(html).not.toContain(GENERIC);
   });
 
   it.each([
@@ -270,6 +301,18 @@ describe('ProjectMembers', () => {
     );
 
     expectInOrder(html, 'Anna Nowak', 'role="alert"', FAILED, 'Show more');
+  });
+
+  it('shows the wait and Reload page in place of the members when their read is refused (#433)', () => {
+    const html = render(<ProjectMembers project={project()} />, (client) =>
+      seedRefusedFirstRead(client, ['projects', 'members', PROJECT_ID]),
+    );
+
+    // `h2` in place of the section and its `h2`, under the `h1` of the project.
+    expect(html).toContain('<h2 class="text-xl font-bold">Too many requests</h2>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(html).toContain('<a href="/projects"');
+    expect(html).not.toContain(GENERIC);
   });
 
   it('renders the Add member button on the server, before its dialog code loads', async () => {

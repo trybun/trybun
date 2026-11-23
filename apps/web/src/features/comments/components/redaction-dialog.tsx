@@ -25,6 +25,7 @@ import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LazyMarkdownEditor } from '../../tickets/components/lazy-markdown-editor.js';
 import { useRedactComment, useRedactDescription } from '../mutations.js';
 import { commentRevisionsQueryOptions, descriptionRevisionsQueryOptions } from '../queries.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /** The text to redact: a comment or a ticket's description. */
 export type RedactedText = { comment: CommentResponse } | { ticket: TicketResponse };
@@ -155,9 +156,12 @@ export function RedactionDialog({
             </fieldset>
           )}
           {revisions.isError && !revisions.isFetchingNextPage && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(revisions.error)}
-            </p>
+            <QueryErrorAlert
+              error={revisions.error}
+              message={errorMessage(revisions.error)}
+              headingLevel={3}
+              offersReload={revisions.isLoadingError}
+            />
           )}
           {revisions.hasNextPage && (
             // Every earlier version must be listed before a redaction, so the default selection

@@ -21,6 +21,7 @@ import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { useUpdateOrganization } from '../mutations.js';
 import { OrganizationSection } from './organization-section.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * The projects an organization may access (§7.3): each with Remove, and a picker of the active
@@ -144,9 +145,12 @@ export function OrganizationProjects({ organization }: { organization: Organizat
             </div>
           )}
           {activeProjects.isError && !activeProjects.isFetchingNextPage && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(activeProjects.error)}
-            </p>
+            <QueryErrorAlert
+              error={activeProjects.error}
+              message={errorMessage(activeProjects.error)}
+              headingLevel={4}
+              offersReload={activeProjects.isLoadingError}
+            />
           )}
           {activeProjects.hasNextPage && (
             <Button

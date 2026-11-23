@@ -7,11 +7,12 @@ import type { TicketResponse } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
 import type { ReactNode } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { useTicketImageIds } from '../../attachments/use-ticket-image-ids.js';
 import { timelineQueryOptions } from '../queries.js';
 import { CommentForm } from './comment-form.js';
 import { CommentItem } from './comment-item.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 /**
  * The timeline of a ticket (S1-12 Q11): its comments and its activity events in one list, oldest
@@ -59,9 +60,12 @@ export function TimelineList({
         )}
       </ol>
       {timeline.isError && !timeline.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(timeline.error)}
-        </p>
+        <QueryErrorAlert
+          error={timeline.error}
+          message={errorMessage(timeline.error)}
+          headingLevel={3}
+          offersReload={timeline.isLoadingError}
+        />
       )}
       {timeline.hasNextPage && (
         <Button

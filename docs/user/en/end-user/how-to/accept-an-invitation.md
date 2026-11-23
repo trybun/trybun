@@ -34,3 +34,5 @@ If you already have a Trybun account with the invited address, select **Sign in 
 ## If the link does not work
 
 **This invitation link is not valid** means the link has expired, has been used, or was replaced by a new one. Ask the person who invited you for a new link.
+
+**Too many requests** means the link is fine, but more requests than Trybun allows were sent in a short time. The page says when to try again; then select **Reload page**.

@@ -17,9 +17,8 @@ import { useRouter } from 'next/navigation.js';
 import { useTranslations } from 'next-intl';
 import { Fragment, useDeferredValue, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { isRateLimited } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
-import { RateLimitedAlert } from '../../app-shell/components/rate-limited-alert.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { AccountInvitations } from '../../invitations/components/account-invitations.js';
 import { usersQueryOptions } from '../queries.js';
 import { type AccountsSearchParams, accountsHref } from '../search-params.js';
@@ -44,26 +43,6 @@ function AccountBadges({ user }: { user: User }) {
 }
 
 /**
- * A failed read of the accounts (§18.5): a failure of the first page in place of the rows, a
- * failure of a later page – or of a refetch – below the rows already loaded, above **Load more**
- * (`isLaterPage`), which tries it again and keeps the loaded pages, so a refusal there offers no
- * **Reload page** (#434). A refused refetch without a next page then shows only the wait; the next
- * refetch – on focus, or after a change – reads the accounts again.
- */
-function AccountsError({ error, isLaterPage }: { error: Error; isLaterPage: boolean }) {
-  const errorMessage = useErrorMessage();
-  return isRateLimited(error) ? (
-    // The wait of `Retry-After`, as the page's own notice says it (#430); `h3` under the `h2` of
-    // the page.
-    <RateLimitedAlert error={error} headingLevel={3} offersReload={!isLaterPage} />
-  ) : (
-    <p role="alert" className="text-sm text-destructive">
-      {errorMessage(error)}
-    </p>
-  );
-}
-
-/**
  * The accounts of the Accounts page (§7.4): display name, e-mail address, kind, state and the
  * Administrator role, filtered by kind and state and searched by name and address. A table on
  * tablets and desktops, cards on phones (Rule 9); the actions of each account follow its
@@ -72,6 +51,7 @@ function AccountsError({ error, isLaterPage }: { error: Error; isLaterPage: bool
  */
 export function AccountList({ kind, state }: AccountsSearchParams) {
   const t = useTranslations('users.accounts');
+  const errorMessage = useErrorMessage();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const query = useDeferredValue(search.trim());
@@ -147,8 +127,13 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
       </div>
       {accounts.isLoadingError ? (
         // Only a failure of the first read replaces the rows; a failure of a later page keeps the
-        // accounts already loaded and is shown above **Load more** (#434).
-        <AccountsError error={accounts.error} isLaterPage={false} />
+        // accounts already loaded and is shown above **Load more** (#434). A refusal shows the wait
+        // of `Retry-After` (#430), `h3` under the `h2` of the page.
+        <QueryErrorAlert
+          error={accounts.error}
+          message={errorMessage(accounts.error)}
+          headingLevel={3}
+        />
       ) : accounts.isPending ? (
         // Read in the browser – the prefetch of the server failed, or a new search: never the empty
         // table, which looks like "no accounts" (#427).
@@ -241,9 +226,17 @@ export function AccountList({ kind, state }: AccountsSearchParams) {
           </table>
         </>
       )}
-      {/* Gone while the page is read again, so a second failure is announced again. */}
+      {/* Gone while the page is read again, so a second failure is announced again. **Load more**
+          tries a refused page again and keeps the loaded pages, so the refusal offers no **Reload
+          page** (#434); a refused refetch without a next page then shows only the wait, and the next
+          refetch – on focus, or after a change – reads the accounts again. */}
       {accounts.isError && !accounts.isLoadingError && !accounts.isFetchingNextPage && (
-        <AccountsError error={accounts.error} isLaterPage />
+        <QueryErrorAlert
+          error={accounts.error}
+          message={errorMessage(accounts.error)}
+          headingLevel={3}
+          offersReload={false}
+        />
       )}
       {accounts.hasNextPage && (
         <Button

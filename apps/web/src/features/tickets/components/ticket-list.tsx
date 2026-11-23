@@ -50,6 +50,7 @@ import {
   useTicketColumns,
 } from './ticket-list-columns.js';
 import { TicketTable } from './ticket-table.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 
 const VIEWS: readonly TicketListView[] = [...predefinedViewSchema.options, 'custom'];
 
@@ -378,9 +379,9 @@ function TicketResults({
       )}
       {/* Only a failure of the first read replaces the rows; a failed **Show more** keeps them (#434). */}
       {tickets.isLoadingError && (
-        <p role="alert" className="text-sm text-destructive">
-          {t('loadFailed')}
-        </p>
+        // A refusal shows the wait of `Retry-After` (#433), `h2` under the `h1` of the page; the
+        // filters above stay usable.
+        <QueryErrorAlert error={tickets.error} headingLevel={2} message={t('loadFailed')} />
       )}
       {tickets.data === undefined ? null : items.length === 0 ? (
         <div className="flex flex-col items-start gap-2">
@@ -402,9 +403,13 @@ function TicketResults({
         </>
       )}
       {tickets.isError && !tickets.isLoadingError && !tickets.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {t('loadFailed')}
-        </p>
+        // **Show more** tries a refused page again and keeps the loaded pages (#434).
+        <QueryErrorAlert
+          error={tickets.error}
+          headingLevel={2}
+          offersReload={false}
+          message={t('loadFailed')}
+        />
       )}
       {tickets.hasNextPage && (
         <Button

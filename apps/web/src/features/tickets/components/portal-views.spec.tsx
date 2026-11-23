@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attachmentResponse } from '../../../../test/factories/attachment.factory.js';
 import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
@@ -21,6 +22,11 @@ vi.mock('next/link', () => ({
     delete anchorProps.replace;
     return <a {...anchorProps} />;
   },
+}));
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => '/portal',
+  useSearchParams: () => new URLSearchParams(),
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
@@ -37,6 +43,32 @@ function asTimeline(events: readonly object[]) {
 
 const fake = createFakeApiClient();
 api.current = fake.client;
+const answerRoute = fake.client.GET.getMockImplementation()!;
+
+/**
+ * Refuses the reads of `path` – only those of a later page with `laterPages` – with `429` and its
+ * `Retry-After: 45` (§14.4); every other read answers its route.
+ */
+function refuse(path: string, { laterPages = false } = {}) {
+  fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+    route === path &&
+    (!laterPages ||
+      (init as { params?: { query?: { cursor?: string } } }).params?.query?.cursor !== undefined)
+      ? rateLimitedResult()
+      : answerRoute(route, init),
+  );
+}
+
+/** The notice of a refused read (#433): its heading level, the wait and **Reload page** or none. */
+async function expectRateLimitedAlert(level: number, reloadHref: string | null) {
+  const alert = await screen.findByRole('alert');
+  expect(within(alert).getByRole('heading', { level }).textContent).toBe('Too many requests');
+  expect(alert.textContent).toContain('Try again in 45 seconds.');
+  // Never only the generic message of the error code.
+  expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
+  const reload = within(alert).queryByRole('link', { name: 'Reload page' });
+  expect(reload?.getAttribute('href') ?? null).toBe(reloadHref);
+}
 
 const IMAGE_ID = '0199a3f0-0000-7000-8000-0000000000a1';
 const PROJECT = { id: '0199a3f0-0000-7000-8000-000000000010', key: 'CP', name: 'Customer portal' };
@@ -69,6 +101,7 @@ function ticket(overrides: Partial<EndUserTicket> = {}): EndUserTicket {
 afterEach(() => {
   cleanup();
   fake.reset();
+  fake.client.GET.mockImplementation(answerRoute);
   toastAdd.mockClear();
 });
 
@@ -112,6 +145,20 @@ describe('MyTicketsList', () => {
       params: { query: { involvement: 'mine', projectId: PROJECT.id, limit: 10 } },
     });
   });
+
+  it.each([
+    [undefined, 2],
+    [3, 3],
+  ] as const)(
+    'shows the wait and Reload page for a refused read at heading level %s (#433)',
+    async (headingLevel, level) => {
+      refuse('/api/v1/tickets');
+      renderInApp(<MyTicketsList {...(headingLevel === undefined ? {} : { headingLevel })} />);
+
+      // At the level of the headings of its groups, in their place.
+      await expectRateLimitedAlert(level, '/portal');
+    },
+  );
 });
 
 describe('when Show more fails (#434)', () => {
@@ -146,6 +193,51 @@ describe('when Show more fails (#434)', () => {
     expect(alert.nextElementSibling).toBe(
       screen.getByRole('button', { name: 'Show more projects' }),
     );
+  });
+});
+
+describe('when a read is refused with 429 (#433)', () => {
+  it('shows the wait above Show more of My tickets, without Reload page', async () => {
+    fake.on('GET /api/v1/tickets', { data: { items: [ticket()], nextCursor: 'next' } });
+    refuse('/api/v1/tickets', { laterPages: true });
+    const events = userEvent.setup();
+    renderInApp(<MyTicketsList />);
+
+    await events.click(await screen.findByRole('button', { name: 'Show more tickets' }));
+
+    // Show more tries the page again and keeps the loaded tickets (#434).
+    await expectRateLimitedAlert(2, null);
+    expect(screen.getByText('Wrong VAT rate')).toBeDefined();
+  });
+
+  it('shows the wait and Reload page in place of the projects of the portal', async () => {
+    refuse('/api/v1/projects');
+    renderInApp(<PortalProjectList />);
+
+    // `h2` under the `h1` of the portal.
+    await expectRateLimitedAlert(2, '/portal');
+  });
+
+  it('shows the wait above Show more of the projects, without Reload page', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ ...PROJECT, state: 'active', allowedActions: ['read'] }], nextCursor: 'n' },
+    });
+    refuse('/api/v1/projects', { laterPages: true });
+    const events = userEvent.setup();
+    renderInApp(<PortalProjectList />);
+
+    await events.click(await screen.findByRole('button', { name: 'Show more projects' }));
+
+    await expectRateLimitedAlert(2, null);
+    expect(screen.getByRole('link', { name: 'Customer portal' })).toBeDefined();
+  });
+
+  it('shows the wait and Reload page in place of a ticket', async () => {
+    refuse('/api/v1/tickets');
+    renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
+
+    // `h1`, as it stands in for the whole view and its title.
+    await expectRateLimitedAlert(1, '/portal');
   });
 });
 

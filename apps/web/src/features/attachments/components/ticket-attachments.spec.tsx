@@ -6,12 +6,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attachmentResponse } from '../../../../test/factories/attachment.factory.js';
 import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
   get browserApiClient() {
     return api.current;
   },
+}));
+vi.mock('next/navigation.js', () => ({
+  usePathname: () => '/tickets/ERP-12',
+  useSearchParams: () => new URLSearchParams(),
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
@@ -20,14 +25,41 @@ const { TicketAttachments } = await import('./ticket-attachments.js');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
+const answerRoute = fake.client.GET.getMockImplementation()!;
 const TICKET_ID = '0199a3f0-0000-7000-8000-000000000020';
 const OWN_ID = '0199a3f0-0000-7000-8000-0000000000a1';
 
 afterEach(() => {
   cleanup();
   fake.reset();
+  fake.client.GET.mockImplementation(answerRoute);
   toastAdd.mockClear();
 });
+
+/**
+ * Refuses the reads of the attachments – only those of a later page with `laterPages` – with
+ * `429` and its `Retry-After: 45` (§14.4).
+ */
+function refuseAttachments({ laterPages = false } = {}) {
+  fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+    route === '/api/v1/tickets/{ticketId}/attachments' &&
+    (!laterPages ||
+      (init as { params?: { query?: { cursor?: string } } }).params?.query?.cursor !== undefined)
+      ? rateLimitedResult()
+      : answerRoute(route, init),
+  );
+}
+
+/** The notice of a refused read (#433): its heading level, the wait and **Reload page** or none. */
+async function expectRateLimitedAlert(level: number, reloadHref: string | null) {
+  const alert = await screen.findByRole('alert');
+  expect(within(alert).getByRole('heading', { level }).textContent).toBe('Too many requests');
+  expect(alert.textContent).toContain('Try again in 45 seconds.');
+  // Never only the generic message of the error code.
+  expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
+  const reload = within(alert).queryByRole('link', { name: 'Reload page' });
+  expect(reload?.getAttribute('href') ?? null).toBe(reloadHref);
+}
 
 function answerAttachments(items: Attachment[]) {
   fake.on('GET /api/v1/tickets/{ticketId}/attachments', { data: { items, nextCursor: null } });
@@ -95,6 +127,29 @@ describe('TicketAttachments', () => {
     const section = screen.getByRole('region', { name: 'Attachments' });
     expect(within(section).getByText('screenshot.png')).toBeDefined();
     expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Show more files' }));
+  });
+
+  it('shows the wait and Reload page in place of the list when its read is refused (#433)', async () => {
+    refuseAttachments();
+    renderInApp(<TicketAttachments ticketId={TICKET_ID} />);
+
+    // `h2`, in place of the section and its heading among the sections of the ticket.
+    await expectRateLimitedAlert(2, '/tickets/ERP-12');
+  });
+
+  it('shows the wait above Show more when a later page is refused, without Reload page (#433)', async () => {
+    fake.on('GET /api/v1/tickets/{ticketId}/attachments', {
+      data: { items: [ATTACHMENTS[0]], nextCursor: 'next' },
+    });
+    refuseAttachments({ laterPages: true });
+    const events = userEvent.setup();
+    renderInApp(<TicketAttachments ticketId={TICKET_ID} />);
+
+    await events.click(await screen.findByRole('button', { name: 'Show more files' }));
+
+    // `h3` under the `h2` of the section; Show more tries the page again (#434).
+    await expectRateLimitedAlert(3, null);
+    expect(screen.getByText('screenshot.png')).toBeDefined();
   });
 
   it('shows the error of a failed refetch of a ticket without attachments (#434)', async () => {
