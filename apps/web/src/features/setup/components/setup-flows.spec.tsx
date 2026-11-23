@@ -103,7 +103,27 @@ describe('SetupWizard', () => {
     fake.on('GET /api/v1/setup', { status: 500, error: {} });
     renderInApp(<SetupWizard />);
 
-    expect((await screen.findByRole('alert')).textContent).not.toBe('');
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(screen.queryByRole('heading', { name: 'Too many requests' })).toBeNull();
     expect(screen.queryByText('Checking the setup link…')).toBeNull();
+  });
+
+  it('keeps the form when a later read of the status fails (#433)', async () => {
+    let isFailing = false;
+    fake.on('GET /api/v1/setup', () => (isFailing ? { status: 500, error: {} } : { data: SETUP }));
+    fake.on('POST /api/v1/setup/token-verification', { data: SETUP });
+    const events = userEvent.setup();
+    const { client } = renderInApp(<SetupWizard />);
+    await events.type(await screen.findByRole('textbox', { name: 'First name' }), 'Ada');
+
+    // The status is read again, e.g. on the return to the tab, and that read fails.
+    isFailing = true;
+    await client.refetchQueries({ queryKey: ['setup'] });
+
+    await waitFor(() => expect(fake.callsTo('GET /api/v1/setup').length).toBeGreaterThan(1));
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'First name' }).value).toBe('Ada');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

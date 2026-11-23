@@ -51,9 +51,10 @@ export function SetupWizard() {
   if (isCompleted) {
     return <SetupMessage title={t('completedTitle')} signIn />;
   }
-  if (setup.isError) {
+  if (setup.isError && setup.data === undefined) {
     // Without the status the token is never checked: the failure is shown instead of the check
-    // (#433), a refusal with the wait – the status and the check share one limit (§14.4).
+    // (#433), a refusal with the wait – the status and the check share one limit (§14.4). A
+    // failed refetch keeps the status read before, and the form with what was typed.
     return (
       <QueryErrorAlert error={setup.error} message={errorMessage(setup.error)} headingLevel={2} />
     );
