@@ -20,7 +20,8 @@
 #              (TEST_ENV_RUN_ID, #453) – for a boot before #453 while its leader started shortly before
 #              startedAt: a "running" descriptor left by a crash or a reboot records PIDs the kernel
 #              may have given to other programs; it waits for and kills the processes the groups had
-#              when signalled, by PID and start time, and names a live group it leaves alone
+#              when signalled, by PID and start time, and the groups while they carry the run id, and
+#              names a live group it leaves alone
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
@@ -88,8 +89,11 @@ ours() {
     'BEGIN { s = boot + start / hz; exit !(boot > 0 && s <= at - 1 && s >= at - 300) }'
 }
 # Every process of a group that is the environment's, as "<pid>:<start ticks>" from just before it
-# is signalled: the wait and the kill below concern exactly these processes, never a later holder
-# of their PIDs, and also the members of a group of a boot before #453 once its leader has exited.
+# is signalled: the wait and the kill below concern these processes, never a later holder of their
+# PIDs – also the members of a group of a boot before #453 once its leader has exited. Since #453
+# they also concern the groups while a member carries the run id, which a process forked later
+# (e.g. by a shutdown hook) inherits.
+SIGNALLED=""
 MEMBERS=""
 for key in $APP_KEYS; do
   pid=$(json_get "$key")
@@ -99,6 +103,7 @@ for key in $APP_KEYS; do
       start=$(ticks "$member")
       if [ -n "$start" ]; then MEMBERS="$MEMBERS $member:$start"; fi
     done
+    SIGNALLED="$SIGNALLED $pid"
     # Each process was started in its own session: stop the whole group (pnpm, node, next).
     kill -- "-$pid" 2>/dev/null || true
   elif kill -0 "-$pid" 2>/dev/null; then
@@ -107,6 +112,8 @@ for key in $APP_KEYS; do
 done
 # Whether "<pid>:<start ticks>" still runs as that process.
 same() { [ "$(ticks "${1%%:*}")" = "${1#*:}" ]; }
+# Whether recorded group $1 still holds a process carrying the run id (boots since #453 only).
+tagged() { [ "$TAGGED" = true ] && ours "$1"; }
 # The API closes its HTTP server only after its shutdown hooks: wait until every process has exited,
 # so the ports are free when this returns (a boot right after checks them), then kill what is left.
 waited=0
@@ -116,11 +123,17 @@ while [ "$waited" -lt 30 ]; do
   for member in $MEMBERS; do
     if same "$member"; then running=true; fi
   done
+  for pid in $SIGNALLED; do
+    if tagged "$pid"; then running=true; fi
+  done
   [ "$running" = true ] || break
   sleep 1
   waited=$((waited + 1))
 done
 if [ "$running" = true ]; then
+  for pid in $SIGNALLED; do
+    if tagged "$pid"; then kill -s KILL -- "-$pid" 2>/dev/null || true; fi
+  done
   for member in $MEMBERS; do
     if same "$member"; then kill -s KILL "${member%%:*}" 2>/dev/null || true; fi
   done

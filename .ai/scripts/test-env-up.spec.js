@@ -903,13 +903,27 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
     });
   });
 
-  /** Sets startedAt of the descriptor to now, as a boot does when it records its applications. */
-  function recordNow() {
+  /**
+   * Sets startedAt of the descriptor to now (plus `seconds`), as a boot does when it records its
+   * applications.
+   */
+  function recordNow(seconds = 0) {
+    const at = new Date(Date.now() + seconds * 1000).toISOString().replace(/\.\d+Z$/, 'Z');
     const text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8').replace(
       /"startedAt": "[^"]*"/,
-      `"startedAt": "${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}"`,
+      `"startedAt": "${at}"`,
     );
     writeFileSync(join(checkout, '.ai/qa/test-env.json'), text);
+  }
+
+  /** Makes the descriptor one of a boot before #453, without app.runIdInEnvironment. */
+  function untagged() {
+    const text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
+    writeFileSync(
+      join(checkout, '.ai/qa/test-env.json'),
+      text.replace('"runIdInEnvironment": true, ', ''),
+    );
+    expect(descriptor().app.runIdInEnvironment).toBeUndefined();
   }
 
   it('signals no recorded group without the run id, even one older than the boot (#453)', async () => {
@@ -939,10 +953,7 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       const leaders = reuseRecordedPids(`sh -c "sh ${join(folder, 'lingering.sh')}"`);
       await sleep(2_100);
       recordNow();
-      let text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
-      text = text.replace('"runIdInEnvironment": true, ', '');
-      writeFileSync(join(checkout, '.ai/qa/test-env.json'), text);
-      expect(descriptor().app.runIdInEnvironment).toBeUndefined();
+      untagged();
       const processes = leaders.flatMap(members);
       expect(processes.length).toBeGreaterThan(leaders.length);
 
@@ -965,6 +976,42 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       expect(down().status).toBe(0);
 
       for (const pid of pids) expect(alive(pid), pid).toBe(true);
+    });
+
+    it('signals none of the programs that started long before the boot recorded them', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      untagged();
+      const pids = reuseRecordedPids();
+      // Longer before than any boot takes (its health wait gives up after 180 s).
+      recordNow(400);
+
+      expect(down().status).toBe(0);
+
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+    });
+
+    it('finishes the stop when processes of a group exit while it lists them', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      // Many short-lived processes: some exit between `ps` and the read of their /proc entry.
+      writeFileSync(
+        join(folder, 'churning.sh'),
+        'for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do\n' +
+          '  (while :; do sleep 0.01; done) &\n' +
+          'done\nwait\n',
+      );
+      const leaders = reuseRecordedPids(`sh ${join(folder, 'churning.sh')}`);
+      await sleep(2_100);
+      recordNow();
+      untagged();
+
+      const { status, stdout, stderr } = down();
+
+      expect(status, stderr).toBe(0);
+      expect(stdout).toContain('TEST_ENV_STATUS=stopped');
+      expect(descriptor().status).toBe('stopped');
+      for (const leader of leaders) expect(groupAlive(leader), leader).toBe(false);
     });
   });
 
