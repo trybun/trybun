@@ -577,6 +577,22 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
       expect(log).toMatch(/stopping environment \S+ failed/);
     });
 
+    it('exits 1 and names the failed stop when an application crashes and the compose down fails (#449)', async () => {
+      const run = start('--foreground');
+      await run.output(owner);
+      const pids = applications();
+      writeFileSync(join(folder, 'compose-down-fails'), '');
+
+      process.kill(-Number(descriptor().app.webPid), 'SIGKILL');
+
+      expect((await run.exited()).code).toBe(1);
+      expect(run.stderr).toMatch(
+        /stopping environment \S+ failed; see \.ai\/qa\/logs\/foreground\.log/,
+      );
+      expect(descriptor().status).toBe('stop-failed');
+      for (const pid of pids) expect(alive(pid), pid).toBe(false);
+    });
+
     it('leaves the infrastructure running when its boot did not start it', async () => {
       writeFileSync(join(folder, 'compose-running'), '');
       const run = start('--foreground');
@@ -818,6 +834,21 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
 
       expect(status).toBe(1);
       expect(stderr).not.toContain('there is no .env');
+    });
+
+    it('keeps the infrastructure a failed stop left running as its own on the next boot', () => {
+      expect(down().status).toBe(1);
+      // The infrastructure still runs; the boot finds it, as after any failed stop.
+      writeFileSync(join(folder, 'compose-running'), '');
+      rmSync(join(folder, 'compose-down-fails'));
+
+      expect(up().status).toBe(0);
+      expect(descriptor().servicesStartedByScript).toBe(true);
+      writeFileSync(join(folder, 'log'), '');
+      expect(down().status).toBe(0);
+      expect(readLines(join(folder, 'log'))).toContain(
+        'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down',
+      );
     });
 
     it('stops the environment on the next down once compose down succeeds, then stays a no-op', () => {

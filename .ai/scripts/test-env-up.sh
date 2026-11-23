@@ -23,7 +23,8 @@
 #              page of the lists – a companion script, not part of this generated entrypoint
 #   2026-11-23 a failed stop is reported (#449): the --foreground owner exits 1 when
 #              test-env-down.sh fails, and the cleanup of an interrupted boot records "stop-failed"
-#              instead of "stopped" when its `compose down` fails
+#              instead of "stopped" when its `compose down` fails; a boot after a failed stop keeps
+#              the infrastructure it left running as started by this script, so the next stop ends it
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -236,6 +237,8 @@ if [ "$FOREGROUND" = 1 ]; then
   current=$(json_get runId "$DESCRIPTOR")
   if [ -n "$current" ] && [ "$current" != "$FG_RUN" ]; then
     log "environment $FG_RUN was replaced by $current; detaching – the new environment keeps running; to stop it, run: sh .ai/scripts/test-env-down.sh"
+  elif [ "$(json_get status "$DESCRIPTOR")" = stop-failed ]; then
+    log "the stop of environment $FG_RUN elsewhere failed; its infrastructure may still run; detaching"
   else
     log "environment $FG_RUN was stopped elsewhere ($(json_get status "$DESCRIPTOR")); detaching"
   fi
@@ -304,7 +307,7 @@ CLEANUP='
   stopped=true
   if [ "$services" = true ] && ! $compose down; then
     stopped=false
-    echo "[test-env] stopping the infrastructure failed (#449); see the output above"
+    echo "[test-env] stopping the infrastructure failed; see the output above"
   fi
   if [ "$locked" = 1 ] && [ "$(owner)" = "$$" ]; then rm -rf "$lock"; fi
   [ "$stopped" = true ] || exit 1
@@ -458,6 +461,13 @@ if [ "$RESET" = 1 ]; then
 fi
 SERVICES_STARTED=true
 [ -n "$($COMPOSE ps -q postgres 2>/dev/null)" ] && SERVICES_STARTED=false
+# The infrastructure a failed stop of this checkout left running (#449) is still this script's: the
+# next stop must take it down rather than leave it as someone else's.
+if [ "$SERVICES_STARTED" = false ] && [ -f "$DESCRIPTOR" ] &&
+   [ "$(json_get status "$DESCRIPTOR")" = stop-failed ] &&
+   [ "$(json_get servicesStartedByScript "$DESCRIPTOR")" = true ]; then
+  SERVICES_STARTED=true
+fi
 log "starting the infrastructure"
 run_step "$COMPOSE up -d --wait" "$LOG_DIR/compose.log"
 run_step "$COMPOSE wait keycloak-config" "$LOG_DIR/compose.log" append
