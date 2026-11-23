@@ -22,10 +22,16 @@
 #              may have given to other programs; it waits for and kills the processes the groups had
 #              when signalled, by PID and start time, and the groups while they carry the run id, and
 #              names a live group it leaves alone
+#   2026-11-23 replaces the descriptor atomically when it marks its status (#457) – written to a
+#              temporary file in .ai/qa, then renamed over it – so no reader sees it half-written or
+#              missing (`sed -i` with a backup suffix renames it away before the new one is in place)
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 DESCRIPTOR=.ai/qa/test-env.json
+# Each status update is written here and then renamed over the descriptor (#457), as test-env-up.sh
+# writes it: a reader opens either the old or the new descriptor, whole.
+DESCRIPTOR_TMP="$DESCRIPTOR.$$.tmp"
 LOG_DIR=.ai/qa/logs
 # The Compose project of test-env-up.sh (keep in sync): never `trybun`, the project of an installation.
 COMPOSE="docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml"
@@ -37,9 +43,12 @@ json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$DESCR
 # processes end then knows they were stopped, not crashed; the reuse check reads only "running".
 # A failed update is logged and never stops the teardown.
 set_status() {
-  sed -i.bak "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" ||
-    echo "could not mark $DESCRIPTOR $1" >&2
-  rm -f "$DESCRIPTOR.bak"
+  if sed "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" >"$DESCRIPTOR_TMP" &&
+     mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"; then
+    return 0
+  fi
+  rm -f "$DESCRIPTOR_TMP"
+  echo "could not mark $DESCRIPTOR $1" >&2
 }
 # "stopped" and "stop-failed" are written only after the applications were signalled and have
 # exited, and the kernel may have given their PIDs to other processes since (#452): a later down
