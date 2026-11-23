@@ -1221,6 +1221,96 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
     expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
   });
 
+  // A boot may replace the descriptor while a down that does not hold the bootstrap lock stops the
+  // run it read (#468): the down never marks the successor, nor stops the infrastructure it runs on.
+  describe('when a boot replaces the descriptor while it stops (#468)', () => {
+    const path = () => join(checkout, '.ai/qa/test-env.json');
+    const composeDown = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down';
+    let successor;
+
+    beforeEach(() => {
+      // The stubbed applications keep their port for 2 s after SIGTERM, as the API does.
+      extraEnvironment = { STUB_STOP_SECONDS: '2' };
+      const boot = up();
+      expect(boot.status, boot.stderr).toBe(0);
+      expect(descriptor().servicesStartedByScript).toBe(true);
+      successor = `${JSON.stringify({ ...descriptor(), runId: 'successor-run', status: 'running' }, null, 2)}\n`;
+      writeFileSync(join(folder, 'successor.json'), successor);
+      writeFileSync(join(folder, 'log'), '');
+    });
+
+    function startDown() {
+      const down = spawn('sh', ['.ai/scripts/test-env-down.sh'], {
+        cwd: checkout,
+        env: { ...environment(), ...extraEnvironment },
+      });
+      let stderr = '';
+      down.stderr.on('data', (data) => (stderr += data));
+      const exited = new Promise((resolve) => down.on('exit', (code) => resolve({ code, stderr })));
+      return { exited };
+    }
+
+    async function expectSuccessorKept({ code, stderr }) {
+      expect(code, stderr).toBe(0);
+      await until(
+        () => descriptor().runId === 'successor-run',
+        10_000,
+        () => `the descriptor records ${descriptor().runId}`,
+      );
+      expect(readFileSync(path(), 'utf8')).toBe(successor);
+      expect(stderr).toMatch(/now records environment successor-run, not \S+; leaving its status/);
+      expect(stderr).toMatch(
+        /environment successor-run replaced \S+ meanwhile; leaving the infrastructure/,
+      );
+      expect(readLines(join(folder, 'log'))).not.toContain(composeDown);
+    }
+
+    it('leaves the status of a successor that lands while it waits for the applications', async () => {
+      const down = startDown();
+      await until(
+        () => descriptor().status === 'stopping',
+        5_000,
+        () => `status ${descriptor().status}`,
+      );
+      // Written whole and renamed into place, as a boot writes it.
+      copyFileSync(join(folder, 'successor.json'), `${path()}.spec.tmp`);
+      renameSync(`${path()}.spec.tmp`, path());
+
+      await expectSuccessorKept(await down.exited);
+    });
+
+    it('leaves a successor that a boot writes between its check and its rename', async () => {
+      // A stub of sed, on the down's rewrite of the descriptor (the second read in its first status
+      // update, after the read of the run id), starts the successor's write as a boot does it – under
+      // the lock of .ai/qa – and gives it a second to land before the down renames its update.
+      const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+      writeFileSync(
+        join(folder, 'bin', 'sed'),
+        `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/swapped" ]; then
+    echo read >>"$STUB_DIR/reads"
+    if [ "$(wc -l <"$STUB_DIR/reads")" -eq 2 ]; then
+      touch "$STUB_DIR/swapped"
+      cp "$STUB_DIR/successor.json" .ai/qa/test-env.json.spec.tmp
+      # Without the down's descriptor of the lock (fd 9), which it would otherwise hold open itself.
+      flock .ai/qa mv -f .ai/qa/test-env.json.spec.tmp .ai/qa/test-env.json 9<&- &
+      sleep 1
+    fi
+  fi
+done
+exec ${sed} "$@"
+`,
+      );
+      chmodSync(join(folder, 'bin', 'sed'), 0o755);
+
+      const result = await startDown().exited;
+
+      expect(existsSync(join(folder, 'swapped'))).toBe(true);
+      await expectSuccessorKept(result);
+    });
+  });
+
   describe('when the compose down fails (#449)', () => {
     beforeEach(() => {
       expect(up().status).toBe(0);

@@ -27,26 +27,47 @@
 #              missing (`sed -i` with a backup suffix renames it away before the new one is in place)
 #   2026-11-23 the identity check of a recorded process group moves to test-env-processes.sh, which
 #              it sources (#456): test-env-up.sh applies the same check to its reuse check and watch
+#   2026-11-23 reads the descriptor once and changes its status only while it still records the run
+#              it stops (#468), checked and renamed under the lock of .ai/qa that test-env-up.sh holds
+#              while it writes the descriptor; it leaves the infrastructure to a boot that replaced it
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
-DESCRIPTOR=.ai/qa/test-env.json
+QA_DIR=.ai/qa
+DESCRIPTOR="$QA_DIR/test-env.json"
 # Each status update is written here and then renamed over the descriptor (#457), as test-env-up.sh
 # writes it: a reader opens either the old or the new descriptor, whole.
 DESCRIPTOR_TMP="$DESCRIPTOR.$$.tmp"
-LOG_DIR=.ai/qa/logs
+LOG_DIR="$QA_DIR/logs"
 # The Compose project of test-env-up.sh (keep in sync): never `trybun`, the project of an installation.
 COMPOSE="docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml"
 KEEP_SERVICES=0
 [ "${1:-}" = "--keep-services" ] && KEEP_SERVICES=1
-[ -f "$DESCRIPTOR" ] || { echo "No test environment recorded."; exit 0; }
-json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$DESCRIPTOR" | head -1; }
+# The value of key $1 in file $2, or in standard input without $2.
+json_get() { sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" ${2+"$2"} | head -1; }
+# The run this down stops is the one the descriptor records now, read once (#468): its status, run
+# id and PIDs all come from this copy, never from separate reads that a replacement can land between.
+RECORDED=$(cat "$DESCRIPTOR" 2>/dev/null) || { echo "No test environment recorded."; exit 0; }
+recorded() { printf '%s\n' "$RECORDED" | json_get "$1"; }
+RUN_ID=$(recorded runId)
 # "stopping" before any process is signalled (#383): an attached --foreground owner that sees its
 # processes end then knows they were stopped, not crashed; the reuse check reads only "running".
+# A boot may replace the descriptor while this down waits for the applications or runs the
+# `compose down` (#468): the status changes only while the descriptor still records RUN_ID, and the
+# check and the rename hold the lock of .ai/qa that test-env-up.sh holds while it writes the
+# descriptor (flock, released by the kernel when its holder exits), so a successor is never marked.
 # A failed update is logged and never stops the teardown.
 set_status() {
-  if sed "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" >"$DESCRIPTOR_TMP" &&
-     mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"; then
+  if (
+    flock 9 || exit 1
+    current=$(json_get runId "$DESCRIPTOR" 2>/dev/null)
+    if [ "$current" != "$RUN_ID" ]; then
+      echo "[test-env] $DESCRIPTOR now records environment ${current:-(none)}, not $RUN_ID; leaving its status" >&2
+      exit 0
+    fi
+    sed "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" >"$DESCRIPTOR_TMP" &&
+      mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"
+  ) 9<"$QA_DIR"; then
     return 0
   fi
   rm -f "$DESCRIPTOR_TMP"
@@ -58,7 +79,7 @@ set_status() {
 # `compose down`. It also keeps that status meanwhile: a retry cut off during the `compose down`
 # must leave "stop-failed", which the next down and the next boot (servicesStartedByScript) read.
 APP_KEYS="apiPid workerPid webPid"
-case "$(json_get status)" in stopped | stop-failed) APP_KEYS="" ;; esac
+case "$(recorded status)" in stopped | stop-failed) APP_KEYS="" ;; esac
 if [ -n "$APP_KEYS" ]; then set_status stopping; fi
 # A "running" or "stopping" descriptor cannot tell its applications from other programs either:
 # after a crash with no --foreground owner or a reboot, the kernel may have given the recorded PIDs
@@ -67,9 +88,8 @@ if [ -n "$APP_KEYS" ]; then set_status stopping; fi
 # before startedAt), the check test-env-up.sh shares (#456).
 # shellcheck source=.ai/scripts/test-env-processes.sh
 . "$ROOT/.ai/scripts/test-env-processes.sh"
-RUN_ID=$(json_get runId)
-TAGGED=$(json_get runIdInEnvironment)
-STARTED_AT=$(json_get startedAt)
+TAGGED=$(recorded runIdInEnvironment)
+STARTED_AT=$(recorded startedAt)
 ours() { group_is_ours "$1" "$RUN_ID" "$TAGGED" "$STARTED_AT"; }
 # Every process of a group that is the environment's, as "<pid>:<start ticks>" from just before it
 # is signalled: the wait and the kill below concern these processes, never a later holder of their
@@ -79,7 +99,7 @@ ours() { group_is_ours "$1" "$RUN_ID" "$TAGGED" "$STARTED_AT"; }
 SIGNALLED=""
 MEMBERS=""
 for key in $APP_KEYS; do
-  pid=$(json_get "$key")
+  pid=$(recorded "$key")
   [ -n "$pid" ] || continue
   if ours "$pid"; then
     for member in $(group_members "$pid"); do
@@ -121,17 +141,25 @@ if [ "$running" = true ]; then
     if same "$member"; then kill -s KILL "${member%%:*}" 2>/dev/null || true; fi
   done
 fi
-if [ "$KEEP_SERVICES" = 0 ] && [ "$(json_get servicesStartedByScript)" = true ]; then
-  mkdir -p "$LOG_DIR"
-  # A failed down leaves the infrastructure running and its ports bound (#449): never "stopped".
-  if ! $COMPOSE down >"$LOG_DIR/down.log" 2>&1; then
-    set_status stop-failed
-    echo "[test-env] stopping the infrastructure failed, see $LOG_DIR/down.log" >&2
-    # Compose reads the required variables of compose.yaml from .env, also for `down`.
-    [ -f .env ] ||
-      echo "[test-env] there is no .env in $ROOT: Compose needs it to read compose.yaml; restore it (cp .env.example .env) and run this script again" >&2
-    echo "TEST_ENV_STATUS=stop-failed"
-    exit 1
+# A boot that replaced the descriptor meanwhile runs on this infrastructure (the same Compose
+# project) and records whether it started it, so its own down decides about it (#468).
+SUCCESSOR=$(json_get runId "$DESCRIPTOR" 2>/dev/null || true)
+[ "$SUCCESSOR" != "$RUN_ID" ] || SUCCESSOR=""
+if [ "$KEEP_SERVICES" = 0 ] && [ "$(recorded servicesStartedByScript)" = true ]; then
+  if [ -n "$SUCCESSOR" ]; then
+    echo "[test-env] environment $SUCCESSOR replaced $RUN_ID meanwhile; leaving the infrastructure it runs on" >&2
+  else
+    mkdir -p "$LOG_DIR"
+    # A failed down leaves the infrastructure running and its ports bound (#449): never "stopped".
+    if ! $COMPOSE down >"$LOG_DIR/down.log" 2>&1; then
+      set_status stop-failed
+      echo "[test-env] stopping the infrastructure failed, see $LOG_DIR/down.log" >&2
+      # Compose reads the required variables of compose.yaml from .env, also for `down`.
+      [ -f .env ] ||
+        echo "[test-env] there is no .env in $ROOT: Compose needs it to read compose.yaml; restore it (cp .env.example .env) and run this script again" >&2
+      echo "TEST_ENV_STATUS=stop-failed"
+      exit 1
+    fi
   fi
 fi
 set_status stopped

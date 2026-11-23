@@ -37,6 +37,9 @@
 #              only while test-env-down.sh's identity check confirms it (#456, test-env-processes.sh,
 #              sourced): after a crash or a reboot its PID may belong to another program, so a boot
 #              reused an environment it never started and an owner missed the crash of its own
+#   2026-11-23 writes the descriptor and marks its status under the lock of .ai/qa (flock, #468), which
+#              test-env-down.sh takes too, and the cleanup of an interrupted boot marks it only while it
+#              still records this boot: neither ever marks a successor's descriptor
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -130,10 +133,18 @@ applications_run() {
     running "$group" && group_is_ours "$group" "$1" "$2" "$3" || return 1
   done
 }
+# Every write of the descriptor holds the lock of .ai/qa (flock, #468), as test-env-down.sh does while
+# it checks that the descriptor records its run and renames its status update over it, so a down never
+# marks a descriptor a boot has just written; the kernel releases the lock when its holder exits.
+# Status $1 is marked only while the descriptor records this boot's RUN_ID: once the cleanup of an
+# interrupted boot has freed the bootstrap lock, another boot may replace it.
 set_descriptor_status() {
-  [ -f "$DESCRIPTOR" ] || return 0
-  if sed "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" >"$DESCRIPTOR_TMP" &&
-     mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"; then
+  if (
+    flock 9 || exit 1
+    [ "$(json_get runId "$DESCRIPTOR" 2>/dev/null)" = "$RUN_ID" ] || exit 0
+    sed "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" >"$DESCRIPTOR_TMP" &&
+      mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"
+  ) 9<"$QA_DIR"; then
     return 0
   fi
   rm -f "$DESCRIPTOR_TMP"
@@ -637,7 +648,7 @@ cat > "$DESCRIPTOR_TMP" <<EOF
   "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). For a second page of the lists (Load more): sh .ai/scripts/test-env-pages.sh add, and remove afterwards. Stop with: sh .ai/scripts/test-env-down.sh"
 }
 EOF
-mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"
+flock "$QA_DIR" mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"
 log "environment $RUN_ID running at $BASE_URL (${ELAPSED}s)"
 print_result 0 "$RUN_ID"
 BOOTED=1
