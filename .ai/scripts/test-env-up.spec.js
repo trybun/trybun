@@ -139,10 +139,16 @@ beforeEach(() => {
   );
 });
 
+// Longer than the down of the cleanup and its scan take at most together (as PROCESS_TESTS), so
+// Vitest never moves on to the next test while the cleanup still runs.
 afterEach(async () => {
-  await stopProcesses();
-  rmSync(folder, { recursive: true, force: true });
-});
+  const own = folder;
+  try {
+    await stopProcesses();
+  } finally {
+    rmSync(own, { recursive: true, force: true });
+  }
+}, 60_000);
 
 /**
  * Stops what the test left running, signalling only its own processes (#458): the recorded PIDs
@@ -150,6 +156,8 @@ afterEach(async () => {
  * tag in the environment instead.
  */
 async function stopProcesses() {
+  // The tag of this test, read before the first wait.
+  const own = tag;
   // Ends the scripts a test left attached (their process groups), before their own handlers can
   // act on what follows – only while Node has not seen the script exit: until it reaps it, its PID
   // and the process group it leads belong to no other process.
@@ -164,9 +172,12 @@ async function stopProcesses() {
   // Stops the stubbed applications of the last boot (their process groups).
   spawnSync('sh', ['.ai/scripts/test-env-down.sh'], { cwd: checkout, env: environment() });
   // And anything else of the test, e.g. the applications a failed boot did not record or a step
-  // it left blocked. Repeated, because a process may start another one before its signal.
+  // it left blocked. Repeated, because a process may start another one before its signal. Between
+  // the read of its environ and the signal a process may exit, but its PID is handed out again
+  // only after the kernel has gone through all the others (pid_max): that gap, which Node cannot
+  // close (it has no pidfd API), is accepted, as in test-env-down.sh.
   const deadline = Date.now() + 10_000;
-  for (let pids = tagged(); pids.length > 0; pids = tagged()) {
+  for (let pids = tagged(own); pids.length > 0; pids = tagged(own)) {
     if (Date.now() > deadline) throw new Error(`processes of the test still run: ${pids}`);
     for (const pid of pids) {
       try {
@@ -180,11 +191,11 @@ async function stopProcesses() {
 }
 
 /**
- * The PIDs of the running processes that carry the tag of this test. A zombie has an empty
- * environ, and another user's process an unreadable one: neither counts.
+ * The PIDs of the running processes that carry `marker` as SPEC_PROCESS_TAG. A zombie has an
+ * empty environ, and another user's process an unreadable one: neither counts.
  */
-function tagged() {
-  const entry = `SPEC_PROCESS_TAG=${tag}`;
+function tagged(marker) {
+  const entry = `SPEC_PROCESS_TAG=${marker}`;
   return readdirSync('/proc')
     .filter((name) => /^\d+$/.test(name))
     .filter((pid) => {
