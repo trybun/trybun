@@ -834,6 +834,78 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       env: environment(),
     });
 
+  const groupAlive = (pid) => alive(-Number(pid));
+  const members = (group) =>
+    execFileSync('ps', ['-e', '-o', 'pid=', '-o', 'pgid='], { encoding: 'utf8' })
+      .split('\n')
+      .map((line) => line.trim().split(/\s+/))
+      .filter(([, pgid]) => pgid === String(group))
+      .map(([pid]) => pid);
+
+  /**
+   * Ends the applications without a stop, as a crash with no --foreground owner or a reboot does
+   * (#453): the descriptor still says "running", and nothing holds their ports any more.
+   */
+  async function endWithoutStop() {
+    const { apiPid, workerPid, webPid } = descriptor().app;
+    for (const pid of [apiPid, workerPid, webPid]) process.kill(-Number(pid), 'SIGKILL');
+    await until(
+      () => [apiPid, workerPid, webPid].every((pid) => !groupAlive(pid)),
+      10_000,
+      () => 'the applications still run',
+    );
+    for (const port of [3000, 3001]) rmSync(join(folder, `serving-${port}`), { force: true });
+    expect(descriptor().status).toBe('running');
+  }
+
+  describe('of a running descriptor whose applications ended without a stop (#453)', () => {
+    it('signals none of the other programs that now lead the recorded process groups', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      const pids = reuseRecordedPids();
+
+      const { status, stdout, stderr } = down();
+
+      expect(status).toBe(0);
+      expect(stdout).toContain('TEST_ENV_STATUS=stopped');
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+      expect(stderr).toContain(`process group ${pids[0]} (apiPid) is not an application`);
+      expect(descriptor().status).toBe('stopped');
+    });
+
+    it('signals none of them when the next boot restarts the stale environment', async () => {
+      expect(up().status).toBe(0);
+      await endWithoutStop();
+      const pids = reuseRecordedPids();
+      // The stubbed health checks still pass, so the reuse check finds the environment stale by its
+      // age instead of by its health, as after a reboot; the restart runs the same down.
+      extraEnvironment = { TEST_ENV_CACHE_TTL_SECONDS: '0' };
+
+      const boot = up();
+
+      expect(boot.status, boot.stderr).toBe(0);
+      expect(boot.stderr).toContain('the recorded environment is stale; restarting it');
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+      expect(descriptor().status).toBe('running');
+      expect(descriptor().app.webPid).not.toBe(pids[2]);
+    });
+  });
+
+  it('stops an application whose group leader has already exited (#453)', () => {
+    expect(up().status).toBe(0);
+    const { webPid } = descriptor().app;
+    const [member] = members(webPid).filter((pid) => pid !== webPid);
+    expect(member).toBeDefined();
+    // The leader `sh -c` ends first, as on SIGTERM; the web application keeps its group and port.
+    process.kill(Number(webPid), 'SIGKILL');
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(true);
+
+    expect(down().status).toBe(0);
+
+    expect(alive(member)).toBe(false);
+    expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
+  });
+
   it('signals no process group on a second down after the applications have stopped (#452)', () => {
     expect(up().status).toBe(0);
     expect(down().status).toBe(0);
