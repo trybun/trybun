@@ -54,7 +54,8 @@ if [ -n "$APP_KEYS" ]; then set_status stopping; fi
 # A "running" or "stopping" descriptor cannot tell its applications from other programs either:
 # after a crash with no --foreground owner or a reboot, the kernel may have given the recorded PIDs
 # to them (#453). A recorded group is signalled only while it is the environment's (group_is_ours:
-# a member carries the run id of the boot), the check test-env-up.sh shares (#456).
+# a member carries the run id of the boot – for a boot before #453, its leader started shortly
+# before startedAt), the check test-env-up.sh shares (#456).
 # shellcheck source=.ai/scripts/test-env-processes.sh
 . "$ROOT/.ai/scripts/test-env-processes.sh"
 RUN_ID=$(json_get runId)

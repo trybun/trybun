@@ -114,10 +114,12 @@ healthy() { curl -fsS --max-time 5 -o /dev/null "$1" 2>/dev/null; }
 # shellcheck source=.ai/scripts/test-env-processes.sh
 . "$ROOT/.ai/scripts/test-env-processes.sh"
 # Whether the applications recorded as $4, $5 and $6 all run as those of run id $1, whose descriptor
-# has runIdInEnvironment $2 and startedAt $3.
+# has runIdInEnvironment $2 and startedAt $3: each recorded leader still runs, as before #456, and
+# its group is the environment's – while the group exists, the kernel gives its PID to no other
+# process.
 applications_run() {
   for group in "$4" "$5" "$6"; do
-    [ -n "$group" ] && group_is_ours "$group" "$1" "$2" "$3" || return 1
+    running "$group" && group_is_ours "$group" "$1" "$2" "$3" || return 1
   done
 }
 set_descriptor_status() {

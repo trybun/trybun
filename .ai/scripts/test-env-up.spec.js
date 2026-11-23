@@ -713,7 +713,13 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
       expect(application.length).toBeGreaterThan(0);
 
       // The web application crashes; its recorded PID stays with a program without the run id.
-      for (const pid of application) process.kill(Number(pid), 'SIGKILL');
+      for (const pid of application) {
+        try {
+          process.kill(Number(pid), 'SIGKILL');
+        } catch {
+          // Exited since the listing, e.g. a `sleep 1` of the stub.
+        }
+      }
 
       expect((await run.exited()).code).toBe(1);
       expect(run.stderr).toMatch(/an application of environment \S+ exited/);
@@ -1033,6 +1039,21 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
       expect(stdout).toContain('TEST_ENV_STATUS=stopped');
       // Gone when the down returns: it waited for them, not only for the leaders.
       for (const pid of processes) expect(alive(pid), pid).toBe(false);
+    });
+
+    it('reuses it while its applications still run (#456)', async () => {
+      expect(up().status).toBe(0);
+      const { runId } = descriptor();
+      // The boot recorded them seconds after starting them (the health wait).
+      await sleep(2_100);
+      recordNow();
+      untagged();
+
+      const reuse = up();
+
+      expect(reuse.status, reuse.stderr).toBe(0);
+      expect(reuse.stdout).toContain('TEST_ENV_REUSED=1');
+      expect(reuse.stdout).toContain(`TEST_ENV_RUN_ID=${runId}\n`);
     });
 
     it('signals none of the programs that started after the boot recorded them', async () => {
