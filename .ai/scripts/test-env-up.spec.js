@@ -36,6 +36,12 @@ case "$*" in
   # The infrastructure counts as already running (not started by the boot) while this file exists.
   "compose -p trybun-test -f compose.yaml -f compose.dev.yaml ps -q postgres")
     [ ! -e "$STUB_DIR/compose-running" ] || echo postgres-container ;;
+  # \`down\` fails as Compose does without the .env of compose.yaml while this file exists (#449).
+  "compose -p trybun-test -f compose.yaml -f compose.dev.yaml down")
+    if [ -e "$STUB_DIR/compose-down-fails" ]; then
+      echo 'required variable TRYBUN_S3_ACCESS_KEY_ID is missing a value' >&2
+      exit 1
+    fi ;;
   "compose -p trybun-test -f compose.yaml -f compose.dev.yaml "*) ;;
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
@@ -406,6 +412,26 @@ describe('an interrupted boot (#383)', PROCESS_TESTS, () => {
     },
   );
 
+  it('logs a failed compose down of its cleanup instead of reporting it cleaned up (#449)', async () => {
+    extraEnvironment = { STUB_BLOCK: 'build' };
+    writeFileSync(join(folder, 'compose-down-fails'), '');
+    const run = start();
+    await until(
+      () => existsSync(join(folder, 'blocked')),
+      20_000,
+      () => run.stderr,
+    );
+
+    run.child.kill('SIGTERM');
+
+    expect((await run.exited()).code).toBe(143);
+    await interruptedClean();
+    const log = readFileSync(join(checkout, '.ai/qa/logs/boot-interrupt.log'), 'utf8');
+    expect(log).toContain('TRYBUN_S3_ACCESS_KEY_ID is missing a value');
+    expect(log).toContain('stopping the infrastructure failed');
+    expect(log).not.toContain('interrupted boot cleaned up');
+  });
+
   it('finishes its cleanup when a closed terminal keeps hanging up its group', async () => {
     extraEnvironment = { STUB_BLOCK: 'build' };
     const run = start();
@@ -533,6 +559,22 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
       expect((await run.exited()).code).toBe(0);
       await stopped(pids);
       expect(downs()).toBe(1);
+    });
+
+    it('exits 1 and leaves the environment not stopped when the compose down fails (#449)', async () => {
+      const run = start('--foreground');
+      await run.output(owner);
+      const pids = applications();
+      writeFileSync(join(folder, 'compose-down-fails'), '');
+
+      run.child.kill('SIGTERM');
+
+      expect((await run.exited()).code).toBe(1);
+      expect(descriptor().status).toBe('stop-failed');
+      for (const pid of pids) expect(alive(pid), pid).toBe(false);
+      const log = readFileSync(join(checkout, '.ai/qa/logs/foreground.log'), 'utf8');
+      expect(log).toContain('stopping the infrastructure failed, see .ai/qa/logs/down.log');
+      expect(log).toMatch(/stopping environment \S+ failed/);
     });
 
     it('leaves the infrastructure running when its boot did not start it', async () => {
@@ -738,5 +780,56 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
     expect(await exited).toBe(0);
     expect(descriptor().status).toBe('stopped');
     expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
+  });
+
+  describe('when the compose down fails (#449)', () => {
+    const down = () =>
+      spawnSync('sh', ['.ai/scripts/test-env-down.sh'], {
+        cwd: checkout,
+        encoding: 'utf8',
+        env: environment(),
+      });
+
+    beforeEach(() => {
+      expect(up().status).toBe(0);
+      writeFileSync(join(folder, 'compose-down-fails'), '');
+    });
+
+    it('exits 1, names the log and marks the environment stop-failed, not stopped', () => {
+      // The issue's case: the .env the boot created is gone before the stop.
+      rmSync(join(checkout, '.env'));
+
+      const { status, stdout, stderr } = down();
+
+      expect(status).toBe(1);
+      expect(stdout).toContain('TEST_ENV_STATUS=stop-failed');
+      expect(stdout).not.toContain('TEST_ENV_STATUS=stopped');
+      expect(stderr).toContain('stopping the infrastructure failed, see .ai/qa/logs/down.log');
+      expect(stderr).toContain('there is no .env in');
+      expect(descriptor().status).toBe('stop-failed');
+      expect(readFileSync(join(checkout, '.ai/qa/logs/down.log'), 'utf8')).toContain(
+        'TRYBUN_S3_ACCESS_KEY_ID is missing a value',
+      );
+      expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
+    });
+
+    it('names no missing .env when the checkout has one', () => {
+      const { status, stderr } = down();
+
+      expect(status).toBe(1);
+      expect(stderr).not.toContain('there is no .env');
+    });
+
+    it('stops the environment on the next down once compose down succeeds, then stays a no-op', () => {
+      expect(down().status).toBe(1);
+      rmSync(join(folder, 'compose-down-fails'));
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { status, stdout } = down();
+        expect(status).toBe(0);
+        expect(stdout).toContain('TEST_ENV_STATUS=stopped');
+        expect(descriptor().status).toBe('stopped');
+      }
+    });
   });
 });

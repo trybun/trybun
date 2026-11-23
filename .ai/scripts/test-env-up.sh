@@ -21,6 +21,9 @@
 #              sessions, detached cleanup); refusal messages never invite stopping another checkout
 #   2026-11-22 the descriptor's notes name test-env-pages.sh (#440), the opt-in records for a second
 #              page of the lists – a companion script, not part of this generated entrypoint
+#   2026-11-23 a failed stop is reported (#449): the --foreground owner exits 1 when
+#              test-env-down.sh fails, and the cleanup of an interrupted boot records "stop-failed"
+#              instead of "stopped" when its `compose down` fails
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -99,7 +102,7 @@ running() { [ -n "${1:-}" ] && ps -o stat= -p "$1" 2>/dev/null | grep -qv '^Z'; 
 healthy() { curl -fsS --max-time 5 -o /dev/null "$1" 2>/dev/null; }
 set_descriptor_status() {
   [ -f "$DESCRIPTOR" ] || return 0
-  sed -i.bak "s/\"status\": \"[a-z]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" || true
+  sed -i.bak "s/\"status\": \"[a-z-]*\"/\"status\": \"$1\"/" "$DESCRIPTOR" || true
   rm -f "$DESCRIPTOR.bak"
 }
 
@@ -128,10 +131,18 @@ fg_still_ours() {
   [ -n "$FG_RUN" ] && [ "$(json_get status "$DESCRIPTOR")" = running ] &&
     [ "$(json_get runId "$DESCRIPTOR")" = "$FG_RUN" ]
 }
+# Returns the exit status of test-env-down.sh: non-zero when the infrastructure still runs (#449).
 fg_teardown() {
   setsid sh "$ROOT/.ai/scripts/test-env-down.sh" >>"$FG_LOG" 2>&1 < /dev/null &
   teardown_pid=$!
-  while alive "$teardown_pid"; do wait "$teardown_pid" || true; done
+  # The first `wait` also collects the status of a teardown the shell has already reaped.
+  teardown_status=0
+  wait "$teardown_pid" || teardown_status=$?
+  while alive "$teardown_pid"; do
+    teardown_status=0
+    wait "$teardown_pid" || teardown_status=$?
+  done
+  return "$teardown_status"
 }
 fg_signal() {
   # Ignore further signals from here on: a closed terminal can hang up the group more than once
@@ -158,7 +169,10 @@ fg_signal() {
   [ -n "$FG_ROLE" ] || fg_read_role
   if [ "$FG_ROLE" = owner ] && fg_still_ours; then
     log "closing the owner of environment $FG_RUN; stopping it"
-    fg_teardown
+    if ! fg_teardown; then
+      log "stopping environment $FG_RUN failed; see the messages of test-env-down.sh above"
+      exit 1
+    fi
   elif [ "$FG_ROLE" = owner ]; then
     log "closing the owner of environment $FG_RUN, which was already stopped or replaced"
   else
@@ -216,7 +230,7 @@ if [ "$FOREGROUND" = 1 ]; then
     # A signal during this teardown must not start a second one or change the exit code.
     trap '' HUP INT TERM
     log "an application of environment $FG_RUN exited; stopping the rest (logs in $LOG_DIR)"
-    fg_teardown
+    fg_teardown || log "stopping environment $FG_RUN failed; see $FG_LOG"
     exit 1
   fi
   current=$(json_get runId "$DESCRIPTOR")
@@ -287,8 +301,13 @@ CLEANUP='
     waited=$((waited + 1))
   done
   for pid in "$@"; do kill -s KILL "-$pid" 2>/dev/null || true; done
-  if [ "$services" = true ]; then $compose down || true; fi
+  stopped=true
+  if [ "$services" = true ] && ! $compose down; then
+    stopped=false
+    echo "[test-env] stopping the infrastructure failed (#449); see the output above"
+  fi
   if [ "$locked" = 1 ] && [ "$(owner)" = "$$" ]; then rm -rf "$lock"; fi
+  [ "$stopped" = true ] || exit 1
   echo "[test-env] interrupted boot cleaned up"
 '
 interrupted() {
@@ -307,9 +326,18 @@ interrupted() {
   setsid sh -c "$CLEANUP" cleanup "$LOCK_DIR" "$LOCKED" "$$" "$SERVICES_STARTED" "$COMPOSE" $pids &
   cleanup_pid=$!
   LOCKED=0
-  # A second signal interrupts `wait`; keep waiting until the cleanup has finished.
-  while alive "$cleanup_pid"; do wait "$cleanup_pid" || true; done
-  if [ -n "${RUN_ID:-}" ]; then set_descriptor_status stopped; fi
+  # A second signal interrupts `wait`; keep waiting until the cleanup has finished. The first
+  # `wait` also collects the status of a cleanup the shell has already reaped.
+  cleanup_status=0
+  wait "$cleanup_pid" || cleanup_status=$?
+  while alive "$cleanup_pid"; do
+    cleanup_status=0
+    wait "$cleanup_pid" || cleanup_status=$?
+  done
+  # A failed `compose down` leaves the infrastructure running: never "stopped" (#449).
+  if [ -n "${RUN_ID:-}" ]; then
+    if [ "$cleanup_status" = 0 ]; then set_descriptor_status stopped; else set_descriptor_status stop-failed; fi
+  fi
   exit "$1"
 }
 
