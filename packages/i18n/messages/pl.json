@@ -14,6 +14,7 @@
   },
   "appShell": {
     "skipToContent": "Przejdź do treści",
+    "waitingForConnection": "Brak połączenia z siecią – wczytywanie wznowi się po jego powrocie.",
     "mainNavigation": "Nawigacja główna",
     "expandNavigation": "Rozwiń nawigację",
     "collapseNavigation": "Zwiń nawigację",
@@ -107,7 +108,8 @@
       "emptyArchived": "Nie ma zarchiwizowanych projektów.",
       "noRole": "Administrator",
       "loadMore": "Pokaż więcej",
-      "loadingMore": "Wczytywanie…"
+      "loadingMore": "Wczytywanie…",
+      "loading": "Wczytywanie projektów…"
     },
     "roles": {
       "developer": "Developer",
@@ -149,6 +151,7 @@
     "members": {
       "title": "Członkowie",
       "empty": "Projekt nie ma jeszcze członków.",
+      "loading": "Wczytywanie członków…",
       "noName": "Bez nazwy",
       "roleOf": "Rola: {name}",
       "add": "Dodaj członka",
@@ -215,7 +218,8 @@
       "noDomains": "Brak domen e-mail",
       "memberCount": "Członkowie: {count}",
       "loadMore": "Pokaż więcej",
-      "loadingMore": "Ładowanie…"
+      "loadingMore": "Wczytywanie…",
+      "loading": "Wczytywanie organizacji…"
     },
     "create": {
       "open": "Nowa organizacja",
@@ -269,12 +273,14 @@
       "removeOf": "Usuń: {name}",
       "added": "Dodano: {name}",
       "removed": "Usunięto: {name}",
-      "loadMore": "Pokaż więcej projektów"
+      "loadMore": "Pokaż więcej projektów",
+      "loading": "Wczytywanie projektów…"
     },
     "members": {
       "title": "Członkowie",
       "description": "Użytkownicy końcowi firmy klienta. Osoba należy najwyżej do jednej organizacji.",
       "empty": "Organizacja nie ma jeszcze członków.",
+      "loading": "Wczytywanie członków…",
       "noName": "Bez nazwy",
       "noEmail": "Brak adresu e-mail",
       "email": "Adres e-mail",
@@ -566,6 +572,7 @@
       "loadFailed": "Nie udało się wczytać zgłoszeń.",
       "showMore": "Pokaż więcej",
       "loadingMore": "Wczytywanie…",
+      "loading": "Wczytywanie zgłoszeń…",
       "columns": {
         "select": "Zaznacz",
         "identifier": "ID",
@@ -1001,7 +1008,8 @@
       "emptyDescription": "Poproś osobę, która Cię zaprosiła, o dodanie do projektu.",
       "myTickets": "Przejdź do moich zgłoszeń",
       "loadMore": "Pokaż więcej projektów",
-      "loadingMore": "Ładowanie…"
+      "loadingMore": "Wczytywanie…",
+      "loading": "Wczytywanie Twoich projektów…"
     },
     "projectHome": {
       "createTicket": "Utwórz zgłoszenie",
@@ -1028,7 +1036,8 @@
       "empty": "Nie masz jeszcze żadnych zgłoszeń.",
       "updated": "Zmienione {time}",
       "loadMore": "Pokaż więcej zgłoszeń",
-      "loadingMore": "Ładowanie…"
+      "loadingMore": "Wczytywanie…",
+      "loading": "Wczytywanie Twoich zgłoszeń…"
     },
     "ticket": {
       "back": "Moje zgłoszenia",

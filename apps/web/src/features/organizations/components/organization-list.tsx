@@ -8,13 +8,15 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { organizationsQueryOptions } from '../queries.js';
 import { organizationHref } from '../search-params.js';
 
 /**
  * The organizations of one state, sorted by name (§7.3): one row per organization with its name,
  * e-mail domains and member count, opening its detail. Rows are full-width cards with 44 px
- * targets on every device, as the projects list (Rule 9).
+ * targets on every device, as the projects list (Rule 9). While the browser reads them, a status
+ * says so in their place (§18.5, #428).
  */
 export function OrganizationList({ state }: { state: OrganizationState }) {
   const t = useTranslations('organizations.list');
@@ -29,8 +31,12 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
       </p>
     );
   }
-  const items = organizations.data?.pages.flatMap((page) => page.items) ?? [];
-  if (organizations.isSuccess && items.length === 0) {
+  if (organizations.isPending) {
+    // Never the empty list or the empty state, which look like "no organizations" (#428).
+    return <LoadingStatus fetchStatus={organizations.fetchStatus}>{t('loading')}</LoadingStatus>;
+  }
+  const items = organizations.data.pages.flatMap((page) => page.items);
+  if (items.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         {state === 'active' ? t('emptyActive') : t('emptyArchived')}

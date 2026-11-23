@@ -18,13 +18,16 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { useUpdateOrganization } from '../mutations.js';
 import { OrganizationSection } from './organization-section.js';
 
 /**
  * The projects an organization may access (§7.3): each with Remove, and a picker of the active
- * projects not yet added, both with `manage_projects`. The whole set is sent.
+ * projects not yet added, both with `manage_projects`. The whole set is sent. While the browser
+ * reads the active projects, a status says so in place of the picker; a failed first read shows only
+ * its error, never the picker without projects (§18.5, #428).
  */
 export function OrganizationProjects({ organization }: { organization: Organization }) {
   const t = useTranslations('organizations.projects');
@@ -101,7 +104,12 @@ export function OrganizationProjects({ organization }: { organization: Organizat
       )}
       {canManage && projectIds.length < ORGANIZATION_MAX_PROJECTS && (
         <div className="flex flex-col gap-3">
-          {activeProjects.isSuccess && candidates.length === 0 && !activeProjects.hasNextPage ? (
+          {activeProjects.isPending ? (
+            // Never the picker without projects, which looks like "no projects to add" (#428).
+            <LoadingStatus fetchStatus={activeProjects.fetchStatus}>{t('loading')}</LoadingStatus>
+          ) : activeProjects.isLoadingError ? null : activeProjects.isSuccess &&
+            candidates.length === 0 &&
+            !activeProjects.hasNextPage ? (
             <p className="text-sm text-muted-foreground">{t('noCandidates')}</p>
           ) : (
             <div className="flex flex-col gap-3 md:flex-row md:items-end">

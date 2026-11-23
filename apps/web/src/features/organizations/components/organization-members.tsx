@@ -21,6 +21,7 @@ import { browserApiClient } from '../../../lib/api-client/browser-api-client.js'
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { useAddOrganizationMember, useRemoveOrganizationMember } from '../mutations.js';
 import { organizationMembersQueryOptions } from '../queries.js';
@@ -38,7 +39,8 @@ function isOfOtherOrganization(error: unknown): boolean {
  * The members of an organization (§7.3): display name, e-mail address, account state and the date
  * they joined, page by page; with `manage_members` also adding an end user by e-mail address and
  * Remove with Undo instead of a confirmation (Rule 2). A person of another organization is moved
- * only after the confirmation of the move – Undo of a removal never moves anyone.
+ * only after the confirmation of the move – Undo of a removal never moves anyone. While the browser
+ * reads the members, a status says so in their place (§18.5, #428).
  */
 export function OrganizationMembers({ organization }: { organization: Organization }) {
   const t = useTranslations('organizations.members');
@@ -161,8 +163,10 @@ export function OrganizationMembers({ organization }: { organization: Organizati
         <p role="alert" className="text-sm text-destructive">
           {errorMessage(members.error)}
         </p>
+      ) : members.isPending ? (
+        // Never the empty state, which looks like "no members" (#428).
+        <LoadingStatus fetchStatus={members.fetchStatus}>{t('loading')}</LoadingStatus>
       ) : (
-        members.isSuccess &&
         items.length === 0 && <p className="text-sm text-muted-foreground">{t('empty')}</p>
       )}
       <ul className="flex flex-col gap-2">

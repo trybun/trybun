@@ -10,6 +10,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { LoadingStatus } from '../../app-shell/components/loading-status.js';
 import { portalTicketHref } from '../../portal/hrefs.js';
 import { myTicketsQueryOptions } from '../queries.js';
 import { PublicStatusBadge } from './public-status-badge.js';
@@ -18,7 +19,8 @@ import { PublicStatusBadge } from './public-status-badge.js';
  * "My tickets" (§5.7, Q10): the tickets the person requested, those awaiting their reply first
  * under their own heading, then the others, the most recently updated first. Across projects each
  * item names its project. `limit` shows only the first items, e.g. on the project home, which links
- * to the whole list instead of loading more.
+ * to the whole list instead of loading more. While the browser reads them, a status says so in
+ * their place (§18.5, #428).
  */
 export function MyTicketsList({
   projectId,
@@ -44,8 +46,12 @@ export function MyTicketsList({
       </p>
     );
   }
-  const items = tickets.data?.pages.flatMap((page) => page.items) ?? [];
-  if (tickets.isSuccess && items.length === 0) {
+  if (tickets.isPending) {
+    // Never the empty list or the empty state, which look like "no tickets" (#428).
+    return <LoadingStatus fetchStatus={tickets.fetchStatus}>{t('loading')}</LoadingStatus>;
+  }
+  const items = tickets.data.pages.flatMap((page) => page.items);
+  if (items.length === 0) {
     return (
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">{t('empty')}</p>
