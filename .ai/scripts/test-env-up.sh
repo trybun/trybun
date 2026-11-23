@@ -26,8 +26,9 @@
 #              instead of "stopped" when its `compose down` fails; a boot after a failed stop keeps
 #              the infrastructure it left running as started by this script, so the next stop ends it
 #   2026-11-23 starts each application with the run id of its boot in its environment
-#              (TEST_ENV_RUN_ID, #453), so test-env-down.sh can tell its process groups from those of
-#              other programs that reuse the recorded PIDs after a crash or a reboot
+#              (TEST_ENV_RUN_ID, #453) and records that (app.runIdInEnvironment, additive), so
+#              test-env-down.sh can tell its process groups from those of other programs that reuse
+#              the recorded PIDs after a crash or a reboot
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -552,7 +553,7 @@ cat > "$DESCRIPTOR" <<EOF
   "composeProject": "$COMPOSE_PROJECT",
   "startScript": ".ai/scripts/test-env-up.sh",
   "stopScript": ".ai/scripts/test-env-down.sh",
-  "app": { "startCommand": "$API_COMMAND & $WORKER_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "workerPid": "$WORKER_PID", "webPid": "$WEB_PID", "apiUrl": "http://localhost:$API_PORT" },
+  "app": { "startCommand": "$API_COMMAND & $WORKER_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "workerPid": "$WORKER_PID", "webPid": "$WEB_PID", "runIdInEnvironment": true, "apiUrl": "http://localhost:$API_PORT" },
   "services": [
     { "type": "compose", "command": "$COMPOSE", "note": "Compose project $COMPOSE_PROJECT, its own containers and volumes; PostgreSQL 5432, Valkey 6379, SeaweedFS 8333, Keycloak 8080, Mailpit 8025" }
   ],
