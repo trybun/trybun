@@ -776,6 +776,70 @@ describe('--foreground (#383)', PROCESS_TESTS, () => {
 });
 
 describe('test-env-down.sh', PROCESS_TESTS, () => {
+  /** Process groups of other programs, as the kernel may start them under a recorded PID. */
+  let unrelated;
+
+  beforeEach(() => {
+    unrelated = [];
+  });
+
+  afterEach(() => {
+    for (const pid of unrelated) {
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch {
+        // Already stopped.
+      }
+    }
+  });
+
+  /**
+   * Simulates the reuse of the recorded PIDs once the applications have exited (#452): each of
+   * them now leads the process group of an unrelated program. Returns those programs' PIDs.
+   */
+  function reuseRecordedPids() {
+    let text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
+    const pids = [];
+    for (const key of ['apiPid', 'workerPid', 'webPid']) {
+      // Started by a shell that exits at once, so the program is not a child of this test, whose
+      // event loop – blocked in spawnSync – would leave it a zombie, still "alive", once signalled.
+      const pid = execFileSync('sh', ['-c', 'setsid sleep 300 >/dev/null 2>&1 & echo $!'], {
+        encoding: 'utf8',
+      }).trim();
+      unrelated.push(Number(pid));
+      pids.push(pid);
+      // It leads its own group, as an application of the environment did under that PID.
+      expect(execFileSync('ps', ['-o', 'pgid=', '-p', pid], { encoding: 'utf8' }).trim()).toBe(pid);
+      text = text.replace(new RegExp(`"${key}": "\\d+"`), `"${key}": "${pid}"`);
+    }
+    writeFileSync(join(checkout, '.ai/qa/test-env.json'), text);
+    expect(descriptor().app).toMatchObject({
+      apiPid: pids[0],
+      workerPid: pids[1],
+      webPid: pids[2],
+    });
+    return pids;
+  }
+
+  const down = () =>
+    spawnSync('sh', ['.ai/scripts/test-env-down.sh'], {
+      cwd: checkout,
+      encoding: 'utf8',
+      env: environment(),
+    });
+
+  it('signals no process group on a second down after the applications have stopped (#452)', () => {
+    expect(up().status).toBe(0);
+    expect(down().status).toBe(0);
+    const pids = reuseRecordedPids();
+
+    const { status, stdout } = down();
+
+    expect(status).toBe(0);
+    expect(stdout).toContain('TEST_ENV_STATUS=stopped');
+    for (const pid of pids) expect(alive(pid), pid).toBe(true);
+  });
+
   it('marks the environment stopping before it signals the applications, stopped once they exit', async () => {
     // The stubbed applications keep their port for 3 s after SIGTERM, as the API does.
     extraEnvironment = { STUB_STOP_SECONDS: '3' };
@@ -799,13 +863,6 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
   });
 
   describe('when the compose down fails (#449)', () => {
-    const down = () =>
-      spawnSync('sh', ['.ai/scripts/test-env-down.sh'], {
-        cwd: checkout,
-        encoding: 'utf8',
-        env: environment(),
-      });
-
     beforeEach(() => {
       expect(up().status).toBe(0);
       writeFileSync(join(folder, 'compose-down-fails'), '');
@@ -861,6 +918,21 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
         expect(stdout).toContain('TEST_ENV_STATUS=stopped');
         expect(descriptor().status).toBe('stopped');
       }
+    });
+
+    it('retries only the compose down, signalling no process group (#452)', () => {
+      expect(down().status).toBe(1);
+      rmSync(join(folder, 'compose-down-fails'));
+      const pids = reuseRecordedPids();
+      writeFileSync(join(folder, 'log'), '');
+
+      expect(down().status).toBe(0);
+
+      for (const pid of pids) expect(alive(pid), pid).toBe(true);
+      expect(readLines(join(folder, 'log'))).toContain(
+        'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down',
+      );
+      expect(descriptor().status).toBe('stopped');
     });
   });
 });

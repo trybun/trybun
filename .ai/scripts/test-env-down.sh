@@ -13,6 +13,8 @@
 #   2026-11-23 a failed `compose down` (#449) is reported – the cause in .ai/qa/logs/down.log, the
 #              descriptor "stop-failed", TEST_ENV_STATUS=stop-failed and exit 1 – instead of
 #              "stopped" while the infrastructure keeps running; running it again retries the down
+#   2026-11-23 signals the recorded applications only while the descriptor is not yet "stopped" or
+#              "stop-failed" (#452): after they have exited their PIDs may belong to other processes
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
@@ -32,9 +34,15 @@ set_status() {
     echo "could not mark $DESCRIPTOR $1" >&2
   rm -f "$DESCRIPTOR.bak"
 }
+# "stopped" and "stop-failed" are written only after the applications were signalled and have
+# exited, and the kernel may have given their PIDs to other processes since (#452): a later down
+# (a retry after "stop-failed", or a second one) signals no process group; it repeats at most the
+# `compose down`.
+APP_KEYS="apiPid workerPid webPid"
+case "$(json_get status)" in stopped | stop-failed) APP_KEYS="" ;; esac
 set_status stopping
 PIDS=""
-for key in apiPid workerPid webPid; do
+for key in $APP_KEYS; do
   pid=$(json_get "$key")
   # Each process was started in its own session: stop the whole group (pnpm, node, next).
   if [ -n "$pid" ]; then
