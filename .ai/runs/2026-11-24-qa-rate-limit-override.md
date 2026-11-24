@@ -1,6 +1,6 @@
 # Execution plan: a per-user rate-limit override for manual QA in the QA test environment
 
-Source doc: .ai/specs/2026-11-23-qa-rate-limit-override.md
+Source doc: .ai/specs/implemented/2026-11-23-qa-rate-limit-override.md
 Issue: #426 (spec PR #476, merged; defaults Q1–Q4 accepted by the maintainer)
 
 ## Goal
