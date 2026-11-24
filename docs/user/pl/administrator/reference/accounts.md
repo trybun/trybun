@@ -32,4 +32,4 @@ Filtruj po **Rodzaju** i **Stanie** oraz szukaj po imieniu i nazwisku lub adresi
 
 Działania konta (**⋮**) oferują tylko to, co jest dla niego możliwe: **Dezaktywuj**, **Aktywuj ponownie**, **Nadaj rolę Administratora** i **Odbierz rolę Administratora**. Twoje własne konto nie ma działań.
 
-**Zaproś** zaprasza osobę do projektu, organizacji lub roli Administratora; oczekujące zaproszenia konta oferują **Skopiuj nowy link** i **Odwołaj**, tak jak zakładka **Członkowie** projektu ([zaproś osoby do projektu](../../team/how-to/invite-people-to-a-project.md)).
+**Zaproś** zaprasza osobę do projektu, organizacji lub roli Administratora – projekty i organizacje wyszukujesz, wpisując tekst; gdy jest ich więcej, niż pokazuje lista, widać „Wpisz, aby znaleźć więcej”; oczekujące zaproszenia konta oferują **Skopiuj nowy link** i **Odwołaj**, tak jak zakładka **Członkowie** projektu ([zaproś osoby do projektu](../../team/how-to/invite-people-to-a-project.md)).

@@ -881,6 +881,8 @@
       "organization": "Organizacja",
       "organizations": "Organizacje",
       "noOrganization": "Żadna aktywna organizacja nie pasuje.",
+      "loading": "Wczytywanie…",
+      "typeToFindMore": "Wpisz, aby znaleźć więcej",
       "role": "Rola",
       "invite": "Zaproś",
       "inviting": "Zapraszanie…",

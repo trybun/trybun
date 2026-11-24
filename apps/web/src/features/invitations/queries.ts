@@ -75,6 +75,75 @@ export function invitationPreviewQueryOptions(client: ApiClient, input: CreateIn
   });
 }
 
+/** An option of a picker of the invitation form: the ID of a project or organization, its name. */
+export interface TargetOption {
+  value: string;
+  label: string;
+}
+
+/** One search of a picker of the invitation form: the first page, and whether typing finds more. */
+export interface TargetSearchPage {
+  options: TargetOption[];
+  hasMore: boolean;
+}
+
+/** The search parameter of a list: a blank search is no search. */
+function searchQuery(search: string) {
+  const query = search.trim();
+  return query === '' ? {} : { query };
+}
+
+/**
+ * The active projects of the project picker of the invitation form (§7.4), searched on the server
+ * by key and name: the first page, narrowed as the person types; the picker never reads further
+ * pages (§18.5, #473).
+ */
+export function projectTargetSearchQueryOptions(client: ApiClient, search: string) {
+  return queryOptions({
+    queryKey: ['projects', 'invitation-target-search', { query: search.trim() }],
+    queryFn: async ({ signal }): Promise<TargetSearchPage> => {
+      const page = await dataOf(
+        client.GET('/api/v1/projects', {
+          params: { query: { state: 'active', ...searchQuery(search) } },
+          signal,
+        }),
+      );
+      return {
+        options: page.items.map(({ id, name, key }) => ({ value: id, label: `${name} (${key})` })),
+        hasMore: page.nextCursor !== null,
+      };
+    },
+  });
+}
+
+/**
+ * The query of one search of a picker of the invitation form: both factories below share its type
+ * (the key of a search and its first page), so `Picker` takes either.
+ */
+export type TargetSearchQueryOptions = ReturnType<typeof projectTargetSearchQueryOptions>;
+
+/**
+ * The active organizations of the organization picker of the invitation form (§7.4), searched on
+ * the server by name: the first page, narrowed as the person types (§18.5, #473).
+ */
+export function organizationTargetSearchQueryOptions(client: ApiClient, search: string) {
+  return queryOptions({
+    queryKey: ['organizations', 'invitation-target-search', { query: search.trim() }],
+    queryFn: async ({ signal }): Promise<TargetSearchPage> => {
+      const page = await dataOf(
+        client.GET('/api/v1/organizations', {
+          params: { query: { state: 'active', ...searchQuery(search) } },
+          signal,
+        }),
+      );
+      return {
+        options: page.items.map(({ id, name }) => ({ value: id, label: name })),
+        hasMore: page.nextCursor !== null,
+      };
+    },
+  });
+}
+
 /**
  * The check of an invitation link before the acceptance page shows it (ADR 0009). It changes
  * nothing, so it is read as a query; an invalid token is an answer, not a failure to retry.

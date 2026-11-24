@@ -5,7 +5,7 @@ import { userEvent } from '@testing-library/user-event';
 import type { User } from '@trybun/contracts/users';
 import { toast } from '@trybun/ui/components/toast';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
-import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
+import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
 import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
@@ -150,6 +150,98 @@ describe('InviteDialog', () => {
     expect(await screen.findByText('This person gets an invitation link.')).toBeTruthy();
   });
 
+  it.each([
+    ['project', 'GET /api/v1/projects', null, 'Project', 'Acme (ACME)', { key: 'ACME' }],
+    ['organization', 'GET /api/v1/organizations', 'An organization', 'Organization', 'Acme', {}],
+  ] as const)(
+    'searches the %ss on the server and reads only the first page (#473)',
+    async (_target, route, radio, picker, option, fields) => {
+      fake.on(route, (init) => {
+        const query = (init as { params: { query: { query?: string } } }).params.query.query;
+        return {
+          data: {
+            items: [{ id: PROJECT_ID, name: query === 'zzz' ? 'Zeta' : 'Acme', ...fields }],
+            nextCursor: 'next',
+          },
+        };
+      });
+      const events = userEvent.setup();
+      renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+
+      await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+      if (radio !== null) {
+        await events.click(await screen.findByRole('radio', { name: radio }));
+      }
+      // Nothing is read before the picker opens.
+      expect(fake.callsTo(route)).toHaveLength(0);
+      const input = await screen.findByRole('combobox', { name: picker });
+      await events.click(input);
+      expect(await screen.findByRole('option', { name: option })).toBeTruthy();
+      expect(screen.getByText('Type to find more')).toBeTruthy();
+      await events.type(input, 'zzz');
+      expect(await screen.findByRole('option', { name: /^Zeta/ })).toBeTruthy();
+      await events.click(screen.getByRole('option', { name: /^Zeta/ }));
+
+      expect(input).toHaveProperty('value', expect.stringMatching(/^Zeta/));
+      // The first page of each search, never the next one, though the list has more.
+      const queries = fake
+        .callsTo(route)
+        .map((call) => (call.init as { params: { query: Record<string, unknown> } }).params.query);
+      expect(queries.every((query) => query.cursor === undefined && query.state === 'active')).toBe(
+        true,
+      );
+      expect(queries.at(-1)).toMatchObject({ query: 'zzz' });
+    },
+  );
+
+  it('keeps the chosen project while another target is shown and when the search is cleared', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ id: PROJECT_ID, name: 'Acme', key: 'ACME' }], nextCursor: null },
+    });
+    fake.on('GET /api/v1/organizations', { data: { items: [], nextCursor: null } });
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Project' }));
+    await events.click(await screen.findByRole('option', { name: 'Acme (ACME)' }));
+
+    await events.click(screen.getByRole('radio', { name: 'An organization' }));
+    await events.click(screen.getByRole('radio', { name: 'A project' }));
+    const input = await screen.findByRole('combobox', { name: 'Project' });
+    expect(input).toHaveProperty('value', 'Acme (ACME)');
+
+    await events.click(input);
+    expect(input).toHaveProperty('placeholder', 'Acme (ACME)');
+    await events.type(input, 'Ac');
+    await events.clear(input);
+    await events.keyboard('{Escape}');
+    expect(input).toHaveProperty('value', 'Acme (ACME)');
+  });
+
+  it('says it is loading, and no "no match" for a refused search', async () => {
+    const answer = fake.hold('GET /api/v1/projects');
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Project' }));
+
+    expect(await screen.findByText('Loading…')).toBeTruthy();
+    expect(screen.queryByText('No active project matches.')).toBeNull();
+    answer({
+      status: 429,
+      error: {
+        type: 'about:blank',
+        title: 'Too Many Requests',
+        status: 429,
+        code: 'request.rate_limited',
+      },
+    });
+    await waitFor(() => expect(screen.queryByText('Loading…')).toBeNull());
+
+    expect(screen.queryByText('No active project matches.')).toBeNull();
+    expect(fake.callsTo('GET /api/v1/projects')).toHaveLength(1);
+  });
+
   it('says when to try again a refused read of the projects, never "No active project matches." (#471)', async () => {
     fake.on('GET /api/v1/projects', {
       data: { items: [{ id: PROJECT_ID, key: 'ERP', name: 'ERP system' }], nextCursor: null },
@@ -180,6 +272,37 @@ describe('InviteDialog', () => {
     expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
   });
 
+  it('keeps a failed search when the list closes, so Try again reads that search again (#473)', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ id: PROJECT_ID, key: 'ERP', name: 'ERP system' }], nextCursor: null },
+    });
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog kind="team" />);
+    await events.click(screen.getByRole('button', { name: 'Invite' }));
+    const input = await screen.findByRole('combobox', { name: 'Project' });
+    await events.click(input);
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+
+    fake.refuse('GET /api/v1/projects');
+    await events.type(input, 'ERP');
+    expect(await screen.findByText('The projects could not be loaded.')).toBeTruthy();
+    // Tab closes the list and reaches **Try again**, which stays with the error of the search.
+    await events.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    fake.answer('GET /api/v1/projects');
+    await events.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect(
+      (fake.callsTo('GET /api/v1/projects').at(-1)!.init as { params: { query: unknown } }).params
+        .query,
+    ).toMatchObject({ query: 'ERP' });
+    await events.click(input);
+    expect(input).toHaveProperty('value', 'ERP');
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+  });
+
   it('shows the message of a failed read of the organizations (#471)', async () => {
     fake.on('GET /api/v1/organizations', { status: 500, error: {} });
     const events = userEvent.setup();
@@ -196,32 +319,6 @@ describe('InviteDialog', () => {
       'Something went wrong. Try again later.',
     );
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
-  });
-
-  it('stops reading the pages of a list at a failed page, and keeps the items found (#471)', async () => {
-    fake.on(
-      'GET /api/v1/organizations',
-      laterPagesFail([{ id: PROJECT_ID, name: 'Acme', state: 'active' }]),
-    );
-    const events = userEvent.setup();
-    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
-
-    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
-    await events.click(await screen.findByRole('radio', { name: 'An organization' }));
-    await events.click(await screen.findByRole('combobox', { name: 'Organization' }));
-
-    expect(await screen.findByText('The organizations could not be loaded.')).toBeTruthy();
-    expect(screen.getByRole('option', { name: 'Acme' })).toBeTruthy();
-    // The failed page is not read again on its own, which would use up the rate limit.
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(fake.callsTo('GET /api/v1/organizations')).toHaveLength(2);
-    // **Try again** reads only the failed page again, not the pages loaded before it.
-    await events.tab();
-    await events.keyboard('{Enter}');
-    await waitFor(() => expect(fake.callsTo('GET /api/v1/organizations')).toHaveLength(3));
-    expect(fake.callsTo('GET /api/v1/organizations')[2]!.init).toMatchObject({
-      params: { query: { cursor: 'next' } },
-    });
   });
 });
 

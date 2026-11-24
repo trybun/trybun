@@ -881,6 +881,8 @@
       "organization": "Organization",
       "organizations": "Organizations",
       "noOrganization": "No active organization matches.",
+      "loading": "Loading…",
+      "typeToFindMore": "Type to find more",
       "role": "Role",
       "invite": "Invite",
       "inviting": "Inviting…",
