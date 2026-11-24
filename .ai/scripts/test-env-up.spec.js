@@ -75,9 +75,13 @@ esac
   // The API, the Worker and the web application run until test-env-down.sh stops them; like the
   // API's shutdown hooks, they keep their port for a moment after SIGTERM (STUB_STOP_SECONDS, 1 by
   // default). The boot step named by STUB_BLOCK (e.g. "build") hangs with a grandchild process,
-  // so a test can interrupt the boot while that step runs.
+  // so a test can interrupt the boot while that step runs. The API logs the per-user rate limit it
+  // got (#426) on a line of its own, which the filters of "docker " and "pnpm " lines skip.
   pnpm: `#!/bin/sh
 echo "pnpm $*" >>"$STUB_LOG"
+if [ "$*" = "--filter @trybun/server start" ]; then
+  echo "api TRYBUN_RATE_LIMIT_PER_USER=\${TRYBUN_RATE_LIMIT_PER_USER-unset}" >>"$STUB_LOG"
+fi
 if [ -n "\${STUB_BLOCK:-}" ] && [ "$*" = "$STUB_BLOCK" ]; then
   sleep 300 &
   echo "$!" >>"$STUB_DIR/grandchildren"
@@ -230,6 +234,8 @@ function tagged(marker) {
 function environment() {
   return {
     ...process.env,
+    // The default limit unless a test sets one (#426), whatever the shell running Vitest exports.
+    TEST_ENV_RATE_LIMIT_PER_USER: undefined,
     SPEC_PROCESS_TAG: tag,
     PATH: `${join(folder, 'bin')}:${process.env.PATH}`,
     STUB_LOG: join(folder, 'log'),
@@ -941,6 +947,157 @@ exit "$status"
 
     expect(status).toBe(2);
     expect(stderr).toContain('--foreground cannot be combined with --force');
+  });
+});
+
+describe('the per-user rate limit (#426)', PROCESS_TESTS, () => {
+  /** The TRYBUN_RATE_LIMIT_PER_USER of each API the stubs started, from their log. */
+  const apiLimits = (log) =>
+    log
+      .filter((line) => line.startsWith('api TRYBUN_RATE_LIMIT_PER_USER='))
+      .map((line) => line.slice('api TRYBUN_RATE_LIMIT_PER_USER='.length));
+  const notesSentence = (limit) =>
+    `Per-user rate limit: ${limit} requests per minute (TEST_ENV_RATE_LIMIT_PER_USER, default 10000).`;
+
+  function expectLimit(run, limit) {
+    expect(run.status, run.stderr).toBe(0);
+    expect(apiLimits(run.log)).toEqual([String(limit)]);
+    expect(descriptor().app.rateLimitPerUser).toBe(limit);
+    expect(descriptor().notes).toContain(notesSentence(limit));
+    expect(run.stderr).toContain(`per-user rate limit: ${limit} requests per minute`);
+  }
+
+  it('runs the API with 10000 by default, never with an exported TRYBUN_RATE_LIMIT_PER_USER', () => {
+    extraEnvironment = { TRYBUN_RATE_LIMIT_PER_USER: '5' };
+
+    expectLimit(up(), 10000);
+  });
+
+  it('takes an empty TEST_ENV_RATE_LIMIT_PER_USER as the default', () => {
+    extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '' };
+
+    expectLimit(up(), 10000);
+  });
+
+  it('runs the API with the limit of TEST_ENV_RATE_LIMIT_PER_USER and records it', () => {
+    extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+    expectLimit(up(), 10);
+  });
+
+  it('passes the limit to the API of the boot it owns with --foreground', async () => {
+    extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+    const run = start('--foreground');
+    await run.output(/attached in the foreground as the owner/);
+
+    expect(apiLimits(readLines(join(folder, 'log')))).toEqual(['10']);
+    expect(descriptor().app.rateLimitPerUser).toBe(10);
+    expect(descriptor().notes).toContain(notesSentence(10));
+    expect(run.stderr).toContain('per-user rate limit: 10 requests per minute');
+  });
+
+  describe('of a value that is not a positive whole number', () => {
+    it.each(['0', '-5', '10/min', '010', ' 10', '+10', '1.5', '10\n20'])(
+      'refuses %j with exit 2, starting, reusing and stopping nothing',
+      (value) => {
+        expect(up().status).toBe(0);
+        const before = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
+        extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: value };
+
+        const { status, stdout, stderr, log } = up();
+
+        expect(status).toBe(2);
+        expect(stderr).toBe(
+          `TEST_ENV_RATE_LIMIT_PER_USER must be a positive whole number of requests per minute, got '${value}'\n`,
+        );
+        expect(stdout).toBe('');
+        expect(log).toEqual([]);
+        expect(lockExists()).toBe(false);
+        expect(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8')).toBe(before);
+        for (const pid of [descriptor().app.apiPid, descriptor().app.webPid]) {
+          expect(alive(pid), pid).toBe(true);
+        }
+      },
+    );
+
+    it('refuses it with --foreground too, before the boot', () => {
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '0' };
+
+      const { status, stderr, log } = up('--foreground');
+
+      expect(status).toBe(2);
+      expect(stderr).toContain('TEST_ENV_RATE_LIMIT_PER_USER must be a positive whole number');
+      expect(log).toEqual([]);
+      expect(existsSync(join(checkout, '.ai/qa/logs/foreground-boot.out'))).toBe(false);
+    });
+  });
+
+  describe('of a running environment of this checkout', () => {
+    it('reuses it when it runs with the same limit, reading the recorded limit back exactly', () => {
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+      expect(up().status).toBe(0);
+      const { runId } = descriptor();
+
+      const { status, stdout, stderr, log } = up();
+
+      expect(status, stderr).toBe(0);
+      expect(stdout).toContain('TEST_ENV_REUSED=1');
+      expect(stderr).toContain(
+        `reusing the running environment ${runId} (per-user rate limit: 10 requests per minute)`,
+      );
+      expect(apiLimits(log)).toEqual([]);
+    });
+
+    it('restarts it with the requested limit when it runs with another one', () => {
+      expect(up().status).toBe(0);
+      const before = descriptor();
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+      const run = up();
+
+      expect(run.stdout).toContain('TEST_ENV_REUSED=0');
+      expect(run.stderr).toContain(
+        `the running environment ${before.runId} has a per-user rate limit of 10000; this start asks for 10 – restarting it`,
+      );
+      expect(run.stderr).not.toContain('the recorded environment is stale');
+      expectLimit(run, 10);
+      expect(descriptor().runId).not.toBe(before.runId);
+      expect(alive(before.app.apiPid)).toBe(false);
+    });
+
+    it('restarts it when its descriptor records no limit (written before #426)', () => {
+      expect(up().status).toBe(0);
+      const path = join(checkout, '.ai/qa/test-env.json');
+      const before = descriptor();
+      const old = readFileSync(path, 'utf8').replace('"rateLimitPerUser": 10000, ', '');
+      expect(old).not.toContain('rateLimitPerUser');
+      writeFileSync(path, old);
+
+      const run = up();
+
+      expect(run.stdout).toContain('TEST_ENV_REUSED=0');
+      expect(run.stderr).toContain(
+        `the running environment ${before.runId} has no per-user rate limit recorded; this start asks for 10000 – restarting it`,
+      );
+      expectLimit(run, 10000);
+      expect(descriptor().runId).not.toBe(before.runId);
+    });
+
+    it('detaches its --foreground owner when a start with another limit replaces it', async () => {
+      const run = start('--foreground');
+      await run.output(/attached in the foreground as the owner/);
+      const before = descriptor().runId;
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+      const replacement = up();
+
+      expectLimit(replacement, 10);
+      expect((await run.exited()).code).toBe(0);
+      expect(run.stderr).toMatch(/was stopped elsewhere \((stopping|stopped)\)|was replaced by /);
+      expect(descriptor().runId).not.toBe(before);
+      expect(descriptor().status).toBe('running');
+    });
   });
 });
 
