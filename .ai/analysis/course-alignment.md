@@ -33,7 +33,7 @@ Every step works in this order:
 |---|---|---|---|
 | 0 | Baseline map | all | done |
 | 1 | Repository, stack, standards, AGENTS.md, `.ai/`, CI safety net | PW, L01–L02 | done; issues #487–#494 |
-| 2 | Skills, `om-setup-agent-pipeline`, labels, issue → PR → review flow | L03, extras: skills | open |
+| 2 | Skills, `om-setup-agent-pipeline`, labels, issue → PR → review flow | L03, extras: skills | done; issues #498, #499 |
 | 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | open |
 | 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | open |
 | 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | open |
@@ -43,9 +43,12 @@ Every step works in this order:
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | open |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | open |
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | open |
-| 12 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | open |
-| 13 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | open |
-| 14 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
+| 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | open |
+| 13 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | open |
+| 14 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | open |
+| 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
+
+Step 12 has no lesson of its own. The course rates whether the safety net and the gates exist (L02, L14, L17), not whether each workflow is needed and well written, so the maintainer added it on 2026-11-24. It follows steps 10 and 11, which rate tests and gates from the course side, and comes before the release step, which covers `release.yml`. Sources to research: the GitHub Actions documentation (security hardening, `permissions`), the tools built for such audits (actionlint, zizmor, OpenSSF Scorecard), and established practice for flaky tests. The flaky component test found during step 1 was filed on its own (#496) because it failed on `main`, and fixed in #497.
 
 ## Step 0 – Baseline map
 
@@ -57,7 +60,7 @@ The "first look" column comes from a listing of files and settings, not from rea
 |---|---|---|---|
 | Stack, monorepo, standards | 1 | pnpm + Turborepo monorepo (`apps/web`, `apps/server`, `packages/*`), ADRs 0002–0003, [`docs/spec/17-conventions.md`](../../docs/spec/17-conventions.md), [`18-code-patterns.md`](../../docs/spec/18-code-patterns.md) | present |
 | AGENTS.md and `.ai/` | 1, 8 | [`AGENTS.md`](../../AGENTS.md) (rules, DoD, commands), `apps/web/AGENTS.md`, `CLAUDE.md`, `.ai/` (specs, memory, skills, runs, qa, trackers, scripts) | present |
-| CI safety net | 1, 11 | [`ci.yml`](../../.github/workflows/ci.yml): format/lint, type check, tests + coverage, build, E2E + Lighthouse, spec consistency, vulnerability audit, dependency review; `codeql.yml`, `image-scan.yml`, `advisory-audit.yml`, `commitlint.yml`; Git hooks in `.githooks/` | present, broad |
+| CI safety net | 1, 11, 12 | [`ci.yml`](../../.github/workflows/ci.yml): format/lint, type check, tests + coverage, build, E2E + Lighthouse, spec consistency, vulnerability audit, dependency review; `codeql.yml`, `image-scan.yml`, `advisory-audit.yml`, `commitlint.yml`; Git hooks in `.githooks/` | present, broad |
 | Skills catalogue and overrides | 2 | 60 `om-*` skills from `skills-lock.json`, project skills `ui-component` and `verify-change`, override rules in [`.ai/skills/README.md`](../skills/README.md) | present |
 | SDLC configuration and labels | 2 | [`agentic.config.json`](../agentic.config.json) (labels, QA gate, autofix, automerge), [`SDLC.md`](../../SDLC.md) (label state machine, claim protocol, DoR), `.github/labels.yml` | present |
 | Discovery, product brief, synthetic users | 3 | `discovery.enabled: true` in `agentic.config.json`; market benchmark in `.ai/specs/research/`; no product brief or persona files found by name | possibly missing |
@@ -71,11 +74,11 @@ The "first look" column comes from a listing of files and settings, not from rea
 | Autonomy, worktrees, Cezar | 9 | `.ai/cezar/` (automations, dispatch, worktrees), `om-auto-*` skills, autofix queue in `SDLC.md` | present |
 | Tests and QA | 10 | Vitest unit/component/integration (Testcontainers), Playwright E2E on three viewports, coverage thresholds, QA test environment `.ai/scripts/test-env-*.sh`, `.ai/qa/knowledge-base/` | present, broad |
 | Review and acceptance | 11 | [`CODE_REVIEW.md`](../../CODE_REVIEW.md), `CODEOWNERS`, PR template, rulesets "Protect main" and "Protect release tag" (active) | present; multi-model to check |
-| Releases | 12 | release-please (`release-please-config*.json`, maintenance branches), `release.yml`, `CHANGELOG.md`, [`BACKWARD_COMPATIBILITY.md`](../../BACKWARD_COMPATIBILITY.md), ADR 0006 | present |
-| Deployment | 12 | install/update/restore/backup in `deploy/trybun`, `compose.yaml`, `docker/`; no preview environment per PR found | partial? |
-| Maintenance and production feedback | 13 | `.ai/memory/` (18 topics), dependabot, daily advisory audit; no production error loop found (no production yet) | to check |
-| Retrospective | 13 | `om-pipeline-retro` skill installed; no retro records found | to check |
-| Company AI SDLC, skills hardening | 14 | `om-judge-agent-session`, `om-evolve-harness`, `om-create-skill` installed | to check |
+| Releases | 13 | release-please (`release-please-config*.json`, maintenance branches), `release.yml`, `CHANGELOG.md`, [`BACKWARD_COMPATIBILITY.md`](../../BACKWARD_COMPATIBILITY.md), ADR 0006 | present |
+| Deployment | 13 | install/update/restore/backup in `deploy/trybun`, `compose.yaml`, `docker/`; no preview environment per PR found | partial? |
+| Maintenance and production feedback | 14 | `.ai/memory/` (18 topics), dependabot, daily advisory audit; no production error loop found (no production yet) | to check |
+| Retrospective | 14 | `om-pipeline-retro` skill installed; no retro records found | to check |
+| Company AI SDLC, skills hardening | 15 | `om-judge-agent-session`, `om-evolve-harness`, `om-create-skill` installed | to check |
 
 ## Step 1 – Repository, stack, standards, AGENTS.md, `.ai/`, CI safety net
 
@@ -190,3 +193,53 @@ The coverage configuration then needs an `lcov` reporter (today: `text-summary`,
 - whether a handoff for tasks outside these skills is needed at all, given the issue and pull request history.
 
 This decision moves to step 6.
+
+## Step 2 – Skills, `om-setup-agent-pipeline`, labels, issue → PR → review
+
+Course sources: the ten knowledge-base leaves of L03, extras "Opis działania skilli" (about the catalogue, setup and configuration), extras "Brownfield: skille i SDLC" and the FAQ "Setup projektu i skille". Checked on 2026-11-24 at `main` `37985c9f`.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 2.1 | A repeated flow becomes a skill that loads only when needed, next to `AGENTS.md` (L03 "Czym są skille") | Project skills `ui-component` and `verify-change` in `.ai/skills/`; `AGENTS.md` "Repeated work → propose a skill in `.ai/skills/`" | Full |
+| 2.2 | The catalogue is installed per project and linked for Claude Code and Codex (L03 "Instalacja") | `skills-lock.json` (60 `om-*` skills), `.agents/skills/` and links in `.claude/skills/`; install and update commands in [`.ai/skills/README.md`](../skills/README.md) | Full |
+| 2.3 | The whole team works with the same version of the skills (extras "Brownfield": keep them in the repository) | The lock records a `computedHash` per skill. A test on 2026-11-24 recomputed it with the algorithm of the skills CLI README for all 60 installed skills: 60 match. The lock has **no `commit` field**: the CLI pins entries to a commit only since v1.9.0 (2026-11-16, vercel-labs/skills #2735), after the last update of the skills (#306, 2026-11-12). A restore elsewhere (`npx skills experimental_install`, another agent's machine) then fetches the latest upstream, not the version recorded here. Upstream has 12 commits since 2026-11-12, including changes of `UPGRADE_NOTES.md` | Partial – #498 |
+| 2.4 | `om-setup-agent-pipeline` writes `.ai/agentic.config.json`, `SDLC.md`, `CODE_REVIEW.md` and `BACKWARD_COMPATIBILITY.md`, which are reviewed and committed (L03) | All four are in the repository; `SDLC.md` and the configuration change through reviewed PRs (#336, #340, #395) | Full |
+| 2.5 | After an update of the skills, the configuration is reconciled with their upgrade notes (extras "Setup": `om-apply-upgrade-notes`) | #306 applied the upgrade notes (tracker and browser descriptors replaced with the shipped copies) | Full |
+| 2.6 | At least one catalogue skill is adapted by an override of the same name in `.ai/skills/` (L03 homework) | No override exists. The mechanism is documented ([`.ai/skills/README.md`](../skills/README.md), "Extending an `om-*` skill"). Trybun adapts the catalogue through rules every skill reads: `AGENTS.md` (e.g. the feature route of `om-auto-fix-issue` stops at the open specification PR), `SDLC.md` and `agentic.config.json`. No skill-specific rule was found that these cannot hold | Different – one place for the rules that apply to every skill; an override is added when a rule concerns one skill only |
+| 2.7 | GitHub labels carry the state of issues and PRs (`review`, `changes-requested`, `merge-queue`, …) (L03 "Katalog") | Labels in `agentic.config.json`, `SDLC.md` "Label state machine"; the 28 pipeline PRs among the last 30 merged all carry category, pipeline, QA, priority and risk labels. The three PRs opened by hand in this analysis (#486, #495, #497) carry none or only category, priority and risk: they skipped `om-open-pr` and `om-check-and-commit`, which normalize the labels (`SDLC.md` "PR"). Adding `review` and `skip-qa` to #495 afterwards was refused by the session's permission check, rightly so for `skip-qa`, which waives the QA gate | Full for the pipeline; the analysis PRs need the maintainer's labels |
+| 2.8 | The skills claim work with a lock so that agents do not overwrite each other (L03 "Katalog") | Claim protocol of `SDLC.md` with atomic `refs/om-locks/*` (`.ai/trackers/github.md`); in use (a live lock on PR #475 on 2026-11-24; #496 was claimed and released with it) | Full |
+| 2.9 | `om-prepare-issue` turns a short need into a ready issue with SDLC labels and a risk rating (L03) | Definition of Ready in `SDLC.md`; issues follow its template (e.g. #426) | Full |
+| 2.10 | `om-auto-fix-issue` chains verify → root cause → fix → PR → review; a feature goes through a specification first (L03) | `SDLC.md` lifecycle; reviews on the pipeline PRs: 24 of the 28 pipeline PRs among the last 30 merged have one or more reviews; #429, #455, #466 and #478 were merged without one, which step 11 (review and acceptance) checks against `SDLC.md` | Full; merges without a review go to step 11 |
+| 2.11 | `om-code-review` reads `CODE_REVIEW.md`, and its rules grow with the project: new contracts, recurring classes of defects (L03 "om-code-review") | `CODE_REVIEW.md` has not changed since 2026-10-26, while 232 commits landed. In November, 7 fix PRs repaired one class of defect – a client query without its loading, error or refused (`429`) state (#429, #432, #448, #469, #470, #478, #400) – and `CODE_REVIEW.md` has no check for it | Partial – #499 |
+| 2.12 | Interactive skills first; autonomous ones after the rules are agreed with the team (FAQ "Setup") | `SDLC.md` (QA gate, claim protocol, specification before implementation), ADR 0011 | Full |
+| 2.13 | Cezar coordinates parallel agents (L03 "Cezar") | `.ai/cezar/` | Rated in step 9 |
+
+### Gap proposals
+
+**2.3 Skills pinned to a commit – accepted (a): #498.**
+
+- **Source:** the skills CLI README, the primary documentation of the tool Trybun uses. It describes the `commit` of a lock entry ("`skills install` … fetches that commit, not the latest commit on `ref`, so a restore still matches `computedHash`") and `install --frozen-lockfile`, which fails when the files differ from the lock. This is the same pattern as a package lockfile with a frozen install (`pnpm install --frozen-lockfile`), which Trybun already uses for its dependencies.
+
+**Options:**
+
+- **(a) Recommended:** update the skills with skills CLI ≥ 1.9.0. `skills update` adds `commit` to every entry. Apply the upgrade notes (`om-apply-upgrade-notes`) and change the restore command in `.ai/skills/README.md` to the frozen install.
+- **(b) Rejected:** commit `.agents/skills/` (the brownfield advice). It adds about 60 copied skills to every diff and review, while (a) gives the same single version with a lock the tool checks.
+- **(c) Rejected:** keep the lock without commits. A restore silently gets another version.
+
+Whether Cezar provisions the locked version into its tasks is checked in step 9.
+
+**2.11 `CODE_REVIEW.md` follows the recurring defects – accepted (a): #499.**
+
+- **Sources** (practitioners' guidance; no controlled study found):
+  - derive checklist items from the defects that recur;
+  - keep each item specific and answerable yes or no;
+  - remove items that no longer apply, because a checklist that only grows goes unused.
+
+**Options:**
+
+- **(a) Recommended:** add one item to the "Web BFF" or "UI" checks. Every client query shows its loading state, its error and the refused-read notice (`QueryErrorAlert`, `RateLimitedAlert`, [§18.5](../../docs/spec/18-code-patterns.md)), with a component test of the failed read.
+- **(b) Rejected:** no item, relying on §18.5 alone. Seven fix PRs in one month show that the rule in the specification was not enough at review.
+
+How `CODE_REVIEW.md` keeps following the defects over time (for example from `om-pipeline-retro`) is rated in step 14 (retrospective).
