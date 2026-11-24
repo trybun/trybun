@@ -43,9 +43,12 @@ Every step works in this order:
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | open |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | open |
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | open |
-| 12 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | open |
-| 13 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | open |
-| 14 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
+| 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | open |
+| 13 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | open |
+| 14 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | open |
+| 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
+
+Step 12 has no lesson of its own. The course rates whether the safety net and the gates exist (L02, L14, L17), not whether each workflow is needed and well written, so the maintainer added it on 2026-11-24. It follows steps 10 and 11, which rate tests and gates from the course side, and comes before the release step, which covers `release.yml`. Sources to research: the GitHub Actions documentation (security hardening, `permissions`), the tools built for such audits (actionlint, zizmor, OpenSSF Scorecard), and established practice for flaky tests. The flaky component test found during step 1 is filed on its own (#496), because it fails on `main` now.
 
 ## Step 0 – Baseline map
 
@@ -57,7 +60,7 @@ The "first look" column comes from a listing of files and settings, not from rea
 |---|---|---|---|
 | Stack, monorepo, standards | 1 | pnpm + Turborepo monorepo (`apps/web`, `apps/server`, `packages/*`), ADRs 0002–0003, [`docs/spec/17-conventions.md`](../../docs/spec/17-conventions.md), [`18-code-patterns.md`](../../docs/spec/18-code-patterns.md) | present |
 | AGENTS.md and `.ai/` | 1, 8 | [`AGENTS.md`](../../AGENTS.md) (rules, DoD, commands), `apps/web/AGENTS.md`, `CLAUDE.md`, `.ai/` (specs, memory, skills, runs, qa, trackers, scripts) | present |
-| CI safety net | 1, 11 | [`ci.yml`](../../.github/workflows/ci.yml): format/lint, type check, tests + coverage, build, E2E + Lighthouse, spec consistency, vulnerability audit, dependency review; `codeql.yml`, `image-scan.yml`, `advisory-audit.yml`, `commitlint.yml`; Git hooks in `.githooks/` | present, broad |
+| CI safety net | 1, 11, 12 | [`ci.yml`](../../.github/workflows/ci.yml): format/lint, type check, tests + coverage, build, E2E + Lighthouse, spec consistency, vulnerability audit, dependency review; `codeql.yml`, `image-scan.yml`, `advisory-audit.yml`, `commitlint.yml`; Git hooks in `.githooks/` | present, broad |
 | Skills catalogue and overrides | 2 | 60 `om-*` skills from `skills-lock.json`, project skills `ui-component` and `verify-change`, override rules in [`.ai/skills/README.md`](../skills/README.md) | present |
 | SDLC configuration and labels | 2 | [`agentic.config.json`](../agentic.config.json) (labels, QA gate, autofix, automerge), [`SDLC.md`](../../SDLC.md) (label state machine, claim protocol, DoR), `.github/labels.yml` | present |
 | Discovery, product brief, synthetic users | 3 | `discovery.enabled: true` in `agentic.config.json`; market benchmark in `.ai/specs/research/`; no product brief or persona files found by name | possibly missing |
@@ -71,11 +74,11 @@ The "first look" column comes from a listing of files and settings, not from rea
 | Autonomy, worktrees, Cezar | 9 | `.ai/cezar/` (automations, dispatch, worktrees), `om-auto-*` skills, autofix queue in `SDLC.md` | present |
 | Tests and QA | 10 | Vitest unit/component/integration (Testcontainers), Playwright E2E on three viewports, coverage thresholds, QA test environment `.ai/scripts/test-env-*.sh`, `.ai/qa/knowledge-base/` | present, broad |
 | Review and acceptance | 11 | [`CODE_REVIEW.md`](../../CODE_REVIEW.md), `CODEOWNERS`, PR template, rulesets "Protect main" and "Protect release tag" (active) | present; multi-model to check |
-| Releases | 12 | release-please (`release-please-config*.json`, maintenance branches), `release.yml`, `CHANGELOG.md`, [`BACKWARD_COMPATIBILITY.md`](../../BACKWARD_COMPATIBILITY.md), ADR 0006 | present |
-| Deployment | 12 | install/update/restore/backup in `deploy/trybun`, `compose.yaml`, `docker/`; no preview environment per PR found | partial? |
-| Maintenance and production feedback | 13 | `.ai/memory/` (18 topics), dependabot, daily advisory audit; no production error loop found (no production yet) | to check |
-| Retrospective | 13 | `om-pipeline-retro` skill installed; no retro records found | to check |
-| Company AI SDLC, skills hardening | 14 | `om-judge-agent-session`, `om-evolve-harness`, `om-create-skill` installed | to check |
+| Releases | 13 | release-please (`release-please-config*.json`, maintenance branches), `release.yml`, `CHANGELOG.md`, [`BACKWARD_COMPATIBILITY.md`](../../BACKWARD_COMPATIBILITY.md), ADR 0006 | present |
+| Deployment | 13 | install/update/restore/backup in `deploy/trybun`, `compose.yaml`, `docker/`; no preview environment per PR found | partial? |
+| Maintenance and production feedback | 14 | `.ai/memory/` (18 topics), dependabot, daily advisory audit; no production error loop found (no production yet) | to check |
+| Retrospective | 14 | `om-pipeline-retro` skill installed; no retro records found | to check |
+| Company AI SDLC, skills hardening | 15 | `om-judge-agent-session`, `om-evolve-harness`, `om-create-skill` installed | to check |
 
 ## Step 1 – Repository, stack, standards, AGENTS.md, `.ai/`, CI safety net
 
