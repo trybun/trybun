@@ -16,7 +16,11 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
-vi.mock('next/navigation.js', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/tickets/ERP-12',
+  useSearchParams: () => new URLSearchParams(),
+}));
 // The fields adapt to the width (jsdom has no `matchMedia`): a tablet, with selects.
 vi.stubGlobal('matchMedia', (query: string) => ({
   matches: query === TABLET_MEDIA_QUERY,
@@ -347,6 +351,46 @@ describe('the duplicate dialog', () => {
       'disabled',
       true,
     );
+  });
+
+  it('says when to try again a refused lookup of the original, and looks it up again (#471)', async () => {
+    answer(ticketResponse());
+    renderView();
+
+    const user = await chooseStatus('Duplicate');
+    const dialog = await screen.findByRole('dialog', { name: 'Mark ERP-12 as a duplicate' });
+    // Only the lookup of the original is refused: the view read its ticket before.
+    fake.refuse('GET /api/v1/tickets');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Original ticket' }), '7');
+
+    const alert = await within(dialog).findByRole('alert');
+    // `h3` under the `h2` title of the dialog; **Try again** looks the original up again, so no
+    // **Reload page**, which would close the dialog.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    fake.answer('GET /api/v1/tickets');
+    await user.click(within(dialog).getByRole('button', { name: 'Try again' }));
+    expect(await within(dialog).findByText('ERP-7 · Totals are rounded twice')).toBeDefined();
+    expect(within(dialog).getByRole('button', { name: 'Mark as duplicate' })).toHaveProperty(
+      'disabled',
+      false,
+    );
+  });
+
+  it('shows the message of a failed lookup of the original (#471)', async () => {
+    answer(ticketResponse());
+    renderView();
+
+    const user = await chooseStatus('Duplicate');
+    const dialog = await screen.findByRole('dialog', { name: 'Mark ERP-12 as a duplicate' });
+    fake.on('GET /api/v1/tickets', { status: 500, error: {} });
+    await user.type(within(dialog).getByRole('textbox', { name: 'Original ticket' }), '7');
+
+    expect((await within(dialog).findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(within(dialog).getByRole('button', { name: 'Try again' })).toBeDefined();
   });
 
   it.each([

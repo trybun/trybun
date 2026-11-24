@@ -11,12 +11,16 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxStatus,
 } from '@trybun/ui/components/combobox';
 import { TABLET_MEDIA_QUERY, useMediaQuery } from '@trybun/ui/hooks/use-media-query';
+import { cn } from '@trybun/ui/lib/utils';
 import { ChevronDownIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useDeferredValue, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
 import { useIsTicketChanging } from '../mutations.js';
 import { assignableMembersQueryOptions } from '../queries.js';
@@ -64,6 +68,7 @@ export function AssigneeControl({ ticket }: { ticket: Ticket }) {
         me={me}
         selected={{ value: current?.id ?? null, label: currentName }}
         disabled={isChanging}
+        headingLevel={3}
         onAssign={(assigneeId, label) => assign(assigneeId, label)}
       />
     );
@@ -97,13 +102,16 @@ export function AssigneeControl({ ticket }: { ticket: Ticket }) {
  * The picker of the people who can be assigned to the tickets of a project – of a ticket in the
  * view or of the full form: a `Combobox` from the tablet breakpoint on, a bottom sheet with a
  * search on phones (§18.6). The search text goes to the server as the person types, deferred while
- * they type (Q9); it stays in the component, never in the URL (§18.5).
+ * they type (Q9); it stays in the component, never in the URL (§18.5). A failed read shows its
+ * error with **Try again** in place of the people (#471), never "No people"; **Unassigned**, which
+ * needs no read, stays.
  */
 export function AssigneePicker({
   projectId,
   me,
   selected: { value: selectedId, label: currentName },
   disabled,
+  headingLevel,
   onAssign,
 }: {
   projectId: string;
@@ -112,16 +120,25 @@ export function AssigneePicker({
   /** The assignee, `null` when nobody is, with the name the control shows. */
   selected: { value: string | null; label: string };
   disabled: boolean;
+  /**
+   * The heading level of a refused read below the input from the tablet breakpoint on, which
+   * continues the page around the picker: `3` under the `h2` of the field panel, `2` in the full
+   * form. The bottom sheet has its own `h2` title, so there it is always `3`.
+   */
+  headingLevel: 2 | 3;
   onAssign: (assigneeId: string | null, label: string) => void;
 }) {
   const t = useTranslations('tickets');
+  const errorMessage = useErrorMessage();
   const isSheet = !useMediaQuery(TABLET_MEDIA_QUERY);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search.trim());
   const members = useQuery({
     ...assignableMembersQueryOptions(browserApiClient, projectId, deferredSearch),
-    enabled: isOpen,
+    // Only once the deferred search has caught up: on opening, the first render still holds the
+    // search of the last opening, whose failed read would be sent again (#471).
+    enabled: isOpen && deferredSearch === search.trim(),
   });
   const people = members.data?.items.map(({ user }) => user) ?? [];
   const isAssignable = people.some((person) => person.id === me);
@@ -146,6 +163,25 @@ export function AssigneePicker({
     onAssign(value === UNASSIGNED ? null : value, label);
   };
   const label = t('view.fields.assignee');
+  // A refusal says when to try again; **Try again** reads the people again, so it offers no
+  // **Reload page**, which would close the picker (§18.5). The alert is gone while they are read
+  // again, so a second failure is announced again; the button stays, keeping the focus.
+  const readError = (level: 2 | 3, className: string) =>
+    members.isError && (
+      <div className={cn('flex flex-col gap-2 text-sm', className)}>
+        {!members.isFetching && (
+          <QueryErrorAlert
+            error={members.error}
+            message={errorMessage(members.error)}
+            headingLevel={level}
+            offersReload={false}
+          />
+        )}
+        <Button type="button" variant="outline" size="sm" onClick={() => void members.refetch()}>
+          {t('view.retry')}
+        </Button>
+      </div>
+    );
 
   if (isSheet) {
     return (
@@ -169,7 +205,7 @@ export function AssigneePicker({
           <LazyFieldSheet
             title={label}
             value={selected.value}
-            groups={[{ label: '', options: members.isSuccess ? choices : [] }]}
+            groups={[{ label: '', options: members.isPending ? [] : choices }]}
             search={{
               label: t('view.searchPeople'),
               value: search,
@@ -181,6 +217,7 @@ export function AssigneePicker({
                 {members.isPending ? t('view.loadingPeople') : t('view.noPeople')}
               </p>
             }
+            alert={readError(3, 'items-center px-2 py-3')}
             onValueChange={choose}
             onClose={() => setIsOpen(false)}
           />
@@ -188,50 +225,61 @@ export function AssigneePicker({
       </>
     );
   }
+  // The list of a combobox is no stop of Tab, which closes it (WAI-ARIA APG), so the error and
+  // **Try again** follow the input outside it, and the list only says that the people are missing.
   return (
-    <Combobox
-      items={choices}
-      value={selected}
-      filter={null}
-      disabled={disabled}
-      isItemEqualToValue={(item, value) => item.value === value.value}
-      // The input shows the assignee while the list is closed and the search while it is open,
-      // which starts empty, so the list starts with everyone.
-      inputValue={isOpen ? search : currentName}
-      onOpenChange={(open) => {
-        setIsOpen(open);
-        if (!open) {
-          setSearch('');
-        }
-      }}
-      onInputValueChange={(text, details) => {
-        // Choosing a person writes their name into the input; only typing searches.
-        if (details.reason === 'input-change' || details.reason === 'input-clear') {
-          setSearch(text);
-        }
-      }}
-      onValueChange={(choice) => {
-        // Clearing the input sets no value (#161): only a choice changes the assignee.
-        if (choice !== null) {
-          choose(choice.value);
-        }
-      }}
-    >
-      <ComboboxInput
-        aria-label={label}
-        placeholder={currentName}
-        maxLength={LIST_SEARCH_QUERY_MAX_LENGTH}
-      />
-      <ComboboxContent>
-        <ComboboxEmpty>{t('view.noPeople')}</ComboboxEmpty>
-        <ComboboxList aria-label={t('view.people')}>
-          {(choice: PickerOption) => (
-            <ComboboxItem key={choice.value} value={choice}>
-              {choice.label}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+    <div className="flex flex-col gap-2">
+      <Combobox
+        items={choices}
+        value={selected}
+        filter={null}
+        disabled={disabled}
+        isItemEqualToValue={(item, value) => item.value === value.value}
+        // The input shows the assignee while the list is closed and the search while it is open,
+        // which starts empty, so the list starts with everyone.
+        inputValue={isOpen ? search : currentName}
+        onOpenChange={(open) => {
+          setIsOpen(open);
+          // Cleared on opening, never on closing: a failed search keeps its error and **Try again**
+          // below the input, which Tab reaches after the list closes (#471).
+          if (open) {
+            setSearch('');
+          }
+        }}
+        onInputValueChange={(text, details) => {
+          // Choosing a person writes their name into the input; only typing searches.
+          if (details.reason === 'input-change' || details.reason === 'input-clear') {
+            setSearch(text);
+          }
+        }}
+        onValueChange={(choice) => {
+          // Clearing the input sets no value (#161): only a choice changes the assignee.
+          if (choice !== null) {
+            choose(choice.value);
+          }
+        }}
+      >
+        <ComboboxInput
+          aria-label={label}
+          placeholder={currentName}
+          maxLength={LIST_SEARCH_QUERY_MAX_LENGTH}
+        />
+        <ComboboxContent>
+          {/* Mounted in every state, so its text is announced; empty after an error (#303). */}
+          <ComboboxEmpty>{members.isError ? '' : t('view.noPeople')}</ComboboxEmpty>
+          <ComboboxList aria-label={t('view.people')}>
+            {(choice: PickerOption) => (
+              <ComboboxItem key={choice.value} value={choice}>
+                {choice.label}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+          {/* A polite live region, filled while the read failed: the rest of the page may be
+              hidden from assistive technologies while the list is open. */}
+          <ComboboxStatus>{members.isError ? t('view.peopleLoadFailed') : ''}</ComboboxStatus>
+        </ComboboxContent>
+      </Combobox>
+      {readError(headingLevel, 'items-start')}
+    </div>
   );
 }

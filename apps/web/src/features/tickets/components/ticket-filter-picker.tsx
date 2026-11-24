@@ -226,13 +226,16 @@ export function TicketFilterPicker({
           <div className="flex flex-col items-center gap-2 px-2 py-3 text-sm">
             {/* A refusal says when to try again (#433), `h3` under the `h2` title of the popover or
                 drawer; **Try again** below reads the options again, so it offers no **Reload
-                page**, which would close the picker. */}
-            <QueryErrorAlert
-              error={page.error}
-              message={tf('loadFailed')}
-              headingLevel={3}
-              offersReload={false}
-            />
+                page**, which would close the picker. The alert is gone while they are read again,
+                so a second failure is announced again (#471). */}
+            {!page.isFetching && (
+              <QueryErrorAlert
+                error={page.error}
+                message={tf('loadFailed')}
+                headingLevel={3}
+                offersReload={false}
+              />
+            )}
             <Button type="button" variant="outline" size="sm" onClick={() => void page.refetch()}>
               {tf('retry')}
             </Button>

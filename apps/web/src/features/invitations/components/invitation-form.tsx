@@ -17,6 +17,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxStatus,
 } from '@trybun/ui/components/combobox';
 import { DialogClose, DialogFooter } from '@trybun/ui/components/dialog';
 import {
@@ -45,6 +46,7 @@ import { browserApiClient } from '../../../lib/api-client/browser-api-client.js'
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { organizationsQueryOptions } from '../../organizations/queries.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { useCreateInvitation } from '../mutations.js';
@@ -289,15 +291,44 @@ export function InvitationForm({
   );
 }
 
-/** All pages of a list the pickers search in the browser: the lists of the API have no search. */
-function useAllPages<Item>(query: UseInfiniteQueryResult<{ pages: { items: Item[] }[] }>): Item[] {
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query;
+/** The error of the read of a picker's list, with a way to read it again (#471). */
+interface PickerReadError {
+  error: Error;
+  /**
+   * Whether **Try again** is reading: the alert is gone meanwhile, so that a second failure is
+   * announced again.
+   */
+  isRetrying: boolean;
+  retry: () => void;
+}
+
+/**
+ * All pages of a list the pickers search in the browser: the lists of the API have no search. A
+ * failed page stops the reading and comes back as `readError`, so a failure never reads as fewer
+ * items; **Try again** reads the failed page again – or the list, when its first page failed – and
+ * the reading of the rest continues.
+ */
+function useAllPages<Item>(query: UseInfiniteQueryResult<{ pages: { items: Item[] }[] }>): {
+  items: Item[];
+  readError: PickerReadError | null;
+} {
+  const { hasNextPage, isFetchingNextPage, isError, isFetchNextPageError, fetchNextPage, refetch } =
+    query;
   useEffect(() => {
-    if (hasNextPage && !isFetchingNextPage) {
+    if (hasNextPage && !isFetchingNextPage && !isError) {
       void fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-  return query.data?.pages.flatMap((page) => page.items) ?? [];
+  }, [hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
+  return {
+    items: query.data?.pages.flatMap((page) => page.items) ?? [],
+    readError: query.isError
+      ? {
+          error: query.error,
+          isRetrying: query.isFetching,
+          retry: () => void (isFetchNextPageError ? fetchNextPage() : refetch()),
+        }
+      : null,
+  };
 }
 
 /** A choice of the active projects, searched by name or key. */
@@ -309,7 +340,9 @@ function ProjectPicker({ value, onChange }: { value: string; onChange: (value: s
       label={t('project')}
       listLabel={t('projects')}
       empty={t('noProject')}
-      items={projects.map((project) => ({
+      loadFailed={t('projectsLoadFailed')}
+      readError={projects.readError}
+      items={projects.items.map((project) => ({
         value: project.id,
         label: `${project.name} (${project.key})`,
       }))}
@@ -336,7 +369,9 @@ function OrganizationPicker({
       label={t('organization')}
       listLabel={t('organizations')}
       empty={t('noOrganization')}
-      items={organizations.map((organization) => ({
+      loadFailed={t('organizationsLoadFailed')}
+      readError={organizations.readError}
+      items={organizations.items.map((organization) => ({
         value: organization.id,
         label: organization.name,
       }))}
@@ -346,11 +381,18 @@ function OrganizationPicker({
   );
 }
 
-/** A searchable choice of one item of a list (the Combobox of `@trybun/ui`). */
+/**
+ * A searchable choice of one item of a list (the Combobox of `@trybun/ui`). A failed read of the
+ * list shows its error with **Try again** below the input, and the list says `loadFailed` below the
+ * items found so far in place of `empty` (#471): the list of a combobox is no stop of Tab, which
+ * closes it (WAI-ARIA APG), so **Try again** follows the input outside it.
+ */
 function Picker({
   label,
   listLabel,
   empty,
+  loadFailed,
+  readError,
   items,
   value,
   onChange,
@@ -358,10 +400,15 @@ function Picker({
   label: string;
   listLabel: string;
   empty: string;
+  /** What the list says while its read failed. */
+  loadFailed: string;
+  readError: PickerReadError | null;
   items: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
 }) {
+  const t = useTranslations('invitations.form');
+  const errorMessage = useErrorMessage();
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
@@ -372,7 +419,8 @@ function Picker({
       >
         <ComboboxInput />
         <ComboboxContent>
-          <ComboboxEmpty>{empty}</ComboboxEmpty>
+          {/* Mounted in every state, so its text is announced; empty after an error (#303). */}
+          <ComboboxEmpty>{readError === null ? empty : ''}</ComboboxEmpty>
           <ComboboxList aria-label={listLabel}>
             {(item: { value: string; label: string }) => (
               <ComboboxItem key={item.value} value={item}>
@@ -380,8 +428,29 @@ function Picker({
               </ComboboxItem>
             )}
           </ComboboxList>
+          {/* A polite live region, filled while the read failed: the rest of the dialog is hidden
+              from assistive technologies while the list is open. */}
+          <ComboboxStatus>{readError === null ? '' : loadFailed}</ComboboxStatus>
         </ComboboxContent>
       </Combobox>
+      {readError !== null && (
+        // A refusal says when to try again, `h3` under the `h2` title of the dialog; **Try again**
+        // reads the list again, so it offers no **Reload page**, which would close the dialog
+        // (§18.5).
+        <div className="flex flex-col items-start gap-2 text-sm">
+          {!readError.isRetrying && (
+            <QueryErrorAlert
+              error={readError.error}
+              message={errorMessage(readError.error)}
+              headingLevel={3}
+              offersReload={false}
+            />
+          )}
+          <Button type="button" variant="outline" onClick={readError.retry}>
+            {t('retry')}
+          </Button>
+        </div>
+      )}
     </Field>
   );
 }
