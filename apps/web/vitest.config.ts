@@ -5,5 +5,6 @@ export default defineConfig({
     name: 'web',
     include: ['src/**/*.spec.{ts,tsx}', 'scripts/**/*.spec.ts'],
     exclude: ['**/*.integration.spec.{ts,tsx}'],
+    setupFiles: ['test/setup/query-notifications.ts'],
   },
 });
