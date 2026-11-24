@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { ActivityEvent } from '@trybun/contracts/activity-events';
 import type { Ticket } from '@trybun/contracts/tickets';
@@ -20,8 +20,9 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
+const refresh = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation.js', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), refresh }),
   usePathname: () => '/tickets/ERP-12',
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -164,6 +165,42 @@ describe('TeamTicketView', () => {
     );
   });
 
+  it('keeps a shown ticket and the typed note when the note and the read after it are refused (#433)', async () => {
+    answer(ticket({ allowedActions: ['read', 'add_comment', 'add_internal_note'] }));
+    const user = userEvent.setup();
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+    const note = await screen.findByRole('textbox', { name: /note|comment/i });
+    await user.type(note, 'Root cause found');
+    const answerRoute = fake.client.GET.getMockImplementation()!;
+    const answerPost = fake.client.POST.getMockImplementation()!;
+    // The limit is used up: the note and the reads of its `onSettled` are refused.
+    fake.client.POST.mockImplementation(() => rateLimitedResult());
+    fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+      route === '/api/v1/tickets' ? rateLimitedResult() : answerRoute(route, init),
+    );
+    try {
+      await user.click(screen.getByRole('button', { name: 'Add internal note' }));
+
+      await waitFor(() =>
+        expect(client.getQueryState(['tickets', 'detail', 'ERP-12'])?.status).toBe('error'),
+      );
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+      ).toBeTruthy();
+      expect(screen.queryByRole('heading', { name: 'Too many requests' })).toBeNull();
+      expect(
+        screen.getByRole<HTMLTextAreaElement>('textbox', { name: /note|comment/i }).value,
+      ).toBe('Root cause found');
+      // The refused note says so under its form.
+      expect(
+        await screen.findByText('Too many requests. Wait a moment and try again.'),
+      ).toBeTruthy();
+    } finally {
+      fake.client.GET.mockImplementation(answerRoute);
+      fake.client.POST.mockImplementation(answerPost);
+    }
+  });
+
   it('keeps a shown ticket when a later read of it is refused (#433)', async () => {
     answer(ticket());
     const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
@@ -175,14 +212,10 @@ describe('TeamTicketView', () => {
       route === '/api/v1/tickets' ? rateLimitedResult() : answerRoute(route, init),
     );
     try {
-      // The ticket is read again, e.g. after a refused comment (`onSettled` of its mutations).
-      await client.refetchQueries({ queryKey: ['tickets'] });
-      await waitFor(() =>
-        expect(client.getQueryState(['tickets', 'detail', 'ERP-12'])?.status).toBe('error'),
-      );
-      // Let the view render the failed read before it is checked.
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // The ticket is read again, e.g. on the return to the tab.
+      await act(() => client.refetchQueries({ queryKey: ['tickets'] }));
 
+      expect(client.getQueryState(['tickets', 'detail', 'ERP-12'])?.status).toBe('error');
       expect(
         screen.getByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
       ).toBeTruthy();
@@ -190,6 +223,22 @@ describe('TeamTicketView', () => {
     } finally {
       fake.client.GET.mockImplementation(answerRoute);
     }
+  });
+
+  it('refreshes the page when a shown ticket is gone, so it shows the not-found page (§18.5)', async () => {
+    answer(ticket());
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+    ).toBeTruthy();
+    refresh.mockClear();
+    // The person lost access to the project meanwhile.
+    fake.on('GET /api/v1/tickets', { data: { items: [], nextCursor: null } });
+
+    await act(() => client.refetchQueries({ queryKey: ['tickets'] }));
+
+    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Invoice totals are wrong' })).toBeNull();
   });
 
   it('shows the header, the rendered description and the fields of the ticket (§3.2)', async () => {

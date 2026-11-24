@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { EndUserTicket } from '@trybun/contracts/tickets';
 import type { ComponentProps } from 'react';
@@ -24,8 +24,9 @@ vi.mock('next/link', () => ({
     return <a {...anchorProps} />;
   },
 }));
+const refresh = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation.js', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh }),
   usePathname: () => '/portal',
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -333,15 +334,26 @@ describe('TicketView', () => {
     refuse('/api/v1/tickets');
 
     // The ticket is read again, e.g. after a refused comment (`onSettled` of its mutations).
-    await client.refetchQueries({ queryKey: ['tickets'] });
-    await waitFor(() =>
-      expect(client.getQueryState(['tickets', 'detail', 'CP-7'])?.status).toBe('error'),
-    );
-    // Let the view render the failed read before it is checked.
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await act(() => client.refetchQueries({ queryKey: ['tickets'] }));
+
+    expect(client.getQueryState(['tickets', 'detail', 'CP-7'])?.status).toBe('error');
 
     expect(screen.getByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
     expect(screen.queryByRole('heading', { name: 'Too many requests' })).toBeNull();
+  });
+
+  it('refreshes the page when a shown ticket is gone, so it shows the not-found page (§18.5)', async () => {
+    answerTicket(ticket());
+    const { client } = renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
+    refresh.mockClear();
+    // The organization lost the access meanwhile (§7.3).
+    fake.on('GET /api/v1/tickets', { data: { items: [], nextCursor: null } });
+
+    await act(() => client.refetchQueries({ queryKey: ['tickets'] }));
+
+    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Wrong VAT rate' })).toBeNull();
   });
 
   it('shows the attachments, the images of the description and the file events (S1-08)', async () => {
