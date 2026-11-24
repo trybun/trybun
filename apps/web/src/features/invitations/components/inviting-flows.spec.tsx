@@ -272,6 +272,37 @@ describe('InviteDialog', () => {
     expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
   });
 
+  it('keeps a failed search when the list closes, so Try again reads that search again (#473)', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ id: PROJECT_ID, key: 'ERP', name: 'ERP system' }], nextCursor: null },
+    });
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog kind="team" />);
+    await events.click(screen.getByRole('button', { name: 'Invite' }));
+    const input = await screen.findByRole('combobox', { name: 'Project' });
+    await events.click(input);
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+
+    fake.refuse('GET /api/v1/projects');
+    await events.type(input, 'ERP');
+    expect(await screen.findByText('The projects could not be loaded.')).toBeTruthy();
+    // Tab closes the list and reaches **Try again**, which stays with the error of the search.
+    await events.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    fake.answer('GET /api/v1/projects');
+    await events.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect(
+      (fake.callsTo('GET /api/v1/projects').at(-1)!.init as { params: { query: unknown } }).params
+        .query,
+    ).toMatchObject({ query: 'ERP' });
+    await events.click(input);
+    expect(input).toHaveProperty('value', 'ERP');
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+  });
+
   it('shows the message of a failed read of the organizations (#471)', async () => {
     fake.on('GET /api/v1/organizations', { status: 500, error: {} });
     const events = userEvent.setup();

@@ -368,7 +368,8 @@ function OrganizationPicker({
  * the list is closed and the search while it is open, which starts empty. A failed search shows its
  * error with **Try again** below the input, and the list says `loadFailed` in place of `empty`
  * (#471): the list of a combobox is no stop of Tab, which closes it (WAI-ARIA APG), so **Try
- * again** follows the input outside it.
+ * again** follows the input outside it – and the failed search stays when the list closes, so
+ * **Try again** reads that search again.
  */
 function Picker({
   label,
@@ -407,7 +408,9 @@ function Picker({
         inputValue={isOpen ? search : (selected?.label ?? '')}
         onOpenChange={(open) => {
           setIsOpen(open);
-          if (!open) {
+          // A failed search stays when the list closes – by Tab or by a press outside it – so its
+          // error and **Try again** below the input stay too and read that search again.
+          if (!open && !page.isError) {
             setSearch('');
           }
         }}
