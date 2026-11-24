@@ -34,3 +34,5 @@ Jeśli masz już konto w Trybunie z adresem z zaproszenia, wybierz **Zaloguj si�
 ## Jeśli link nie działa
 
 **Ten link z zaproszeniem jest nieważny** oznacza, że link wygasł, został użyty albo zastąpiony nowym. Poproś osobę, która Cię zaprosiła, o nowy link.
+
+**Zbyt wiele żądań** oznacza, że link jest w porządku, ale w krótkim czasie wysłano więcej żądań, niż Trybun pozwala. Strona podaje, kiedy spróbować ponownie; wtedy wybierz **Odśwież stronę**.

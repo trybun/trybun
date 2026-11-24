@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LoadingStatus } from '../../app-shell/components/loading-status.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { useUpdateOrganization } from '../mutations.js';
 import { OrganizationSection } from './organization-section.js';
@@ -152,9 +153,12 @@ export function OrganizationProjects({ organization }: { organization: Organizat
             </div>
           )}
           {activeProjects.isError && !activeProjects.isFetchingNextPage && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(activeProjects.error)}
-            </p>
+            <QueryErrorAlert
+              error={activeProjects.error}
+              message={errorMessage(activeProjects.error)}
+              headingLevel={4}
+              offersReload={activeProjects.isLoadingError}
+            />
           )}
           {activeProjects.hasNextPage && (
             <Button

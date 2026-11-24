@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { organizationsQueryOptions } from '../../organizations/queries.js';
 import { organizationHref } from '../../organizations/search-params.js';
 
@@ -41,9 +42,8 @@ export function ProjectOrganizations({ projectId }: { projectId: string }) {
         <p className="text-sm text-muted-foreground">{t('description')}</p>
       </div>
       {loadError !== null ? (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(loadError)}
-        </p>
+        // `h3` under the `h2` of the section.
+        <QueryErrorAlert error={loadError} message={errorMessage(loadError)} headingLevel={3} />
       ) : (
         active.isSuccess &&
         archived.isSuccess &&
@@ -68,9 +68,12 @@ export function ProjectOrganizations({ projectId }: { projectId: string }) {
         ))}
       </ul>
       {pageError !== null && !active.isFetchingNextPage && !archived.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(pageError)}
-        </p>
+        <QueryErrorAlert
+          error={pageError}
+          message={errorMessage(pageError)}
+          headingLevel={3}
+          offersReload={false}
+        />
       )}
       {(active.hasNextPage || archived.hasNextPage) && (
         <Button

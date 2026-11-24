@@ -27,7 +27,7 @@ Select the help icon (question mark) in the header, then **Help for this view**.
 1. Select your account menu (your initials) in the header.
 2. Select **Sign out**.
 
-If you send more requests than Trybun allows in a short time, you see **Too many requests** with **Reload page** instead of the page until the block ends, usually after a minute. The header is not shown then, so select **Sign out** on that page.
+If you send more requests than Trybun allows in a short time, you see **Too many requests** with **Reload page** instead of the page until the block ends, usually after a minute. The header is not shown then, so select **Sign out** on that page. If only a part of a page is refused, such as the list of your tickets or the history of a ticket, that part shows **Too many requests** and when to try again, with **Reload page** – or, when it happens as you select a button such as **Show more tickets**, above that button, which you select again – and the rest of the page stays.
 
 Trybun also signs you out by itself after 8 hours without activity, and 30 days after you signed in. Then sign in again.
 

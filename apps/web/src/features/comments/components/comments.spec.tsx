@@ -6,6 +6,7 @@ import type { Ticket } from '@trybun/contracts/tickets';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 import { ticketResponse } from '../../../../test/factories/ticket.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
@@ -15,7 +16,11 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
   },
 }));
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: vi.fn() } }));
-vi.mock('next/navigation.js', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/tickets/ERP-12',
+  useSearchParams: () => new URLSearchParams(),
+}));
 vi.stubGlobal('matchMedia', (query: string) => ({
   matches: false,
   media: query,
@@ -28,6 +33,45 @@ const { TimelineList } = await import('./timeline-list.js');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
+const answerRoute = fake.client.GET.getMockImplementation()!;
+
+/** Refuses the reads of `path` with `429` and its `Retry-After: 45` (§14.4). */
+function refuse(path: string) {
+  fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+    route === path ? rateLimitedResult() : answerRoute(route, init),
+  );
+}
+
+/** Refuses the later pages of `path` – the reads with a cursor – with `429` (#434). */
+function refuseLaterPages(path: string) {
+  fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+    route === path &&
+    (init as { params: { query: { cursor?: string } } }).params.query.cursor !== undefined
+      ? rateLimitedResult()
+      : answerRoute(route, init),
+  );
+}
+
+/**
+ * The notice of a refused later page (#434): the wait, without **Reload page**, which would drop
+ * the pages loaded; **Show more** tries the page again.
+ */
+function expectLaterPageAlert(alert: HTMLElement, level: number) {
+  expect(within(alert).getByRole('heading', { level }).textContent).toBe('Too many requests');
+  expect(alert.textContent).toContain('Try again in 45 seconds.');
+  expect(within(alert).queryByRole('link')).toBeNull();
+}
+
+/** The notice of a refused read (#433): its heading level, the wait and **Reload page**. */
+function expectRateLimitedAlert(alert: HTMLElement, level: number) {
+  expect(within(alert).getByRole('heading', { level }).textContent).toBe('Too many requests');
+  expect(alert.textContent).toContain('Try again in 45 seconds.');
+  // Never only the generic message of the error code.
+  expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
+  expect(within(alert).getByRole('link', { name: 'Reload page' }).getAttribute('href')).toBe(
+    '/tickets/ERP-12',
+  );
+}
 
 const COMMENT_ID = '0199a3f0-0000-7000-8000-000000000051';
 const AUTHOR = { id: '0199a3f0-0000-7000-8000-000000000031', displayName: 'Anna' };
@@ -75,6 +119,7 @@ function renderTimeline(ticket: Ticket | object, isTeam = true) {
 afterEach(() => {
   cleanup();
   fake.reset();
+  fake.client.GET.mockImplementation(answerRoute);
 });
 
 describe('the comment field', () => {
@@ -239,5 +284,107 @@ describe('a comment', () => {
         body: { purgeRevisionIds: [revision(1).id, revision(2).id] },
       }),
     );
+  });
+});
+
+describe('when a read is refused with 429 (#433)', () => {
+  it('shows the wait and Reload page in place of the timeline', async () => {
+    answer([]);
+    refuse('/api/v1/tickets/{ticketId}/timeline');
+    renderTimeline(ticketResponse());
+
+    // `h3` under the `h2` of the history of the ticket.
+    expectRateLimitedAlert(await screen.findByRole('alert'), 3);
+  });
+
+  it('shows the wait and Reload page in the edit history', async () => {
+    const user = userEvent.setup();
+    answer([{ type: 'comment', comment: teamComment({ editedAt: '2026-11-09T11:00:00.000Z' }) }]);
+    refuse('/api/v1/comments/{commentId}/revisions');
+    renderTimeline(ticketResponse());
+
+    const item = within((await screen.findByText('Checked the logs')).closest('li')!);
+    await user.click(item.getByRole('button', { name: 'edited – show the edit history' }));
+
+    // `h3` under the `h2` title of the dialog.
+    const dialog = within(await screen.findByRole('dialog', { name: 'Edit history' }));
+    expectRateLimitedAlert(await dialog.findByRole('alert'), 3);
+  });
+
+  it('shows the wait and Reload page in the versions of the redaction', async () => {
+    const user = userEvent.setup();
+    answer([{ type: 'comment', comment: teamComment() }]);
+    refuse('/api/v1/comments/{commentId}/revisions');
+    renderTimeline(ticketResponse());
+
+    await user.click(await screen.findByRole('button', { name: 'Actions of the comment' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Redact' }));
+
+    const dialog = within(await screen.findByRole('dialog', { name: 'Redact the comment' }));
+    expectRateLimitedAlert(await dialog.findByRole('alert'), 3);
+  });
+
+  describe('of a later page', () => {
+    const revision = (n: number) => ({
+      id: `0199a3f0-0000-7000-8000-0000000006${n.toString().padStart(2, '0')}`,
+      body: `Version ${n}`,
+      mentions: [],
+      author: AUTHOR,
+      writtenAt: '2026-11-09T10:00:00.000Z',
+    });
+    const answerRevisions = () =>
+      fake.on('GET /api/v1/comments/{commentId}/revisions', {
+        data: { items: [revision(1)], nextCursor: 'next' },
+      });
+
+    it('keeps the timeline and shows the wait without Reload page', async () => {
+      const user = userEvent.setup();
+      answer([]);
+      fake.on('GET /api/v1/tickets/{ticketId}/timeline', {
+        data: { items: [{ type: 'comment', comment: teamComment() }], nextCursor: 'next' },
+      });
+      refuseLaterPages('/api/v1/tickets/{ticketId}/timeline');
+      renderTimeline(ticketResponse());
+
+      await user.click(await screen.findByRole('button', { name: 'Show more' }));
+
+      expectLaterPageAlert(await screen.findByRole('alert'), 3);
+      expect(screen.getByText('Checked the logs')).toBeDefined();
+    });
+
+    it('keeps the edit history and shows the wait without Reload page', async () => {
+      const user = userEvent.setup();
+      answer([{ type: 'comment', comment: teamComment({ editedAt: '2026-11-09T11:00:00.000Z' }) }]);
+      answerRevisions();
+      refuseLaterPages('/api/v1/comments/{commentId}/revisions');
+      renderTimeline(ticketResponse());
+
+      const item = within((await screen.findByText('Checked the logs')).closest('li')!);
+      await user.click(item.getByRole('button', { name: 'edited – show the edit history' }));
+      const dialog = within(await screen.findByRole('dialog', { name: 'Edit history' }));
+      await dialog.findByText('Version 1');
+      await user.click(dialog.getByRole('button', { name: 'Show more' }));
+
+      expectLaterPageAlert(await dialog.findByRole('alert'), 3);
+      expect(dialog.getByText('Version 1')).toBeDefined();
+    });
+
+    it('keeps the versions of the redaction and shows the wait without Reload page', async () => {
+      const user = userEvent.setup();
+      answer([{ type: 'comment', comment: teamComment() }]);
+      answerRevisions();
+      refuseLaterPages('/api/v1/comments/{commentId}/revisions');
+      renderTimeline(ticketResponse());
+
+      await user.click(await screen.findByRole('button', { name: 'Actions of the comment' }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Redact' }));
+      const dialog = within(await screen.findByRole('dialog', { name: 'Redact the comment' }));
+      // Each version is listed by its author and time.
+      await dialog.findByText(/Anna/);
+      await user.click(dialog.getByRole('button', { name: 'Show more' }));
+
+      expectLaterPageAlert(await dialog.findByRole('alert'), 3);
+      expect(dialog.getByText(/Anna/)).toBeDefined();
+    });
   });
 });

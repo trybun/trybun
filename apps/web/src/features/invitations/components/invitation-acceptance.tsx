@@ -2,24 +2,12 @@
 
 import { languageSchema } from '@trybun/contracts/users';
 import { useLocale, useTranslations } from 'next-intl';
-import { useSyncExternalStore } from 'react';
+import { useLocationHash } from '../../../lib/browser/use-location-hash.js';
 import type { IdentityProvider } from '../../sessions/keycloak-sign-in.js';
 import { invitationTokenOf, readPendingAcceptance } from '../acceptance-state.js';
 import { ContinueAcceptance } from './continue-acceptance.js';
 import { InvitationMessage } from './invitation-message.js';
 import { InvitationOffer } from './invitation-offer.js';
-
-/** The fragment of the address is known only in the browser; the server renders the check. */
-function useLocationHash(): string | undefined {
-  return useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener('hashchange', onChange);
-      return () => window.removeEventListener('hashchange', onChange);
-    },
-    () => window.location.hash,
-    () => undefined,
-  );
-}
 
 /**
  * The acceptance page of an invitation (ADR 0009): a link opened with its token in the fragment

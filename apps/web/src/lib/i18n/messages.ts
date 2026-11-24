@@ -34,10 +34,15 @@ export const CLIENT_NAMESPACES = {
   root: ROOT,
   /** `app/sign-in/layout.tsx` */
   signIn: [...ROOT, 'signIn'],
-  /** `app/setup/layout.tsx` */
-  setup: [...ROOT, 'errors', 'languages', 'setup'],
-  /** `app/invitations/layout.tsx` */
-  invitations: [...ROOT, 'errors', 'invitations'],
+  /**
+   * `app/setup/layout.tsx`, with the notice of a query refused with `429` (`RateLimitedAlert`).
+   */
+  setup: [...ROOT, 'errors', 'languages', 'rateLimited', 'setup'],
+  /**
+   * `app/invitations/layout.tsx`, with the notice of a query refused with `429`
+   * (`RateLimitedAlert`).
+   */
+  invitations: [...ROOT, 'errors', 'invitations', 'rateLimited'],
   /**
    * `AccountShell` of `app/(team)/layout.tsx`, `app/(portal)/layout.tsx` and `app/help/layout.tsx`:
    * the application shell, its menus, the product tours and the notice of a query refused with

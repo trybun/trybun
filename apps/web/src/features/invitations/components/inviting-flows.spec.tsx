@@ -6,6 +6,7 @@ import { toast } from '@trybun/ui/components/toast';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 const signInToContinue = vi.hoisted(() => vi.fn());
@@ -18,10 +19,15 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 }));
 vi.mock('../acceptance-sign-in.js', () => ({ signInToContinue }));
 vi.mock('../../sessions/keycloak-sign-in.js', () => ({ signOutInPlace }));
+vi.mock('next/navigation.js', () => ({
+  usePathname: () => '/invitations',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const { InviteDialog } = await import('./invite-dialog.js');
 const { AddMemberDialog } = await import('../../projects/components/add-member-dialog.js');
 const { ContinueAcceptance } = await import('./continue-acceptance.js');
+const { InvitationOffer } = await import('./invitation-offer.js');
 const { PendingInvitationList } = await import('./pending-invitation-list.js');
 const { ProjectInvitations } = await import('../../projects/components/project-invitations.js');
 const { PasswordAcceptanceForm } = await import('./password-acceptance-form.js');
@@ -57,6 +63,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   toasts.mockRestore();
+  window.history.replaceState(null, '', '/');
 });
 
 describe('InviteDialog', () => {
@@ -245,7 +252,13 @@ describe('PendingInvitationList', () => {
         invitations={[invitation()] as never}
         titleOf={(item) => item.user.email ?? ''}
         detailOf={() => 'Developer'}
-        paging={{ hasNextPage, isFetchingNextPage: false, error: null, onLoadMore }}
+        paging={{
+          hasNextPage,
+          isFetchingNextPage: false,
+          error: null,
+          headingLevel: 4,
+          onLoadMore,
+        }}
       />,
     );
   }
@@ -472,6 +485,33 @@ describe('ProjectInvitations', () => {
   });
 });
 
+describe('InvitationOffer', () => {
+  it.each([
+    ['en', 'Too many requests', 'Try again in 45 seconds.', 'Reload page', 'not valid'],
+    ['pl', 'Zbyt wiele żądań', 'Spróbuj ponownie za 45 sekund.', 'Odśwież stronę', 'nieważny'],
+  ] as const)(
+    'says in %s that a refused check is a limit, not an invalid link, and reloads with the token (#433)',
+    async (locale, title, wait, reload, invalid) => {
+      // The link of the e-mail, with its token in the fragment of the address (ADR 0009).
+      window.history.replaceState(null, '', '/invitations#token=abc');
+      fake.client.POST.mockImplementationOnce(() => rateLimitedResult());
+      renderInApp(<InvitationOffer token="abc" language={locale} endUserProviders={[]} />, {
+        locale,
+      });
+
+      const alert = await screen.findByRole('alert');
+      // `h2` under the `h1` of the page.
+      expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe(title);
+      expect(alert.textContent).toContain(wait);
+      expect(alert.textContent).not.toMatch(new RegExp(invalid, 'i'));
+      // A link to the address would only scroll to the fragment, one without it would lose the
+      // token: **Reload page** reloads the document instead.
+      expect(within(alert).getByRole('button', { name: reload })).toBeTruthy();
+      expect(within(alert).queryByRole('link')).toBeNull();
+    },
+  );
+});
+
 describe('ContinueAcceptance', () => {
   const accepted = (kind: 'end_user' | 'team', landingPath = '/projects') => ({
     data: { kind, landingPath },
@@ -557,6 +597,29 @@ describe('ContinueAcceptance', () => {
     );
 
     expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
+  it('says when to try again a refused check of the session, without signing in (#433)', async () => {
+    fake.client.GET.mockImplementationOnce(() => rateLimitedResult());
+    const pending = {
+      step: 'verify',
+      landingPath: '/projects',
+      provider: 'github',
+      signIns: 0,
+    } as const;
+    writePendingAcceptance(window.sessionStorage, pending);
+    renderInApp(<ContinueAcceptance pending={pending} language="en" />);
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
+    // The step stays in the tab, so the reloaded page checks the session again.
+    expect(within(alert).getByRole('link', { name: 'Reload page' }).getAttribute('href')).toBe(
+      '/invitations',
+    );
+    expect(readPendingAcceptance(window.sessionStorage)).toEqual(pending);
+    expect(signInToContinue).not.toHaveBeenCalled();
   });
 
   describe('verifying the second factor', () => {

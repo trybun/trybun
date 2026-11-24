@@ -22,6 +22,7 @@ import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { FORM_ERROR_MAP, fieldErrorsOf } from '../../../lib/errors/form-errors.js';
 import { LoadingStatus } from '../../app-shell/components/loading-status.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { useAddOrganizationMember, useRemoveOrganizationMember } from '../mutations.js';
 import { organizationMembersQueryOptions } from '../queries.js';
@@ -160,9 +161,11 @@ export function OrganizationMembers({ organization }: { organization: Organizati
       {/* Only a failure of the first read stands in for the rows; a failed **Load more** is shown
           above its button (#434). */}
       {members.isLoadingError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(members.error)}
-        </p>
+        <QueryErrorAlert
+          error={members.error}
+          message={errorMessage(members.error)}
+          headingLevel={4}
+        />
       ) : members.isPending ? (
         // Never the empty state, which looks like "no members" (#428).
         <LoadingStatus fetchStatus={members.fetchStatus}>{t('loading')}</LoadingStatus>
@@ -205,9 +208,12 @@ export function OrganizationMembers({ organization }: { organization: Organizati
         ))}
       </ul>
       {members.isError && !members.isLoadingError && !members.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(members.error)}
-        </p>
+        <QueryErrorAlert
+          error={members.error}
+          message={errorMessage(members.error)}
+          headingLevel={4}
+          offersReload={false}
+        />
       )}
       {members.hasNextPage && (
         <Button

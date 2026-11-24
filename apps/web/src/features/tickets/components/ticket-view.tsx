@@ -14,7 +14,9 @@ import Link from 'next/link';
 import { useFormatter, useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { MY_TICKETS_HREF } from '../../app-shell/navigation.js';
+import { useNotFoundOnServer } from '../../app-shell/use-not-found-on-server.js';
 import { TicketAttachments } from '../../attachments/components/ticket-attachments.js';
 import { useTicketImageIds } from '../../attachments/use-ticket-image-ids.js';
 import { portalTicketHref } from '../../portal/hrefs.js';
@@ -54,11 +56,17 @@ export function TicketView({
     enabled: ticket.data !== undefined,
   });
   const imageIds = useTicketImageIds(ticket.data?.id ?? '', ticket.data?.description ?? '');
-  if (ticket.isError) {
+  // The ticket became invisible or was deleted while it was open: the page shows the not-found
+  // page with its title (§18.5, #404).
+  const isGone = useNotFoundOnServer(ticket.error);
+  if (isGone) {
+    return null;
+  }
+  // Only a ticket that could not be read at all is replaced by its error: a failed refetch – e.g.
+  // after a refused comment – keeps the ticket on screen, with what was typed in its form (#433).
+  if (ticket.isError && ticket.data === undefined) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(ticket.error)}
-      </p>
+      <QueryErrorAlert error={ticket.error} message={errorMessage(ticket.error)} headingLevel={1} />
     );
   }
   if (ticket.data === undefined) {

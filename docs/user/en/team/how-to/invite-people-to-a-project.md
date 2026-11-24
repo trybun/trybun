@@ -17,6 +17,7 @@ Project managers invite people to their projects; the Administrator invites peop
    - **This person will join the organization X.** – an end user whose e-mail domain belongs to an organization that has this project joins that organization when they accept, and reaches the project through it.
    - **This person already has an account and gets the access at once.** – no invitation is needed.
    - Otherwise it says why the person cannot be added, for example because the address belongs to an account of the other kind or to a deactivated account.
+   - **Too many requests** with when to try again – more requests than Trybun allows were sent in a short time; wait, then change the address or the role, and the line checks again.
 5. Select **Invite** (or **Add**, when the person already has an account).
 6. In **Invitation created**, select **Copy link** and send the link to the person, for example in a chat or an e-mail. Only this link works, and it is shown only now.
 

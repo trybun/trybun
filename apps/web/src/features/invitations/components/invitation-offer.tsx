@@ -8,7 +8,9 @@ import { Separator } from '@trybun/ui/components/separator';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { isRateLimited } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { RateLimitedAlert } from '../../app-shell/components/rate-limited-alert.js';
 import type { IdentityProvider } from '../../sessions/keycloak-sign-in.js';
 import { signInToContinue } from '../acceptance-sign-in.js';
 import { invitationTokenVerificationQueryOptions } from '../queries.js';
@@ -43,6 +45,11 @@ export function InvitationOffer({
   const queryClient = useQueryClient();
   const verification = useQuery(invitationTokenVerificationQueryOptions(browserApiClient, token));
 
+  if (isRateLimited(verification.error)) {
+    // Only a temporary limit, never an invalid invitation (#433); `h2` under the `h1` of the page.
+    // **Reload page** keeps the token in the fragment of the address.
+    return <RateLimitedAlert error={verification.error} headingLevel={2} />;
+  }
   if (verification.isError) {
     return (
       <InvitationMessage title={t('invalidTitle')}>

@@ -17,6 +17,7 @@ Kierownicy projektu zapraszają osoby do swoich projektów; Administrator zapras
    - **Ta osoba dołączy do organizacji X.** – użytkownik, którego domena e-mail należy do organizacji mającej ten projekt, po przyjęciu zaproszenia dołącza do tej organizacji i przez nią ma dostęp do projektu.
    - **Ta osoba ma już konto i od razu otrzyma dostęp.** – zaproszenie nie jest potrzebne.
    - W pozostałych przypadkach wyjaśnia, dlaczego nie można dodać tej osoby, na przykład gdy adres należy do konta innego rodzaju albo do konta dezaktywowanego.
+   - **Zbyt wiele żądań** z informacją, kiedy spróbować ponownie – w krótkim czasie wysłano więcej żądań, niż Trybun pozwala; odczekaj, a potem zmień adres lub rolę, a wiersz sprawdzi go jeszcze raz.
 5. Wybierz **Zaproś** (albo **Dodaj**, gdy osoba ma już konto).
 6. W oknie **Zaproszenie utworzone** wybierz **Skopiuj link** i wyślij link tej osobie, na przykład na czacie lub e-mailem. Działa tylko ten link i jest pokazywany tylko teraz.
 

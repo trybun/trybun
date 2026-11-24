@@ -26,6 +26,7 @@ import { useMemo, useOptimistic, useState, useTransition } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LoadingStatus } from '../../app-shell/components/loading-status.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { type TicketVersion, useBulkChangeTickets } from '../mutations.js';
 import { ticketListInfiniteQueryOptions } from '../queries.js';
 import {
@@ -380,9 +381,9 @@ function TicketResults({
       )}
       {/* Only a failure of the first read replaces the rows; a failed **Show more** keeps them (#434). */}
       {tickets.isLoadingError ? (
-        <p role="alert" className="text-sm text-destructive">
-          {t('loadFailed')}
-        </p>
+        // A refusal shows the wait of `Retry-After` (#433), `h2` under the `h1` of the page; the
+        // filters above stay usable.
+        <QueryErrorAlert error={tickets.error} headingLevel={2} message={t('loadFailed')} />
       ) : tickets.isPending ? (
         // Never the empty state, which looks like "no tickets" (#428).
         <LoadingStatus fetchStatus={tickets.fetchStatus}>{t('loading')}</LoadingStatus>
@@ -406,9 +407,13 @@ function TicketResults({
         </>
       )}
       {tickets.isError && !tickets.isLoadingError && !tickets.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {t('loadFailed')}
-        </p>
+        // **Show more** tries a refused page again and keeps the loaded pages (#434).
+        <QueryErrorAlert
+          error={tickets.error}
+          headingLevel={2}
+          offersReload={false}
+          message={t('loadFailed')}
+        />
       )}
       {tickets.hasNextPage && (
         <Button
