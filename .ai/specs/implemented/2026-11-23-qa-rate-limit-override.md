@@ -4,7 +4,7 @@ Extends: .ai/specs/implemented/2026-11-20-preview-start-recipe.md
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-23 |
 | Plan task | – (agent tooling) |
 | System specification sections | none (agent tooling outside `docs/spec/`); §14.4 (rate limits) and §15.12 (local environment) are relied on and left unchanged |
@@ -101,3 +101,4 @@ Accepted by the maintainer in the session on 2026-11-24 ([#476](https://github.c
 - 2026-11-23 – Created (autonomous defaults Q1–Q4, #426).
 - 2026-11-23 – Review of #476: field position for `json_get`, README sentences and Preview, the reverse replacement case, rollback note, wording fixes.
 - 2026-11-24 – Defaults Q1–Q4 accepted by the maintainer.
+- 2026-11-24 – Implemented in #482. One wording refinement: for a descriptor without the field the restart line reads `the running environment <runId> has no per-user rate limit recorded; this start asks for <B> – restarting it`, since there is no recorded limit to name; a reuse logs `reusing the running environment <runId> (per-user rate limit: <N> requests per minute)`.
