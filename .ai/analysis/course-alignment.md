@@ -34,7 +34,7 @@ Every step works in this order:
 | 0 | Baseline map | all | done |
 | 1 | Repository, stack, standards, AGENTS.md, `.ai/`, CI safety net | PW, L01–L02 | done; issues #487–#494 |
 | 2 | Skills, `om-setup-agent-pipeline`, labels, issue → PR → review flow | L03, extras: skills | done; issues #498, #499 |
-| 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | open |
+| 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | done; issue #501 |
 | 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | open |
 | 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | open |
 | 6 | Interactive coding (phases, subagent per task, tracking) | L08 | open |
@@ -243,3 +243,44 @@ Whether Cezar provisions the locked version into its tasks is checked in step 9.
 - **(b) Rejected:** no item, relying on §18.5 alone. Seven fix PRs in one month show that the rule in the specification was not enough at review.
 
 How `CODE_REVIEW.md` keeps following the defects over time (for example from `om-pipeline-retro`) is rated in step 14 (retrospective).
+
+## Step 3 – Discovery, product brief, synthetic users, backlog
+
+Course sources: the eight method leaves of L04 (overview, business case and workshop, `om-setup-discovery-pipeline`, `om-discover`, critical reading of the brief, synthetic users in practice, `om-backlog`, state and checklist) and the index of extras "Discovery". Checked on 2026-11-24 at `main` `a82ccf8b`.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 3.1 | A business case states what, for whom, what benefit and on what belief; the vision and the scope of the first release are written apart (L04 step 1) | [§1.1](../../docs/spec/01-overview.md) says what the system does and for whom (team, end users, integrations); the implementation plan separates the MVP (Stages 0–1) from later stages and unscheduled ideas. The benefit and the evidence that the problem is worth solving are not written down | Partial – part of 3.4 |
+| 3.2 | Discovery material lives in `.ai/specs/research/` as text, with kind, date, sources and decisions (L04 step 2) | `.ai/specs/research/2026-11-09-market-benchmark.md` is a model of the format: date, kind, method, reliability, unverified items marked `(u)`, purpose. No stakeholder map, interview or other material on the people who have the problem | Partial – part of 3.4 |
+| 3.3 | `om-setup-discovery-pipeline` adds the Discovery stage, the product owner role, the Definition of Ready, protected product decisions and routing from `AGENTS.md` (L04) | `SDLC.md`: Discovery stage, product owner role, Definition of Ready, "Product decisions as a protected contract"; `discovery.enabled: true`; `.ai/specs/research/` exists. `AGENTS.md` does not route to a brief or to the research folder | Partial – part of 3.4 |
+| 3.4 | A product brief (`.ai/specs/product-brief.md`): problem, users, goals, Now / Later scope, business rules, decisions and non-goals with ids and owners, sources tagged by kind, open questions (L04 step 3) | **None.** Consequences: the product-decision gate of `om-code-review` ("when `product-brief.md` exists, read its Non-goals, Business rules, and Decisions") and the protected contract of `SDLC.md` never run, and the ticket-level Definition of Ready ("who has the need") has no shared source | Missing – #501 |
+| 3.5 | The brief is read critically: claims tagged as interview, decision, assumption or synthetic; ambiguous words made precise (L04) | The benchmark separates verified from unverified claims; with no brief there is nothing else to read | Part of 3.4 |
+| 3.6 | Synthetic users (optional) probe one key flow of the brief, and their findings stay marked as hypotheses (L04 step 4) | None | Decided after 3.4: the skill needs a brief and its key flows |
+| 3.7 | The backlog: epics, stories with acceptance criteria and `Depends on:` in GitHub Issues, mapped in `.ai/specs/backlog.md` (L04 step 5) | The [implementation plan](../../docs/plan/implementation-plan.md) is the backlog: stages as Now and Later, groups for order and parallel work, "Done when" per task, "Ideas – unscheduled" for what is not decided, status in the file ("How to use this plan"). Tasks become work through their change specification and PR, not through issues (18 issues name a plan task, mostly of Stage 0) | Different – one source of the scope, recorded in "How to use this plan" |
+| 3.8 | Continuous discovery: the brief is refreshed when new information changes it (`om-discover --refresh`) (L04 overview) | No brief to refresh | Part of 3.4 |
+| 3.9 | Each decision records who made it, why and when to revisit it (L04 step 2) | Technical decisions: ADRs (MADR) with context and consequences. Product decisions: accepted by merging a change specification (approver: the maintainer), with no revisit date | Partial – part of 3.4 |
+
+### Gap proposal
+
+**3.4 Product brief – accepted (a): #501.** It also closes 3.1, 3.2, 3.3, 3.5, 3.8 and 3.9.
+
+**Sources.** The course (L04) and the skills that read the brief. Practitioners' guides (Atlassian, Productboard, Aha!; vendor blogs) agree on a chain of documents: the brief answers why – the problem, who has it, the value – the requirements and specification answer what and how, and the brief stays a living document with one owner. They warn that a document that goes stale is worse than none, and that a long brief turns into a requirements document. Teresa Torres ("Continuous Discovery Habits") asks whether there is enough evidence for each assumption and revisits it as evidence comes in. No source prescribes a formal decision log; the `N`/`R`/`D` tables of the brief template come from the course skills.
+
+**Options:**
+
+- **(a) Recommended: a brief from `om-discover --mode existing`**, in an interactive session with the maintainer as product owner, reading `docs/spec/`, the implementation plan and `.ai/specs/research/`.
+  - It writes `.ai/specs/product-brief.md`: the why, the people and the evidence; Now (Stages 0–1), Later (Stages 2–9) and not doing; non-goals, business rules and decisions with ids and owners; open questions.
+  - It links the specification and the plan instead of repeating them: the brief says why, `docs/spec/` says what, the plan says when.
+  - It adds the routing line in `AGENTS.md`.
+  - The criticism is answered by keeping the brief short and linked, and by refreshing it with `--refresh`. When it is refreshed is rated in step 14 (maintenance).
+- **(b) Rejected: product sections in [§1](../../docs/spec/01-overview.md).** The product-decision gate of `om-code-review` reads only `product-brief.md`, and the specification is the place of what the system does, not of why.
+- **(c) Rejected: no brief.** The gate and the protected contract stay inert, and scope decisions keep no recorded basis.
+
+Only the product owner can supply the problem, the people and the decisions (ticket-level tier of the Definition of Ready). The issue is therefore a session of the maintainer with the skill, not autonomous work.
+
+Found during step 3: two flaky E2E checks, filed on their own because they fail on `main` and on unrelated PRs (step 12 rates how flaky tests are handled):
+
+- #502: the accessibility check measured elements while they still animated. Fixed in #504: the check waits for the animations of the page.
+- #503: the Lighthouse LCP budget of the empty shell, open.
