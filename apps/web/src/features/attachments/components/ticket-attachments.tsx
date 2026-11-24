@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { LazyConfirmDialog } from '../../projects/components/lazy-confirm-dialog.js';
 import { attachmentStateOf } from '../attachment-state.js';
 import { useDeleteAttachment } from '../mutations.js';
@@ -44,9 +45,11 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
   // a ticket without attachments; a failed **Load more** keeps the files loaded (#434).
   if (attachments.isError && items.length === 0) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(attachments.error)}
-      </p>
+      <QueryErrorAlert
+        error={attachments.error}
+        message={errorMessage(attachments.error)}
+        headingLevel={2}
+      />
     );
   }
   if (items.length === 0) {
@@ -83,9 +86,12 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
         })}
       </AttachmentList>
       {attachments.isError && !attachments.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(attachments.error)}
-        </p>
+        <QueryErrorAlert
+          error={attachments.error}
+          message={errorMessage(attachments.error)}
+          headingLevel={3}
+          offersReload={false}
+        />
       )}
       {attachments.hasNextPage && (
         <Button

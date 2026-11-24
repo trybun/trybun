@@ -3,9 +3,12 @@
 import { useQuery } from '@tanstack/react-query';
 import type { BulkTicketChange, TicketListItem } from '@trybun/contracts/tickets';
 import { Button } from '@trybun/ui/components/button';
+import { cn } from '@trybun/ui/lib/utils';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { assignableMembersQueryOptions } from '../queries.js';
 import type { PickerGroup } from './field-sheet.js';
 import { FieldPicker } from './field-picker.js';
@@ -20,7 +23,10 @@ const NONE = 'none';
  * and **Clear selection** – above the table from the tablet width on, fixed at the bottom with the
  * safe area on phones (§18.6). An action is offered while one selected ticket allows it; tickets
  * that do not are sent anyway and come back as "not permitted" – the UI never derives
- * permissions from results (§18.3).
+ * permissions from results (§18.3). A failed read of the people who can be assigned shows its error
+ * with **Try again** (#471) – in the bar from the tablet breakpoint on, outside the list of
+ * **Assignee**, and in its bottom sheet on phones, where a taller fixed bar would cover the end of
+ * the list – while **Assign to me** and **Unassigned** stay.
  */
 export function TicketBulkActionBar({
   selected,
@@ -36,6 +42,7 @@ export function TicketBulkActionBar({
   onClear: () => void;
 }) {
   const t = useTranslations('tickets');
+  const errorMessage = useErrorMessage();
   const [isRejecting, setIsRejecting] = useState(false);
   const allows = (...actions: TicketListItem['allowedActions']) =>
     selected.some((ticket) => actions.some((action) => ticket.allowedActions.includes(action)));
@@ -48,6 +55,28 @@ export function TicketBulkActionBar({
     ...assignableMembersQueryOptions(browserApiClient, projectId ?? '', ''),
     enabled: canAssignOthers && projectId !== undefined,
   });
+
+  // Only while the selection offers the people: a later selection disables the query, which keeps
+  // its error. A refusal says when to try again; **Try again** reads the people again, so it offers
+  // no **Reload page**, which would drop the selection (§18.5). The alert is gone while they are
+  // read again, so a second failure is announced again.
+  const readError = (level: 2 | 3, className: string) =>
+    canAssignOthers &&
+    people.isError && (
+      <div className={cn('flex-col gap-2 text-sm', className)}>
+        {!people.isFetching && (
+          <QueryErrorAlert
+            error={people.error}
+            message={errorMessage(people.error)}
+            headingLevel={level}
+            offersReload={false}
+          />
+        )}
+        <Button type="button" variant="outline" onClick={() => void people.refetch()}>
+          {t('list.bulk.retryPeople')}
+        </Button>
+      </div>
+    );
 
   const statusGroups: PickerGroup[] = STATUS_KINDS.map(({ kind, statuses }) => ({
     label: t(`status.kinds.${kind}`),
@@ -132,6 +161,8 @@ export function TicketBulkActionBar({
             value={null}
             groups={assigneeGroups}
             disabled={isPending}
+            // `h3` under the `h2` title of the sheet.
+            alert={readError(3, 'flex items-center px-2 py-3')}
             onValueChange={(value) =>
               onChange({
                 field: 'assignee',
@@ -141,6 +172,9 @@ export function TicketBulkActionBar({
           />
         )}
       </div>
+      {/* From the tablet breakpoint on, where the bar is not fixed; on phones the bar keeps its
+          height over the list and the error shows in the sheet of **Assignee** instead. */}
+      {readError(2, 'hidden items-start md:order-last md:flex md:basis-full')}
       <Button type="button" variant="ghost" onClick={onClear} className="md:ml-auto">
         {t('list.selection.clear')}
       </Button>

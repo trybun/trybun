@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LoadingStatus } from '../../app-shell/components/loading-status.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { organizationsQueryOptions } from '../queries.js';
 import { organizationHref } from '../search-params.js';
 
@@ -26,9 +27,11 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
   // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
   if (organizations.isLoadingError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(organizations.error)}
-      </p>
+      <QueryErrorAlert
+        error={organizations.error}
+        message={errorMessage(organizations.error)}
+        headingLevel={3}
+      />
     );
   }
   if (organizations.isPending) {
@@ -69,9 +72,12 @@ export function OrganizationList({ state }: { state: OrganizationState }) {
         ))}
       </ul>
       {organizations.isError && !organizations.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(organizations.error)}
-        </p>
+        <QueryErrorAlert
+          error={organizations.error}
+          message={errorMessage(organizations.error)}
+          headingLevel={3}
+          offersReload={false}
+        />
       )}
       {organizations.hasNextPage && (
         <Button

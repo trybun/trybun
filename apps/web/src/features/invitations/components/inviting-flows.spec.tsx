@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { useQuery } from '@tanstack/react-query';
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
+import type { User } from '@trybun/contracts/users';
 import { toast } from '@trybun/ui/components/toast';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 const signInToContinue = vi.hoisted(() => vi.fn());
@@ -18,10 +20,16 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 }));
 vi.mock('../acceptance-sign-in.js', () => ({ signInToContinue }));
 vi.mock('../../sessions/keycloak-sign-in.js', () => ({ signOutInPlace }));
+vi.mock('next/navigation.js', () => ({
+  usePathname: () => '/invitations',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const { InviteDialog } = await import('./invite-dialog.js');
 const { AddMemberDialog } = await import('../../projects/components/add-member-dialog.js');
 const { ContinueAcceptance } = await import('./continue-acceptance.js');
+const { InvitationOffer } = await import('./invitation-offer.js');
+const { AccountInvitations } = await import('./account-invitations.js');
 const { PendingInvitationList } = await import('./pending-invitation-list.js');
 const { ProjectInvitations } = await import('../../projects/components/project-invitations.js');
 const { PasswordAcceptanceForm } = await import('./password-acceptance-form.js');
@@ -57,6 +65,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   toasts.mockRestore();
+  window.history.replaceState(null, '', '/');
 });
 
 describe('InviteDialog', () => {
@@ -140,6 +149,177 @@ describe('InviteDialog', () => {
 
     expect(await screen.findByText('This person gets an invitation link.')).toBeTruthy();
   });
+
+  it.each([
+    ['project', 'GET /api/v1/projects', null, 'Project', 'Acme (ACME)', { key: 'ACME' }],
+    ['organization', 'GET /api/v1/organizations', 'An organization', 'Organization', 'Acme', {}],
+  ] as const)(
+    'searches the %ss on the server and reads only the first page (#473)',
+    async (_target, route, radio, picker, option, fields) => {
+      fake.on(route, (init) => {
+        const query = (init as { params: { query: { query?: string } } }).params.query.query;
+        return {
+          data: {
+            items: [{ id: PROJECT_ID, name: query === 'zzz' ? 'Zeta' : 'Acme', ...fields }],
+            nextCursor: 'next',
+          },
+        };
+      });
+      const events = userEvent.setup();
+      renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+
+      await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+      if (radio !== null) {
+        await events.click(await screen.findByRole('radio', { name: radio }));
+      }
+      // Nothing is read before the picker opens.
+      expect(fake.callsTo(route)).toHaveLength(0);
+      const input = await screen.findByRole('combobox', { name: picker });
+      await events.click(input);
+      expect(await screen.findByRole('option', { name: option })).toBeTruthy();
+      expect(screen.getByText('Type to find more')).toBeTruthy();
+      await events.type(input, 'zzz');
+      expect(await screen.findByRole('option', { name: /^Zeta/ })).toBeTruthy();
+      await events.click(screen.getByRole('option', { name: /^Zeta/ }));
+
+      expect(input).toHaveProperty('value', expect.stringMatching(/^Zeta/));
+      // The first page of each search, never the next one, though the list has more.
+      const queries = fake
+        .callsTo(route)
+        .map((call) => (call.init as { params: { query: Record<string, unknown> } }).params.query);
+      expect(queries.every((query) => query.cursor === undefined && query.state === 'active')).toBe(
+        true,
+      );
+      expect(queries.at(-1)).toMatchObject({ query: 'zzz' });
+    },
+  );
+
+  it('keeps the chosen project while another target is shown and when the search is cleared', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ id: PROJECT_ID, name: 'Acme', key: 'ACME' }], nextCursor: null },
+    });
+    fake.on('GET /api/v1/organizations', { data: { items: [], nextCursor: null } });
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Project' }));
+    await events.click(await screen.findByRole('option', { name: 'Acme (ACME)' }));
+
+    await events.click(screen.getByRole('radio', { name: 'An organization' }));
+    await events.click(screen.getByRole('radio', { name: 'A project' }));
+    const input = await screen.findByRole('combobox', { name: 'Project' });
+    expect(input).toHaveProperty('value', 'Acme (ACME)');
+
+    await events.click(input);
+    expect(input).toHaveProperty('placeholder', 'Acme (ACME)');
+    await events.type(input, 'Ac');
+    await events.clear(input);
+    await events.keyboard('{Escape}');
+    expect(input).toHaveProperty('value', 'Acme (ACME)');
+  });
+
+  it('says it is loading, and no "no match" for a refused search', async () => {
+    const answer = fake.hold('GET /api/v1/projects');
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Project' }));
+
+    expect(await screen.findByText('Loading…')).toBeTruthy();
+    expect(screen.queryByText('No active project matches.')).toBeNull();
+    answer({
+      status: 429,
+      error: {
+        type: 'about:blank',
+        title: 'Too Many Requests',
+        status: 429,
+        code: 'request.rate_limited',
+      },
+    });
+    await waitFor(() => expect(screen.queryByText('Loading…')).toBeNull());
+
+    expect(screen.queryByText('No active project matches.')).toBeNull();
+    expect(fake.callsTo('GET /api/v1/projects')).toHaveLength(1);
+  });
+
+  it('says when to try again a refused read of the projects, never "No active project matches." (#471)', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ id: PROJECT_ID, key: 'ERP', name: 'ERP system' }], nextCursor: null },
+    });
+    fake.refuse('GET /api/v1/projects');
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog kind="team" />);
+
+    await events.click(screen.getByRole('button', { name: 'Invite' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Project' }));
+
+    // The open list says the projects are missing; Tab closes it, as the list is no stop of Tab
+    // (WAI-ARIA APG), and reaches **Try again** next to the error below the input.
+    expect(await screen.findByText('The projects could not be loaded.')).toBeTruthy();
+    expect(screen.queryByText('No active project matches.')).toBeNull();
+    await events.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    const alert = await screen.findByRole('alert');
+    // `h3` under the `h2` title of the dialog; **Try again** reads the list again, so no **Reload
+    // page**, which would close the dialog.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    fake.answer('GET /api/v1/projects');
+    await events.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    await events.click(screen.getByRole('combobox', { name: 'Project' }));
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+  });
+
+  it('keeps a failed search when the list closes, so Try again reads that search again (#473)', async () => {
+    fake.on('GET /api/v1/projects', {
+      data: { items: [{ id: PROJECT_ID, key: 'ERP', name: 'ERP system' }], nextCursor: null },
+    });
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog kind="team" />);
+    await events.click(screen.getByRole('button', { name: 'Invite' }));
+    const input = await screen.findByRole('combobox', { name: 'Project' });
+    await events.click(input);
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+
+    fake.refuse('GET /api/v1/projects');
+    await events.type(input, 'ERP');
+    expect(await screen.findByText('The projects could not be loaded.')).toBeTruthy();
+    // Tab closes the list and reaches **Try again**, which stays with the error of the search.
+    await events.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    fake.answer('GET /api/v1/projects');
+    await events.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect(
+      (fake.callsTo('GET /api/v1/projects').at(-1)!.init as { params: { query: unknown } }).params
+        .query,
+    ).toMatchObject({ query: 'ERP' });
+    await events.click(input);
+    expect(input).toHaveProperty('value', 'ERP');
+    expect(await screen.findByRole('option', { name: 'ERP system (ERP)' })).toBeTruthy();
+  });
+
+  it('shows the message of a failed read of the organizations (#471)', async () => {
+    fake.on('GET /api/v1/organizations', { status: 500, error: {} });
+    const events = userEvent.setup();
+    renderInApp(<InviteDialog email="anna@acme.com" kind="end_user" />);
+
+    await events.click(screen.getByRole('button', { name: 'Invite anna@acme.com' }));
+    await events.click(await screen.findByRole('radio', { name: 'An organization' }));
+    await events.click(await screen.findByRole('combobox', { name: 'Organization' }));
+
+    expect(await screen.findByText('The organizations could not be loaded.')).toBeTruthy();
+    expect(screen.queryByText('No active organization matches.')).toBeNull();
+    await events.tab();
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
 });
 
 describe('AddMemberDialog', () => {
@@ -193,6 +373,59 @@ describe('AddMemberDialog', () => {
     );
   });
 
+  it('says when to try again a refused search of the accounts, and searches again (#471)', async () => {
+    fake.on('GET /api/v1/projects/{projectId}/member-candidates', {
+      data: { items: [candidate], nextCursor: null },
+    });
+    fake.refuse('GET /api/v1/projects/{projectId}/member-candidates');
+    const events = userEvent.setup();
+    renderInApp(<AddMemberDialog projectId={PROJECT_ID} />);
+
+    await events.click(screen.getByRole('button', { name: 'Add member' }));
+
+    const alert = await screen.findByRole('alert');
+    // `h3` under the `h2` title of the dialog; **Try again** searches again, so no **Reload page**.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    expect(screen.queryByText('No active team members match.')).toBeNull();
+    fake.answer('GET /api/v1/projects/{projectId}/member-candidates');
+    await events.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('radio', { name: /Dev Eloper/ })).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('shows the message of a failed search of the accounts, never an empty list (#471)', async () => {
+    fake.on('GET /api/v1/projects/{projectId}/member-candidates', { status: 500, error: {} });
+    const events = userEvent.setup();
+    renderInApp(<AddMemberDialog projectId={PROJECT_ID} />);
+
+    await events.click(screen.getByRole('button', { name: 'Add member' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
+  it('keeps the accounts shown when a search again fails, with its error below (#471)', async () => {
+    fake.on('GET /api/v1/projects/{projectId}/member-candidates', {
+      data: { items: [candidate], nextCursor: null },
+    });
+    const events = userEvent.setup();
+    const { client } = renderInApp(<AddMemberDialog projectId={PROJECT_ID} />);
+
+    await events.click(screen.getByRole('button', { name: 'Add member' }));
+    await events.click(await screen.findByRole('radio', { name: /Dev Eloper/ }));
+    // The search again on focus, after the cache time, is refused.
+    fake.refuse('GET /api/v1/projects/{projectId}/member-candidates');
+    await act(() => client.refetchQueries());
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Try again in 45 seconds.');
+    expect(screen.getByRole('radio', { name: /Dev Eloper/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveProperty('disabled', false);
+  });
+
   it('shows the error of a refused addition under the form', async () => {
     fake.on('GET /api/v1/projects/{projectId}/member-candidates', {
       data: { items: [candidate], nextCursor: null },
@@ -237,6 +470,141 @@ describe('AddMemberDialog', () => {
   });
 });
 
+describe('AccountInvitations', () => {
+  const account: User = {
+    id: '0199a3f0-0000-7000-8000-000000000001',
+    displayName: null,
+    email: 'new@acme.com',
+    kind: 'team',
+    state: 'invited',
+    isAdmin: false,
+    githubLogin: null,
+    createdAt: '2026-10-29T09:30:00.000Z',
+    pendingInvitationCount: 1,
+    allowedActions: [],
+  };
+  const renderAccount = () =>
+    renderInApp(
+      <AccountInvitations
+        user={account}
+        pageAccounts={[account]}
+        wrap={(content) => <div data-testid="wrap">{content}</div>}
+      />,
+    );
+
+  it('says when to try again a refused read of the invitations, and reads them again (#471)', async () => {
+    fake.on('GET /api/v1/invitations', { data: { items: [invitation()], nextCursor: null } });
+    fake.refuse('GET /api/v1/invitations');
+    const events = userEvent.setup();
+    renderAccount();
+
+    const alert = await screen.findByRole('alert');
+    // `h3` under the `h2` of the Accounts page; **Try again** reads the invitations again, so no
+    // **Reload page**, which would drop the accounts loaded with **Load more**.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    fake.answer('GET /api/v1/invitations');
+    await events.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(
+      await screen.findByRole('list', { name: 'Pending invitations of new@acme.com' }),
+    ).toBeTruthy();
+  });
+
+  it('announces a failed read once for the page of accounts, and says so at every account (#471)', async () => {
+    const other: User = {
+      ...account,
+      id: '0199a3f0-0000-7000-8000-000000000002',
+      email: 'b@acme.com',
+    };
+    fake.on('GET /api/v1/invitations', { status: 500, error: {} });
+    renderInApp(
+      <>
+        {[account, other].map((user) => (
+          <AccountInvitations
+            key={user.id}
+            user={user}
+            pageAccounts={[account, other]}
+            wrap={(content) => <div data-testid={`wrap-${user.email}`}>{content}</div>}
+          />
+        ))}
+      </>,
+    );
+
+    expect((await screen.findAllByRole('alert')).map((alert) => alert.textContent)).toEqual([
+      'Something went wrong. Try again later.',
+    ]);
+    expect(within(screen.getByTestId('wrap-new@acme.com')).getByRole('alert')).toBeTruthy();
+    expect(
+      within(screen.getByTestId('wrap-b@acme.com')).getByText(
+        'The invitations could not be loaded.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+  });
+
+  it('leaves the accounts without invitations as they are while the read of the page fails (#471)', async () => {
+    const noLink: User = {
+      ...account,
+      id: '0199a3f0-0000-7000-8000-000000000003',
+      email: 'c@acme.com',
+      pendingInvitationCount: 0,
+    };
+    const active: User = { ...noLink, id: '0199a3f0-0000-7000-8000-000000000004', state: 'active' };
+    const page = [account, noLink, active];
+    fake.on('GET /api/v1/invitations', { status: 500, error: {} });
+    renderInApp(
+      <>
+        {page.map((user) => (
+          <AccountInvitations
+            key={user.id}
+            user={user}
+            pageAccounts={page}
+            wrap={(content) => <div data-testid={`wrap-${user.id}`}>{content}</div>}
+          />
+        ))}
+      </>,
+    );
+
+    await screen.findByRole('alert');
+    // The invited account without a working link is still offered **Invite**; the active one
+    // shows nothing – not even its row.
+    expect(
+      within(screen.getByTestId(`wrap-${noLink.id}`)).getByText('No working invitation link.'),
+    ).toBeTruthy();
+    expect(screen.queryByTestId(`wrap-${active.id}`)).toBeNull();
+  });
+
+  it('keeps the invitations shown when a read again fails, with its error below (#471)', async () => {
+    fake.on('GET /api/v1/invitations', { data: { items: [invitation()], nextCursor: null } });
+    const { client } = renderInApp(
+      <AccountInvitations
+        user={account}
+        pageAccounts={[account]}
+        wrap={(content) => <div data-testid="wrap">{content}</div>}
+      />,
+    );
+    await screen.findByRole('list', { name: 'Pending invitations of new@acme.com' });
+
+    fake.refuse('GET /api/v1/invitations');
+    await act(() => client.refetchQueries());
+
+    expect((await screen.findByRole('alert')).textContent).toContain('Try again in 45 seconds.');
+    expect(screen.getByRole('list', { name: 'Pending invitations of new@acme.com' })).toBeTruthy();
+  });
+
+  it('shows the message of a failed read of the invitations, which never just disappear (#471)', async () => {
+    fake.on('GET /api/v1/invitations', { status: 500, error: {} });
+    renderAccount();
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(screen.getByTestId('wrap')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+});
+
 describe('PendingInvitationList', () => {
   function renderList(onLoadMore = vi.fn(), hasNextPage = false) {
     return renderInApp(
@@ -245,7 +613,13 @@ describe('PendingInvitationList', () => {
         invitations={[invitation()] as never}
         titleOf={(item) => item.user.email ?? ''}
         detailOf={() => 'Developer'}
-        paging={{ hasNextPage, isFetchingNextPage: false, error: null, onLoadMore }}
+        paging={{
+          hasNextPage,
+          isFetchingNextPage: false,
+          error: null,
+          headingLevel: 4,
+          onLoadMore,
+        }}
       />,
     );
   }
@@ -472,6 +846,33 @@ describe('ProjectInvitations', () => {
   });
 });
 
+describe('InvitationOffer', () => {
+  it.each([
+    ['en', 'Too many requests', 'Try again in 45 seconds.', 'Reload page', 'not valid'],
+    ['pl', 'Zbyt wiele żądań', 'Spróbuj ponownie za 45 sekund.', 'Odśwież stronę', 'nieważny'],
+  ] as const)(
+    'says in %s that a refused check is a limit, not an invalid link, and reloads with the token (#433)',
+    async (locale, title, wait, reload, invalid) => {
+      // The link of the e-mail, with its token in the fragment of the address (ADR 0009).
+      window.history.replaceState(null, '', '/invitations#token=abc');
+      fake.client.POST.mockImplementationOnce(() => rateLimitedResult());
+      renderInApp(<InvitationOffer token="abc" language={locale} endUserProviders={[]} />, {
+        locale,
+      });
+
+      const alert = await screen.findByRole('alert');
+      // `h2` under the `h1` of the page.
+      expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe(title);
+      expect(alert.textContent).toContain(wait);
+      expect(alert.textContent).not.toMatch(new RegExp(invalid, 'i'));
+      // A link to the address would only scroll to the fragment, one without it would lose the
+      // token: **Reload page** reloads the document instead.
+      expect(within(alert).getByRole('button', { name: reload })).toBeTruthy();
+      expect(within(alert).queryByRole('link')).toBeNull();
+    },
+  );
+});
+
 describe('ContinueAcceptance', () => {
   const accepted = (kind: 'end_user' | 'team', landingPath = '/projects') => ({
     data: { kind, landingPath },
@@ -557,6 +958,29 @@ describe('ContinueAcceptance', () => {
     );
 
     expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy();
+  });
+
+  it('says when to try again a refused check of the session, without signing in (#433)', async () => {
+    fake.client.GET.mockImplementationOnce(() => rateLimitedResult());
+    const pending = {
+      step: 'verify',
+      landingPath: '/projects',
+      provider: 'github',
+      signIns: 0,
+    } as const;
+    writePendingAcceptance(window.sessionStorage, pending);
+    renderInApp(<ContinueAcceptance pending={pending} language="en" />);
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
+    // The step stays in the tab, so the reloaded page checks the session again.
+    expect(within(alert).getByRole('link', { name: 'Reload page' }).getAttribute('href')).toBe(
+      '/invitations',
+    );
+    expect(readPendingAcceptance(window.sessionStorage)).toEqual(pending);
+    expect(signInToContinue).not.toHaveBeenCalled();
   });
 
   describe('verifying the second factor', () => {

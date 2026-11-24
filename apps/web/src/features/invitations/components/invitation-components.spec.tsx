@@ -7,6 +7,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('next-auth/react', () => ({ signIn: vi.fn(), signOut: vi.fn() }));
+vi.mock('next/navigation.js', () => ({
+  usePathname: () => '/admin/accounts',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const { InvitationLink } = await import('./invitation-link.js');
 const { InvitationPreviewLine } = await import('./invitation-preview-line.js');
@@ -144,6 +148,22 @@ describe('InvitationPreviewLine', () => {
 
     expect(html).toContain('role="alert"');
     expect(html).toContain('This address belongs to an account of the other kind.');
+  });
+
+  it('says when to try again a refused check, without Reload page, which would close the form (#433)', () => {
+    const html = render(
+      <InvitationPreviewLine
+        preview={undefined}
+        error={new ApiError(429, 'request.rate_limited', [], 45)}
+        isChecking={false}
+      />,
+    );
+
+    // `h3` under the title of the dialog; the next change of the form checks again.
+    expect(html).toContain('<h3 class="text-lg font-bold">Too many requests</h3>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(html).not.toContain('Too many requests. Wait a moment and try again.');
+    expect(html).not.toContain('Reload page');
   });
 
   it('says that it checks the address', () => {

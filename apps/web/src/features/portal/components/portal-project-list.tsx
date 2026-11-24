@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LoadingStatus } from '../../app-shell/components/loading-status.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { projectsQueryOptions } from '../../projects/queries.js';
 import { portalProjectHref } from '../hrefs.js';
 
@@ -23,9 +24,11 @@ export function PortalProjectList() {
   // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
   if (projects.isLoadingError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(projects.error)}
-      </p>
+      <QueryErrorAlert
+        error={projects.error}
+        message={errorMessage(projects.error)}
+        headingLevel={2}
+      />
     );
   }
   if (projects.isPending) {
@@ -59,9 +62,12 @@ export function PortalProjectList() {
         ))}
       </ul>
       {projects.isError && !projects.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(projects.error)}
-        </p>
+        <QueryErrorAlert
+          error={projects.error}
+          message={errorMessage(projects.error)}
+          headingLevel={2}
+          offersReload={false}
+        />
       )}
       {projects.hasNextPage && (
         <Button

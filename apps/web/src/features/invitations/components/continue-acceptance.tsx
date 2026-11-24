@@ -6,8 +6,9 @@ import { Button } from '@trybun/ui/components/button';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { ApiError } from '../../../lib/errors/api-error.js';
+import { ApiError, isRateLimited } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { RateLimitedAlert } from '../../app-shell/components/rate-limited-alert.js';
 import { signOutInPlace } from '../../sessions/keycloak-sign-in.js';
 import { currentUserQueryOptions } from '../../users/queries.js';
 import { signInToContinue } from '../acceptance-sign-in.js';
@@ -180,6 +181,11 @@ function VerifySecondFactor({
     }
   }, [user.isSuccess, shouldSignIn, pending, language]);
 
+  if (isRateLimited(user.error)) {
+    // The step stays in the tab's `sessionStorage`, so **Reload page** checks the session again
+    // (#433); `h2` under the `h1` of the page.
+    return <RateLimitedAlert error={user.error} headingLevel={2} />;
+  }
   if (user.isError && !shouldSignIn) {
     return (
       <InvitationMessage

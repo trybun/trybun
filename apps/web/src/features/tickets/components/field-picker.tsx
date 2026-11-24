@@ -12,7 +12,7 @@ import {
 } from '@trybun/ui/components/select';
 import { TABLET_MEDIA_QUERY, useMediaQuery } from '@trybun/ui/hooks/use-media-query';
 import { ChevronDownIcon } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import type { PickerGroup } from './field-sheet.js';
 import { LazyFieldSheet } from './lazy-field-sheet.js';
 
@@ -20,6 +20,8 @@ import { LazyFieldSheet } from './lazy-field-sheet.js';
  * A field of the ticket view that saves on selection (§3.2, Q10): a `Select` from the tablet
  * breakpoint on, a button that opens a bottom sheet on phones (§18.6, Rule 9). Choosing the
  * current value changes nothing. `value` is `null` while the field is not set (`placeholder`).
+ * `alert` – the error of a read of its choices with **Try again** – shows in the bottom sheet only;
+ * from the tablet breakpoint on, the owner shows it beside the picker.
  */
 export function FieldPicker({
   label,
@@ -27,6 +29,7 @@ export function FieldPicker({
   placeholder,
   groups,
   disabled = false,
+  alert,
   onValueChange,
 }: {
   label: string;
@@ -34,6 +37,7 @@ export function FieldPicker({
   placeholder: string;
   groups: PickerGroup[];
   disabled?: boolean;
+  alert?: ReactNode;
   onValueChange: (value: string) => void;
 }) {
   const isSheet = !useMediaQuery(TABLET_MEDIA_QUERY);
@@ -66,6 +70,7 @@ export function FieldPicker({
             title={label}
             value={value}
             groups={groups}
+            alert={alert}
             onValueChange={choose}
             onClose={() => setIsOpen(false)}
           />

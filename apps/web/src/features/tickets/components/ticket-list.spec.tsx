@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient, laterPagesFail } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 import { stateOfView, withFilters } from '../ticket-list.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
@@ -18,10 +19,16 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
 const replace = vi.hoisted(() => vi.fn());
-vi.mock('next/navigation.js', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
-// A tablet: the table, selects instead of bottom sheets (jsdom has no `matchMedia`).
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ replace, push: vi.fn() }),
+  usePathname: () => '/tickets',
+  useSearchParams: () => new URLSearchParams('view=triage'),
+}));
+// A tablet: the table, selects instead of bottom sheets (jsdom has no `matchMedia`); a phone where a
+// test says so.
+const device = vi.hoisted(() => ({ isTablet: true }));
 vi.stubGlobal('matchMedia', (query: string) => ({
-  matches: query === TABLET_MEDIA_QUERY,
+  matches: query === TABLET_MEDIA_QUERY && device.isTablet,
   media: query,
   addEventListener: () => undefined,
   removeEventListener: () => undefined,
@@ -31,6 +38,31 @@ const { TicketList } = await import('./ticket-list.js');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
+const answerRoute = fake.client.GET.getMockImplementation()!;
+
+/**
+ * Refuses the reads of the tickets – only those of a later page with `laterPages` – with `429` and
+ * its `Retry-After: 45` (§14.4); the projects of the filters answer their route.
+ */
+function refuseTickets({ laterPages = false } = {}) {
+  fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+    route === '/api/v1/tickets' &&
+    (!laterPages ||
+      (init as { params?: { query?: { cursor?: string } } }).params?.query?.cursor !== undefined)
+      ? rateLimitedResult()
+      : answerRoute(route, init),
+  );
+}
+
+/** The notice of a refused read (#433): `h2` under the `h1` of the page, the wait, Reload page. */
+async function expectRateLimitedAlert(reloadHref: string | null) {
+  const alert = await screen.findByRole('alert');
+  expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe('Too many requests');
+  expect(alert.textContent).toContain('Try again in 45 seconds.');
+  expect(alert.textContent).not.toContain('The tickets could not be loaded.');
+  const reload = within(alert).queryByRole('link', { name: 'Reload page' });
+  expect(reload?.getAttribute('href') ?? null).toBe(reloadHref);
+}
 
 const ME = '0199a3f0-0000-7000-8000-000000000031';
 const PROJECT = { id: '0199a3f0-0000-7000-8000-000000000010', key: 'ERP', name: 'ERP system' };
@@ -73,8 +105,10 @@ function answerList(items: TicketListItem[]) {
 afterEach(() => {
   cleanup();
   fake.reset();
+  fake.client.GET.mockImplementation(answerRoute);
   toastAdd.mockClear();
   replace.mockClear();
+  device.isTablet = true;
 });
 
 describe('TicketList', () => {
@@ -308,6 +342,119 @@ describe('TicketList', () => {
     });
   });
 
+  describe('the people of the bulk Assignee (#471)', () => {
+    const JAN = {
+      id: '0199a3f0-0000-7000-8000-000000000032',
+      displayName: 'Jan',
+      githubLogin: null,
+    };
+    const members = {
+      data: {
+        items: [{ user: JAN, role: 'developer', createdAt: '2026-11-01T09:00:00.000Z' }],
+        nextCursor: null,
+      },
+    };
+
+    /** Selects a ticket, the read of its project's people answering `reply`. */
+    async function selectTicket(reply: Parameters<typeof fake.on>[1] = members) {
+      const events = userEvent.setup();
+      answerList([ticket(1)]);
+      fake.on('GET /api/v1/projects/{projectId}/members', reply);
+      renderInApp(
+        <TicketList
+          state={stateOfView('my_open_tickets')}
+          currentUserId={ME}
+          organizationsExist={false}
+        />,
+      );
+      await screen.findAllByRole('link', { name: 'Ticket 1' });
+      await events.click(
+        within(screen.getByRole('table')).getByRole('checkbox', { name: 'Select ERP-1' }),
+      );
+      return { events, bar: screen.getByRole('region', { name: 'Bulk actions' }) };
+    }
+
+    it('says in the bar when to try again a refused read, and reads the people again', async () => {
+      fake.refuse('GET /api/v1/projects/{projectId}/members');
+      const { events, bar } = await selectTicket();
+
+      const alert = await within(bar).findByRole('alert');
+      // `h2` like the errors of the list; **Try again** reads the people again, so no **Reload
+      // page**, which would drop the selection.
+      expect(within(alert).getByRole('heading', { level: 2 }).textContent).toBe(
+        'Too many requests',
+      );
+      expect(alert.textContent).toContain('Try again in 45 seconds.');
+      expect(within(alert).queryByRole('link')).toBeNull();
+      fake.answer('GET /api/v1/projects/{projectId}/members');
+      await events.click(within(bar).getByRole('button', { name: 'Try again' }));
+      await waitFor(() => expect(within(bar).queryByRole('alert')).toBeNull());
+      await events.click(within(bar).getByRole('combobox', { name: 'Assignee' }));
+      expect(await screen.findByRole('option', { name: 'Jan' })).toBeDefined();
+    });
+
+    it('shows the error in the sheet of Assignee on phones, never in the fixed bar', async () => {
+      device.isTablet = false;
+      fake.refuse('GET /api/v1/projects/{projectId}/members');
+      const { events, bar } = await selectTicket();
+      await waitFor(() =>
+        expect(fake.callsTo('GET /api/v1/projects/{projectId}/members').length).toBeGreaterThan(0),
+      );
+
+      // The bar keeps its height over the end of the list: its error is hidden below the tablet
+      // breakpoint (jsdom applies no CSS, so the class says it).
+      const inBar = within(bar).getByRole('button', { name: 'Try again' }).parentElement!;
+      expect(inBar.className.split(' ')).toEqual(expect.arrayContaining(['hidden', 'md:flex']));
+      await events.click(within(bar).getByRole('button', { name: /^Assignee/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Assignee' });
+      const alert = await within(sheet).findByRole('alert');
+      expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe(
+        'Too many requests',
+      );
+      expect(within(sheet).getByRole('button', { name: 'Try again' })).toBeDefined();
+      expect(within(sheet).getByRole('radio', { name: 'Unassigned' })).toBeDefined();
+    });
+
+    it('drops the error when the selection no longer offers the people', async () => {
+      const other = { id: '0199a3f0-0000-7000-8000-000000000011', key: 'QM', name: 'Quality' };
+      const events = userEvent.setup();
+      answerList([
+        ticket(1),
+        ticket(2, { projectId: other.id, project: other, identifier: 'QM-2' }),
+      ]);
+      fake.refuse('GET /api/v1/projects/{projectId}/members');
+      renderInApp(
+        <TicketList
+          state={stateOfView('my_open_tickets')}
+          currentUserId={ME}
+          organizationsExist={false}
+        />,
+      );
+      await screen.findAllByRole('link', { name: 'Ticket 1' });
+      const table = screen.getByRole('table');
+      await events.click(within(table).getByRole('checkbox', { name: 'Select ERP-1' }));
+      const bar = screen.getByRole('region', { name: 'Bulk actions' });
+      await within(bar).findByRole('alert');
+
+      // A ticket of another project: the bar offers no people, so no error of their read.
+      await events.click(within(table).getByRole('checkbox', { name: 'Select QM-2' }));
+      expect(within(bar).queryByRole('alert')).toBeNull();
+      expect(within(bar).queryByRole('button', { name: 'Try again' })).toBeNull();
+    });
+
+    it('shows the message of a failed read in the bar, and keeps Assign to me and Unassigned', async () => {
+      const { events, bar } = await selectTicket({ status: 500, error: {} });
+
+      expect((await within(bar).findByRole('alert')).textContent).toBe(
+        'Something went wrong. Try again later.',
+      );
+      expect(within(bar).getByRole('button', { name: 'Try again' })).toBeDefined();
+      await events.click(within(bar).getByRole('combobox', { name: 'Assignee' }));
+      const options = await screen.findAllByRole('option');
+      expect(options.map((option) => option.textContent)).toEqual(['Assign to me', 'Unassigned']);
+    });
+  });
+
   it('offers Approve and Refuse sharing in Pending sharing approvals by allowedActions (Q11)', async () => {
     answerList([
       ticket(1, {
@@ -366,6 +513,52 @@ describe('TicketList', () => {
     expect(alert.textContent).toBe('The tickets could not be loaded.');
     expect(within(screen.getByRole('table')).getByRole('link', { name: 'Ticket 1' })).toBeDefined();
     expect(alert.nextElementSibling).toBe(screen.getByRole('button', { name: 'Show more' }));
+  });
+
+  it('shows the wait and Reload page with the filters of the address for a refused read (#433)', async () => {
+    answerList([]);
+    refuseTickets();
+    renderInApp(
+      <TicketList state={stateOfView('triage')} currentUserId={ME} organizationsExist={false} />,
+    );
+
+    // The query string keeps the view and the filters.
+    await expectRateLimitedAlert('/tickets?view=triage');
+    expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('shows the wait above Show more for a refused later page, without Reload page (#433)', async () => {
+    answerList([]);
+    fake.on('GET /api/v1/tickets', { data: { items: [ticket(1)], nextCursor: 'next' } });
+    refuseTickets({ laterPages: true });
+    const events = userEvent.setup();
+    renderInApp(
+      <TicketList
+        state={stateOfView('my_open_tickets')}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    await events.click(await screen.findByRole('button', { name: 'Show more' }));
+
+    // Show more tries the page again and keeps the loaded rows (#434).
+    await expectRateLimitedAlert(null);
+    expect(within(screen.getByRole('table')).getByRole('link', { name: 'Ticket 1' })).toBeDefined();
+  });
+
+  it('shows its own message for another failure of the first read (#433)', async () => {
+    answerList([]);
+    fake.on('GET /api/v1/tickets', { status: 500, error: {} });
+    renderInApp(
+      <TicketList
+        state={stateOfView('my_open_tickets')}
+        currentUserId={ME}
+        organizationsExist={false}
+      />,
+    );
+
+    expect((await screen.findByRole('alert')).textContent).toBe('The tickets could not be loaded.');
   });
 
   it('keeps the rows of the last filters while the next ones load (#279)', async () => {

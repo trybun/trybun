@@ -175,7 +175,8 @@
       "removed": "{name} removed from the project",
       "addBy": "Add",
       "addByAccount": "A team member",
-      "addByEmail": "By e-mail address"
+      "addByEmail": "By e-mail address",
+      "retry": "Try again"
     },
     "danger": {
       "archive": "Archive project",
@@ -471,7 +472,9 @@
       "people": "People",
       "searchPeople": "Search by name or GitHub login",
       "loadingPeople": "Loading…",
-      "noPeople": "No one found."
+      "noPeople": "No one found.",
+      "retry": "Try again",
+      "peopleLoadFailed": "The people could not be loaded."
     },
     "form": {
       "heading": "New ticket",
@@ -548,7 +551,8 @@
       "originalFound": "{identifier} · {title}",
       "originalNotFound": "There is no ticket {identifier} in this project.",
       "originalInvalid": "Enter an identifier such as ERP-7.",
-      "duplicateConfirm": "Mark as duplicate"
+      "duplicateConfirm": "Mark as duplicate",
+      "retry": "Try again"
     },
     "list": {
       "title": "Tickets",
@@ -690,7 +694,8 @@
         },
         "rejectTitle": "Reject {count, plural, one {# ticket} other {# tickets}}",
         "rejectDescription": "The reason will be published to the requester of each ticket.",
-        "rejectConfirm": "Reject tickets"
+        "rejectConfirm": "Reject tickets",
+        "retryPeople": "Try again"
       },
       "sharing": {
         "approve": "Approve sharing",
@@ -876,12 +881,17 @@
       "organization": "Organization",
       "organizations": "Organizations",
       "noOrganization": "No active organization matches.",
+      "loading": "Loading…",
+      "typeToFindMore": "Type to find more",
       "role": "Role",
       "invite": "Invite",
       "inviting": "Inviting…",
       "grant": "Add",
       "granting": "Adding…",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "retry": "Try again",
+      "projectsLoadFailed": "The projects could not be loaded.",
+      "organizationsLoadFailed": "The organizations could not be loaded."
     },
     "issued": {
       "title": "Invitation created",
@@ -918,7 +928,9 @@
       "cancel": "Cancel",
       "loadMore": "Show more",
       "loadingMore": "Loading…",
-      "listOf": "Pending invitations of {name}"
+      "listOf": "Pending invitations of {name}",
+      "retry": "Try again",
+      "loadFailed": "The invitations could not be loaded."
     },
     "acceptance": {
       "title": "Accept the invitation",

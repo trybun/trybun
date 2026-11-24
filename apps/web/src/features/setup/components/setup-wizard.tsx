@@ -1,25 +1,23 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, useSyncExternalStore } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
-import { ApiError } from '../../../lib/errors/api-error.js';
+import { useLocationHash } from '../../../lib/browser/use-location-hash.js';
+import { ApiError, isRateLimited } from '../../../lib/errors/api-error.js';
+import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
+import { RateLimitedAlert } from '../../app-shell/components/rate-limited-alert.js';
 import { setupQueryOptions, setupTokenVerificationQueryOptions } from '../queries.js';
 import { setupTokenOf } from '../setup-link.js';
 import { AdministratorForm } from './administrator-form.js';
 import { SetupMessage } from './setup-message.js';
 
-/** The fragment of the address is known only in the browser; the server renders the check. */
+/** The token of the setup link, in the fragment of the address; `undefined` on the server. */
 function useSetupToken(): string | undefined {
-  return useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener('hashchange', onChange);
-      return () => window.removeEventListener('hashchange', onChange);
-    },
-    () => setupTokenOf(window.location.hash),
-    () => undefined,
-  );
+  const hash = useLocationHash();
+  return hash === undefined ? undefined : setupTokenOf(hash);
 }
 
 /**
@@ -30,6 +28,7 @@ function useSetupToken(): string | undefined {
  */
 export function SetupWizard() {
   const t = useTranslations('setup');
+  const errorMessage = useErrorMessage();
   const queryClient = useQueryClient();
   const token = useSetupToken();
   const [isCreated, setIsCreated] = useState(false);
@@ -51,6 +50,19 @@ export function SetupWizard() {
     (verification.error instanceof ApiError && verification.error.code === 'setup.completed');
   if (isCompleted) {
     return <SetupMessage title={t('completedTitle')} signIn />;
+  }
+  if (setup.isError && setup.data === undefined) {
+    // Without the status the token is never checked: the failure is shown instead of the check
+    // (#433), a refusal with the wait – the status and the check share one limit (§14.4). A
+    // failed refetch keeps the status read before, and the form with what was typed.
+    return (
+      <QueryErrorAlert error={setup.error} message={errorMessage(setup.error)} headingLevel={2} />
+    );
+  }
+  if (isRateLimited(verification.error)) {
+    // Only a temporary limit, never an invalid link (#433); `h2` under the `h1` of the page, as
+    // the setup messages. **Reload page** keeps the token in the fragment of the address.
+    return <RateLimitedAlert error={verification.error} headingLevel={2} />;
   }
   if (token === '' || verification.isError) {
     return (

@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { ApiError } from '../../../lib/errors/api-error.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { LazyMarkdownEditor } from '../../tickets/components/lazy-markdown-editor.js';
 import { useRedactComment, useRedactDescription } from '../mutations.js';
 import { commentRevisionsQueryOptions, descriptionRevisionsQueryOptions } from '../queries.js';
@@ -155,9 +156,12 @@ export function RedactionDialog({
             </fieldset>
           )}
           {revisions.isError && !revisions.isFetchingNextPage && (
-            <p role="alert" className="text-sm text-destructive">
-              {errorMessage(revisions.error)}
-            </p>
+            <QueryErrorAlert
+              error={revisions.error}
+              message={errorMessage(revisions.error)}
+              headingLevel={3}
+              offersReload={revisions.isLoadingError}
+            />
           )}
           {revisions.hasNextPage && (
             // Every earlier version must be listed before a redaction, so the default selection

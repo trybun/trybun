@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, type QueryKey } from '@tanstack/react-query';
 import type {
   Organization,
   OrganizationAction,
@@ -16,11 +16,13 @@ import {
   FAILED_READ_MESSAGE as FAILED,
   seedFailedLaterPage,
 } from '../../../../test/query-state.js';
+import { ApiError } from '../../../lib/errors/api-error.js';
 
 vi.mock('next/link', () => ({ default: (props: ComponentProps<'a'>) => <a {...props} /> }));
 vi.mock('next/navigation.js', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => '/admin/organizations',
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const { OrganizationList } = await import('./organization-list.js');
@@ -124,6 +126,23 @@ function seedDetail(client: QueryClient, value: Organization) {
   );
 }
 
+/** A refusal of the rate limit with `Retry-After: 45` (§14.4). */
+const REFUSED = new ApiError(429, 'request.rate_limited', [], 45);
+/** The generic message of `request.rate_limited`, never shown alone for a refused read (#433). */
+const GENERIC = 'Too many requests. Wait a moment and try again.';
+
+/**
+ * Seeds the state a refused first read leaves: no data and the status `error`. The client then
+ * does not read again on mount (`retryOnMount`), which would show the loading state instead.
+ */
+function seedRefusedFirstRead(client: QueryClient, queryKey: QueryKey) {
+  client.setDefaultOptions({ queries: { retryOnMount: false } });
+  client
+    .getQueryCache()
+    .build(client, { queryKey })
+    .setState({ status: 'error', error: REFUSED, fetchStatus: 'idle' });
+}
+
 function render(element: ReactElement, seed: (client: QueryClient) => void = () => {}) {
   const queryClient = new QueryClient();
   seed(queryClient);
@@ -172,6 +191,35 @@ describe('OrganizationList', () => {
     );
 
     expectInOrder(html, 'acme.com, acme.pl', 'role="alert"', FAILED, 'Show more');
+  });
+
+  it('shows the wait and Reload page in place of the list when its read is refused (#433)', () => {
+    const html = render(<OrganizationList state="active" />, (client) =>
+      seedRefusedFirstRead(client, ['organizations', 'list', 'active']),
+    );
+
+    // `h3` under the `h2` of the page, inside the `h1` of the Administrator panel.
+    expect(html).toContain('<h3 class="text-lg font-bold">Too many requests</h3>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(html).toContain('<a href="/admin/organizations"');
+    expect(html).not.toContain(GENERIC);
+  });
+
+  it('shows the wait above Show more, without Reload page, when a later page is refused (#433)', () => {
+    const html = render(<OrganizationList state="active" />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['organizations', 'list', 'active'],
+        [{ items: [organization()], nextCursor: 'next' }],
+        REFUSED,
+      ),
+    );
+
+    // Reload page would drop the pages already loaded; Show more tries the page again (#434).
+    expectInOrder(html, 'acme.com, acme.pl', 'Too many requests', 'Show more');
+    expect(html).toContain('<h3 class="text-lg font-bold">Too many requests</h3>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
   });
 
   it.each([
@@ -351,6 +399,46 @@ describe('OrganizationProjects', () => {
     expectInOrder(html, 'Choose a project', 'role="alert"', FAILED, 'Show more');
   });
 
+  it('shows the wait without Reload page above Show more when a later page of the projects to choose is refused (#433)', () => {
+    const html = render(<OrganizationProjects organization={organization()} />, (client) =>
+      seedFailedLaterPage(
+        client,
+        ['projects', 'list', 'active'],
+        [
+          {
+            items: [project('0199a3f0-0000-7000-8000-000000000013', 'ERP', 'ERP')],
+            nextCursor: 'next',
+          },
+        ],
+        REFUSED,
+      ),
+    );
+
+    // **Show more** tries the page again and keeps the projects loaded (#434).
+    expectInOrder(
+      html,
+      'Choose a project',
+      'Too many requests',
+      'Try again in 45 seconds.',
+      'Show more',
+    );
+    expect(html).toContain('<h4 class="text-base font-bold">Too many requests</h4>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
+  });
+
+  it('shows the wait and Reload page when the read of the projects to choose is refused (#433)', () => {
+    const html = render(<OrganizationProjects organization={organization()} />, (client) =>
+      seedRefusedFirstRead(client, ['projects', 'list', 'active']),
+    );
+
+    // `h4` under the `h3` of the section.
+    expect(html).toContain('<h4 class="text-base font-bold">Too many requests</h4>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(html).toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
+  });
+
   it('says when the organization may access no projects', () => {
     const html = render(
       <OrganizationProjects
@@ -403,6 +491,42 @@ describe('OrganizationMembers', () => {
     expectInOrder(html, 'ewa@acme.com', 'jan@acme.com', 'role="alert"', FAILED, 'Show more');
     // Not in place of the rows or their empty state.
     expect(html.match(/role="alert"/g)).toHaveLength(1);
+  });
+
+  it('shows the wait without Reload page above Show more when a later page is refused (#433)', () => {
+    const html = render(<OrganizationMembers organization={organization()} />, (client) => {
+      seedDetail(client, organization());
+      seedFailedLaterPage(
+        client,
+        ['organizations', 'members', ORGANIZATION_ID],
+        [members],
+        REFUSED,
+      );
+    });
+
+    expectInOrder(
+      html,
+      'jan@acme.com',
+      'Too many requests',
+      'Try again in 45 seconds.',
+      'Show more',
+    );
+    expect(html).toContain('<h4 class="text-base font-bold">Too many requests</h4>');
+    expect(html).not.toContain('Reload page');
+    expect(html).not.toContain(GENERIC);
+  });
+
+  it('shows the wait and Reload page in place of the members when their read is refused (#433)', () => {
+    const html = render(<OrganizationMembers organization={organization()} />, (client) => {
+      client.setQueryData(['organizations', 'detail', ORGANIZATION_ID], organization());
+      seedRefusedFirstRead(client, ['organizations', 'members', ORGANIZATION_ID]);
+    });
+
+    // `h4` under the `h3` of the section.
+    expect(html).toContain('<h4 class="text-base font-bold">Too many requests</h4>');
+    expect(html).toContain('Try again in 45 seconds.');
+    expect(html).toContain('<a href="/admin/organizations"');
+    expect(html).not.toContain(GENERIC);
   });
 
   it('shows the members read-only without manage_members', () => {

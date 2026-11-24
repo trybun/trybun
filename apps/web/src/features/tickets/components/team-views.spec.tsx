@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import type { ActivityEvent } from '@trybun/contracts/activity-events';
 import type { Ticket } from '@trybun/contracts/tickets';
@@ -10,6 +10,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakeApiClient } from '../../../../test/dom/fake-api-client.js';
 import { renderInApp } from '../../../../test/dom/render.js';
+import { rateLimitedResult } from '../../../../test/factories/rate-limited.factory.js';
 
 const api = vi.hoisted((): { current: unknown } => ({ current: undefined }));
 vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
@@ -19,7 +20,12 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 }));
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
-vi.mock('next/navigation.js', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ push: vi.fn(), refresh }),
+  usePathname: () => '/tickets/ERP-12',
+  useSearchParams: () => new URLSearchParams(),
+}));
 // The fields adapt to the width (jsdom has no `matchMedia`): a tablet, with selects.
 vi.stubGlobal('matchMedia', (query: string) => ({
   matches: query === TABLET_MEDIA_QUERY,
@@ -140,6 +146,101 @@ afterEach(() => {
 });
 
 describe('TeamTicketView', () => {
+  it('shows the wait and Reload page in place of a ticket whose read is refused (#433)', async () => {
+    const answerRoute = fake.client.GET.getMockImplementation()!;
+    // The answer of the BFF with its `Retry-After: 45`.
+    fake.client.GET.mockImplementationOnce((route: string, init?: unknown) =>
+      route === '/api/v1/tickets' ? rateLimitedResult() : answerRoute(route, init),
+    );
+    renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+
+    const alert = await screen.findByRole('alert');
+    // `h1`, as it stands in for the whole view and its title.
+    expect(within(alert).getByRole('heading', { level: 1 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    // Never only the generic message of the error code.
+    expect(alert.textContent).not.toContain('Too many requests. Wait a moment and try again.');
+    expect(within(alert).getByRole('link', { name: 'Reload page' }).getAttribute('href')).toBe(
+      '/tickets/ERP-12',
+    );
+  });
+
+  it('keeps a shown ticket and the typed note when the note and the read after it are refused (#433)', async () => {
+    answer(ticket({ allowedActions: ['read', 'add_comment', 'add_internal_note'] }));
+    const user = userEvent.setup();
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+    const note = await screen.findByRole('textbox', { name: /note|comment/i });
+    await user.type(note, 'Root cause found');
+    const answerRoute = fake.client.GET.getMockImplementation()!;
+    const answerPost = fake.client.POST.getMockImplementation()!;
+    // The limit is used up: the note and the reads of its `onSettled` are refused.
+    fake.client.POST.mockImplementation(() => rateLimitedResult());
+    fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+      route === '/api/v1/tickets' ? rateLimitedResult() : answerRoute(route, init),
+    );
+    try {
+      await user.click(screen.getByRole('button', { name: 'Add internal note' }));
+
+      await waitFor(() =>
+        expect(client.getQueryState(['tickets', 'detail', 'ERP-12'])?.status).toBe('error'),
+      );
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+      ).toBeTruthy();
+      expect(screen.queryByRole('heading', { name: 'Too many requests' })).toBeNull();
+      expect(
+        screen.getByRole<HTMLTextAreaElement>('textbox', { name: /note|comment/i }).value,
+      ).toBe('Root cause found');
+      // The refused note says so under its form.
+      expect(
+        await screen.findByText('Too many requests. Wait a moment and try again.'),
+      ).toBeTruthy();
+    } finally {
+      fake.client.GET.mockImplementation(answerRoute);
+      fake.client.POST.mockImplementation(answerPost);
+    }
+  });
+
+  it('keeps a shown ticket when a later read of it is refused (#433)', async () => {
+    answer(ticket());
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+    ).toBeTruthy();
+    const answerRoute = fake.client.GET.getMockImplementation()!;
+    fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+      route === '/api/v1/tickets' ? rateLimitedResult() : answerRoute(route, init),
+    );
+    try {
+      // The ticket is read again, e.g. on the return to the tab.
+      await act(() => client.refetchQueries({ queryKey: ['tickets'] }));
+
+      expect(client.getQueryState(['tickets', 'detail', 'ERP-12'])?.status).toBe('error');
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+      ).toBeTruthy();
+      expect(screen.queryByRole('heading', { name: 'Too many requests' })).toBeNull();
+    } finally {
+      fake.client.GET.mockImplementation(answerRoute);
+    }
+  });
+
+  it('refreshes the page when a shown ticket is gone, so it shows the not-found page (§18.5)', async () => {
+    answer(ticket());
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+    ).toBeTruthy();
+    refresh.mockClear();
+    // The person lost access to the project meanwhile.
+    fake.on('GET /api/v1/tickets', { data: { items: [], nextCursor: null } });
+
+    await act(() => client.refetchQueries({ queryKey: ['tickets'] }));
+
+    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Invoice totals are wrong' })).toBeNull();
+  });
+
   it('shows the header, the rendered description and the fields of the ticket (§3.2)', async () => {
     // Without the actions that change them, the fields are text.
     answer(ticket({ allowedActions: ['read'] }));

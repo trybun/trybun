@@ -45,6 +45,7 @@ export function FieldSheet({
   groups,
   search,
   empty,
+  alert,
   onValueChange,
   onClose,
 }: {
@@ -55,6 +56,8 @@ export function FieldSheet({
   search?: PickerSearch;
   /** Shown when no group has a choice, e.g. no person matches the search. */
   empty?: ReactNode;
+  /** Shown below the choices, e.g. the error of the read of the people with **Try again**. */
+  alert?: ReactNode;
   onValueChange: (value: string) => void;
   onClose: () => void;
 }) {
@@ -119,6 +122,7 @@ export function FieldSheet({
           ) : (
             empty
           )}
+          {alert}
         </div>
       </DrawerContent>
     </Drawer>

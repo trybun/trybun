@@ -17,7 +17,11 @@ vi.mock('../../../lib/api-client/browser-api-client.js', () => ({
 const toastAdd = vi.hoisted(() => vi.fn());
 vi.mock('@trybun/ui/components/toast', () => ({ toast: { add: toastAdd } }));
 const push = vi.hoisted(() => vi.fn());
-vi.mock('next/navigation.js', () => ({ useRouter: () => ({ push }) }));
+vi.mock('next/navigation.js', () => ({
+  useRouter: () => ({ push }),
+  usePathname: () => '/tickets/ERP-12',
+  useSearchParams: () => new URLSearchParams(),
+}));
 // The fields adapt to the width (jsdom has no `matchMedia`): a tablet unless a test says otherwise.
 const viewport = vi.hoisted(() => ({ isTablet: true }));
 vi.stubGlobal('matchMedia', (query: string) => ({
@@ -431,6 +435,109 @@ describe('assignee', () => {
 
     await waitFor(() => expect(lastToast()?.title).toBe('Assigned to Jan'));
     expect(lastToast().actionProps?.children).toBe('Undo');
+  });
+
+  it('says when to try again a refused read of the people, and reads them again (#471)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: ANNA }));
+    members(ANNA, JAN);
+    fake.refuse('GET /api/v1/projects/{projectId}/members');
+    renderView();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Assignee' }));
+    const alert = await screen.findByRole('alert');
+    // `h3` under the `h2` of the field panel; **Try again** reads the people again, so no **Reload
+    // page**, which would close the picker.
+    expect(within(alert).getByRole('heading', { level: 3 }).textContent).toBe('Too many requests');
+    expect(alert.textContent).toContain('Try again in 45 seconds.');
+    expect(within(alert).queryByRole('link')).toBeNull();
+    expect(screen.queryByText('No one found.')).toBeNull();
+    // The list says the people are missing; **Unassigned** needs no read and stays.
+    expect(screen.getByText('The people could not be loaded.')).toBeDefined();
+    expect(
+      within(screen.getByRole('listbox', { name: 'People' }))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Unassigned']);
+    fake.answer('GET /api/v1/projects/{projectId}/members');
+    // Tab closes the list, which is no stop of Tab (WAI-ARIA APG), and reaches **Try again** next.
+    await user.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    await user.click(screen.getByRole('combobox', { name: 'Assignee' }));
+    expect(await screen.findByRole('option', { name: 'Jan' })).toBeDefined();
+  });
+
+  it('keeps the error of a failed typed search after the list closes, and Try again reads it again (#471)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: ANNA }));
+    members(ANNA, JAN);
+    renderView();
+
+    const input = await screen.findByRole('combobox', { name: 'Assignee' });
+    await user.click(input);
+    await screen.findByRole('option', { name: 'Jan' });
+    fake.refuse('GET /api/v1/projects/{projectId}/members');
+    await user.type(input, 'ja');
+    expect(await screen.findByText('The people could not be loaded.')).toBeDefined();
+
+    // Tab closes the list; the error of the search stays, and **Try again** is the next stop.
+    await user.tab();
+    expect(document.activeElement?.textContent).toBe('Try again');
+    expect((await screen.findByRole('alert')).textContent).toContain('Try again in 45 seconds.');
+    fake.answer('GET /api/v1/projects/{projectId}/members');
+    const reads = fake.callsTo('GET /api/v1/projects/{projectId}/members').length;
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    const again = fake.callsTo('GET /api/v1/projects/{projectId}/members');
+    expect(again).toHaveLength(reads + 1);
+    expect(again.at(-1)?.init).toMatchObject({ params: { query: { query: 'ja' } } });
+  });
+
+  it('never sends the search of the last opening again when the list opens (#471)', async () => {
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: ANNA }));
+    members(ANNA, JAN);
+    renderView();
+
+    const input = await screen.findByRole('combobox', { name: 'Assignee' });
+    await user.click(input);
+    await screen.findByRole('option', { name: 'Jan' });
+    fake.refuse('GET /api/v1/projects/{projectId}/members');
+    await user.type(input, 'ja');
+    await screen.findByText('The people could not be loaded.');
+    await user.tab();
+    fake.answer('GET /api/v1/projects/{projectId}/members');
+    const reads = fake.callsTo('GET /api/v1/projects/{projectId}/members').length;
+
+    await user.click(input);
+    await screen.findByRole('option', { name: 'Jan' });
+    // Only the search of this opening, which starts empty, is read – never the refused `ja`.
+    const queries = fake
+      .callsTo('GET /api/v1/projects/{projectId}/members')
+      .slice(reads)
+      .map((call) => (call.init as { params: { query: { query?: string } } }).params.query.query);
+    expect(queries).not.toContain('ja');
+  });
+
+  it('shows the message of a failed read of the people in the bottom sheet, never "No one found." (#471)', async () => {
+    viewport.isTablet = false;
+    const user = userEvent.setup();
+    answer(ticketResponse({ assignee: ANNA }));
+    fake.on('GET /api/v1/projects/{projectId}/members', { status: 500, error: {} });
+    renderView();
+
+    await user.click(await screen.findByRole('button', { name: 'Assignee: Anna' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Assignee' });
+
+    expect((await within(sheet).findByRole('alert')).textContent).toBe(
+      'Something went wrong. Try again later.',
+    );
+    expect(within(sheet).queryByText('No one found.')).toBeNull();
+    expect(within(sheet).getByRole('radio', { name: 'Unassigned' })).toBeDefined();
+    expect(within(sheet).getByRole('button', { name: 'Try again' })).toBeDefined();
   });
 
   it('offers no Assign to me to a person who cannot be assigned in the project', async () => {

@@ -21,6 +21,7 @@ import { useState } from 'react';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LoadingStatus } from '../../app-shell/components/loading-status.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { useChangeProjectMemberRole, useRemoveProjectMember } from '../mutations.js';
 import { projectMembersQueryOptions, projectRoleCountQueryOptions } from '../queries.js';
 import { LazyAddMemberDialog } from './lazy-add-member-dialog.js';
@@ -92,9 +93,11 @@ export function ProjectMembers({ project }: { project: Project }) {
   // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
   if (members.isLoadingError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(members.error)}
-      </p>
+      <QueryErrorAlert
+        error={members.error}
+        message={errorMessage(members.error)}
+        headingLevel={2}
+      />
     );
   }
   const items = members.data?.pages.flatMap((page) => page.items) ?? [];
@@ -174,11 +177,13 @@ export function ProjectMembers({ project }: { project: Project }) {
           </li>
         ))}
       </ul>
-      {canManage && <ProjectInvitations projectId={project.id} />}
       {members.isError && !members.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(members.error)}
-        </p>
+        <QueryErrorAlert
+          error={members.error}
+          message={errorMessage(members.error)}
+          headingLevel={3}
+          offersReload={false}
+        />
       )}
       {members.hasNextPage && (
         <Button
@@ -190,6 +195,9 @@ export function ProjectMembers({ project }: { project: Project }) {
           {members.isFetchingNextPage ? t('list.loadingMore') : t('list.loadMore')}
         </Button>
       )}
+      {/* After the error and **Show more** of the members: before them, the member list's **Show
+          more** and its refusal stood under the pending invitations, as if they were theirs (#433). */}
+      {canManage && <ProjectInvitations projectId={project.id} />}
       {pending !== null && (
         <LazyConfirmDialog
           title={

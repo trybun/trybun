@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { browserApiClient } from '../../../lib/api-client/browser-api-client.js';
 import { useErrorMessage } from '../../../lib/errors/error-message.js';
 import { LoadingStatus } from '../../app-shell/components/loading-status.js';
+import { QueryErrorAlert } from '../../app-shell/components/query-error-alert.js';
 import { projectsQueryOptions } from '../queries.js';
 import { projectSettingsHref } from '../search-params.js';
 
@@ -27,9 +28,11 @@ export function ProjectList({ state }: { state: ProjectState }) {
   // Only a failure of the first read replaces the rows; a failed **Load more** keeps them (#434).
   if (projects.isLoadingError) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        {errorMessage(projects.error)}
-      </p>
+      <QueryErrorAlert
+        error={projects.error}
+        message={errorMessage(projects.error)}
+        headingLevel={2}
+      />
     );
   }
   if (projects.isPending) {
@@ -72,9 +75,12 @@ export function ProjectList({ state }: { state: ProjectState }) {
         ))}
       </ul>
       {projects.isError && !projects.isFetchingNextPage && (
-        <p role="alert" className="text-sm text-destructive">
-          {errorMessage(projects.error)}
-        </p>
+        <QueryErrorAlert
+          error={projects.error}
+          message={errorMessage(projects.error)}
+          headingLevel={2}
+          offersReload={false}
+        />
       )}
       {projects.hasNextPage && (
         <Button

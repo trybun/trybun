@@ -32,4 +32,4 @@ Filter by **Kind** and **State**, and search by name or e-mail address. The filt
 
 The actions of an account (**⋮**) offer only what is possible for it: **Deactivate**, **Reactivate**, **Grant Administrator role** and **Revoke Administrator role**. Your own account has no actions.
 
-**Invite** invites a person to a project, an organization or the Administrator role; the pending invitations of an account offer **Copy new link** and **Revoke**, as on the Members tab of a project ([invite people to a project](../../team/how-to/invite-people-to-a-project.md)).
+**Invite** invites a person to a project, an organization or the Administrator role – type to search the projects and organizations; when more exist than the list shows, it says "Type to find more"; the pending invitations of an account offer **Copy new link** and **Revoke**, as on the Members tab of a project ([invite people to a project](../../team/how-to/invite-people-to-a-project.md)).
