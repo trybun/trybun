@@ -48,5 +48,5 @@ Issue: #426 (spec PR #476, merged; defaults Q1–Q4 accepted by the maintainer)
 
 ### Phase 2: Documentation and verification
 
-- [ ] 2.1 README, security memory, script history, spec to implemented
+- [x] 2.1 README, security memory, script history, spec to implemented — e6bbd3ec, 6df8cf84
 - [ ] 2.2 Full validation gate and the manual check
