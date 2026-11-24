@@ -581,6 +581,51 @@ describe('an interrupted boot (#383)', PROCESS_TESTS, () => {
     expect(readLines(join(folder, 'log'))).toContain(`${compose} down`);
   });
 
+  it('leaves a descriptor that another boot writes while its cleanup runs (#468)', async () => {
+    // The cleanup frees the bootstrap lock before it marks the descriptor "stopped", so another boot
+    // may have replaced it by then. The stubbed applications keep their port for 3 s after SIGTERM.
+    extraEnvironment = { STUB_STOP_SECONDS: '3' };
+    // A stub of sed holds the first read of the descriptor – the one of the boot's result, right
+    // after it wrote the descriptor – until the file "go" exists, so the signal lands there.
+    const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+    writeFileSync(
+      join(folder, 'bin', 'sed'),
+      `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/paused" ]; then
+    touch "$STUB_DIR/paused"
+    waited=0
+    while [ ! -e "$STUB_DIR/go" ] && [ "$waited" -lt 600 ]; do sleep 0.1; waited=$((waited + 1)); done
+  fi
+done
+exec ${sed} "$@"
+`,
+    );
+    chmodSync(join(folder, 'bin', 'sed'), 0o755);
+    const path = join(checkout, '.ai/qa/test-env.json');
+    const run = start();
+    await until(
+      () => existsSync(join(folder, 'paused')),
+      20_000,
+      () => run.stderr,
+    );
+    expect(descriptor().status).toBe('running');
+
+    run.child.kill('SIGTERM');
+    writeFileSync(join(folder, 'go'), '');
+    await until(
+      () => descriptor().status === 'stopping',
+      10_000,
+      () => `status ${descriptor().status}`,
+    );
+    const successor = `${JSON.stringify({ ...descriptor(), runId: 'successor-run', status: 'running' }, null, 2)}\n`;
+    writeFileSync(`${path}.spec.tmp`, successor);
+    renameSync(`${path}.spec.tmp`, path);
+
+    expect((await run.exited()).code).toBe(143);
+    expect(readFileSync(path, 'utf8')).toBe(successor);
+  });
+
   it('records each application as the leader of its own process group', () => {
     expect(up().status).toBe(0);
     for (const pid of [descriptor().app.apiPid, descriptor().app.webPid]) {
@@ -1376,6 +1421,174 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
     expect(await exited).toBe(0);
     expect(descriptor().status).toBe('stopped');
     expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
+  });
+
+  // A boot may replace the descriptor while a down that does not hold the bootstrap lock stops the
+  // run it read (#468): the down never marks the successor, nor stops the infrastructure it runs on.
+  describe('when a boot replaces the descriptor while it stops (#468)', () => {
+    const path = () => join(checkout, '.ai/qa/test-env.json');
+    const composeDown = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down';
+    let successor;
+
+    beforeEach(() => {
+      // The stubbed applications keep their port for 2 s after SIGTERM, as the API does.
+      extraEnvironment = { STUB_STOP_SECONDS: '2' };
+      const boot = up();
+      expect(boot.status, boot.stderr).toBe(0);
+      expect(descriptor().servicesStartedByScript).toBe(true);
+      // A boot that lands while the down runs takes the infrastructure over (servicesStartedByScript).
+      successor = `${JSON.stringify({ ...descriptor(), runId: 'successor-run', status: 'running' }, null, 2)}\n`;
+      writeFileSync(join(folder, 'successor.json'), successor);
+      writeFileSync(join(folder, 'log'), '');
+    });
+
+    function startDown() {
+      const down = spawn('sh', ['.ai/scripts/test-env-down.sh'], {
+        cwd: checkout,
+        env: { ...environment(), ...extraEnvironment },
+      });
+      let stderr = '';
+      down.stderr.on('data', (data) => (stderr += data));
+      const exited = new Promise((resolve) => down.on('exit', (code) => resolve({ code, stderr })));
+      return { exited };
+    }
+
+    async function expectSuccessorKept({ code, stderr }) {
+      expect(code, stderr).toBe(0);
+      await until(
+        () => descriptor().runId === 'successor-run',
+        10_000,
+        () => `the descriptor records ${descriptor().runId}`,
+      );
+      expect(readFileSync(path(), 'utf8')).toBe(successor);
+      expect(stderr).toMatch(/now records environment successor-run, not \S+; leaving its status/);
+      expect(stderr).toMatch(
+        /environment successor-run replaced \S+ meanwhile; leaving the infrastructure/,
+      );
+      expect(readLines(join(folder, 'log'))).not.toContain(composeDown);
+    }
+
+    it('leaves the status of a successor that lands while it waits for the applications', async () => {
+      const down = startDown();
+      await until(
+        () => descriptor().status === 'stopping',
+        5_000,
+        () => `status ${descriptor().status}`,
+      );
+      // Written whole and renamed into place, as a boot writes it.
+      copyFileSync(join(folder, 'successor.json'), `${path()}.spec.tmp`);
+      renameSync(`${path()}.spec.tmp`, path());
+
+      await expectSuccessorKept(await down.exited);
+    });
+
+    it('leaves a successor that a boot writes between its check and its rename', async () => {
+      // A stub of sed, on the down's rewrite of the descriptor (the second read in its first status
+      // update, after the read of the run id), starts the successor's write as a boot does it – under
+      // the lock of .ai/qa – and gives it a second to land before the down renames its update.
+      const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+      writeFileSync(
+        join(folder, 'bin', 'sed'),
+        `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/swapped" ]; then
+    echo read >>"$STUB_DIR/reads"
+    if [ "$(wc -l <"$STUB_DIR/reads")" -eq 2 ]; then
+      touch "$STUB_DIR/swapped"
+      cp "$STUB_DIR/successor.json" .ai/qa/test-env.json.spec.tmp
+      # Without the down's descriptor of the lock (fd 9), which it would otherwise hold open itself.
+      flock .ai/qa mv -f .ai/qa/test-env.json.spec.tmp .ai/qa/test-env.json 9<&- &
+      sleep 1
+    fi
+  fi
+done
+exec ${sed} "$@"
+`,
+      );
+      chmodSync(join(folder, 'bin', 'sed'), 0o755);
+
+      const result = await startDown().exited;
+
+      expect(existsSync(join(folder, 'swapped'))).toBe(true);
+      await expectSuccessorKept(result);
+    });
+
+    it('keeps the descriptor of a real boot that writes it between its check and its rename', async () => {
+      // The applications have ended and the down is under way ("stopping"): a boot neither reuses
+      // nor stops that environment, so it runs through to its final rename of the descriptor.
+      await endWithoutStop();
+      const stopping = readFileSync(path(), 'utf8').replace(
+        '"status": "running"',
+        '"status": "stopping"',
+      );
+      writeFileSync(`${path()}.spec.tmp`, stopping);
+      renameSync(`${path()}.spec.tmp`, path());
+      const before = descriptor().runId;
+      // A stub of sed, on the down's rewrite of the descriptor (inside its lock), starts a real boot
+      // and continues once that boot waits for the lock to rename its descriptor – two temporary
+      // files – or has already renamed it, as it would without the lock.
+      const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+      writeFileSync(
+        join(folder, 'bin', 'sed'),
+        `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/swapped" ]; then
+    echo read >>"$STUB_DIR/reads"
+    if [ "$(wc -l <"$STUB_DIR/reads")" -eq 2 ]; then
+      touch "$STUB_DIR/swapped"
+      sh .ai/scripts/test-env-up.sh >"$STUB_DIR/boot.out" 2>&1 9<&- &
+      waited=0
+      while [ "$waited" -lt 600 ]; do
+        [ "$(ls .ai/qa | grep -c '^test-env\\.json\\..*\\.tmp$')" -ge 2 ] && break
+        grep -q '"runId": "${before}"' .ai/qa/test-env.json || break
+        sleep 0.1
+        waited=$((waited + 1))
+      done
+      sleep 0.5
+    fi
+  fi
+done
+exec ${sed} "$@"
+`,
+      );
+      chmodSync(join(folder, 'bin', 'sed'), 0o755);
+
+      const { code, stderr } = await startDown().exited;
+
+      expect(code, stderr).toBe(0);
+      expect(existsSync(join(folder, 'swapped'))).toBe(true);
+      await until(
+        () =>
+          readLines(join(folder, 'boot.out')).some((line) => line.startsWith('TEST_ENV_RUN_ID=')),
+        30_000,
+        () => readLines(join(folder, 'boot.out')).join('\n'),
+      );
+      const booted = readLines(join(folder, 'boot.out'))
+        .find((line) => line.startsWith('TEST_ENV_RUN_ID='))
+        .slice('TEST_ENV_RUN_ID='.length);
+      expect(booted).not.toBe(before);
+      expect(descriptor()).toMatchObject({ runId: booted, status: 'running' });
+    });
+
+    it('takes over the infrastructure as a boot that lands while it stops, so that boot stops it', async () => {
+      // The applications have ended and the down still runs: its descriptor says "stopping".
+      await endWithoutStop();
+      const stopping = readFileSync(path(), 'utf8').replace(
+        '"status": "running"',
+        '"status": "stopping"',
+      );
+      writeFileSync(`${path()}.spec.tmp`, stopping);
+      renameSync(`${path()}.spec.tmp`, path());
+      writeFileSync(join(folder, 'compose-running'), '');
+
+      const boot = up();
+
+      expect(boot.status, boot.stderr).toBe(0);
+      expect(descriptor()).toMatchObject({ status: 'running', servicesStartedByScript: true });
+      writeFileSync(join(folder, 'log'), '');
+      expect(down().status).toBe(0);
+      expect(readLines(join(folder, 'log'))).toContain(composeDown);
+    });
   });
 
   describe('when the compose down fails (#449)', () => {
