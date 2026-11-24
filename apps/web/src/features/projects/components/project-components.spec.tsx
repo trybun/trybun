@@ -468,6 +468,24 @@ describe('ProjectInvitations', () => {
     expect(html).toContain('aria-label="Revoke the invitation of ewa@customer.example.com"');
   });
 
+  it('shows a refused later page of the members with the members, above the pending invitations (#433)', () => {
+    const html = render(<ProjectMembers project={project()} />, (client) => {
+      seedFailedLaterPage(
+        client,
+        ['projects', 'members', PROJECT_ID],
+        [{ ...members, nextCursor: 'next' }],
+        REFUSED,
+      );
+      client.setQueryData(['invitations', 'list', { projectId: PROJECT_ID }], {
+        pages: [{ items: [invitation()], nextCursor: null }],
+        pageParams: [null],
+      });
+    });
+
+    // The notice and **Show more** follow the member list, never the section after it.
+    expectInOrder(html, 'Anna Nowak', 'Too many requests', 'Show more', 'Pending invitations');
+  });
+
   it('offers only the actions the invitation allows', () => {
     const html = renderInvitations([invitation({ allowedActions: ['revoke'], invitedBy: null })]);
 

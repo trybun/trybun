@@ -164,6 +164,34 @@ describe('TeamTicketView', () => {
     );
   });
 
+  it('keeps a shown ticket when a later read of it is refused (#433)', async () => {
+    answer(ticket());
+    const { client } = renderInApp(<TeamTicketView identifier="ERP-12" attachmentMaxSizeMb={25} />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+    ).toBeTruthy();
+    const answerRoute = fake.client.GET.getMockImplementation()!;
+    fake.client.GET.mockImplementation((route: string, init?: unknown) =>
+      route === '/api/v1/tickets' ? rateLimitedResult() : answerRoute(route, init),
+    );
+    try {
+      // The ticket is read again, e.g. after a refused comment (`onSettled` of its mutations).
+      await client.refetchQueries({ queryKey: ['tickets'] });
+      await waitFor(() =>
+        expect(client.getQueryState(['tickets', 'detail', 'ERP-12'])?.status).toBe('error'),
+      );
+      // Let the view render the failed read before it is checked.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Invoice totals are wrong' }),
+      ).toBeTruthy();
+      expect(screen.queryByRole('heading', { name: 'Too many requests' })).toBeNull();
+    } finally {
+      fake.client.GET.mockImplementation(answerRoute);
+    }
+  });
+
   it('shows the header, the rendered description and the fields of the ticket (§3.2)', async () => {
     // Without the actions that change them, the fields are text.
     answer(ticket({ allowedActions: ['read'] }));

@@ -326,6 +326,24 @@ describe('TicketView', () => {
     });
   }
 
+  it('keeps a shown ticket when a later read of it is refused (#433)', async () => {
+    answerTicket(ticket());
+    const { client } = renderInApp(<TicketView attachmentMaxSizeMb={25} identifier="CP-7" />);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
+    refuse('/api/v1/tickets');
+
+    // The ticket is read again, e.g. after a refused comment (`onSettled` of its mutations).
+    await client.refetchQueries({ queryKey: ['tickets'] });
+    await waitFor(() =>
+      expect(client.getQueryState(['tickets', 'detail', 'CP-7'])?.status).toBe('error'),
+    );
+    // Let the view render the failed read before it is checked.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Wrong VAT rate' })).toBeDefined();
+    expect(screen.queryByRole('heading', { name: 'Too many requests' })).toBeNull();
+  });
+
   it('shows the attachments, the images of the description and the file events (S1-08)', async () => {
     const value = ticket({
       description: `Look:\n\n![screenshot.png](/api/v1/attachments/${IMAGE_ID}/content)`,

@@ -49,7 +49,9 @@ export function TeamTicketView({
     enabled: ticket.data !== undefined,
   });
   const imageIds = useTicketImageIds(ticket.data?.id ?? '', ticket.data?.description ?? '');
-  if (ticket.isError) {
+  // Only a ticket that could not be read at all is replaced by its error: a failed refetch – e.g.
+  // after a refused comment – keeps the ticket on screen, with what was typed in its form (#433).
+  if (ticket.isError && ticket.data === undefined) {
     return (
       <QueryErrorAlert error={ticket.error} message={errorMessage(ticket.error)} headingLevel={1} />
     );

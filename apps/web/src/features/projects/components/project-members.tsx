@@ -177,7 +177,6 @@ export function ProjectMembers({ project }: { project: Project }) {
           </li>
         ))}
       </ul>
-      {canManage && <ProjectInvitations projectId={project.id} />}
       {members.isError && !members.isFetchingNextPage && (
         <QueryErrorAlert
           error={members.error}
@@ -196,6 +195,9 @@ export function ProjectMembers({ project }: { project: Project }) {
           {members.isFetchingNextPage ? t('list.loadingMore') : t('list.loadMore')}
         </Button>
       )}
+      {/* After the error and **Show more** of the members, so both stay with the list they belong
+          to, not under the pending invitations (#433). */}
+      {canManage && <ProjectInvitations projectId={project.id} />}
       {pending !== null && (
         <LazyConfirmDialog
           title={
