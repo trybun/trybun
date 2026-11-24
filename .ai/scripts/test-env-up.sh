@@ -42,6 +42,11 @@
 #              still records this boot: neither ever marks a successor's descriptor
 #              the infrastructure of a stop that is still running ("stopping") is this boot's, as after a
 #              failed one: that down leaves it to the boot that replaces its descriptor (#468)
+#   2026-11-24 TEST_ENV_RATE_LIMIT_PER_USER (#426): an optional per-user rate limit for manual QA of
+#              the rate limit itself (default 10000; not a positive whole number → exit 2 before
+#              anything starts or stops), recorded as app.rateLimitPerUser (additive) and in the notes
+#              and the boot log; a running environment of this checkout with another limit, or none
+#              recorded, is restarted instead of reused
 set -eu
 
 # --- project-specific facts (discovered from README.md, compose*.yaml, ci.yml, playwright.config.ts)
@@ -61,8 +66,19 @@ API_PORT=3001                       # fixed: the web application reaches the API
 BASE_URL="http://localhost:$WEB_PORT"
 WEB_HEALTH="$BASE_URL/api/health"
 API_HEALTH="http://localhost:$API_PORT/health/ready"   # checks PostgreSQL too
-# The parallel E2E/QA requests share the seeded accounts, as in playwright.config.ts.
-export TRYBUN_RATE_LIMIT_PER_USER=10000 TRYBUN_RATE_LIMIT_PER_IP=10000
+# The parallel E2E/QA requests share the seeded accounts, as in playwright.config.ts. Manual QA of
+# the rate limit itself takes a low per-user limit from TEST_ENV_RATE_LIMIT_PER_USER (#426), never
+# from an exported TRYBUN_RATE_LIMIT_PER_USER, which a shell may carry for another purpose. Checked
+# here, before anything is locked, reused or stopped, as the API checks it (a whole number of at
+# least 1): a `case` on the whole value, so a value with a newline is refused too.
+RATE_LIMIT_PER_USER="${TEST_ENV_RATE_LIMIT_PER_USER:-10000}"
+case "$RATE_LIMIT_PER_USER" in
+  0* | *[!0-9]*)
+    printf "TEST_ENV_RATE_LIMIT_PER_USER must be a positive whole number of requests per minute, got '%s'\n" \
+      "$RATE_LIMIT_PER_USER" >&2
+    exit 2 ;;
+esac
+export TRYBUN_RATE_LIMIT_PER_USER="$RATE_LIMIT_PER_USER" TRYBUN_RATE_LIMIT_PER_IP=10000
 # The pseudo-locale of the width-sensitive E2E checks (§2.9), as in playwright.config.ts; the web
 # application accepts it on the loopback NEXTAUTH_URL of .env only.
 export TRYBUN_PSEUDO_LOCALE=true
@@ -479,11 +495,20 @@ if [ "$FORCE" = 0 ] && [ "$RESET" = 0 ] && [ -f "$DESCRIPTOR" ] && [ "$(json_get
      [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://localhost:$API_PORT/api/v1/users/me")" = 401 ] &&
      [ "$(age_seconds "$(json_get startedAt "$DESCRIPTOR")")" -lt "$TTL_SECONDS" ] &&
      [ "$(json_get sourceFingerprint "$DESCRIPTOR")" = "$CURRENT_FP" ]; then
-    log "reusing the running environment $(json_get runId "$DESCRIPTOR")"
-    print_result 1 "$(json_get runId "$DESCRIPTOR")"
-    exit 0
+    # The limit last (#426): a start that asks for another one replaces the environment, as a
+    # change of the sources does. A descriptor written before #426 records none and never matches.
+    recorded_limit=$(json_get rateLimitPerUser "$DESCRIPTOR")
+    if [ "$recorded_limit" = "$RATE_LIMIT_PER_USER" ]; then
+      log "reusing the running environment $(json_get runId "$DESCRIPTOR") (per-user rate limit: $RATE_LIMIT_PER_USER requests per minute)"
+      print_result 1 "$(json_get runId "$DESCRIPTOR")"
+      exit 0
+    fi
+    recorded_as="a per-user rate limit of $recorded_limit"
+    [ -n "$recorded_limit" ] || recorded_as="no per-user rate limit recorded"
+    log "the running environment $(json_get runId "$DESCRIPTOR") has $recorded_as; this start asks for $RATE_LIMIT_PER_USER – restarting it"
+  else
+    log "the recorded environment is stale; restarting it"
   fi
-  log "the recorded environment is stale; restarting it"
   sh .ai/scripts/test-env-down.sh --keep-services >/dev/null 2>&1 || true
 fi
 acquire_lock
@@ -576,6 +601,7 @@ start_bg() { # $1 log name, $2 command – in its own session, so the down scrip
   setsid env TEST_ENV_RUN_ID="$BOOT_RUN_ID" sh -c "$2" >"$LOG_DIR/$1.log" 2>&1 < /dev/null &
   echo $!
 }
+log "per-user rate limit: $RATE_LIMIT_PER_USER requests per minute"
 API_PID=$(start_bg api "$API_COMMAND")
 WORKER_PID=$(start_bg worker "$WORKER_COMMAND")
 WEB_PID=$(start_bg web "$WEB_COMMAND")
@@ -629,7 +655,7 @@ cat > "$DESCRIPTOR_TMP" <<EOF
   "composeProject": "$COMPOSE_PROJECT",
   "startScript": ".ai/scripts/test-env-up.sh",
   "stopScript": ".ai/scripts/test-env-down.sh",
-  "app": { "startCommand": "$API_COMMAND & $WORKER_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "workerPid": "$WORKER_PID", "webPid": "$WEB_PID", "runIdInEnvironment": true, "apiUrl": "http://localhost:$API_PORT" },
+  "app": { "startCommand": "$API_COMMAND & $WORKER_COMMAND & $WEB_COMMAND", "port": $WEB_PORT, "healthPath": "/api/health", "apiPid": "$API_PID", "workerPid": "$WORKER_PID", "webPid": "$WEB_PID", "runIdInEnvironment": true, "rateLimitPerUser": $RATE_LIMIT_PER_USER, "apiUrl": "http://localhost:$API_PORT" },
   "services": [
     { "type": "compose", "command": "$COMPOSE", "note": "Compose project $COMPOSE_PROJECT, its own containers and volumes; PostgreSQL 5432, Valkey 6379, SeaweedFS 8333, Keycloak 8080, Mailpit 8025" }
   ],
@@ -652,7 +678,7 @@ cat > "$DESCRIPTOR_TMP" <<EOF
   "platform": "linux",
   "sourceFingerprint": "$CURRENT_FP",
   "startedAt": "$(now)",
-  "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). The data of earlier runs stays until a boot with --reset (before a local E2E run). For a second page of the lists (Load more): sh .ai/scripts/test-env-pages.sh add, and remove afterwards. Stop with: sh .ai/scripts/test-env-down.sh"
+  "notes": "Sign-in goes through Keycloak at localhost:8080: e-mail, password, then a TOTP code of TEST_TOTP_SECRET (all seeded accounts share it; a code is accepted once). The demo dataset has the projects CP, ERP and the archived LEGACY. Build reused: $REUSED_BUILD; boot ${ELAPSED}s; data reset: $([ "$RESET" = 1 ] && echo true || echo false). Per-user rate limit: $RATE_LIMIT_PER_USER requests per minute (TEST_ENV_RATE_LIMIT_PER_USER, default 10000). The data of earlier runs stays until a boot with --reset (before a local E2E run). For a second page of the lists (Load more): sh .ai/scripts/test-env-pages.sh add, and remove afterwards. Stop with: sh .ai/scripts/test-env-down.sh"
 }
 EOF
 flock "$QA_DIR" mv -f "$DESCRIPTOR_TMP" "$DESCRIPTOR"
