@@ -42,9 +42,9 @@ Issue: #426 (spec PR #476, merged; defaults Q1–Q4 accepted by the maintainer)
 
 ### Phase 1: The override
 
-- [ ] 1.1 Override, validation, export and boot log
-- [ ] 1.2 Descriptor field and notes sentence
-- [ ] 1.3 Reuse check comparing the recorded limit
+- [x] 1.1 Override, validation, export and boot log — 9e6cd1c1
+- [x] 1.2 Descriptor field and notes sentence — 9e6cd1c1
+- [x] 1.3 Reuse check comparing the recorded limit — 9e6cd1c1
 
 ### Phase 2: Documentation and verification
 
