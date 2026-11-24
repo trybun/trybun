@@ -33,10 +33,12 @@ Issue: #426 (spec PR #476, merged; defaults Q1–Q4 accepted by the maintainer)
 
 ## Risks
 
-- The manual check of the acceptance criteria (reloads showing "Too many requests") needs the real QA environment; it is the PR's manual QA when it cannot run here.
+- Step 2.2: the manual check ran on the real QA environment of the agents' machine (`--foreground` with 10, reuse at the same limit, restart on another one, the owner detaching, "Too many requests" after reloads of the ticket list); evidence on the PR.
 - Signal timing in the `--foreground` tests: every wait is bounded, as in the existing tests.
 
 ## Progress
+
+PR: #482
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
@@ -49,4 +51,4 @@ Issue: #426 (spec PR #476, merged; defaults Q1–Q4 accepted by the maintainer)
 ### Phase 2: Documentation and verification
 
 - [x] 2.1 README, security memory, script history, spec to implemented — e6bbd3ec, 6df8cf84
-- [ ] 2.2 Full validation gate and the manual check
+- [x] 2.2 Full validation gate and the manual check — gate green, manual check passed (PR comment)
