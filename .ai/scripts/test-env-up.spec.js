@@ -75,9 +75,13 @@ esac
   // The API, the Worker and the web application run until test-env-down.sh stops them; like the
   // API's shutdown hooks, they keep their port for a moment after SIGTERM (STUB_STOP_SECONDS, 1 by
   // default). The boot step named by STUB_BLOCK (e.g. "build") hangs with a grandchild process,
-  // so a test can interrupt the boot while that step runs.
+  // so a test can interrupt the boot while that step runs. The API logs the per-user rate limit it
+  // got (#426) on a line of its own, which the filters of "docker " and "pnpm " lines skip.
   pnpm: `#!/bin/sh
 echo "pnpm $*" >>"$STUB_LOG"
+if [ "$*" = "--filter @trybun/server start" ]; then
+  echo "api TRYBUN_RATE_LIMIT_PER_USER=\${TRYBUN_RATE_LIMIT_PER_USER-unset}" >>"$STUB_LOG"
+fi
 if [ -n "\${STUB_BLOCK:-}" ] && [ "$*" = "$STUB_BLOCK" ]; then
   sleep 300 &
   echo "$!" >>"$STUB_DIR/grandchildren"
@@ -230,6 +234,8 @@ function tagged(marker) {
 function environment() {
   return {
     ...process.env,
+    // The default limit unless a test sets one (#426), whatever the shell running Vitest exports.
+    TEST_ENV_RATE_LIMIT_PER_USER: undefined,
     SPEC_PROCESS_TAG: tag,
     PATH: `${join(folder, 'bin')}:${process.env.PATH}`,
     STUB_LOG: join(folder, 'log'),
@@ -573,6 +579,51 @@ describe('an interrupted boot (#383)', PROCESS_TESTS, () => {
     expect((await run.exited()).signal).toBe('SIGKILL');
     await interruptedClean();
     expect(readLines(join(folder, 'log'))).toContain(`${compose} down`);
+  });
+
+  it('leaves a descriptor that another boot writes while its cleanup runs (#468)', async () => {
+    // The cleanup frees the bootstrap lock before it marks the descriptor "stopped", so another boot
+    // may have replaced it by then. The stubbed applications keep their port for 3 s after SIGTERM.
+    extraEnvironment = { STUB_STOP_SECONDS: '3' };
+    // A stub of sed holds the first read of the descriptor – the one of the boot's result, right
+    // after it wrote the descriptor – until the file "go" exists, so the signal lands there.
+    const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+    writeFileSync(
+      join(folder, 'bin', 'sed'),
+      `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/paused" ]; then
+    touch "$STUB_DIR/paused"
+    waited=0
+    while [ ! -e "$STUB_DIR/go" ] && [ "$waited" -lt 600 ]; do sleep 0.1; waited=$((waited + 1)); done
+  fi
+done
+exec ${sed} "$@"
+`,
+    );
+    chmodSync(join(folder, 'bin', 'sed'), 0o755);
+    const path = join(checkout, '.ai/qa/test-env.json');
+    const run = start();
+    await until(
+      () => existsSync(join(folder, 'paused')),
+      20_000,
+      () => run.stderr,
+    );
+    expect(descriptor().status).toBe('running');
+
+    run.child.kill('SIGTERM');
+    writeFileSync(join(folder, 'go'), '');
+    await until(
+      () => descriptor().status === 'stopping',
+      10_000,
+      () => `status ${descriptor().status}`,
+    );
+    const successor = `${JSON.stringify({ ...descriptor(), runId: 'successor-run', status: 'running' }, null, 2)}\n`;
+    writeFileSync(`${path}.spec.tmp`, successor);
+    renameSync(`${path}.spec.tmp`, path);
+
+    expect((await run.exited()).code).toBe(143);
+    expect(readFileSync(path, 'utf8')).toBe(successor);
   });
 
   it('records each application as the leader of its own process group', () => {
@@ -944,6 +995,157 @@ exit "$status"
   });
 });
 
+describe('the per-user rate limit (#426)', PROCESS_TESTS, () => {
+  /** The TRYBUN_RATE_LIMIT_PER_USER of each API the stubs started, from their log. */
+  const apiLimits = (log) =>
+    log
+      .filter((line) => line.startsWith('api TRYBUN_RATE_LIMIT_PER_USER='))
+      .map((line) => line.slice('api TRYBUN_RATE_LIMIT_PER_USER='.length));
+  const notesSentence = (limit) =>
+    `Per-user rate limit: ${limit} requests per minute (TEST_ENV_RATE_LIMIT_PER_USER, default 10000).`;
+
+  function expectLimit(run, limit) {
+    expect(run.status, run.stderr).toBe(0);
+    expect(apiLimits(run.log)).toEqual([String(limit)]);
+    expect(descriptor().app.rateLimitPerUser).toBe(limit);
+    expect(descriptor().notes).toContain(notesSentence(limit));
+    expect(run.stderr).toContain(`per-user rate limit: ${limit} requests per minute`);
+  }
+
+  it('runs the API with 10000 by default, never with an exported TRYBUN_RATE_LIMIT_PER_USER', () => {
+    extraEnvironment = { TRYBUN_RATE_LIMIT_PER_USER: '5' };
+
+    expectLimit(up(), 10000);
+  });
+
+  it('takes an empty TEST_ENV_RATE_LIMIT_PER_USER as the default', () => {
+    extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '' };
+
+    expectLimit(up(), 10000);
+  });
+
+  it('runs the API with the limit of TEST_ENV_RATE_LIMIT_PER_USER and records it', () => {
+    extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+    expectLimit(up(), 10);
+  });
+
+  it('passes the limit to the API of the boot it owns with --foreground', async () => {
+    extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+    const run = start('--foreground');
+    await run.output(/attached in the foreground as the owner/);
+
+    expect(apiLimits(readLines(join(folder, 'log')))).toEqual(['10']);
+    expect(descriptor().app.rateLimitPerUser).toBe(10);
+    expect(descriptor().notes).toContain(notesSentence(10));
+    expect(run.stderr).toContain('per-user rate limit: 10 requests per minute');
+  });
+
+  describe('of a value that is not a positive whole number', () => {
+    it.each(['0', '-5', '10/min', '010', ' 10', '+10', '1.5', '10\n20'])(
+      'refuses %j with exit 2, starting, reusing and stopping nothing',
+      (value) => {
+        expect(up().status).toBe(0);
+        const before = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
+        extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: value };
+
+        const { status, stdout, stderr, log } = up();
+
+        expect(status).toBe(2);
+        expect(stderr).toBe(
+          `TEST_ENV_RATE_LIMIT_PER_USER must be a positive whole number of requests per minute, got '${value}'\n`,
+        );
+        expect(stdout).toBe('');
+        expect(log).toEqual([]);
+        expect(lockExists()).toBe(false);
+        expect(readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8')).toBe(before);
+        for (const pid of [descriptor().app.apiPid, descriptor().app.webPid]) {
+          expect(alive(pid), pid).toBe(true);
+        }
+      },
+    );
+
+    it('refuses it with --foreground too, before the boot', () => {
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '0' };
+
+      const { status, stderr, log } = up('--foreground');
+
+      expect(status).toBe(2);
+      expect(stderr).toContain('TEST_ENV_RATE_LIMIT_PER_USER must be a positive whole number');
+      expect(log).toEqual([]);
+      expect(existsSync(join(checkout, '.ai/qa/logs/foreground-boot.out'))).toBe(false);
+    });
+  });
+
+  describe('of a running environment of this checkout', () => {
+    it('reuses it when it runs with the same limit, reading the recorded limit back exactly', () => {
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+      expect(up().status).toBe(0);
+      const { runId } = descriptor();
+
+      const { status, stdout, stderr, log } = up();
+
+      expect(status, stderr).toBe(0);
+      expect(stdout).toContain('TEST_ENV_REUSED=1');
+      expect(stderr).toContain(
+        `reusing the running environment ${runId} (per-user rate limit: 10 requests per minute)`,
+      );
+      expect(apiLimits(log)).toEqual([]);
+    });
+
+    it('restarts it with the requested limit when it runs with another one', () => {
+      expect(up().status).toBe(0);
+      const before = descriptor();
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+      const run = up();
+
+      expect(run.stdout).toContain('TEST_ENV_REUSED=0');
+      expect(run.stderr).toContain(
+        `the running environment ${before.runId} has a per-user rate limit of 10000; this start asks for 10 – restarting it`,
+      );
+      expect(run.stderr).not.toContain('the recorded environment is stale');
+      expectLimit(run, 10);
+      expect(descriptor().runId).not.toBe(before.runId);
+      expect(alive(before.app.apiPid)).toBe(false);
+    });
+
+    it('restarts it when its descriptor records no limit (written before #426)', () => {
+      expect(up().status).toBe(0);
+      const path = join(checkout, '.ai/qa/test-env.json');
+      const before = descriptor();
+      const old = readFileSync(path, 'utf8').replace('"rateLimitPerUser": 10000, ', '');
+      expect(old).not.toContain('rateLimitPerUser');
+      writeFileSync(path, old);
+
+      const run = up();
+
+      expect(run.stdout).toContain('TEST_ENV_REUSED=0');
+      expect(run.stderr).toContain(
+        `the running environment ${before.runId} has no per-user rate limit recorded; this start asks for 10000 – restarting it`,
+      );
+      expectLimit(run, 10000);
+      expect(descriptor().runId).not.toBe(before.runId);
+    });
+
+    it('detaches its --foreground owner when a start with another limit replaces it', async () => {
+      const run = start('--foreground');
+      await run.output(/attached in the foreground as the owner/);
+      const before = descriptor().runId;
+      extraEnvironment = { TEST_ENV_RATE_LIMIT_PER_USER: '10' };
+
+      const replacement = up();
+
+      expectLimit(replacement, 10);
+      expect((await run.exited()).code).toBe(0);
+      expect(run.stderr).toMatch(/was stopped elsewhere \((stopping|stopped)\)|was replaced by /);
+      expect(descriptor().runId).not.toBe(before);
+      expect(descriptor().status).toBe('running');
+    });
+  });
+});
+
 describe('test-env-down.sh', PROCESS_TESTS, () => {
   /**
    * Simulates the reuse of the recorded PIDs once the applications have exited (#452): each of
@@ -1219,6 +1421,174 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
     expect(await exited).toBe(0);
     expect(descriptor().status).toBe('stopped');
     expect(existsSync(join(folder, 'serving-3000'))).toBe(false);
+  });
+
+  // A boot may replace the descriptor while a down that does not hold the bootstrap lock stops the
+  // run it read (#468): the down never marks the successor, nor stops the infrastructure it runs on.
+  describe('when a boot replaces the descriptor while it stops (#468)', () => {
+    const path = () => join(checkout, '.ai/qa/test-env.json');
+    const composeDown = 'docker compose -p trybun-test -f compose.yaml -f compose.dev.yaml down';
+    let successor;
+
+    beforeEach(() => {
+      // The stubbed applications keep their port for 2 s after SIGTERM, as the API does.
+      extraEnvironment = { STUB_STOP_SECONDS: '2' };
+      const boot = up();
+      expect(boot.status, boot.stderr).toBe(0);
+      expect(descriptor().servicesStartedByScript).toBe(true);
+      // A boot that lands while the down runs takes the infrastructure over (servicesStartedByScript).
+      successor = `${JSON.stringify({ ...descriptor(), runId: 'successor-run', status: 'running' }, null, 2)}\n`;
+      writeFileSync(join(folder, 'successor.json'), successor);
+      writeFileSync(join(folder, 'log'), '');
+    });
+
+    function startDown() {
+      const down = spawn('sh', ['.ai/scripts/test-env-down.sh'], {
+        cwd: checkout,
+        env: { ...environment(), ...extraEnvironment },
+      });
+      let stderr = '';
+      down.stderr.on('data', (data) => (stderr += data));
+      const exited = new Promise((resolve) => down.on('exit', (code) => resolve({ code, stderr })));
+      return { exited };
+    }
+
+    async function expectSuccessorKept({ code, stderr }) {
+      expect(code, stderr).toBe(0);
+      await until(
+        () => descriptor().runId === 'successor-run',
+        10_000,
+        () => `the descriptor records ${descriptor().runId}`,
+      );
+      expect(readFileSync(path(), 'utf8')).toBe(successor);
+      expect(stderr).toMatch(/now records environment successor-run, not \S+; leaving its status/);
+      expect(stderr).toMatch(
+        /environment successor-run replaced \S+ meanwhile; leaving the infrastructure/,
+      );
+      expect(readLines(join(folder, 'log'))).not.toContain(composeDown);
+    }
+
+    it('leaves the status of a successor that lands while it waits for the applications', async () => {
+      const down = startDown();
+      await until(
+        () => descriptor().status === 'stopping',
+        5_000,
+        () => `status ${descriptor().status}`,
+      );
+      // Written whole and renamed into place, as a boot writes it.
+      copyFileSync(join(folder, 'successor.json'), `${path()}.spec.tmp`);
+      renameSync(`${path()}.spec.tmp`, path());
+
+      await expectSuccessorKept(await down.exited);
+    });
+
+    it('leaves a successor that a boot writes between its check and its rename', async () => {
+      // A stub of sed, on the down's rewrite of the descriptor (the second read in its first status
+      // update, after the read of the run id), starts the successor's write as a boot does it – under
+      // the lock of .ai/qa – and gives it a second to land before the down renames its update.
+      const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+      writeFileSync(
+        join(folder, 'bin', 'sed'),
+        `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/swapped" ]; then
+    echo read >>"$STUB_DIR/reads"
+    if [ "$(wc -l <"$STUB_DIR/reads")" -eq 2 ]; then
+      touch "$STUB_DIR/swapped"
+      cp "$STUB_DIR/successor.json" .ai/qa/test-env.json.spec.tmp
+      # Without the down's descriptor of the lock (fd 9), which it would otherwise hold open itself.
+      flock .ai/qa mv -f .ai/qa/test-env.json.spec.tmp .ai/qa/test-env.json 9<&- &
+      sleep 1
+    fi
+  fi
+done
+exec ${sed} "$@"
+`,
+      );
+      chmodSync(join(folder, 'bin', 'sed'), 0o755);
+
+      const result = await startDown().exited;
+
+      expect(existsSync(join(folder, 'swapped'))).toBe(true);
+      await expectSuccessorKept(result);
+    });
+
+    it('keeps the descriptor of a real boot that writes it between its check and its rename', async () => {
+      // The applications have ended and the down is under way ("stopping"): a boot neither reuses
+      // nor stops that environment, so it runs through to its final rename of the descriptor.
+      await endWithoutStop();
+      const stopping = readFileSync(path(), 'utf8').replace(
+        '"status": "running"',
+        '"status": "stopping"',
+      );
+      writeFileSync(`${path()}.spec.tmp`, stopping);
+      renameSync(`${path()}.spec.tmp`, path());
+      const before = descriptor().runId;
+      // A stub of sed, on the down's rewrite of the descriptor (inside its lock), starts a real boot
+      // and continues once that boot waits for the lock to rename its descriptor – two temporary
+      // files – or has already renamed it, as it would without the lock.
+      const sed = execFileSync('sh', ['-c', 'command -v sed'], { encoding: 'utf8' }).trim();
+      writeFileSync(
+        join(folder, 'bin', 'sed'),
+        `#!/bin/sh
+for arg in "$@"; do
+  if [ "$arg" = .ai/qa/test-env.json ] && [ ! -e "$STUB_DIR/swapped" ]; then
+    echo read >>"$STUB_DIR/reads"
+    if [ "$(wc -l <"$STUB_DIR/reads")" -eq 2 ]; then
+      touch "$STUB_DIR/swapped"
+      sh .ai/scripts/test-env-up.sh >"$STUB_DIR/boot.out" 2>&1 9<&- &
+      waited=0
+      while [ "$waited" -lt 600 ]; do
+        [ "$(ls .ai/qa | grep -c '^test-env\\.json\\..*\\.tmp$')" -ge 2 ] && break
+        grep -q '"runId": "${before}"' .ai/qa/test-env.json || break
+        sleep 0.1
+        waited=$((waited + 1))
+      done
+      sleep 0.5
+    fi
+  fi
+done
+exec ${sed} "$@"
+`,
+      );
+      chmodSync(join(folder, 'bin', 'sed'), 0o755);
+
+      const { code, stderr } = await startDown().exited;
+
+      expect(code, stderr).toBe(0);
+      expect(existsSync(join(folder, 'swapped'))).toBe(true);
+      await until(
+        () =>
+          readLines(join(folder, 'boot.out')).some((line) => line.startsWith('TEST_ENV_RUN_ID=')),
+        30_000,
+        () => readLines(join(folder, 'boot.out')).join('\n'),
+      );
+      const booted = readLines(join(folder, 'boot.out'))
+        .find((line) => line.startsWith('TEST_ENV_RUN_ID='))
+        .slice('TEST_ENV_RUN_ID='.length);
+      expect(booted).not.toBe(before);
+      expect(descriptor()).toMatchObject({ runId: booted, status: 'running' });
+    });
+
+    it('takes over the infrastructure as a boot that lands while it stops, so that boot stops it', async () => {
+      // The applications have ended and the down still runs: its descriptor says "stopping".
+      await endWithoutStop();
+      const stopping = readFileSync(path(), 'utf8').replace(
+        '"status": "running"',
+        '"status": "stopping"',
+      );
+      writeFileSync(`${path()}.spec.tmp`, stopping);
+      renameSync(`${path()}.spec.tmp`, path());
+      writeFileSync(join(folder, 'compose-running'), '');
+
+      const boot = up();
+
+      expect(boot.status, boot.stderr).toBe(0);
+      expect(descriptor()).toMatchObject({ status: 'running', servicesStartedByScript: true });
+      writeFileSync(join(folder, 'log'), '');
+      expect(down().status).toBe(0);
+      expect(readLines(join(folder, 'log'))).toContain(composeDown);
+    });
   });
 
   describe('when the compose down fails (#449)', () => {
