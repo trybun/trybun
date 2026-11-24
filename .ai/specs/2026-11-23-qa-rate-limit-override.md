@@ -67,6 +67,8 @@ None (agent tooling). §14.4 already says the limits can be changed with `TRYBUN
 
 ## Resolved assumptions (autonomous defaults)
 
+Accepted by the maintainer in the session on 2026-11-24 ([#476](https://github.com/trybun/trybun/pull/476#issuecomment-7125501345)).
+
 | # | Question | Default applied | Rationale |
 |---|---|---|---|
 | Q1 | A warm environment with a different limit: restart it or refuse? | Restart, through the existing stale-environment path, with a log line naming both limits. | Same as a source change today; recreate-on-config-change is the practice of Docker Compose and Testcontainers; no new refusal for the QA skills to handle. |
@@ -98,3 +100,4 @@ None (agent tooling). §14.4 already says the limits can be changed with `TRYBUN
 
 - 2026-11-23 – Created (autonomous defaults Q1–Q4, #426).
 - 2026-11-23 – Review of #476: field position for `json_get`, README sentences and Preview, the reverse replacement case, rollback note, wording fixes.
+- 2026-11-24 – Defaults Q1–Q4 accepted by the maintainer.
