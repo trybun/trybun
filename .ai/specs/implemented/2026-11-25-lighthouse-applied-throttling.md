@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `approved` |
+| Status | `implemented` |
 | Created | 2026-11-25 |
 | Plan task | – |
 | System specification sections | §2.9 (Performance) |
@@ -107,3 +107,4 @@ New or changed glossary terms: none.
 - 2026-11-25 – Created.
 - 2026-11-25 – Review: benchmark indexes of both machines, the stop rule and the duration criterion added; the rejection of packet-level throttling corrected; Stage 1 key pages listed as in §2.9.
 - 2026-11-25 – Approved: the maintainer answered both open questions as proposed and confirmed the stop margin of a quarter of the budget.
+- 2026-11-25 – Implemented (#503): `throttlingMethod: 'devtools'` in `apps/web/e2e/lighthouse.spec.ts`, §2.9 and `.ai/memory/e2e.md` updated; the CI measurements are listed in the implementation pull request.
