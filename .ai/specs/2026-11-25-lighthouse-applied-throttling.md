@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-11-25 |
 | Plan task | – |
 | System specification sections | §2.9 (Performance) |
@@ -89,14 +89,14 @@ New or changed glossary terms: none.
 
 ## Open questions
 
-1. Keep the median over three runs with applied throttling? — **Proposed answer:** yes. The LCP of applied throttling varies little, and the median still covers a single slow run of TBT.
-2. The key pages of Stage 1 named in §2.9 (portal project home, ticket creation form, ticket view for the end user and the team, team list view, Kanban board) are not in the budget yet (`apps/web/e2e/lighthouse.spec.ts` has the two pages of Stage 0). Add them here, or in a task of their own? — **Proposed answer:** in a follow-up issue after this change, so that each new page is measured with the stable method and its own verdict.
+1. Keep the median over three runs with applied throttling? — **Answer (maintainer, 2026-11-25):** yes. The LCP of applied throttling varies little, and the median still covers a single slow run of TBT.
+2. The key pages of Stage 1 named in §2.9 (portal project home, ticket creation form, ticket view for the end user and the team, team list view, Kanban board) are not in the budget yet (`apps/web/e2e/lighthouse.spec.ts` has the two pages of Stage 0). Add them here, or in a task of their own? — **Answer (maintainer, 2026-11-25):** in a follow-up issue after this change, so that each new page is measured with the stable method and its own verdict.
 
 ## Acceptance criteria
 
 - [ ] `apps/web/e2e/lighthouse.spec.ts` runs Lighthouse with applied throttling and the mobile profile (default 4× CPU slowdown); the budget values are unchanged. The comment on `RUNS`, which explains the median by the steps of the simulated LCP (#163), describes the new reason.
 - [ ] 10 consecutive re-runs of the job "E2E and Lighthouse" on one commit pass. The PR lists, per run, the LCP, TBT and score medians of each key page, the margin to the budget and the benchmark index of the runner.
-- [ ] Every one of these medians keeps at least a quarter of the budget as margin (LCP ≤ 1875 ms, TBT ≤ 150 ms). If a run fails or a median comes closer, the implementation stops and the PR returns the method to the maintainer with the measurements; it does not change the budget, the number of runs or the CPU slowdown on its own.
+- [ ] Every one of these medians keeps at least a quarter of the budget as margin (LCP ≤ 1875 ms, TBT ≤ 150 ms; the quarter was confirmed by the maintainer on 2026-11-25). If a run fails or a median comes closer, the implementation stops and the PR returns the method to the maintainer with the measurements; it does not change the budget, the number of runs or the CPU slowdown on its own.
 - [ ] The PR reports the duration of the Lighthouse tests before and after the change; they stay within the timeout of each test (`RUNS × 120 s`) and the 30-minute timeout of the job.
 - [ ] §2.9 and `.ai/memory/e2e.md` describe the method and the measurements; the first-load check stays.
 - [ ] Works on phone, tablet and desktop (Rule 9) – n/a: test configuration only.
@@ -106,3 +106,4 @@ New or changed glossary terms: none.
 
 - 2026-11-25 – Created.
 - 2026-11-25 – Review: benchmark indexes of both machines, the stop rule and the duration criterion added; the rejection of packet-level throttling corrected; Stage 1 key pages listed as in §2.9.
+- 2026-11-25 – Approved: the maintainer answered both open questions as proposed and confirmed the stop margin of a quarter of the budget.
