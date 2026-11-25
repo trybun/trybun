@@ -171,9 +171,6 @@ test.describe('accounts of the Administrator', () => {
     await page.getByRole('option', { name: /^Customer portal/ }).click();
     await expect(dialog.getByRole('combobox', { name: 'Role' })).toContainText('End user');
     await expect(dialog.getByText('This person gets an invitation link.')).toBeVisible();
-    await dialog.evaluate((popup) =>
-      Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
-    );
     expect(await seriousViolations(page)).toEqual([]);
     // The whole label of a choice is its target.
     await expectTouchTarget(

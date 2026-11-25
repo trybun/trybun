@@ -66,12 +66,11 @@ export class AppShellPage {
   }
 
   /**
-   * Opens a header menu and returns it once its opening animation has finished.
+   * Opens a header menu and returns it once it shows.
    *
    * The server renders the button and the menu loads after the first paint (#72); a click before
    * the hydration opens nothing (WebKit, #191, #206), so the click repeats until the menu shows.
-   * During the fade-in the text is semi-transparent, and axe would measure a colour contrast
-   * nobody sees (#72).
+   * The accessibility check waits for the fade-in itself (#502).
    */
   private async openMenu(trigger: Locator): Promise<Locator> {
     const menu = this.page.getByRole('menu');
@@ -81,9 +80,6 @@ export class AppShellPage {
       }
       await expect(menu).toBeVisible({ timeout: 1000 });
     }).toPass();
-    await menu.evaluate((popup) =>
-      Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
-    );
     return menu;
   }
 }
