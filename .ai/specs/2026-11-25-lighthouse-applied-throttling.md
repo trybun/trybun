@@ -41,6 +41,15 @@ In the simulation the LCP lies 1.4–2.1 s after the FCP. In a load with applied
 
 The local simulated runs reproduce the steps of CI. Inlining the CSS made it worse and the paint did not move earlier, so the stylesheet is not what holds the paint.
 
+**The machine matters with applied throttling.** Lighthouse rates applied (DevTools) throttling "NO MITIGATION" for client hardware variability and client resource contention, against "PARTIALLY MITIGATED" for simulation ([variability.md](https://github.com/GoogleChrome/lighthouse/blob/main/docs/variability.md), "Effect of Throttling Strategies"): the 4× CPU slowdown runs on the real CPU. The measurements above come from the agents' machine only, so they predict CI only as far as the two machines compare. The benchmark index that Lighthouse writes into every report (`environment.benchmarkIndex`):
+
+| Machine | Benchmark index | Simulated TBT of the empty shell |
+|---|---|---|
+| Agents' machine (8 cores; measured 2026-11-25 beside other sessions) | 2565–2706 | 47–80 ms |
+| CI runner (`ubuntu-24.04`; reports of PR #506) | 3415–3542 | 27–30 ms |
+
+Both point the same way: the CI runner runs the main thread faster, so the applied TBT and LCP in CI are expected at or below the local values. This is an inference; the acceptance criteria below verify it and say what happens when it does not hold.
+
 ## Goals
 
 - The budget of §2.9 gives the same verdict on every run of an unchanged build.
@@ -52,6 +61,7 @@ The local simulated runs reproduce the steps of CI. Inlining the CSS made it wor
 - Changing the first-load check of the build (no Zod in the first load of the shell). It stays the deterministic guard of the JavaScript of the first load.
 - Adding the key pages of Stage 1 to the budget (open question 2).
 - Inlining CSS (`experimental.inlineCss`): it is experimental, it costs returning visitors their cached stylesheet, and the measurement above shows it does not help.
+- Calibrating the CPU slowdown to the runner (`cpuSlowdownMultiplier` from the benchmark index, throttling.md): the default 4× stays. A multiplier derived from the runner would move the budget whenever GitHub changes the runner hardware.
 
 ## Proposed change
 
@@ -67,7 +77,7 @@ Options considered:
 1. **Recommended: applied throttling.** LCP spread 53 ms on an idle machine and 45 ms with six busy CPU loops, against 1.1–1.4 s for the simulation. The LCP equals the FCP, as in a real throttled load. TBT is higher than simulated on an idle machine but not under load (worst 168 ms against 206 ms simulated), so the budget keeps its risk on TBT, not more. The Lighthouse documentation rates simulation as more mitigated against client variability; on this page the measurement shows the opposite for LCP, because the variability comes from the model's edge case, not from the machine. It also names Lantern "~6–13 % more inaccurate than DevTools throttling" ([lantern.md](https://github.com/GoogleChrome/lighthouse/blob/main/docs/lantern.md)).
 2. **Rejected: five runs instead of three** (the median of five "is twice as stable as 1 run", variability.md). The failure rate would fall from ~4.9 % to ~2.0 % by the model, but the margin stays 70–150 ms, and each key page would take about a minute more.
 3. **Rejected: less client JavaScript in the first load.** It would add margin to the simulated value, but #163 showed that trimming small chunks barely moves it: the largest framework chunk (React DOM with the Next.js runtime, ~72 KB) sets the step.
-4. **Rejected: packet-level throttling** (`throttlingMethod: 'provided'` with an external throttle, the most accurate option of throttling.md). It needs a system-level tool and root rights on the CI runner, which is more than the budget needs.
+4. **Rejected: packet-level throttling** (`throttlingMethod: 'provided'` with an external throttle, the most accurate option of throttling.md). The whole stack of the test talks over the loopback interface, so shaping it would also slow the server-side calls of the web application to the API and Keycloak: the measurement would no longer model only the user's connection. It also needs a system-level tool (`tc`, run with `sudo` on the runner) outside the Playwright test.
 
 ## Changes to the system specification
 
@@ -80,12 +90,14 @@ New or changed glossary terms: none.
 ## Open questions
 
 1. Keep the median over three runs with applied throttling? — **Proposed answer:** yes. The LCP of applied throttling varies little, and the median still covers a single slow run of TBT.
-2. The key pages of Stage 1 named in §2.9 (portal project home, ticket creation form, ticket views, team list view) are not in the budget yet (`e2e/lighthouse.spec.ts` has the two pages of Stage 0). Add them here, or in a task of their own? — **Proposed answer:** in a follow-up issue after this change, so that each new page is measured with the stable method and its own verdict.
+2. The key pages of Stage 1 named in §2.9 (portal project home, ticket creation form, ticket view for the end user and the team, team list view, Kanban board) are not in the budget yet (`apps/web/e2e/lighthouse.spec.ts` has the two pages of Stage 0). Add them here, or in a task of their own? — **Proposed answer:** in a follow-up issue after this change, so that each new page is measured with the stable method and its own verdict.
 
 ## Acceptance criteria
 
-- [ ] `e2e/lighthouse.spec.ts` runs Lighthouse with applied throttling and the mobile profile; the budget values are unchanged.
-- [ ] 10 consecutive re-runs of the job "E2E and Lighthouse" on one commit pass. The PR lists the LCP, TBT and score medians of each run and the margin to the budget.
+- [ ] `apps/web/e2e/lighthouse.spec.ts` runs Lighthouse with applied throttling and the mobile profile (default 4× CPU slowdown); the budget values are unchanged. The comment on `RUNS`, which explains the median by the steps of the simulated LCP (#163), describes the new reason.
+- [ ] 10 consecutive re-runs of the job "E2E and Lighthouse" on one commit pass. The PR lists, per run, the LCP, TBT and score medians of each key page, the margin to the budget and the benchmark index of the runner.
+- [ ] Every one of these medians keeps at least a quarter of the budget as margin (LCP ≤ 1875 ms, TBT ≤ 150 ms). If a run fails or a median comes closer, the implementation stops and the PR returns the method to the maintainer with the measurements; it does not change the budget, the number of runs or the CPU slowdown on its own.
+- [ ] The PR reports the duration of the Lighthouse tests before and after the change; they stay within the timeout of each test (`RUNS × 120 s`) and the 30-minute timeout of the job.
 - [ ] §2.9 and `.ai/memory/e2e.md` describe the method and the measurements; the first-load check stays.
 - [ ] Works on phone, tablet and desktop (Rule 9) – n/a: test configuration only.
 - [ ] User documentation and product tour updated where relevant (Rules 3, 4) – n/a.
@@ -93,3 +105,4 @@ New or changed glossary terms: none.
 ## Changelog
 
 - 2026-11-25 – Created.
+- 2026-11-25 – Review: benchmark indexes of both machines, the stop rule and the duration criterion added; the rejection of packet-level throttling corrected; Stage 1 key pages listed as in §2.9.
