@@ -31,6 +31,11 @@ vi.stubGlobal('matchMedia', (query: string) => ({
 Object.defineProperty(document, 'execCommand', { value: () => false });
 
 const { TeamTicketForm } = await import('./team-ticket-form.js');
+// The lazily loaded editor and confirmation dialog are imported before the tests (#511): the
+// first import of the editor takes ~0.7 s alone and longer under the whole suite, past the
+// 1 s of `findBy*`, so a wait would measure the module load instead of the component.
+await import('@trybun/ui/components/markdown-editor');
+await import('../../projects/components/confirm-dialog.js');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
@@ -52,7 +57,7 @@ function renderForm(props: Partial<FormProps> = {}) {
 
 /** The description editor, loaded lazily. */
 function description() {
-  return screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+  return screen.findByRole('textbox', { name: 'Description' });
 }
 
 /** The chosen item of a select, without the text of its icon. */
@@ -185,7 +190,7 @@ describe('TeamTicketForm', () => {
       { locale: 'pl' },
     );
 
-    expect(await screen.findByRole('textbox', { name: 'Opis' }, { timeout: 5_000 })).toHaveProperty(
+    expect(await screen.findByRole('textbox', { name: 'Opis' })).toHaveProperty(
       'value',
       CATALOGUES.pl.tickets.templates.task,
     );
@@ -326,7 +331,7 @@ describe('TeamTicketForm', () => {
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Export the invoices');
     await events.click(screen.getByRole('link', { name: 'Cancel' }));
 
-    expect(await screen.findByText('Discard your changes?', {}, { timeout: 5_000 })).toBeDefined();
+    expect(await screen.findByText('Discard your changes?')).toBeDefined();
     await events.click(screen.getByRole('button', { name: 'Discard' }));
     expect(push).toHaveBeenCalledWith('/');
   });
@@ -341,7 +346,7 @@ describe('TeamTicketForm', () => {
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Export the invoices');
     window.history.back();
 
-    expect(await screen.findByText('Discard your changes?', {}, { timeout: 5_000 })).toBeDefined();
+    expect(await screen.findByText('Discard your changes?')).toBeDefined();
     expect(window.location.pathname).toBe('/tickets/new');
     await events.click(screen.getByRole('button', { name: 'Keep editing' }));
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveProperty(

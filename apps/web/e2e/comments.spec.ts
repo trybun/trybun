@@ -67,8 +67,13 @@ test.describe('comments and internal notes', () => {
     await expect(activity.getByText('Visible to the requester')).toBeVisible();
     await field.fill(`We are on it ${stamp}`);
     await activity.getByRole('button', { name: 'Comment publicly' }).click();
-    await expect(activity.getByText(`We are on it ${stamp}`)).toBeVisible();
-    // A new form starts with the internal note again.
+    // The timeline item, as for the note: the comment shows a render before the form resets, and
+    // until then the field in the same region holds the same text (#517).
+    await expect(
+      activity.getByRole('listitem').filter({ hasText: `We are on it ${stamp}` }),
+    ).toBeVisible();
+    // A new form starts empty, with the internal note again.
+    await expect(field).toHaveValue('');
     await expect(note).toBeChecked();
 
     const customer = await browser.newContext({
