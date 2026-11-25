@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-11-25 |
 | Plan task | – |
 | System specification sections | §2.9 (Performance) |
@@ -108,8 +108,8 @@ New or changed glossary terms: none.
 
 ## Open questions
 
-1. Should a run whose own `environment.benchmarkIndex` differs from the calibration's unthrottled reading by more than 20 % fail the test? That is a sign the runner became busier between the calibration and the run. — **Proposed answer:** no; record it in the report only. The median over three runs already covers a single run on a busier machine. A gate would fail a test on runner noise rather than on the page. If a median ever breaks the stop rule because of it, the report shows the drift and the decision returns to the maintainer.
-2. Where to recheck the target when Playwright's Chromium is upgraded (the benchmark's definition can change with Chromium)? — **Proposed answer:** a memory entry in `.ai/memory/e2e.md`, and a comment at the target constant. On every Chromium upgrade, the Playwright upgrade PR compares the calibrated multipliers in its report with the previous ones.
+1. Should a run whose own `environment.benchmarkIndex` differs from the calibration's unthrottled reading by more than 20 % fail the test? That is a sign the runner became busier between the calibration and the run. — **Answer (maintainer, 2026-11-25):** no; record it in the report only. The median over three runs already covers a single run on a busier machine. A gate would fail a test on runner noise rather than on the page. If a median ever breaks the stop rule because of it, the report shows the drift and the decision returns to the maintainer.
+2. Where to recheck the target when Playwright's Chromium is upgraded (the benchmark's definition can change with Chromium)? — **Answer (maintainer, 2026-11-25):** a memory entry in `.ai/memory/e2e.md`, and a comment at the target constant. On every Chromium upgrade, the Playwright upgrade PR compares the calibrated multipliers in its report with the previous ones.
 
 ## Acceptance criteria
 
@@ -129,3 +129,4 @@ New or changed glossary terms: none.
 ## Changelog
 
 - 2026-11-25 – Created. The maintainer chose calibration and the target 1000 on 2026-11-25, after the stop rule broke on PR #507.
+- 2026-11-25 – Approved: the maintainer accepted both proposed answers.
