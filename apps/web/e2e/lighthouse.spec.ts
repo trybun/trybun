@@ -5,7 +5,10 @@ import { type BrowserContextOptions, chromium, expect, test } from '@playwright/
 import lighthouse, { type Result } from 'lighthouse';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 
-/** The performance budget of the key pages, mobile profile of Lighthouse (§2.9). */
+/**
+ * The performance budget of the key pages, mobile profile of Lighthouse with applied throttling
+ * (§2.9).
+ */
 const BUDGET = {
   performance: 0.9,
   accessibility: 0.9,
@@ -30,9 +33,10 @@ const KEY_PAGES = [
 ];
 
 /**
- * Lighthouse runs per key page. Each value of the budget applies to its median over the runs: the
- * simulated LCP of the same build lands on steps up to ~650 ms apart, depending on which scripts
- * the runner evaluates before the first paint (#163).
+ * Lighthouse runs per key page. Each value of the budget applies to its median over the runs, so
+ * that a single slow run does not decide it: TBT measures the real main thread at the 4× CPU
+ * slowdown and moves with whatever else the runner does (#146). The LCP of applied throttling
+ * varies by ~50 ms between runs of one build (#503).
  */
 const RUNS = 3;
 
@@ -68,6 +72,10 @@ for (const keyPage of KEY_PAGES) {
           logLevel: 'error',
           onlyCategories: ['performance', 'accessibility'],
           blockedUrlPatterns: keyPage.blockedUrlPatterns,
+          // Applied throttling (#503): the page loads at the speed of the mobile profile. The
+          // default simulation (Lantern) computes it from an unthrottled load, and on localhost
+          // its LCP lands on steps ~1 s apart for one build.
+          throttlingMethod: 'devtools',
         });
         expect(result).toBeDefined();
         if (result === undefined) continue;
