@@ -3,11 +3,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type BrowserContextOptions, chromium, expect, test } from '@playwright/test';
 import lighthouse, { type Result } from 'lighthouse';
+import { calibrateCpuSlowdown } from './cpu-calibration.js';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 
 /**
- * The performance budget of the key pages, mobile profile of Lighthouse with applied throttling
- * (§2.9).
+ * The performance budget of the key pages, mobile profile of Lighthouse with applied throttling and
+ * the CPU slowdown calibrated to a mid-tier phone (§2.9).
  */
 const BUDGET = {
   performance: 0.9,
@@ -34,8 +35,8 @@ const KEY_PAGES = [
 
 /**
  * Lighthouse runs per key page. Each value of the budget applies to its median over the runs, so
- * that a single slow run does not decide it: TBT measures the real main thread at the 4× CPU
- * slowdown and moves with whatever else the runner does (#146). The LCP of applied throttling
+ * that a single slow run does not decide it: TBT measures the real main thread at the
+ * calibrated CPU slowdown and moves with whatever else the runner does (#146, #508). The LCP of applied throttling
  * varies by ~50 ms between runs of one build (#503).
  */
 const RUNS = 3;
@@ -64,6 +65,13 @@ for (const keyPage of KEY_PAGES) {
         await browser.addCookies(state.cookies);
       }
 
+      // Calibrated in the Chromium that Lighthouse drives, before its runs (#508).
+      const calibration = await calibrateCpuSlowdown(browser);
+      await testInfo.attach('cpu-calibration.json', {
+        body: JSON.stringify(calibration, null, 2),
+        contentType: 'application/json',
+      });
+
       const runs: Result[] = [];
       for (let run = 1; run <= RUNS; run++) {
         const result = await lighthouse(`${baseURL ?? ''}${keyPage.path}`, {
@@ -76,6 +84,7 @@ for (const keyPage of KEY_PAGES) {
           // default simulation (Lantern) computes it from an unthrottled load, and on localhost
           // its LCP lands on steps ~1 s apart for one build.
           throttlingMethod: 'devtools',
+          throttling: { cpuSlowdownMultiplier: calibration.cpuSlowdownMultiplier },
         });
         expect(result).toBeDefined();
         if (result === undefined) continue;
@@ -83,6 +92,12 @@ for (const keyPage of KEY_PAGES) {
         await testInfo.attach(`lighthouse-report-${String(run)}.json`, {
           body: typeof result.report === 'string' ? result.report : '',
           contentType: 'application/json',
+        });
+        // The emulated device holds only while the runner keeps its speed: the benchmark index of each
+        // run goes into the report, without a gate (open question 1 of the specification of #508).
+        testInfo.annotations.push({
+          type: 'benchmark index',
+          description: `run ${String(run)}: ${String(result.lhr.environment.benchmarkIndex)}`,
         });
         // Measured on the key page itself, not on a page it redirects to.
         expect(result.lhr.finalDisplayedUrl).toBe(`${baseURL ?? ''}${keyPage.path}`);
