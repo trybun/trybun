@@ -36,6 +36,10 @@ vi.stubGlobal('matchMedia', (query: string) => ({
 
 const { TeamTicketView } = await import('./team-ticket-view.js');
 const { ActivityEventItem } = await import('./activity-event-item.js');
+// The lazily loaded editor is imported before the tests (#511): its first import takes ~0.7 s
+// alone and longer under the whole suite, past the 1 s of `findBy*`, so a wait would measure
+// the module load instead of the component.
+await import('@trybun/ui/components/markdown-editor');
 
 /** Events as the items of a ticket's timeline (S1-12 Q11). */
 function asTimeline(events: readonly object[]) {

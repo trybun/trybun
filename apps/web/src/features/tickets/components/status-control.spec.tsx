@@ -33,6 +33,10 @@ Object.defineProperty(document, 'execCommand', { value: () => false });
 
 const { TeamTicketView } = await import('./team-ticket-view.js');
 const { hasStatusUndo } = await import('./status-control.js');
+// The lazily loaded editor is imported before the tests (#511): its first import takes ~0.7 s
+// alone and longer under the whole suite, past the 1 s of `findBy*`, so a wait would measure
+// the module load instead of the component.
+await import('@trybun/ui/components/markdown-editor');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
@@ -268,7 +272,7 @@ describe('the reject dialog', () => {
     expect(statusCalls()).toHaveLength(0);
 
     await user.type(
-      await within(dialog).findByRole('textbox', { name: 'Reason' }, { timeout: 5_000 }),
+      await within(dialog).findByRole('textbox', { name: 'Reason' }),
       'Works as designed.',
     );
     await user.click(within(dialog).getByRole('button', { name: 'Reject ticket' }));
@@ -290,11 +294,7 @@ describe('the reject dialog', () => {
 
     const user = await chooseStatus('Rejected');
     const dialog = await screen.findByRole('dialog', { name: 'Reject ERP-12' });
-    const reason = await within(dialog).findByRole(
-      'textbox',
-      { name: 'Reason' },
-      { timeout: 5_000 },
-    );
+    const reason = await within(dialog).findByRole('textbox', { name: 'Reason' });
     await user.type(reason, 'Works as designed.');
     await user.click(within(dialog).getByRole('button', { name: 'Reject ticket' }));
 
