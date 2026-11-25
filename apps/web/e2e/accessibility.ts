@@ -25,10 +25,24 @@ export async function seriousViolations(page: Page): Promise<string[]> {
  * a popup fading in, fails `color-contrast` although its settled state passes (#72, #502). Infinite
  * animations, such as spinners, never finish and are not waited for; an animation that starts
  * while the others finish is waited for too.
+ *
+ * Each check follows a rendering update of the page. WebKit reports an animation as finished while
+ * the computed style still holds an early frame of it until the next rendering update: a dialog
+ * read `opacity: 0.02` after its fade-in had finished, for up to ~0.5 s on a slow runner (#514).
  */
 async function animationsFinished(page: Page): Promise<void> {
   await page.evaluate(async () => {
+    // The second callback runs after the rendering update the first one preceded.
+    const renderingUpdated = () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      });
     for (;;) {
+      await renderingUpdated();
       const running = document
         .getAnimations()
         .filter(
