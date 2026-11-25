@@ -29,6 +29,10 @@ vi.stubGlobal('matchMedia', (query: string) => ({
 Object.defineProperty(document, 'execCommand', { value: () => false });
 
 const { NewTicketForm } = await import('./new-ticket-form.js');
+// The lazily loaded editor is imported before the tests (#511): its first import takes ~0.7 s
+// alone and longer under the whole suite, past the 1 s of `findBy*`, so a wait would measure
+// the module load instead of the component.
+await import('@trybun/ui/components/markdown-editor');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
@@ -60,10 +64,7 @@ describe('NewTicketForm', () => {
       );
 
       expect(
-        // The editor loads lazily; its first import takes longer under the whole suite.
-        (await screen.findByRole('textbox', { name: label }, { timeout: 5_000 })).getAttribute(
-          'placeholder',
-        ),
+        (await screen.findByRole('textbox', { name: label })).getAttribute('placeholder'),
       ).toBe(placeholder);
     },
   );
@@ -180,7 +181,7 @@ describe('NewTicketForm', () => {
       <NewTicketForm projectId={PROJECT_ID} visibilityOptions={ONLY_ME} attachmentMaxSizeMb={25} />,
     );
     await events.type(screen.getByRole('textbox', { name: 'Title' }), 'Invoice PDF is empty');
-    await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    await screen.findByRole('textbox', { name: 'Description' });
     const input = document.querySelector<HTMLInputElement>('input[type="file"]');
     if (input === null) {
       throw new Error('The editor has no file input');
