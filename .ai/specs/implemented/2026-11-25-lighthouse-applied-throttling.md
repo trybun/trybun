@@ -61,7 +61,7 @@ Both point the same way: the CI runner runs the main thread faster, so the appli
 - Changing the first-load check of the build (no Zod in the first load of the shell). It stays the deterministic guard of the JavaScript of the first load.
 - Adding the key pages of Stage 1 to the budget (open question 2).
 - Inlining CSS (`experimental.inlineCss`): it is experimental, it costs returning visitors their cached stylesheet, and the measurement above shows it does not help.
-- Calibrating the CPU slowdown to the runner (`cpuSlowdownMultiplier` from the benchmark index, throttling.md): the default 4× stays. A multiplier derived from the runner would move the budget whenever GitHub changes the runner hardware.
+- Calibrating the CPU slowdown to the runner (`cpuSlowdownMultiplier` from the benchmark index, throttling.md): the default 4× stays. A multiplier derived from the runner would move the budget whenever GitHub changes the runner hardware. *Superseded by `2026-11-25-lighthouse-calibrated-cpu-slowdown.md` (#508): the CI data showed that the fixed 4× is what moves with the hardware.*
 
 ## Proposed change
 
@@ -108,3 +108,4 @@ New or changed glossary terms: none.
 - 2026-11-25 – Review: benchmark indexes of both machines, the stop rule and the duration criterion added; the rejection of packet-level throttling corrected; Stage 1 key pages listed as in §2.9.
 - 2026-11-25 – Approved: the maintainer answered both open questions as proposed and confirmed the stop margin of a quarter of the budget.
 - 2026-11-25 – Implemented (#503): `throttlingMethod: 'devtools'` in `apps/web/e2e/lighthouse.spec.ts`, §2.9 and `.ai/memory/e2e.md` updated; the CI measurements are listed in the implementation pull request.
+- 2026-11-25 – The non-goal on the calibration of the CPU slowdown is superseded by `2026-11-25-lighthouse-calibrated-cpu-slowdown.md` (#508).
