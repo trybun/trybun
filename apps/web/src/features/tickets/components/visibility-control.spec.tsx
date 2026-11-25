@@ -29,6 +29,10 @@ vi.stubGlobal('matchMedia', (query: string) => ({
 Object.defineProperty(document, 'execCommand', { value: () => false });
 
 const { TeamTicketView } = await import('./team-ticket-view.js');
+// The lazily loaded editor is imported before the tests (#511): its first import takes ~0.7 s
+// alone and longer under the whole suite, past the 1 s of `findBy*`, so a wait would measure
+// the module load instead of the component.
+await import('@trybun/ui/components/markdown-editor');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
@@ -118,7 +122,7 @@ describe('VisibilityControl', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Refuse' }));
     expect(await within(dialog).findByText('Enter a reason.')).toBeDefined();
     await user.type(
-      await within(dialog).findByRole('textbox', { name: 'Reason' }, { timeout: 5_000 }),
+      await within(dialog).findByRole('textbox', { name: 'Reason' }),
       'Names a customer.',
     );
     await user.click(within(dialog).getByRole('button', { name: 'Refuse' }));
