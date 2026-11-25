@@ -169,11 +169,6 @@ test.describe('application shell', () => {
       ]);
       expect(tooltipBox?.x).toBeGreaterThan((linkBox?.x ?? 0) + (linkBox?.width ?? 0));
       await expect(projects).not.toHaveAttribute('aria-describedby');
-      await tooltip.evaluate((element) =>
-        Promise.all(
-          element.getAnimations({ subtree: true }).map((animation) => animation.finished),
-        ),
-      );
       expect(await seriousViolations(page)).toEqual([]);
 
       await page.keyboard.press('Escape');
@@ -211,11 +206,6 @@ test.describe('application shell', () => {
       await page.keyboard.press('Tab');
       await expect(projects).toBeFocused();
       await expect(tooltip).toBeVisible();
-      await tooltip.evaluate((element) =>
-        Promise.all(
-          element.getAnimations({ subtree: true }).map((animation) => animation.finished),
-        ),
-      );
       expect(await seriousViolations(page)).toEqual([]);
 
       await shell.toggleNavigation('Expand navigation');
