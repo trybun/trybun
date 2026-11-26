@@ -13,10 +13,31 @@ export type MessageKey = KeysOf<Messages>;
 
 export type MessageValues = Record<string, PrimitiveType>;
 
+/** The options `intl-messageformat` passes to its number format. */
+type MessageNumberFormatOptions = Parameters<Formatters['getNumberFormat']>[1];
+
+/**
+ * The options of a message's number format as the platform's `Intl` options. Since 12.2.0,
+ * `intl-messageformat` also types `trailingZeroDisplay: 'stripToMinimum'` (formatjs#7934), a TC39
+ * proposal that neither TypeScript's `Intl` types nor Node support; Node rejects it with a
+ * `RangeError`, so this does too, with a clearer message. The library never sets it itself.
+ */
+export function platformNumberFormatOptions(
+  options: MessageNumberFormatOptions,
+): Intl.NumberFormatOptions | undefined {
+  if (options === undefined) return undefined;
+  const { trailingZeroDisplay, ...rest } = options;
+  if (trailingZeroDisplay === 'stripToMinimum') {
+    throw new RangeError("The platform's Intl.NumberFormat does not support 'stripToMinimum'.");
+  }
+  return { ...rest, trailingZeroDisplay };
+}
+
 /** Formatters that show dates and times in one time zone. */
 function formattersIn(timeZone: string): Formatters {
   return {
-    getNumberFormat: (locales, options) => new Intl.NumberFormat(locales, options),
+    getNumberFormat: (locales, options) =>
+      new Intl.NumberFormat(locales, platformNumberFormatOptions(options)),
     getDateTimeFormat: (locales, options) =>
       new Intl.DateTimeFormat(locales, { ...options, timeZone }),
     getPluralRules: (locales, options) => new Intl.PluralRules(locales, options),
