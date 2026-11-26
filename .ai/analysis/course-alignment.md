@@ -37,7 +37,7 @@ Every step works in this order:
 | 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | done; issue #501 |
 | 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | done; issues #524–#526 |
 | 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | done; issues #530–#534 |
-| 6 | Interactive coding (phases, subagent per task, tracking) | L08 | open |
+| 6 | Interactive coding (phases, subagent per task, tracking) | L08 | done; issues #537, #538 |
 | 7 | Security of AI tools and of the product | L09, L16 | open |
 | 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | open |
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | open |
@@ -56,8 +56,8 @@ Questions found in one step that belong to a later one. Each step reads its rows
 
 | Step | Question | Found in |
 |---|---|---|
-| 6 | When a run log in `.ai/runs/` is written outside the `om-auto-*` skills (1.7) | step 1 |
 | 8 | Nested `AGENTS.md` files per folder (1.4) | step 1 |
+| 8 | Whether runs fill their context window, and so whether `om-auto-create-pr` needs a subagent per task below 20 Steps (6.4) | step 6 |
 | 9 | Whether Cezar provisions the locked skill versions into its tasks (2.3, #498) | step 2 |
 | 10 | Test quality beyond executed lines, e.g. mutation testing (1.18, #493) | step 1 |
 | 10 | The Compose infrastructure `trybun-test` was running without a descriptor in `.ai/qa/` (up 41 h on 2026-11-25); `test-env-up.sh` adopted it as `discovered`, so `test-env-down.sh` leaves it running by design. Who started it, and whether a leftover environment should be found and reported | #503 measurements |
@@ -518,3 +518,72 @@ The research was done on 2026-11-26; the maintainer accepted every recommendatio
 
 - **5.8 Storybook as a manual.** No MDX manual, `llms.txt` or `design-system.md`. Agents already reach §18.6 through `AGENTS.md` and the `ui-component` skill, and a copy would drift. Storybook's manifest and MCP wait until they leave preview and agents can reach a running Storybook.
 - **5.10 Storybook build in CI.** When Storybook is published or MCP is adopted.
+
+## Step 6 – Interactive coding (phases, subagent per task, tracking)
+
+Course sources: the ten leaves of L08 (input and scope of epic 01, the prototype README, the interactive implementation flow, the safety net and self-correction, review pitfalls and the choice of reviewer, the build of the phases, environment set-up and manual tests, tests of roles, sign-up and rate limit, GitHub OAuth, state after the lesson with its checklist). The carried-forward row of step 1 (1.7, run logs) is rated here as 6.2. Checked on 2026-11-26 at `main` `88269175`, with read-only commands: the skills under `.agents/skills/`, `.ai/agentic.config.json`, the 50 execution plans of `.ai/runs/`, the 336 runs of `.ai/cezar/runs.json` (task text, runner, `prRefs`) and the reviews of the 308 merged pull requests (`gh pr list`).
+
+Trybun's agents work in two modes. The autonomous skills of the Open Mercato pipeline (`om-auto-*`, run by Cezar) and interactive sessions with the maintainer, such as the one writing this analysis. The course's flow is the interactive one; where Trybun's autonomous skills cover the same practice, they are rated.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 6.1 | Implementation starts from an approved specification and is split into phases and stable tasks before any code (L08 initial prompt) | "Specification before implementation" (`SDLC.md`, `AGENTS.md`): the specification PR is merged first. `om-auto-create-pr` step 4 drafts an execution plan with Phases and Steps from the specification and commits it before any code (step 6, "Never commit code before the execution plan lands"); `AGENTS.md` "Plan first, re-plan when it goes wrong" | Full |
+| 6.2 | A tracker (`track.md`) lists phases and tasks, marks each done, keeps open points, and reflects the real state, so an interrupted session resumes from it and the last commit (L08) | The 50 execution plans of `.ai/runs/` have a Progress list, step → commit SHA (2–19 steps each); `om-auto-continue-pr` resumes from it; the loop engine adds `HANDOFF.md` and `NOTIFY.md`. No field for open points (the plans have Risks). Only `om-auto-create-pr` and its loop write one: the bug chain of `om-auto-fix-issue` and interactive sessions leave none, so their record is the issue, the PR body and the commits | Partial – 1.7 |
+| 6.3 | A commit after every task, as the point to return to (L08) | `om-auto-create-pr`: one commit per Step, or per Phase, plus a Progress commit; the loop engine: exactly one commit per Step ("runs MUST bisect by Step"); `commit-msg` and `pre-push` hooks check every commit | Full |
+| 6.4 | Each task is implemented by a subagent in its own context window, so the main thread keeps only the results (L08) | The loop engine dispatches `dispatch`/`group` Steps to sequential executor subagents (`engine.executorTier: standard`), but only above `engine.loopStepThreshold: 20` Steps; no execution plan in `.ai/runs/` has more than 19, and Cezar recorded one loop run. `om-auto-create-pr` and the bug chain implement in the main session. Trybun's own unit of isolation is the small task: one task = one focused PR (`AGENTS.md`), one agent run per PR. Whether runs exhaust their context was not measured (`tokensUsed` in `runs.json` is cumulative, not the context size) | Partial – measured in step 8 |
+| 6.5 | After every task the agent runs deterministic checks (typecheck, lint, tests, build), not its own judgement (L08, Huang et al. 2024) | `om-auto-create-pr` step 7.3: a targeted subset of `validation.commands` after each Phase; step 8: the full gate of six commands (`pnpm lint`, `lint:spec`, `typecheck`, `test`, `test:coverage`, `build`) before completion; the `pre-push` hook runs the commit checks of CI; 13 required CI checks. `AGENTS.md` forbids weakening tests or gates | Beyond |
+| 6.6 | The agent stops after each phase; a person tests by hand and reviews before the next phase builds on it (L08 "STOP") | Autonomous runs do not stop between phases. The checkpoint is the pull request: small PRs, review, the QA gate (`needs-qa`, `om-auto-qa-pr`, `qa-approved` owned by a person) and the maintainer's merge (`SDLC.md`, ADR 0011). The loop engine verifies at checkpoints every 5 Steps without stopping | Different |
+| 6.7 | Each phase is reviewed in a new session, by a model of another family; the author's own session reviews poorly (L08: self-correction blind spot, self-preference, familiarity) | The skill chains review in the session that wrote the code: `om-auto-fix-issue` step 9 and `om-auto-create-pr` step 10 invoke `om-auto-review-pr --autofix` inline ("this run owns the PR"). Of 128 merged `feat`/`fix` PRs with a review, 106 have a single Cezar run, the one that implemented them; 9 were reviewed by a separate run; 13 have no or several runs. All 336 runs use the `claude` runner. A second family for specifications is #525; for code it is step 11 (L21) | Missing |
+| 6.8 | Review findings go back to the implementation; blockers and majors are fixed before the next phase (L08) | `om-auto-review-pr --autofix` loops until a clean verdict or only non-actionable findings remain, with new commits and re-run validation; severities in `CODE_REVIEW.md`; `changes-requested` hands the PR back to its author | Full |
+| 6.9 | Code review comes before manual testing, so the agent removes simple glitches first (L08) | `SDLC.md` pipeline: review → `needs-qa` → `qa`; `om-auto-fix-issue`: `om-auto-review-pr` (step 9) before `om-auto-qa-pr` | Full |
+| 6.10 | The whole specification is reviewed at the end (L08) | `om-auto-review-pr` reviews the whole PR against the specification it cites; with a Delta, the finish check of `om-auto-implement-spec` (`references/delta-archive.md`) reports a missing capability file or characterization test | Full |
+| 6.11 | After a phase the agent says what it built, what configuration and data it needs and how to run it, and writes a manual test guide with test accounts (L08) | The summary comment of `om-auto-create-pr` and the PR body template; `om-prepare-test-env` boots the application once and `om-auto-qa-pr` walks it in a browser; the seeded accounts with their password and TOTP secret are listed in `README.md` (§15.12) | Full |
+| 6.12 | The local environment is reproducible: an example `.env`, generated secrets, mocks only locally and refused elsewhere, migrations and a seed with personas (L08) | `pnpm dev` starts Compose, applies the migrations and the demo dataset (§15.12); `.env.example` (165 lines) with development values, `./trybun install` generates real secrets (§15.5). No mock identity adapter: Keycloak runs locally with the development realm overlay, and password sign-in of seeded team accounts exists only in the local environment (§7.4). Personas include the newcomer without tour progress, the customer and the partner | Beyond |
+| 6.13 | A failure is debugged to its root cause with evidence (the URL, the type-check output), not by guessing (L08) | `SDLC.md` Implement stage: `om-root-cause` (read-only) locates the change surface before the fix; the bug chain runs `om-verify-in-repo` → `om-root-cause` → `om-fix` with a regression test | Full |
+| 6.14 | A third-party sign-in uses the least privilege, one application per environment, its secrets in `.env` (L08 GitHub OAuth) | GitHub sign-in goes through Keycloak (§7.4); the GitHub integration is a GitHub App with access only to selected repositories and the minimum permissions, no PAT (§11); client secrets only in `.env` (`TRYBUN_GITHUB_CLIENT_SECRET`); local contributors need no OAuth application (§7.4) | Full |
+| 6.15 | The agent records what it learned (`lessons.md`) and keeps the instructions current (L08) | Rule 7 and the Definition of Done: project memory in `.ai/memory/`; "Learn from corrections" in `AGENTS.md` | Full |
+
+Rated elsewhere: the joint input of specification and prototype and the screen states (5.16–5.20); watching the context during a long run with `/context` (L10, step 8).
+
+Not verified: the scopes the Keycloak GitHub identity provider requests (6.14); which session submitted the reviews of the 8 PRs without a Cezar run, made in interactive sessions (6.7); whether any Cezar run was compacted (6.4).
+
+**6.6 Different – the pull request is the checkpoint.** The course stops after every phase because one interactive session builds a whole epic (four phases, about 500 000 tokens). Trybun's tasks are small, one task per PR, so the run ends where the course stops: at review, QA and the maintainer's merge. Phases inside a PR are verified by the deterministic gate (6.5), which does not wait for a person.
+
+### Gap proposals
+
+The research was done on 2026-11-26, by two research passes that read the primary sources. On the same day the maintainer had the upstream skills checked first, then accepted (a) for 6.7 (#537) and the rule for 6.2 (#538).
+
+**6.7 Review in a fresh context – accepted (a): #537.** The author's session reviewing its own change is the case every source warns against:
+
+- Huang et al. (ICLR 2024): intrinsic self-correction lowers accuracy (GPT-4 on GSM8K 95.5 → 91.5 → 89.0 %).
+- Tsui, Self-Correction Bench (COLM 2026): 14 models left 64.5 % of their own errors uncorrected that they corrected when shown as someone else's.
+- Kamoi et al. (TACL 2024): self-correction works only with reliable external feedback.
+- Reddy et al. (arXiv 2605.21537, 2026): the producing model approved 31.7 % of its own semantic-drift errors.
+
+The direct measurement of a fresh context of the same model on code is thin: Song (arXiv 2603.12123 v2, one author, 30 artifacts) found a fresh session better than repeated self-review (p = 0.004) but not significantly better than one self-review (p = 0.26), and Guey & Bougault (arXiv 2606.20093) found no author bias on verifiable revisions, with effects under about 13 points not ruled out. What practice does is not thin: no tool maker reviews in the author's context. Claude Code's `/code-review` runs "in a fresh subagent that never saw your conversation", and its skills can run as one (`context: fork`, code.claude.com/docs/en/skills); GitHub's Copilot coding agent has a separate Copilot code review check its changes before it opens the PR (2026-02-26); OpenAI's Codex reviewer is run apart from the generator and warns against one verifier for both (2025-12-01).
+
+**Upstream, checked at `open-mercato/skills` `7c861837` (2026-11-26) at the maintainer's request.** The pattern is already there, but not on the path Trybun uses:
+
+- `om-auto-fix-issue` in **automerge mode** (#194, 2026-11-20): "the review and QA cycles each run in fresh-context subagents" (`references/automerge-mode.md`). Trybun's lock predates it, and the mode hands the merge to `om-auto-merge-buddy`, which ADR 0011 leaves to the maintainer.
+- The staged-only skills `om-fix-issue` and `om-implement-feature` with the runtime `om-harness` (#152, 2026-10-31): even in the `standard` profile, `om-code-review` runs in "a new Claude context with no inherited implementation transcript"; the contract (`om-harness/references/code-review-contract.md`) gives the reviewer only the worktree, an immutable packet with its SHA-256 and the skill, has it attest `freshContext: true`, and stops if the host cannot create a fresh context. These skills never commit, push or open a PR, and are not installed in Trybun (#525 installs `om-harness` for its Codex reviewer).
+- The default chains do not: `om-auto-create-pr` and `om-auto-create-pr-loop` are unchanged upstream, and the upstream `om-auto-review-pr` (changed since the lock by #193, #198 and #204) still reviews in the caller's context. `om-code-review` is unchanged.
+
+Options:
+
+- **(a) Accepted: the upstream pattern on Trybun's path.** The lock is first brought to the current upstream (with #498), then a repository extension `.ai/skills/om-auto-review-pr/SKILL.md` (the mechanism of `.ai/skills/README.md`, the same file #525 adds) runs the review of `om-code-review` in a subagent that gets only the PR number, the issue or specification and read access to the worktree, never the author's transcript; it returns the findings. The calling session, which knows the change, applies the fixes, as in the course ("uwagi wracają do sesji implementacyjnej"), and each re-review is again a fresh subagent. The reviewer gets the specification, because OpenAI traces many false alarms to a misread intent, and is asked for correctness, because "a reviewer that's asked to find problems will always find something" (Anthropic). Interactive sessions follow the same rule before they open a PR.
+- **(b) Rejected: a separate Cezar run for every review.** The same isolation, but each autofix round would cross runs, the claim of the PR would pass between them, and the review would wait for the orchestrator. The 9 reviews made this way show it works, not that it is simpler.
+- **(c) Rejected: keep the same session.** Against all the sources above.
+- **Out of scope here:** a model of another family. It is #525 for specifications and step 11 (L21) for code.
+
+Cost: one more context per review, which re-reads the diff and the specification. The extension has to be tested in a real run, because whether `context: fork` holds when one skill invokes another, and in Cezar, is not documented.
+
+**6.2 and 1.7 Run logs – accepted (a): #538.** The sources agree that a progress file is for work that outlives one session or context window, runs for hours, has phases, or passes to another agent (Anthropic "Effective harnesses for long-running agents", 2025-11-26, and the Claude prompting best practices; OpenAI's ExecPlans, "for complex features or significant refactors"; Cline's memory bank; Harper Reed's `todo.md`, 2025-02-16). For short work, the PR is the record: GitHub's Copilot coding agent keeps its checklist in the PR body, and Cursor says that for quick changes "jumping straight to Agent mode is fine". No tool maker asks for a file on every task, which is what `track.md` in L08 does.
+
+- **(a) Accepted: write the rule down.** `SDLC.md` says when a run log in `.ai/runs/` is written: by the `om-auto-create-pr` skills, and by any other task that spans more than one session, is planned in phases or is handed to another agent. A task done in one session has its record in the issue, the PR body and the commits. That is the split Trybun already has; only the rule was missing, which is why 1.7 was asked.
+- **(b) Rejected: a run log for every task, as in L08.** Stricter than any source, and it repeats the PR body.
+- **(c) Not now: delete finished run logs at merge** (cogitoacademy/app #295, 2026-10-09, deleted 53 plans). No problem with the 50 logs on `main` is recorded; it waits for one.
+- **Open points**, which the course keeps in `track.md`: the ExecPlan sections Surprises & Discoveries and Decision Log cover them. Nothing in Trybun shows an open point lost, so the plans keep their Risks.
+
+**6.4 Subagent per task – moves to step 8**, which measures the context: whether runs fill their window decides whether `om-auto-create-pr` needs executor subagents below 20 Steps.
