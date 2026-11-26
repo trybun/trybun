@@ -35,7 +35,7 @@ Every step works in this order:
 | 1 | Repository, stack, standards, AGENTS.md, `.ai/`, CI safety net | PW, L01–L02 | done; issues #487–#494 |
 | 2 | Skills, `om-setup-agent-pipeline`, labels, issue → PR → review flow | L03, extras: skills | done; issues #498, #499 |
 | 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | done; issue #501 |
-| 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | open |
+| 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | done; issues #524–#526 |
 | 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | open |
 | 6 | Interactive coding (phases, subagent per task, tracking) | L08 | open |
 | 7 | Security of AI tools and of the product | L09, L16 | open |
@@ -49,6 +49,27 @@ Every step works in this order:
 | 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
 
 Step 12 has no lesson of its own. The course rates whether the safety net and the gates exist (L02, L14, L17), not whether each workflow is needed and well written, so the maintainer added it on 2026-11-24. It follows steps 10 and 11, which rate tests and gates from the course side, and comes before the release step, which covers `release.yml`. Sources to research: the GitHub Actions documentation (security hardening, `permissions`), the tools built for such audits (actionlint, zizmor, OpenSSF Scorecard), and established practice for flaky tests. The flaky component test found during step 1 was filed on its own (#496) because it failed on `main`, and fixed in #497.
+
+### Carried forward
+
+Questions found in one step that belong to a later one. Each step reads its rows before it rates, and the final review pass checks that none is left open.
+
+| Step | Question | Found in |
+|---|---|---|
+| 6 | When a run log in `.ai/runs/` is written outside the `om-auto-*` skills (1.7) | step 1 |
+| 8 | Nested `AGENTS.md` files per folder (1.4) | step 1 |
+| 9 | Whether Cezar provisions the locked skill versions into its tasks (2.3, #498) | step 2 |
+| 10 | Test quality beyond executed lines, e.g. mutation testing (1.18, #493) | step 1 |
+| 10 | The Compose infrastructure `trybun-test` was running without a descriptor in `.ai/qa/` (up 41 h on 2026-11-25); `test-env-up.sh` adopted it as `discovered`, so `test-env-down.sh` leaves it running by design. Who started it, and whether a leftover environment should be found and reported | #503 measurements |
+| 11 | Model per task (1.21) | step 1 |
+| 11 | Four pipeline PRs merged without a review (#429, #455, #466, #478), with `required_approving_review_count: 0` in the ruleset "Protect main" | step 2 |
+| 12 | `ci.yml` and `codeql.yml` run every job on every pull request, also on documentation only (about 12 min; #495 failed on the flaky Lighthouse budget). A path filter on the workflow would leave the required checks unreported and block the PR, so the question is a job-level condition. Risks to research: Markdown that is part of the application (help pages in `apps/web`), the required CodeQL check, pushes to `main` | #506 |
+| 12 | Flaky classes that came back after a fix: animations under axe (#72, #270 → #502, and again after its fix → #514) and the simulated LCP (#163, #372 → #503). A third class: lazily loaded modules in component tests (#326, #496 → #511), which five specs had worked around with longer timeouts. A fourth: a background program checked before it has run, in the stubs of `test-env-up.spec.js` (#520, #522). And the calibrated Lighthouse slowdown (#515) failed to converge on a noisy runner (#523). Why the earlier fixes did not hold, and how flaky tests are detected and reported (quarantine, retry reports) | step 3 |
+| 12 | `.github/labels.yml` lists 33 labels, GitHub has 50, and no workflow or script reads the file | step 2 |
+| 12 | Editing a PR body re-runs `Commit messages and title` and cancels the run in progress, which shows as a cancelled check next to the passing one (#504, #506) | #506 |
+| 12 | A CI run takes 11.5–14 min. The critical path is `pnpm test:coverage` (389–642 s) and `pnpm e2e` (472–633 s); the spread follows the runner pool (AWS fast, Azure slow, read from the `Cloud:` line of the job log). An idle VPS ran `pnpm test:coverage` in 249 s (9908 tests, warm Testcontainers images). Self-hosting is advised against: GitHub's secure-use docs say self-hosted runners should almost never serve public repositories, the PyTorch and runner-images compromises and the Shai-Hulud 2.0 worm used them, and the VPS holds the maintainer's `gh` credentials, the agents' worktrees and the QA stacks, with the `docker` group root-equivalent. Options to weigh: Vitest shards with thresholds checked on the merged coverage, Playwright shards with merged reports, Lighthouse as its own job, the infrastructure started early, one gate job (`re-actors/alls-green`) or the kept check names for the ruleset; then a managed per-job-VM runner (Ubicloud, Blacksmith, Namespace). Larger GitHub runners need a paid plan | session 2026-11-25 |
+| 14 | When the product brief is refreshed (3.4, #501); how `CODE_REVIEW.md` keeps following the defects (2.11, #499); retrospectives | steps 2, 3 |
+| 15 | The analysis commits use the scope `agents`, as the closed scope list of §2.14 has none for `.ai/analysis/`; whether one is needed | step 0 |
 
 ## Step 0 – Baseline map
 
@@ -284,3 +305,133 @@ Found during step 3: two flaky E2E checks, filed on their own because they fail 
 
 - #502: the accessibility check measured elements while they still animated. Fixed in #504: the check waits for the animations of the page.
 - #503: the Lighthouse LCP budget of the empty shell, open.
+
+## Step 4 – Specification for agents (spec, delta, grill-me, review by another model)
+
+Course sources: the seven leaves of L05 (overview, spec as context engineering, user stories, `om-spec-writing` and grill-me, the live spec of issue #7, review by another model, process and state), the L07 leaf "from prototype to specification", the L25 leaf "new requirement = new specification", the L11 leaf on the input of autonomous work, and the extras on the specification skills and on context and specifications. Checked on 2026-11-26 at `main` `60d19f78`, over the 44 change specifications in `.ai/specs/implemented/` and their pull requests.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 4.1 | The requirement says what, the specification says how in this system; it is written before the code and is the shared reference of author, reviewer and tester (L05) | "Specification before implementation" in [`SDLC.md`](../../SDLC.md) and [`.ai/specs/README.md`](../specs/README.md): the implementation starts only after the specification pull request is merged, and the merge is the maintainer's acceptance. Two layers: the system specification [`docs/spec/`](../../docs/spec/README.md) says what the system is, a change specification says what changes and why | Beyond – the system specification is kept current by every change (Rule 8, [§2.8](../../docs/spec/02-agent-rules.md#28-rule-8--the-specification-is-kept-up-to-date)) |
+| 4.2 | The specification is context engineering: scope, place in the architecture, reused components and patterns, changed flows, decisions, risks, edge cases, acceptance criteria, the link to the backlog and a history; not every line of code (L05) | The sections of `om-spec-writing` (TLDR, Problem Statement, Proposed Solution with the alternatives, Architecture, Edge Cases, Risks) and of [`TEMPLATE.md`](../specs/TEMPLATE.md) (Non-goals, Changes to the system specification, Acceptance criteria, Changelog, Related issues). The 44 implemented specifications average 175 lines | Full |
+| 4.3 | User stories are the most important part: who, in what situation, wants to do what, sees what result, what the system does on the way and what happens next; without them an agent builds flat CRUD (L05) | None of the 44 specifications has user stories. The TLDR names who needs the change, and three specifications have `WHEN`/`THEN` scenarios in a Delta. Neither the template nor the installed skill asks for stories (the skill's "Phases (stories)" means delivery slices) | Missing – #524 |
+| 4.4 | `om-spec-writing` recognises the project, asks the questions an agent must not decide, researches the code, then drafts; open questions stop the design (L05, extras) | `om-spec-writing` and `om-auto-write-spec` are installed; every one of the 44 specifications has "Open questions" or "Resolved assumptions (autonomous defaults)"; an assumption marked `⚠ NEEDS HUMAN CONFIRMATION` keeps the pull request a draft | Full |
+| 4.5 | The human reads the specification first, decides what to keep and records the decisions in it (L05, L07) | The maintainer answers the open questions and the autonomous defaults in the session; the answers are written into the specification and posted on the pull request before the merge (e.g. #421, #506) | Full |
+| 4.6 | A model other than the author reviews the specification, with a short prompt about contradictions, anti-patterns and over-complexity (L05) | `om-auto-review-pr` reviews every specification pull request in its specification mode, in a fresh context, but with the same model family: all 336 recorded Cezar runs use the `claude` runner. Codex CLI is installed on the maintainer's machine and unused | Missing – #525 |
+| 4.7 | `grill-me` interviews the human after the review and surfaces the assumptions nobody wrote down (L05) | Not installed. The closest step is the open-questions gate of `om-spec-writing`, which asks before the design, not after the review | Missing – #526 |
+| 4.8 | The delivery is split into phases and steps; each step leaves the application working and the order of the phases follows the dependencies (L05, extras) | "Implementation Plan" in 29 of the 44 specifications; the others are single-step changes. `om-auto-create-pr` runs the plan phase by phase | Full |
+| 4.9 | What a prototype or a persona finds goes back into the specification before the code, as a checkable criterion or a recorded "not doing" (L07) | Belongs to step 5 (design and prototype), which rates the prototype itself; two specifications carry mockups | Rated in step 5 |
+| 4.10 | A new requirement gets a new specification, the old one stays as the record of its time; the status follows the folder (active, `implemented/`, `archive/`) (L25) | The lifecycle of `.ai/specs/README.md` keeps the same three places. What the system does now is in `docs/spec/`, so an agent does not have to work out which of many change specifications applies | Beyond |
+| 4.11 | A Delta (ADDED / MODIFIED / REMOVED with `WHEN`/`THEN`), `Extends` / `Supersedes`, a prior-spec drift check and `Frozen by:` characterization tests (L25) | The installed `om-spec-writing` asks for all of them (`references/delta-format.md`, `prior-specs.md`), but `TEMPLATE.md` and `README.md` mention none. 3 of the 44 specifications have a Delta, although more change observable behavior (e.g. `2026-11-20-page-tab-titles.md`); the specifications mix the skill's sections with the template's | Partial – #524 |
+| 4.12 | An autonomous specification is its own pull request, the implementation another one; risky assumptions hold the merge (extras, L11) | `om-auto-write-spec` and `om-auto-implement-spec`; the implementation pull request refers to the specification pull request (`Refs`, `Source doc:`) | Full |
+| 4.13 | With many specifications the agent is pointed at the one that matters and its links; the archive is kept apart (extras FAQ) | `docs/spec/README.md` indexes the system specification; change specifications by date in their status folders | Full |
+
+### Gap proposals
+
+The research was done on 2026-11-26. The maintainer accepted the recommended option of every gap on the same day.
+
+**4.3 and 4.11 – one format with user scenarios and a Delta – accepted (A): #524.** These two gaps share one cause, so they get one proposal.
+
+**What the repo shows.**
+
+- **Two formats.** Of the 44 implemented specifications, 34 use the sections of `TEMPLATE.md` and 17 those of the skill; some use both. The installed `om-spec-writing` never reads `TEMPLATE.md`.
+- **No user stories, in any revision.** None of the 20 upstream revisions of its `SKILL.md` asked for them. In Open Mercato they live in `om-app-spec-writing`.
+- **A second source of truth.** `om-auto-implement-spec` archives every Delta into `.ai/specs/capabilities/<slug>.md` (`references/delta-archive.md`). That would be a second description of current behavior next to `docs/spec/`, against Rule 8. The three Deltas of Trybun escaped it only because their headings do not match the shape the skill looks for.
+
+**Sources.**
+
+- **User stories.** Sources disagree.
+  - GitHub Spec Kit requires prioritised stories with Given/When/Then.
+  - AWS Kiro writes stories with EARS criteria, and gives a bug fix a separate format: current, expected and unchanged behavior.
+  - OpenSpec has no stories: requirements with scenarios, and none for tooling.
+  - Mike Cohn: "not everything needs to be a user story".
+  - Alan Klement's job stories put the situation before the persona.
+- **Criticism.** Birgitta Böckeler (martinfowler.com, 2025) saw Kiro turn a small bug into 4 stories with 16 criteria, and found Spec Kit's Markdown tedious to review.
+- **Where they agree.** Name the actor, the situation and the visible result, and confirm them with concrete scenarios. Do not force a story where nobody observes the behavior.
+- **The two layers.** They are the model of OpenSpec: change specifications plus a living specification updated when a change is implemented. So "never rewrite an old specification" (L25) applies to `.ai/specs/`, and editing `docs/spec/` is that model's archive step.
+- **Delta and the table.** `docs/spec/` is prose (no `SHALL`, no `WHEN`/`THEN`), so the Delta and the table "Changes to the system specification" do different jobs. The Delta covers behavior and its characterization tests; the table covers the sections, the glossary and the user documentation.
+- **Characterization tests.** Michael Feathers (2004) and Mark Seemann (2025). An existing test named in `Frozen by:` is checked by breaking the code and seeing the test fail.
+
+**Options.**
+
+- **(A) Recommended: `TEMPLATE.md` becomes the one format**, and repo-local extensions make the skills follow it.
+  - The template gains:
+    - `Extends` / `Supersedes` lines and a prior-spec drift section;
+    - **user scenarios**, required when someone observes the change (an end user, a role of the glossary, or the maintainer reading CI or audit output), built on the six questions of L05 with the situation first;
+    - a **Delta** per `docs/spec/` section, with `SHALL`, `WHEN`/`THEN` and `Frozen by:`.
+  - The table "Changes to the system specification" stays.
+  - An extension of `om-spec-writing` writes this format.
+  - An extension of `om-auto-implement-spec` replaces the `capabilities/` archive with the Rule 8 update of `docs/spec/`.
+  - `README.md` describes all of it.
+  - **Open risk.** `references/agentic-setup.md` says an extension can never "redirect outputs". If the skill reads the new archive target as such, the fix is an upstream proposal for a setting that names the living specification.
+- **(B) Rejected: change only the template.** The skill does not read it, and the `capabilities/` conflict stays.
+- **(C) Rejected: the skill's format only.** It loses the plan task, the glossary terms and Rules 3, 4 and 9, and the conflict stays.
+- **(D) Rejected: OpenSpec capability files, or rewriting `docs/spec/` as requirements.** It duplicates or restructures the single source of truth, and OpenSpec itself advises against converting existing documents.
+
+**4.6 – Review by another model – accepted (a1): #525.**
+
+**What exists.**
+
+- **Upstream already has it, staged only.** `open-mercato/skills` added `om-harness` and `om-setup-agent-harness` on 2026-10-31 (PR #152). In the "multi" profile, a fresh Claude context and blind advisors, Codex among them, review the same hash-bound packet, also of a specification (`prepare-review --kind spec`). The Codex reviewer runs:
+  - in a read-only sandbox;
+  - against a strict output schema;
+  - with a check that the worktree did not change.
+- **Not in the PR flow, and not installed.** The upstream `om-auto-review-pr` has no reviewer-model option. Trybun's lock has 60 of the 74 upstream skills, because `npx skills update` never adds new skills.
+- **Codex CLI 0.171.0 can run unattended:** `exec -s read-only`, `--ephemeral`, `--output-schema`, `-o`.
+
+**Evidence.**
+
+- **For.**
+  - Self-preference: Panickssery et al., NeurIPS 2024.
+  - No self-correction without an outside signal: Huang et al., ICLR 2024.
+  - Correlated errors: Goel et al., ICML 2025.
+  - For documents, Song (arXiv, single author): one same-model and one cross-model review found 56.7 % of the planted errors, against 42.7 % for two same-model reviews.
+- **Against.**
+  - Xiang et al.: Codex reviewing Claude's code made the result worse (91.4 % → 82.8 %).
+  - Broccia et al. (2026, n=34): LLM help lowered the requirement defects people found. So the maintainer reads the specification before the AI findings, as L05 teaches.
+- **Practitioners.** The official `codex-plugin-cc`, PAL/zen MCP and others run Codex locally, read-only and blind, and check its findings before acting. None runs a specification review in CI on a public repository.
+
+**Options.**
+
+- **(a1) Recommended: install `om-harness` and `om-setup-agent-harness`**, locked by hash, with only the Codex reviewer configured. A repo-local extension of `om-auto-review-pr` runs a blind Codex advisor next to the fresh Claude review on specification pull requests.
+  - **Findings.** Codex findings are attributed, checked against the code before they count toward the verdict, and never applied unchecked.
+  - **Failures.** A failed or partial Codex run is reported as "not reviewed", never as a pass.
+  - **Where it runs.** Locally in Cezar, so no secret reaches GitHub.
+  - **What is still unchecked.** Whether the harness runtime can be called from the extension needs one test run of Codex.
+  - **If it cannot.** (a2) The extension calls `codex exec` directly with the same flags.
+  - **Upstream.** The maintainer may propose the reviewer option upstream (a3).
+- **(b) Rejected: a manual step.** Nothing is recorded on the pull request.
+- **(c) Rejected: a GitHub Action with another provider.** An API key in a public repository, and fork pull requests would need `pull_request_target`, the class of the known exfiltration attacks; it is also a settings change agents do not make.
+- **(d) Rejected: the same model in a fresh context only.** That is the gap, and it can be closed.
+
+**Quality.** The evidence that cross-model review helps with specifications in particular rests on one study. So the Codex review informs the maintainer and the reviewer, and it is not a merge gate.
+
+**4.7 – grill-me – accepted (a): #526.**
+
+**What it is.** `grill-me` (2026-08-15) is one line that calls `grilling` (MIT, Markdown only, 15 changes from June to October 2026).
+
+- It maps the decisions as a tree and asks them in rounds, each question with a recommended answer.
+- The agent looks up facts; the human makes every decision.
+- It has no asynchronous mode, on purpose, and writes no file.
+
+**How it differs from what Trybun has.** The gate of `om-spec-writing` covers only the critical unknowns, before the design, and `om-auto-write-spec` answers it with defaults. Grilling interviews the human after the review, so the two complement each other.
+
+**Similar practices.** Spec Kit `/clarify` (at most five questions, answers written into the specification), the pre-mortem (Klein), structured interviews (Davis et al. 2006) and ClarifyGPT (FSE 2024). No study measures grill-me itself.
+
+**Options.**
+
+- **(a) Recommended: install `grilling` and `grill-me`** with `npx skills`, locked by hash, with the diff read at every update, since the skill changes often.
+  - The `.gitignore` rule covers only the `om-*` links, so the new links need a rule; that is the maintainer's change.
+  - The maintainer runs `/grill-me` after reading the specification and the reviews, and records the decisions as in 4.5.
+  - A project skill that feeds the interview from the assumptions table and the review findings waits until real sessions show it is needed.
+- **(b) Rejected: extend the gate of `om-spec-writing`.** It runs autonomously and before the review.
+- **(c) Rejected: an asynchronous "grill memo" on the pull request.** Unanswered questions are the agent's opinion, not decisions.
+
+Full reports: the research of 2026-11-26 in the session scratchpad, summarised here; the sources are named above.
+
+Found during step 4, in the ten attempts of the CI experiment of #510: two flaky checks in code the experiment does not change, filed on their own:
+
+- #522: a late line of the previous boot's API stub reached the log of the next run in `test-env-up.spec.js`; the health checks of the stub passed before the stubbed API had started.
+- #523: the CPU slowdown calibration of the Lighthouse budget did not converge on a noisy runner.
