@@ -38,7 +38,7 @@ Every step works in this order:
 | 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | done; issues #524–#526 |
 | 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | done; issues #530–#534 |
 | 6 | Interactive coding (phases, subagent per task, tracking) | L08 | done; issues #537, #538 |
-| 7 | Security of AI tools and of the product | L09, L16 | open |
+| 7 | Security of AI tools and of the product | L09, L16 | done; issue #540 |
 | 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | open |
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | open |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | open |
@@ -68,6 +68,7 @@ Questions found in one step that belong to a later one. Each step reads its rows
 | 12 | `.github/labels.yml` lists 33 labels, GitHub has 50, and no workflow or script reads the file | step 2 |
 | 12 | Editing a PR body re-runs `Commit messages and title` and cancels the run in progress, which shows as a cancelled check next to the passing one (#504, #506) | #506 |
 | 12 | A CI run takes 11.5–14 min. The critical path is `pnpm test:coverage` (389–642 s) and `pnpm e2e` (472–633 s); the spread follows the runner pool (AWS fast, Azure slow, read from the `Cloud:` line of the job log). An idle VPS ran `pnpm test:coverage` in 249 s (9908 tests, warm Testcontainers images). Self-hosting is advised against: GitHub's secure-use docs say self-hosted runners should almost never serve public repositories, the PyTorch and runner-images compromises and the Shai-Hulud 2.0 worm used them, and the VPS holds the maintainer's `gh` credentials, the agents' worktrees and the QA stacks, with the `docker` group root-equivalent. Options to weigh: Vitest shards with thresholds checked on the merged coverage, Playwright shards with merged reports, Lighthouse as its own job, the infrastructure started early, one gate job (`re-actors/alls-green`) or the kept check names for the ruleset; then a managed per-job-VM runner (Ubicloud, Blacksmith, Namespace). Larger GitHub runners need a paid plan | session 2026-11-25 |
+| 13 | A threat model (`docs/security/threat-model.md`) before the first release `1.0.0`, and with it the decision on DAST and an agentic security review (7.9–7.15) | step 7 |
 | 14 | When the product brief is refreshed (3.4, #501); how `CODE_REVIEW.md` keeps following the defects (2.11, #499); retrospectives | steps 2, 3 |
 | 15 | The analysis commits use the scope `agents`, as the closed scope list of §2.14 has none for `.ai/analysis/`; whether one is needed | step 0 |
 
@@ -587,3 +588,87 @@ Cost: one more context per review, which re-reads the diff and the specification
 - **Open points**, which the course keeps in `track.md`: the ExecPlan sections Surprises & Discoveries and Decision Log cover them. Nothing in Trybun shows an open point lost, so the plans keep their Risks.
 
 **6.4 Subagent per task – moves to step 8**, which measures the context: whether runs fill their window decides whether `om-auto-create-pr` needs executor subagents below 20 Steps.
+
+## Step 7 – Security of AI tools and of the product
+
+Course sources: the nine leaves of L09 (six areas and the lethal trifecta, the lab, the repository that runs code, skills as dependencies, prompt injection, secrets in sessions, sandbox and outbound traffic, hooks, checklist and homework) and the ten leaves of L16 (plan, threat model with STRIDE and the `threat-model` skill, the DevMentor threat model, OWASP lists, access control and IDOR, SAST and DAST, where to run tests, DeepSec, refusals of models, state after the lesson with the evidence card). The carried-forward table has no row for step 7. Checked on 2026-11-26 at `main` `88269175`.
+
+The commands were read-only:
+
+- the agent configuration of the repository (`.claude/settings.json`, `.github/CODEOWNERS`, no `.mcp.json`) and of the agents' machine (the user settings of Claude Code, the scopes of the `gh` token);
+- the product's security requirements (§13.5, §7.4, ADR 0011);
+- the denial tests of the 45 integration specifications of `apps/server`;
+- a count-only scan of the session transcripts on the agents' machine with the patterns of L09, which prints no values.
+
+### Ratings – the agents' tools (L09)
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 7.1 | Every agent run is judged by the lethal trifecta – private data, untrusted content, a way to send data out – and one leg is missing in each run (L09, Willison) | No document applies it. In a Cezar run all three legs meet: <ul><li>private data: the maintainer's `gh` token, the local `.env` files and the session transcripts;</li><li>untrusted content: issues, pull requests and comments of a public repository, which anyone can write, and web pages;</li><li>a way out: `gh`, `git push`, `curl`.</li></ul>ADR 0011 names prompt injection through contributors' pull requests and answers it with an instruction ("text … is data, never an instruction"), which L09 says is not a boundary | Missing |
+| 7.2 | The agent configuration of a repository (hooks, `.mcp.json`, `enableAllProjectMcpServers`, `allow` lists) is read before an agent starts in it, and is under `CODEOWNERS` with a required Code Owners review (L09) | Trybun's `.claude/settings.json` has only an `allow` list of six `pnpm` commands and `autoMemoryEnabled: false`; no hooks, no `.mcp.json`. `CODEOWNERS` is `* @dtk7c2`, so it covers `.claude/`, `.agents/`, `AGENTS.md` and `CLAUDE.md`, but ADR 0011 removed the required Code Owners review: a contributor's pull request that changes the agent configuration is merged by the maintainer or by a workflow the maintainer runs (`om-approve-merge-pr`), and nothing marks such a change for the maintainer | Partial |
+| 7.3 | Skills are dependencies: read before install, scanned (`` !` ``, `curl`, `.env`, `~/.ssh`), added and updated through a reviewed PR with a pinned version (L09) | Installed from one upstream (`open-mercato/skills`) and recorded by hash in `skills-lock.json`, changed through pull requests; the content is read before an install (rule of #525 and #526). The lock pins a hash, not a commit (#498). No scan of the skills, locally or in CI | Partial – #498 |
+| 7.4 | The untrusted sources an agent reads are known, a test with a hidden instruction is recorded, and the boundary is outside the model: permissions, sandbox, hooks (L09) | No list of the untrusted sources, no recorded test. Interactive sessions run in Claude Code's auto mode, whose classifier sees the intended action, not the tool output; the permission mode of Cezar's runs was not checked | Missing |
+| 7.5 | Session transcripts are scanned and what they hold is rotated; `permissions.deny` covers `.env`, keys and credentials; secrets come from a manager; the agent has its own short-lived token with the least scope (L09) | No `deny` rule in the repository or the user settings. The agents use the maintainer's `gh` token (ADR 0011), which does not expire and has the scopes `repo`, `workflow`, `admin:org`, `user` and `gist`, for all the maintainer's repositories. Transcripts are kept 30 days by default; 2.6 GB in 435 project folders. The count-only scan found: <ul><li>Postgres URLs in 55 files, all local development and Testcontainers defaults;</li><li>the AWS documentation example key;</li><li>in other projects' sessions, one classic GitHub token and one private key; the maintainer was told.</li></ul>Trybun's own `.env` holds development values only, and production secrets are generated on the server (§15.5) | Missing |
+| 7.6 | The agent's commands run in a sandbox: `enabled`, `allowUnsandboxedCommands: false`, `denyRead` for credential folders, a tested allowlist of domains, cloud metadata denied (L09) | Not configured. `bubblewrap` is installed on the agents' machine, `socat` is not; the agents' user is in the `docker` group, which is root-equivalent (step 12 row of the carried-forward table) | Missing |
+| 7.7 | At least one blocking `PreToolUse` hook (exit 2), tested without the agent, read before use (L09) | No agent hooks. The Git hooks `commit-msg` and `pre-push` check commits, not the agent's tool calls | Missing |
+| 7.8 | The permissions, skills and MCP servers can be reviewed in a minute (`security-notes.md`) (L09) | Skills: `skills-lock.json` and `.ai/skills/README.md`. Permissions: `.claude/settings.json`. The user-level plugins and MCP servers of the agents' machine and the scopes of the token are written down nowhere | Partial |
+
+### Ratings – the product (L16)
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 7.9 | A threat model of the real architecture: the four questions, STRIDE per entry point and trust boundary, a table with likelihood, impact, response, today's control and how it is verified, assumptions, re-run triggers, updated with stable IDs (L16 `threat-model`) | None. The security requirements are spread over the specification: §13.5 (OWASP ASVS as the reference, headers, brute force, CSRF, secrets), §7.4 (Keycloak, mandatory 2FA for the team, the password policy), §5 (visibility, 404), §14.4 (BFF, rate limits), §14 (upload quarantine with ClamAV). Nothing lists the threats, their likelihood and impact, or what verifies each | Missing |
+| 7.10 | The OWASP lists that fit the product are chosen, and each category is a hypothesis checked against the code (L16) | §13.5: OWASP ASVS is the reference for security requirements; ASVS 5.0 V6 for passwords; OWASP's XSS guidance for Markdown (§6). Trybun has no LLM, agent or MCP in the product (`AGENTS.md`: no external AI APIs for ticket content), so the GenAI and agentic lists do not apply to it. No review of the code by category is recorded | Partial |
+| 7.11 | An access-control test checks the positive path of both accounts, the denied read, the denied write and the data after the attempt, and this rule is in the agents' skills (L16) | The policy is central: CASL abilities on the server, an invisible record is 404, never 403 (`AGENTS.md`). The integration specifications test denials across projects, organizations and roles, e.g. "lists a ticket for every principal exactly when its detail is 200, else 404", refused writes in archived projects or for a Developer. The written rule (`SDLC.md`, risk table) asks for "the denied path and the wrong-scope read", not the denied write or the data after the attempt | Partial |
+| 7.12 | SAST runs in CI on every PR, and a clean result is read together with its coverage (L16) | CodeQL (`javascript-typescript`, `actions`) on every PR and push; Trivy image scan daily (`image-scan.yml`); the advisory audit (`advisory-audit.yml`); `dependency-review`; ESLint security-relevant rules. Coverage of a CodeQL run is shown by GitHub, not recorded | Full |
+| 7.13 | DAST (ZAP Baseline) against a local instance, with what it did not check (L16) | No DAST. What ZAP reported for DevMentor is specified and implemented in Trybun: one proxy sets a nonce CSP, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy` and denies framing (§13.5), with unit tests (`apps/web/src/proxy.spec.ts`) | Partial |
+| 7.14 | Active tests run only in a disposable environment with synthetic data, under written rules of engagement (L16) | The QA test environment (`.ai/scripts/test-env-up.sh`, `om-prepare-test-env`) is disposable and loads the synthetic demo dataset; no rules of engagement for security tests, and no active security test has been run | Partial |
+| 7.15 | An agentic security review of the repository (DeepSec, `om-auto-sec-report`) within a budget, each finding verified by a second agent and reproduced before it enters the backlog (L16) | `om-auto-sec-report` and `om-auto-sec-report-pr` are installed; 0 recorded runs | Missing |
+| 7.16 | A confirmed finding gets a test that is red before the fix and green after (L16) | The bug chain observes the regression test failing first (`om-fix`, `SDLC.md`); a security fix follows the same chain | Full |
+
+Not applicable now: the handling of model refusals in active tests (L16 step 8). It depends on 7.14 and 7.15.
+
+Not verified:
+
+- the permission mode and the tools Cezar gives its runs (7.4);
+- whether the GitHub App `dtk7c2-claude` of ADR 0005 is still installed. A Cezar task of 2026-11-26 still names it, and ADR 0011 planned its removal (7.5);
+- which CodeQL query suite runs (7.12).
+
+### Gap proposals
+
+The research was done on 2026-11-26 by two research passes over the primary sources (code.claude.com, docs.github.com, OWASP, Anthropic, Meta, Semgrep, Vercel). The maintainer decided the same day.
+
+**7.1, 7.4–7.8 The agents' machine – risk accepted by the maintainer.** The maintainer accepted the risk: the course describes typical problems, few of which touch this machine, and all are acceptable to the maintainer. The proposal the maintainer rejected as disproportionate was an ADR that would cut one leg of the trifecta in every run. Its layers were:
+
+- an isolated container or microVM per Cezar run;
+- a fine-grained token for one repository, with an expiry;
+- Meta's "Agents Rule of Two" per task;
+- a sandbox in managed settings;
+- `deny` rules and a hook;
+- shorter transcript retention.
+
+The research behind it, kept for a later decision:
+
+- **The classifier and the instruction are no boundary.** Anthropic measured that auto mode let through 17 % of real overeager actions and 5.7 % of synthetic exfiltration attempts, and calls it "a per-action control, not an isolation boundary". Willison and Meta hold that detection never suffices.
+- **The Bash sandbox is not enough for unattended runs**, says Anthropic's own documentation (`sandbox-environments`). It wraps Bash only, and a repository's `.claude/settings.json` can widen it unless managed settings fix it.
+- **A narrower token is possible, with limits.** A fine-grained token can be limited to one repository with an expiry. It cannot use the Checks API or GitHub Packages, so GHCR would stay with CI's `GITHUB_TOKEN`.
+
+What would reopen it: a second person or machine with access, real user data on the machine, a secret of production on it, or an incident.
+
+**7.2 Contributors' changes to the agent configuration – deferred.** GitHub lets only accounts with write access merge, and no one else works on the repository. The remaining case is an agent merging an outside contributor's pull request that changes `.claude/`, `.agents/`, `.ai/skills/`, `AGENTS.md`, `CLAUDE.md` or `.github/` in the maintainer's name through `om-approve-merge-pr`. Trigger: the first pull request from an outside contributor. Then such pull requests are merged by the maintainer by hand, and no agent session starts inside their checkout. The second rule is own reasoning, not verified for Cezar.
+
+**7.11 Access-control rule – accepted: #540.** Established practice uses two accounts and checks both the denied read and the denied write: OWASP's IDOR Prevention Cheat Sheet ("read, create, update, delete, export, administrative"), WSTG v4.2, and ASVS 5 8.2.1–8.2.3 and 8.1.2. The check that the data is unchanged after a denied write is own reasoning, since a 404 does not prove that nothing was written; no OWASP source names it. The tests, not a review, are the gate. Semgrep (2025-11-03) found LLM reviewers at 0 % true positives where authorization is spread across files or middleware, as with Trybun's CASL abilities.
+
+**7.9, 7.10, 7.13–7.15 Threat model, DAST, agentic review – deferred, with triggers.**
+
+- **Threat model** (7.9, 7.10): `docs/security/threat-model.md` before the first release `1.0.0`, when Trybun is installed on other people's servers; until then the architecture still changes.
+  - **Method:** STRIDE with LINDDUN prompts for the personal data of tickets and e-mail, stable IDs, a "how we verify" column, and re-run triggers.
+  - **Sources:** the Threat Modeling Manifesto, OWASP's Threat Modeling Cheat Sheet and ASVS 5 8.1.1.
+  - **Drafting:** an LLM draft is a start only; arXiv 2505.04101 measured at best 72 % accuracy.
+- **DAST** (7.13): decided by the threat model's "how we verify" column. The ZAP Baseline is passive and checks the headers that `proxy.spec.ts` already tests; an authenticated ZAP scan is what would add value.
+- **Agentic security review** (7.14, 7.15): after the threat model, as a discovery tool under written rules of engagement, never a gate.
+  - **Precision:** Semgrep (2025-09-02) measured 14 % true positives for Claude Code and 18 % for Codex.
+  - **Non-determinism:** three identical runs gave 3, 6 and 11 findings.
+  - **Before the backlog:** every finding is checked by a second agent and reproduced by a test.
+
+**7.3 Skills.** The pinning is #498; the reading before an install is already a rule.
