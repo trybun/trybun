@@ -812,7 +812,7 @@ No new research was needed beyond the lessons' sources. Each proposal below rest
   | PRs | State | Recommendation |
   |---|---|---|
   | #462, #463, #472 (Dependabot) | all checks green | review and merge |
-  | #459, #460, #461 (Dependabot) | `Format and lint` failed on 2026-11-23 on two ESLint warnings in `apps/web/src/app/error.spec.tsx` that `main` had then; #459 also on the E2E job, before the calibration fix #536 | `@dependabot rebase`, then review and merge on green |
+  | #459, #460, #461 (Dependabot) | `Format and lint` fails on the supply-chain check (§2.10): Dependabot updates the image in the Compose files, but the Testcontainers set-up of the integration tests pins the same image again (`apps/server/test/keycloak/keycloak.ts`, `clamav/clamav.ts`, `storage/seaweedfs.ts`), and the check requires both to match. #461 still failed after a rebase on 2026-11-26. #459 also failed an E2E test of the Accounts page on 2026-11-23 | the test pins updated on each branch; the duplicate pin itself is #547 |
   | #474 (memory note of #428) | conflicts with `main`; `Tests and coverage` failed on 2026-11-24 | rebase, re-run, then merge |
   | #124, #125, #126 (S1-14, S1-15, S1-16 drafts) | gated by `om-auto-write-spec` on the maintainer's confirmation of assumptions (Q1 of #124 builds on #123, merged since; Q1–Q3 of #125); next in the plan (order 7, after S1-20) | refresh against `main`, then the maintainer answers the gated questions |
   | #127, #128 (S1-17, S1-18 drafts) | gated the same way; plan order 8 | keep as drafts until order 8 |
