@@ -69,35 +69,113 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm build
 
-  e2e:
-    name: E2E and Lighthouse
+  # The device projects in shards and the Lighthouse budget in its own job (#510); the job
+  # "E2E and Lighthouse" merges their reports and is the required check.
+  e2e-shard:
+    name: E2E (${{ matrix.shard }}/3)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The local environment (§15.12) with the seeded accounts and the optional services of
+      # `.env.example` – SeaweedFS and ClamAV, which the attachments of the portal tests need.
+      # It starts in the background while the dependencies and browsers install and the build
+      # runs, and is awaited before the seed (#510).
+      - name: Start the infrastructure
+        run: |
+          cp .env.example .env
+          nohup sh -c 'docker compose -f compose.yaml -f compose.dev.yaml up -d --wait && docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config; echo $? > "$RUNNER_TEMP/infra.exit"' > "$RUNNER_TEMP/infra.log" 2>&1 &
+      - uses: ./.github/actions/setup
+      # Chromium for the phone and desktop projects, WebKit for the tablet (§2.9).
+      - run: pnpm --filter @trybun/web exec playwright install --with-deps chromium webkit
+      # Production builds: the Lighthouse budget applies to them. Playwright starts the API and
+      # the web application (playwright.config.ts).
+      - run: pnpm build
+      - name: Wait for the infrastructure
+        timeout-minutes: 5
+        run: |
+          until [ -e "$RUNNER_TEMP/infra.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/infra.log"
+          exit "$(cat "$RUNNER_TEMP/infra.exit")"
+      - run: pnpm db:migrate && pnpm db:seed
+      - run: pnpm --filter @trybun/web exec playwright test --project phone --project tablet --project desktop --shard=${{ matrix.shard }}/3 --reporter=github,blob
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: e2e-blob-${{ matrix.shard }}
+          path: apps/web/blob-report/
+          retention-days: 1
+
+  lighthouse:
+    name: Lighthouse
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
-      # Chromium for the phone, desktop and Lighthouse projects, WebKit for the tablet (§2.9).
-      - run: pnpm --filter @trybun/web exec playwright install --with-deps chromium webkit
       # The local environment (§15.12) with the seeded accounts and the optional services of
       # `.env.example` – SeaweedFS and ClamAV, which the attachments of the portal tests need.
+      # It starts in the background while the dependencies and browsers install and the build
+      # runs, and is awaited before the seed (#510).
       - name: Start the infrastructure
         run: |
           cp .env.example .env
-          docker compose -f compose.yaml -f compose.dev.yaml up -d --wait
-          docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config
-      - run: pnpm db:migrate && pnpm db:seed
+          nohup sh -c 'docker compose -f compose.yaml -f compose.dev.yaml up -d --wait && docker compose -f compose.yaml -f compose.dev.yaml wait keycloak-config; echo $? > "$RUNNER_TEMP/infra.exit"' > "$RUNNER_TEMP/infra.log" 2>&1 &
+      - uses: ./.github/actions/setup
+      - run: pnpm --filter @trybun/web exec playwright install --with-deps chromium
       # Production builds: the Lighthouse budget applies to them. Playwright starts the API and
       # the web application (playwright.config.ts).
       - run: pnpm build
-      - run: pnpm e2e
+      - name: Wait for the infrastructure
+        timeout-minutes: 5
+        run: |
+          until [ -e "$RUNNER_TEMP/infra.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/infra.log"
+          exit "$(cat "$RUNNER_TEMP/infra.exit")"
+      - run: pnpm db:migrate && pnpm db:seed
+      - run: pnpm --filter @trybun/web exec playwright test --project lighthouse --reporter=github,blob
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: e2e-blob-lighthouse
+          path: apps/web/blob-report/
+          retention-days: 1
+
+  e2e:
+    name: E2E and Lighthouse
+    needs: [e2e-shard, lighthouse]
+    # A job skipped after a failed need would count as a passing required check.
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: e2e-blob-*
+          merge-multiple: true
+          path: apps/web/all-blob-reports
+      - run: pnpm --filter @trybun/web exec playwright merge-reports --reporter html ./all-blob-reports
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
           path: apps/web/playwright-report/
           retention-days: 14
+      - name: Require every E2E job
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: echo "$RESULTS" | jq -e 'all(.[]; .result == "success")'
 
   spec:
     name: Specification consistency

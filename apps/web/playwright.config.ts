@@ -50,12 +50,12 @@ export default defineConfig({
     },
     {
       // The performance budget of the key pages, measured with the mobile profile of Lighthouse.
-      // It runs after the other projects and one page at a time: the CPU slowdown is applied to
-      // the runner's real CPU (#503, #508), so a parallel test on the same runner moves the
-      // measurement (#146).
+      // It runs alone on its runner and one page at a time: the CPU slowdown is applied to the
+      // runner's real CPU (#503, #508), so a parallel test on the same runner moves the
+      // measurement (#146). CI runs it in its own job (#510).
       name: 'lighthouse',
       testMatch: /lighthouse\.spec\.ts$/,
-      dependencies: ['setup', 'phone', 'tablet', 'desktop'],
+      dependencies: ['setup'],
       workers: 1,
     },
   ],
