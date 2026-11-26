@@ -5,7 +5,7 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 
 // Pinned to the digest of compose.yaml (§2.10). The image contains a signature database.
 const CLAMAV_IMAGE =
-  'clamav/clamav:1.5.4@sha256:e19130cdebaeacc71fa46eab3ed6f69941f2f22aa5e08d55e9197f8edf43ce5e';
+  'clamav/clamav:1.5.4@sha256:7054e3f34308c384ea43cd786ea17abf899bd44af40af9f1b099853d7a5c214e';
 const CLAMD_CONF = join(import.meta.dirname, '../../../../docker/clamav/clamd.conf');
 
 export interface TestClamav {
