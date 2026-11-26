@@ -42,7 +42,7 @@ Every step works in this order:
 | 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | done; issue #542 |
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | done; issue #544 |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | done; no new issue (#499, #493) |
-| 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | open |
+| 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | done; issue #549, #537 extended |
 | 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | open |
 | 13 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | open |
 | 14 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | open |
@@ -56,15 +56,13 @@ Questions found in one step that belong to a later one. Each step reads its rows
 
 | Step | Question | Found in |
 |---|---|---|
-| 11 | Model per task (1.21) | step 1 |
-| 11 | After #537: the peak context of the fix-issue runs measured again; above 300k, a subagent per step of `om-auto-fix-issue` is proposed; cheaper models for mechanical steps (8.12, 6.4, 9.9) | steps 8, 9 |
-| 11 | Four pipeline PRs merged without a review (#429, #455, #466, #478), with `required_approving_review_count: 0` in the ruleset "Protect main" | step 2 |
 | 12 | `ci.yml` and `codeql.yml` run every job on every pull request, also on documentation only (about 12 min; #495 failed on the flaky Lighthouse budget). A path filter on the workflow would leave the required checks unreported and block the PR, so the question is a job-level condition. Risks to research: Markdown that is part of the application (help pages in `apps/web`), the required CodeQL check, pushes to `main` | #506 |
 | 12 | Flaky classes that came back after a fix: animations under axe (#72, #270 → #502, and again after its fix → #514) and the simulated LCP (#163, #372 → #503). A third class: lazily loaded modules in component tests (#326, #496 → #511), which five specs had worked around with longer timeouts. A fourth: a background program checked before it has run, in the stubs of `test-env-up.spec.js` (#520, #522). And the calibrated Lighthouse slowdown (#515) failed to converge on a noisy runner (#523). Why the earlier fixes did not hold, and how flaky tests are detected and reported (quarantine, retry reports) | step 3 |
 | 12 | `.github/labels.yml` lists 33 labels, GitHub has 50, and no workflow or script reads the file | step 2 |
 | 12 | Editing a PR body re-runs `Commit messages and title` and cancels the run in progress, which shows as a cancelled check next to the passing one (#504, #506) | #506 |
 | 12 | A CI run takes 11.5–14 min. The critical path is `pnpm test:coverage` (389–642 s) and `pnpm e2e` (472–633 s); the spread follows the runner pool (AWS fast, Azure slow, read from the `Cloud:` line of the job log). An idle VPS ran `pnpm test:coverage` in 249 s (9908 tests, warm Testcontainers images). Self-hosting is advised against: GitHub's secure-use docs say self-hosted runners should almost never serve public repositories, the PyTorch and runner-images compromises and the Shai-Hulud 2.0 worm used them, and the VPS holds the maintainer's `gh` credentials, the agents' worktrees and the QA stacks, with the `docker` group root-equivalent. Options to weigh: Vitest shards with thresholds checked on the merged coverage, Playwright shards with merged reports, Lighthouse as its own job, the infrastructure started early, one gate job (`re-actors/alls-green`) or the kept check names for the ruleset; then a managed per-job-VM runner (Ubicloud, Blacksmith, Namespace). Larger GitHub runners need a paid plan | session 2026-11-25 |
 | 13 | A threat model (`docs/security/threat-model.md`) before the first release `1.0.0`, and with it the decision on DAST and an agentic security review (7.9–7.15) | step 7 |
+| 14 | After #525 and #537 have results: a reviewer of another model family for code PRs, the model per role (1.21), cheaper models for mechanical steps, and the peak context of the fix-issue runs measured again (above 300k, a subagent per step of `om-auto-fix-issue`) (6.4, 8.12, 9.9, 11.8–11.10) | steps 1, 6, 8, 9, 11 |
 | 14 | When the product brief is refreshed (3.4, #501); how `CODE_REVIEW.md` keeps following the defects (2.11, #499); retrospectives | steps 2, 3 |
 | 15 | The analysis commits use the scope `agents`, as the closed scope list of §2.14 has none for `.ai/analysis/`; whether one is needed | step 0 |
 
@@ -866,3 +864,50 @@ The maintainer decided on 2026-11-26. No proposal brings in a new practice, so n
 - **10.13 Exploring a specification before testing – not adopted.** `om-qa-buddy`'s plan step and the specification review cover it.
 - **10.5 Missing states – #499**, already open.
 - **10.14 The leftover test infrastructure.** The six `trybun-test` containers were stopped on 2026-11-26 with `docker compose -p trybun-test stop`, which keeps their volumes. `test-env-down.sh` keeps leaving adopted infrastructure running by design; it is reopened if a leftover environment is found again.
+
+## Step 11 – Review and acceptance (deterministic gates, branch protection, multi-model review)
+
+Course sources: the seven leaves of L17 and the ten leaves of L21.
+
+- **L17:** the mental model and DORA 2025; whose move in the PR queue; `om-review-prs`; branch protection by ruleset; how much automated review finds; deterministic gates; the homework.
+- **L21:** preparation; the three roles; correlated errors and three review rules; Cezar's multi-model mode; the two prompt examples; the multi skills in Claude Code; routers, panels and reviewers of other vendors; weaker models in a council and when it pays; the homework.
+
+The carried-forward rows rated here:
+
+- 1.21, the model per task (as 11.9);
+- step 2, the PRs merged without a review (as 11.5);
+- steps 8 and 9, the new measurement after #537 (as 11.9).
+
+Checked on 2026-11-26, read-only: the rulesets (`gh api …/rulesets`), the reviews of the 77 PRs merged from 2026-11-19 to 2026-11-26 20:30 UTC (`main` `9e0bb259`), and the size of the 72 PRs titled `feat(…)` or `fix(…)` with a scope of product code (`web`, `server`, `ui`, `contracts`, `i18n`) among the 300 most recently merged on the same day.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 11.1 | A person owns both ends: the requirements and the merge decision (L17) | Change specifications and ADRs are approved by the maintainer (Rule 8, ADR 0011); every merge is the maintainer's word or a workflow the maintainer runs | Full |
+| 11.2 | Whose move in the queue is read from the labels and the PR's history, not from the label alone (L17) | The pipeline labels, the claim protocol and the author hand-off of `om-auto-review-pr` (`SDLC.md`); one maintainer, so the queue is small (9.10) | Full |
+| 11.3 | The whole queue is reviewed by `om-review-prs`, each review in a fresh subagent (`--subagents --parallel`), with its blind spots known (L17) | Installed, 0 runs. The skill skips PRs by the person who runs it, and every PR here is the maintainer's or Dependabot's, so the course's own note applies: an empty list is the correct result | N/A |
+| 11.4 | The branch is protected by a ruleset: PR required, an approval by someone else (solo: an admin bypass for PRs only), approval of the last push, resolved conversations, no deletion or force push (L17) | "Protect main" (the default branch and `release/*`): PR required, squash only, no deletion, no force push, 13 required status checks, no bypass actors. No approval required (ADR 0011: the agents act as the maintainer, who cannot approve their own PR), so neither last-push approval nor resolved conversations apply | Different |
+| 11.5 | Automated review is a sieve, not a gate: every PR gets one, the reviewer sees the diff and the specification without the author's rationale, several independent passes, small PRs (L17) | Of the 71 non-Dependabot PRs merged from 2026-11-19 to 2026-11-26 20:30 UTC, 24 have no review at all. They are: <ul><li>9 product code or its tests (#429, #478, #497, #507, #512, #515, #516, #518, #536);</li><li>4 the agents' tooling (#455, #466, #521, #529);</li><li>1 a specification (#513);</li><li>10 the steps of this analysis.</li></ul> They come from interactive sessions, including the one writing this analysis, where `om-auto-review-pr` is not part of the flow. The Definition of Done still says "Reviewed and approved – by a human or the review and QA gates". Size of the merged `feat`/`fix` PRs of product code: median 236 changed lines, p75 536, p90 2 415, 24 of 72 over 400. One review pass per PR; the reviewer reads the PR description | Partial |
+| 11.6 | Deterministic gates beyond the model: specialised review skills, mutation testing (StrykerJS), API fuzzing (RESTler), a size limit of what the browser downloads (L17) | Size: `pnpm build` fails when Zod enters the first load of the application shell, and the Lighthouse budget runs on every PR (#508, #523). The coverage thresholds of CI hold. No mutation testing, no API fuzzing, no specialised skill beyond `ui-component` | Partial |
+| 11.7 | A bug that came back despite review gets a deterministic check, red on the old code and green on the fix, required before merge (L17) | The flaky-test rule (an issue and a root-cause fix for each, 10.4) and the regression test of every fix (10.6). The recurring class of missing states has #499, a review rule, not a check | Partial |
+| 11.8 | Reviewers of at least two model families get the diff, the specification, the criteria and the repository rules, without the implementer's rationale; every finding, even a single reviewer's, is checked (L21) | All 336 Cezar runs use Claude. #525 adds a blind Codex review of specification PRs; code PRs have none. 6.7 and #537 cover the fresh context | Missing – #525 for specifications |
+| 11.9 | The model for each role is chosen, recorded with a date and checked again, because a newer version is not always better (L21) | No configuration of models per role: 287 of 336 runs on Opus (8 of them with the 1M window), 38 on Sonnet, 7 on Fable, no rule which (1.21) | Missing |
+| 11.10 | The multi-model flow (orchestrator, one implementer, a council of reviewers, three rounds) is used for large features from a full specification, not for small fixes (L21) | Not used. Its skills (`om-implement-feature-multi`, `om-harness`) leave staged changes without a PR; `om-harness` arrives with #525 | N/A until #525 |
+
+### Gap proposals
+
+The maintainer accepted every recommendation on 2026-11-26.
+
+- **11.5 Every PR gets a review – #537, extended.** The 24 PRs merged without a review came from interactive sessions. #537 now also asks an interactive session to have a fresh-context review posted on its PR before it asks the maintainer to merge. The sources:
+  - SWE-PRBench (L17): one pass finds 15–31 % of the issues people report;
+  - SWR-Bench: combining passes finds more;
+  - the size of a PR is the strongest predictor of review quality.
+
+  Several passes and a PR size limit wait for the measurements after #537.
+- **11.6 Mutation testing – a trial first: #549.** StrykerJS on the permission layer, the code where step 7 found that review by a model does not find defects. Whether it becomes a gate is decided from its report. API fuzzing (RESTler) is deferred: L17 found nothing on a small application, and Trybun's integration tests already exercise the endpoints with denials.
+- **11.8–11.10 Another model family, the model per role, the multi-model flow – deferred until #525 has results.** The evidence disagrees:
+  - **For another family:** Greptile measured 8–9 points more serious bugs found by a reviewer of another vendor.
+  - **Against Codex on Claude's code:** Xiang et al. found that Codex reviewing Claude's code lowered the result (91.4 % → 82.8 %).
+  - **The open question:** what Codex adds on Trybun's specifications. That is measured by #525, from how many of its findings are real.
+- **11.4 Branch protection – different on purpose**, ADR 0011.
