@@ -60,12 +60,21 @@ case "$*" in
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
 `,
-  // A port answers while a stubbed application holds it (a file "serving-<port>"); the health
-  // checks pass once the boot has started the applications, unless the file "unhealthy" exists.
+  // A port answers while a stubbed application holds it (a file "serving-<port>"). Like the real
+  // ones, the health checks of the API and of the web application pass only once that application
+  // serves, waiting for it as a request to a starting application does (up to 5 s, the --max-time
+  // of test-env-up.sh) – so a boot returns only after its applications have started and logged
+  // (#522) – and never while the file "unhealthy" exists.
   curl: `#!/bin/sh
 for arg in "$@"; do url=$arg; done
+serves() {
+  tries=0
+  until [ -e "$STUB_DIR/serving-$1" ] || [ "$tries" -ge 50 ]; do sleep 0.1; tries=$((tries + 1)); done
+  [ -e "$STUB_DIR/serving-$1" ]
+}
 case "$url" in
-  */health/ready | */api/health) [ ! -e "$STUB_DIR/unhealthy" ] || exit 7 ;;
+  */health/ready) [ ! -e "$STUB_DIR/unhealthy" ] && serves 3001 || exit 7 ;;
+  */api/health) [ ! -e "$STUB_DIR/unhealthy" ] && serves 3000 || exit 7 ;;
   */api/v1/users/me) printf 401 ;;
   http://localhost:3000/) [ -e "$STUB_DIR/serving-3000" ] || exit 7 ;;
   http://localhost:3001/) [ -e "$STUB_DIR/serving-3001" ] || exit 7 ;;
