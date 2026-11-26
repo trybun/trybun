@@ -40,7 +40,7 @@ Every step works in this order:
 | 6 | Interactive coding (phases, subagent per task, tracking) | L08 | done; issues #537, #538 |
 | 7 | Security of AI tools and of the product | L09, L16 | done; issue #540 |
 | 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | done; issue #542 |
-| 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | open |
+| 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | done; issue #544 |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | open |
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | open |
 | 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | open |
@@ -56,11 +56,10 @@ Questions found in one step that belong to a later one. Each step reads its rows
 
 | Step | Question | Found in |
 |---|---|---|
-| 9 | After #537: the peak context of the fix-issue runs measured again; above 300k, a subagent per step of `om-auto-fix-issue` is proposed (8.12, 6.4) | step 8 |
-| 9 | Whether Cezar provisions the locked skill versions into its tasks (2.3, #498) | step 2 |
 | 10 | Test quality beyond executed lines, e.g. mutation testing (1.18, #493) | step 1 |
 | 10 | The Compose infrastructure `trybun-test` was running without a descriptor in `.ai/qa/` (up 41 h on 2026-11-25); `test-env-up.sh` adopted it as `discovered`, so `test-env-down.sh` leaves it running by design. Who started it, and whether a leftover environment should be found and reported | #503 measurements |
 | 11 | Model per task (1.21) | step 1 |
+| 11 | After #537: the peak context of the fix-issue runs measured again; above 300k, a subagent per step of `om-auto-fix-issue` is proposed; cheaper models for mechanical steps (8.12, 6.4, 9.9) | steps 8, 9 |
 | 11 | Four pipeline PRs merged without a review (#429, #455, #466, #478), with `required_approving_review_count: 0` in the ruleset "Protect main" | step 2 |
 | 12 | `ci.yml` and `codeql.yml` run every job on every pull request, also on documentation only (about 12 min; #495 failed on the flaky Lighthouse budget). A path filter on the workflow would leave the required checks unreported and block the PR, so the question is a job-level condition. Risks to research: Markdown that is part of the application (help pages in `apps/web`), the required CodeQL check, pushes to `main` | #506 |
 | 12 | Flaky classes that came back after a fix: animations under axe (#72, #270 → #502, and again after its fix → #514) and the simulated LCP (#163, #372 → #503). A third class: lazily loaded modules in component tests (#326, #496 → #511), which five specs had worked around with longer timeouts. A fourth: a background program checked before it has run, in the stubs of `test-env-up.spec.js` (#520, #522). And the calibrated Lighthouse slowdown (#515) failed to converge on a noisy runner (#523). Why the earlier fixes did not hold, and how flaky tests are detected and reported (quarantine, retry reports) | step 3 |
@@ -766,3 +765,60 @@ The evidence on instruction files is thin and points one way: keep them minimal 
 - **Different: no further nested files.** The rules of a module are the pattern catalogue §18, the one source of the specification (Rule 8, Rule 12), reached from the root file; files per module would repeat it.
 
 **8.12 and 6.4 Subagents in long runs – deferred until #537 is merged.** The evidence is mixed. Anthropic's harness post (2025-11-26) says "compaction isn't sufficient" for long work, while the current Claude Code best practices list "use subagents to protect your context window" as outdated advice. Their remaining reason for a subagent is independence ("it hasn't seen your reasoning"), which is #537. Trigger: after #537, the peak context of the fix-issue runs is measured again; if they still pass 300k, a subagent per step of `om-auto-fix-issue` is proposed.
+
+## Step 9 – Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP)
+
+Course sources: the eleven leaves of L11 and the eight leaves of L13.
+
+- **L11:** fire and forget; loop engineering; worktrees, validation and ephemeral environments; communication and permissions; `om-auto-review-pr`; `om-auto-create-pr` and its loop variants; the input; the epic 02 demo; cheaper models and independent review; Cezar; the homework.
+- **L13:** the queue and dispatch; the data and Amdahl's law; brain fry and the five rules; what to run in parallel; Cezar's functions; the alternatives; receiving the queue and merging; the homework.
+
+The carried-forward rows rated here:
+
+- 2.3, whether Cezar provisions the locked skill versions (as 9.4);
+- 6.4 and 8.12, subagents in long runs (as 9.9).
+
+Checked on 2026-11-26 at `main` `4f06e17a`, read-only: `.ai/cezar/` (the runs, the automations and their receipts, the task worktrees), `~/.cezar/config.json` and the open pull requests.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 9.1 | Autonomy starts from a repeatable flow with a clear end and leaves evidence of the work, so the result is judged without replaying the session (L11) | 99 autonomous Cezar runs and 34 started by an automation. Every `om-auto-*` run ends in a labelled PR or issue with a summary comment (`SDLC.md`); Cezar keeps a handoff file and an event log per run (`.ai/cezar/runs/<id>.handoff.md`, `.ndjson`) | Full |
+| 9.2 | The loop plans, builds, verifies and updates its knowledge; verification is the key step (L11) | `om-auto-create-pr`: execution plan, the validation gate after each phase and in full before completion, the review loop; `.ai/memory/` (Rule 7) | Full |
+| 9.3 | The unit of work is an issue or a PR: labels say who works on what and when a person is needed, results go into comments, artefacts into the PR (L11) | The pipeline labels and the claim protocol of `SDLC.md`: an `in-progress` label, an assignee, a claim comment and a lock ref per item, so two runs never take the same work | Beyond |
+| 9.4 | Each task runs in its own worktree and branch (L11, L13) | Cezar creates a worktree per task (`.ai/cezar/worktrees/<id>`, branch `cez/<id8>`); the `om-auto-*` skills check a PR out into a temporary worktree and remove it. 2.3: a task worktree links only the skills it needs. `.claude/skills/om-*` points to the main checkout's `.agents/skills/`, which `npx skills` installed from `skills-lock.json`, and the hashes of `om-auto-review-pr`, `om-auto-fix-issue` and `om-approve-merge-pr` in a task worktree match the main checkout. So tasks run the locked versions whenever the main checkout is installed from the lock (pinning by commit: #498) | Full |
+| 9.5 | The agent can rebuild an ephemeral environment many times: Testcontainers, a test environment with migrations and seed (L11) | Integration tests on Testcontainers (`AGENTS.md`: never mock the database); `.ai/scripts/test-env-up.sh` with `om-prepare-test-env`, also Cezar's `startApp` | Full |
+| 9.6 | An autonomous run starts only from an accepted specification with functional acceptance criteria and mockups ("garbage in, garbage out") (L11) | "Specification before implementation" (`SDLC.md`); the change template has Acceptance criteria; the prototype part is 5.16–5.20 | Full |
+| 9.7 | Permissions match the environment: YOLO or auto mode only where isolation allows it (L11, L13) | Autonomous runs in Claude Code without a sandbox, on the maintainer's machine and token; the maintainer accepted this risk in step 7 (7.1, 7.4–7.8) | Different |
+| 9.8 | The review of an autonomous run is independent: a new context, another model (L11) | Same session today (6.7); accepted as #537 (fresh context) and #525 (Codex for specifications); code by another model is step 11 | Partial – #537 |
+| 9.9 | A strong coordinator with cheaper subagents for mechanical steps; tasks in a fresh context (L11, L13 dispatch) | 279 of 336 runs on Opus, 38 on Sonnet, 8 on Opus 1M, 7 on Fable; no rule says which model runs which task (1.21 is step 11). The loop engine dispatches executor subagents only above 20 Steps. Of 104 fix-issue runs, 31 peaked above 300k tokens (8.12) | Partial – after #537 |
+| 9.10 | The WIP limit is the number of streams a person really reviews; don't generate PRs nobody will read and merge soon (L13 rule 1) | Cezar's `maxParallel: 2` (`~/.cezar/config.json`), but runs overlapped up to 7 at once. 15 pull requests are open:<ul><li>the release PR of release-please (#224), open by design;</li><li>five specification drafts of 2026-10-26 (#124–#128, S1-14 to S1-18) and #129 (S1-19, `changes-requested` since 2026-11-05);</li><li>six Dependabot updates of 2026-11-23 and a memory note in `merge-queue` (#474), which wait for the maintainer's merge;</li><li>#543 of this analysis.</li></ul>Nothing records whether the drafts are parked on purpose until their plan tasks come up. The queue in front of the maintainer, not the agents, is where work waits, as L13's Amdahl argument predicts | Partial |
+| 9.11 | Interruptions are batched; agents end in a gate, not in a question; "needs you" is a filter (L13 rules 2–4) | Autonomous Cezar runs decide and report ("nobody is waiting to answer questions"); the review and QA gates end the run. The maintainer's own batching is personal practice and not assessed | Full |
+| 9.12 | A workflow has at least one deterministic check as its own step, whose result goes back to the agent (L13) | The validation gate (`validation.commands`) runs inside the skill, and a failure goes back to the same run, which fixes and re-runs it; CI runs the same commands as required checks. Cezar's own workflow steps are not used: every planned run has one step | Full |
+| 9.13 | At least one automation for maintenance, at night or on a trigger, with a received result (L13) | Daily at 06:30 UTC "Issues for alerts of the daily image scan" (34 runs, last on 2026-11-26: 3 open Trivy alerts, both vulnerabilities already in open issues, US$ 0.16). Its prompt still names the GitHub App of ADR 0005 for a 403, which ADR 0011 replaced | Full |
+| 9.14 | Tasks are classified by whether they are disjoint and checkable without a person: in parallel, two or three at a time, in sequence, interactively (L13) | No classification of the backlog; issues carry category, priority and risk labels, not a mode of work | Missing |
+| 9.15 | Cost per task is visible, and people are not measured by tokens or agents (L13) | Cezar records the cost per run: US$ 57 752 in total at API prices (October 9 169, November 48 583), median 13, largest 15 542 (S1-08, attachment backups). Whether the account pays API prices or a subscription was not checked | Full |
+| 9.16 | A person decides every merge; nothing merges by itself (L13) | The maintainer's word in the session, ADR 0011; the automerge mode of the skills is not used | Full |
+
+Not verified: why runs overlapped beyond `maxParallel` (dispatch subtasks, interactive sessions or a changed setting); the billing basis of Cezar's costs.
+
+### Gap proposals
+
+No new research was needed beyond the lessons' sources. Each proposal below rests on the measurements above and on the course's own sources (METR 2026, Faros AI 2025, ParallelPilot, Geng and Neubig 2026). The one exception is the WIP limit as a Kanban practice, which is own knowledge and is marked so.
+
+- **9.10 The review queue – accepted: a review of the queue and a rule (#544).** The work that waits is waiting for the maintainer, not for agents. The review, done on 2026-11-26, found:
+
+  | PRs | State | Recommendation |
+  |---|---|---|
+  | #462, #463, #472 (Dependabot) | all checks green | review and merge |
+  | #459, #460, #461 (Dependabot) | `Format and lint` fails on the supply-chain check (§2.10): Dependabot updates the image in the Compose files, but the Testcontainers set-up of the integration tests pins the same image again (`apps/server/test/keycloak/keycloak.ts`, `clamav/clamav.ts`, `storage/seaweedfs.ts`), and the check requires both to match. #461 still failed after a rebase on 2026-11-26. #459 also failed an E2E test of the Accounts page on 2026-11-23 | the test pins updated on each branch; the duplicate pin itself is #547 |
+  | #474 (memory note of #428) | conflicts with `main`; `Tests and coverage` failed on 2026-11-24 | rebase, re-run, then merge |
+  | #124, #125, #126 (S1-14, S1-15, S1-16 drafts) | gated by `om-auto-write-spec` on the maintainer's confirmation of assumptions (Q1 of #124 builds on #123, merged since; Q1–Q3 of #125); next in the plan (order 7, after S1-20) | refresh against `main`, then the maintainer answers the gated questions |
+  | #127, #128 (S1-17, S1-18 drafts) | gated the same way; plan order 8 | keep as drafts until order 8 |
+  | #129 (S1-19) | `changes-requested` since 2026-11-05 (the link rule misses two team help pages) | the findings applied with `om-auto-continue-pr`, or closed |
+
+  The rule: a draft specification PR states in its body what it waits for (the gated questions and its plan order), not only in a run comment. Cezar's `maxParallel: 2` already limits the agents. The WIP limit as a Kanban practice is own knowledge.
+- **9.14 Classification of tasks – different on purpose.** With one maintainer, a limit of two parallel runs and one task per PR, a mode-of-work label has no consumer; the course's quadrants are applied when a batch is started.
+- **9.9 Cheaper models for mechanical steps – moves to step 11** with the model per task (1.21). The new measurement of the fix-issue runs follows #537.
+- **9.13 The automation's prompt** names the GitHub App of ADR 0005 for a 403. The automation is Cezar state (`.ai/cezar/`, "do not edit"), so the maintainer corrects the text in Cezar.
