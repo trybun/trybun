@@ -36,7 +36,7 @@ Every step works in this order:
 | 2 | Skills, `om-setup-agent-pipeline`, labels, issue → PR → review flow | L03, extras: skills | done; issues #498, #499 |
 | 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | done; issue #501 |
 | 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | done; issues #524–#526 |
-| 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | in progress |
+| 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | done; issues #530–#534 |
 | 6 | Interactive coding (phases, subagent per task, tracking) | L08 | open |
 | 7 | Security of AI tools and of the product | L09, L16 | open |
 | 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | open |
@@ -470,9 +470,9 @@ Not verified: whether each of the 21 forms disables its submit while pending (5.
 
 ### Gap proposals
 
-The research was done on 2026-11-26, and each gap starts from its consumer today: the end users, the maintainer or the coding agents. Across 174 issues and 332 pull requests, none reports a spacing, look or dark-mode problem. The UX defect that does recur is a missing state: 7 fix pull requests and about 10 issues lacked a loading, error or "too many requests" state, which #499 addresses. A course practice without a consumer here is deferred, with the trigger that would make it needed.
+The research was done on 2026-11-26; the maintainer accepted every recommendation, and the removal of the dark theme, on the same day. Each gap starts from its consumer today: the end users, the maintainer or the coding agents. Across 174 issues and 332 pull requests, none reports a spacing, look or dark-mode problem. The UX defect that does recur is a missing state: 7 fix pull requests and about 10 issues lacked a loading, error or "too many requests" state, which #499 addresses. A course practice without a consumer here is deferred, with the trigger that would make it needed.
 
-**5.14 Reduced motion – recommended now.**
+**5.14 Reduced motion – accepted: #530.**
 
 - **The consumer.** People who set "Reduce motion".
 - **What moves today.** The zoom and slide of popups (100 ms), the drawer (450 ms), the toast (500 ms) and the `switch` thumb do not honour the setting, while tooltips, the spinner and the tours do. So the gap is inconsistency, not a missing policy.
@@ -481,26 +481,26 @@ The research was done on 2026-11-26, and each gap starts from its consumer today
 - **Rejected:** the blanket 0.01 ms reset, which also removes harmless fades.
 - **Still to check.** WCAG 2.3.3 is level AAA and the specification targets AA, so this goes beyond the target. Whether Base UI still closes its popups correctly with only a fade left is untested.
 
-**5.13 Dark theme – the maintainer's decision.** S0-07 asked for light and dark themes of the library, and the specification asks for none in the product.
+**5.13 Dark theme – accepted (b), removal: #531** (a change specification first, as it changes S0-07, §2.6 and §2.14). S0-07 asked for light and dark themes of the library, and the specification asks for none in the product.
 
 - **(a) Ship it.** It follows the system setting: a change of the specification and dark checks in E2E.
 - **(b) Remove it.** The `.dark` tokens, the `dark:` classes and the dark story project go, which also halves the story tests.
 - **Rejected:** keeping it as it is, a cost without a consumer.
 - **The research leans to (b)** unless the product brief (#501) names users who need it.
 
-**5.21 `SDLC.md` – recommended now.**
+**5.21 `SDLC.md` – accepted: #532.**
 
 - **The cause.** The UX steps come from the pipeline template, written whatever `designer: false` in `.ai/agentic.config.json` says. The setup skill does not overwrite `SDLC.md`, and no skill starts `om-ux-review-pr` on its own.
 - **The proposal.** A hand edit says what runs: the UX skills on demand, and no `.uxproof/` contract until a trigger.
 - **Rejected:** running `om-ux-setup` now. It would copy what lint already enforces and add a QA step for every UI pull request without a measured defect.
 
-**5.3 / 5.5 Named text styles – recommended now, as a refactor of measured drift.**
+**5.3 / 5.5 Named text styles – accepted: #533**, as a refactor of measured drift.
 
 - **The drift.** No heading component exists: `text-2xl font-bold` is copied 23 times for `h1`, and six `h3` headings use five styles.
 - **The proposal.** Named text styles (a Tailwind `@utility` or a `Heading` component) and a line in §18.6. GOV.UK publishes its heading sizes the same way.
 - **Deferred:** a spacing rule tied to relationships, until evidence. Atlassian ties spacing to size rather than strictly to relationships.
 
-**5.15 Agent test – recommended once, on the next real screen.**
+**5.15 Agent test – accepted: #534**, once, on the next real screen.
 
 - **The test.** An agent builds the next new screen (S1-14 Kanban) only from the design system and labels each decision RULE, EXAMPLE or GUESS.
 - **What it decides.** Its guesses settle 5.5 and any new rule in §18.6.
@@ -512,7 +512,7 @@ The research was done on 2026-11-26, and each gap starts from its consumer today
 - **Waiting for the brief (#501):** 5.17 (grey prototype) and 5.19 (personas).
 - **Already in place:** the form of 5.20.
 
-**5.1 Generic look – one paragraph.** `docs/brand/` says that the default radius, type scale, shadows and spacing were kept on purpose: familiar conventions (Jakob's Law) and no positioning yet. The full audit waits for the brief.
+**5.1 Generic look – accepted, one paragraph: #532.** `docs/brand/` says that the default radius, type scale, shadows and spacing were kept on purpose: familiar conventions (Jakob's Law) and no positioning yet. The full audit waits for the brief.
 
 **Deferred, with triggers.**
 
