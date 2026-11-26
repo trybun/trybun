@@ -453,11 +453,11 @@ Course sources: the fifteen leaves of L06 (context, generic AI look, the detecto
 | 5.7 | No hard-coded values (hex/rgb/oklch, palette classes, arbitrary `[13px]`) outside the token file, and a CI check that fails on them with explicit exit-code handling, not `! grep` (L06 "Sprawdzenie w CI") | Tailwind's palette is removed (`--color-*: initial`), so `bg-red-500` is an unknown class; `@trybun/eslint-config/src/tailwind.js` runs `better-tailwindcss/no-unknown-classes` and `no-restricted-classes` (arbitrary values in 44 token utility families, literal colours in any arbitrary value), with failing fixtures in `configs.spec.js`; job `Format and lint` (`pnpm lint`) fails on an ESLint error, so the `! grep` pitfall does not arise. Not covered: inline `style` (forbidden by §2.6 and `CODE_REVIEW.md`, no lint rule; 0 occurrences in `packages/ui` and `apps/web`) and raw values in plain CSS (2 CSS files, both token files). One literal outside: `themeColor: '#ffffff'` in `apps/web/src/app/layout.tsx` | Beyond |
 | 5.8 | Storybook is an instruction manual, not a gallery: a component page with 13 sections (purpose, when to use, when not to use and what instead, anatomy, states, a11y, content, responsiveness, API, code, do/don't, related), Foundations, Patterns, "How to choose", "What to avoid", "What is missing", and an agent file routed from `AGENTS.md` (L06 exercise 3) | 27 story files with 268 stories, all under `Components/`; no MDX page, no `autodocs` tag, no "when not to use" in any story or component; no Foundations or Patterns pages, no product stories (`apps/` has 0 story files). The guidance an agent reads lives elsewhere: §2.6, §18.6 (choices for filters, tooltips, overlays, tables), the `ui-component` skill (19 lines) and `.ai/memory/shadcn.md` (46 lines of pitfalls). No `docs/design-system.md`; `AGENTS.md` routes to `docs/brand/` only | Partial |
 | 5.9 | Every component has a state matrix, long content, a narrow screen and interaction tests in `play`; data is realistic, no lorem ipsum (L06 exercise 3, stage 2) | Rule in §2.6, §18.6 and step 4 of `ui-component`; 188 `play` functions; 27 of 27 story files have `Phone`, `Tablet`, `Desktop` stories (`viewports.ts`); 0 lorem ipsum; a missing state is a minor finding in `CODE_REVIEW.md` | Full |
-| 5.10 | Story tests with a11y run in CI, fail on a violation (`a11y: { test: 'error' }`), in both themes (L06 homework) | `.storybook/preview.tsx`: `a11y.test: 'error'`, tags `wcag2a`–`wcag22aa`; `packages/ui/vitest.config.ts` projects `ui-stories-light` and `ui-stories-dark` (Chromium, `@storybook/addon-vitest`); run by `pnpm test:coverage` in job `Tests and coverage`, which installs Chromium first. Beyond the course: axe on 50 E2E call sites in 15 specs on three viewports. `build-storybook` does not run in CI (`@trybun/ui` has no `build` script) | Beyond |
+| 5.10 | Story tests with a11y run in CI, fail on a violation (`a11y: { test: 'error' }`), in both themes (L06 homework) | `.storybook/preview.tsx`: `a11y.test: 'error'`, tags `wcag2a`–`wcag22aa`; `packages/ui/vitest.config.ts` projects `ui-stories-light` and `ui-stories-dark` (Chromium, `@storybook/addon-vitest`); run by `pnpm test:coverage` in job `Tests and coverage`, which installs Chromium first. Beyond the course: axe on 50 E2E call sites in 15 specs on three viewports. `build-storybook` (a script of `@trybun/ui`, which builds) does not run in CI | Beyond |
 | 5.11 | The UX numbers live in the components: contrast 4.5:1 / 3:1, targets ≥ 24 × 24 px, visible focus, no sideways scroll at 320 px, lines of 45–75 characters (L06) | Targets 44 × 44 px on touch (§2.9, §13.4), checked by `e2e/touch-targets.ts` in 10 files and by the `Phone` stories; focus indicator specified to WCAG 2.4.13 (§13.4); `--input` 3:1 for field borders. Minimum width is 360 px, not 320 px (§2.9). Line length is bounded by width (forms ≤ 768 px), not by characters | Beyond |
 | 5.12 | Heuristics are built into components, e.g. the form pattern: visible label, one validation schema with the server, error linked to the field, focus on the first error, no double submit, success only after the server (L06) | §18.5 "Forms": React Hook Form with the contract schema the API validates, `Field` links label, description and error; React Hook Form 7.92 defaults `shouldFocusError: true` (client errors); 21 files call `useForm` and 23 files disable a control while a mutation is pending or the form is submitting (counted by grep, not checked form by form); unsaved text is never lost without a question. Focus after a server-side field error not verified | Full |
-| 5.13 | Dark mode: each token has a second value with the same meaning, contrast in both themes, the theme set on the root so dialogs and menus get it too (L06) | `.dark` block in `globals.css`; `withThemeByClassName` sets the class on `html` (addon default), so portals get it; every story tested in dark. The web application never sets `.dark` (no theme switch, no `prefers-color-scheme`), so the dark theme exists only in Storybook; the specification does not ask for it in the product. 13 `dark:` classes in 10 components (from shadcn) against "not with separate classes in every component" (§2.6) | Partial |
-| 5.14 | Motion, fonts and icons are decisions: durations by purpose, animations off under `prefers-reduced-motion`, fonts in the project not from a CDN, one icon set (L06 "Fundamenty wizualne") | Manrope self-hosted (`next/font`, Fontsource); Lucide only. No motion tokens; 3 of the 16 component files with animation or transition classes gate them on reduced motion (`motion-safe`, `matchMedia`); `tw-animate-css` has no reduced-motion rule (checked in its `dist`) | Partial |
+| 5.13 | Dark mode: each token has a second value with the same meaning, contrast in both themes, the theme set on the root so dialogs and menus get it too (L06) | `.dark` block in `globals.css`; `withThemeByClassName` sets the class on `html` (addon default), so portals get it; every story tested in dark. The web application never sets `.dark` (no theme switch, no `prefers-color-scheme`), so the dark theme exists only in Storybook. Plan task S0-07 asked for light and dark themes of the library and its stories, but no section of the specification asks for a dark theme in the product. 22 `dark:` classes in 10 components (shadcn defaults) against "not with separate classes in every component" (§2.6) | Partial |
+| 5.14 | Motion, fonts and icons are decisions: durations by purpose, animations off under `prefers-reduced-motion`, fonts in the project not from a CDN, one icon set (L06 "Fundamenty wizualne") | Manrope self-hosted (`next/font`, Fontsource); Lucide only. No motion tokens; `tw-animate-css` has no reduced-motion rule (checked in its `dist`). Most animated components only fade or change colour. Tooltips, the upload spinner, `scroll-fade` and the product tours (§2.4) honour the setting. The zoom and slide of `dialog`, `popover`, `dropdown-menu`, `select`, `combobox` (100 ms), `drawer` (450 ms), `toast` (500 ms) and the `switch` thumb do not | Partial |
 | 5.15 | An agent in a fresh session builds a new screen only from the design system and labels every decision RULE / EXAMPLE / GUESS; every guess becomes a rule or a "What is missing" entry (L06 "Test agentem") | None recorded | Missing |
 | 5.16 | A prototype starts from one question (role, look and feel, implementation) and a screen map: stable screen IDs, states per screen, roles, switchable scenarios, demo data, spec gaps as questions to the product owner (L07 exercise 1) | `SDLC.md` Design stage: "the flow and its states are settled before the code exists" (empty, loading, error, no permission), owned by `om-ux-shape` or a human; the spec-level Definition of Ready asks for "a link to the prototype or mockups". No screen map, no screen IDs, no prototype question in any specification; `om-ux-shape` has 0 of 336 recorded Cezar runs | Partial |
 | 5.17 | A grey, neutral prototype of one flow with `om-mockup-prototype`, checked in a browser, versioned as `revision-NNN` (L07 exercise 2a) | Installed (`skills-lock.json`); 0 runs; no `.ai/prototypes/`. The skill stops without `.ai/specs/product-brief.md`, which does not exist (#501 open). `browser.provider: agent-browser` is configured | Missing – needs 3.4 (#501) |
@@ -470,4 +470,51 @@ Not verified: whether each of the 21 forms disables its submit while pending (5.
 
 ### Gap proposals
 
-Research in progress.
+The research was done on 2026-11-26, and each gap starts from its consumer today: the end users, the maintainer or the coding agents. Across 174 issues and 332 pull requests, none reports a spacing, look or dark-mode problem. The UX defect that does recur is a missing state: 7 fix pull requests and about 10 issues lacked a loading, error or "too many requests" state, which #499 addresses. A course practice without a consumer here is deferred, with the trigger that would make it needed.
+
+**5.14 Reduced motion – recommended now.**
+
+- **The consumer.** People who set "Reduce motion".
+- **What moves today.** The zoom and slide of popups (100 ms), the drawer (450 ms), the toast (500 ms) and the `switch` thumb do not honour the setting, while tooltips, the spinner and the tours do. So the gap is inconsistency, not a missing policy.
+- **The proposal.** One rule in `globals.css` turns off the zoom and slide of `tw-animate-css` under `prefers-reduced-motion: reduce` and keeps the fades. The drawer and the toast fade instead of sliding, and swipe stays. A line in §13.4 and one test with reduced motion emulated go with it.
+- **Sources.** W3C Understanding 2.3.3 (C39, SCR40), MDN, WebKit (2017), GitHub Primer, and the advice to reduce motion rather than remove it.
+- **Rejected:** the blanket 0.01 ms reset, which also removes harmless fades.
+- **Still to check.** WCAG 2.3.3 is level AAA and the specification targets AA, so this goes beyond the target. Whether Base UI still closes its popups correctly with only a fade left is untested.
+
+**5.13 Dark theme – the maintainer's decision.** S0-07 asked for light and dark themes of the library, and the specification asks for none in the product.
+
+- **(a) Ship it.** It follows the system setting: a change of the specification and dark checks in E2E.
+- **(b) Remove it.** The `.dark` tokens, the `dark:` classes and the dark story project go, which also halves the story tests.
+- **Rejected:** keeping it as it is, a cost without a consumer.
+- **The research leans to (b)** unless the product brief (#501) names users who need it.
+
+**5.21 `SDLC.md` – recommended now.**
+
+- **The cause.** The UX steps come from the pipeline template, written whatever `designer: false` in `.ai/agentic.config.json` says. The setup skill does not overwrite `SDLC.md`, and no skill starts `om-ux-review-pr` on its own.
+- **The proposal.** A hand edit says what runs: the UX skills on demand, and no `.uxproof/` contract until a trigger.
+- **Rejected:** running `om-ux-setup` now. It would copy what lint already enforces and add a QA step for every UI pull request without a measured defect.
+
+**5.3 / 5.5 Named text styles – recommended now, as a refactor of measured drift.**
+
+- **The drift.** No heading component exists: `text-2xl font-bold` is copied 23 times for `h1`, and six `h3` headings use five styles.
+- **The proposal.** Named text styles (a Tailwind `@utility` or a `Heading` component) and a line in §18.6. GOV.UK publishes its heading sizes the same way.
+- **Deferred:** a spacing rule tied to relationships, until evidence. Atlassian ties spacing to size rather than strictly to relationships.
+
+**5.15 Agent test – recommended once, on the next real screen.**
+
+- **The test.** An agent builds the next new screen (S1-14 Kanban) only from the design system and labels each decision RULE, EXAMPLE or GUESS.
+- **What it decides.** Its guesses settle 5.5 and any new rule in §18.6.
+
+**5.16–5.20 Prototype loop – the light part only.**
+
+- **What is done now.** #499 is finished, and UI specifications list the states of each screen in their acceptance criteria.
+- **When to prototype.** Only when a specification has an open question of look and feel.
+- **Waiting for the brief (#501):** 5.17 (grey prototype) and 5.19 (personas).
+- **Already in place:** the form of 5.20.
+
+**5.1 Generic look – one paragraph.** `docs/brand/` says that the default radius, type scale, shadows and spacing were kept on purpose: familiar conventions (Jakob's Law) and no positioning yet. The full audit waits for the brief.
+
+**Deferred, with triggers.**
+
+- **5.8 Storybook as a manual.** No MDX manual, `llms.txt` or `design-system.md`. Agents already reach §18.6 through `AGENTS.md` and the `ui-component` skill, and a copy would drift. Storybook's manifest and MCP wait until they leave preview and agents can reach a running Storybook.
+- **5.10 Storybook build in CI.** When Storybook is published or MCP is adopted.
