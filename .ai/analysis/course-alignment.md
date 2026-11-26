@@ -39,7 +39,7 @@ Every step works in this order:
 | 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | done; issues #530–#534 |
 | 6 | Interactive coding (phases, subagent per task, tracking) | L08 | done; issues #537, #538 |
 | 7 | Security of AI tools and of the product | L09, L16 | done; issue #540 |
-| 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | open |
+| 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | done; issue #542 |
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | open |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | open |
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | open |
@@ -56,8 +56,7 @@ Questions found in one step that belong to a later one. Each step reads its rows
 
 | Step | Question | Found in |
 |---|---|---|
-| 8 | Nested `AGENTS.md` files per folder (1.4) | step 1 |
-| 8 | Whether runs fill their context window, and so whether `om-auto-create-pr` needs a subagent per task below 20 Steps (6.4) | step 6 |
+| 9 | After #537: the peak context of the fix-issue runs measured again; above 300k, a subagent per step of `om-auto-fix-issue` is proposed (8.12, 6.4) | step 8 |
 | 9 | Whether Cezar provisions the locked skill versions into its tasks (2.3, #498) | step 2 |
 | 10 | Test quality beyond executed lines, e.g. mutation testing (1.18, #493) | step 1 |
 | 10 | The Compose infrastructure `trybun-test` was running without a descriptor in `.ai/qa/` (up 41 h on 2026-11-25); `test-env-up.sh` adopted it as `discovered`, so `test-env-down.sh` leaves it running by design. Who started it, and whether a leftover environment should be found and reported | #503 measurements |
@@ -672,3 +671,98 @@ What would reopen it: a second person or machine with access, real user data on 
   - **Before the backlog:** every finding is checked by a second agent and reproduced by a test.
 
 **7.3 Skills.** The pinning is #498; the reading before an install is already a rule.
+
+## Step 8 – Context engineering (JIT router, `check:agents`, measuring context)
+
+Course sources: the twelve leaves of L10:
+
+- what context engineering is;
+- context rot;
+- the four places context comes from;
+- the AS / IS measurement;
+- the AGENTS.md of DevMentor before the rebuild;
+- the context cost of skills;
+- repository structure, names and examples;
+- task-driven context routing;
+- subagents;
+- the CI checks;
+- dynamic context in a large project;
+- state, homework and checklist.
+
+The carried-forward rows of step 1 (1.4, nested `AGENTS.md`) and step 6 (6.4, a subagent per task) are rated here as 8.4 and 8.12. Checked on 2026-11-26 at `main` `fcbb96d4`. The measurements:
+
+- **`/context`** in a fresh Claude Code session in the repository (Opus 5.5).
+- **The session transcripts on the agents' machine.** The context of every main-model turn is read from `usage`, the sum of input, cache read and cache creation tokens. The measurement covers 234 sessions with more than three turns: 225 Cezar runs and 9 interactive sessions. Haiku side sessions and subagent turns are excluded.
+- **File sizes**, and the skill descriptions read from the front matter.
+
+### Measurement AS / IS
+
+| What | AS / IS |
+|---|---|
+| Loaded at the start of a session (`/context`, deferred tools excluded) | 22.2k tokens |
+| – skill descriptions (62 skills: 60 `om-*`, 2 project skills) | 10k |
+| – root `AGENTS.md` (10.6 KB; `CLAUDE.md` is only `@AGENTS.md`) | 4.1k |
+| – the maintainer's `~/CLAUDE.md` (outside the repository) | 2.2k |
+| – MCP server instructions and tools of user-level plugins unrelated to Trybun (three DevExpress documentation servers, Claude Docs) | 3.0k |
+| – system prompt and tools | 2.9k |
+| Read next, by the first rule of `AGENTS.md`: `.ai/memory/MEMORY.md` | 16 KB, about 4k tokens |
+| Context of the first turn, median (p10–p90) | 43k (35k–48k) |
+| Peak context per session, median (p75, p90, max) | 171k (266k, 440k, 962k) |
+| Sessions peaking above 300k / 500k | 49 / 17, all Cezar runs |
+| of which "Fix GitHub issue" runs (the `om-auto-fix-issue` chain) | 31 of 104 above 300k |
+| Sessions with a compaction | 1 marker; 9 with a drop of more than half the context |
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 8.1 | Context is measured before anything is changed, AS / IS and TO BE (`/context`, Context Scope) (L10) | No measurement was recorded before this step; the table above is the first | Missing – measured here |
+| 8.2 | Every line of the root `AGENTS.md` passes "would the agent act differently without it?"; no-op sentences, duplicates of skills, motivation and history are removed (`eliminate-no-op`) (L10) | 10.6 KB, under Claude Code's warning (40 000 characters) and Codex's limit (32 KiB). It is mostly routing ("Where things are"), rules, "Never", working practices, the Definition of Done and the commands. No line-by-line test was run: the twelve rules repeat their full text in `docs/spec/02-agent-rules.md`, and some "Never" items are also enforced by lint or CI | Partial |
+| 8.3 | The root `AGENTS.md` is a router: per type of task, what to read and what not to read (L10 `task-router`) | "Start of every session" (memory, the specification sections the task cites, glossary, pattern catalogue) and the table "Where things are" route by place, not by type of task; skills route by task (bug → `om-auto-fix-issue`, spec → `om-auto-write-spec`) | Partial |
+| 8.4 | Module details live with the module, in nested `AGENTS.md` files that load only when the agent works there (L10, agents.md) | One nested file, `apps/web/AGENTS.md`, written by `next dev`. Module rules live in the pattern catalogue §18 with its reference implementations and in `.ai/memory/<topic>.md`, both reached through the root file | Partial – 1.4 |
+| 8.5 | `CLAUDE.md` holds only the import of `AGENTS.md` (L10) | `CLAUDE.md` is `@AGENTS.md` | Full |
+| 8.6 | CI checks the size budget of `AGENTS.md` and of the lessons files, and that every path they name exists (L10 `check:agents`) | Paths: `lychee` checks the links of every Markdown file in CI, and `pnpm lint:spec` the `§N.M` references. No size budget for `AGENTS.md` or `.ai/memory/` | Partial |
+| 8.7 | The lessons file, which grows over the project's life, is kept small and measured (L10) | `.ai/memory/MEMORY.md`, which every session reads first, is 16 KB for 33 lines: each line is an index entry with a long summary. It is larger than `AGENTS.md`. The 19 topic files total 243 KB and are opened on demand. No budget | Missing |
+| 8.8 | Skill descriptions say when, not what; bodies stay under about 500 lines; unused skills are disabled and stale cached copies removed (L10) | Descriptions: 341 characters on average, 491 at most, all under 1 024; no `SKILL.md` over 500 lines. All 60 `om-*` skills are installed, and their descriptions cost 10k tokens in every session; Cezar's 336 runs used about 18 of them. No cached old copies (`.claude/skills/` links to `.agents/skills/`) | Partial |
+| 8.9 | MCP servers that the project does not use are off (L10) | No MCP server in the repository. The maintainer's user-level plugins (DevExpress documentation, Claude Docs) load into every Trybun session, 3k tokens at start | Partial |
+| 8.10 | A predictable structure: one convention, colocation by feature, names by role, dates where currency matters (L10) | Feature folders (`apps/web/src/features/<feature>`, NestJS modules per domain), dated change specifications (`YYYY-MM-DD-slug.md`), numbered ADRs, the glossary of code identifiers (§0), one pattern per problem (Rule 12) | Full |
+| 8.11 | A current reference example instead of a paragraph describing a pattern, kept current (L10) | The pattern catalogue §18 names a reference implementation for each pattern, and Rule 12 makes a changed pattern migrate the code; the links are checked by `lychee` | Beyond |
+| 8.12 | Subagents protect the main context of long work: a brief, a bounded scope, a cheaper model for research (L10, L08) | 49 of the 225 Cezar runs peaked above 300k tokens, where L10 places the drop in quality, and 17 above 500k; compaction is rare because the window is 1M. The fix-issue chain is the heaviest: 31 of 104 runs above 300k. It implements and reviews in one session (6.7, #537). The loop engine dispatches subagents only above 20 Steps (6.4) | Partial |
+| 8.13 | Dynamic context for a large project: generated module facts, axes, a harness comparing declared and read context (L10, Open Mercato) | Trybun is one repository without framework modules in `node_modules` to describe; `apps/web/AGENTS.md` points to the Next.js guides in `node_modules/next/dist/docs/` | N/A |
+
+A test for 8.4: a session started in `apps/web` loads neither `apps/web/AGENTS.md` nor, through the root `CLAUDE.md`, the root `AGENTS.md`; `/context` lists only the two `CLAUDE.md` files. Claude Code's memory documentation explains the first: a subdirectory `AGENTS.md` is read only where that directory has no `CLAUDE.md` mode of its own. Cezar starts its runs in the root of a worktree, where the root file loads.
+
+Not verified: whether the start of a session shows a peak (L10, Context Scope; not installed); which of the 49 long runs lost quality; whether `apps/web/AGENTS.md` loads on demand when a session started in the root reads files in `apps/web`.
+
+### Gap proposals
+
+The research was done on 2026-11-26 over the primary sources: the Claude Code documentation (memory, skills, best practices), the agents.md and Codex documentation, Anthropic's engineering posts, and the studies listed below.
+
+The evidence on instruction files is thin and points one way: keep them minimal and written by people.
+
+- **Lulla et al.** (arXiv 2601.20404, ICSE JAWs 2026): a human-written `AGENTS.md` lowered the median runtime by 28.6 % and output tokens by 20 %; correctness was not measured.
+- **Gloaguen et al.** (arXiv 2602.11988, 2026): developer-written files added about 2.4 points of success (not significant) but 6–42 % inference cost; generated files lowered success. Their advice: only the minimal requirements that are not in the README.
+- **Claude Code's memory documentation:** "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." Its auto memory keeps `MEMORY.md` to one line per entry and loads at most 200 lines or 25 KB.
+- **The course's threshold.** The ~300k of L10 is not in the Chroma study it cites, which shows a gradual decline with no threshold. NoLiMa (ICML 2025) found 11 of 13 models below half of their short-context score at 32k.
+
+**8.8, 8.9 The skill catalogue – declined by the maintainer on 2026-11-26; recorded as an accepted cost.** Each listed skill costs context in every turn (Claude Code skills documentation), and the catalogue is the largest fixed cost measured: 10k of 22.2k.
+
+- **(a) Proposed, declined:** `.claude/settings.json` turns off, with `skillOverrides: off`, the `om-*` skills no workflow of Trybun runs. The skills the used ones call stay on. The lock stays equal to upstream, so `npx skills update` keeps working, and turning a skill on is one line. The same file turns off the maintainer's user-level plugins that Trybun does not use (`enabledPlugins`). Done when `/context` is measured again (TO BE).
+- **(b) Rejected: uninstall the unused skills** (`npx skills remove`). It makes the lock differ from upstream, and a skill another one calls can go missing silently.
+- **(c) Rejected: keep all**, as upstream advises ("every skill is small until invoked"). That contradicts Anthropic's documentation, and upstream has an interest in the full install.
+
+**8.2, 8.6, 8.7 Instruction and memory files – accepted (a): #542.**
+
+- **(a) Accepted:**
+  - **`MEMORY.md` as a real index:** one short line per entry, the details in the topic files.
+  - **A line-by-line pass over `AGENTS.md`** with the course's test: a line that repeats `docs/spec/02-agent-rules.md`, a skill, or a rule that lint or CI already enforces goes, unless it changes what an agent does.
+  - **A size budget for both in CI** with a small script like the existing `scripts/check-*.js`. Thresholds: about 200 lines for `AGENTS.md` and 25 KB for `MEMORY.md`, those of Claude Code's documentation.
+- **(b) Rejected: `agnix` as the linter.** A new dependency for two numbers.
+- **(c) Rejected: a router table by type of task (8.3).** Trybun's skills already route by task (bug, specification, review, QA), and a table would repeat them.
+
+**8.4 and 1.4 Nested files – accepted (a): #542.**
+
+- **(a) Accepted: `apps/web/CLAUDE.md` with `@AGENTS.md`**, so that the Next.js rule that `next dev` writes reaches Claude Code; pat-lewczuk's `task-router` places such a file next to every `AGENTS.md`.
+- **Different: no further nested files.** The rules of a module are the pattern catalogue §18, the one source of the specification (Rule 8, Rule 12), reached from the root file; files per module would repeat it.
+
+**8.12 and 6.4 Subagents in long runs – deferred until #537 is merged.** The evidence is mixed. Anthropic's harness post (2025-11-26) says "compaction isn't sufficient" for long work, while the current Claude Code best practices list "use subagents to protect your context window" as outdated advice. Their remaining reason for a subagent is independence ("it hasn't seen your reasoning"), which is #537. Trigger: after #537, the peak context of the fix-issue runs is measured again; if they still pass 300k, a subagent per step of `om-auto-fix-issue` is proposed.
