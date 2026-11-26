@@ -41,7 +41,7 @@ Every step works in this order:
 | 7 | Security of AI tools and of the product | L09, L16 | done; issue #540 |
 | 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | done; issue #542 |
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | done; issue #544 |
-| 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | open |
+| 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | done; no new issue (#499, #493) |
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | open |
 | 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | open |
 | 13 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | open |
@@ -56,8 +56,6 @@ Questions found in one step that belong to a later one. Each step reads its rows
 
 | Step | Question | Found in |
 |---|---|---|
-| 10 | Test quality beyond executed lines, e.g. mutation testing (1.18, #493) | step 1 |
-| 10 | The Compose infrastructure `trybun-test` was running without a descriptor in `.ai/qa/` (up 41 h on 2026-11-25); `test-env-up.sh` adopted it as `discovered`, so `test-env-down.sh` leaves it running by design. Who started it, and whether a leftover environment should be found and reported | #503 measurements |
 | 11 | Model per task (1.21) | step 1 |
 | 11 | After #537: the peak context of the fix-issue runs measured again; above 300k, a subagent per step of `om-auto-fix-issue` is proposed; cheaper models for mechanical steps (8.12, 6.4, 9.9) | steps 8, 9 |
 | 11 | Four pipeline PRs merged without a review (#429, #455, #466, #478), with `required_approving_review_count: 0` in the ruleset "Protect main" | step 2 |
@@ -822,3 +820,49 @@ No new research was needed beyond the lessons' sources. Each proposal below rest
 - **9.14 Classification of tasks – different on purpose.** With one maintainer, a limit of two parallel runs and one task per PR, a mode-of-work label has no consumer; the course's quadrants are applied when a batch is started.
 - **9.9 Cheaper models for mechanical steps – moves to step 11** with the model per task (1.21). The new measurement of the fix-issue runs follows #537.
 - **9.13 The automation's prompt** names the GitHub App of ADR 0005 for a 403. The automation is Cezar state (`.ai/cezar/`, "do not edit"), so the maintainer corrects the text in Cezar.
+
+## Step 10 – Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`)
+
+Course sources: the eight leaves of L12, the eight leaves of L14 and the nine leaves of L18.
+
+- **L12:** deterministic tests compared with an agent's verification; Playwright compared with `agent-browser`; the test environment; fifteen practices against flaky tests; `om-integration-tests` with a local override; the demo test; regression and fix; the homework.
+- **L14:** preparation; testing at the edges; a bug report for an agent; the `om-auto-fix-issue` chain; "fixed" is a hypothesis; a second agent looks for regressions; static analysis; closing and merge.
+- **L18:** the tester's role with AI; the QA skill pipeline; plan, runbook and parallel testing; sandbox and test data; `om-qa-buddy`; the layers of instructions; exploring a specification; PR #58 as an example; the homework.
+
+The carried-forward rows of step 1 (1.18, test quality beyond executed lines) and of the #503 measurements (the leftover `trybun-test` infrastructure) are rated here as 10.6 and 10.14. Checked on 2026-11-26 at `main` `09e0ac3c`, read-only. The sources were:
+
+- `docs/spec/18-code-patterns.md` §18.7;
+- the skills;
+- `.ai/qa/`;
+- the issue templates;
+- the bodies of the last 15 merged fix PRs of product code;
+- `docker ps`.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 10.1 | Deterministic end-to-end tests guard against regressions in CI: a browser framework, an isolated environment, readable scenarios (L12) | Playwright in CI on phone, tablet and desktop with axe and the Lighthouse budget (21 specification files in `apps/web/e2e/`); 45 integration specifications on Testcontainers; component tests in jsdom (ADR 0012); story tests in Chromium. A one-off agent verification (`om-auto-qa-pr`) is kept apart from the tests | Beyond |
+| 10.2 | The fifteen practices against flaky tests: behaviour, one case per scenario, Given–When–Then, determinism (no `wait(5000)`, fixed clock), independence, the shortest set-up, external integrations replaced at the boundary, positive, negative and boundary cases, idempotency, stable selectors (role, label, text), concrete assertions, names "action + condition + result", AI-written tests reviewed (L12) | §18.7 covers most of them: business rules as `it.each` tables from the specification, each integration test with its own factories, test doubles only at external boundaries (MSW, the fixed clock), never mocking the project's own services or the database, page objects with `getByRole`, never CSS classes. Two `waitForTimeout` calls remain, both waiting for a real clock period: the TOTP window and a tap delay. Given–When–Then is not a rule. Flaky tests still recur (four classes, step 12) | Full |
+| 10.3 | Scenarios are also written in Markdown for testers and agents, linked to the test code, by area (`.ai/qa/{AREA}/…`), through a local override of `om-integration-tests` (L12) | No Markdown scenarios: the test names and the specification's acceptance criteria are the scenarios. No override of `om-integration-tests` | Missing |
+| 10.4 | A failing test is fixed at its root by the chain (`om-auto-fix-pr`, `om-integration-tests`), never by weakening the test (L12) | `AGENTS.md` ("Never disable, skip or weaken tests…"); `om-auto-fix-pr` installed; the flaky-test rule of the maintainer: a test that fails on `main` gets an issue and a root-cause fix (#496, #502, #511, #514, #520, #522, #523) | Full |
+| 10.5 | Testing at the edges: empty states, boundaries, time, money, permissions (L14) | Required by the risk table of `SDLC.md` (auth, data scoping, money, migrations) and by §18.7 (cases of the specification); `CODE_REVIEW.md` treats a missing state as a finding. The recurring user-visible defect is a missing loading, error or "too many requests" state: 7 fix PRs (#499) | Partial – #499 |
+| 10.6 | "Fixed" is a hypothesis: the same test is red on the old code on the right assertion and green on the fix (L14) | `om-fix` requires "a unit test that fails without your fix and passes with it". 10 of the last 15 merged fix PRs of product code record the red run in their body. 1.18: beyond executed lines, #493 (the coverage of changed lines); mutation testing has no issue | Full |
+| 10.7 | A bug report an agent can act on: where, how to reproduce, expected, actual, a suggested direction, short (L14, Waterloo/Microsoft study) | `om-prepare-issue`; `.github/ISSUE_TEMPLATE/bug_report.yml`; the Definition of Ready of `SDLC.md` ("for a bug, ready means reproducible", `om-verify-in-repo`) | Full |
+| 10.8 | The autonomous fix chain: verify → root cause → fix → open PR → review, which may stop with `NO_ACTION_NEEDED` (L14) | `om-auto-fix-issue`, 104 Cezar runs; `SDLC.md` Triage and Implement stages | Full |
+| 10.9 | A second agent in a new session, of another model, looks for regressions (L14) | 6.7: the review runs in the author's session; #537 and #525; code by another model is step 11 | Partial – #537 |
+| 10.10 | Deterministic static analysis as a merge gate: SAST with data flow, SCA, Dependabot; a quality gate as a required check (L14) | CodeQL on every PR and push, a required check; Dependabot, `dependency-review`, the advisory audit, Trivy; lint and type check. No SonarQube | Full |
+| 10.11 | The merge gate checks that the evidence belongs to the current head (L14 `om-approve-merge-pr`) | `om-approve-merge-pr` compares `QA head:` with the PR head; the QA gate of `SDLC.md`; the maintainer merges by hand after green required checks | Full |
+| 10.12 | A tester works in parallel with AI: a plan and runbook before the first click, an independent human pass, the results compared, a human verdict, a knowledge base kept also without defects (L18 `om-qa-buddy`) | The QA reviewer role, `needs-qa` → `qa-approved` owned by a person (`SDLC.md`); `om-auto-qa-pr` (3 Cezar runs) and `om-qa-buddy` installed; `.ai/qa/knowledge-base/` has `module-history.md` (6 sessions from 2026-11-19 to 2026-11-23, verdicts and defect counts) and `risk-hotspots.md`. No runbook is published before a run, and no comparison of a human pass with the AI's is recorded | Partial |
+| 10.13 | Before a module is tested, its specification is explored for rules, risks and ambiguities, ending in a test charter (L18) | Not done as a QA practice; the specification review of `om-auto-review-pr` covers ambiguity at the design stage | Missing |
+| 10.14 | The test environment is disposable and does not linger (L11, L12) | `.ai/scripts/test-env-up.sh` and `test-env-down.sh`. On 2026-11-26 the six containers of the Compose project `trybun-test` had been up for 34 hours, and `.ai/qa/test-env.json` says `status: stopped`, `mode: discovered`, `servicesStartedByScript: false`: a run that finds the infrastructure running adopts it and, by design, does not stop it | Partial |
+
+### Gap proposals
+
+The maintainer decided on 2026-11-26. No proposal brings in a new practice, so no research beyond the lessons' sources was needed.
+
+- **10.3 Markdown scenarios – different on purpose.** The acceptance criteria of the change specifications and the test names (§18.7) are the scenarios. A second description of each case in `.ai/qa/` would drift from the test and has no reader beyond the agents.
+- **10.12 A runbook and a human pass in parallel – adopted by the maintainer, no change to the repository.** The maintainer uses `om-qa-buddy` for `needs-qa` work. It publishes the plan and runbook before it tests and keeps `.ai/qa/knowledge-base/`. The skill is installed and configured (`browser.provider: agent-browser`).
+- **10.13 Exploring a specification before testing – not adopted.** `om-qa-buddy`'s plan step and the specification review cover it.
+- **10.5 Missing states – #499**, already open.
+- **10.14 The leftover test infrastructure.** The six `trybun-test` containers were stopped on 2026-11-26 with `docker compose -p trybun-test stop`, which keeps their volumes. `test-env-down.sh` keeps leaving adopted infrastructure running by design; it is reopened if a leftover environment is found again.
