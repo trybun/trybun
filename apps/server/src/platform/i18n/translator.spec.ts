@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TEST_ENV } from '../../../test/env.js';
 import { loadConfig } from '../config/load-config.js';
-import { compileMessage, Translator } from './translator.js';
+import { compileMessage, platformNumberFormatOptions, Translator } from './translator.js';
 
 const MOMENT = new Date('2026-11-03T23:15:00Z');
 
@@ -26,8 +26,25 @@ describe('compileMessage', () => {
     ['pl', 'Europe/Warsaw', '{at, date, ::yyyyMMdd}', { at: MOMENT }, '04.11.2026'],
     ['pl', 'UTC', '{amount, number}', { amount: 1234.5 }, '1234,5'],
     ['en', 'UTC', '{amount, number}', { amount: 1234.5 }, '1,234.5'],
+    ['en', 'UTC', '{share, number, percent}', { share: 0.25 }, '25%'],
+    ['pl', 'UTC', '{amount, number, ::.00}', { amount: 3 }, '3,00'],
   ] as const)('%s in %s: %s', (locale, timeZone, message, values, expected) => {
     expect(compileMessage(message, locale, timeZone)(values)).toBe(expected);
+  });
+});
+
+describe('platformNumberFormatOptions', () => {
+  it('passes the options of a message on unchanged', () => {
+    expect(
+      platformNumberFormatOptions({ style: 'percent', trailingZeroDisplay: 'stripIfInteger' }),
+    ).toEqual({ style: 'percent', trailingZeroDisplay: 'stripIfInteger' });
+    expect(platformNumberFormatOptions(undefined)).toBeUndefined();
+  });
+
+  it("rejects 'stripToMinimum', which the platform's Intl.NumberFormat does not support", () => {
+    expect(() => platformNumberFormatOptions({ trailingZeroDisplay: 'stripToMinimum' })).toThrow(
+      RangeError,
+    );
   });
 });
 
