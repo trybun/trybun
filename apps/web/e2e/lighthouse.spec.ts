@@ -1,5 +1,5 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { availableParallelism, loadavg, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type BrowserContextOptions, chromium, expect, test } from '@playwright/test';
 import lighthouse, { type Result } from 'lighthouse';
@@ -67,8 +67,10 @@ for (const keyPage of KEY_PAGES) {
 
       // Calibrated in the Chromium that Lighthouse drives, before its runs (#508).
       const calibration = await calibrateCpuSlowdown(browser);
+      // With the load of the runner, which explains a noisy calibration (#523).
+      const runner = { loadAverage: loadavg(), parallelism: availableParallelism() };
       await testInfo.attach('cpu-calibration.json', {
-        body: JSON.stringify(calibration, null, 2),
+        body: JSON.stringify({ ...calibration, runner }, null, 2),
         contentType: 'application/json',
       });
 
