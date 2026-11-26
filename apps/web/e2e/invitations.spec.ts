@@ -35,9 +35,6 @@ test.describe('invitations', () => {
     const dialog = await projects.addByEmail(email, 'End user');
 
     await expect(dialog.getByText('This person gets an invitation link.')).toBeVisible();
-    await dialog.evaluate((popup) =>
-      Promise.all(popup.getAnimations({ subtree: true }).map((animation) => animation.finished)),
-    );
     expect(await seriousViolations(page)).toEqual([]);
     await expectTouchTarget(
       dialog.getByRole('button', { name: 'Invite' }),

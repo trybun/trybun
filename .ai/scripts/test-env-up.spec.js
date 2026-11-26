@@ -60,12 +60,21 @@ case "$*" in
   *) echo "unexpected: docker $*" >&2; exit 99 ;;
 esac
 `,
-  // A port answers while a stubbed application holds it (a file "serving-<port>"); the health
-  // checks pass once the boot has started the applications, unless the file "unhealthy" exists.
+  // A port answers while a stubbed application holds it (a file "serving-<port>"). Like the real
+  // ones, the health checks of the API and of the web application pass only once that application
+  // serves, waiting for it as a request to a starting application does (up to 5 s, the --max-time
+  // of test-env-up.sh) – so a boot returns only after its applications have started and logged
+  // (#522) – and never while the file "unhealthy" exists.
   curl: `#!/bin/sh
 for arg in "$@"; do url=$arg; done
+serves() {
+  tries=0
+  until [ -e "$STUB_DIR/serving-$1" ] || [ "$tries" -ge 50 ]; do sleep 0.1; tries=$((tries + 1)); done
+  [ -e "$STUB_DIR/serving-$1" ]
+}
 case "$url" in
-  */health/ready | */api/health) [ ! -e "$STUB_DIR/unhealthy" ] || exit 7 ;;
+  */health/ready) [ ! -e "$STUB_DIR/unhealthy" ] && serves 3001 || exit 7 ;;
+  */api/health) [ ! -e "$STUB_DIR/unhealthy" ] && serves 3000 || exit 7 ;;
   */api/v1/users/me) printf 401 ;;
   http://localhost:3000/) [ -e "$STUB_DIR/serving-3000" ] || exit 7 ;;
   http://localhost:3001/) [ -e "$STUB_DIR/serving-3001" ] || exit 7 ;;
@@ -321,6 +330,30 @@ function start(...args) {
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Starts `command` as the leader of its own process group and returns its PID. A shell that exits
+ * at once starts it, so the program is not a child of this test, whose event loop – blocked in
+ * spawnSync – would leave it a zombie, still "alive", once signalled. `$!` is known as soon as
+ * the shell forks, but the program leads its group only once its `setsid()` has run, so the shell
+ * waits for that (up to 5 s) before it prints the PID (#520).
+ */
+const startGroupLeader = (command, env) =>
+  execFileSync(
+    'sh',
+    [
+      '-c',
+      `setsid ${command} >/dev/null 2>&1 &
+pid=$!
+tries=0
+while [ "$(ps -o pgid= -p "$pid" | tr -d ' ')" != "$pid" ] && [ "$tries" -lt 500 ]; do
+  sleep 0.01
+  tries=$((tries + 1))
+done
+echo "$pid"`,
+    ],
+    { encoding: 'utf8', env },
+  ).trim();
 
 async function until(condition, timeout, message) {
   const deadline = Date.now() + timeout;
@@ -1156,12 +1189,7 @@ describe('test-env-down.sh', PROCESS_TESTS, () => {
     let text = readFileSync(join(checkout, '.ai/qa/test-env.json'), 'utf8');
     const pids = [];
     for (const key of ['apiPid', 'workerPid', 'webPid']) {
-      // Started by a shell that exits at once, so the program is not a child of this test, whose
-      // event loop – blocked in spawnSync – would leave it a zombie, still "alive", once signalled.
-      const pid = execFileSync('sh', ['-c', `setsid ${command} >/dev/null 2>&1 & echo $!`], {
-        encoding: 'utf8',
-        env: { ...process.env, SPEC_PROCESS_TAG: tag },
-      }).trim();
+      const pid = startGroupLeader(command, { ...process.env, SPEC_PROCESS_TAG: tag });
       pids.push(pid);
       // It leads its own group, as an application of the environment did under that PID.
       expect(execFileSync('ps', ['-o', 'pgid=', '-p', pid], { encoding: 'utf8' }).trim()).toBe(pid);
@@ -1750,15 +1778,8 @@ describe('the descriptor (#457)', PROCESS_TESTS, () => {
 });
 
 describe('the cleanup after each test (#458)', PROCESS_TESTS, () => {
-  /**
-   * Starts `sleep 300` with `env` as the leader of its own process group, reparented at once
-   * (see reuseRecordedPids), and returns its PID.
-   */
-  const startGroup = (env) =>
-    execFileSync('sh', ['-c', 'setsid sleep 300 >/dev/null 2>&1 & echo $!'], {
-      encoding: 'utf8',
-      env,
-    }).trim();
+  /** Starts `sleep 300` with `env` as the leader of its own process group; returns its PID. */
+  const startGroup = (env) => startGroupLeader('sleep 300', env);
 
   it('signals no program that took over a recorded PID, and stops what the test left running', async () => {
     // Programs that now hold PIDs the test recorded: another program of the same user (no tag)

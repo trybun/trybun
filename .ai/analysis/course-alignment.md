@@ -34,12 +34,12 @@ Every step works in this order:
 | 0 | Baseline map | all | done |
 | 1 | Repository, stack, standards, AGENTS.md, `.ai/`, CI safety net | PW, L01–L02 | done; issues #487–#494 |
 | 2 | Skills, `om-setup-agent-pipeline`, labels, issue → PR → review flow | L03, extras: skills | done; issues #498, #499 |
-| 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | open |
-| 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | open |
-| 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | open |
-| 6 | Interactive coding (phases, subagent per task, tracking) | L08 | open |
-| 7 | Security of AI tools and of the product | L09, L16 | open |
-| 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | open |
+| 3 | Discovery, product brief, synthetic users, backlog | L04, extras: discovery | done; issue #501 |
+| 4 | Specification for agents (spec, delta, grill-me, review by another model) | L05, L07, L25 | done; issues #524–#526 |
+| 5 | Design system and prototype (tokens, Storybook, a11y in CI) | L06–L07 | done; issues #530–#534 |
+| 6 | Interactive coding (phases, subagent per task, tracking) | L08 | done; issues #537, #538 |
+| 7 | Security of AI tools and of the product | L09, L16 | done; issue #540 |
+| 8 | Context engineering (JIT router, `check:agents`, measuring context) | L10 | done; issue #542 |
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | open |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | open |
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | open |
@@ -49,6 +49,27 @@ Every step works in this order:
 | 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
 
 Step 12 has no lesson of its own. The course rates whether the safety net and the gates exist (L02, L14, L17), not whether each workflow is needed and well written, so the maintainer added it on 2026-11-24. It follows steps 10 and 11, which rate tests and gates from the course side, and comes before the release step, which covers `release.yml`. Sources to research: the GitHub Actions documentation (security hardening, `permissions`), the tools built for such audits (actionlint, zizmor, OpenSSF Scorecard), and established practice for flaky tests. The flaky component test found during step 1 was filed on its own (#496) because it failed on `main`, and fixed in #497.
+
+### Carried forward
+
+Questions found in one step that belong to a later one. Each step reads its rows before it rates, and the final review pass checks that none is left open.
+
+| Step | Question | Found in |
+|---|---|---|
+| 9 | After #537: the peak context of the fix-issue runs measured again; above 300k, a subagent per step of `om-auto-fix-issue` is proposed (8.12, 6.4) | step 8 |
+| 9 | Whether Cezar provisions the locked skill versions into its tasks (2.3, #498) | step 2 |
+| 10 | Test quality beyond executed lines, e.g. mutation testing (1.18, #493) | step 1 |
+| 10 | The Compose infrastructure `trybun-test` was running without a descriptor in `.ai/qa/` (up 41 h on 2026-11-25); `test-env-up.sh` adopted it as `discovered`, so `test-env-down.sh` leaves it running by design. Who started it, and whether a leftover environment should be found and reported | #503 measurements |
+| 11 | Model per task (1.21) | step 1 |
+| 11 | Four pipeline PRs merged without a review (#429, #455, #466, #478), with `required_approving_review_count: 0` in the ruleset "Protect main" | step 2 |
+| 12 | `ci.yml` and `codeql.yml` run every job on every pull request, also on documentation only (about 12 min; #495 failed on the flaky Lighthouse budget). A path filter on the workflow would leave the required checks unreported and block the PR, so the question is a job-level condition. Risks to research: Markdown that is part of the application (help pages in `apps/web`), the required CodeQL check, pushes to `main` | #506 |
+| 12 | Flaky classes that came back after a fix: animations under axe (#72, #270 → #502, and again after its fix → #514) and the simulated LCP (#163, #372 → #503). A third class: lazily loaded modules in component tests (#326, #496 → #511), which five specs had worked around with longer timeouts. A fourth: a background program checked before it has run, in the stubs of `test-env-up.spec.js` (#520, #522). And the calibrated Lighthouse slowdown (#515) failed to converge on a noisy runner (#523). Why the earlier fixes did not hold, and how flaky tests are detected and reported (quarantine, retry reports) | step 3 |
+| 12 | `.github/labels.yml` lists 33 labels, GitHub has 50, and no workflow or script reads the file | step 2 |
+| 12 | Editing a PR body re-runs `Commit messages and title` and cancels the run in progress, which shows as a cancelled check next to the passing one (#504, #506) | #506 |
+| 12 | A CI run takes 11.5–14 min. The critical path is `pnpm test:coverage` (389–642 s) and `pnpm e2e` (472–633 s); the spread follows the runner pool (AWS fast, Azure slow, read from the `Cloud:` line of the job log). An idle VPS ran `pnpm test:coverage` in 249 s (9908 tests, warm Testcontainers images). Self-hosting is advised against: GitHub's secure-use docs say self-hosted runners should almost never serve public repositories, the PyTorch and runner-images compromises and the Shai-Hulud 2.0 worm used them, and the VPS holds the maintainer's `gh` credentials, the agents' worktrees and the QA stacks, with the `docker` group root-equivalent. Options to weigh: Vitest shards with thresholds checked on the merged coverage, Playwright shards with merged reports, Lighthouse as its own job, the infrastructure started early, one gate job (`re-actors/alls-green`) or the kept check names for the ruleset; then a managed per-job-VM runner (Ubicloud, Blacksmith, Namespace). Larger GitHub runners need a paid plan | session 2026-11-25 |
+| 13 | A threat model (`docs/security/threat-model.md`) before the first release `1.0.0`, and with it the decision on DAST and an agentic security review (7.9–7.15) | step 7 |
+| 14 | When the product brief is refreshed (3.4, #501); how `CODE_REVIEW.md` keeps following the defects (2.11, #499); retrospectives | steps 2, 3 |
+| 15 | The analysis commits use the scope `agents`, as the closed scope list of §2.14 has none for `.ai/analysis/`; whether one is needed | step 0 |
 
 ## Step 0 – Baseline map
 
@@ -243,3 +264,505 @@ Whether Cezar provisions the locked version into its tasks is checked in step 9.
 - **(b) Rejected:** no item, relying on §18.5 alone. Seven fix PRs in one month show that the rule in the specification was not enough at review.
 
 How `CODE_REVIEW.md` keeps following the defects over time (for example from `om-pipeline-retro`) is rated in step 14 (retrospective).
+
+## Step 3 – Discovery, product brief, synthetic users, backlog
+
+Course sources: the eight method leaves of L04 (overview, business case and workshop, `om-setup-discovery-pipeline`, `om-discover`, critical reading of the brief, synthetic users in practice, `om-backlog`, state and checklist) and the index of extras "Discovery". Checked on 2026-11-24 at `main` `a82ccf8b`.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 3.1 | A business case states what, for whom, what benefit and on what belief; the vision and the scope of the first release are written apart (L04 step 1) | [§1.1](../../docs/spec/01-overview.md) says what the system does and for whom (team, end users, integrations); the implementation plan separates the MVP (Stages 0–1) from later stages and unscheduled ideas. The benefit and the evidence that the problem is worth solving are not written down | Partial – part of 3.4 |
+| 3.2 | Discovery material lives in `.ai/specs/research/` as text, with kind, date, sources and decisions (L04 step 2) | `.ai/specs/research/2026-11-09-market-benchmark.md` is a model of the format: date, kind, method, reliability, unverified items marked `(u)`, purpose. No stakeholder map, interview or other material on the people who have the problem | Partial – part of 3.4 |
+| 3.3 | `om-setup-discovery-pipeline` adds the Discovery stage, the product owner role, the Definition of Ready, protected product decisions and routing from `AGENTS.md` (L04) | `SDLC.md`: Discovery stage, product owner role, Definition of Ready, "Product decisions as a protected contract"; `discovery.enabled: true`; `.ai/specs/research/` exists. `AGENTS.md` does not route to a brief or to the research folder | Partial – part of 3.4 |
+| 3.4 | A product brief (`.ai/specs/product-brief.md`): problem, users, goals, Now / Later scope, business rules, decisions and non-goals with ids and owners, sources tagged by kind, open questions (L04 step 3) | **None.** Consequences: the product-decision gate of `om-code-review` ("when `product-brief.md` exists, read its Non-goals, Business rules, and Decisions") and the protected contract of `SDLC.md` never run, and the ticket-level Definition of Ready ("who has the need") has no shared source | Missing – #501 |
+| 3.5 | The brief is read critically: claims tagged as interview, decision, assumption or synthetic; ambiguous words made precise (L04) | The benchmark separates verified from unverified claims; with no brief there is nothing else to read | Part of 3.4 |
+| 3.6 | Synthetic users (optional) probe one key flow of the brief, and their findings stay marked as hypotheses (L04 step 4) | None | Decided after 3.4: the skill needs a brief and its key flows |
+| 3.7 | The backlog: epics, stories with acceptance criteria and `Depends on:` in GitHub Issues, mapped in `.ai/specs/backlog.md` (L04 step 5) | The [implementation plan](../../docs/plan/implementation-plan.md) is the backlog: stages as Now and Later, groups for order and parallel work, "Done when" per task, "Ideas – unscheduled" for what is not decided, status in the file ("How to use this plan"). Tasks become work through their change specification and PR, not through issues (18 issues name a plan task, mostly of Stage 0) | Different – one source of the scope, recorded in "How to use this plan" |
+| 3.8 | Continuous discovery: the brief is refreshed when new information changes it (`om-discover --refresh`) (L04 overview) | No brief to refresh | Part of 3.4 |
+| 3.9 | Each decision records who made it, why and when to revisit it (L04 step 2) | Technical decisions: ADRs (MADR) with context and consequences. Product decisions: accepted by merging a change specification (approver: the maintainer), with no revisit date | Partial – part of 3.4 |
+
+### Gap proposal
+
+**3.4 Product brief – accepted (a): #501.** It also closes 3.1, 3.2, 3.3, 3.5, 3.8 and 3.9.
+
+**Sources.** The course (L04) and the skills that read the brief. Practitioners' guides (Atlassian, Productboard, Aha!; vendor blogs) agree on a chain of documents: the brief answers why – the problem, who has it, the value – the requirements and specification answer what and how, and the brief stays a living document with one owner. They warn that a document that goes stale is worse than none, and that a long brief turns into a requirements document. Teresa Torres ("Continuous Discovery Habits") asks whether there is enough evidence for each assumption and revisits it as evidence comes in. No source prescribes a formal decision log; the `N`/`R`/`D` tables of the brief template come from the course skills.
+
+**Options:**
+
+- **(a) Recommended: a brief from `om-discover --mode existing`**, in an interactive session with the maintainer as product owner, reading `docs/spec/`, the implementation plan and `.ai/specs/research/`.
+  - It writes `.ai/specs/product-brief.md`: the why, the people and the evidence; Now (Stages 0–1), Later (Stages 2–9) and not doing; non-goals, business rules and decisions with ids and owners; open questions.
+  - It links the specification and the plan instead of repeating them: the brief says why, `docs/spec/` says what, the plan says when.
+  - It adds the routing line in `AGENTS.md`.
+  - The criticism is answered by keeping the brief short and linked, and by refreshing it with `--refresh`. When it is refreshed is rated in step 14 (maintenance).
+- **(b) Rejected: product sections in [§1](../../docs/spec/01-overview.md).** The product-decision gate of `om-code-review` reads only `product-brief.md`, and the specification is the place of what the system does, not of why.
+- **(c) Rejected: no brief.** The gate and the protected contract stay inert, and scope decisions keep no recorded basis.
+
+Only the product owner can supply the problem, the people and the decisions (ticket-level tier of the Definition of Ready). The issue is therefore a session of the maintainer with the skill, not autonomous work.
+
+Found during step 3: two flaky E2E checks, filed on their own because they fail on `main` and on unrelated PRs (step 12 rates how flaky tests are handled):
+
+- #502: the accessibility check measured elements while they still animated. Fixed in #504: the check waits for the animations of the page.
+- #503: the Lighthouse LCP budget of the empty shell, open.
+
+## Step 4 – Specification for agents (spec, delta, grill-me, review by another model)
+
+Course sources: the seven leaves of L05 (overview, spec as context engineering, user stories, `om-spec-writing` and grill-me, the live spec of issue #7, review by another model, process and state), the L07 leaf "from prototype to specification", the L25 leaf "new requirement = new specification", the L11 leaf on the input of autonomous work, and the extras on the specification skills and on context and specifications. Checked on 2026-11-26 at `main` `60d19f78`, over the 44 change specifications in `.ai/specs/implemented/` and their pull requests.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 4.1 | The requirement says what, the specification says how in this system; it is written before the code and is the shared reference of author, reviewer and tester (L05) | "Specification before implementation" in [`SDLC.md`](../../SDLC.md) and [`.ai/specs/README.md`](../specs/README.md): the implementation starts only after the specification pull request is merged, and the merge is the maintainer's acceptance. Two layers: the system specification [`docs/spec/`](../../docs/spec/README.md) says what the system is, a change specification says what changes and why | Beyond – the system specification is kept current by every change (Rule 8, [§2.8](../../docs/spec/02-agent-rules.md#28-rule-8--the-specification-is-kept-up-to-date)) |
+| 4.2 | The specification is context engineering: scope, place in the architecture, reused components and patterns, changed flows, decisions, risks, edge cases, acceptance criteria, the link to the backlog and a history; not every line of code (L05) | The sections of `om-spec-writing` (TLDR, Problem Statement, Proposed Solution with the alternatives, Architecture, Edge Cases, Risks) and of [`TEMPLATE.md`](../specs/TEMPLATE.md) (Non-goals, Changes to the system specification, Acceptance criteria, Changelog, Related issues). The 44 implemented specifications average 175 lines | Full |
+| 4.3 | User stories are the most important part: who, in what situation, wants to do what, sees what result, what the system does on the way and what happens next; without them an agent builds flat CRUD (L05) | None of the 44 specifications has user stories. The TLDR names who needs the change, and three specifications have `WHEN`/`THEN` scenarios in a Delta. Neither the template nor the installed skill asks for stories (the skill's "Phases (stories)" means delivery slices) | Missing – #524 |
+| 4.4 | `om-spec-writing` recognises the project, asks the questions an agent must not decide, researches the code, then drafts; open questions stop the design (L05, extras) | `om-spec-writing` and `om-auto-write-spec` are installed; every one of the 44 specifications has "Open questions" or "Resolved assumptions (autonomous defaults)"; an assumption marked `⚠ NEEDS HUMAN CONFIRMATION` keeps the pull request a draft | Full |
+| 4.5 | The human reads the specification first, decides what to keep and records the decisions in it (L05, L07) | The maintainer answers the open questions and the autonomous defaults in the session; the answers are written into the specification and posted on the pull request before the merge (e.g. #421, #506) | Full |
+| 4.6 | A model other than the author reviews the specification, with a short prompt about contradictions, anti-patterns and over-complexity (L05) | `om-auto-review-pr` reviews every specification pull request in its specification mode, in a fresh context, but with the same model family: all 336 recorded Cezar runs use the `claude` runner. Codex CLI is installed on the maintainer's machine and unused | Missing – #525 |
+| 4.7 | `grill-me` interviews the human after the review and surfaces the assumptions nobody wrote down (L05) | Not installed. The closest step is the open-questions gate of `om-spec-writing`, which asks before the design, not after the review | Missing – #526 |
+| 4.8 | The delivery is split into phases and steps; each step leaves the application working and the order of the phases follows the dependencies (L05, extras) | "Implementation Plan" in 29 of the 44 specifications; the others are single-step changes. `om-auto-create-pr` runs the plan phase by phase | Full |
+| 4.9 | What a prototype or a persona finds goes back into the specification before the code, as a checkable criterion or a recorded "not doing" (L07) | Belongs to step 5 (design and prototype), which rates the prototype itself; two specifications carry mockups | Rated in step 5 |
+| 4.10 | A new requirement gets a new specification, the old one stays as the record of its time; the status follows the folder (active, `implemented/`, `archive/`) (L25) | The lifecycle of `.ai/specs/README.md` keeps the same three places. What the system does now is in `docs/spec/`, so an agent does not have to work out which of many change specifications applies | Beyond |
+| 4.11 | A Delta (ADDED / MODIFIED / REMOVED with `WHEN`/`THEN`), `Extends` / `Supersedes`, a prior-spec drift check and `Frozen by:` characterization tests (L25) | The installed `om-spec-writing` asks for all of them (`references/delta-format.md`, `prior-specs.md`), but `TEMPLATE.md` and `README.md` mention none. 3 of the 44 specifications have a Delta, although more change observable behavior (e.g. `2026-11-20-page-tab-titles.md`); the specifications mix the skill's sections with the template's | Partial – #524 |
+| 4.12 | An autonomous specification is its own pull request, the implementation another one; risky assumptions hold the merge (extras, L11) | `om-auto-write-spec` and `om-auto-implement-spec`; the implementation pull request refers to the specification pull request (`Refs`, `Source doc:`) | Full |
+| 4.13 | With many specifications the agent is pointed at the one that matters and its links; the archive is kept apart (extras FAQ) | `docs/spec/README.md` indexes the system specification; change specifications by date in their status folders | Full |
+
+### Gap proposals
+
+The research was done on 2026-11-26. The maintainer accepted the recommended option of every gap on the same day.
+
+**4.3 and 4.11 – one format with user scenarios and a Delta – accepted (A): #524.** These two gaps share one cause, so they get one proposal.
+
+**What the repo shows.**
+
+- **Two formats.** Of the 44 implemented specifications, 34 use the sections of `TEMPLATE.md` and 17 those of the skill; some use both. The installed `om-spec-writing` never reads `TEMPLATE.md`.
+- **No user stories, in any revision.** None of the 20 upstream revisions of its `SKILL.md` asked for them. In Open Mercato they live in `om-app-spec-writing`.
+- **A second source of truth.** `om-auto-implement-spec` archives every Delta into `.ai/specs/capabilities/<slug>.md` (`references/delta-archive.md`). That would be a second description of current behavior next to `docs/spec/`, against Rule 8. The three Deltas of Trybun escaped it only because their headings do not match the shape the skill looks for.
+
+**Sources.**
+
+- **User stories.** Sources disagree.
+  - GitHub Spec Kit requires prioritised stories with Given/When/Then.
+  - AWS Kiro writes stories with EARS criteria, and gives a bug fix a separate format: current, expected and unchanged behavior.
+  - OpenSpec has no stories: requirements with scenarios, and none for tooling.
+  - Mike Cohn: "not everything needs to be a user story".
+  - Alan Klement's job stories put the situation before the persona.
+- **Criticism.** Birgitta Böckeler (martinfowler.com, 2025) saw Kiro turn a small bug into 4 stories with 16 criteria, and found Spec Kit's Markdown tedious to review.
+- **Where they agree.** Name the actor, the situation and the visible result, and confirm them with concrete scenarios. Do not force a story where nobody observes the behavior.
+- **The two layers.** They are the model of OpenSpec: change specifications plus a living specification updated when a change is implemented. So "never rewrite an old specification" (L25) applies to `.ai/specs/`, and editing `docs/spec/` is that model's archive step.
+- **Delta and the table.** `docs/spec/` is prose (no `SHALL`, no `WHEN`/`THEN`), so the Delta and the table "Changes to the system specification" do different jobs. The Delta covers behavior and its characterization tests; the table covers the sections, the glossary and the user documentation.
+- **Characterization tests.** Michael Feathers (2004) and Mark Seemann (2025). An existing test named in `Frozen by:` is checked by breaking the code and seeing the test fail.
+
+**Options.**
+
+- **(A) Recommended: `TEMPLATE.md` becomes the one format**, and repo-local extensions make the skills follow it.
+  - The template gains:
+    - `Extends` / `Supersedes` lines and a prior-spec drift section;
+    - **user scenarios**, required when someone observes the change (an end user, a role of the glossary, or the maintainer reading CI or audit output), built on the six questions of L05 with the situation first;
+    - a **Delta** per `docs/spec/` section, with `SHALL`, `WHEN`/`THEN` and `Frozen by:`.
+  - The table "Changes to the system specification" stays.
+  - An extension of `om-spec-writing` writes this format.
+  - An extension of `om-auto-implement-spec` replaces the `capabilities/` archive with the Rule 8 update of `docs/spec/`.
+  - `README.md` describes all of it.
+  - **Open risk.** `references/agentic-setup.md` says an extension can never "redirect outputs". If the skill reads the new archive target as such, the fix is an upstream proposal for a setting that names the living specification.
+- **(B) Rejected: change only the template.** The skill does not read it, and the `capabilities/` conflict stays.
+- **(C) Rejected: the skill's format only.** It loses the plan task, the glossary terms and Rules 3, 4 and 9, and the conflict stays.
+- **(D) Rejected: OpenSpec capability files, or rewriting `docs/spec/` as requirements.** It duplicates or restructures the single source of truth, and OpenSpec itself advises against converting existing documents.
+
+**4.6 – Review by another model – accepted (a1): #525.**
+
+**What exists.**
+
+- **Upstream already has it, staged only.** `open-mercato/skills` added `om-harness` and `om-setup-agent-harness` on 2026-10-31 (PR #152). In the "multi" profile, a fresh Claude context and blind advisors, Codex among them, review the same hash-bound packet, also of a specification (`prepare-review --kind spec`). The Codex reviewer runs:
+  - in a read-only sandbox;
+  - against a strict output schema;
+  - with a check that the worktree did not change.
+- **Not in the PR flow, and not installed.** The upstream `om-auto-review-pr` has no reviewer-model option. Trybun's lock has 60 of the 74 upstream skills, because `npx skills update` never adds new skills.
+- **Codex CLI 0.171.0 can run unattended:** `exec -s read-only`, `--ephemeral`, `--output-schema`, `-o`.
+
+**Evidence.**
+
+- **For.**
+  - Self-preference: Panickssery et al., NeurIPS 2024.
+  - No self-correction without an outside signal: Huang et al., ICLR 2024.
+  - Correlated errors: Goel et al., ICML 2025.
+  - For documents, Song (arXiv, single author): one same-model and one cross-model review found 56.7 % of the planted errors, against 42.7 % for two same-model reviews.
+- **Against.**
+  - Xiang et al.: Codex reviewing Claude's code made the result worse (91.4 % → 82.8 %).
+  - Broccia et al. (2026, n=34): LLM help lowered the requirement defects people found. So the maintainer reads the specification before the AI findings, as L05 teaches.
+- **Practitioners.** The official `codex-plugin-cc`, PAL/zen MCP and others run Codex locally, read-only and blind, and check its findings before acting. None runs a specification review in CI on a public repository.
+
+**Options.**
+
+- **(a1) Recommended: install `om-harness` and `om-setup-agent-harness`**, locked by hash, with only the Codex reviewer configured. A repo-local extension of `om-auto-review-pr` runs a blind Codex advisor next to the fresh Claude review on specification pull requests.
+  - **Findings.** Codex findings are attributed, checked against the code before they count toward the verdict, and never applied unchecked.
+  - **Failures.** A failed or partial Codex run is reported as "not reviewed", never as a pass.
+  - **Where it runs.** Locally in Cezar, so no secret reaches GitHub.
+  - **What is still unchecked.** Whether the harness runtime can be called from the extension needs one test run of Codex.
+  - **If it cannot.** (a2) The extension calls `codex exec` directly with the same flags.
+  - **Upstream.** The maintainer may propose the reviewer option upstream (a3).
+- **(b) Rejected: a manual step.** Nothing is recorded on the pull request.
+- **(c) Rejected: a GitHub Action with another provider.** An API key in a public repository, and fork pull requests would need `pull_request_target`, the class of the known exfiltration attacks; it is also a settings change agents do not make.
+- **(d) Rejected: the same model in a fresh context only.** That is the gap, and it can be closed.
+
+**Quality.** The evidence that cross-model review helps with specifications in particular rests on one study. So the Codex review informs the maintainer and the reviewer, and it is not a merge gate.
+
+**4.7 – grill-me – accepted (a): #526.**
+
+**What it is.** `grill-me` (2026-08-15) is one line that calls `grilling` (MIT, Markdown only, 15 changes from June to October 2026).
+
+- It maps the decisions as a tree and asks them in rounds, each question with a recommended answer.
+- The agent looks up facts; the human makes every decision.
+- It has no asynchronous mode, on purpose, and writes no file.
+
+**How it differs from what Trybun has.** The gate of `om-spec-writing` covers only the critical unknowns, before the design, and `om-auto-write-spec` answers it with defaults. Grilling interviews the human after the review, so the two complement each other.
+
+**Similar practices.** Spec Kit `/clarify` (at most five questions, answers written into the specification), the pre-mortem (Klein), structured interviews (Davis et al. 2006) and ClarifyGPT (FSE 2024). No study measures grill-me itself.
+
+**Options.**
+
+- **(a) Recommended: install `grilling` and `grill-me`** with `npx skills`, locked by hash, with the diff read at every update, since the skill changes often.
+  - The `.gitignore` rule covers only the `om-*` links, so the new links need a rule; that is the maintainer's change.
+  - The maintainer runs `/grill-me` after reading the specification and the reviews, and records the decisions as in 4.5.
+  - A project skill that feeds the interview from the assumptions table and the review findings waits until real sessions show it is needed.
+- **(b) Rejected: extend the gate of `om-spec-writing`.** It runs autonomously and before the review.
+- **(c) Rejected: an asynchronous "grill memo" on the pull request.** Unanswered questions are the agent's opinion, not decisions.
+
+Full reports: the research of 2026-11-26 in the session scratchpad, summarised here; the sources are named above.
+
+Found during step 4, in the ten attempts of the CI experiment of #510: two flaky checks in code the experiment does not change, filed on their own:
+
+- #522: a late line of the previous boot's API stub reached the log of the next run in `test-env-up.spec.js`; the health checks of the stub passed before the stubbed API had started.
+- #523: the CPU slowdown calibration of the Lighthouse budget did not converge on a noisy runner.
+
+## Step 5 – Design system and prototype (tokens, Storybook, a11y in CI)
+
+Course sources: the fifteen leaves of L06 (context, generic AI look, the detector of exercise 1, layers and ready-made bases, tokens in three layers, from references to tokens, UX rules for the button and the form, the Storybook prompt and its run, visual foundations, AI errors and the CI check, the agent test, inspiration, homework, materials), the eight leaves of L07 (context, prototype question and screen map, the grey prototype of `om-mockup-prototype`, the clickable prototype from the design system, comments and variants, personas with `om-synthetic-users`, from prototype to specification, homework), and the extras on `om-mockup-prototype`, `om-synthetic-users` and `om-ux-setup`. The carried-forward table has no row for step 5; 4.9 of step 4 and 3.6 of step 3 are rated here. Checked on 2026-11-26 at `main` `6a9f832c`, with read-only commands (`grep`, `ls`, counts over `packages/ui/src/components/` and `.ai/cezar/runs.json`).
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 5.1 | The interface is audited for the generic AI look before the design system is decided: a checklist prompt, a report with "checked" or "assumption" per finding, five decisions that move the UI away from the average (L06 exercise 1) | No audit report in the repository. The visual base is close to the shadcn/ui defaults the course calls the most common generic look: style `base-nova`, base colour `neutral`, Lucide icons (`packages/ui/components.json`), `--radius: 0.625rem`, which shadcn 4.23 names its `default` radius preset (checked in `node_modules/shadcn/dist`); the interactive Blue `#2563EB` is Tailwind's `blue-600`. Whether this is generic was not assessed by any document | Missing |
+| 5.2 | A ready-made base is chosen and the reason recorded; behaviour and accessibility come from the library, the look is the product's own (L06 "Nie zaczynaj od zera") | [§2.6](../../docs/spec/02-agent-rules.md#26-rule-6--new-components-are-always-reusable) and [§18.6](../../docs/spec/18-code-patterns.md): shadcn/ui on Base UI, added with the CLI and adapted before first use; Radix and `asChild` blocked by lint (`configs.spec.js`) | Full |
+| 5.3 | Likes and dislikes become numbered decisions with a source: reference and anti-reference cards, observation, take / do not take, character and anti-character words, conflicts left to the human; every token traces to a decision (L06 exercise 2) | [`docs/brand/README.md`](../../docs/brand/README.md) records the brand colours, their roles and the reasons (Vermilion not the focus ring, Blue for interactive states); [`2026-11-01-brand-interactive-colour.md`](../specs/implemented/2026-11-01-brand-interactive-colour.md) records one decision with the maintainer's rejection of the first option. No reference or anti-reference cards, no character words; type scale, spacing, radii and shadows are "those of Tailwind CSS" without a recorded reason | Partial |
+| 5.4 | Colour tokens in three layers: raw values only in the token file, semantic tokens named by purpose, component tokens only when needed; each semantic token carries its origin (L06) | `packages/ui/src/styles/globals.css` (279 lines): raw `--ink`, `--vermilion`, `--blue` ("not utilities"); 28 semantic colour tokens (the 19 of the shadcn set plus `success`, `warning`, `info` with their foregrounds, `link`, `overlay`, `brand-accent`), with origin and contrast in comments; components use them through cva variants, no component tokens | Full |
+| 5.5 | One spacing scale tied to relationships (in a group, between groups, inside a panel, between sections) and named text styles, so the agent picks a step, not a pixel (L06) | Tailwind's default spacing (`--spacing` steps) and type scale; no rule that maps a step to a relationship and no named text styles. The only spacing rules are the content widths of §2.9 and the touch-target sizes | Missing |
+| 5.6 | The contrast of every text/background pair is computed in both themes and computed again after a change (L06) | Contrast of each pair in both themes in `globals.css` comments and the token table of `docs/brand/README.md`; axe `color-contrast` checks the rendered pairs in all 268 stories in light and dark and on 50 E2E call sites. No contrast table rendered in Storybook | Full |
+| 5.7 | No hard-coded values (hex/rgb/oklch, palette classes, arbitrary `[13px]`) outside the token file, and a CI check that fails on them with explicit exit-code handling, not `! grep` (L06 "Sprawdzenie w CI") | Tailwind's palette is removed (`--color-*: initial`), so `bg-red-500` is an unknown class; `@trybun/eslint-config/src/tailwind.js` runs `better-tailwindcss/no-unknown-classes` and `no-restricted-classes` (arbitrary values in 44 token utility families, literal colours in any arbitrary value), with failing fixtures in `configs.spec.js`; job `Format and lint` (`pnpm lint`) fails on an ESLint error, so the `! grep` pitfall does not arise. Not covered: inline `style` (forbidden by §2.6 and `CODE_REVIEW.md`, no lint rule; 0 occurrences in `packages/ui` and `apps/web`) and raw values in plain CSS (2 CSS files, both token files). One literal outside: `themeColor: '#ffffff'` in `apps/web/src/app/layout.tsx` | Beyond |
+| 5.8 | Storybook is an instruction manual, not a gallery: a component page with 13 sections (purpose, when to use, when not to use and what instead, anatomy, states, a11y, content, responsiveness, API, code, do/don't, related), Foundations, Patterns, "How to choose", "What to avoid", "What is missing", and an agent file routed from `AGENTS.md` (L06 exercise 3) | 27 story files with 268 stories, all under `Components/`; no MDX page, no `autodocs` tag, no "when not to use" in any story or component; no Foundations or Patterns pages, no product stories (`apps/` has 0 story files). The guidance an agent reads lives elsewhere: §2.6, §18.6 (choices for filters, tooltips, overlays, tables), the `ui-component` skill (19 lines) and `.ai/memory/shadcn.md` (46 lines of pitfalls). No `docs/design-system.md`; `AGENTS.md` routes to `docs/brand/` only | Partial |
+| 5.9 | Every component has a state matrix, long content, a narrow screen and interaction tests in `play`; data is realistic, no lorem ipsum (L06 exercise 3, stage 2) | Rule in §2.6, §18.6 and step 4 of `ui-component`; 188 `play` functions; 27 of 27 story files have `Phone`, `Tablet`, `Desktop` stories (`viewports.ts`); 0 lorem ipsum; a missing state is a minor finding in `CODE_REVIEW.md` | Full |
+| 5.10 | Story tests with a11y run in CI, fail on a violation (`a11y: { test: 'error' }`), in both themes (L06 homework) | `.storybook/preview.tsx`: `a11y.test: 'error'`, tags `wcag2a`–`wcag22aa`; `packages/ui/vitest.config.ts` projects `ui-stories-light` and `ui-stories-dark` (Chromium, `@storybook/addon-vitest`); run by `pnpm test:coverage` in job `Tests and coverage`, which installs Chromium first. Beyond the course: axe on 50 E2E call sites in 15 specs on three viewports. `build-storybook` (a script of `@trybun/ui`, which builds) does not run in CI | Beyond |
+| 5.11 | The UX numbers live in the components: contrast 4.5:1 / 3:1, targets ≥ 24 × 24 px, visible focus, no sideways scroll at 320 px, lines of 45–75 characters (L06) | Targets 44 × 44 px on touch (§2.9, §13.4), checked by `e2e/touch-targets.ts` in 10 files and by the `Phone` stories; focus indicator specified to WCAG 2.4.13 (§13.4); `--input` 3:1 for field borders. Minimum width is 360 px, not 320 px (§2.9). Line length is bounded by width (forms ≤ 768 px), not by characters | Beyond |
+| 5.12 | Heuristics are built into components, e.g. the form pattern: visible label, one validation schema with the server, error linked to the field, focus on the first error, no double submit, success only after the server (L06) | §18.5 "Forms": React Hook Form with the contract schema the API validates, `Field` links label, description and error; React Hook Form 7.92 defaults `shouldFocusError: true` (client errors); 21 files call `useForm` and 23 files disable a control while a mutation is pending or the form is submitting (counted by grep, not checked form by form); unsaved text is never lost without a question. Focus after a server-side field error not verified | Full |
+| 5.13 | Dark mode: each token has a second value with the same meaning, contrast in both themes, the theme set on the root so dialogs and menus get it too (L06) | `.dark` block in `globals.css`; `withThemeByClassName` sets the class on `html` (addon default), so portals get it; every story tested in dark. The web application never sets `.dark` (no theme switch, no `prefers-color-scheme`), so the dark theme exists only in Storybook. Plan task S0-07 asked for light and dark themes of the library and its stories, but no section of the specification asks for a dark theme in the product. 22 `dark:` classes in 10 components (shadcn defaults) against "not with separate classes in every component" (§2.6) | Partial |
+| 5.14 | Motion, fonts and icons are decisions: durations by purpose, animations off under `prefers-reduced-motion`, fonts in the project not from a CDN, one icon set (L06 "Fundamenty wizualne") | Manrope self-hosted (`next/font`, Fontsource); Lucide only. No motion tokens; `tw-animate-css` has no reduced-motion rule (checked in its `dist`). Most animated components only fade or change colour. Tooltips, the upload spinner, `scroll-fade` and the product tours (§2.4) honour the setting. The zoom and slide of `dialog`, `popover`, `dropdown-menu`, `select`, `combobox` (100 ms), `drawer` (450 ms), `toast` (500 ms) and the `switch` thumb do not | Partial |
+| 5.15 | An agent in a fresh session builds a new screen only from the design system and labels every decision RULE / EXAMPLE / GUESS; every guess becomes a rule or a "What is missing" entry (L06 "Test agentem") | None recorded | Missing |
+| 5.16 | A prototype starts from one question (role, look and feel, implementation) and a screen map: stable screen IDs, states per screen, roles, switchable scenarios, demo data, spec gaps as questions to the product owner (L07 exercise 1) | `SDLC.md` Design stage: "the flow and its states are settled before the code exists" (empty, loading, error, no permission), owned by `om-ux-shape` or a human; the spec-level Definition of Ready asks for "a link to the prototype or mockups". No screen map, no screen IDs, no prototype question in any specification; `om-ux-shape` has 0 of 336 recorded Cezar runs | Partial |
+| 5.17 | A grey, neutral prototype of one flow with `om-mockup-prototype`, checked in a browser, versioned as `revision-NNN` (L07 exercise 2a) | Installed (`skills-lock.json`); 0 runs; no `.ai/prototypes/`. The skill stops without `.ai/specs/product-brief.md`, which does not exist (#501 open). `browser.provider: agent-browser` is configured | Missing – needs 3.4 (#501) |
+| 5.18 | A clickable prototype built from the design system's components and tokens, every state reachable, simulations labelled, comments pinned to elements and exported, several versions of a screen compared (L07 exercise 2b, "Komentarze i warianty") | No `prototypes/`; `om-ux-design` installed, 0 runs. Two of the 44 implemented specifications (`2026-11-10-ticket-list-filter-pickers.md`, `2026-11-21-rate-limited-sign-out.md`) link static HTML+PNG mockups in `.ai/specs/assets/`, marked "illustrative, not accepted designs", with hard-coded colours rather than DS components; no comment loop | Missing |
+| 5.19 | Synthetic personas walk the grey prototype in `validate` mode, two runs with fresh panels, only repeated findings kept, reported as hypotheses for real people (L07 exercise 3, optional) | `om-synthetic-users` installed, 0 runs; no `.ai/specs/research/walkthroughs/`. 3.6 deferred it until the brief exists | Missing – decided after 3.4 and 5.17 |
+| 5.20 | What a prototype, a comment or a persona finds goes back into the specification before the code, as a checkable criterion tied to a screen ID or a recorded "not doing"; persona findings only as questions (L07, carried from 4.9) | The form exists: change specifications have "Acceptance criteria" and "Non-goals" (`TEMPLATE.md`) and are merged before the code. There is no prototype, comment export or persona report to feed it, and criteria carry no screen IDs | Partial – depends on 5.16–5.19 |
+| 5.21 | The design system is extracted into a contract that the UX skills check against (`om-ux-setup` → `.uxproof/`; extras, optional in L07) | `SDLC.md` says the contract "is set up once" with `om-ux-setup`, that QA checks conformance to `.uxproof/` "when the repository has one", and that `om-ux-review-pr` gives every user-facing PR an advisory design pass. No `.uxproof/`; `om-ux-setup` and `om-ux-review-pr` have 0 recorded runs | Missing |
+
+Not verified: whether each of the 21 forms disables its submit while pending (5.12 counts files by grep); whether the 13 animated components without `motion-safe` animate in practice (5.14 reads classes only); `om-*` runs outside Cezar (interactive sessions leave no record in `runs.json`).
+
+### Gap proposals
+
+The research was done on 2026-11-26; the maintainer accepted every recommendation, and the removal of the dark theme, on the same day. Each gap starts from its consumer today: the end users, the maintainer or the coding agents. Across 174 issues and 332 pull requests, none reports a spacing, look or dark-mode problem. The UX defect that does recur is a missing state: 7 fix pull requests and about 10 issues lacked a loading, error or "too many requests" state, which #499 addresses. A course practice without a consumer here is deferred, with the trigger that would make it needed.
+
+**5.14 Reduced motion – accepted: #530.**
+
+- **The consumer.** People who set "Reduce motion".
+- **What moves today.** The zoom and slide of popups (100 ms), the drawer (450 ms), the toast (500 ms) and the `switch` thumb do not honour the setting, while tooltips, the spinner and the tours do. So the gap is inconsistency, not a missing policy.
+- **The proposal.** One rule in `globals.css` turns off the zoom and slide of `tw-animate-css` under `prefers-reduced-motion: reduce` and keeps the fades. The drawer and the toast fade instead of sliding, and swipe stays. A line in §13.4 and one test with reduced motion emulated go with it.
+- **Sources.** W3C Understanding 2.3.3 (C39, SCR40), MDN, WebKit (2017), GitHub Primer, and the advice to reduce motion rather than remove it.
+- **Rejected:** the blanket 0.01 ms reset, which also removes harmless fades.
+- **Still to check.** WCAG 2.3.3 is level AAA and the specification targets AA, so this goes beyond the target. Whether Base UI still closes its popups correctly with only a fade left is untested.
+
+**5.13 Dark theme – accepted (b), removal: #531** (a change specification first, as it changes S0-07, §2.6 and §2.14). S0-07 asked for light and dark themes of the library, and the specification asks for none in the product.
+
+- **(a) Ship it.** It follows the system setting: a change of the specification and dark checks in E2E.
+- **(b) Remove it.** The `.dark` tokens, the `dark:` classes and the dark story project go, which also halves the story tests.
+- **Rejected:** keeping it as it is, a cost without a consumer.
+- **The research leans to (b)** unless the product brief (#501) names users who need it.
+
+**5.21 `SDLC.md` – accepted: #532.**
+
+- **The cause.** The UX steps come from the pipeline template, written whatever `designer: false` in `.ai/agentic.config.json` says. The setup skill does not overwrite `SDLC.md`, and no skill starts `om-ux-review-pr` on its own.
+- **The proposal.** A hand edit says what runs: the UX skills on demand, and no `.uxproof/` contract until a trigger.
+- **Rejected:** running `om-ux-setup` now. It would copy what lint already enforces and add a QA step for every UI pull request without a measured defect.
+
+**5.3 / 5.5 Named text styles – accepted: #533**, as a refactor of measured drift.
+
+- **The drift.** No heading component exists: `text-2xl font-bold` is copied 23 times for `h1`, and six `h3` headings use five styles.
+- **The proposal.** Named text styles (a Tailwind `@utility` or a `Heading` component) and a line in §18.6. GOV.UK publishes its heading sizes the same way.
+- **Deferred:** a spacing rule tied to relationships, until evidence. Atlassian ties spacing to size rather than strictly to relationships.
+
+**5.15 Agent test – accepted: #534**, once, on the next real screen.
+
+- **The test.** An agent builds the next new screen (S1-14 Kanban) only from the design system and labels each decision RULE, EXAMPLE or GUESS.
+- **What it decides.** Its guesses settle 5.5 and any new rule in §18.6.
+
+**5.16–5.20 Prototype loop – the light part only.**
+
+- **What is done now.** #499 is finished, and UI specifications list the states of each screen in their acceptance criteria.
+- **When to prototype.** Only when a specification has an open question of look and feel.
+- **Waiting for the brief (#501):** 5.17 (grey prototype) and 5.19 (personas).
+- **Already in place:** the form of 5.20.
+
+**5.1 Generic look – accepted, one paragraph: #532.** `docs/brand/` says that the default radius, type scale, shadows and spacing were kept on purpose: familiar conventions (Jakob's Law) and no positioning yet. The full audit waits for the brief.
+
+**Deferred, with triggers.**
+
+- **5.8 Storybook as a manual.** No MDX manual, `llms.txt` or `design-system.md`. Agents already reach §18.6 through `AGENTS.md` and the `ui-component` skill, and a copy would drift. Storybook's manifest and MCP wait until they leave preview and agents can reach a running Storybook.
+- **5.10 Storybook build in CI.** When Storybook is published or MCP is adopted.
+
+## Step 6 – Interactive coding (phases, subagent per task, tracking)
+
+Course sources: the ten leaves of L08 (input and scope of epic 01, the prototype README, the interactive implementation flow, the safety net and self-correction, review pitfalls and the choice of reviewer, the build of the phases, environment set-up and manual tests, tests of roles, sign-up and rate limit, GitHub OAuth, state after the lesson with its checklist). The carried-forward row of step 1 (1.7, run logs) is rated here as 6.2. Checked on 2026-11-26 at `main` `88269175`, with read-only commands: the skills under `.agents/skills/`, `.ai/agentic.config.json`, the 50 execution plans of `.ai/runs/`, the 336 runs of `.ai/cezar/runs.json` (task text, runner, `prRefs`) and the reviews of the 308 merged pull requests (`gh pr list`).
+
+Trybun's agents work in two modes. The autonomous skills of the Open Mercato pipeline (`om-auto-*`, run by Cezar) and interactive sessions with the maintainer, such as the one writing this analysis. The course's flow is the interactive one; where Trybun's autonomous skills cover the same practice, they are rated.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 6.1 | Implementation starts from an approved specification and is split into phases and stable tasks before any code (L08 initial prompt) | "Specification before implementation" (`SDLC.md`, `AGENTS.md`): the specification PR is merged first. `om-auto-create-pr` step 4 drafts an execution plan with Phases and Steps from the specification and commits it before any code (step 6, "Never commit code before the execution plan lands"); `AGENTS.md` "Plan first, re-plan when it goes wrong" | Full |
+| 6.2 | A tracker (`track.md`) lists phases and tasks, marks each done, keeps open points, and reflects the real state, so an interrupted session resumes from it and the last commit (L08) | The 50 execution plans of `.ai/runs/` have a Progress list, step → commit SHA (2–19 steps each); `om-auto-continue-pr` resumes from it; the loop engine adds `HANDOFF.md` and `NOTIFY.md`. No field for open points (the plans have Risks). Only `om-auto-create-pr` and its loop write one: the bug chain of `om-auto-fix-issue` and interactive sessions leave none, so their record is the issue, the PR body and the commits | Partial – 1.7 |
+| 6.3 | A commit after every task, as the point to return to (L08) | `om-auto-create-pr`: one commit per Step, or per Phase, plus a Progress commit; the loop engine: exactly one commit per Step ("runs MUST bisect by Step"); `commit-msg` and `pre-push` hooks check every commit | Full |
+| 6.4 | Each task is implemented by a subagent in its own context window, so the main thread keeps only the results (L08) | The loop engine dispatches `dispatch`/`group` Steps to sequential executor subagents (`engine.executorTier: standard`), but only above `engine.loopStepThreshold: 20` Steps; no execution plan in `.ai/runs/` has more than 19, and Cezar recorded one loop run. `om-auto-create-pr` and the bug chain implement in the main session. Trybun's own unit of isolation is the small task: one task = one focused PR (`AGENTS.md`), one agent run per PR. Whether runs exhaust their context was not measured (`tokensUsed` in `runs.json` is cumulative, not the context size) | Partial – measured in step 8 |
+| 6.5 | After every task the agent runs deterministic checks (typecheck, lint, tests, build), not its own judgement (L08, Huang et al. 2024) | `om-auto-create-pr` step 7.3: a targeted subset of `validation.commands` after each Phase; step 8: the full gate of six commands (`pnpm lint`, `lint:spec`, `typecheck`, `test`, `test:coverage`, `build`) before completion; the `pre-push` hook runs the commit checks of CI; 13 required CI checks. `AGENTS.md` forbids weakening tests or gates | Beyond |
+| 6.6 | The agent stops after each phase; a person tests by hand and reviews before the next phase builds on it (L08 "STOP") | Autonomous runs do not stop between phases. The checkpoint is the pull request: small PRs, review, the QA gate (`needs-qa`, `om-auto-qa-pr`, `qa-approved` owned by a person) and the maintainer's merge (`SDLC.md`, ADR 0011). The loop engine verifies at checkpoints every 5 Steps without stopping | Different |
+| 6.7 | Each phase is reviewed in a new session, by a model of another family; the author's own session reviews poorly (L08: self-correction blind spot, self-preference, familiarity) | The skill chains review in the session that wrote the code: `om-auto-fix-issue` step 9 and `om-auto-create-pr` step 10 invoke `om-auto-review-pr --autofix` inline ("this run owns the PR"). Of 128 merged `feat`/`fix` PRs with a review, 106 have a single Cezar run, the one that implemented them; 9 were reviewed by a separate run; 13 have no or several runs. All 336 runs use the `claude` runner. A second family for specifications is #525; for code it is step 11 (L21) | Missing |
+| 6.8 | Review findings go back to the implementation; blockers and majors are fixed before the next phase (L08) | `om-auto-review-pr --autofix` loops until a clean verdict or only non-actionable findings remain, with new commits and re-run validation; severities in `CODE_REVIEW.md`; `changes-requested` hands the PR back to its author | Full |
+| 6.9 | Code review comes before manual testing, so the agent removes simple glitches first (L08) | `SDLC.md` pipeline: review → `needs-qa` → `qa`; `om-auto-fix-issue`: `om-auto-review-pr` (step 9) before `om-auto-qa-pr` | Full |
+| 6.10 | The whole specification is reviewed at the end (L08) | `om-auto-review-pr` reviews the whole PR against the specification it cites; with a Delta, the finish check of `om-auto-implement-spec` (`references/delta-archive.md`) reports a missing capability file or characterization test | Full |
+| 6.11 | After a phase the agent says what it built, what configuration and data it needs and how to run it, and writes a manual test guide with test accounts (L08) | The summary comment of `om-auto-create-pr` and the PR body template; `om-prepare-test-env` boots the application once and `om-auto-qa-pr` walks it in a browser; the seeded accounts with their password and TOTP secret are listed in `README.md` (§15.12) | Full |
+| 6.12 | The local environment is reproducible: an example `.env`, generated secrets, mocks only locally and refused elsewhere, migrations and a seed with personas (L08) | `pnpm dev` starts Compose, applies the migrations and the demo dataset (§15.12); `.env.example` (165 lines) with development values, `./trybun install` generates real secrets (§15.5). No mock identity adapter: Keycloak runs locally with the development realm overlay, and password sign-in of seeded team accounts exists only in the local environment (§7.4). Personas include the newcomer without tour progress, the customer and the partner | Beyond |
+| 6.13 | A failure is debugged to its root cause with evidence (the URL, the type-check output), not by guessing (L08) | `SDLC.md` Implement stage: `om-root-cause` (read-only) locates the change surface before the fix; the bug chain runs `om-verify-in-repo` → `om-root-cause` → `om-fix` with a regression test | Full |
+| 6.14 | A third-party sign-in uses the least privilege, one application per environment, its secrets in `.env` (L08 GitHub OAuth) | GitHub sign-in goes through Keycloak (§7.4); the GitHub integration is a GitHub App with access only to selected repositories and the minimum permissions, no PAT (§11); client secrets only in `.env` (`TRYBUN_GITHUB_CLIENT_SECRET`); local contributors need no OAuth application (§7.4) | Full |
+| 6.15 | The agent records what it learned (`lessons.md`) and keeps the instructions current (L08) | Rule 7 and the Definition of Done: project memory in `.ai/memory/`; "Learn from corrections" in `AGENTS.md` | Full |
+
+Rated elsewhere: the joint input of specification and prototype and the screen states (5.16–5.20); watching the context during a long run with `/context` (L10, step 8).
+
+Not verified: the scopes the Keycloak GitHub identity provider requests (6.14); which session submitted the reviews of the 8 PRs without a Cezar run, made in interactive sessions (6.7); whether any Cezar run was compacted (6.4).
+
+**6.6 Different – the pull request is the checkpoint.** The course stops after every phase because one interactive session builds a whole epic (four phases, about 500 000 tokens). Trybun's tasks are small, one task per PR, so the run ends where the course stops: at review, QA and the maintainer's merge. Phases inside a PR are verified by the deterministic gate (6.5), which does not wait for a person.
+
+### Gap proposals
+
+The research was done on 2026-11-26, by two research passes that read the primary sources. On the same day the maintainer had the upstream skills checked first, then accepted (a) for 6.7 (#537) and the rule for 6.2 (#538).
+
+**6.7 Review in a fresh context – accepted (a): #537.** The author's session reviewing its own change is the case every source warns against:
+
+- Huang et al. (ICLR 2024): intrinsic self-correction lowers accuracy (GPT-4 on GSM8K 95.5 → 91.5 → 89.0 %).
+- Tsui, Self-Correction Bench (COLM 2026): 14 models left 64.5 % of their own errors uncorrected that they corrected when shown as someone else's.
+- Kamoi et al. (TACL 2024): self-correction works only with reliable external feedback.
+- Reddy et al. (arXiv 2605.21537, 2026): the producing model approved 31.7 % of its own semantic-drift errors.
+
+The direct measurement of a fresh context of the same model on code is thin: Song (arXiv 2603.12123 v2, one author, 30 artifacts) found a fresh session better than repeated self-review (p = 0.004) but not significantly better than one self-review (p = 0.26), and Guey & Bougault (arXiv 2606.20093) found no author bias on verifiable revisions, with effects under about 13 points not ruled out. What practice does is not thin: no tool maker reviews in the author's context. Claude Code's `/code-review` runs "in a fresh subagent that never saw your conversation", and its skills can run as one (`context: fork`, code.claude.com/docs/en/skills); GitHub's Copilot coding agent has a separate Copilot code review check its changes before it opens the PR (2026-02-26); OpenAI's Codex reviewer is run apart from the generator and warns against one verifier for both (2025-12-01).
+
+**Upstream, checked at `open-mercato/skills` `7c861837` (2026-11-26) at the maintainer's request.** The pattern is already there, but not on the path Trybun uses:
+
+- `om-auto-fix-issue` in **automerge mode** (#194, 2026-11-20): "the review and QA cycles each run in fresh-context subagents" (`references/automerge-mode.md`). Trybun's lock predates it, and the mode hands the merge to `om-auto-merge-buddy`, which ADR 0011 leaves to the maintainer.
+- The staged-only skills `om-fix-issue` and `om-implement-feature` with the runtime `om-harness` (#152, 2026-10-31): even in the `standard` profile, `om-code-review` runs in "a new Claude context with no inherited implementation transcript"; the contract (`om-harness/references/code-review-contract.md`) gives the reviewer only the worktree, an immutable packet with its SHA-256 and the skill, has it attest `freshContext: true`, and stops if the host cannot create a fresh context. These skills never commit, push or open a PR, and are not installed in Trybun (#525 installs `om-harness` for its Codex reviewer).
+- The default chains do not: `om-auto-create-pr` and `om-auto-create-pr-loop` are unchanged upstream, and the upstream `om-auto-review-pr` (changed since the lock by #193, #198 and #204) still reviews in the caller's context. `om-code-review` is unchanged.
+
+Options:
+
+- **(a) Accepted: the upstream pattern on Trybun's path.** The lock is first brought to the current upstream (with #498), then a repository extension `.ai/skills/om-auto-review-pr/SKILL.md` (the mechanism of `.ai/skills/README.md`, the same file #525 adds) runs the review of `om-code-review` in a subagent that gets only the PR number, the issue or specification and read access to the worktree, never the author's transcript; it returns the findings. The calling session, which knows the change, applies the fixes, as in the course ("uwagi wracają do sesji implementacyjnej"), and each re-review is again a fresh subagent. The reviewer gets the specification, because OpenAI traces many false alarms to a misread intent, and is asked for correctness, because "a reviewer that's asked to find problems will always find something" (Anthropic). Interactive sessions follow the same rule before they open a PR.
+- **(b) Rejected: a separate Cezar run for every review.** The same isolation, but each autofix round would cross runs, the claim of the PR would pass between them, and the review would wait for the orchestrator. The 9 reviews made this way show it works, not that it is simpler.
+- **(c) Rejected: keep the same session.** Against all the sources above.
+- **Out of scope here:** a model of another family. It is #525 for specifications and step 11 (L21) for code.
+
+Cost: one more context per review, which re-reads the diff and the specification. The extension has to be tested in a real run, because whether `context: fork` holds when one skill invokes another, and in Cezar, is not documented.
+
+**6.2 and 1.7 Run logs – accepted (a): #538.** The sources agree that a progress file is for work that outlives one session or context window, runs for hours, has phases, or passes to another agent (Anthropic "Effective harnesses for long-running agents", 2025-11-26, and the Claude prompting best practices; OpenAI's ExecPlans, "for complex features or significant refactors"; Cline's memory bank; Harper Reed's `todo.md`, 2025-02-16). For short work, the PR is the record: GitHub's Copilot coding agent keeps its checklist in the PR body, and Cursor says that for quick changes "jumping straight to Agent mode is fine". No tool maker asks for a file on every task, which is what `track.md` in L08 does.
+
+- **(a) Accepted: write the rule down.** `SDLC.md` says when a run log in `.ai/runs/` is written: by the `om-auto-create-pr` skills, and by any other task that spans more than one session, is planned in phases or is handed to another agent. A task done in one session has its record in the issue, the PR body and the commits. That is the split Trybun already has; only the rule was missing, which is why 1.7 was asked.
+- **(b) Rejected: a run log for every task, as in L08.** Stricter than any source, and it repeats the PR body.
+- **(c) Not now: delete finished run logs at merge** (cogitoacademy/app #295, 2026-10-09, deleted 53 plans). No problem with the 50 logs on `main` is recorded; it waits for one.
+- **Open points**, which the course keeps in `track.md`: the ExecPlan sections Surprises & Discoveries and Decision Log cover them. Nothing in Trybun shows an open point lost, so the plans keep their Risks.
+
+**6.4 Subagent per task – moves to step 8**, which measures the context: whether runs fill their window decides whether `om-auto-create-pr` needs executor subagents below 20 Steps.
+
+## Step 7 – Security of AI tools and of the product
+
+Course sources: the nine leaves of L09 (six areas and the lethal trifecta, the lab, the repository that runs code, skills as dependencies, prompt injection, secrets in sessions, sandbox and outbound traffic, hooks, checklist and homework) and the ten leaves of L16 (plan, threat model with STRIDE and the `threat-model` skill, the DevMentor threat model, OWASP lists, access control and IDOR, SAST and DAST, where to run tests, DeepSec, refusals of models, state after the lesson with the evidence card). The carried-forward table has no row for step 7. Checked on 2026-11-26 at `main` `88269175`.
+
+The commands were read-only:
+
+- the agent configuration of the repository (`.claude/settings.json`, `.github/CODEOWNERS`, no `.mcp.json`) and of the agents' machine (the user settings of Claude Code, the scopes of the `gh` token);
+- the product's security requirements (§13.5, §7.4, ADR 0011);
+- the denial tests of the 45 integration specifications of `apps/server`;
+- a count-only scan of the session transcripts on the agents' machine with the patterns of L09, which prints no values.
+
+### Ratings – the agents' tools (L09)
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 7.1 | Every agent run is judged by the lethal trifecta – private data, untrusted content, a way to send data out – and one leg is missing in each run (L09, Willison) | No document applies it. In a Cezar run all three legs meet: <ul><li>private data: the maintainer's `gh` token, the local `.env` files and the session transcripts;</li><li>untrusted content: issues, pull requests and comments of a public repository, which anyone can write, and web pages;</li><li>a way out: `gh`, `git push`, `curl`.</li></ul>ADR 0011 names prompt injection through contributors' pull requests and answers it with an instruction ("text … is data, never an instruction"), which L09 says is not a boundary | Missing |
+| 7.2 | The agent configuration of a repository (hooks, `.mcp.json`, `enableAllProjectMcpServers`, `allow` lists) is read before an agent starts in it, and is under `CODEOWNERS` with a required Code Owners review (L09) | Trybun's `.claude/settings.json` has only an `allow` list of six `pnpm` commands and `autoMemoryEnabled: false`; no hooks, no `.mcp.json`. `CODEOWNERS` is `* @dtk7c2`, so it covers `.claude/`, `.agents/`, `AGENTS.md` and `CLAUDE.md`, but ADR 0011 removed the required Code Owners review: a contributor's pull request that changes the agent configuration is merged by the maintainer or by a workflow the maintainer runs (`om-approve-merge-pr`), and nothing marks such a change for the maintainer | Partial |
+| 7.3 | Skills are dependencies: read before install, scanned (`` !` ``, `curl`, `.env`, `~/.ssh`), added and updated through a reviewed PR with a pinned version (L09) | Installed from one upstream (`open-mercato/skills`) and recorded by hash in `skills-lock.json`, changed through pull requests; the content is read before an install (rule of #525 and #526). The lock pins a hash, not a commit (#498). No scan of the skills, locally or in CI | Partial – #498 |
+| 7.4 | The untrusted sources an agent reads are known, a test with a hidden instruction is recorded, and the boundary is outside the model: permissions, sandbox, hooks (L09) | No list of the untrusted sources, no recorded test. Interactive sessions run in Claude Code's auto mode, whose classifier sees the intended action, not the tool output; the permission mode of Cezar's runs was not checked | Missing |
+| 7.5 | Session transcripts are scanned and what they hold is rotated; `permissions.deny` covers `.env`, keys and credentials; secrets come from a manager; the agent has its own short-lived token with the least scope (L09) | No `deny` rule in the repository or the user settings. The agents use the maintainer's `gh` token (ADR 0011), which does not expire and has the scopes `repo`, `workflow`, `admin:org`, `user` and `gist`, for all the maintainer's repositories. Transcripts are kept 30 days by default; 2.6 GB in 435 project folders. The count-only scan found: <ul><li>Postgres URLs in 55 files, all local development and Testcontainers defaults;</li><li>the AWS documentation example key;</li><li>in other projects' sessions, one classic GitHub token and one private key; the maintainer was told.</li></ul>Trybun's own `.env` holds development values only, and production secrets are generated on the server (§15.5) | Missing |
+| 7.6 | The agent's commands run in a sandbox: `enabled`, `allowUnsandboxedCommands: false`, `denyRead` for credential folders, a tested allowlist of domains, cloud metadata denied (L09) | Not configured. `bubblewrap` is installed on the agents' machine, `socat` is not; the agents' user is in the `docker` group, which is root-equivalent (step 12 row of the carried-forward table) | Missing |
+| 7.7 | At least one blocking `PreToolUse` hook (exit 2), tested without the agent, read before use (L09) | No agent hooks. The Git hooks `commit-msg` and `pre-push` check commits, not the agent's tool calls | Missing |
+| 7.8 | The permissions, skills and MCP servers can be reviewed in a minute (`security-notes.md`) (L09) | Skills: `skills-lock.json` and `.ai/skills/README.md`. Permissions: `.claude/settings.json`. The user-level plugins and MCP servers of the agents' machine and the scopes of the token are written down nowhere | Partial |
+
+### Ratings – the product (L16)
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 7.9 | A threat model of the real architecture: the four questions, STRIDE per entry point and trust boundary, a table with likelihood, impact, response, today's control and how it is verified, assumptions, re-run triggers, updated with stable IDs (L16 `threat-model`) | None. The security requirements are spread over the specification: §13.5 (OWASP ASVS as the reference, headers, brute force, CSRF, secrets), §7.4 (Keycloak, mandatory 2FA for the team, the password policy), §5 (visibility, 404), §14.4 (BFF, rate limits), §14 (upload quarantine with ClamAV). Nothing lists the threats, their likelihood and impact, or what verifies each | Missing |
+| 7.10 | The OWASP lists that fit the product are chosen, and each category is a hypothesis checked against the code (L16) | §13.5: OWASP ASVS is the reference for security requirements; ASVS 5.0 V6 for passwords; OWASP's XSS guidance for Markdown (§6). Trybun has no LLM, agent or MCP in the product (`AGENTS.md`: no external AI APIs for ticket content), so the GenAI and agentic lists do not apply to it. No review of the code by category is recorded | Partial |
+| 7.11 | An access-control test checks the positive path of both accounts, the denied read, the denied write and the data after the attempt, and this rule is in the agents' skills (L16) | The policy is central: CASL abilities on the server, an invisible record is 404, never 403 (`AGENTS.md`). The integration specifications test denials across projects, organizations and roles, e.g. "lists a ticket for every principal exactly when its detail is 200, else 404", refused writes in archived projects or for a Developer. The written rule (`SDLC.md`, risk table) asks for "the denied path and the wrong-scope read", not the denied write or the data after the attempt | Partial |
+| 7.12 | SAST runs in CI on every PR, and a clean result is read together with its coverage (L16) | CodeQL (`javascript-typescript`, `actions`) on every PR and push; Trivy image scan daily (`image-scan.yml`); the advisory audit (`advisory-audit.yml`); `dependency-review`; ESLint security-relevant rules. Coverage of a CodeQL run is shown by GitHub, not recorded | Full |
+| 7.13 | DAST (ZAP Baseline) against a local instance, with what it did not check (L16) | No DAST. What ZAP reported for DevMentor is specified and implemented in Trybun: one proxy sets a nonce CSP, HSTS, `nosniff`, `Referrer-Policy`, `Permissions-Policy` and denies framing (§13.5), with unit tests (`apps/web/src/proxy.spec.ts`) | Partial |
+| 7.14 | Active tests run only in a disposable environment with synthetic data, under written rules of engagement (L16) | The QA test environment (`.ai/scripts/test-env-up.sh`, `om-prepare-test-env`) is disposable and loads the synthetic demo dataset; no rules of engagement for security tests, and no active security test has been run | Partial |
+| 7.15 | An agentic security review of the repository (DeepSec, `om-auto-sec-report`) within a budget, each finding verified by a second agent and reproduced before it enters the backlog (L16) | `om-auto-sec-report` and `om-auto-sec-report-pr` are installed; 0 recorded runs | Missing |
+| 7.16 | A confirmed finding gets a test that is red before the fix and green after (L16) | The bug chain observes the regression test failing first (`om-fix`, `SDLC.md`); a security fix follows the same chain | Full |
+
+Not applicable now: the handling of model refusals in active tests (L16 step 8). It depends on 7.14 and 7.15.
+
+Not verified:
+
+- the permission mode and the tools Cezar gives its runs (7.4);
+- whether the GitHub App `dtk7c2-claude` of ADR 0005 is still installed. A Cezar task of 2026-11-26 still names it, and ADR 0011 planned its removal (7.5);
+- which CodeQL query suite runs (7.12).
+
+### Gap proposals
+
+The research was done on 2026-11-26 by two research passes over the primary sources (code.claude.com, docs.github.com, OWASP, Anthropic, Meta, Semgrep, Vercel). The maintainer decided the same day.
+
+**7.1, 7.4–7.8 The agents' machine – risk accepted by the maintainer.** The maintainer accepted the risk: the course describes typical problems, few of which touch this machine, and all are acceptable to the maintainer. The proposal the maintainer rejected as disproportionate was an ADR that would cut one leg of the trifecta in every run. Its layers were:
+
+- an isolated container or microVM per Cezar run;
+- a fine-grained token for one repository, with an expiry;
+- Meta's "Agents Rule of Two" per task;
+- a sandbox in managed settings;
+- `deny` rules and a hook;
+- shorter transcript retention.
+
+The research behind it, kept for a later decision:
+
+- **The classifier and the instruction are no boundary.** Anthropic measured that auto mode let through 17 % of real overeager actions and 5.7 % of synthetic exfiltration attempts, and calls it "a per-action control, not an isolation boundary". Willison and Meta hold that detection never suffices.
+- **The Bash sandbox is not enough for unattended runs**, says Anthropic's own documentation (`sandbox-environments`). It wraps Bash only, and a repository's `.claude/settings.json` can widen it unless managed settings fix it.
+- **A narrower token is possible, with limits.** A fine-grained token can be limited to one repository with an expiry. It cannot use the Checks API or GitHub Packages, so GHCR would stay with CI's `GITHUB_TOKEN`.
+
+What would reopen it: a second person or machine with access, real user data on the machine, a secret of production on it, or an incident.
+
+**7.2 Contributors' changes to the agent configuration – deferred.** GitHub lets only accounts with write access merge, and no one else works on the repository. The remaining case is an agent merging an outside contributor's pull request that changes `.claude/`, `.agents/`, `.ai/skills/`, `AGENTS.md`, `CLAUDE.md` or `.github/` in the maintainer's name through `om-approve-merge-pr`. Trigger: the first pull request from an outside contributor. Then such pull requests are merged by the maintainer by hand, and no agent session starts inside their checkout. The second rule is own reasoning, not verified for Cezar.
+
+**7.11 Access-control rule – accepted: #540.** Established practice uses two accounts and checks both the denied read and the denied write: OWASP's IDOR Prevention Cheat Sheet ("read, create, update, delete, export, administrative"), WSTG v4.2, and ASVS 5 8.2.1–8.2.3 and 8.1.2. The check that the data is unchanged after a denied write is own reasoning, since a 404 does not prove that nothing was written; no OWASP source names it. The tests, not a review, are the gate. Semgrep (2025-11-03) found LLM reviewers at 0 % true positives where authorization is spread across files or middleware, as with Trybun's CASL abilities.
+
+**7.9, 7.10, 7.13–7.15 Threat model, DAST, agentic review – deferred, with triggers.**
+
+- **Threat model** (7.9, 7.10): `docs/security/threat-model.md` before the first release `1.0.0`, when Trybun is installed on other people's servers; until then the architecture still changes.
+  - **Method:** STRIDE with LINDDUN prompts for the personal data of tickets and e-mail, stable IDs, a "how we verify" column, and re-run triggers.
+  - **Sources:** the Threat Modeling Manifesto, OWASP's Threat Modeling Cheat Sheet and ASVS 5 8.1.1.
+  - **Drafting:** an LLM draft is a start only; arXiv 2505.04101 measured at best 72 % accuracy.
+- **DAST** (7.13): decided by the threat model's "how we verify" column. The ZAP Baseline is passive and checks the headers that `proxy.spec.ts` already tests; an authenticated ZAP scan is what would add value.
+- **Agentic security review** (7.14, 7.15): after the threat model, as a discovery tool under written rules of engagement, never a gate.
+  - **Precision:** Semgrep (2025-09-02) measured 14 % true positives for Claude Code and 18 % for Codex.
+  - **Non-determinism:** three identical runs gave 3, 6 and 11 findings.
+  - **Before the backlog:** every finding is checked by a second agent and reproduced by a test.
+
+**7.3 Skills.** The pinning is #498; the reading before an install is already a rule.
+
+## Step 8 – Context engineering (JIT router, `check:agents`, measuring context)
+
+Course sources: the twelve leaves of L10:
+
+- what context engineering is;
+- context rot;
+- the four places context comes from;
+- the AS / IS measurement;
+- the AGENTS.md of DevMentor before the rebuild;
+- the context cost of skills;
+- repository structure, names and examples;
+- task-driven context routing;
+- subagents;
+- the CI checks;
+- dynamic context in a large project;
+- state, homework and checklist.
+
+The carried-forward rows of step 1 (1.4, nested `AGENTS.md`) and step 6 (6.4, a subagent per task) are rated here as 8.4 and 8.12. Checked on 2026-11-26 at `main` `fcbb96d4`. The measurements:
+
+- **`/context`** in a fresh Claude Code session in the repository (Opus 5.5).
+- **The session transcripts on the agents' machine.** The context of every main-model turn is read from `usage`, the sum of input, cache read and cache creation tokens. The measurement covers 234 sessions with more than three turns: 225 Cezar runs and 9 interactive sessions. Haiku side sessions and subagent turns are excluded.
+- **File sizes**, and the skill descriptions read from the front matter.
+
+### Measurement AS / IS
+
+| What | AS / IS |
+|---|---|
+| Loaded at the start of a session (`/context`, deferred tools excluded) | 22.2k tokens |
+| – skill descriptions (62 skills: 60 `om-*`, 2 project skills) | 10k |
+| – root `AGENTS.md` (10.6 KB; `CLAUDE.md` is only `@AGENTS.md`) | 4.1k |
+| – the maintainer's `~/CLAUDE.md` (outside the repository) | 2.2k |
+| – MCP server instructions and tools of user-level plugins unrelated to Trybun (three DevExpress documentation servers, Claude Docs) | 3.0k |
+| – system prompt and tools | 2.9k |
+| Read next, by the first rule of `AGENTS.md`: `.ai/memory/MEMORY.md` | 16 KB, about 4k tokens |
+| Context of the first turn, median (p10–p90) | 43k (35k–48k) |
+| Peak context per session, median (p75, p90, max) | 171k (266k, 440k, 962k) |
+| Sessions peaking above 300k / 500k | 49 / 17, all Cezar runs |
+| of which "Fix GitHub issue" runs (the `om-auto-fix-issue` chain) | 31 of 104 above 300k |
+| Sessions with a compaction | 1 marker; 9 with a drop of more than half the context |
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 8.1 | Context is measured before anything is changed, AS / IS and TO BE (`/context`, Context Scope) (L10) | No measurement was recorded before this step; the table above is the first | Missing – measured here |
+| 8.2 | Every line of the root `AGENTS.md` passes "would the agent act differently without it?"; no-op sentences, duplicates of skills, motivation and history are removed (`eliminate-no-op`) (L10) | 10.6 KB, under Claude Code's warning (40 000 characters) and Codex's limit (32 KiB). It is mostly routing ("Where things are"), rules, "Never", working practices, the Definition of Done and the commands. No line-by-line test was run: the twelve rules repeat their full text in `docs/spec/02-agent-rules.md`, and some "Never" items are also enforced by lint or CI | Partial |
+| 8.3 | The root `AGENTS.md` is a router: per type of task, what to read and what not to read (L10 `task-router`) | "Start of every session" (memory, the specification sections the task cites, glossary, pattern catalogue) and the table "Where things are" route by place, not by type of task; skills route by task (bug → `om-auto-fix-issue`, spec → `om-auto-write-spec`) | Partial |
+| 8.4 | Module details live with the module, in nested `AGENTS.md` files that load only when the agent works there (L10, agents.md) | One nested file, `apps/web/AGENTS.md`, written by `next dev`. Module rules live in the pattern catalogue §18 with its reference implementations and in `.ai/memory/<topic>.md`, both reached through the root file | Partial – 1.4 |
+| 8.5 | `CLAUDE.md` holds only the import of `AGENTS.md` (L10) | `CLAUDE.md` is `@AGENTS.md` | Full |
+| 8.6 | CI checks the size budget of `AGENTS.md` and of the lessons files, and that every path they name exists (L10 `check:agents`) | Paths: `lychee` checks the links of every Markdown file in CI, and `pnpm lint:spec` the `§N.M` references. No size budget for `AGENTS.md` or `.ai/memory/` | Partial |
+| 8.7 | The lessons file, which grows over the project's life, is kept small and measured (L10) | `.ai/memory/MEMORY.md`, which every session reads first, is 16 KB for 33 lines: each line is an index entry with a long summary. It is larger than `AGENTS.md`. The 19 topic files total 243 KB and are opened on demand. No budget | Missing |
+| 8.8 | Skill descriptions say when, not what; bodies stay under about 500 lines; unused skills are disabled and stale cached copies removed (L10) | Descriptions: 341 characters on average, 491 at most, all under 1 024; no `SKILL.md` over 500 lines. All 60 `om-*` skills are installed, and their descriptions cost 10k tokens in every session; Cezar's 336 runs used about 18 of them. No cached old copies (`.claude/skills/` links to `.agents/skills/`) | Partial |
+| 8.9 | MCP servers that the project does not use are off (L10) | No MCP server in the repository. The maintainer's user-level plugins (DevExpress documentation, Claude Docs) load into every Trybun session, 3k tokens at start | Partial |
+| 8.10 | A predictable structure: one convention, colocation by feature, names by role, dates where currency matters (L10) | Feature folders (`apps/web/src/features/<feature>`, NestJS modules per domain), dated change specifications (`YYYY-MM-DD-slug.md`), numbered ADRs, the glossary of code identifiers (§0), one pattern per problem (Rule 12) | Full |
+| 8.11 | A current reference example instead of a paragraph describing a pattern, kept current (L10) | The pattern catalogue §18 names a reference implementation for each pattern, and Rule 12 makes a changed pattern migrate the code; the links are checked by `lychee` | Beyond |
+| 8.12 | Subagents protect the main context of long work: a brief, a bounded scope, a cheaper model for research (L10, L08) | 49 of the 225 Cezar runs peaked above 300k tokens, where L10 places the drop in quality, and 17 above 500k; compaction is rare because the window is 1M. The fix-issue chain is the heaviest: 31 of 104 runs above 300k. It implements and reviews in one session (6.7, #537). The loop engine dispatches subagents only above 20 Steps (6.4) | Partial |
+| 8.13 | Dynamic context for a large project: generated module facts, axes, a harness comparing declared and read context (L10, Open Mercato) | Trybun is one repository without framework modules in `node_modules` to describe; `apps/web/AGENTS.md` points to the Next.js guides in `node_modules/next/dist/docs/` | N/A |
+
+A test for 8.4: a session started in `apps/web` loads neither `apps/web/AGENTS.md` nor, through the root `CLAUDE.md`, the root `AGENTS.md`; `/context` lists only the two `CLAUDE.md` files. Claude Code's memory documentation explains the first: a subdirectory `AGENTS.md` is read only where that directory has no `CLAUDE.md` mode of its own. Cezar starts its runs in the root of a worktree, where the root file loads.
+
+Not verified: whether the start of a session shows a peak (L10, Context Scope; not installed); which of the 49 long runs lost quality; whether `apps/web/AGENTS.md` loads on demand when a session started in the root reads files in `apps/web`.
+
+### Gap proposals
+
+The research was done on 2026-11-26 over the primary sources: the Claude Code documentation (memory, skills, best practices), the agents.md and Codex documentation, Anthropic's engineering posts, and the studies listed below.
+
+The evidence on instruction files is thin and points one way: keep them minimal and written by people.
+
+- **Lulla et al.** (arXiv 2601.20404, ICSE JAWs 2026): a human-written `AGENTS.md` lowered the median runtime by 28.6 % and output tokens by 20 %; correctness was not measured.
+- **Gloaguen et al.** (arXiv 2602.11988, 2026): developer-written files added about 2.4 points of success (not significant) but 6–42 % inference cost; generated files lowered success. Their advice: only the minimal requirements that are not in the README.
+- **Claude Code's memory documentation:** "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." Its auto memory keeps `MEMORY.md` to one line per entry and loads at most 200 lines or 25 KB.
+- **The course's threshold.** The ~300k of L10 is not in the Chroma study it cites, which shows a gradual decline with no threshold. NoLiMa (ICML 2025) found 11 of 13 models below half of their short-context score at 32k.
+
+**8.8, 8.9 The skill catalogue – declined by the maintainer on 2026-11-26; recorded as an accepted cost.** Each listed skill costs context in every turn (Claude Code skills documentation), and the catalogue is the largest fixed cost measured: 10k of 22.2k.
+
+- **(a) Proposed, declined:** `.claude/settings.json` turns off, with `skillOverrides: off`, the `om-*` skills no workflow of Trybun runs. The skills the used ones call stay on. The lock stays equal to upstream, so `npx skills update` keeps working, and turning a skill on is one line. The same file turns off the maintainer's user-level plugins that Trybun does not use (`enabledPlugins`). Done when `/context` is measured again (TO BE).
+- **(b) Rejected: uninstall the unused skills** (`npx skills remove`). It makes the lock differ from upstream, and a skill another one calls can go missing silently.
+- **(c) Rejected: keep all**, as upstream advises ("every skill is small until invoked"). That contradicts Anthropic's documentation, and upstream has an interest in the full install.
+
+**8.2, 8.6, 8.7 Instruction and memory files – accepted (a): #542.**
+
+- **(a) Accepted:**
+  - **`MEMORY.md` as a real index:** one short line per entry, the details in the topic files.
+  - **A line-by-line pass over `AGENTS.md`** with the course's test: a line that repeats `docs/spec/02-agent-rules.md`, a skill, or a rule that lint or CI already enforces goes, unless it changes what an agent does.
+  - **A size budget for both in CI** with a small script like the existing `scripts/check-*.js`. Thresholds: about 200 lines for `AGENTS.md` and 25 KB for `MEMORY.md`, those of Claude Code's documentation.
+- **(b) Rejected: `agnix` as the linter.** A new dependency for two numbers.
+- **(c) Rejected: a router table by type of task (8.3).** Trybun's skills already route by task (bug, specification, review, QA), and a table would repeat them.
+
+**8.4 and 1.4 Nested files – accepted (a): #542.**
+
+- **(a) Accepted: `apps/web/CLAUDE.md` with `@AGENTS.md`**, so that the Next.js rule that `next dev` writes reaches Claude Code; pat-lewczuk's `task-router` places such a file next to every `AGENTS.md`.
+- **Different: no further nested files.** The rules of a module are the pattern catalogue §18, the one source of the specification (Rule 8, Rule 12), reached from the root file; files per module would repeat it.
+
+**8.12 and 6.4 Subagents in long runs – deferred until #537 is merged.** The evidence is mixed. Anthropic's harness post (2025-11-26) says "compaction isn't sufficient" for long work, while the current Claude Code best practices list "use subagents to protect your context window" as outdated advice. Their remaining reason for a subagent is independence ("it hasn't seen your reasoning"), which is #537. Trigger: after #537, the peak context of the fix-issue runs is measured again; if they still pass 300k, a subagent per step of `om-auto-fix-issue` is proposed.

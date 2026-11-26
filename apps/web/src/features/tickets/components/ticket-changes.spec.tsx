@@ -34,6 +34,10 @@ vi.stubGlobal('matchMedia', (query: string) => ({
 Object.defineProperty(document, 'execCommand', { value: () => false });
 
 const { TeamTicketView } = await import('./team-ticket-view.js');
+// The lazily loaded editor is imported before the tests (#511): its first import takes ~0.7 s
+// alone and longer under the whole suite, past the 1 s of `findBy*`, so a wait would measure
+// the module load instead of the component.
+await import('@trybun/ui/components/markdown-editor');
 
 const fake = createFakeApiClient();
 api.current = fake.client;
@@ -235,7 +239,7 @@ describe('one change at a time', () => {
     renderView();
 
     await user.click(await screen.findByRole('button', { name: 'Edit description' }));
-    await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    await screen.findByRole('textbox', { name: 'Description' });
     await user.click(screen.getByRole('button', { name: 'Edit title' }));
     await user.click(screen.getByRole('combobox', { name: 'Priority' }));
     await user.click(await screen.findByRole('option', { name: 'Critical' }));
@@ -288,7 +292,7 @@ describe('title and description', () => {
     renderView();
 
     await user.click(await screen.findByRole('button', { name: 'Edit description' }));
-    const editor = await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    const editor = await screen.findByRole('textbox', { name: 'Description' });
     await user.clear(editor);
     await user.type(editor, 'The total shows 22%.');
     const reads = fake.callsTo('GET /api/v1/tickets').length;
@@ -312,7 +316,7 @@ describe('title and description', () => {
     renderView();
 
     await user.click(await screen.findByRole('button', { name: 'Edit description' }));
-    const editor = await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    const editor = await screen.findByRole('textbox', { name: 'Description' });
     await user.type(editor, ' More.');
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     await user.click(await screen.findByRole('button', { name: 'Keep editing' }));
@@ -336,7 +340,7 @@ describe('title and description', () => {
     renderView();
 
     await user.click(await screen.findByRole('button', { name: 'Edit description' }));
-    const editor = await screen.findByRole('textbox', { name: 'Description' }, { timeout: 5_000 });
+    const editor = await screen.findByRole('textbox', { name: 'Description' });
     await user.type(editor, ' More.');
     window.history.back();
     await user.click(await screen.findByRole('button', { name: 'Keep editing' }));

@@ -57,12 +57,9 @@ test.describe('comments and internal notes', () => {
     await expect(noteItem).toBeVisible();
     await expect(noteItem.getByText('Internal note')).toBeVisible();
     // The note shows before the ticket is read again (two requests since S1-13); until then the
-    // submit button is disabled, and axe runs only after its fade back to full opacity.
+    // submit button is disabled. The accessibility check waits for its fade back (#502).
     const submit = activity.getByRole('button', { name: 'Add internal note' });
     await expect(submit).toBeEnabled();
-    await submit.evaluate((element) =>
-      Promise.all(element.getAnimations().map((animation) => animation.finished)),
-    );
     expect(await seriousViolations(page)).toEqual([]);
     expect(await shell.horizontalOverflow()).toBe(0);
 
@@ -70,8 +67,13 @@ test.describe('comments and internal notes', () => {
     await expect(activity.getByText('Visible to the requester')).toBeVisible();
     await field.fill(`We are on it ${stamp}`);
     await activity.getByRole('button', { name: 'Comment publicly' }).click();
-    await expect(activity.getByText(`We are on it ${stamp}`)).toBeVisible();
-    // A new form starts with the internal note again.
+    // The timeline item, as for the note: the comment shows a render before the form resets, and
+    // until then the field in the same region holds the same text (#517).
+    await expect(
+      activity.getByRole('listitem').filter({ hasText: `We are on it ${stamp}` }),
+    ).toBeVisible();
+    // A new form starts empty, with the internal note again.
+    await expect(field).toHaveValue('');
     await expect(note).toBeChecked();
 
     const customer = await browser.newContext({

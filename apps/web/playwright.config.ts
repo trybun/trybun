@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 import { TEAM_STORAGE_STATE } from './e2e/storage-state.js';
 
 const isCi = process.env.CI !== undefined;
+/** The unit tests of the E2E helpers, which Vitest runs (`vitest.config.ts`). */
+const UNIT_TESTS = /\.unit\.spec\.ts$/;
 
 /**
  * E2E tests (§2.14): the key user paths on phone, tablet and desktop (§2.9) against the local
@@ -28,7 +30,7 @@ export default defineConfig({
         storageState: TEAM_STORAGE_STATE,
       },
       dependencies: ['setup'],
-      testIgnore: /lighthouse\.spec\.ts$/,
+      testIgnore: [/lighthouse\.spec\.ts$/, UNIT_TESTS],
     },
     {
       name: 'tablet',
@@ -36,7 +38,7 @@ export default defineConfig({
       dependencies: ['setup'],
       // The React Compiler check concerns the build, not the device: it runs in the Chromium
       // projects, whose React DevTools hook it stubs (WebKit reports no React roots to it).
-      testIgnore: [/lighthouse\.spec\.ts$/, /react-compiler\.spec\.ts$/],
+      testIgnore: [/lighthouse\.spec\.ts$/, /react-compiler\.spec\.ts$/, UNIT_TESTS],
     },
     {
       name: 'desktop',
@@ -46,13 +48,13 @@ export default defineConfig({
         storageState: TEAM_STORAGE_STATE,
       },
       dependencies: ['setup'],
-      testIgnore: /lighthouse\.spec\.ts$/,
+      testIgnore: [/lighthouse\.spec\.ts$/, UNIT_TESTS],
     },
     {
       // The performance budget of the key pages, measured with the mobile profile of Lighthouse.
-      // It runs after the other projects and one page at a time: the simulated TBT multiplies
-      // the observed main-thread tasks by the CPU slowdown, so a parallel test on the same
-      // runner moves the measurement (#146).
+      // It runs after the other projects and one page at a time: the CPU slowdown is applied to
+      // the runner's real CPU (#503, #508), so a parallel test on the same runner moves the
+      // measurement (#146).
       name: 'lighthouse',
       testMatch: /lighthouse\.spec\.ts$/,
       dependencies: ['setup', 'phone', 'tablet', 'desktop'],
