@@ -219,7 +219,7 @@ describe('accepted risks of the image scan (.trivyignore.yaml)', () => {
 describe('daily image scan (.github/workflows/image-scan.yml)', () => {
   const workflow = readFileSync('.github/workflows/image-scan.yml', 'utf8');
 
-  it('has no access to secrets and only reads, apart from uploading its results (§2.10)', () => {
+  it('has no access to secrets and only reads, apart from uploading its results and its tracking issue (§2.10)', () => {
     expect(workflow).not.toMatch(/\bsecrets\./);
     expect(workflow).not.toMatch(/^\s*environment:/m);
     expect(workflow).toMatch(/^permissions: \{\}$/m);
@@ -227,8 +227,21 @@ describe('daily image scan (.github/workflows/image-scan.yml)', () => {
       ([, scope, access]) => `${scope}: ${access}`,
     );
     expect(new Set(permissions)).toEqual(
-      new Set(['contents: read', 'packages: read', 'security-events: write']),
+      new Set([
+        'contents: read',
+        'packages: read',
+        'security-events: write',
+        'actions: read',
+        'issues: write',
+      ]),
     );
+  });
+
+  it('writes the tracking issue only from a job that runs no repository code (#568)', () => {
+    const jobs = workflow.split(/^ {2}(?=[a-z-]+:$)/m);
+    const writers = jobs.filter((job) => /^\s+issues: write$/m.test(job));
+    expect(writers.map((job) => job.split(':')[0])).toEqual(['report']);
+    expect(writers[0]).not.toMatch(/actions\/checkout|actions\/setup-node|pnpm|node /);
   });
 
   it('applies the accepted risks of the release scan', () => {

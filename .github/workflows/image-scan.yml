@@ -2,8 +2,9 @@
 # (§2.11) and the images built from `main` for critical vulnerabilities, with the accepted risks of
 # .trivyignore.yaml, and uploads the results to GitHub code scanning. A finding opens a code
 # scanning alert; an accepted risk past its expiry date is reported again; a vulnerability that is
-# gone closes its alert with the next upload of the same category. No secrets, read-only
-# permissions plus the upload of the results.
+# gone closes its alert with the next upload of the same category. A failed run on `main` keeps one
+# tracking issue open (job `report`, #568). No secrets, read-only permissions plus the upload of
+# the results and the tracking issue.
 name: Image scan
 
 on:
@@ -137,3 +138,60 @@ jobs:
         with:
           sarif_file: ${{ env.SARIF }}
           category: image-scan/${{ matrix.service }}/${{ matrix.slot }}
+
+  # One tracking issue per outage (#568): a failed run on `main` opens or reopens it with a comment,
+  # the next successful run on `main` closes it. A run on another branch writes the job summary
+  # only. No checkout and no repository code in the job that holds `issues: write`.
+  report:
+    name: Report the scan
+    needs: [series, scan]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      issues: write
+    steps:
+      - name: Open, update or close the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PASSED: ${{ needs.series.result == 'success' && needs.scan.result == 'success' }}
+          ON_MAIN: ${{ github.ref == 'refs/heads/main' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          title='Image scan fails'
+          failed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" --paginate \
+            --jq '.jobs[] | select(.conclusion != null and .conclusion != "success" and .conclusion != "skipped") | "- " + .name + " (" + .conclusion + ")"')
+          # The newest issue with the exact title, and its state, from the plain label listing:
+          # the search index can lag behind an issue opened by the previous run.
+          found=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --label image-scan --limit 500 \
+            --json number,title,state \
+            --jq "map(select(.title == \"$title\")) | sort_by(.number) | last | select(. != null) | \"\(.number) \(.state)\"")
+          issue=${found%% *}
+          state=${found#* }
+          if [ "$PASSED" = true ]; then
+            summary="The scan passed."
+          else
+            summary=$(printf 'The scan failed in [this run](%s):\n\n%s' "$RUN_URL" "${failed:-- (no job reported a failure; a job was skipped)}")
+          fi
+          printf '%s\n' "$summary" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ON_MAIN" != true ]; then
+            echo "Not on main: dry run, the tracking issue is left as it is." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ "$PASSED" = true ]; then
+            if [ -n "$issue" ] && [ "$state" = OPEN ]; then
+              gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "The scan passed again in [this run]($RUN_URL)."
+            fi
+            exit 0
+          fi
+          if [ -z "$issue" ]; then
+            body=$(printf 'The daily image scan (`.github/workflows/image-scan.yml`) fails on `main`, so some images are not scanned. This issue is opened and updated by the workflow and closed by its next successful run.\n\n%s' "$summary")
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label image-scan --body "$body"
+          else
+            if [ "$state" = CLOSED ]; then
+              gh issue reopen "$issue" --repo "$GITHUB_REPOSITORY"
+            fi
+            gh issue comment "$issue" --repo "$GITHUB_REPOSITORY" --body "$summary"
+          fi
