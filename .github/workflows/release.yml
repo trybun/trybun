@@ -41,6 +41,11 @@ jobs:
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          # Only what release-please needs (its README): commits, tags and releases, the labels
+          # of the release pull request, and the pull request itself.
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
@@ -72,6 +77,10 @@ jobs:
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          # Only what the candidate job uses: read the release pull request, create the tag and
+          # the draft prerelease.
+          permission-contents: write
+          permission-pull-requests: read
       - id: tag
         name: Tag the release candidate
         env:
