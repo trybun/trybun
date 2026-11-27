@@ -1061,7 +1061,7 @@ Course sources:
 - **L19**, the manager's playbook against resistance;
 - **L20**, open-weight models on one's own computer.
 
-The carried-forward row of step 0 (a commit scope for `.ai/analysis/`) is rated here. Checked on 2026-11-27, read-only: `.ai/skills/`, the commit history of the analysis, `.ai/cezar/runs.json`.
+The carried-forward row of step 0 (a commit scope for `.ai/analysis/`) is rated here. Checked on 2026-11-27, read-only: `.ai/skills/`, the commit history of the analysis, and Cezar's local run records (`.ai/cezar/runs.json`, ignored by git).
 
 ### Ratings
 
@@ -1070,9 +1070,9 @@ The carried-forward row of step 0 (a commit scope for `.ai/analysis/`) is rated 
 | 15.1 | An AI SDLC starts from an initiative with a sponsor, a result per quarter and a selected process, and is introduced to a team step by step (L23 steps 1–6, L19) | One maintainer who is sponsor, lead and team; the initiative is the product itself (`docs/plan/`). The organisational canvases, the resistance playbook and the adoption phases have no reader here | N/A |
 | 15.2 | The harness is designed after the process, and it logs its work so that results can be judged honestly (L23 step 7) | The harness follows the process of `SDLC.md` (ADR 0011, the `om-*` skills, Cezar); Cezar logs every run (handoff, events, tokens, cost, time) and the PRs carry the evidence | Full |
 | 15.3 | Evaluation tasks measure the result against a threshold, as-is against to-be, including the people's effort and the cost; then develop, fix or stop (L23 steps 8–9) | Not measured. The data exists: Cezar's time and cost per run (US$ 57 752 in total, 9.15) and the time of each PR from issue to merge. Nobody compares it with a baseline or a threshold. The course alignment is the "fix" decision in practice, but without the measured result | Missing |
-| 15.4 | A skill is born from repeated work and observed errors, has eval cases run with and without it (triggering, asks for missing data), keeps `SKILL.md` short with references and scripts for deterministic steps, and other people's skills are audited before installation (extras) | Project skills: `ui-component` (19 lines) and `verify-change` (23 lines), from repeated work; no eval cases. `verify-change` repeats the command list of `validation.commands` in `.ai/agentic.config.json`, without `pnpm format` but with an install step, so the two lists can drift apart. Other people's skills are read before installation (#525, #526) and locked (#498). The coming repository extensions of `om-auto-review-pr` (#525, #537) have a real run in their Definition of Done, not eval cases | Partial |
+| 15.4 | A skill is born from repeated work and observed errors, has eval cases run with and without it (triggering, asks for missing data), keeps `SKILL.md` short with references and scripts for deterministic steps, and other people's skills are audited before installation (extras) | Project skills: `ui-component` (19 lines) and `verify-change` (23 lines), from repeated work; no eval cases. `verify-change` repeats the command list of `validation.commands` in `.ai/agentic.config.json` and adds `pnpm install` and `pnpm format`, which the gate does not run, so the two lists can drift apart. Other people's skills are read before installation (#525, #526) and locked (#498). The coming repository extensions of `om-auto-review-pr` (#525, #537) have a real run in their Definition of Done, not eval cases | Partial |
 | 15.5 | Open-weight local models when privacy, cost or availability call for them (L20) | Not needed: the agents use subscriptions; the product sends no ticket content to external AI APIs (`AGENTS.md`), so it has no model to host. Revisit if a product feature needs a model on the customer's infrastructure | N/A |
-| 15.6 | A commit scope for the analysis files (step 0) | The analysis commits use `agents`, which the closed scope list of §2.14 allows for the agents' harness; `.ai/analysis/` belongs to it | Full |
+| 15.6 | A commit scope for the analysis files (step 0) | The analysis commits use `agents`. The closed list of §2.14 defines it as "`AGENTS.md`, `CLAUDE.md`, `SDLC.md`, `.ai/skills/`, the agent pipeline configuration" and names neither `.ai/analysis/` nor the other folders of `.ai/`. `agents` is the closest scope, but the list does not say so; naming the folders is added to #494 | Partial – #494 |
 
 ### Gap proposals
 
@@ -1084,7 +1084,7 @@ The maintainer decided on 2026-11-27.
 
 ## Final review pass
 
-Done on 2026-11-27, over the 49 issues that the steps filed (#487–#562; 12 of them are closed). Every carried-forward row is now either answered in a step or a trigger with its condition. None is an open question.
+Done on 2026-11-27, over the 47 issues that the steps filed (#487–#562, the other numbers of that range are pull requests; 11 of them are closed). Every carried-forward row is now either answered in a step or a trigger with its condition. None is an open question.
 
 ### Overlaps
 
@@ -1094,12 +1094,13 @@ No two issues ask for the same change. These touch the same files and are done t
 |---|---|---|
 | The repository extension of `om-auto-review-pr` | #498 → #537, #525, #560 | #498 pins the skills to a commit first. The fresh-context review (#537) and the Codex advisor (#525) share one extension file; their eval cases come from #560 |
 | `AGENTS.md` and the memory | #542, #494 | One PR. #494 adds the folders of `.ai/` within the budget that #542 sets |
-| `SDLC.md` and `CODE_REVIEW.md` rules | #538, #540, #544, #499 | Small edits of the same two files; they can share one PR |
-| CI workflows | #552, #554, #556; then #553 | The three small fixes first. #553 needs its change specification and a ruleset change by the maintainer |
+| `SDLC.md` and `CODE_REVIEW.md` rules | #538, #540, #544, #499 | Small edits of the same two files; they can share one PR. #501, #532, #537, #555 and #558 also edit `SDLC.md`, so each rebases on the others |
+| CI workflows | #552, then #553 | #552 first. #553 needs its change specification and a ruleset change by the maintainer |
+| Repository hygiene | #554, #556 | Two small files (`.github/labels.yml`, `.gitignore`); one PR |
 | Dependabot | #547, then #558 | Fixing the duplicate image pins (#547) removes most of the work of the dependencies step of #558 |
 | Flaky tests | #555, #528 | #528 is one more case of a class #555 treats (programs checked before they start) |
 | Deprecated APIs | #487–#491, then #492 | The lint rule (#492) follows the fixes, so that it starts green |
-| Design | #531 (change specification first), #530, #533, #534, #532 | Independent; #534 waits for the S1-14 screen |
+| Design | #531 (change specification first), #530, #533; #534, #532 | #530, #531 and #533 all edit `packages/ui/src/styles/globals.css`, so they go one after another; #534 waits for the S1-14 screen; #532 is independent |
 | Security of the product | #540, then #562 | The access-control rule now; the threat model before `1.0.0` (step 7) |
 | Specification process | #524, #526, #501 | #501 (the product brief) is a precondition of the prototype steps of step 5 |
 
