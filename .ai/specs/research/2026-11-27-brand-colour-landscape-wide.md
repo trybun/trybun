@@ -1,25 +1,27 @@
 # Brand colour landscape – wide survey (software vendors)
 
 - **Date:** 2026-11-27
-- **Kind:** benchmark (desk research by an AI agent; no interviews, no usage data). Extends [`2026-11-27-category-colour-landscape.md`](2026-11-27-category-colour-landscape.md) (30 products), which was not redone; its 29 usable rows are reused as read.
-- **Reliability:** **(u)** = not confirmed at an official source; **(mkt)** = marketing site, not the app; **(si)** = simple-icons v16.38.1 only. Gaps: see "Gaps and reliability".
+- **Kind:** benchmark (desk research by an AI agent; no interviews, no usage data).
+- **Method:** official logo files, brand/press pages, design-token packages and official repositories first; home-page inline logo, `theme-color` and CSS second (mkt); simple-icons v16.38.1 last (si); OKLCH and ΔE OK computed with an own, verified script. Details in "Method" below.
+- **Reliability:** items marked **(u)** were not confirmed at an official source in this run; **(mkt)** values come from a marketing site; **(si)** values come from simple-icons only, which was shown to be outdated for seven vendors.
+- **Relation to earlier work:** extends [`2026-11-27-category-colour-landscape.md`](2026-11-27-category-colour-landscape.md) (30 products), which was not redone; its 29 usable rows are reused as published.
 - **Purpose:** input for the brand colour change (#573); not a requirement (Rule 8, [§2.8](../../../docs/spec/02-agent-rules.md)).
-- **Outcome (2026-11-27):** a decision of the maintainer, not a requirement; it is recorded in the change specification of #573 (Rule 8). The maintainer chose the UI direction of Plane and the teal hue (candidate A). After the wide survey ([`2026-11-27-brand-colour-landscape-wide.md`](2026-11-27-brand-colour-landscape-wide.md)) showed close neighbours of the first values, the teal was moved to action `#035F5C` and team branch `#071F20`, and after comparing the options on large graphics the maintainer chose light gold `#DCA81C` for the customer branch, as a brand accent only.
-- **Question:** does Trybun's provisional teal (`#017272`, OKLCH L 0.50 C 0.085 H 194.8; team branch `#023237`, L 0.29 C 0.048 H 205.8) set it apart across a much broader set of vendors a software team and its B2B customers see, or is teal common?
-- **Scope:** 156 new products in four groups (A help desk / ITSM / support 43, B work management / issue tracking 35, C developer platforms 52, D Polish / CEE 26; 13 of them added beyond the first list), **140 with a logo colour obtained** (108 official source, 18 simple-icons, 14 marketing site) and 16 not obtained (listed, not counted). Combined with the earlier 29: **169 logo colours, 51 known action colours**.
+- **Outcome (2026-11-27):** a decision of the maintainer, not a requirement; it is recorded in the change specification of #573 (Rule 8). The maintainer chose the UI direction of Plane and the teal hue (candidate A). After the wide survey (this note) showed close neighbours of the first values, the teal was moved to action `#035F5C` and team branch `#071F20`, and after comparing the options on large graphics the maintainer chose light gold `#DCA81C` for the customer branch, as a brand accent only.
+- **Question:** does Trybun's teal set it apart across a much broader set of vendors that a software team and its B2B customers see, or is teal common? The survey was run for the provisional values `#017272` (OKLCH L 0.50 C 0.085 H 194.8) and `#023237` (L 0.29 C 0.048 H 205.8); the values chosen afterwards (`#035F5C`, `#071F20`, `#DCA81C`) are covered in the section "Nearest neighbours of the chosen values".
+- **Scope:** 156 products in four groups (A help desk / ITSM / support 43, B work management / issue tracking 35, C developer platforms 52, D Polish / CEE 26; 13 of them were added to the products surveyed first, marked "ADDED"), **140 with a logo colour obtained** (108 official source, 18 simple-icons, 14 marketing site) and 16 not obtained (listed, not counted). Combined with the earlier 29: **169 logo colours, 51 known action colours**.
 
 ## Method
 
-- Source order: (1) official logo files served by the vendor (SVG fills grepped; PNG decoded with a small pure-Python decoder, dominant opaque colour taken), official brand / press pages, official repositories (`gh api`, raw.githubusercontent.com) and design-token packages (npm tarballs: `@elastic/eui-theme-borealis@8.3.0`, `@fluentui/tokens@1.0.0-alpha.25`); (2) inline logo SVG and `theme-color` of the vendor home page; (3) the most-used chromatic colour of the home page / its CSS, marked **(mkt)**; (4) simple-icons **v16.38.1** (npm, published 2026-11-24), marked **(si)**, only where (1)–(3) gave nothing. Plain `curl -s`, default user agent; sites that blocked (HTTP 403) were skipped.
+- Source order: (1) official logo files served by the vendor (SVG fills grepped; PNG decoded with a small pure-Python decoder, dominant opaque colour taken), official brand / press pages, official repositories (`gh api`, raw.githubusercontent.com) and design-token packages (npm tarballs: `@elastic/eui-theme-borealis@8.3.0`, `@fluentui/tokens@1.0.0-alpha.25`); (2) inline logo SVG and `theme-color` of the vendor home page; (3) the most-used chromatic colour of the home page or its CSS, marked **(mkt)**; (4) simple-icons **v16.38.1** (npm, published 2026-11-22 per `npm view simple-icons time`), marked **(si)**, only where (1)–(3) gave nothing. Plain `curl -s`, default user agent; sites that blocked (HTTP 403) were skipped.
 - **(u)** = not confirmed at an official source in this run. Rows with no value are listed but not counted.
-- simple-icons was checked against official sources where both were available; it is **stale** for Docker (`#2496ED` → `#6172FF`), DigitalOcean (`#0080FF` → monochrome logo + foam `#6FE0ED`), Elastic (`#005571` → six-colour logo, UI `#0B64DD`), Travis CI (`#3EAAAF` → monochrome), GitKraken (`#179287` → monochrome), MariaDB (`#003545` → near-black), HubSpot (`#FF7A59` → `#FF4800`). Three of these stale values are teal/dark-teal, so using simple-icons blindly would have **overstated** teal.
-- "Brand hex" = the dominant chromatic logo colour; multi-colour logos are counted by the dominant (or first) colour and their other colours are listed and included in the ±20° and distance analysis. "Action" = main button colour where seen (mostly the marketing site, so mostly (mkt)); in-app buttons were not inspected except where tokens exist.
-- OKLCH from sRGB hex with Björn Ottosson's OKLab matrices (own converter, not part of the repository). Verified: `#FF0000` → L 0.628 C 0.258 H 29.2, `#00FF00` → 0.866 / 0.295 / 142.5, `#0000FF` → 0.452 / 0.313 / 264.1 (the CSS Color 4 reference values), and `#017272` → 0.500 / 0.085 / 194.8, `#E0482C` → 0.613 / 0.193 / 32.6, `#2563EB` → 0.546 / 0.215 / 262.9 (the values in the earlier note). ΔE OK = Euclidean distance in OKLab. CSS Color 4 uses ΔE OK 0.02 as the just-noticeable difference in its gamut-mapping algorithm; that is the yardstick for "near".
+- simple-icons was checked against official sources where both were available. It is **stale** for Docker (`#2496ED` → `#6172FF`), DigitalOcean (`#0080FF` → monochrome logo + foam `#6FE0ED`), Elastic (`#005571` → six-colour logo, UI `#0B64DD`), Travis CI (`#3EAAAF` → monochrome), GitKraken (`#179287` → monochrome), MariaDB (`#003545` → near-black) and HubSpot (`#FF7A59` → `#FF4800`). Several of these stale values are teal or dark teal, so using simple-icons unchecked would have **overstated** teal.
+- "Brand hex" = the dominant chromatic logo colour; multi-colour logos are counted by the dominant (or first) colour, and their other colours are listed and included in the ±20° and distance analysis. "Action" = main button colour where seen (mostly the marketing site, so mostly (mkt)); in-app buttons were not inspected except where tokens exist.
+- OKLCH from sRGB hex with Björn Ottosson's OKLab matrices (own script). Verified: `#FF0000` → L 0.628 C 0.258 H 29.2, `#00FF00` → 0.866 / 0.295 / 142.5, `#0000FF` → 0.452 / 0.313 / 264.1 (the CSS Color 4 reference values), and `#017272` → 0.500 / 0.085 / 194.8, `#E0482C` → 0.613 / 0.193 / 32.6, `#2563EB` → 0.546 / 0.215 / 262.9 (the values in the earlier note). ΔE OK = Euclidean distance in OKLab. CSS Color 4 uses ΔE OK 0.02 as the just-noticeable difference (JND) in its gamut-mapping algorithm; that is the yardstick for "near".
 - Buckets: red 15–40, orange 40–70, yellow 70–115, green 115–165, teal 165–195, cyan 195–240, blue 240–268, indigo 268–285, violet 285–315, magenta/pink 315–15; neutral when C < 0.045.
 
 ## Table
 
-Group: A help desk/ITSM/support, B work management/issue tracking, C developer platforms/tools, D Polish/CEE. "ADDED" = not in the first list, added as relevant.
+Group: A help desk/ITSM/support, B work management/issue tracking, C developer platforms/tools, D Polish/CEE. "ADDED" = added to the products surveyed first.
 
 | Product | Group | Brand hex (logo) | OKLCH | Bucket | Other logo colours | UI action hex (if known) | Source | Notes |
 |---|---|---|---|---|---|---|---|---|
@@ -60,12 +62,12 @@ Group: A help desk/ITSM/support, B work management/issue tracking, C developer p
 | Gladly | A | `#009B00` | L 0.60 C 0.203 H 142 | green |  |  | https://www.gladly.com/icon.svg (embedded PNG palette) |  |
 | Re:amaze | A | `#00BADC` | L 0.73 C 0.130 H 217 | cyan |  |  | https://cdn.reamaze.com/assets/site/logo-white-...png (PNG decoded) |  |
 | Dixa | A | `#171512` | L 0.20 C 0.007 H 78 | neutral |  | `#5644D8` (L 0.50 C 0.215 H 281; indigo) | https://cdn.prod.website-files.com/694a79a0b33f026ed61a478b/694abd355cfa82233ac80228_logo.svg; site CSS | Action = site indigo (mkt). |
-| Odoo (Helpdesk app) | A | `#714B67` | L 0.46 C 0.066 H 337 | magenta |  | `#017E84` (L 0.54 C 0.092 H 201; cyan) | github.com/odoo/odoo addons/web/static/src/scss/primary_variables.scss (master: $o-enterprise-color #714B67, $o-enterprise-action-color #017e84, $o-community-color #71639e); https://odoocdn.com/web/assets/1/00d8416/web.assets_frontend.min.css (#017E84 x118) | ADDED. Enterprise action colour is teal; community action is #71639E. That Enterprise buttons use it is inferred from the variable name (web_enterprise is closed) (u). |
+| Odoo (Helpdesk app) | A | `#714B67` | L 0.46 C 0.066 H 337 | magenta |  | `#017E84` (L 0.54 C 0.092 H 201; cyan) | github.com/odoo/odoo addons/web/static/src/scss/primary_variables.scss (master: $o-enterprise-color #714B67, $o-enterprise-action-color #017e84, $o-community-color #71639e); https://odoocdn.com/web/assets/1/00d8416/web.assets_frontend.min.css (#017E84 x118) | ADDED. Enterprise action colour is cyan (H 201, next to the teal border); community action is #71639E. That Enterprise buttons use it is inferred from the variable name (web_enterprise is closed) (u). |
 | FreeScout | A | `#5CB85C` | L 0.70 C 0.156 H 144 | green | `#337AB7` (blue, H 248) |  | https://freescout.net/wp-content/uploads/2018/10/freescout-logo.png (PNG decoded) | ADDED (OSS help desk). |
 | HESK | A | `#09A033` | L 0.61 C 0.186 H 146 | green | `#353535` (neutral, H 90) |  | https://cdn.hesk.com/images/logo.png (PNG decoded) | ADDED (self-hosted help desk). |
 | HelpDesk.com (PL) | A | `#2FC774` | L 0.73 C 0.172 H 154 | green | `#000000` (neutral, H 0) |  | https://www.helpdesk.com/helpdesk-logo.svg | ADDED (Text/LiveChat Inc., Wrocław). |
 | Sugester (PL) | A | `#32A9DE` | L 0.69 C 0.127 H 233 | cyan |  |  | inline logo in https://sugester.pl/ ; theme-color #32A9DE | ADDED (Polish help desk/CRM). |
-| Bitrix24 | A | `#00629A` | L 0.48 C 0.118 H 244 | blue | `#3FC0F0` (cyan, H 228) | `#409EEF` (L 0.68 C 0.149 H 248; blue) | inline logo in https://www.bitrix24.pl/ ; site CSS | ADDED (popular in PL). Action = site blue (mkt). |
+| Bitrix24 | A | `#00629A` | L 0.48 C 0.118 H 244 | blue | `#3FC0F0` (cyan, H 228) | `#409EEF` (L 0.68 C 0.149 H 248; blue) | inline logo in https://www.bitrix24.pl/ ; site CSS | ADDED (Polish site bitrix24.pl). Action = site blue (mkt). |
 | Wrike | B | `#00E05C` | L 0.79 C 0.228 H 148 | green | `#162136` (neutral, H 263) |  | https://www.wrike.com/tp/storage/uploads/ea10c069-.../wrike-website-logo-light.svg |  |
 | Smartsheet | B | `#0E2947` | L 0.28 C 0.065 H 253 | blue |  | `#0244D1` (L 0.46 C 0.223 H 263; blue) | https://www.smartsheet.com/sites/default/files/smartsheet-logo-blue-new.svg; site CSS | Action = site blue (mkt). |
 | Teamwork.com | B | `#FF22B1` | L 0.67 C 0.268 H 348 | magenta | `#1D1C39` (indigo, H 283) |  | https://cdn-website.teamwork.com/images/logo/teamwork-logo.svg |  |
@@ -99,7 +101,7 @@ Group: A help desk/ITSM/support, B work management/issue tracking, C developer p
 | Kantree | B | `#000000` | L 0.00 C 0.000 H 0 | neutral |  | `#2CBE85` (L 0.71 C 0.146 H 161; green) | https://kantree.io/static/promo/img/logo.png (PNG decoded); site CSS | Action = site green (mkt). |
 | Vikunja | B | `#196AFF` (si) | L 0.57 C 0.234 H 262 | blue |  |  | (si v16.38.1); site #196AFF |  |
 | Focalboard | B | `#0058CC` | L 0.49 C 0.194 H 259 | blue |  |  | https://raw.githubusercontent.com/mattermost-community/focalboard/main/webapp/static/favicon.svg |  |
-| WeKan | B | `#007289` | L 0.51 C 0.092 H 218 | cyan | `#00778C` (cyan, H 216), `#007A8E` (cyan, H 214) |  | https://wekan.fi/wekan-logo.png (PNG decoded) | OSS Kanban; deep cyan-teal, very close to #017272. |
+| WeKan | B | `#007289` | L 0.51 C 0.092 H 218 | cyan | `#00778C` (cyan, H 216), `#007A8E` (cyan, H 214) |  | https://wekan.fi/wekan-logo.png (PNG decoded) | OSS Kanban; deep cyan (H 218), very close to #017272. |
 | Planka | B | (u) not obtained |  |  |  |  | https://planka.app/ (favicon.ico only) | Not counted. |
 | Netlify | C | `#131619` | L 0.20 C 0.008 H 248 | neutral |  | `#32E6E2` (L 0.84 C 0.136 H 193; teal) | https://www.netlify.com/assets/logos/netlify-logo-full.zip (logo-netlify-full-lightmode.svg); https://www.netlify.com/_astro/RebrandLayout.Dlm8VuNA.css (--ntl-button-primary-bg-color: var(--ntl-teal-200) = #32e6e2; a rebrand layer maps teal-200 to turquoise-400 #63e6d0) | Logo now monochrome; TEAL primary button on the marketing site; brand-primary token is blue #2E51ED. |
 | Vercel | C | `#000000` | L 0.00 C 0.000 H 0 | neutral |  |  | theme-color of https://vercel.com/; (si v16.38.1) |  |
@@ -162,7 +164,7 @@ Group: A help desk/ITSM/support, B work management/issue tracking, C developer p
 | wFirma | D | `#1A0FA0` | L 0.34 C 0.209 H 270 | indigo | `#6F63FF` (indigo, H 281), `#F2418E` (magenta, H 359), `#F8BC48` (yellow, H 80) |  | https://wfirma.pl/_public/wf/img/website/icons/i-logo-wfirma-20-blue.svg |  |
 | Brand24 | D | `#00EF88` | L 0.84 C 0.209 H 154 | green | `#171717` (neutral, H 90) |  | theme-color #00EF88 and inline logo on https://brand24.com/ |  |
 | Booksy | D | `#218CAC` | L 0.60 C 0.103 H 223 | cyan |  |  | https://booksy.com/mp-2026-public/apple-touch-icon.png (PNG decoded) | Site accent lime #DFF304 (mkt). |
-| Docplanner | D | `#00A085` | L 0.63 C 0.119 H 175 | teal | `#242727` (neutral, H 197) |  | https://www.docplanner.com/logos/logo-docplanner.svg | Green-teal (H 175). |
+| Docplanner | D | `#00A085` | L 0.63 C 0.119 H 175 | teal | `#242727` (neutral, H 197) |  | https://www.docplanner.com/logos/logo-docplanner.svg | Teal at the green border (H 175.0). |
 | ZnanyLekarz | D | `#007C68` (mkt) | L 0.52 C 0.098 H 176 | teal | `#006A59` (teal, H 177) |  | https://platform.docplanner.com/css/jade-homepage-rs-f2a247c0.css (znanylekarz.pl) | Logo PNG 404 (u). |
 | Manago AI (ex-SALESmanago) | D | `#1ED760` | L 0.77 C 0.212 H 149 | green |  |  | https://www.salesmanago.com/assets/images/layout/footer/managoai_logo.png (PNG decoded) |  |
 | Livespace | D | `#4FD465` | L 0.77 C 0.191 H 146 | green | `#041005` (neutral, H 146) |  | inline logo on https://www.livespace.io/; theme-color #7CE175 |  |
@@ -180,10 +182,9 @@ Group: A help desk/ITSM/support, B work management/issue tracking, C developer p
 | Tpay | D | `#072653` | L 0.28 C 0.090 H 258 | blue |  | `#08854B` (L 0.54 C 0.133 H 155; green) | inline logo on https://tpay.com/; site CSS | Action = site green (mkt). |
 | GetResponse | D | `#00BAFF` | L 0.74 C 0.156 H 234 | cyan |  |  | inline logo on https://www.getresponse.pl/ | ADDED (Polish). |
 
-
 ## 1. Counts per hue bucket
 
-Logo = primary brand colour (one per product). "Earlier 29" = the earlier survey's rows as published there. Action = known main-button colours (mostly marketing-site CTAs).
+Logo = primary brand colour (one per product). "Earlier 29" = the earlier note's rows as published there. Action = known main-button colours (mostly marketing-site CTAs).
 
 | Bucket | Logo A | Logo B | Logo C | Logo D | **Logo new total** | Logo earlier 29 | **Logo all** | Action new (known) | Action earlier | **Action all** |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -200,9 +201,9 @@ Logo = primary brand colour (one per product). "Earlier 29" = the earlier survey
 | magenta | 1 | 1 | 2 | 0 | **4** | 3 | **7** | 0 | 0 | **0** |
 | **total** | 35 | 30 | 52 | 23 | **140** | 29 | **169** | 24 | 27 | **51** |
 
-Shares of all 169 logo values: blue 38 (22 %), neutral/black 25 (15 %), green 21 (12 %), red 18 (11 %), violet 14, cyan 11, indigo 11, orange 10, **teal 7 (4 %)**, yellow 7, magenta 7. Actions (51): blue 20 (39 %), indigo 8, neutral 5, green 5, **teal 5 (10 %)**, cyan 4, violet 4; red, orange, yellow, magenta 0.
+Shares of all 169 logo values: blue 38 (22 %), neutral/black 25 (15 %), green 21 (12 %), red 18 (11 %), violet 14, cyan 11, indigo 11, orange 10, **teal 7 (4 %)**, yellow 7, magenta 7. Actions (51): blue 20 (39 %), indigo 8, neutral 5, green 5, **teal 5 (10 %)**, cyan 4, violet 4; red, orange, yellow and magenta 0.
 
-Teal-bucket members: logos – Targetprocess  (mkt, u as logo), Nifty , Backlog  (H 166, mkt), Element  (H 166), Docplanner , ZnanyLekarz  (mkt), STX Next . **No help-desk/ITSM logo (group A) is teal.** Actions – Halo ITSM  (mkt), Nifty , Netlify  (mkt), Comarch  (one button variant), STX Next  (mkt).
+Teal-bucket members: logos – Targetprocess `#008F89` (mkt; that it is the logo is (u)), Nifty `#019B8E`, Backlog `#42CE9F` (H 166, mkt), Element `#0DBD8B` (H 166), Docplanner `#00A085` (H 175.0), ZnanyLekarz `#007C68` (mkt), STX Next `#24C2C0`. **No help-desk/ITSM logo (group A) is teal.** Actions – Halo ITSM `#00D2C4` (mkt), Nifty `#00857A`, Netlify `#32E6E2` (mkt), Comarch `#02A78E` (one button variant), STX Next `#00B2A9` (mkt).
 
 Fine histogram (15° bands, chromatic colours only, new + earlier):
 
@@ -236,7 +237,7 @@ Fine histogram (15° bands, chromatic colours only, new + earlier):
 
 ## 2. Everyone within ±20° of H 195 (175–215°) with C ≥ 0.045
 
-All roles (primary logo, secondary logo colour, action), new and earlier rows, sorted by distance to .
+All roles (primary logo, secondary logo colour, action), new and earlier rows, sorted by distance to `#017272`.
 
 | Product | Group | Role | Hex | L | C | H | ΔE OK to #017272 | ΔE OK to #023237 | Source kind |
 |---|---|---|---|---|---|---|---|---|---|
@@ -260,9 +261,9 @@ All roles (primary logo, secondary logo colour, action), new and earlier rows, s
 | Netlify | C | action | `#32E6E2` | 0.84 | 0.136 | 192.5 | 0.344 | 0.557 | o |
 | DigitalOcean | C | action | `#6FE0ED` | 0.85 | 0.104 | 205.4 | 0.346 | 0.558 | o |
 
-Just outside the window but relevant: **WeKan** primary  (H 218, ΔE 0.038 – the single nearest colour of all), Docplanner  (H 174.99, ΔE 0.139), SysAid  (H 172, light), Element  (H 166), Brevo  (H 165), Booksy  (H 223), Keycloak  (H 222).
+Just outside the window but relevant: **WeKan** primary `#007289` (H 218, cyan, ΔE 0.038 – the single nearest colour of all to `#017272`), Docplanner `#00A085` (H 174.99, ΔE 0.139), SysAid `#6BD9B9` (H 172, light), Element `#0DBD8B` (H 166), Brevo `#0B996E` (H 165), Booksy `#218CAC` (H 223), Keycloak `#008AAA` (H 222).
 
-### Closest neighbours in OKLab distance
+### Closest neighbours of the provisional values in OKLab distance
 
 Nearest 12 to `#017272` (all colours, any chroma):
 
@@ -298,35 +299,88 @@ Nearest 12 to `#023237` (all colours, any chroma):
 | 11 | ClickUp | earlier | action | `#202020` | L 0.24 C 0.000 H 90 | 0.067 |
 | 12 | enova365 (Soneta) | D | logo (secondary) | `#231F20` | L 0.24 C 0.006 H 1 | 0.071 |
 
-### Who is in Trybun's direct category, and could be confused
+### Who is in Trybun's direct category, and could be confused (provisional values)
 
-- ** (action colour).** Within ΔE ≤ 0.05 (about 2.5 JND) there are three products from the direct or adjacent category:
-  - **WeKan** (open-source self-hosted Kanban – direct category) logo , ΔE 0.038; bluer (H 218 vs 195), same lightness and chroma.
-  - **Odoo** Enterprise action colour  (ΔE 0.041, H 201) – Odoo ships a Helpdesk app and is widely sold to SMBs in Poland/Europe; on odoo.com it is the secondary colour (118 uses in the frontend CSS), its logo is plum . That Enterprise in-app buttons use it is inferred from the variable name (u).
-  - **Fider** (open-source feedback portal – adjacent) logo tile , ΔE 0.050 (one of three logo colours).
-  - Also close: Nifty (project management) brand fill  ΔE 0.058 and logo ; ZnanyLekarz/Docplanner (not software for teams, but every Polish buyer sees it)  ΔE 0.040; Targetprocess  ΔE 0.088.
-  - A buyer is most likely to confuse Trybun with **WeKan** (same niche: self-hosted, open-source board) and, for Odoo users, with **Odoo Helpdesk** buttons. No large help desk uses this teal as its *logo*.
-- ** (team branch).** It is practically **identical to Zendesk "Kale" ** (ΔE 0.016, below 1 JND) – Zendesk is the largest help-desk brand and the earlier note already listed Kale. SUSE  (ΔE 0.021) is the only other near match. Beyond that, the neighbours are near-black neutrals (Smartsheet navy, Wrike navy, Kayako ), which is expected for a very dark colour: at L 0.29 C 0.048 the hue carries little identity.
+- **`#017272` (provisional action colour).** Within ΔE ≤ 0.05 (about 2.5 JND) there are three products from the direct or adjacent category:
+  - **WeKan** (open-source self-hosted Kanban – direct category) logo `#007289`, ΔE 0.038; cyan by this note's buckets (H 218 vs 195), same lightness and chroma.
+  - **Odoo** Enterprise action colour `#017E84` (ΔE 0.041, H 201, cyan by this note's buckets). Odoo ships a Helpdesk app; how widely it is used in Poland or Europe was not checked (u). On odoo.com it is the secondary colour (118 uses in the frontend CSS); its logo is plum `#714B67`. That Enterprise in-app buttons use it is inferred from the variable name (u).
+  - **Fider** (open-source feedback portal – direct category) logo tile `#12827F`, ΔE 0.050 (one of three logo colours).
+  - Also close: Nifty (project management) brand fill `#00857A` ΔE 0.058 and logo `#019B8E`; ZnanyLekarz/Docplanner (a medical booking marketplace, not software for teams; its reach among Polish buyers was not measured (u)) `#007C68` ΔE 0.040; Targetprocess `#008F89` ΔE 0.088.
+  - A buyer is most likely to confuse it with **WeKan** (same niche: self-hosted, open-source board) and, for Odoo users, with **Odoo Helpdesk** buttons. No help desk in the set uses this colour as its *logo*.
+- **`#023237` (provisional team branch).** It is practically **identical to Zendesk "Kale" `#03363D`** (ΔE 0.016, below 1 JND). Zendesk is a leading help-desk brand (market position not measured in this run (u)); the earlier note already listed Kale. SUSE `#0C322C` (ΔE 0.021) is the only other near match. Beyond that, the neighbours are near-black neutrals (Smartsheet navy, Wrike navy, Kayako `#1E4142`), which is expected for a very dark colour: at L 0.29 C 0.048 the hue carries little identity.
 
-## 3. Crowded and free hues; does "teal is rare in the category" hold?
+## 3. Nearest neighbours of the chosen values
 
-**Crowded (logos):** blue 240–268° (38, the 255–270° band alone has 45 colours incl. actions), neutral/black (25 – 2025/26 rebrands moved Netlify, DigitalOcean, Travis CI, GitKraken, MariaDB, Docker's mark-on-black to monochrome logos), green 135–165° (21; especially Polish SaaS: enova365, Symfonia, Brand24, Manago AI, Livespace, Netguru), red-orange 15–45° (27 colour values incl. secondaries).
+After this survey the maintainer moved the palette to action **Teal `#035F5C`**, team branch **Deep Teal `#071F20`** and customer branch **light gold `#DCA81C`**. For each value: the 8 closest colours across the whole set (primary logo, secondary logo and action colours of the 156 new products and of the earlier 30-product note; 324 distinct product–colour pairs). Source: official, mkt, si or u as in the tables; earlier-note values carry that note's tag. "Direct category" = help desk, ITSM, tracker, Kanban or feedback portal.
+
+### `#035F5C` – action Teal (L 0.439 C 0.075 H 191.0; bucket teal)
+
+| Rank | ΔE OK | Product | Group | Role | Hex | OKLCH | Source | Trybun's direct category? |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 0.038 | ZnanyLekarz | D | secondary logo | `#006A59` | L 0.47 C 0.087 H 177 (teal) | mkt | no (Polish/CEE brand) |
+| 2 | 0.077 | Redmine | earlier | secondary logo | `#4D4D4D` | L 0.42 C 0.000 H 90 (neutral) | official | direct |
+| 3 | 0.079 | Freshdesk | earlier | action | `#264966` | L 0.39 C 0.064 H 245 (blue) | official | direct |
+| 4 | 0.081 | Redmine | earlier | action | `#234761` | L 0.38 C 0.061 H 242 (blue) | official | direct |
+| 5 | 0.083 | WeKan | B | logo | `#007289` | L 0.51 C 0.092 H 218 (cyan) | official | direct (tracker / Kanban / feedback) |
+| 6 | 0.091 | ZnanyLekarz | D | logo | `#007C68` | L 0.52 C 0.098 H 176 (teal) | mkt | no (Polish/CEE brand) |
+| 7 | 0.094 | WeKan | B | secondary logo | `#00778C` | L 0.52 C 0.093 H 216 (cyan) | official | direct (tracker / Kanban / feedback) |
+| 8 | 0.096 | Kayako | A | secondary logo | `#1E4142` | L 0.35 C 0.041 H 198 (neutral) | official | direct (help desk / ITSM) |
+
+### `#071F20` – team branch Deep Teal (L 0.221 C 0.030 H 199.0; bucket neutral)
+
+| Rank | ΔE OK | Product | Group | Role | Hex | OKLCH | Source | Trybun's direct category? |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 0.022 | Zammad | earlier | action | `#0E1E29` | L 0.23 C 0.031 H 240 (neutral) | mkt | direct |
+| 2 | 0.030 | Libredesk | A | logo | `#1A1A1A` | L 0.22 C 0.000 H 90 (neutral) | official | direct (help desk / ITSM) |
+| 3 | 0.030 | GitKraken | C | logo | `#1C1C1C` | L 0.23 C 0.000 H 90 (neutral) | official | no (developer platform) |
+| 4 | 0.034 | Brand24 | D | secondary logo | `#171717` | L 0.20 C 0.000 H 90 (neutral) | official | no (Polish/CEE brand) |
+| 5 | 0.034 | Frappe Helpdesk | earlier | action | `#171717` | L 0.20 C 0.000 H 90 (neutral) | official | direct |
+| 6 | 0.034 | Netlify | C | logo | `#131619` | L 0.20 C 0.008 H 248 (neutral) | official | no (developer platform) |
+| 7 | 0.034 | Plain | earlier | action | `#0A2414` | L 0.23 C 0.045 H 154 (neutral) | mkt | direct |
+| 8 | 0.036 | CircleCI | C | logo | `#161616` | L 0.20 C 0.000 H 90 (neutral) | official | no (developer platform) |
+
+### `#DCA81C` – customer branch light gold (L 0.759 C 0.150 H 85.1; bucket yellow)
+
+| Rank | ΔE OK | Product | Group | Role | Hex | OKLCH | Source | Trybun's direct category? |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 0.050 | Zammad | earlier | secondary logo | `#F39804` | L 0.76 C 0.165 H 68 (orange) | official | direct |
+| 2 | 0.054 | GitLab | earlier | secondary logo | `#FCA326` | L 0.79 C 0.162 H 68 (orange) | official | direct |
+| 3 | 0.059 | Hiver | A | secondary logo | `#FDB022` | L 0.81 C 0.163 H 76 (yellow) | official | direct (help desk / ITSM) |
+| 4 | 0.061 | Zoho Desk / Zoho Projects | A | secondary logo | `#FFAF00` | L 0.81 C 0.170 H 76 (yellow) | official | direct (help desk / ITSM) |
+| 5 | 0.062 | Libredesk | A | secondary logo | `#FFAE2C` | L 0.81 C 0.161 H 73 (yellow) | official | direct (help desk / ITSM) |
+| 6 | 0.062 | Airtable | B | secondary logo | `#FCB42A` | L 0.82 C 0.161 H 78 (yellow) | si | adjacent (work management) |
+| 7 | 0.064 | Zammad | earlier | action | `#F6BA08` | L 0.82 C 0.167 H 85 (yellow) | mkt | direct |
+| 8 | 0.066 | LiveAgent | A | logo | `#F6921E` | L 0.75 C 0.165 H 62 (orange) | official | direct (help desk / ITSM) |
+
+
+Reading:
+
+- **`#035F5C` (action Teal, L 0.44 C 0.075 H 191, teal).** Only one colour is within 2 JND: ZnanyLekarz's secondary site colour `#006A59` (ΔE 0.038, mkt, not the direct category). Every other neighbour is ΔE ≥ 0.077, about 4 JND or more. The nearest colours from the direct category are Redmine's grey and navy, Freshdesk's navy button, WeKan's cyan logo `#007289` (ΔE 0.083) and Kayako's dark wordmark. Compared with `#017272` (WeKan 0.038, Odoo 0.041, Fider 0.050), the darker teal is **clearly further from every help desk and tracker**: Odoo `#017E84` is now ΔE 0.10 and Fider `#12827F` ΔE 0.11 (computed with the same script; not in the top 8).
+- **`#071F20` (team branch Deep Teal, L 0.22 C 0.030 H 199).** C 0.030 is below 0.045, so by this note's own rule it is **neutral**, not teal: it reads as a near-black with a slight green-blue cast. Its neighbours are near-black colours (Zammad's marketing CTA `#0E1E29` ΔE 0.022, Libredesk, Frappe Helpdesk, Plain's dark green, Netlify, CircleCI, GitKraken, Brand24, all ΔE 0.030–0.036). These are close in distance but carry no hue identity; near-black is a common choice (25 neutral logos, 5 neutral actions), so the team branch does not set Trybun apart, and it no longer matches Zendesk Kale (`#03363D` is ΔE 0.09 from `#071F20`).
+- **`#DCA81C` (customer branch light gold, L 0.76 C 0.150 H 85, yellow).** The neighbours are amber/orange logo colours at ΔE 0.050–0.066 (2.5–3.3 JND): Zammad `#F39804` and its marketing `#F6BA08`, GitLab `#FCA326`, Hiver `#FDB022`, Zoho `#FFAF00`, Libredesk `#FFAE2C`, LiveAgent `#F6921E`, Airtable `#FCB42A` (si). Most are from the direct category, but all are **secondary** logo colours or a marketing CTA, except LiveAgent's logo. None is a primary *action* colour (yellow: 0 actions in the set). As a brand accent only, gold sits in a hue that is common in logo details and absent from buttons.
+
+
+## 4. Crowded and free hues; does "teal is rare in the category" hold?
+
+**Crowded (logos):** blue 240–268° (38; the 255–270° band alone has 45 colours including actions), neutral/black (25 – 2025/26 rebrands moved Netlify, DigitalOcean, Travis CI, GitKraken and MariaDB to monochrome logos), green 135–165° (21; especially Polish SaaS: enova365, Symfonia, Brand24, Manago AI, Livespace, Netguru), red-orange 15–45° (27 colour values including secondaries).
 **Crowded (actions):** blue (39 %), then indigo (16 %).
 
 **Sparse:** teal 165–195° (7 logos = 4 %, 5 actions), cyan 195–240° (11 logos, mostly bright sky-cyan around H 220–238, not deep teal), yellow (7 logos, 0 actions), magenta/pink 315–15° (7 logos, 0 actions), the yellow-green gap 105–135° (2 colours).
 
 **Verdict: the conclusion weakens, it does not fail.**
-- It **holds** at the level of hue counts: teal is tied with yellow and magenta as the least-used logo bucket (7 of 169, 4 %), and among help desks / ITSM (group A, 35 logos) not a single logo is teal; across 169 logos only 7 are teal and none of the 7 is a help desk or an issue tracker with a large user base.
-- It **weakens** at the level of the exact colour: deep, mid-chroma teal at L ≈ 0.5 is used by WeKan (OSS Kanban, logo), Odoo (Helpdesk, action), Fider (feedback, logo part) and Nifty (PM, brand fill) – all within ΔE 0.06 – and the team-branch dark  is a near-copy of Zendesk Kale. The earlier note's statement "teal 165–195°: nobody" was true for its 30 products; in the wider set it is "rare, with a few close neighbours in the niche".
-- **Teal / green-teal developer brands** (asked for explicitly): Netlify (logo now monochrome; *marketing CTA* bright turquoise , L 0.84 – far from , ΔE 0.34), Elastic (one of six logo tiles ; UI blue), DigitalOcean (accent "foam" , cyan, ΔE 0.35), Supabase (green , H 159 – green, not teal), Element (, H 166 – green/teal border), New Relic (logo green ; theme-color , ΔE 0.088), ServiceNow (not obtained, (u)). These dev brands use **light, bright** teal/turquoise or green (L 0.72–0.85); none uses a **deep** teal like  (L 0.50) as its main colour. Three historical teal dev brands (Travis CI, GitKraken, MariaDB dark teal, also Elastic ) have moved away from teal.
 
-## 4. If teal were considered common: which hues stay free (data, not a recommendation)
+- It **holds** at the level of hue counts: teal is tied with yellow and magenta as the least-used logo bucket (7 of 169, 4 %), and among help desks / ITSM (group A, 35 logos) not a single logo is teal; across 169 logos only 7 are teal, and none of the 7 is a help desk or issue tracker (user numbers were not measured (u)).
+- It **weakens** at the level of the exact provisional colour: deep, mid-chroma blue-green at L ≈ 0.5 is used by WeKan (OSS Kanban, cyan logo), Odoo (Helpdesk, cyan action), Fider (feedback, teal logo part) and Nifty (PM, teal brand fill) – all within ΔE 0.06 of `#017272` – and the provisional team branch `#023237` is a near-copy of Zendesk Kale. The earlier note's statement "teal 165–195°: nobody" was true for its 30 products; in the wider set it is "rare, with a few close neighbours in the niche". For the chosen `#035F5C` the nearest direct-category colour is ΔE 0.077 away (section 3), so the weakening applies mainly to the provisional value.
+- **Teal and green-teal developer brands:** Netlify (logo now monochrome; *marketing CTA* bright turquoise `#32E6E2`, L 0.84 – far from `#017272`, ΔE 0.34), Elastic (one of six logo tiles `#02BCB7`; UI blue), DigitalOcean (accent "foam" `#6FE0ED`, cyan, ΔE 0.35), Supabase (green `#3ECF8E`, H 159 – green, not teal), Element (`#0DBD8B`, H 166 – green/teal border), New Relic (logo green `#1CE783`; theme-color `#008C99`, ΔE 0.088), ServiceNow (not obtained, (u)). These developer brands use **light, bright** teal/turquoise or green (L 0.72–0.85); none uses a **deep** teal like `#017272` (L 0.50) or `#035F5C` (L 0.44) as its main colour. Several historical teal developer brands (Travis CI `#3EAAAF`, GitKraken `#179287`, MariaDB dark teal `#003545`, Elastic `#005571`) have moved away from teal.
+
+## 5. Hues that stay free (data, not a recommendation)
 
 Across the 169 logos and 51 actions:
-- **Magenta/pink 315–15°**: 7 logos (Odoo plum, Slack aubergine, Teamwork pink, n8n, YouTrack, ClickUp, monday dots), **0 actions**. None in group A as a primary except Odoo's plum.
-- **Yellow 70–115°**: 7 logos, 0 actions; but yellow cannot carry white text and reads as "warning".
-- **Yellow-green / chartreuse 105–135°**: 2–3 colours (SysAid lime, Gitea); neighbouring green 135–165° is crowded in Polish SaaS.
-- **Deep cyan 195–225° at L ≈ 0.4–0.55**: only WeKan, Odoo action, New Relic theme-color, Booksy icon – sparse but adjacent to  itself.
+
+- **Magenta/pink 315–15°**: 7 logos (Odoo plum `#714B67`, Slack aubergine `#481A54`, Teamwork pink `#FF22B1`, n8n `#FB6E96`, YouTrack, ClickUp, monday dots), **0 actions**. In group A only Odoo's plum is a primary logo colour.
+- **Yellow 70–115°**: 7 logos, 0 actions; yellow cannot carry white text and reads as "warning".
+- **Yellow-green / chartreuse 105–135°**: 2–3 colours (SysAid lime `#DEFF00`, Gitea `#609926`); the neighbouring green 135–165° is crowded in Polish SaaS.
+- **Deep cyan 195–225° at L ≈ 0.4–0.55**: only WeKan, the Odoo action, New Relic's theme-color and Booksy's icon – sparse, but adjacent to `#017272` itself.
 - **Red/orange** are crowded as logos (27 values) but unused as action colours (danger semantics), as the earlier note found.
 - Teal itself (165–195°) remains tied for the least-used logo bucket.
 
@@ -335,4 +389,5 @@ Across the 169 logos and 51 actions:
 - 16 logos not obtained (ServiceNow, Znuny colour logo, Groove/Helply, Missive, ManageEngine, TOPdesk, Halo ITSM (WebP; its action colour is counted), Spiceworks, Azure DevOps, Phorge, MantisBT, Podio, Planka, Asseco, Brainly, PayU). Faveo, Leantime and Symfonia logos are WebP and were counted by site colour (mkt). ServiceNow, TOPdesk and ManageEngine are relevant ITSM brands; ServiceNow's green/dark-teal palette is known only from memory (u).
 - Action colours are mostly marketing-site CTAs, not in-app buttons (exceptions: Elastic EUI, Microsoft Teams Fluent, Odoo SCSS, Atlassian ADS).
 - 18 logo values are simple-icons only (si v16.38.1) and 14 are (mkt) site colours; for 7 vendors simple-icons was shown to be outdated, so the remaining (si) values may be too.
-- Multi-colour logos are counted by one colour; secondary colours enter the ±20° and distance analysis only.
+- Multi-colour logos are counted by one colour; secondary colours enter only the ±20° and distance analysis.
+- "Direct category" in section 3 is this note's classification (help desk, ITSM, tracker, Kanban, feedback portal); market size and buyer recognition were not measured (u).

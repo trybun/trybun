@@ -54,8 +54,8 @@ Practitioner guidance:
 - **B. Neutral / near-black primary, colour reserved for meaning** (Polaris 2023, shadcn default,
   Linear's reduced chrome, Notion/GitHub's neutral marks). Rationale: maximum contrast, colour freed
   for status and affordance. Criticism found: a single practitioner anecdote that pure-black buttons
-  felt "loud"/"aggressive" (**[summary only]** pravinkumar.co, 2026); WordPress Trac #48709 and
-  WordPress Trac ticket on disabled black primaries being hard to distinguish (<https://core.trac.wordpress.org/ticket/48709>).
+  felt "loud"/"aggressive" (**[summary only]** pravinkumar.co, 2026); WordPress Trac ticket #48709 on disabled black primaries being
+  hard to distinguish (<https://core.trac.wordpress.org/ticket/48709>).
   No controlled study either way was found.
 - **C. Separate brand palette from UI palette** (Zendesk Garden, Red Hat). Brand colour used for
   identity; UI colours chosen for function.
@@ -137,9 +137,9 @@ Brand colours from simple-icons (version not recorded; each entry links to the b
 - Neutral/black: Plane #121212, GitHub #181717, Notion, Basecamp #1D2D35, Discourse.
 - Red/coral: Asana #F06A6A, Redmine #B32024, Todoist #E44332, HubSpot #FF7A59, LiveChat, Rocket.Chat.
 - Orange: GitLab #FC6D26, Forgejo #FB923C.
-- Teal: Zendesk #03363D (dark kale), Intercom #6AFDEF (stale in simple-icons: intercom.com is black and orange today). Green: Gitea #609926.
+- Teal / cyan: Intercom #6AFDEF (teal, H 187; stale in simple-icons: intercom.com is black and orange today), Zendesk #03363D (dark kale, cyan by the buckets of the landscape notes, H 209). Green: Gitea #609926.
 Counts (30 brands, Atlassian family counted per product): blue 12, red 6, violet 5, neutral 5,
-orange 2, teal 2, green 1. Not in dataset: YouTrack, Zammad, osTicket, Freshdesk, Jira Service
+orange 2, teal/cyan 2, green 1. Not in dataset: YouTrack, Zammad, osTicket, Freshdesk, Jira Service
 Management, Wrike, Height, Taiga, monday.com.
 **[own reasoning]** Blue and violet are the crowded codes in this category; teal/cyan, green and
 magenta are sparse – but green collides with success and teal sits between success and info.
@@ -219,7 +219,7 @@ red-600: ΔE 0.059, 5.3°. This confirms the earlier rejection of Vermilion as a
   a button identified by its text does not need a 3:1 fill boundary; focus indicators need contrast
   against adjacent colours; hover exempt; disabled exempt
   (https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html).
-- **Correction:** in final WCAG 2.2, **2.4.11 is Focus Not Obscured (Minimum), AA**,
+- **Note on the focus criteria:** in final WCAG 2.2, **2.4.11 is Focus Not Obscured (Minimum), AA**,
   and does not concern colour; **2.4.13 Focus Appearance is AAA**: indicator area ≥ a 2 CSS px
   perimeter and ≥ 3:1 between focused and unfocused pixels
   (https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html,
@@ -334,17 +334,17 @@ Computed in OKLCH and converted to sRGB; contrast per WCAG 2; colour-vision defi
 | Candidate | Action (fill) | Team / customer branch | White text on fill | Branches: normal / deuteranopia / protanopia | Hue distance to danger / warning | Result |
 |---|---|---|---|---|---|---|
 | A Teal (*Morski*) | `#017272` | `#023237` / `#DA8A11` | 5.75:1 | 5.04 / 5.63 / 4.17 | 166° / 149° | chosen as hue; values moved later (below) |
-| B Plum (*Śliwka*) | `#97317C` | `#451C3D` / `#E07937` | 6.89:1 | 4.68 / 5.03 / 4.08 | 48° / 65° | not chosen |
-| C Blue (conservative) | `#2860DD` | `#151B32` / `#E14C2F` | 5.52:1 | 4.27 / 5.07 / 3.11 | 126° / 143° | not chosen; the most crowded hue |
+| B Plum (*Śliwka*) | `#97317C` | `#451C3D` / `#E07937` | 6.89:1 | 4.68 / 5.03 / 4.08 | 49° / 65° | not chosen |
+| C Blue (conservative) | `#2860DD` | `#151B32` / `#E14C2F` | 5.52:1 | 4.27 / 5.07 / 3.11 | 125° / 142° | not chosen; the most crowded hue |
 | Copper | `#A44C03` | – | 5.81:1 | – | 22° / 5° | rejected: reads as danger or warning, under protanopia nearly the danger colour |
 
 **Amber against the warning colour.** The first amber `#DA8A11` (H 68) is 23° from `--warning` `#BB4D00`, with a contrast of 1.83:1 (1.75:1 under deuteranopia, both olive): similar lightness, so it would read as a warning in a badge. (An earlier draft compared it with a sample warning `#A56205` and gave 3°; that was not the repository's token.)
 
-**Values moved after the wide survey.** `#017272` is within ΔE OK 0.04 of WeKan's logo `#007289` and Odoo's action colour `#017E84`, and `#023237` is within 0.016 of Zendesk Kale `#03363D` (below the just-noticeable difference of CSS Color 4). Moved values: action `#035F5C` (white text 7.51:1; ΔE ≥ 0.083 to those neighbours) and team branch `#071F20` (ΔE 0.087 to Zendesk Kale).
+**Values moved after the wide survey.** `#017272` is within ΔE OK 0.038 of WeKan's logo `#007289` and 0.041 of Odoo's action colour `#017E84`, and `#023237` is within 0.016 of Zendesk Kale `#03363D` (below the just-noticeable difference of CSS Color 4). Moved values: action `#035F5C` (white text 7.51:1) and team branch `#071F20`. Their nearest neighbours across the whole survey are in section 3 of [`2026-11-27-brand-colour-landscape-wide.md`](2026-11-27-brand-colour-landscape-wide.md): `#035F5C` is 0.038 from ZnanyLekarz (marketing site, another field) and 0.077–0.096 from the nearest help desks and trackers (WeKan 0.083); `#071F20` has C 0.030 and is a near-neutral, 0.022–0.036 from other near-blacks and 0.087 from Zendesk Kale; `#DCA81C` is 0.050–0.066 from amber and orange secondary logo colours, and no product uses it as an action colour.
 
 **Customer branch.** On large graphics (sign-in panel, portal, empty state, social preview, e-mail) four ambers and three golds were compared. The maintainer chose light gold `#DCA81C`:
 - it reaches 7.88:1 on `#071F20`;
-- it has 2.17:1 on white (2.06:1 under deuteranopia), and 2.17:1 against a white team branch on dark backgrounds; that is below the 3:1 rule proposed in this note, which WCAG does not require of logos, and was accepted after examples at 16, 24 and 56 px, under simulated deuteranopia and in greyscale;
-- it is 4° and 1.26:1 from the dark-theme warning `#FFB900`, so it stays a brand accent only: never text, a button or a status; in the UI the customer side is shown by an icon and a label (WCAG 1.4.1, [§13.4](../../../docs/spec/13-non-functional.md)).
+- it has 2.17:1 on white (2.06:1 under deuteranopia), and 2.17:1 against a white team branch on dark backgrounds; that is below the 3:1 between branches used to compare the candidates above, which WCAG does not require of logos (Understanding 1.4.11), and was accepted after examples at 16, 24 and 56 px, under simulated deuteranopia and in greyscale;
+- it is 4° and 1.26:1 from the dark-theme warning `#FFB900`, so the maintainer decided that it is a brand accent only (never text, a button or a status) and that the customer side is shown in the UI by an icon and a label (WCAG 1.4.1, [§13.4](../../../docs/spec/13-non-functional.md)); the decision is recorded in the change specification of #573.
 
 Screenshots of Plane and Linear used for the direction: 71 and 65 images from the vendors' own documentation, changelogs, blogs, product pages and (Plane) GitHub repository, mostly 2025–2026, collected on 2026-11-27; the comparison page itself is a private artefact and not part of the repository.
