@@ -83,10 +83,10 @@ Reversible, web-only change; no contract, schema or permission surface. The cost
 
 ## Acceptance criteria
 
-- [ ] With more than 100 (up to 2,000) projects, organizations or members per list, every one the person can see can be chosen in the filter panel (§8.1).
-- [ ] The chip of a visible record within the bound shows its name; "Unknown" stays only for records the person cannot see (S1-13 Q5).
-- [ ] A failed page fails the option list as a whole, never a silently partial list.
-- [ ] Works on phone, tablet and desktop (Rule 9); the change is covered by tests.
+- [x] With more than 100 (up to 2,000) projects, organizations or members per list, every one the person can see can be chosen in the filter panel (§8.1).
+- [x] The chip of a visible record within the bound shows its name; "Unknown" stays only for records the person cannot see (S1-13 Q5).
+- [x] A failed page fails the option list as a whole, never a silently partial list.
+- [x] Works on phone, tablet and desktop (Rule 9); the change is covered by tests.
 
 ## 📋 Implementation Plan
 
