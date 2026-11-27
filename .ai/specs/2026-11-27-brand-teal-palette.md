@@ -91,7 +91,7 @@ Every file in [`docs/brand/`](../../docs/brand/README.md) is regenerated in the 
 - the PNG icon and avatar (512 px), the social preview (1280 × 640) and the favicon (16/32/48 px);
 - the copies in the web application: `apps/web/src/app/icon.svg`, `favicon.ico`, `apple-icon.png` and `apps/web/public/icons/` (SVG, 192 and 512 px).
 
-The favicon is checked at 16 px on a light and a dark browser tab. If the Gold branch is too faint on a light tab, a small version uses a darker gold for the branch. On a dark tab the Deep Teal crossbar and branch are faint (1.06–1.42:1 against `#202124` and `#35363A`, the dark tab colours assumed for Chrome (u); Ink today is no better). A single `favicon.ico` cannot change with the browser theme, so the web application adds an SVG favicon whose `prefers-color-scheme: dark` rule switches to the dark-background version, with the ICO as fallback, as described by Sitnik (Evil Martians, "How to Favicon", cited in the practice research). Browser support is checked in the implementation; where it is missing, the small version gets a light outline. A custom tiny version is what Sitnik recommends for a blurry 16 px icon; GitLab and Firefox keep several variants of their icon (practice research). The rule "Do not recolour the branches" stays and refers to the new colours.
+The favicon is checked at 16 px on a light and a dark browser tab. If the Gold branch is too faint on a light tab, a small version uses a darker gold for the branch. On a dark tab the Deep Teal crossbar and branch are faint (1.06–1.42:1 against `#202124` and `#35363A`, the dark tab colours assumed for Chrome (u); Ink today is no better). A single `favicon.ico` cannot change with the browser theme, so the existing SVG favicon of the web application (`apps/web/src/app/icon.svg`) gets a `prefers-color-scheme: dark` rule that switches to the dark-background version, with the ICO as fallback, as described by Sitnik (Evil Martians, "How to Favicon", cited in the practice research). Browser support is checked in the implementation; where it is missing, the small version gets a light outline. A custom tiny version is what Sitnik recommends for a blurry 16 px icon; GitLab and Firefox keep several variants of their icon (practice research). The rule "Do not recolour the branches" stays and refers to the new colours.
 
 The GitHub organization avatar and the repository social preview are uploaded by the maintainer, because agents never change settings.
 
@@ -176,14 +176,14 @@ Implementation must not start until every question has an answer.
 ## Acceptance criteria
 
 - [ ] `docs/brand/README.md` lists Teal, Deep Teal, Gold and White with their uses, the versions of the mark and the rules above.
-- [ ] All brand files and the web application's icons (`icon.svg`, `favicon.ico`, `apple-icon.png`, `public/icons/`) use the new colours with unchanged geometry. The favicon is checked at 16 px on a light and a dark tab. The maintainer has been asked to upload the avatar and the social preview.
+- [ ] All brand files and the web application's icons (`icon.svg`, `favicon.ico`, `apple-icon.png`, `public/icons/`) use the new colours with unchanged geometry. The favicon is checked at 16 px on a light and a dark tab, including the dark-theme switch of the SVG favicon. The maintainer has been asked to upload the avatar and the social preview.
 - [ ] The tokens have the values above in both themes: `--brand-1` … `--brand-12`, `--primary`, `--primary-hover`, `--ring`, `--link`, `--selected` and `--brand-accent`. `--info` keeps its blue; `--blue` and `--vermilion` are gone.
 - [ ] Story tests check:
   - `--primary-foreground` on `--primary` ≥ 4.5:1 in both themes;
   - `--ring` ≥ 3:1 on `--background`, `--card`, `--popover` and `--muted` in both themes;
   - `--ring` is not `--destructive`; in `input.stories.tsx` the assertion `--ring` ≠ `--primary` is removed, because both are Teal now, and `--ring` = `--link` becomes "both from the brand scale": they are equal in the light theme, while in the dark theme `--ring` is step 9 and `--link` step 11;
   - a focused invalid field keeps its danger border (`Input/FocusedInvalid`).
-- [ ] A selected table row (`table.tsx`) shows a second indicator besides `--selected` (a check, a bar or bold text), visible at 1.15:1 background contrast.
+- [ ] A selected table row (`table.tsx`) shows a second indicator besides `--selected`, because the selected background differs from `--background` by only 1.15:1 (light) and 1.10:1 (dark). The indicator is chosen in the implementation (a check, a bar or bold text) and checked by a story test in both themes.
 - [ ] No text, button or status in the product code uses `--brand-accent` (lint or story test); the unit-test strings listed under non-goals are exempt.
 - [ ] E-mail links use Teal, and the test of `render-email-markdown.ts` asserts it.
 - [ ] §13.4 and [`.ai/memory/shadcn.md`](../memory/shadcn.md) are updated. [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md) has a changelog line pointing here.
