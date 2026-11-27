@@ -2,17 +2,18 @@
 
 - **Date:** 2026-11-27
 - **Kind:** practice review (desk research by an AI agent, with small own tests)
+- **Method:** primary sources first (standards, official design systems and token packages, tool code), peer-reviewed studies, practitioners; criticism searched on purpose; own tests with a converter that is not part of the repository.
 - **Reliability:** items marked **(u)**, **mkt** or **[summary only]** were not confirmed at an official source or were seen only in a search summary. Values are a reading of public sources on this date.
 - **Purpose:** input for the brand colour change of 2026-11-27 (stage 1b of the visual direction). This is not a requirement; the decision is recorded in its change specification (Rule 8, [§2.8](../../../docs/spec/02-agent-rules.md)).
-- **Outcome (2026-11-27):** the maintainer chose the UI direction of Plane and candidate A "Teal" (*Morski*): action colour `#017272`, team branch `#023237`, customer branch amber `#DA8A11` as a brand accent only, never for text, buttons or statuses. Related notes: [`2026-11-27-category-colour-landscape.md`](2026-11-27-category-colour-landscape.md), [`2026-11-27-brand-colour-practice.md`](2026-11-27-brand-colour-practice.md), [`2026-11-27-open-source-competitors-and-visual-references.md`](2026-11-27-open-source-competitors-and-visual-references.md).
+- **Outcome (2026-11-27):** a decision of the maintainer, not a requirement; it is recorded in the change specification of #573 (Rule 8). The maintainer chose the UI direction of Plane and the teal hue (candidate A). After the wide survey ([`2026-11-27-brand-colour-landscape-wide.md`](2026-11-27-brand-colour-landscape-wide.md)) showed close neighbours of the first values, the teal was moved to action `#035F5C` and team branch `#071F20`, and after comparing the options on large graphics the maintainer chose light gold `#DCA81C` for the customer branch, as a brand accent only.
 
-Date: 2026-11-27. Scope: questions 1–5 of the brief (brand vs UI action colour, choice of brand hue,
+Scope: five questions (brand vs UI action colour, choice of brand hue,
 building a UI palette from a hue, accessibility constraints, recolouring a kept logo mark).
-Status: research only; no palette is proposed here. Every claim names its source; items marked
+Every claim names its source; items marked
 **[summary only]** were seen only as a search-engine summary, not read in the original.
 Items marked **[own reasoning]** are not established practice.
 
-Tests were run with own scripts (not committed): WCAG 2 contrast, OKLCH, APCA-W3 0.1.9 (self-tested: black on white Lc 106.04, white on black Lc −107.88, both match the published reference values), CVD simulation (Machado et al. 2009 matrices, severity 1.0), and the hue families of 30 issue-tracker, helpdesk and developer-tool brand colours from the simple-icons dataset.
+Tests were run with own scripts (not part of the repository): WCAG 2 contrast, OKLCH, APCA-W3 0.1.9 (self-tested: black on white Lc 106.04, white on black Lc −107.88, both match the published reference values), CVD simulation (Machado et al. 2009 matrices, severity 1.0), and the hue families of 30 issue-tracker, helpdesk and developer-tool brand colours from the simple-icons dataset.
 
 ---
 
@@ -54,7 +55,7 @@ Practitioner guidance:
   Linear's reduced chrome, Notion/GitHub's neutral marks). Rationale: maximum contrast, colour freed
   for status and affordance. Criticism found: a single practitioner anecdote that pure-black buttons
   felt "loud"/"aggressive" (**[summary only]** pravinkumar.co, 2026); WordPress Trac #48709 and
-  Nextcloud issue on disabled black primaries being hard to distinguish (https://core.trac.wordpress.org/ticket/48709).
+  WordPress Trac ticket on disabled black primaries being hard to distinguish (<https://core.trac.wordpress.org/ticket/48709>).
   No controlled study either way was found.
 - **C. Separate brand palette from UI palette** (Zendesk Garden, Red Hat). Brand colour used for
   identity; UI colours chosen for function.
@@ -65,7 +66,7 @@ with dark text) at the brand's own lightness; the brand hue collides with a sema
 non-semantic duplicate of error", **[summary only]** design.cms.gov migration guide v7); or the
 accent would cover more than a small share of the screen (Propel).
 
-Fit for Trybun: the owner dislikes the near-black primary (pattern B). Pattern A is the closest
+Fit for Trybun: the maintainer rejected the near-black primary on 2026-11-27, in the session that chose the Plane direction (pattern B). Pattern A is the closest
 match to Plane (the stated UI reference) and to Atlassian/Carbon; it requires a brand hue that can
 be re-toned to a fill with ≥4.5:1 against white text and that stays clear of danger/success.
 
@@ -128,7 +129,7 @@ costs almost nothing in equity (Romaniuk's caution applies to established assets
 constraint is uniqueness versus the category.
 
 ### Category colour audit (test)
-Brand colours from simple-icons (each linked to the brand's own guideline/press kit):
+Brand colours from simple-icons (version not recorded; each entry links to the brand's own guideline or press kit; some values are stale, see the wide survey):
 - Blue: Atlassian/Jira/Trello/Bitbucket #0052CC (pre-2024 value in the dataset), OpenProject
   #0770B8, Help Scout #1292EE, Vikunja #196AFF, Mattermost #0058CC, Chatwoot #1F93FF, Airtable,
   Pivotal Tracker.
@@ -136,7 +137,7 @@ Brand colours from simple-icons (each linked to the brand's own guideline/press 
 - Neutral/black: Plane #121212, GitHub #181717, Notion, Basecamp #1D2D35, Discourse.
 - Red/coral: Asana #F06A6A, Redmine #B32024, Todoist #E44332, HubSpot #FF7A59, LiveChat, Rocket.Chat.
 - Orange: GitLab #FC6D26, Forgejo #FB923C.
-- Teal: Zendesk #03363D (dark kale), Intercom #6AFDEF. Green: Gitea #609926.
+- Teal: Zendesk #03363D (dark kale), Intercom #6AFDEF (stale in simple-icons: intercom.com is black and orange today). Green: Gitea #609926.
 Counts (30 brands, Atlassian family counted per product): blue 12, red 6, violet 5, neutral 5,
 orange 2, teal 2, green 1. Not in dataset: YouTrack, Zammad, osTicket, Freshdesk, Jira Service
 Management, Wrike, Height, Taiga, monday.com.
@@ -206,7 +207,7 @@ in use.
 (1) move the brand hue away (most common in systems above), or (2) keep the brand hue for identity
 only and shift danger (Red Hat). Option (2) conflicts with the universal red = danger convention.
 **Test:** Vermilion #E0482C vs Plane danger: OKLab ΔE 0.086, hue difference 3.7°; vs Tailwind
-red-600: ΔE 0.059, 5.3°. This confirms the earlier rejection of Vermilion as an action colour.
+red-600: ΔE 0.059, 5.3°. This confirms the earlier rejection of Vermilion as an action colour ([`docs/brand/README.md`](../../../docs/brand/README.md), "UI design tokens").
 
 ## 4. Accessibility constraints
 
@@ -218,7 +219,7 @@ red-600: ΔE 0.059, 5.3°. This confirms the earlier rejection of Vermilion as a
   a button identified by its text does not need a 3:1 fill boundary; focus indicators need contrast
   against adjacent colours; hover exempt; disabled exempt
   (https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html).
-- **Correction to the brief:** in final WCAG 2.2, **2.4.11 is Focus Not Obscured (Minimum), AA**,
+- **Correction:** in final WCAG 2.2, **2.4.11 is Focus Not Obscured (Minimum), AA**,
   and does not concern colour; **2.4.13 Focus Appearance is AAA**: indicator area ≥ a 2 CSS px
   perimeter and ≥ 3:1 between focused and unfocused pixels
   (https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html,
@@ -328,13 +329,22 @@ researched in depth – open point).
 
 ## Candidates shown to the maintainer (2026-11-27)
 
-Computed in OKLCH and converted to sRGB; contrast per WCAG 2; colour-vision deficiency simulated with Machado et al. (2009) at full severity. "Branches" is the contrast between the team and customer branches of the mark; dark-background values use the dark variants of both branches.
+Computed in OKLCH and converted to sRGB; contrast per WCAG 2; colour-vision deficiency simulated with Machado, Oliveira and Fernandes (2009) at full severity. "Branches" is the contrast between the team and customer branches of the mark. Hue distances are to the repository's own tokens: `--destructive` `#C10007` (H 28.5) and `--warning` `#BB4D00` (H 45.4), light theme.
 
-| Candidate | Action (fill) | Team / customer branch | White text on fill | Branches: normal / deuteranopia / protanopia | Branches on dark | Hue distance to danger | Result |
-|---|---|---|---|---|---|---|---|
-| A Teal (*Morski*) | `#017272` | `#023237` / `#DA8A11` (dark: `#017F7F` / `#FFE8C5`) | 5.75:1 | 5.04 / 5.63 / 4.17 | 4.05 / 4.40 / 3.59 | 168° | **chosen** |
-| B Plum (*Śliwka*) | `#97317C` | `#451C3D` / `#E07937` (dark: `#AF4E93` / `#FEE2CF`) | 6.89:1 | 4.68 / 5.03 / 4.08 | 3.92 / 3.68 / 4.36 | 47° | not chosen |
-| C Blue (conservative) | `#2860DD` | `#151B32` / `#E14C2F` (dark: white / `#E14C2F`) | 5.52:1 | 4.27 / 5.07 / 3.11 | 3.98 / 3.39 / – | 124° | not chosen; the most crowded hue in the category |
-| Copper | `#A44C03` | – | 5.81:1 | – | – | 23° (15° to warning) | rejected: under protanopia the fill reads as the danger colour |
+| Candidate | Action (fill) | Team / customer branch | White text on fill | Branches: normal / deuteranopia / protanopia | Hue distance to danger / warning | Result |
+|---|---|---|---|---|---|---|
+| A Teal (*Morski*) | `#017272` | `#023237` / `#DA8A11` | 5.75:1 | 5.04 / 5.63 / 4.17 | 166° / 149° | chosen as hue; values moved later (below) |
+| B Plum (*Śliwka*) | `#97317C` | `#451C3D` / `#E07937` | 6.89:1 | 4.68 / 5.03 / 4.08 | 48° / 65° | not chosen |
+| C Blue (conservative) | `#2860DD` | `#151B32` / `#E14C2F` | 5.52:1 | 4.27 / 5.07 / 3.11 | 126° / 143° | not chosen; the most crowded hue |
+| Copper | `#A44C03` | – | 5.81:1 | – | 22° / 5° | rejected: reads as danger or warning, under protanopia nearly the danger colour |
 
-**Found after the choice:** the amber of candidate A (`#DA8A11`, hue 68°) is almost the hue of the warning colour (`#A56205`, 65°; contrast 1.75:1; both olive under deuteranopia). Amber is therefore a brand accent only (mark, sign-in brand panel, empty-state illustrations, e-mail and other materials), never text, a button or a status; in the UI the customer side is marked by an icon and a label, not by colour (WCAG 1.4.1, [§13.4](../../../docs/spec/13-non-functional.md)).
+**Amber against the warning colour.** The first amber `#DA8A11` (H 68) is 23° from `--warning` `#BB4D00`, with a contrast of 1.83:1 (1.75:1 under deuteranopia, both olive): similar lightness, so it would read as a warning in a badge. (An earlier draft compared it with a sample warning `#A56205` and gave 3°; that was not the repository's token.)
+
+**Values moved after the wide survey.** `#017272` is within ΔE OK 0.04 of WeKan's logo `#007289` and Odoo's action colour `#017E84`, and `#023237` is within 0.016 of Zendesk Kale `#03363D` (below the just-noticeable difference of CSS Color 4). Moved values: action `#035F5C` (white text 7.51:1; ΔE ≥ 0.083 to those neighbours) and team branch `#071F20` (ΔE 0.087 to Zendesk Kale).
+
+**Customer branch.** On large graphics (sign-in panel, portal, empty state, social preview, e-mail) four ambers and three golds were compared. The maintainer chose light gold `#DCA81C`:
+- it reaches 7.88:1 on `#071F20`;
+- it has 2.17:1 on white (2.06:1 under deuteranopia), and 2.17:1 against a white team branch on dark backgrounds; that is below the 3:1 rule proposed in this note, which WCAG does not require of logos, and was accepted after examples at 16, 24 and 56 px, under simulated deuteranopia and in greyscale;
+- it is 4° and 1.26:1 from the dark-theme warning `#FFB900`, so it stays a brand accent only: never text, a button or a status; in the UI the customer side is shown by an icon and a label (WCAG 1.4.1, [§13.4](../../../docs/spec/13-non-functional.md)).
+
+Screenshots of Plane and Linear used for the direction: 71 and 65 images from the vendors' own documentation, changelogs, blogs, product pages and (Plane) GitHub repository, mostly 2025–2026, collected on 2026-11-27; the comparison page itself is a private artefact and not part of the repository.

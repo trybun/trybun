@@ -2,11 +2,12 @@
 
 - **Date:** 2026-11-27
 - **Kind:** benchmark (desk research by an AI agent; no interviews, no usage data)
+- **Method:** see "Method" below: token packages, repositories, official logos and brand pages first; marketing CSS marked **mkt**; colour-aggregator sites not used.
 - **Reliability:** items marked **(u)**, **mkt** or **[summary only]** were not confirmed at an official source or were seen only in a search summary. Values are a reading of public sources on this date.
 - **Purpose:** input for the brand colour change of 2026-11-27 (stage 1b of the visual direction). This is not a requirement; the decision is recorded in its change specification (Rule 8, [§2.8](../../../docs/spec/02-agent-rules.md)).
-- **Outcome (2026-11-27):** the maintainer chose the UI direction of Plane and candidate A "Teal" (*Morski*): action colour `#017272`, team branch `#023237`, customer branch amber `#DA8A11` as a brand accent only, never for text, buttons or statuses. Related notes: [`2026-11-27-category-colour-landscape.md`](2026-11-27-category-colour-landscape.md), [`2026-11-27-brand-colour-practice.md`](2026-11-27-brand-colour-practice.md), [`2026-11-27-open-source-competitors-and-visual-references.md`](2026-11-27-open-source-competitors-and-visual-references.md).
+- **Outcome (2026-11-27):** a decision of the maintainer, not a requirement; it is recorded in the change specification of #573 (Rule 8). The maintainer chose the UI direction of Plane and the teal hue (candidate A). After the wide survey ([`2026-11-27-brand-colour-landscape-wide.md`](2026-11-27-brand-colour-landscape-wide.md)) showed close neighbours of the first values, the teal was moved to action `#035F5C` and team branch `#071F20`, and after comparing the options on large graphics the maintainer chose light gold `#DCA81C` for the customer branch, as a brand accent only.
 
-Research date: 2026-11-27. Scope: 30 products from the Trybun brief.
+Scope: 30 trackers and help desks chosen as Trybun's closest category.
 Trybun today: Ink `#141A2E` (OKLCH L 0.22 C 0.040 H 270, near-black; UI primary),
 Vermilion `#E0482C` (L 0.61 C 0.193 H 32.6, red), Blue `#2563EB` (L 0.55 C 0.215 H 263, blue).
 
@@ -23,7 +24,7 @@ Vermilion `#E0482C` (L 0.61 C 0.193 H 32.6, red), Blue `#2563EB` (L 0.55 C 0.215
 - **(u)** = not confirmed at an official source in this run (memory, inference, or a
   source that blocked the request).
 - OKLCH values were computed from sRGB hex with the standard Björn Ottosson OKLab matrices
-  (own script, not committed; checked against Plane's own `oklch()` tokens, which convert
+  (own converter, not part of the repository; checked against Plane's own `oklch()` tokens, which convert
   back to the hex in the table).
 - Hue buckets (OKLCH hue angle, set by converting pure reference colours: #FF0000 = 29°,
   #FF8000 = 53°, #FFFF00 = 110°, #00FF00 = 142°, #008080 = 195°, #0080FF = 256°,
@@ -80,7 +81,7 @@ OKLCH hue per colour (brand = logo; action = main button). Height excluded.
 | **orange (40–70)** | GitLab `#FC6D26`, ClickUp `#FC6D2D` (gradient stop), Zammad `#F39804` | none |
 | **yellow (70–115)** | JSM tile `#FFC716`, monday `#FFCC00` (dot), Zammad `#FFCE33`, Basecamp (u) | Zammad "submit" `#FFCE33` only |
 | **green (115–165)** | GitHub brand `#0FBF3E`, Freshdesk `#00AC4C`, Plain `#2CE68C`, monday `#00CA72` (dot) | GitHub `#1F883D`/`#238636`, OpenProject `#1F883D` (Primer), Plain mkt `#1AD379` |
-| **teal (165–195)** | **none** | **none** |
+| **teal (165–195)** | none in this set (see the wide survey) | none in this set |
 | **cyan (195–240)** | Zendesk kale `#03363D` (dark, low chroma), Zammad `#009EC6` | Zammad `#23A2CD`; Plane dark `#2893CC` at the 238° edge |
 | **blue (240–268)** | Jira `#1868DB`, Trello `#1558BC`, Help Scout `#0064F0`, OpenProject `#0F41B5`/`#1A67A3`, Chatwoot `#2781F6`, ClickUp `#0091FF` (stop) | **Most crowded**: Atlassian (Jira, JSM, Trello) `#1868DB`, YouTrack `#3369D6`, Zendesk `#1F73B7`, monday `#0073EA`, Huly `#205DC2`, Chatwoot `#2781F6`, Help Scout `#0064F0`, Plane `#006399` (243°), Basecamp mkt `#117AF3`, GitLab pre-2026; links/focus of almost everyone (Primer `#0969DA`). **Trybun Blue `#2563EB` sits here.** |
 | **indigo (268–285)** | Shortcut `#494BCB`, Canny `#525DF9`, Featurebase `#3B5BFF`, Pylon `#5B0EFF`, ClickUp `#6647F0` | Linear `#5E6AD2`/`#7170FF`, Shortcut, Canny, Featurebase, Pylon (mkt), monday mkt `#6161FF` |
@@ -101,7 +102,7 @@ OKLCH hue per colour (brand = logo; action = main button). Height excluded.
 
 ### Who uses teal / green
 
-- **Teal (165–195°): nobody**, neither as logo nor as action colour.
+- **Teal (165–195°): nobody in these 30 products**, neither as logo nor as action colour. The wider survey of 2026-11-27 ([`2026-11-27-brand-colour-landscape-wide.md`](2026-11-27-brand-colour-landscape-wide.md)) finds teal in 7 of 169 logos and 5 of 51 action colours, none of them a help desk, and close neighbours of the exact values first chosen (WeKan, Odoo, Zendesk Kale).
 - **Cyan (195–240°): sparse**. Only Zammad (UI primary `#23A2CD`, logo accent `#009EC6`), Zendesk's dark kale `#03363D` (H 209, L 0.31: reads as near-black green-teal, not as a bright teal), and Plane's dark-mode azure at the edge.
 - **Green: moderate**. GitHub/Primer's green "create" button (also inherited by OpenProject), Freshdesk's product icon, Plain's whole brand, and one monday dot. Green also carries the "success" meaning in every system.
 
@@ -109,7 +110,7 @@ OKLCH hue per colour (brand = logo; action = main button). Height excluded.
 
 | Hue | Status | Note |
 |---|---|---|
-| Teal 165–195° | **Free** | No product in the set. Nearest: Zammad cyan (≈225°), Zendesk kale (209°, dark), Plain/GitHub green (146–156°). |
+| Teal 165–195° | **Free in this set**; rare in the wide survey | No product in the set. Nearest: Zammad cyan (≈225°), Zendesk kale (209°, dark), Plain/GitHub green (146–156°). |
 | Orange 40–70° as a *primary* | **Free as UI action**; used in logos (GitLab, ClickUp, Zammad) | Contrast caution: mid-orange fails 4.5:1 with white text unless darkened. |
 | Yellow / amber 70–115° | **Nearly free**: logos (JSM tile, monday dot, Basecamp, Zammad) and Zammad "submit" only | Needs dark text on the button (as Zammad does with black on `#FFCE33`). |
 | Magenta/pink 315–15° | **Free as UI action**; logos only (YouTrack, ClickUp, monday dot) | |
@@ -126,6 +127,6 @@ OKLCH hue per colour (brand = logo; action = main button). Height excluded.
 ## Gaps and why
 
 - Closed SaaS apps (Linear, Asana, ClickUp, Notion, Intercom, Front, Help Scout, Pylon, Plain, Canny, Featurebase, Shortcut, Basecamp) need a login to show the in-app button. Their marketing CTA was used instead and is labelled **mkt**. That is the closest official signal available without an account.
-- zendesk.com returned HTTP 403 to plain curl. As the brief asked, no user-agent spoofing was tried.
+- zendesk.com returned HTTP 403 to plain curl. No user-agent spoofing was tried.
 - WebP logos (Basecamp, Freshworks corporate) could not be decoded without image libraries, which are not installed.
 - Colour-aggregator sites were not used at all.
