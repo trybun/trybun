@@ -5,7 +5,9 @@ FROM node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable
 WORKDIR /repo
-COPY pnpm-lock.yaml pnpm-workspace.yaml ./
+# With package.json, Corepack runs the pnpm of `packageManager` for the fetch too; without it,
+# the fetch ran the latest pnpm, which the offline install could not follow (#566).
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm fetch
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
