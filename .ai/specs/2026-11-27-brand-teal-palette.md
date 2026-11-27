@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-11-27 |
 | Plan task | – |
 | System specification sections | §13.4; [`docs/brand/README.md`](../../docs/brand/README.md) (The mark, Colours, UI design tokens, Rules) |
@@ -194,3 +194,4 @@ Implementation must not start until every question has an answer.
 
 - 2026-11-27 – Created after the maintainer chose the Plane direction, the teal palette, light gold as a brand accent and Teal for focus and links. Revised the same day after review: values moved away from WeKan, Odoo and Zendesk, gold for the customer branch, the dark scale, and the e-mail and icon files.
 - 2026-11-27 – Questions 5–8 answered by the maintainer: the names Teal, Deep Teal and Gold, selected states in Teal, a light Teal button with Ink text in the dark theme, the wordmark in Deep Teal. Second review: figures corrected, the dark `--info` row, the ring and link test, the favicon on dark tabs and the full list of deliberate leftovers. Third review: the neighbour table from the whole survey, the SVG favicon for dark tabs, a criterion for the selected row, CVD distances to two decimals.
+- 2026-11-27 – Approved by the maintainer (merged in #574).
