@@ -30,14 +30,14 @@ The research of 2026-11-27 is in three notes:
 
 The main findings:
 
-- **Category:** blue and indigo/violet are crowded. Teal is rare: 7 of 169 logos and 5 of 51 action colours, and no help desk uses it.
+- **Category:** blue and indigo/violet are crowded. Teal is rare: 7 of 169 logos and 5 of 51 action colours, and no help-desk or ITSM logo uses it (one ITSM product, Halo, has a teal button on its marketing site).
 - **Practice:** Plane, Atlassian, Carbon, Stripe and Material 3 use one brand hue as a rare action colour and keep everything else neutral.
 
 The maintainer chose the teal hue from four candidates on mock-ups. The wide survey then showed close neighbours of the first values: `#017272` is near WeKan and Odoo, and `#023237` is near Zendesk Kale. The values below are moved away from them. After comparing four ambers and three golds on large graphics, the maintainer chose light gold for the customer branch. On 2026-11-01 teal (`#0F766E`) was variant B for the focus colour and was not chosen; this time teal becomes the brand colour as a whole.
 
 ## Goals
 
-- **One brand colour for action and interaction:** primary button, focus ring, links and, subject to question 6, selection. It must be distinct from danger, success, warning and information, and reach at least 4.5:1 for text and 3:1 for non-text in both themes.
+- **One brand colour for action and interaction:** primary button, focus ring, links and selection. It must be distinct from danger, success, warning and information, and reach at least 4.5:1 for text and 3:1 for non-text in both themes.
 - **A mark that keeps its shape and meaning** (team branch, customer branch) in new colours, visible on light and dark backgrounds and at 16 px.
 - **Gold is a brand accent only:** the mark, the sign-in brand panel, empty-state illustrations, e-mails and other materials. Never text, buttons or statuses: it is 4° of hue and 1.26:1 from the dark-theme warning `#FFB900`.
 
@@ -64,12 +64,15 @@ The maintainer chose the teal hue from four candidates on mock-ups. The wide sur
 | Gold | `#DCA81C` | L 0.76 C 0.15 H 85 | customer branch of the mark; brand accent only |
 | White | `#FFFFFF` | | backgrounds; the team branch and crossbar of the mark on dark backgrounds |
 
-Distance to the nearest brand colours found (ΔE OK; 0.02 is the just-noticeable difference of CSS Color 4):
+Nearest colours among 324 product colours of the wide survey (ΔE OK; 0.02 is the just-noticeable difference of CSS Color 4; full table in section 3 of [`research/2026-11-27-brand-colour-landscape-wide.md`](research/2026-11-27-brand-colour-landscape-wide.md)):
 
-| Colour | Nearest neighbours |
-|---|---|
-| Teal | WeKan `#007289` 0.083, Odoo `#017E84` 0.103 |
-| Deep Teal | Zendesk Kale `#03363D` 0.087 |
+| Colour | Nearest overall | Nearest in the direct category (help desks, trackers) |
+|---|---|---|
+| Teal | ZnanyLekarz `#006A59` 0.038 (marketing site, another field) | Redmine 0.077, Freshdesk 0.079, WeKan `#007289` 0.083; Odoo `#017E84` 0.103 |
+| Deep Teal | near-blacks from 0.022 (Zammad marketing CTA `#0E1E29`); C 0.030, so a near-neutral | the same near-blacks; Zendesk Kale `#03363D` 0.087 |
+| Gold | amber and orange secondary logo colours 0.050–0.066 (Zammad `#F39804`, GitLab `#FCA326`, Hiver, Zoho, Libredesk) | the same; the nearest button is Zammad's yellow marketing CTA `#F6BA08` (0.064) |
+
+Recognition comes from Teal and Gold; Deep Teal is a dark surface colour, close to other near-blacks by nature.
 
 ### The mark
 
@@ -88,13 +91,13 @@ Every file in [`docs/brand/`](../../docs/brand/README.md) is regenerated in the 
 - the PNG icon and avatar (512 px), the social preview (1280 × 640) and the favicon (16/32/48 px);
 - the copies in the web application: `apps/web/src/app/icon.svg`, `favicon.ico`, `apple-icon.png` and `apps/web/public/icons/` (SVG, 192 and 512 px).
 
-The favicon is checked at 16 px on a light and a dark browser tab. If the Gold branch is too faint on a light tab, a small version uses a darker gold for the branch; if the Deep Teal crossbar and branch are too faint on a dark tab (1.06–1.42:1 on common dark tab colours, as with Ink today), the favicon uses the dark-background version or a light outline. GitLab and Firefox draw separate small icons in the same way. The rule "Do not recolour the branches" stays and refers to the new colours.
+The favicon is checked at 16 px on a light and a dark browser tab. If the Gold branch is too faint on a light tab, a small version uses a darker gold for the branch. On a dark tab the Deep Teal crossbar and branch are faint (1.06–1.42:1 against `#202124` and `#35363A`, the dark tab colours assumed for Chrome (u); Ink today is no better). A single `favicon.ico` cannot change with the browser theme, so the web application adds an SVG favicon whose `prefers-color-scheme: dark` rule switches to the dark-background version, with the ICO as fallback, as described by Sitnik (Evil Martians, "How to Favicon", cited in the practice research). Browser support is checked in the implementation; where it is missing, the small version gets a light outline. A custom tiny version is what Sitnik recommends for a blurry 16 px icon; GitLab and Firefox keep several variants of their icon (practice research). The rule "Do not recolour the branches" stays and refers to the new colours.
 
 The GitHub organization avatar and the repository social preview are uploaded by the maintainer, because agents never change settings.
 
 ### UI tokens
 
-The brand scale has 12 steps in OKLCH (H 190–191) with the roles of Radix Colors: 1–2 backgrounds, 3–5 component backgrounds, 6–8 borders, 9 the solid fill, 10 hover, 11 text, 12 strong text. In the light theme step 11 equals step 9 on purpose: the fill already reaches 7.51:1 as text.
+The brand scale has 12 steps in OKLCH (H about 190; step 1 of the light scale is H 197 because its chroma is near zero) with the roles of Radix Colors: 1–2 backgrounds, 3–5 component backgrounds, 6–8 borders, 9 the solid fill, 10 hover, 11 text, 12 strong text. In the light theme step 11 equals step 9 on purpose: the fill already reaches 7.51:1 as text.
 
 | Step | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -109,7 +112,7 @@ The brand scale has 12 steps in OKLCH (H 190–191) with the roles of Radix Colo
 | `--ring` | step 9 | step 9 | light: 7.51:1 on `--background`, `--card`, `--popover`; 6.82:1 on `--muted`. Dark: 8.07:1 on `--background`, 6.84:1 on `--card` and `--popover`, 5.69:1 on `--muted` |
 | `--link` | step 11 | step 11 | 7.51:1 / 10.21:1 on `--background`, still underlined |
 | `--selected` (new) | step 3 | step 3 | with `--foreground`: 15.06:1 / 15.74:1; against `--background` only 1.15:1, so a selected row also has a second indicator (a check, a bar or bold text), as `bg-muted` needs today |
-| `--info` | `#2563EB` (unchanged value) | `#60A5FA` (unchanged value) | ΔE OK from Teal: 0.231 light, 0.137 dark |
+| `--info` | `#2563EB` (unchanged value) | `#60A5FA` (unchanged value) | ΔE OK from Teal: 0.23 light, 0.14 dark |
 | `--brand-accent` | Gold | Gold | never text, buttons or statuses |
 | `--blue`, `--vermilion` | removed; `--info` takes the blue value, `--brand-accent` the Gold | | |
 
@@ -119,10 +122,10 @@ The focus ring stays 2 px. A focused invalid field keeps its danger border. `--r
 
 | Pair | Normal | Deuteranopia | Protanopia |
 |---|---|---|---|
-| Teal vs `--success`, light | 0.140 | 0.130 | 0.137 |
-| Teal vs `--success`, dark | 0.159 | 0.115 | 0.137 |
-| Teal vs `--info`, light | 0.231 | 0.221 | 0.231 |
-| Teal vs `--info`, dark | 0.137 | 0.136 | 0.132 |
+| Teal vs `--success`, light | 0.14 | 0.13 | 0.14 |
+| Teal vs `--success`, dark | 0.16 | 0.12 | 0.14 |
+| Teal vs `--info`, light | 0.23 | 0.22 | 0.23 |
+| Teal vs `--info`, dark | 0.14 | 0.14 | 0.13 |
 
 All values are ΔE OK. Statuses always have an icon or text as well (§13.4).
 
@@ -180,6 +183,7 @@ Implementation must not start until every question has an answer.
   - `--ring` ≥ 3:1 on `--background`, `--card`, `--popover` and `--muted` in both themes;
   - `--ring` is not `--destructive`; in `input.stories.tsx` the assertion `--ring` ≠ `--primary` is removed, because both are Teal now, and `--ring` = `--link` becomes "both from the brand scale": they are equal in the light theme, while in the dark theme `--ring` is step 9 and `--link` step 11;
   - a focused invalid field keeps its danger border (`Input/FocusedInvalid`).
+- [ ] A selected table row (`table.tsx`) shows a second indicator besides `--selected` (a check, a bar or bold text), visible at 1.15:1 background contrast.
 - [ ] No text, button or status in the product code uses `--brand-accent` (lint or story test); the unit-test strings listed under non-goals are exempt.
 - [ ] E-mail links use Teal, and the test of `render-email-markdown.ts` asserts it.
 - [ ] §13.4 and [`.ai/memory/shadcn.md`](../memory/shadcn.md) are updated. [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md) has a changelog line pointing here.
@@ -189,4 +193,4 @@ Implementation must not start until every question has an answer.
 ## Changelog
 
 - 2026-11-27 – Created after the maintainer chose the Plane direction, the teal palette, light gold as a brand accent and Teal for focus and links. Revised the same day after review: values moved away from WeKan, Odoo and Zendesk, gold for the customer branch, the dark scale, and the e-mail and icon files.
-- 2026-11-27 – Questions 5–8 answered by the maintainer: the names Teal, Deep Teal and Gold, selected states in Teal, a light Teal button with Ink text in the dark theme, the wordmark in Deep Teal. Second review: figures corrected, the dark `--info` row, the ring and link test, the favicon on dark tabs and the full list of deliberate leftovers.
+- 2026-11-27 – Questions 5–8 answered by the maintainer: the names Teal, Deep Teal and Gold, selected states in Teal, a light Teal button with Ink text in the dark theme, the wordmark in Deep Teal. Second review: figures corrected, the dark `--info` row, the ring and link test, the favicon on dark tabs and the full list of deliberate leftovers. Third review: the neighbour table from the whole survey, the SVG favicon for dark tabs, a criterion for the selected row, CVD distances to two decimals.
