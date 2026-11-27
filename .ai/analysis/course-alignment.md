@@ -1104,11 +1104,11 @@ No two issues ask for the same change. These touch the same files and are done t
 
 ### Priorities
 
-The labels set when each issue was filed stay, with one exception proposed to the maintainer:
+The labels set when each issue was filed stay, with one exception, which the maintainer accepted on 2026-11-27:
 
 - **#552 → `priority-high`.** A failed series computation in `image-scan.yml` closes every open code-scanning alert without notice, and the release path restores the Trivy binary from a cache that any job on `main` can seed.
 
-A suggested order of work, most value first:
+The order of work the maintainer accepted, most value first:
 
 1. #552;
 2. #547;
