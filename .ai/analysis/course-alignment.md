@@ -45,7 +45,7 @@ Every step works in this order:
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | done; issue #549, #537 extended |
 | 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | done; issues #552–#555 |
 | 13 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | done; no new issue |
-| 14 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | open |
+| 14 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | done; issue #558 |
 | 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
 
 Step 12 has no lesson of its own. The course rates whether the safety net and the gates exist (L02, L14, L17), not whether each workflow is needed and well written, so the maintainer added it on 2026-11-24. It follows steps 10 and 11, which rate tests and gates from the course side, and comes before the release step, which covers `release.yml`. Sources to research: the GitHub Actions documentation (security hardening, `permissions`), the tools built for such audits (actionlint, zizmor, OpenSSF Scorecard), and established practice for flaky tests. The flaky component test found during step 1 was filed on its own (#496) because it failed on `main`, and fixed in #497.
@@ -58,7 +58,8 @@ Questions found in one step that belong to a later one. Each step reads its rows
 |---|---|---|
 | before `1.0.0` | #562: a threat model (`docs/security/threat-model.md`), and with it the decision on DAST and an agentic security review (7.9–7.15); checked in step 13, it stays a trigger of the release | step 7 |
 | 14 | After #525 and #537 have results: a reviewer of another model family for code PRs, the model per role (1.21), cheaper models for mechanical steps, and the peak context of the fix-issue runs measured again (above 300k, a subagent per step of `om-auto-fix-issue`) (6.4, 8.12, 9.9, 11.8–11.10) | steps 1, 6, 8, 9, 11 |
-| 14 | When the product brief is refreshed (3.4, #501); how `CODE_REVIEW.md` keeps following the defects (2.11, #499); retrospectives | steps 2, 3 |
+| first production installation | The loop from production errors to the agent: a read-only MCP of an error tracker, error content as data, personal data masked (14.6) | step 14 |
+| when #501 lands | The product brief cleaned when a decision changes (3.4, 14.9); `CODE_REVIEW.md` following the recurring defects is part of the monthly audit of #558 (2.11) | steps 2, 3, 14 |
 | 15 | The analysis commits use the scope `agents`, as the closed scope list of §2.14 has none for `.ai/analysis/`; whether one is needed | step 0 |
 
 ## Step 0 – Baseline map
@@ -1012,3 +1013,42 @@ The threat model before `1.0.0` (carried from step 7) stays a trigger of the fir
 - **13.10 – a decision of the maintainer, no issue.** When to release `0.5.0` is the maintainer's choice (§2.11). A release candidate `0.5.0-rc.1` on the test installation would test the deployment package and the update path of three weeks of changes before they grow further. It is the procedure §2.11 already describes.
 - **13.2 – no change.** A highlights paragraph and a contributor list would mean replacing release-please's generator, or writing by hand what Rule 11 forbids. With one contributor, the list has no reader.
 - **13.8 – different on purpose.** A self-hosted product has no hosting platform to give each PR a preview. The local QA environment and the release candidates on the test installation cover the same need.
+
+## Step 14 – Maintenance and retrospective (knowledge audit, weekly maintenance, production errors)
+
+Course sources: the four leaves of L15 and the seven leaves of L25.
+
+- **L15:** the retrospective method and plan; UI, backlog and coordination; context, costs and the harness; product validation and the human's role.
+- **L25:** the knowledge audit; a new requirement as a new specification; knowledge over time; the `weekly-maintenance` workflow; the loop from production to the agent; a year of Open Mercato; the homework.
+
+The carried-forward rows of steps 2 and 3 (the product brief, `CODE_REVIEW.md` following the defects, retrospectives) are rated here. Checked on 2026-11-26, read-only: `.ai/specs/` and its status lines, `.ai/cezar/automations.json`, `.ai/memory/`.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 14.1 | A periodic knowledge audit with a rule of evidence, file and line or "not established", that changes nothing but writes a report (L25) | None; no `.ai/maintenance/`. A spot check found drift. `.ai/specs/2026-11-10-ticket-filter-options-all-pages.md` is still active with `Status: draft`, although #276 implemented it. The other active specification (`2026-10-26-title-redaction.md`, `approved`, plan task S1-21) is rightly active | Missing |
+| 14.2 | The status of a specification follows from where its file is: active, `implemented/` after QA, `archive/` (L25) | `.ai/specs/README.md` defines the lifecycle (`implemented/`, `archive/`); 44 specifications in `implemented/`, 2 active, 0 archived. The one drift above is the only exception found | Full |
+| 14.3 | A new requirement gets a new specification with `Extends`/`Supersedes`, prior-spec drift and a delta whose changes are frozen by characterization tests (L25) | The change specification template and the Delta of the `om-*` skills (characterization tests checked at the finish of `om-auto-implement-spec`); one format for both is #524 | Full – #524 |
+| 14.4 | A weekly maintenance workflow: an audit of the week's PRs, a drift PR, the context check, red Dependabot PRs fixed at their cause, dead code; a person merges (L25) | One Cezar automation, the daily image-scan triage (9.13), and the daily advisory audit in CI. No audit, no drift PR, no dead-code pass. Red Dependabot PRs were fixed by hand: four agent runs in `.ai/runs/` and #459–#461 on 2026-11-26, now #547 | Missing |
+| 14.5 | Lessons grow: the index stays short, duplicates and outdated entries are pruned, new entries wait in a buffer until they recur (L25) | `.ai/memory/MEMORY.md` is an index (33 lines, 16 KB, each line a paragraph) of 19 topic files (243 KB); #542 makes it a one-line index with a budget in CI. No pruning or buffer | Partial – #542 |
+| 14.6 | Production errors reach the agent through a read-only MCP of the error tracker, with the error content treated as data, and end in a PR (L25) | No production installation yet (pre-`1.0.0`) and no error tracker; the maintainer's test installation is the only deployment | N/A |
+| 14.7 | A retrospective after a development cycle: what, so what, now what; observations become actions with owners; data such as the fixes that came back feed it (L15) | No retrospective recorded. The course alignment itself plays that role now, with its decisions and issues. Data exists: fix PRs, review findings, the flaky classes (12.11) | Missing |
+| 14.8 | The harness has an owner and is kept like a product (L15) | One maintainer owns everything; the skills come from one upstream with a lock (#498), and project skills live in `.ai/skills/` | Full |
+| 14.9 | The active brief and the specifications are cleaned when a decision changes, not only appended to (L15) | No product brief yet (3.4, #501). Change specifications are not edited after they move to `implemented/` (`.ai/specs/README.md`) | N/A until #501 |
+
+### Gap proposals
+
+The maintainer asked for a fuller explanation first and then accepted all three on 2026-11-27.
+
+- **14.1, 14.4 – a weekly maintenance workflow: #558.** A Cezar automation, whose PRs the maintainer merges and reads in full in the first weeks. Its steps are:
+  - **audit**, with a rule of evidence;
+  - **drift**, one PR;
+  - **context**, the budget of #542;
+  - **dependencies**, red Dependabot PRs fixed at their cause, or a comment;
+  - a deterministic **verify**.
+
+  The dead-code step of L25 is left out until dead code is a measured problem. The stale specification found here moved to `implemented/` at once (#559).
+- **14.7 – a monthly full audit with retrospective data** (fixes that came back, real review findings, recurring flaky classes), part of #558. A team retrospective waits for a team.
+- **14.6 – deferred until the first production installation:** then an error tracker connected read-only through MCP, the error content treated as data, personal data masked in the tracker.
+- **14.5** is #542, **14.9** waits for the product brief (#501).
