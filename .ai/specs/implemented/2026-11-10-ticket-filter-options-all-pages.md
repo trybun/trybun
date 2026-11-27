@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-10 |
 | Plan task | – (follow-up of `S1-13`) |
 | System specification sections | §8.1, §18.5 |
-| Related issues / PRs | #272, #270, [S1-13 spec](implemented/2026-10-26-team-list-view.md) |
+| Related issues / PRs | #272, #270, [S1-13 spec](2026-10-26-team-list-view.md) |
 
 ## 📝 TLDR
 
@@ -83,10 +83,10 @@ Reversible, web-only change; no contract, schema or permission surface. The cost
 
 ## Acceptance criteria
 
-- [ ] With more than 100 (up to 2,000) projects, organizations or members per list, every one the person can see can be chosen in the filter panel (§8.1).
-- [ ] The chip of a visible record within the bound shows its name; "Unknown" stays only for records the person cannot see (S1-13 Q5).
-- [ ] A failed page fails the option list as a whole, never a silently partial list.
-- [ ] Works on phone, tablet and desktop (Rule 9); the change is covered by tests.
+- [x] With more than 100 (up to 2,000) projects, organizations or members per list, every one the person can see can be chosen in the filter panel (§8.1).
+- [x] The chip of a visible record within the bound shows its name; "Unknown" stays only for records the person cannot see (S1-13 Q5).
+- [x] A failed page fails the option list as a whole, never a silently partial list.
+- [x] Works on phone, tablet and desktop (Rule 9); the change is covered by tests.
 
 ## 📋 Implementation Plan
 
@@ -101,3 +101,5 @@ Reversible, web-only change; no contract, schema or permission surface. The cost
 
 - 2026-11-10 – Created (autonomous defaults, #272).
 - 2026-11-10 – Specification review: the bound is the helper's default `ALL_PAGES_MAX_PAGES`, as implemented in #276; the move to `implemented/` follows both merges.
+- 2026-11-10 – The option lists of every page were replaced by searches in the filter pickers ([2026-11-10-ticket-list-filter-pickers.md](2026-11-10-ticket-list-filter-pickers.md), #279, implemented in #290).
+- 2026-11-27 – Implemented by #276; moved to `implemented/`, which was left undone after both merges (found by step 14 of `.ai/analysis/course-alignment.md`).

@@ -6,7 +6,7 @@
 | Created | 2026-11-10 |
 | Plan task | – (follow-up of `S1-13`) |
 | System specification sections | §7.5, §8.1, §12.1, §17.2, §18.5, §18.6 |
-| Related issues / PRs | #279, #276, #272, #270, [S1-13 spec](2026-10-26-team-list-view.md), [#272 spec](../2026-11-10-ticket-filter-options-all-pages.md) |
+| Related issues / PRs | #279, #276, #272, #270, [S1-13 spec](2026-10-26-team-list-view.md), [#272 spec](2026-11-10-ticket-filter-options-all-pages.md) |
 
 ## 📝 TLDR
 
