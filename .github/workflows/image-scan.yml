@@ -13,6 +13,12 @@ on:
 
 permissions: {}
 
+# `bash` runs `bash --noprofile --norc -eo pipefail {0}`: a failed command in a pipe fails the
+# step (the default `bash -e` checks only the last command of a pipe).
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
