@@ -41,6 +41,11 @@ jobs:
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          # Only what release-please needs (its README): commits, tags and releases, the labels
+          # of the release pull request, and the pull request itself.
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
@@ -72,6 +77,10 @@ jobs:
         with:
           client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          # Only what the candidate job uses: read the release pull request and its manifest,
+          # create the tag and the draft prerelease.
+          permission-contents: write
+          permission-pull-requests: read
       - id: tag
         name: Tag the release candidate
         env:
@@ -206,7 +215,9 @@ jobs:
           dependency-snapshot: false
       # The publish job pushes exactly the scanned image.
       - name: Export the image
-        run: docker save "$IMAGE" | gzip > "image-${{ matrix.service }}.tar.gz"
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: docker save "$IMAGE" | gzip > "image-$SERVICE.tar.gz"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: image-${{ matrix.service }}
