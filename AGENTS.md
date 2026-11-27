@@ -19,6 +19,7 @@ Instructions for AI coding agents in the **Trybun** repository. The project is b
 | `docs/brand/` | Logo, colours, typeface – never draw your own |
 | `docs/user/` | User documentation (EN, PL), shown in the help of the web application ([structure](docs/user/README.md)) |
 | `.ai/specs/` | Change specifications (`YYYY-MM-DD-slug.md`, `implemented/`, `archive/`) |
+| `.ai/specs/research/` | Research notes (market, competitors, visual references) – read them before new research of that kind and write only a dated update |
 | `.ai/memory/` | Project memory |
 | `.ai/skills/` | Project skills |
 | `.ai/agentic.config.json`, `.ai/trackers/`, `.ai/browsers/` | Agent pipeline configuration: validation gate, labels, QA gate, GitHub and browser operations ([`SDLC.md`](SDLC.md)) |
