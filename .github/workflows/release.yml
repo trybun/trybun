@@ -215,7 +215,9 @@ jobs:
           dependency-snapshot: false
       # The publish job pushes exactly the scanned image.
       - name: Export the image
-        run: docker save "$IMAGE" | gzip > "image-${{ matrix.service }}.tar.gz"
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: docker save "$IMAGE" | gzip > "image-$SERVICE.tar.gz"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: image-${{ matrix.service }}
