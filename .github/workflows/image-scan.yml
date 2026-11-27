@@ -162,10 +162,14 @@ jobs:
         run: |
           title='Image scan fails'
           failed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs" --paginate \
-            --jq '.jobs[] | select(.conclusion == "failure") | "- " + .name')
-          issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --label image-scan \
-            --search "\"$title\" in:title" --json number,title \
-            --jq "map(select(.title == \"$title\")) | sort_by(.number) | last | .number // empty")
+            --jq '.jobs[] | select(.conclusion != null and .conclusion != "success" and .conclusion != "skipped") | "- " + .name + " (" + .conclusion + ")"')
+          # The newest issue with the exact title, and its state, from the plain label listing:
+          # the search index can lag behind an issue opened by the previous run.
+          found=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --label image-scan --limit 500 \
+            --json number,title,state \
+            --jq "map(select(.title == \"$title\")) | sort_by(.number) | last | select(. != null) | \"\(.number) \(.state)\"")
+          issue=${found%% *}
+          state=${found#* }
           if [ "$PASSED" = true ]; then
             summary="The scan passed."
           else
@@ -177,7 +181,7 @@ jobs:
             exit 0
           fi
           if [ "$PASSED" = true ]; then
-            if [ -n "$issue" ] && [ "$(gh issue view "$issue" --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = OPEN ]; then
+            if [ -n "$issue" ] && [ "$state" = OPEN ]; then
               gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "The scan passed again in [this run]($RUN_URL)."
             fi
             exit 0
@@ -186,7 +190,7 @@ jobs:
             body=$(printf 'The daily image scan (`.github/workflows/image-scan.yml`) fails on `main`, so some images are not scanned. This issue is opened and updated by the workflow and closed by its next successful run.\n\n%s' "$summary")
             gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label image-scan --body "$body"
           else
-            if [ "$(gh issue view "$issue" --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = CLOSED ]; then
+            if [ "$state" = CLOSED ]; then
               gh issue reopen "$issue" --repo "$GITHUB_REPOSITORY"
             fi
             gh issue comment "$issue" --repo "$GITHUB_REPOSITORY" --body "$summary"
