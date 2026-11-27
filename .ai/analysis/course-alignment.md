@@ -43,7 +43,7 @@ Every step works in this order:
 | 9 | Autonomy and parallel work (feedback loop, `om-auto-*`, worktrees, Cezar, WIP) | L11, L13 | done; issue #544 |
 | 10 | Tests, fixes, QA (E2E, RED/GREEN, static analysis, `qa-*`) | L12, L14, L18 | done; no new issue (#499, #493) |
 | 11 | Review and acceptance (deterministic gates, branch protection, multi-model review) | L17, L21 | done; issue #549, #537 extended |
-| 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | open |
+| 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | done; issues #552–#555 |
 | 13 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | open |
 | 14 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | open |
 | 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
@@ -56,11 +56,6 @@ Questions found in one step that belong to a later one. Each step reads its rows
 
 | Step | Question | Found in |
 |---|---|---|
-| 12 | `ci.yml` and `codeql.yml` run every job on every pull request, also on documentation only (about 12 min; #495 failed on the flaky Lighthouse budget). A path filter on the workflow would leave the required checks unreported and block the PR, so the question is a job-level condition. Risks to research: Markdown that is part of the application (help pages in `apps/web`), the required CodeQL check, pushes to `main` | #506 |
-| 12 | Flaky classes that came back after a fix: animations under axe (#72, #270 → #502, and again after its fix → #514) and the simulated LCP (#163, #372 → #503). A third class: lazily loaded modules in component tests (#326, #496 → #511), which five specs had worked around with longer timeouts. A fourth: a background program checked before it has run, in the stubs of `test-env-up.spec.js` (#520, #522). And the calibrated Lighthouse slowdown (#515) failed to converge on a noisy runner (#523). Why the earlier fixes did not hold, and how flaky tests are detected and reported (quarantine, retry reports) | step 3 |
-| 12 | `.github/labels.yml` lists 33 labels, GitHub has 50, and no workflow or script reads the file | step 2 |
-| 12 | Editing a PR body re-runs `Commit messages and title` and cancels the run in progress, which shows as a cancelled check next to the passing one (#504, #506) | #506 |
-| 12 | A CI run takes 11.5–14 min. The critical path is `pnpm test:coverage` (389–642 s) and `pnpm e2e` (472–633 s); the spread follows the runner pool (AWS fast, Azure slow, read from the `Cloud:` line of the job log). An idle VPS ran `pnpm test:coverage` in 249 s (9908 tests, warm Testcontainers images). Self-hosting is advised against: GitHub's secure-use docs say self-hosted runners should almost never serve public repositories, the PyTorch and runner-images compromises and the Shai-Hulud 2.0 worm used them, and the VPS holds the maintainer's `gh` credentials, the agents' worktrees and the QA stacks, with the `docker` group root-equivalent. Options to weigh: Vitest shards with thresholds checked on the merged coverage, Playwright shards with merged reports, Lighthouse as its own job, the infrastructure started early, one gate job (`re-actors/alls-green`) or the kept check names for the ruleset; then a managed per-job-VM runner (Ubicloud, Blacksmith, Namespace). Larger GitHub runners need a paid plan | session 2026-11-25 |
 | 13 | A threat model (`docs/security/threat-model.md`) before the first release `1.0.0`, and with it the decision on DAST and an agentic security review (7.9–7.15) | step 7 |
 | 14 | After #525 and #537 have results: a reviewer of another model family for code PRs, the model per role (1.21), cheaper models for mechanical steps, and the peak context of the fix-issue runs measured again (above 300k, a subagent per step of `om-auto-fix-issue`) (6.4, 8.12, 9.9, 11.8–11.10) | steps 1, 6, 8, 9, 11 |
 | 14 | When the product brief is refreshed (3.4, #501); how `CODE_REVIEW.md` keeps following the defects (2.11, #499); retrospectives | steps 2, 3 |
@@ -911,3 +906,73 @@ The maintainer accepted every recommendation on 2026-11-26.
   - **Against Codex on Claude's code:** Xiang et al. found that Codex reviewing Claude's code lowered the result (91.4 % → 82.8 %).
   - **The open question:** what Codex adds on Trybun's specifications. That is measured by #525, from how many of its findings are real.
 - **11.4 Branch protection – different on purpose**, ADR 0011.
+
+## Step 12 – CI workflows: necessity, correctness and efficiency; flaky tests
+
+There is no lesson for this step. The yardsticks are GitHub's workflow syntax and "Secure use" documentation, the audits of zizmor and actionlint, and the practice of flaky-test handling at Google, Meta, Microsoft, Spotify and GitLab together with the studies behind it.
+
+The step had three research passes on 2026-11-26:
+
+- an audit of the six workflows, the composite action `setup`, `dependabot.yml`, `dependency-review-config.yml` and `labels.yml`. It was done by hand: running actionlint and zizmor from their Docker images was refused by the session's permission check, so it is not the tools' output;
+- the docs-only path of CI;
+- flaky tests.
+
+The carried-forward rows of step 12 are rated here.
+
+### Ratings
+
+| # | Practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 12.1 | Actions pinned by commit SHA, the SHA matching its tag | All 17 action references pinned by SHA, each matching its `# vX` comment (annotated tags dereferenced through the API); `pnpm lint` enforces the pinning (`scripts/check-supply-chain.js`) | Beyond |
+| 12.2 | Least privilege: `permissions` empty or read at workflow level, raised per job; no credentials left in checkouts | `{}` or `contents: read` at workflow level, write only per job and `contents: write` only in the environment-gated `publish`; `persist-credentials: false` on every checkout. The GitHub App tokens of `release.yml` (lines 34–37, 65–68) carry every permission of the app, while `create-github-app-token` v3.3.0 can narrow them (`permission-contents`, `permission-pull-requests`) | Full |
+| 12.3 | No dangerous triggers or template injection | No `pull_request_target`, `workflow_run`, `secrets: inherit` or self-hosted runner; the PR title and SHAs reach `run:` through `env:`. Only a static `${{ matrix.service }}` is interpolated into `run:` (`release.yml` line 200), which zizmor's pedantic mode flags | Full |
+| 12.4 | Shell steps fail on any failed command | No `defaults.run.shell`, so `run:` uses `bash -e` without `pipefail`. In `image-scan.yml` line 44 `node … supported-series … \| tee -a "$GITHUB_OUTPUT"` stays green when `node` fails. The `current` and `previous` slots then come out empty, and the empty SARIF uploads (lines 126–133) close every open alert of those categories. `release.yml` line 200 (`docker save … \| gzip`) has the same gap, which the restore test catches later | Partial |
+| 12.5 | No cache in a privileged release path | `aquasecurity/trivy-action` in the `images` job of `release.yml` (line 181) keeps its default `cache: 'true'`. At the pinned SHA it restores the Trivy binary and database from caches that any job on `main` can seed, next to the Docker socket and before `docker save`. The pnpm store cache is used only outside `release.yml` | Partial |
+| 12.6 | One toolchain in every job | The `audit` job of `ci.yml` (lines 122–133) has no `setup-node`, so it runs on the runner's Node, not `.node-version` | Partial |
+| 12.7 | Work on a PR matches what the PR changes, while the required checks stay honest | Every PR runs every job. On PR #548, which changed only `.ai/`, `E2E and Lighthouse` took 13.3 min and `Tests and coverage` 7.5 min. A workflow-level `paths-ignore` would leave the required checks pending (GitHub: "Avoid requiring workflows that can be skipped"). A job skipped by `if:` reports Success, also when the job it depends on failed | Partial |
+| 12.8 | A workflow re-runs only when its input changed | `commitlint.yml` runs on every `edited` event, also on body edits, and cancels the run in progress. The new run checks the same head SHA and the required check takes its result. Skipping body-only edits with `if:` would let a skipped run report Success for a SHA whose commits were never checked. Kept as a documented trade-off: about 40 s per edit | Full |
+| 12.9 | One source of truth for the labels | `.github/labels.yml` lists 33 labels and nothing reads it; GitHub has 50. The same taxonomy is in `.ai/agentic.config.json` and in `ensure-label-taxonomy` of `.ai/trackers/github.md` | Partial |
+| 12.10 | Dependabot covers every pin | The `docker` and `docker-compose` entries cover the Dockerfiles and both Compose files. The image pins of the integration tests are TypeScript literals that Dependabot cannot read | Partial – #547 |
+| 12.11 | Flaky tests are detected and reported with evidence, and a class that comes back gets a class-level fix | The rule holds: an issue and a root-cause fix for every failure on `main`. But Playwright has `retries: 0` and no `failOnFlakyTests`, and Vitest no `retry`, so a flake shows as an unrelated red PR that "passed on re-run" (#495, #500, #502). The flake rate is unknown; there is no `flaky` label. Fixed waits are not linted (`eslint-plugin-playwright` not used; two `waitForTimeout`, both justified). Four classes came back after a fix:<ul><li>animations under axe, #502 → #514;</li><li>lazily loaded modules, #496 → #511;</li><li>the simulated LCP and the calibrated slowdown, #503, #523;</li><li>programs checked before they started, #520, #522, #528.</li></ul> | Partial |
+| 12.12 | CI duration | The options of the carried-forward row were weighed in #510 and closed as not now on 2026-11-26 (Vitest shards wait for vitest 5.1.2); self-hosted runners were rejected for security | Decided – #510 |
+
+Checked and found fine:
+
+- every job has `timeout-minutes`;
+- CI and CodeQL cancel only on PRs;
+- both scheduled workflows have a consumer: the advisory issue, and the code scanning alerts;
+- `lychee` runs offline;
+- the job logic of `release.yml` (`!cancelled() && … == 'success'`) is sound;
+- `dependency-review` encodes the scoped package correctly.
+
+### Why the flaky fixes did not hold
+
+The studies (Luo et al., FSE 2014: async wait 45 %, concurrency 20 %, test order 12 % of 201 fixes; Parry et al. 2021 and 2025) match the four classes:
+
+- **Animations under axe (#502 → #514).** The fix waited for a signal that stands in for the settled state – the animations running at that moment – instead of the state itself, and missed animations not yet started on WebKit.
+- **Lazily loaded modules (#496 → #511).** Five specs had raised their timeouts. Luo et al. found that a longer wait is what machine speed undoes. The cause was shared across tests, as Parry et al. (2025) found for 75 % of flaky tests, so fixing one test left the others.
+- **Measurement noise (#503, #523).** A hard limit on a noisy metric fails by construction until its margin is measured against the variance of the runner.
+- **Race conditions in the shell stubs (#520, #522, #528).** Each race was fixed on its own; Luo et al. found no single strategy for concurrency.
+- **Verification.** Fixes were verified by repeat loops on an idle machine, while the variance shows on loaded runners. Parry et al. found CPU stress surfaces flakes faster.
+
+### Gap proposals
+
+The maintainer accepted all four on 2026-11-26:
+
+- **12.2–12.6 – #552.** `defaults.run.shell: bash`, which brings `pipefail`; `cache: false` for Trivy in the release; narrowed App tokens; `matrix.service` through `env:`; `setup-node` in `audit`.
+- **12.7 – #553.** A docs-only path behind one gate, specified first:
+  - a `changes` job with plain `git diff`, as in CPython, because `tj-actions/changed-files` was compromised (CVE-2025-30066);
+  - a fail-closed allowlist: `.ai/**`, and `docs/**` except `docs/user/**`;
+  - the expensive jobs skipped only on docs-only PRs, everything on `push` to `main`;
+  - `re-actors/alls-green` as the required check in place of the five application checks, the ruleset changed by the maintainer.
+- **12.9 – #554.** `.github/labels.yml` removed; `.ai/agentic.config.json` stays the source.
+- **12.11 – #555.** The rule stays, with evidence and classes:
+  - Playwright `retries: 1` with `failOnFlakyTests: true` in CI;
+  - a `flaky-test` label with a cause label, after GitLab's list;
+  - a class-level fix when a class comes back;
+  - the recommended rules of `eslint-plugin-playwright`;
+  - `--repeat-each` under CPU stress for every flaky fix;
+  - a pattern catalogue by class in `.ai/memory/e2e.md`;
+  - quarantine rejected, after Habchi et al. 2021.
+
+Found while committing this step: `.ai/tmp/`, where the review skills check out pull requests, is not ignored (#556). Kept: the `edited` trigger of `commitlint.yml` (12.8). Tracked elsewhere: the test image pins (#547) and CI duration (#510).
