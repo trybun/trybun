@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `implemented` |
 | Created | 2026-11-10 |
 | Plan task | – (follow-up of `S1-13`) |
 | System specification sections | §8.1, §18.5 |
-| Related issues / PRs | #272, #270, [S1-13 spec](implemented/2026-10-26-team-list-view.md) |
+| Related issues / PRs | #272, #270, [S1-13 spec](2026-10-26-team-list-view.md) |
 
 ## 📝 TLDR
 
@@ -101,3 +101,4 @@ Reversible, web-only change; no contract, schema or permission surface. The cost
 
 - 2026-11-10 – Created (autonomous defaults, #272).
 - 2026-11-10 – Specification review: the bound is the helper's default `ALL_PAGES_MAX_PAGES`, as implemented in #276; the move to `implemented/` follows both merges.
+- 2026-11-27 – Implemented by #276; moved to `implemented/`, which was left undone after both merges (found by step 14 of `.ai/analysis/course-alignment.md`).
