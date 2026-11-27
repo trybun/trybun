@@ -5,7 +5,7 @@
 | Status | `draft` |
 | Created | 2026-11-27 |
 | Plan task | – |
-| System specification sections | §13.4; [`docs/brand/README.md`](../../docs/brand/README.md) (Colours, UI design tokens, Rules) |
+| System specification sections | §13.4; [`docs/brand/README.md`](../../docs/brand/README.md) (The mark, Colours, UI design tokens, Rules) |
 | Related issues / PRs | #573, #572 (research), [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md) (superseded in part) |
 
 ## Context
@@ -17,90 +17,126 @@ Today the brand has three colours ([`docs/brand/README.md`](../../docs/brand/REA
 | Colour | Use today | Problem |
 |---|---|---|
 | Ink `#141A2E` | `--primary`, so every primary button is near-black; the team branch and the wordmark | reads as black; the same as the default shadcn look, Polaris, GitLab since 2026 and Frappe Helpdesk, so it does not set Trybun apart |
-| Vermilion `#E0482C` | `--brand-accent`, the customer branch of the mark | 3.7° of hue from the danger red and only 4.09:1 with white text, so it cannot be an action colour; in the mark it is almost the red of GitLab (`#E24329`) and close to Zammad (`#E54011`) |
+| Vermilion `#E0482C` | `--brand-accent`, the customer branch of the mark | 4.1° of hue from `--destructive` and only 4.09:1 with white text, so it cannot be an action colour; in the mark it is almost the red of GitLab (`#E24329`) and close to Zammad (`#E54011`) |
 | Blue `#2563EB` | focus ring, links and information ([2026-11-01](implemented/2026-11-01-brand-interactive-colour.md)) | added only because Ink reads as black and Vermilion as an error; blue is the most crowded hue in the category |
 
 Under deuteranopia, Vermilion beside green cannot be told apart (about 8 % of men of European descent).
 
-The research of 2026-11-27 is in [`research/2026-11-27-category-colour-landscape.md`](research/2026-11-27-category-colour-landscape.md) and [`research/2026-11-27-brand-colour-practice.md`](research/2026-11-27-brand-colour-practice.md):
+The research of 2026-11-27 is in three notes:
 
-- **Category:** of 30 trackers and help desks, blue and indigo/violet are crowded, and none uses teal.
+- [`research/2026-11-27-category-colour-landscape.md`](research/2026-11-27-category-colour-landscape.md): 30 trackers and help desks;
+- [`research/2026-11-27-brand-colour-landscape-wide.md`](research/2026-11-27-brand-colour-landscape-wide.md): 156 more vendors;
+- [`research/2026-11-27-brand-colour-practice.md`](research/2026-11-27-brand-colour-practice.md): practice and accessibility.
+
+The main findings:
+
+- **Category:** blue and indigo/violet are crowded. Teal is rare: 7 of 169 logos and 5 of 51 action colours, and no help desk uses it.
 - **Practice:** Plane, Atlassian, Carbon, Stripe and Material 3 use one brand hue as a rare action colour and keep everything else neutral.
 
-The maintainer compared four candidates on mock-ups. On 2026-11-27 they chose **A – Teal**, and confirmed **amber as a brand accent only**. On 2026-11-01 teal (`#0F766E`) was variant B for the focus colour and was not chosen; this time teal becomes the brand colour as a whole.
+The maintainer chose the teal hue from four candidates on mock-ups. The wide survey then showed close neighbours of the first values: `#017272` is near WeKan and Odoo, and `#023237` is near Zendesk Kale. The values below are moved away from them. After comparing four ambers and three golds on large graphics, the maintainer chose light gold for the customer branch. On 2026-11-01 teal (`#0F766E`) was variant B for the focus colour and was not chosen; this time teal becomes the brand colour as a whole.
 
 ## Goals
 
-- **One brand colour for action and interaction:** primary button, selection, active tab, focus ring and links. It must be distinct from danger, success, warning and information, and reach at least 4.5:1 for text and 3:1 for non-text in both themes.
-- **A mark that keeps its shape and meaning** (team branch, customer branch) in new colours. The two branches differ in lightness by at least 3:1, also under simulated deuteranopia and protanopia, on light and dark backgrounds.
-- **Amber is a brand accent only:** the mark, the sign-in brand panel, empty-state illustrations, e-mails and other materials. Never text, buttons or statuses; it is 3° of hue from the warning colour (contrast 1.75:1).
+- **One brand colour for action and interaction:** primary button, focus ring, links and, subject to question 6, selection. It must be distinct from danger, success, warning and information, and reach at least 4.5:1 for text and 3:1 for non-text in both themes.
+- **A mark that keeps its shape and meaning** (team branch, customer branch) in new colours, visible on light and dark backgrounds and at 16 px.
+- **Gold is a brand accent only:** the mark, the sign-in brand panel, empty-state illustrations, e-mails and other materials. Never text, buttons or statuses: it is 4° of hue and 1.26:1 from the dark-theme warning `#FFB900`.
 
 ## Non-goals
 
-- **The rest of the design system in the direction of Plane:** neutrals and surface layers, type, radii, density, motion and statuses. It follows in its own change specification; until then Ink stays the base of the neutral scale, the dark background and the text colour.
-- **Branding the Keycloak sign-in pages.** How to theme them (CSS over `keycloak.v2`, FreeMarker templates or Keycloakify) needs its own research and specification. The sign-in brand panel above describes only the colours it will use.
-- **The semantic colours.** Danger, success and warning stay as they are, and `--info` keeps its own blue (see "UI tokens").
+- **The rest of the design system in the direction of Plane:** neutrals and surface layers, type, radii, density, motion and statuses. It follows in its own change specification. Until then Ink stays the base of the neutral scale, the dark background and the text colour.
+- **Branding the Keycloak sign-in pages.** How to theme them (CSS over `keycloak.v2`, FreeMarker templates or Keycloakify) needs its own research and specification. The colours here are what it will use.
+- **The semantic colours.** Danger, success and warning stay as they are. `--info` keeps its own blue.
 - **The shape of the mark and the wordmark typeface** (Manrope ExtraBold).
+- **Deliberate uses of old colours:**
+  - the `bg-[#E0482C]` examples in [§2.6](../../docs/spec/02-agent-rules.md) and in the lint tests of `@trybun/eslint-config`, which show a forbidden arbitrary value;
+  - the implemented specifications and research notes, which record history.
 
 ## Proposed change
 
 ### Brand colours
 
-| Name (proposed) | Hex | OKLCH | Use |
+| Name (question 5) | Hex | OKLCH | Use |
 |---|---|---|---|
-| Teal | `#017272` | L 0.50 C 0.105 H 195 | action and interaction colour in the UI; 5.75:1 with white text |
-| Deep Teal | `#023237` | L 0.29 C 0.05 H 205 | team branch, crossbar and wordmark of the mark; brand surfaces (sign-in panel, e-mail header) |
-| Amber | `#DA8A11` | L 0.70 C 0.15 H 68 | customer branch of the mark; brand accent only |
-| White | `#FFFFFF` | | backgrounds; the mark on dark backgrounds |
+| Teal | `#035F5C` | L 0.44 C 0.075 H 190 | action and interaction colour in the UI; 7.51:1 with white text |
+| Deep Teal | `#071F20` | L 0.22 C 0.03 H 200 | team branch, crossbar and (question 8) wordmark of the mark; brand surfaces: sign-in panel, e-mail header, social preview |
+| Gold | `#DCA81C` | L 0.76 C 0.15 H 85 | customer branch of the mark; brand accent only |
+| White | `#FFFFFF` | | backgrounds; the team branch and crossbar of the mark on dark backgrounds |
 
-On dark backgrounds the mark uses a dark-background pair: team branch `#017F7F` and customer branch `#FFE8C5`.
+Distance to the nearest brand colours found (ΔE OK; 0.02 is the just-noticeable difference of CSS Color 4):
 
-| Pair | Normal | Deuteranopia | Protanopia |
-|---|---|---|---|
-| `#023237` / `#DA8A11` on light | 5.04:1 | 5.63:1 | 4.17:1 |
-| `#017F7F` / `#FFE8C5` on `#16181D` | 4.05:1 | 4.40:1 | 3.59:1 |
-
-On a Deep Teal surface (the sign-in brand panel) the pair is not settled yet: white and Amber are both clearly visible on it (13.87:1 and 5.04:1), but differ from each other by only 2.75:1 (question 8).
+| Colour | Nearest neighbours |
+|---|---|
+| Teal | WeKan `#007289` 0.083, Odoo `#017E84` 0.103 |
+| Deep Teal | Zendesk Kale `#03363D` 0.087 |
 
 ### The mark
+
+| Version | Team branch and crossbar | Customer branch | Contrast of the branches | Branch against the background |
+|---|---|---|---|---|
+| on light backgrounds | Deep Teal | Gold | 7.88:1 (deuteranopia 8.43, protanopia 7.08) | Deep Teal 17.13:1, Gold 2.17:1 on white |
+| on dark backgrounds (Ink, Deep Teal) | White | Gold | 2.17:1 | Gold 7.94:1 on Ink, 7.88:1 on Deep Teal |
+| one colour | Deep Teal, or White on dark | same | – | – |
+
+Gold has 2.17:1 on white (2.06:1 under deuteranopia), and differs from a white team branch by 2.17:1. WCAG 1.4.11 does not apply to logos. The maintainer accepted these values after examples at 16, 24 and 56 px, under simulated deuteranopia and in greyscale. The research proposed at least 3:1 here, and this specification records the exception on purpose. The meaning "team – customers" is also carried by the shape: the left and right branches.
 
 Every file in [`docs/brand/`](../../docs/brand/README.md) is regenerated in the new colours with the same geometry:
 
 - the icons: primary, on dark, one-colour dark and one-colour white;
 - the logos with the wordmark, light and dark;
 - the PNG icon and avatar (512 px), the social preview (1280 × 640) and the favicon (16/32/48 px);
-- the copies in the web application: `apps/web/src/app/icon.svg` and `apps/web/public/icons/`.
+- the copies in the web application: `apps/web/src/app/icon.svg`, `favicon.ico`, `apple-icon.png` and `apps/web/public/icons/` (SVG, 192 and 512 px).
 
-The favicon is checked at 16 px. If the branches blur, a simplified small version is drawn, as GitLab and Firefox do. The rule "Do not recolour the branches" stays and refers to the new colours.
+The favicon is checked at 16 px on a light and a dark browser tab. If the Gold branch is too faint there, a small version uses a darker gold for the branch, as GitLab and Firefox draw separate small icons. The rule "Do not recolour the branches" stays and refers to the new colours.
 
 The GitHub organization avatar and the repository social preview are uploaded by the maintainer, because agents never change settings.
 
 ### UI tokens
 
+The brand scale has 12 steps in OKLCH (H 190) with the roles of Radix Colors: 1–2 backgrounds, 3–5 component backgrounds, 6–8 borders, 9 the solid fill, 10 hover, 11 text, 12 strong text.
+
+| Step | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Light | `#F7FDFD` | `#EFF9F8` | `#DEF4F2` | `#D1EDEB` | `#C1E5E2` | `#B0D9D6` | `#98C9C5` | `#74B2AD` | `#035F5C` | `#01504D` | `#035F5C` | `#022D2B` |
+| Dark | `#091413` | `#0D1B1A` | `#0D2725` | `#0C2F2D` | `#103735` | `#174340` | `#1F5451` | `#316F6B` | `#6EBFB9` | `#82CEC8` | `#8CD4CE` | `#D4F3F0` |
+
 | Token | Light | Dark | Contrast |
 |---|---|---|---|
-| `--primary` / `--primary-foreground` | Teal `#017272` / White | `#5FBDBC` / Ink | 5.75:1 / 7.8:1 |
-| primary hover | `#076262` | (from the dark scale) | 7.16:1 with white |
-| `--ring` | Teal `#017272` | `#5FBDBC` | 5.75:1 on `--background`, 5.22:1 on `--muted` / 7.8:1 on `--background`, 5.5:1 on `--muted` |
-| `--link` | `#066B6C` (scale step 11) | `#5FBDBC` | 6.31:1 / 7.8:1, still underlined |
-| selected background (selected row, active item) | `#DEF7F6` (scale step 3) | from the dark scale | Ink text 15.4:1 |
-| `--info` | stays a blue of its own | | 60° of hue from Teal |
-| `--brand-accent` | Amber `#DA8A11` | Amber `#DA8A11` | not for text, buttons or statuses |
-| `--blue` | removed; `--info` keeps the blue value | | |
+| `--brand-1` … `--brand-12` | the scale | the scale | |
+| `--primary` / `--primary-foreground` | step 9 / White | step 9 / Ink (question 7) | 7.51:1 / 8.07:1 |
+| `--primary-hover` (new; replaces `hover:bg-primary/80` in Button and Badge) | step 10 | step 10 | 9.31:1 with White / 9.54:1 with Ink |
+| `--ring` | step 9 | step 9 | light: 7.51:1 on `--background`, `--card`, `--popover`; 6.82:1 on `--muted`. Dark: 8.07:1 on `--background`, 6.84:1 on `--card` and `--popover`, 5.69:1 on `--muted` |
+| `--link` | step 11 | step 11 | 7.51:1 / 10.21:1 on `--background`, still underlined |
+| `--selected` (new, question 6) | step 3 | step 3 | with `--foreground`: 15.06:1 / 15.74:1 |
+| `--info` | `#2563EB` (unchanged value) | `#60A5FA` (unchanged value) | ΔE OK 0.23 from Teal |
+| `--brand-accent` | Gold | Gold | never text, buttons or statuses |
+| `--blue` | removed; `--info` takes its value | | |
 
-The brand scale has 12 steps in OKLCH with the roles of Radix Colors: 1–2 backgrounds, 3–5 component backgrounds, 6–8 borders, 9 the solid fill, 10 hover, 11 text, 12 strong text. It is computed for the light and the dark theme. Its light values are in the brand colour research.
+The focus ring stays 2 px. A focused invalid field keeps its danger border. `--ring` and `--destructive` are ΔE OK 0.29 apart in the light theme and 0.27 in the dark theme.
 
-**Selected states** (the active tab underline, checked Switch and Radio, the selected list row) use Teal instead of Ink, as in Plane. This reverses answer 4 of [2026-11-01](implemented/2026-11-01-brand-interactive-colour.md).
+**Distance to the semantic colours**, also under simulated colour-vision deficiency (Machado, Oliveira and Fernandes 2009, full severity):
 
-**The customer side in the UI** is shown by an icon and a label ("Customer · organization name"), never by Amber (WCAG 1.4.1, §13.4).
+| Pair | Normal | Deuteranopia | Protanopia |
+|---|---|---|---|
+| Teal vs `--success`, light | 0.140 | 0.132 | 0.137 |
+| Teal vs `--success`, dark | 0.159 | 0.115 | 0.137 |
+| Teal vs `--info`, light | 0.231 | 0.221 | |
+
+All values are ΔE OK. Statuses always have an icon or text as well (§13.4).
+
+**The customer side in the UI** is shown by an icon and a label ("Customer · organization name"), never by Gold (WCAG 1.4.1, §13.4).
+
+**E-mails** carry inline colours (`apps/server/src/platform/markdown/render-email-markdown.ts`): the link colour changes from `#2563eb` to Teal `#035F5C`.
 
 ### Supersedes
 
 [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md):
 
-- the colour of `--ring` and `--link` changes from Blue to Teal;
-- selected states change from Ink to Teal;
-- the 2 px focus thickness stays.
+| Answer of 2026-11-01 | Now |
+|---|---|
+| 1 – Blue for `--ring`, 2 px | Teal for `--ring`; 2 px stays |
+| 2 – links in Blue | links in Teal (`--link` = step 11) |
+| 3 – `--info` reuses the Blue | `--info` keeps the blue value as its own colour; `--blue` is removed |
+| 4 – selected states stay Ink | Teal if question 6 is answered "yes" |
 
 That specification gets a changelog line pointing here.
 
@@ -108,11 +144,13 @@ That specification gets a changelog line pointing here.
 
 | Section | Change |
 |---|---|
-| [`docs/brand/README.md`](../../docs/brand/README.md) – The mark | branch colours: Deep Teal (team), Amber (customers) |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – Colours | Teal, Deep Teal, Amber, White replace Ink, Vermilion and Blue as brand colours; Ink stays a UI neutral until the design system specification |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens | the rows above, the bullets on Teal, Amber and `--info`, the 12-step scale |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – Rules | the dark-background pair; Amber never for text, buttons or statuses; the 16 px favicon check |
+| [`docs/brand/README.md`](../../docs/brand/README.md) – The mark | branch colours: Deep Teal (team), Gold (customers); White and Gold on dark backgrounds |
+| [`docs/brand/README.md`](../../docs/brand/README.md) – Colours | Teal, Deep Teal, Gold and White replace Ink, Vermilion and Blue as brand colours; Ink stays a UI neutral until the design system specification |
+| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens | the rows above, the bullets on Teal, Gold and `--info`, the 12-step scale |
+| [`docs/brand/README.md`](../../docs/brand/README.md) – Rules | the versions of the mark; Gold never for text, buttons or statuses; the 16 px favicon check |
 | §13.4 | the focus indicator uses Teal (`--ring`), still 2 px; the customer side is never shown by colour alone |
+
+Agent memory: [`.ai/memory/shadcn.md`](../memory/shadcn.md) says the focus ring is Blue; it is updated with the implementation.
 
 New or changed glossary terms: none.
 
@@ -120,28 +158,31 @@ New or changed glossary terms: none.
 
 Implementation must not start until every question has an answer.
 
-1. Which brand palette? — **Answer:** **A – Teal**: Teal `#017272`, Deep Teal `#023237`, Amber `#DA8A11` (maintainer, 2026-11-27, after comparing four candidates on mock-ups).
-2. What is Amber for? — **Answer:** **a brand accent only**: the mark, the sign-in panel, illustrations and materials; never text, buttons or statuses (maintainer, 2026-11-27).
-3. Do focus and links also use Teal, or stay Blue? — **Answer:** **Teal**: one action colour for everything clickable, as in Plane, Atlassian and Primer (maintainer, 2026-11-27).
-4. The English names of the colours: **Teal, Deep Teal, Amber** (proposed)? — **Answer:** open.
-5. Selected states in Teal instead of Ink, as in Plane (proposed)? — **Answer:** open.
-6. In the dark theme, is the primary button light Teal `#5FBDBC` with Ink text (proposed, 7.8:1; like tone 80 in Material 3), or Teal `#017272` with white text (only 3.0:1 against the Ink background, at the limit of WCAG 1.4.11)? — **Answer:** open.
-7. The wordmark in Deep Teal (proposed, one colour with the stem), or in a neutral near-black like Plane and Linear? — **Answer:** open.
-8. Which branch pair does the mark use on a Deep Teal surface? Proposed: decide it in the Keycloak branding specification, with the same rule (each branch at least 3:1 against the surface and against the other branch); a darker amber, about OKLCH L 0.63, meets it but is a fourth colour. — **Answer:** open.
+1. Which brand hue? — **Answer:** **teal** (candidate A), with the values moved after the wide survey: Teal `#035F5C`, Deep Teal `#071F20` (maintainer, 2026-11-27).
+2. Which colour for the customer branch? — **Answer:** **light gold `#DCA81C`**, accepted with 2.17:1 on white (maintainer, 2026-11-27, after large graphics and small-size examples).
+3. What is Gold for? — **Answer:** **a brand accent only**: the mark, the sign-in panel, illustrations and materials; never text, buttons or statuses (maintainer, 2026-11-27).
+4. Do focus and links also use Teal, or stay Blue? — **Answer:** **Teal**: one action colour for everything clickable, as in Plane, Atlassian and Primer (maintainer, 2026-11-27).
+5. The English names of the colours: **Teal, Deep Teal, Gold** (proposed)? — **Answer:** open.
+6. Selected states (the active tab underline, checked Switch, Radio and Checkbox, the selected list row) in Teal instead of Ink, as in Plane (proposed)? Switch, Radio and Checkbox use `bg-primary` today, so they follow `--primary` either way. "No" would need a separate token that keeps them Ink. — **Answer:** open.
+7. In the dark theme, is the primary button light Teal (step 9, `#6EBFB9`) with Ink text (proposed, 8.07:1; like tone 80 in Material 3), or Teal `#035F5C` with white text? The latter has only 2.30:1 against the Ink background and 1.95:1 against the dark `--card`, below WCAG 1.4.11. — **Answer:** open.
+8. The wordmark in Deep Teal (proposed, one colour with the stem), or in a neutral near-black like Plane and Linear? — **Answer:** open.
 
 ## Acceptance criteria
 
-- [ ] `docs/brand/README.md` lists Teal, Deep Teal, Amber and White with their uses, the dark-background pair and the rules above.
-- [ ] All brand files and the web application's icons use the new colours with unchanged geometry. The favicon is checked at 16 px. The maintainer has been asked to upload the avatar and the social preview.
-- [ ] `--primary`, `--ring`, `--link`, the selected background and `--brand-accent` have the values above in both themes. `--info` keeps its blue and `--blue` is gone.
+- [ ] `docs/brand/README.md` lists Teal, Deep Teal, Gold and White with their uses, the versions of the mark and the rules above.
+- [ ] All brand files and the web application's icons (`icon.svg`, `favicon.ico`, `apple-icon.png`, `public/icons/`) use the new colours with unchanged geometry. The favicon is checked at 16 px on a light and a dark tab. The maintainer has been asked to upload the avatar and the social preview.
+- [ ] The tokens have the values above in both themes: `--brand-1` … `--brand-12`, `--primary`, `--primary-hover`, `--ring`, `--link`, `--selected` (per question 6) and `--brand-accent`. `--info` keeps its blue, and `--blue` is gone.
 - [ ] Story tests check:
-  - white on `--primary` ≥ 4.5:1 and `--ring` ≥ 3:1 on `--background`, `--card`, `--popover` and `--muted` in both themes;
+  - `--primary-foreground` on `--primary` ≥ 4.5:1 in both themes;
+  - `--ring` ≥ 3:1 on `--background`, `--card`, `--popover` and `--muted` in both themes;
+  - `--ring` is not `--destructive`; the assertion `--ring` ≠ `--primary` in `input.stories.tsx` is removed, because both are Teal now;
   - a focused invalid field keeps its danger border (`Input/FocusedInvalid`).
 - [ ] No text, button or status uses `--brand-accent` (lint or story test).
-- [ ] §13.4 updated. [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md) has a changelog line pointing here.
-- [ ] Works on phone, tablet and desktop (Rule 9). Light and dark theme are checked in manual QA.
+- [ ] E-mail links use Teal, and the test of `render-email-markdown.ts` asserts it.
+- [ ] §13.4 and [`.ai/memory/shadcn.md`](../memory/shadcn.md) are updated. [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md) has a changelog line pointing here.
+- [ ] Works on phone, tablet and desktop (Rule 9). The light theme is checked in manual QA. The dark theme is checked in Storybook, because the web application has no dark theme (#531).
 - [ ] User documentation and product tour updated where they show the colours or the logo (Rules 3, 4).
 
 ## Changelog
 
-- 2026-11-27 – Created after the maintainer chose the Plane direction, the Teal palette, Amber as a brand accent and Teal for focus and links.
+- 2026-11-27 – Created after the maintainer chose the Plane direction, the teal palette, light gold as a brand accent and Teal for focus and links. Revised the same day after review: values moved away from WeKan, Odoo and Zendesk, gold for the customer branch, the dark scale, and the e-mail and icon files.
