@@ -1084,7 +1084,7 @@ The maintainer decided on 2026-11-27.
 
 ## Final review pass
 
-Done on 2026-11-27, over the 48 issues that the steps filed (#487–#560; 12 of them are closed). Every carried-forward row is now either answered in a step or a trigger with its condition. None is an open question.
+Done on 2026-11-27, over the 49 issues that the steps filed (#487–#562; 12 of them are closed). Every carried-forward row is now either answered in a step or a trigger with its condition. None is an open question.
 
 ### Overlaps
 
@@ -1100,6 +1100,7 @@ No two issues ask for the same change. These touch the same files and are done t
 | Flaky tests | #555, #528 | #528 is one more case of a class #555 treats (programs checked before they start) |
 | Deprecated APIs | #487–#491, then #492 | The lint rule (#492) follows the fixes, so that it starts green |
 | Design | #531 (change specification first), #530, #533, #534, #532 | Independent; #534 waits for the S1-14 screen |
+| Security of the product | #540, then #562 | The access-control rule now; the threat model before `1.0.0` (step 7) |
 | Specification process | #524, #526, #501 | #501 (the product brief) is a precondition of the prototype steps of step 5 |
 
 ### Priorities
