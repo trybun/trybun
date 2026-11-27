@@ -101,4 +101,5 @@ Reversible, web-only change; no contract, schema or permission surface. The cost
 
 - 2026-11-10 – Created (autonomous defaults, #272).
 - 2026-11-10 – Specification review: the bound is the helper's default `ALL_PAGES_MAX_PAGES`, as implemented in #276; the move to `implemented/` follows both merges.
+- 2026-11-10 – The option lists of every page were replaced by searches in the filter pickers ([2026-11-10-ticket-list-filter-pickers.md](2026-11-10-ticket-list-filter-pickers.md), #279, implemented in #290).
 - 2026-11-27 – Implemented by #276; moved to `implemented/`, which was left undone after both merges (found by step 14 of `.ai/analysis/course-alignment.md`).
