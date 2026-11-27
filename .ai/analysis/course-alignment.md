@@ -46,7 +46,7 @@ Every step works in this order:
 | 12 | CI workflows: necessity, correctness and efficiency of every workflow, action, hook and Dependabot setting; flaky tests | project step, not a lesson | done; issues #552–#555 |
 | 13 | Releases and deployment (triage, changelog, compatibility, preview per PR) | L22, L24 | done; no new issue |
 | 14 | Maintenance and retrospective (knowledge audit, weekly maintenance, production errors) | L15, L25 | done; issue #558 |
-| 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | open |
+| 15 | Company AI SDLC and skills hardening; then team adoption and local models if still needed | L23, extras: skills hardening; L19, L20 | done; issue #560 |
 
 Step 12 has no lesson of its own. The course rates whether the safety net and the gates exist (L02, L14, L17), not whether each workflow is needed and well written, so the maintainer added it on 2026-11-24. It follows steps 10 and 11, which rate tests and gates from the course side, and comes before the release step, which covers `release.yml`. Sources to research: the GitHub Actions documentation (security hardening, `permissions`), the tools built for such audits (actionlint, zizmor, OpenSSF Scorecard), and established practice for flaky tests. The flaky component test found during step 1 was filed on its own (#496) because it failed on `main`, and fixed in #497.
 
@@ -60,7 +60,6 @@ Questions found in one step that belong to a later one. Each step reads its rows
 | after #525 and #537 | After #525 and #537 have results: a reviewer of another model family for code PRs, the model per role (1.21), cheaper models for mechanical steps, and the peak context of the fix-issue runs measured again (above 300k, a subagent per step of `om-auto-fix-issue`) (6.4, 8.12, 9.9, 11.8–11.10) | steps 1, 6, 8, 9, 11 |
 | first production installation | The loop from production errors to the agent: a read-only MCP of an error tracker, error content as data, personal data masked (14.6) | step 14 |
 | when #501 lands | The product brief cleaned when a decision changes (3.4, 14.9); `CODE_REVIEW.md` following the recurring defects is part of the monthly audit of #558 (2.11) | steps 2, 3, 14 |
-| 15 | The analysis commits use the scope `agents`, as the closed scope list of §2.14 has none for `.ai/analysis/`; whether one is needed | step 0 |
 
 ## Step 0 – Baseline map
 
@@ -1052,3 +1051,33 @@ The maintainer asked for a fuller explanation first and then accepted all three 
 - **14.7 – a monthly full audit with retrospective data** (fixes that came back, real review findings, recurring flaky classes), part of #558. A team retrospective waits for a team.
 - **14.6 – deferred until the first production installation:** then an error tracker connected read-only through MCP, the error content treated as data, personal data masked in the tracker.
 - **14.5** is #542, **14.9** waits for the product brief (#501).
+
+## Step 15 – Company AI SDLC and skills hardening; team adoption and local models
+
+Course sources:
+
+- **L23**, a nine-step method for bringing an AI SDLC into an organisation: initiative, process canvas, selection matrix, process map, agent tasks, organisational environment, harness design, evaluation tasks, decision;
+- **the extras on skills hardening** (live session of 2026-10-28);
+- **L19**, the manager's playbook against resistance;
+- **L20**, open-weight models on one's own computer.
+
+The carried-forward row of step 0 (a commit scope for `.ai/analysis/`) is rated here. Checked on 2026-11-27, read-only: `.ai/skills/`, the commit history of the analysis, `.ai/cezar/runs.json`.
+
+### Ratings
+
+| # | Course practice | Evidence in Trybun | Rating |
+|---|---|---|---|
+| 15.1 | An AI SDLC starts from an initiative with a sponsor, a result per quarter and a selected process, and is introduced to a team step by step (L23 steps 1–6, L19) | One maintainer who is sponsor, lead and team; the initiative is the product itself (`docs/plan/`). The organisational canvases, the resistance playbook and the adoption phases have no reader here | N/A |
+| 15.2 | The harness is designed after the process, and it logs its work so that results can be judged honestly (L23 step 7) | The harness follows the process of `SDLC.md` (ADR 0011, the `om-*` skills, Cezar); Cezar logs every run (handoff, events, tokens, cost, time) and the PRs carry the evidence | Full |
+| 15.3 | Evaluation tasks measure the result against a threshold, as-is against to-be, including the people's effort and the cost; then develop, fix or stop (L23 steps 8–9) | Not measured. The data exists: Cezar's time and cost per run (US$ 57 752 in total, 9.15) and the time of each PR from issue to merge. Nobody compares it with a baseline or a threshold. The course alignment is the "fix" decision in practice, but without the measured result | Missing |
+| 15.4 | A skill is born from repeated work and observed errors, has eval cases run with and without it (triggering, asks for missing data), keeps `SKILL.md` short with references and scripts for deterministic steps, and other people's skills are audited before installation (extras) | Project skills: `ui-component` (19 lines) and `verify-change` (23 lines), from repeated work; no eval cases. `verify-change` repeats the command list of `validation.commands` in `.ai/agentic.config.json`, without `pnpm format` but with an install step, so the two lists can drift apart. Other people's skills are read before installation (#525, #526) and locked (#498). The coming repository extensions of `om-auto-review-pr` (#525, #537) have a real run in their Definition of Done, not eval cases | Partial |
+| 15.5 | Open-weight local models when privacy, cost or availability call for them (L20) | Not needed: the agents use subscriptions; the product sends no ticket content to external AI APIs (`AGENTS.md`), so it has no model to host. Revisit if a product feature needs a model on the customer's infrastructure | N/A |
+| 15.6 | A commit scope for the analysis files (step 0) | The analysis commits use `agents`, which the closed scope list of §2.14 allows for the agents' harness; `.ai/analysis/` belongs to it | Full |
+
+### Gap proposals
+
+The maintainer decided on 2026-11-27.
+
+- **15.3 – different on purpose.** The project is free and its costs are deliberately of no interest, so no evaluation of cost and time against a threshold is set up. Cezar keeps recording them, should that change.
+- **15.4 – accepted: #560.** `verify-change` points to `validation.commands` as the one list of the gate. Each repository extension of an `om-*` skill (#525, #537) gets an eval case run with and without it, now in their Definition of Done. Eval cases for `ui-component` wait for a failure that shows they are needed.
+- **15.1, 15.5 – not applicable**, with the triggers in the ratings: a team, or a product feature that needs a model on the customer's infrastructure.
