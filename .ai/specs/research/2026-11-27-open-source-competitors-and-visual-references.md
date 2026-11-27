@@ -18,8 +18,8 @@ No active, MIT-licensed project combines a team tracker (Kanban, statuses) with 
 
 | Item | Cloud | Server |
 |---|---|---|
-| User | from 5.40 USD per month (monthly) or 4.50 (annual) | packs: 900 USD for 15 users, 1,500 for 25, 6,000 for 100 (u) |
-| Helpdesk agent from the 4th | 6 USD per month or 5.50 (annual) | 72 USD per year (u) |
+| User | from 5.40 USD per month (monthly) or 4.50 (annual) | packs: 900 USD for 15 users, 1,500 for 25, 6,000 for 100 |
+| Helpdesk agent from the 4th | 6 USD per month or 5.50 (annual) | 72 USD per year |
 
 Sources:
 
@@ -29,9 +29,7 @@ Sources:
 - <https://www.jetbrains.com/help/youtrack/cloud/switching-subscription-plans.html>
 - <https://blog.jetbrains.com/youtrack/2025/06/new-youtrack-prices-starting-from-october-2025/>
 
-The JetBrains blog refuses automated reading, so the Server prices were seen only in search summaries.
-
-Each project row links to its repository; licence, stars and activity are from its API on 2026-11-27.
+Each project row links to its repository; licence, stars and activity are from its API (GitHub, Codeberg or GitLab) on 2026-11-27.
 
 | Project | Licence (from `LICENSE`) | Kanban | Customer portal | GitHub | Last activity | Stars |
 |---|---|---|---|---|---|---|
@@ -50,7 +48,7 @@ Each project row links to its repository; licence, stars and activity are from i
 | [Kanboard](https://github.com/kanboard/kanboard) | MIT | Y | N | plugins (u) | v1.2.58, 2026-11, maintenance mode (README) | 10.0k |
 | [Gitea](https://github.com/go-gitea/gitea) | MIT | project boards | N | it is a forge | v28.4.0, 2026-11 | 59.3k |
 | [Forgejo](https://codeberg.org/forgejo/forgejo) | GPL-3.0 (awesome-selfhosted still says MIT) | project boards | N | it is a forge | push 2026-11-27 | 5.9k |
-| [GitLab CE Service Desk](https://gitlab.com/gitlab-org/gitlab) | MIT for the CE code; `ee/` proprietary | Y | e-mail only | – | push 2026-10 | 24.6k |
+| [GitLab CE Service Desk](https://gitlab.com/gitlab-org/gitlab) | MIT for the CE code; `ee/` proprietary | Y | e-mail only | – | activity 2026-11-27 (GitLab API) | 6.2k |
 | [Peppermint](https://github.com/Peppermint-Lab/peppermint) | AGPL-3.0 + commercial | – | – | – | archived; last push 2025-09-21 | 3.2k |
 | [Tegon](https://github.com/RedPlanetHQ/tegon) (moved to `RedPlanetHQ`) | AGPL-3.0 | – | – | – | archived; last push 2025-03-30 | 1.9k |
 | [Helpy](https://github.com/helpyio/helpy) | MIT | N | Y | N | last release 2020 | 2.5k |
@@ -78,13 +76,13 @@ Values from the published tokens in the packages named under Method, and from th
 
 | Product | Type | Colour | Shape and depth | Notes |
 |---|---|---|---|---|
-| YouTrack (Ring UI; [2025.1 redesign](https://jetbrains.com/help/youtrack/cloud/youtrack-new-design-2025.html)) | `system-ui`, body 14/20, H4 12 px all caps ([typography](https://jetbrains.com/help/ring-ui/typography.html)) | accent #3369D6 | radii 2/4/8, popup shadow | collapsible icon sidebar, global Create, light/dark/OS themes; no density setting found (u) |
+| YouTrack (Ring UI; [2025.1 redesign](https://blog.jetbrains.com/youtrack/2025/02/youtrack-introduces-a-new-design/)) | `system-ui`, body 14/20, H4 12 px all caps ([typography](https://jetbrains.com/help/ring-ui/typography.html)) | accent #3369D6 | radii 2/4/8, popup shadow | collapsible icon sidebar, global Create, light/dark/OS themes; no density setting found (u) |
 | Linear ([2024](https://linear.app/now/how-we-redesigned-the-linear-ui), [2026 refresh](https://linear.app/now/behind-the-latest-design-refresh)) | Inter Display for headings, Inter for text | warm, low-chroma greys (2026); themes from base, accent, contrast in LCH | few, soft dividers; dimmed sidebar | smaller icons, no coloured icon tiles |
 | Plane (`@makeplane/propel`) | Inter Variable, regular 450, medium 500 | near-achromatic neutrals, brand `oklch(.48 .116 243)` | canvas, surface, layer; 0.5–1 px borders | Lucide icons, dark mode |
 | GitHub [Primer](https://primer.style) (`@primer/primitives`) | Mona Sans VF / system stack, body 14 | border #d1d9e0, accent #0969da | radii 3/6/12, default 6; borders first, faint resting shadow; controls 28/32/40 | 14 themes |
 | Atlassian (Jira, JSM) | Atlassian Sans (from Inter; GA 2025-09 (u)), body 14/20, no all-caps ([typography](https://atlassian.design/foundations/typography)) | less blue tint in neutrals and dark surfaces ([refresh](https://atlassian.design/whats-new/atlassian-ui-refresh-updates)) | radius by role: 2 badges, 4 tags, 6 buttons and inputs, 8 cards and menus, 12 modals and Kanban columns ([radius](https://atlassian.design/foundations/radius), [elevation](https://atlassian.design/foundations/elevation)) | line icons 1.5 px on 16 px ([iconography](https://atlassian.design/foundations/iconography)) |
 | Zendesk Garden (`@zendeskgarden/react-theming`) | system fonts, base 14 | – | radii 2/4/8, focus as ring shadow | 4 px grid, dark base |
-| Help Scout ([Inbox 2, 2024-09](https://articles.helpscout.com/blog/redesigned-inbox/)) (u) | – | higher contrast | – | ⌘K action menu, `/` in the composer, words instead of icons |
+| Help Scout ([Inbox 2](https://articles.helpscout.com/blog/redesigned-inbox/), 2024-09 (u)) | – | higher contrast | – | ⌘K action menu, `/` in the composer, words instead of icons |
 | Front ([2025-08](https://front.com/blog/the-new-front-inbox)) (u) | – | "calmer colours" | – | users on the [forum](https://community.front.com/product-q-a-45/new-front-update-opinions-2839/index2.html): "one big blur", a low-contrast list |
 
 **What reviewers say about YouTrack (u):**
