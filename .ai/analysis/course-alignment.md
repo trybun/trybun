@@ -1081,3 +1081,41 @@ The maintainer decided on 2026-11-27.
 - **15.3 – different on purpose.** The project is free and its costs are deliberately of no interest, so no evaluation of cost and time against a threshold is set up. Cezar keeps recording them, should that change.
 - **15.4 – accepted: #560.** `verify-change` points to `validation.commands` as the one list of the gate. Each repository extension of an `om-*` skill (#525, #537) gets an eval case run with and without it, now in their Definition of Done. Eval cases for `ui-component` wait for a failure that shows they are needed.
 - **15.1, 15.5 – not applicable**, with the triggers in the ratings: a team, or a product feature that needs a model on the customer's infrastructure.
+
+## Final review pass
+
+Done on 2026-11-27, over the 48 issues that the steps filed (#487–#560; 12 of them are closed). Every carried-forward row is now either answered in a step or a trigger with its condition. None is an open question.
+
+### Overlaps
+
+No two issues ask for the same change. These touch the same files and are done together or in order:
+
+| Group | Issues | How |
+|---|---|---|
+| The repository extension of `om-auto-review-pr` | #498 → #537, #525, #560 | #498 pins the skills to a commit first. The fresh-context review (#537) and the Codex advisor (#525) share one extension file; their eval cases come from #560 |
+| `AGENTS.md` and the memory | #542, #494 | One PR. #494 adds the folders of `.ai/` within the budget that #542 sets |
+| `SDLC.md` and `CODE_REVIEW.md` rules | #538, #540, #544, #499 | Small edits of the same two files; they can share one PR |
+| CI workflows | #552, #554, #556; then #553 | The three small fixes first. #553 needs its change specification and a ruleset change by the maintainer |
+| Dependabot | #547, then #558 | Fixing the duplicate image pins (#547) removes most of the work of the dependencies step of #558 |
+| Flaky tests | #555, #528 | #528 is one more case of a class #555 treats (programs checked before they start) |
+| Deprecated APIs | #487–#491, then #492 | The lint rule (#492) follows the fixes, so that it starts green |
+| Design | #531 (change specification first), #530, #533, #534, #532 | Independent; #534 waits for the S1-14 screen |
+| Specification process | #524, #526, #501 | #501 (the product brief) is a precondition of the prototype steps of step 5 |
+
+### Priorities
+
+The labels set when each issue was filed stay, with one exception proposed to the maintainer:
+
+- **#552 → `priority-high`.** A failed series computation in `image-scan.yml` closes every open code-scanning alert without notice, and the release path restores the Trivy binary from a cache that any job on `main` can seed.
+
+A suggested order of work, most value first:
+
+1. #552;
+2. #547;
+3. #498 → #537 (and with it #525, #560);
+4. #540;
+5. #555;
+6. #553;
+7. #509, unblocked since #523;
+8. the remaining `priority-medium` issues;
+9. the `priority-low` ones.
