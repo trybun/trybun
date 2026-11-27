@@ -311,33 +311,33 @@ Nearest 12 to `#023237` (all colours, any chroma):
 
 ## 3. Nearest neighbours of the chosen values
 
-After this survey the maintainer moved the palette to action **Teal `#035F5C`**, team branch **Deep Teal `#071F20`** and customer branch **light gold `#DCA81C`**. For each value: the 8 closest colours across the whole set (primary logo, secondary logo and action colours of the 156 new products and of the earlier 30-product note; 324 distinct product–colour pairs). Source: official, mkt, si or u as in the tables; earlier-note values carry that note's tag. "Direct category" = help desk, ITSM, tracker, Kanban or feedback portal.
+After this survey the maintainer moved the palette to action **Teal `#035F5C`**, team branch **Deep Teal `#071F20`** and customer branch **light gold `#DCA81C`**. For each value: the 8 closest colours across the whole set (primary logo, secondary logo and action colours of the 156 new products and of the earlier 30-product note; 324 distinct product–colour pairs). Colours mentioned only in the Notes column are not in this set; the nearest of them are 10Clouds `#29555E` (mkt) at 0.037 from `#035F5C`, Gorgias `#1A1E23` at 0.028 and LiveChat `#1B1B20` at 0.031 from `#071F20`, and Slack `#ECB22E` (u) at 0.038 from `#DCA81C`. None of them is in Trybun's direct category, and they do not change the reading below. Source: official, mkt, si or u as in the tables; earlier-note values carry that note's tag. "Direct category" = help desk, ITSM, tracker, Kanban or feedback portal.
 
 ### `#035F5C` – action Teal (L 0.439 C 0.075 H 191.0; bucket teal)
 
 | Rank | ΔE OK | Product | Group | Role | Hex | OKLCH | Source | Trybun's direct category? |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 0.038 | ZnanyLekarz | D | secondary logo | `#006A59` | L 0.47 C 0.087 H 177 (teal) | mkt | no (Polish/CEE brand) |
+| 1 | 0.038 | ZnanyLekarz | D | secondary logo | `#006A59` | L 0.47 C 0.087 H 177 (teal) | mkt | no |
 | 2 | 0.077 | Redmine | earlier | secondary logo | `#4D4D4D` | L 0.42 C 0.000 H 90 (neutral) | official | direct |
 | 3 | 0.079 | Freshdesk | earlier | action | `#264966` | L 0.39 C 0.064 H 245 (blue) | official | direct |
 | 4 | 0.081 | Redmine | earlier | action | `#234761` | L 0.38 C 0.061 H 242 (blue) | official | direct |
-| 5 | 0.083 | WeKan | B | logo | `#007289` | L 0.51 C 0.092 H 218 (cyan) | official | direct (tracker / Kanban / feedback) |
-| 6 | 0.091 | ZnanyLekarz | D | logo | `#007C68` | L 0.52 C 0.098 H 176 (teal) | mkt | no (Polish/CEE brand) |
-| 7 | 0.094 | WeKan | B | secondary logo | `#00778C` | L 0.52 C 0.093 H 216 (cyan) | official | direct (tracker / Kanban / feedback) |
-| 8 | 0.096 | Kayako | A | secondary logo | `#1E4142` | L 0.35 C 0.041 H 198 (neutral) | official | direct (help desk / ITSM) |
+| 5 | 0.083 | WeKan | B | logo | `#007289` | L 0.51 C 0.092 H 218 (cyan) | official | direct |
+| 6 | 0.091 | ZnanyLekarz | D | logo | `#007C68` | L 0.52 C 0.098 H 176 (teal) | mkt | no |
+| 7 | 0.094 | WeKan | B | secondary logo | `#00778C` | L 0.52 C 0.093 H 216 (cyan) | official | direct |
+| 8 | 0.096 | Kayako | A | secondary logo | `#1E4142` | L 0.35 C 0.041 H 198 (neutral) | official | direct |
 
 ### `#071F20` – team branch Deep Teal (L 0.221 C 0.030 H 199.0; bucket neutral)
 
 | Rank | ΔE OK | Product | Group | Role | Hex | OKLCH | Source | Trybun's direct category? |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 0.022 | Zammad | earlier | action | `#0E1E29` | L 0.23 C 0.031 H 240 (neutral) | mkt | direct |
-| 2 | 0.030 | Libredesk | A | logo | `#1A1A1A` | L 0.22 C 0.000 H 90 (neutral) | official | direct (help desk / ITSM) |
-| 3 | 0.030 | GitKraken | C | logo | `#1C1C1C` | L 0.23 C 0.000 H 90 (neutral) | official | no (developer platform) |
-| 4 | 0.034 | Brand24 | D | secondary logo | `#171717` | L 0.20 C 0.000 H 90 (neutral) | official | no (Polish/CEE brand) |
+| 2 | 0.030 | Libredesk | A | logo | `#1A1A1A` | L 0.22 C 0.000 H 90 (neutral) | official | direct |
+| 3 | 0.030 | GitKraken | C | logo | `#1C1C1C` | L 0.23 C 0.000 H 90 (neutral) | official | no |
+| 4 | 0.034 | Brand24 | D | secondary logo | `#171717` | L 0.20 C 0.000 H 90 (neutral) | official | no |
 | 5 | 0.034 | Frappe Helpdesk | earlier | action | `#171717` | L 0.20 C 0.000 H 90 (neutral) | official | direct |
-| 6 | 0.034 | Netlify | C | logo | `#131619` | L 0.20 C 0.008 H 248 (neutral) | official | no (developer platform) |
+| 6 | 0.034 | Netlify | C | logo | `#131619` | L 0.20 C 0.008 H 248 (neutral) | official | no |
 | 7 | 0.034 | Plain | earlier | action | `#0A2414` | L 0.23 C 0.045 H 154 (neutral) | mkt | direct |
-| 8 | 0.036 | CircleCI | C | logo | `#161616` | L 0.20 C 0.000 H 90 (neutral) | official | no (developer platform) |
+| 8 | 0.036 | CircleCI | C | logo | `#161616` | L 0.20 C 0.000 H 90 (neutral) | official | no |
 
 ### `#DCA81C` – customer branch light gold (L 0.759 C 0.150 H 85.1; bucket yellow)
 
@@ -345,19 +345,19 @@ After this survey the maintainer moved the palette to action **Teal `#035F5C`**,
 |---|---|---|---|---|---|---|---|---|
 | 1 | 0.050 | Zammad | earlier | secondary logo | `#F39804` | L 0.76 C 0.165 H 68 (orange) | official | direct |
 | 2 | 0.054 | GitLab | earlier | secondary logo | `#FCA326` | L 0.79 C 0.162 H 68 (orange) | official | direct |
-| 3 | 0.059 | Hiver | A | secondary logo | `#FDB022` | L 0.81 C 0.163 H 76 (yellow) | official | direct (help desk / ITSM) |
-| 4 | 0.061 | Zoho Desk / Zoho Projects | A | secondary logo | `#FFAF00` | L 0.81 C 0.170 H 76 (yellow) | official | direct (help desk / ITSM) |
-| 5 | 0.062 | Libredesk | A | secondary logo | `#FFAE2C` | L 0.81 C 0.161 H 73 (yellow) | official | direct (help desk / ITSM) |
+| 3 | 0.059 | Hiver | A | secondary logo | `#FDB022` | L 0.81 C 0.163 H 76 (yellow) | official | direct |
+| 4 | 0.061 | Zoho Desk / Zoho Projects | A | secondary logo | `#FFAF00` | L 0.81 C 0.170 H 76 (yellow) | official | direct |
+| 5 | 0.062 | Libredesk | A | secondary logo | `#FFAE2C` | L 0.81 C 0.161 H 73 (yellow) | official | direct |
 | 6 | 0.062 | Airtable | B | secondary logo | `#FCB42A` | L 0.82 C 0.161 H 78 (yellow) | si | adjacent (work management) |
 | 7 | 0.064 | Zammad | earlier | action | `#F6BA08` | L 0.82 C 0.167 H 85 (yellow) | mkt | direct |
-| 8 | 0.066 | LiveAgent | A | logo | `#F6921E` | L 0.75 C 0.165 H 62 (orange) | official | direct (help desk / ITSM) |
+| 8 | 0.066 | LiveAgent | A | logo | `#F6921E` | L 0.75 C 0.165 H 62 (orange) | official | direct |
 
 
 Reading:
 
-- **`#035F5C` (action Teal, L 0.44 C 0.075 H 191, teal).** Only one colour is within 2 JND: ZnanyLekarz's secondary site colour `#006A59` (ΔE 0.038, mkt, not the direct category). Every other neighbour is ΔE ≥ 0.077, about 4 JND or more. The nearest colours from the direct category are Redmine's grey and navy, Freshdesk's navy button, WeKan's cyan logo `#007289` (ΔE 0.083) and Kayako's dark wordmark. Compared with `#017272` (WeKan 0.038, Odoo 0.041, Fider 0.050), the darker teal is **clearly further from every help desk and tracker**: Odoo `#017E84` is now ΔE 0.10 and Fider `#12827F` ΔE 0.11 (computed with the same script; not in the top 8).
+- **`#035F5C` (action Teal, L 0.44 C 0.075 H 191, teal).** Within this set only one colour is within 2 JND (10Clouds from the Notes column is a second, 0.037): ZnanyLekarz's secondary site colour `#006A59` (ΔE 0.038, mkt, not the direct category). Every other neighbour is ΔE ≥ 0.077, about 4 JND or more. The nearest colours from the direct category are Redmine's grey and navy, Freshdesk's navy button, WeKan's cyan logo `#007289` (ΔE 0.083) and Kayako's dark wordmark. Compared with `#017272` (WeKan 0.038, Odoo 0.041, Fider 0.050), the darker teal is **clearly further from every help desk and tracker**: Odoo `#017E84` is now ΔE 0.10 and Fider `#12827F` ΔE 0.11 (computed with the same script; not in the top 8).
 - **`#071F20` (team branch Deep Teal, L 0.22 C 0.030 H 199).** C 0.030 is below 0.045, so by this note's own rule it is **neutral**, not teal: it reads as a near-black with a slight green-blue cast. Its neighbours are near-black colours (Zammad's marketing CTA `#0E1E29` ΔE 0.022, Libredesk, Frappe Helpdesk, Plain's dark green, Netlify, CircleCI, GitKraken, Brand24, all ΔE 0.030–0.036). These are close in distance but carry no hue identity; near-black is a common choice (25 neutral logos, 5 neutral actions), so the team branch does not set Trybun apart, and it no longer matches Zendesk Kale (`#03363D` is ΔE 0.09 from `#071F20`).
-- **`#DCA81C` (customer branch light gold, L 0.76 C 0.150 H 85, yellow).** The neighbours are amber/orange logo colours at ΔE 0.050–0.066 (2.5–3.3 JND): Zammad `#F39804` and its marketing `#F6BA08`, GitLab `#FCA326`, Hiver `#FDB022`, Zoho `#FFAF00`, Libredesk `#FFAE2C`, LiveAgent `#F6921E`, Airtable `#FCB42A` (si). Most are from the direct category, but all are **secondary** logo colours or a marketing CTA, except LiveAgent's logo. None is a primary *action* colour (yellow: 0 actions in the set). As a brand accent only, gold sits in a hue that is common in logo details and absent from buttons.
+- **`#DCA81C` (customer branch light gold, L 0.76 C 0.150 H 85, yellow).** The neighbours are amber/orange logo colours at ΔE 0.050–0.066 (2.5–3.3 JND): Zammad `#F39804` and its marketing `#F6BA08`, GitLab `#FCA326`, Hiver `#FDB022`, Zoho `#FFAF00`, Libredesk `#FFAE2C`, LiveAgent `#F6921E`, Airtable `#FCB42A` (si). Most are from the direct category, but all are **secondary** logo colours or a marketing CTA, except LiveAgent's logo. The one button among them is Zammad's marketing CTA `#F6BA08` (ΔE 0.064); Zammad's in-app "submit" button is yellow `#FFCE33` with black text (see the 30-product note). Yellow is otherwise not an action colour in the set. As a brand accent only, gold sits in a hue that is common in logo details and rare on buttons.
 
 
 ## 4. Crowded and free hues; does "teal is rare in the category" hold?
@@ -369,7 +369,7 @@ Reading:
 
 **Verdict: the conclusion weakens, it does not fail.**
 
-- It **holds** at the level of hue counts: teal is tied with yellow and magenta as the least-used logo bucket (7 of 169, 4 %), and among help desks / ITSM (group A, 35 logos) not a single logo is teal; across 169 logos only 7 are teal, and none of the 7 is a help desk or issue tracker (user numbers were not measured (u)).
+- It **holds** at the level of hue counts: teal is tied with yellow and magenta as the least-used logo bucket (7 of 169, 4 %), and among help desks / ITSM (group A, 35 logos) not a single logo is teal; across 169 logos only 7 are teal, and none of the 7 is a help desk or ITSM product, while three are issue trackers or work-management tools (Targetprocess, Nifty, Backlog) (user numbers were not measured (u)).
 - It **weakens** at the level of the exact provisional colour: deep, mid-chroma blue-green at L ≈ 0.5 is used by WeKan (OSS Kanban, cyan logo), Odoo (Helpdesk, cyan action), Fider (feedback, teal logo part) and Nifty (PM, teal brand fill) – all within ΔE 0.06 of `#017272` – and the provisional team branch `#023237` is a near-copy of Zendesk Kale. The earlier note's statement "teal 165–195°: nobody" was true for its 30 products; in the wider set it is "rare, with a few close neighbours in the niche". For the chosen `#035F5C` the nearest direct-category colour is ΔE 0.077 away (section 3), so the weakening applies mainly to the provisional value.
 - **Teal and green-teal developer brands:** Netlify (logo now monochrome; *marketing CTA* bright turquoise `#32E6E2`, L 0.84 – far from `#017272`, ΔE 0.34), Elastic (one of six logo tiles `#02BCB7`; UI blue), DigitalOcean (accent "foam" `#6FE0ED`, cyan, ΔE 0.35), Supabase (green `#3ECF8E`, H 159 – green, not teal), Element (`#0DBD8B`, H 166 – green/teal border), New Relic (logo green `#1CE783`; theme-color `#008C99`, ΔE 0.088), ServiceNow (not obtained, (u)). These developer brands use **light, bright** teal/turquoise or green (L 0.72–0.85); none uses a **deep** teal like `#017272` (L 0.50) or `#035F5C` (L 0.44) as its main colour. Several historical teal developer brands (Travis CI `#3EAAAF`, GitKraken `#179287`, MariaDB dark teal `#003545`, Elastic `#005571`) have moved away from teal.
 
