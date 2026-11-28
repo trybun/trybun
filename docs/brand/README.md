@@ -21,9 +21,20 @@ The Trybun mark is a letter **T** whose stem splits like branches in git: the De
 
 The wordmark in `trybun-logo-*.svg` uses the **Manrope ExtraBold** font. Before using these files outside the web (print, design tools), convert the text to outlines.
 
-The web application keeps copies: `apps/web/src/app/favicon.ico` and `apple-icon.png` (the avatar), `apps/web/public/icons/` (the primary icon as SVG and as PNG of 192 and 512 px), and `apps/web/src/app/icon.svg`, the primary icon with a `prefers-color-scheme: dark` rule that switches it to the dark-background version on a dark browser tab. The favicon follows the browser theme, not the theme of the page; Safari 26 ignores the rule and shows the light version. The header of the application loads `public/icons/trybun-icon.svg`, which has no such rule: an image follows the theme of the system, and the header is light.
+The web application keeps copies: `apps/web/src/app/favicon.ico` and `apple-icon.png` (the avatar), `apps/web/public/icons/` (the primary icon as SVG and as PNG of 192 and 512 px), and `apps/web/src/app/icon.svg`, the primary icon with a `prefers-color-scheme: dark` rule that switches it to the dark-background version on a dark browser tab. The favicon follows the browser theme, not the theme of the page; Safari 26 ignores the rule and shows the light version. The header of the application loads `public/icons/trybun-icon.svg`, which has no such rule: in some browsers (Safari) an SVG image follows the theme of the system rather than the page, and the header is light.
 
-The SVG files are plain SVG written from the geometry of the mark, without embedded metadata. The PNG files are screenshots of these SVG files in Chromium (Playwright) with Manrope from `@fontsource-variable/manrope`, with grayscale antialiasing (`--disable-lcd-text`); `favicon.ico` holds the 16, 32 and 48 px renders as PNG images. To change a colour, change it in every SVG file and render the PNG and ICO files again at the same sizes.
+The SVG files are plain SVG written from the geometry of the mark, without embedded metadata. The PNG files are screenshots in Chromium (Playwright) with Manrope from `@fontsource-variable/manrope`, with grayscale antialiasing (`--disable-lcd-text`):
+
+- `trybun-icon-512.png` and the 192 px copy: `trybun-icon.svg` at the full size of the image, transparent background;
+- `trybun-avatar-512.png`: `trybun-icon.svg` in a 352 px square at (80, 80), on White;
+- `favicon.ico`: `trybun-icon.svg` rendered at 16, 32 and 48 px, stored as PNG images;
+- `trybun-social-preview.png` (1280 × 640, Deep Teal background):
+  - the mark of `trybun-logo-dark.svg` (White and Gold) with the transform `translate(285,134.6) scale(2.1875) translate(10,10) scale(0.8)`;
+  - the wordmark `trybun` at x 519.3, baseline 301.5, Manrope 800, 148.2 px, letter spacing −5.97 px, White;
+  - the tagline "Customer requests and developer work on one path", centred at x 640, baseline 406, Manrope 500, 36 px, White at 85 % opacity;
+  - "OPEN SOURCE · SELF-HOSTED · MIT", centred at x 640, baseline 478, Manrope 500, 22 px, letter spacing 1.8 px, White at 65 % opacity.
+
+To change a colour, change it in every SVG file and render the PNG and ICO files again as described above.
 
 ## Colours
 
@@ -83,7 +94,7 @@ The type scale, spacing, radii (derived from `--radius`), shadows and breakpoint
 - Keep clear space around the mark of at least the height of its crossbar.
 - Minimum size: 16 px for the icon, 80 px width for the logo with wordmark.
 - Do not recolour the branches, rotate, stretch, outline or add effects to the mark.
-- Versions: on light backgrounds Deep Teal and Gold; on dark backgrounds (Ink, Deep Teal, photos with a dark tone) White and Gold; one colour Deep Teal, or White on dark backgrounds.
+- Versions: on light backgrounds Deep Teal and Gold; on dark backgrounds (Ink, Deep Teal) White and Gold; one colour Deep Teal, or White on dark backgrounds.
 - Gold is never used for text, buttons or statuses; the customer side in the UI is shown by an icon and a label.
 - After a change of the mark, check the favicon at 16 px on a light and a dark browser tab.
 - On photos or busy backgrounds, use the one-colour version.
