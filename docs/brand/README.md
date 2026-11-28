@@ -45,7 +45,7 @@ To change a colour, change it in every SVG file and render the PNG and ICO files
 | Gold | `#DCA81C` | Customer branch of the mark; a brand accent only, never text, buttons or statuses |
 | White | `#FFFFFF` | Backgrounds; team branch and crossbar of the mark on dark backgrounds |
 
-These colours were chosen on 2026-11-27 ([change specification](../../.ai/specs/2026-11-27-brand-teal-palette.md)).
+These colours were chosen on 2026-11-27 ([change specification](../../.ai/specs/implemented/2026-11-27-brand-teal-palette.md)).
 
 ## Typography
 

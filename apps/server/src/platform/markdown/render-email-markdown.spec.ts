@@ -73,7 +73,7 @@ describe('renderEmailMarkdown', () => {
     expect(html).toContain('<code style="font-family:');
     expect(html).not.toMatch(/class=|hljs/);
     expect(html).toContain(
-      '<a href="https://trybun.example.com/a" style="color:#2563eb;text-decoration:underline">x</a>',
+      '<a href="https://trybun.example.com/a" style="color:#035f5c;text-decoration:underline">x</a>',
     );
   });
 
