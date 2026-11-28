@@ -7,7 +7,7 @@ description: Add a UI component to @trybun/ui in Trybun – from shadcn/ui on Ba
 
 Rules: [§2.6](../../../docs/spec/02-agent-rules.md) (Rule 6), [§2.9](../../../docs/spec/02-agent-rules.md) (Rule 9), [§13.4](../../../docs/spec/13-non-functional.md), [§18.6](../../../docs/spec/18-code-patterns.md). Reference implementation: [`button.tsx`](../../../packages/ui/src/components/button.tsx) and [`button.stories.tsx`](../../../packages/ui/src/components/button.stories.tsx). Pitfalls: `.ai/memory/shadcn.md`.
 
-1. **Check what exists** in `packages/ui/src/components/`; extend or compose an existing component instead of adding a similar one.
+1. **Check what exists** in `packages/ui/src/components/`; extend or compose an existing component instead of adding a similar one. The same element needed a second time becomes a shared component, never a copy ([§2.6](../../../docs/spec/02-agent-rules.md) "The second use makes a component").
 2. **Add it from shadcn/ui** (Base UI flavour, never `-b radix`): `pnpm --filter @trybun/ui exec shadcn add <component>`. Use the documentation pages under `/docs/components/base/`. Add the dependencies the CLI did not install (it may skip `class-variance-authority`, `lucide-react`) with `pnpm --filter @trybun/ui add`.
 3. **Adapt before first use**:
    - Tokens only: replace arbitrary values (`text-[0.8rem]`, `min-w-[96px]`, `rounded-[min(…)]`) and Tailwind palette colours (`bg-black/10`) with theme tokens (`globals.css`). Focus rings are `ring-ring` at full opacity. A new token is a change of `docs/brand/README.md` for human approval.

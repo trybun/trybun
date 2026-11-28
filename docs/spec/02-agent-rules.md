@@ -96,7 +96,6 @@ Rule 6 is **subordinate to Rules 1 and 2**.
 Per Rule 1:
 
 - **Check what already exists first.** Before creating a component, the agent checks the project's component library. If a similar component exists, it extends it or composes from it instead of creating a copy.
-- **The second use makes a component.** The second time the same piece of UI (markup, a class list or a behaviour) is needed, it becomes one shared component, or an existing one is extended; it is never copied. Generic UI goes to `@trybun/ui`, domain UI to the feature's `components/`. Waiting for the second use keeps components to known use cases (YAGNI, below).
 - UI components form the **project component library** (a separate internal monorepo package `packages/ui`, named `@trybun/ui`), built on Base UI primitives (the default of shadcn/ui), not from scratch. **shadcn/ui** is the starting point ([§14.2](14-architecture.md)): if shadcn/ui offers a suitable component, it is added to `packages/ui` with the shadcn CLI and then adapted; a component is built from scratch only when shadcn/ui has nothing suitable.
 - A component copied from shadcn/ui becomes **project code** and is adapted before first use:
   - styling uses only the project's design tokens,
@@ -121,6 +120,7 @@ Per Rule 2:
 
 - The same elements (person picker, label picker, visibility switch, status badge, GFM editor) look and behave **identically across the system**. Users learn them once and recognize them everywhere (Nielsen's "consistency and standards").
 - An improvement made in a component (e.g. a new keyboard shortcut) immediately works everywhere the component is used.
+- **The second use makes a component.** The second time the same element is needed in another place – the same role and meaning for the user, such as a status badge, a page header, a list row or a load-more button, not class lists that happen to match – it becomes one shared component, or an existing one is extended; it is never copied. This deliberately differs from the common rule of three, because copies of UI drift from the first copy. Generic UI goes to `@trybun/ui`; domain UI goes to the components of the feature that owns the resource ([§18.5](18-code-patterns.md)) and is composed from `@trybun/ui`. Repetition inside one file (a loop) and files added by the shadcn CLI are exempt.
 
 ## 2.7 Rule 7 – Project memory lives in the repository
 

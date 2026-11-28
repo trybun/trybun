@@ -35,7 +35,7 @@ Full text: [`docs/spec/02-agent-rules.md`](docs/spec/02-agent-rules.md). Rules 2
 3. **User documentation** – docs-as-code (Diátaxis, EN + PL), updated in the same PR.
 4. **Product tours** – short, skippable, shown once, role-aware; targets `data-tour="view-element"`.
 5. **README always current** – updated in the same PR; English for code, commits and technical docs.
-6. **Reusable components** – start from shadcn/ui in `@trybun/ui`, adapt (tokens, 44 px targets, translations, a11y, Storybook); Tailwind theme tokens only; the second time the same UI is needed it becomes one shared component, never a copy.
+6. **Reusable components** – start from shadcn/ui in `@trybun/ui`, adapt (tokens, 44 px targets, translations, a11y, Storybook); Tailwind theme tokens only; the second time the same element is needed elsewhere it becomes one shared component, never a copy.
 7. **Project memory in the repo** – `.ai/memory/` only; tool memory outside the repo is disabled.
 8. **Specification always current** – update `docs/spec/` in the same PR; changes of requirements go through a change specification approved by a human.
 9. **Phones and tablets first** – every view from 360 px, touch targets ≥ 44 px, no hover-only actions.
