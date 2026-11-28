@@ -23,7 +23,7 @@ The research note [`research/2026-11-28-design-system-foundations.md`](research/
 Two open decisions bear on this specification:
 
 - **#531.** The maintainer decided on 2026-11-26 to remove the dark theme, which the application never shows. On 2026-11-28 they reversed it: a dark theme is a convention of the category (Plane, Linear, GitHub, Jira offer one) and stays, as an option beside the default light theme (question 15). #531 is closed. This specification defines the dark values; showing the theme in the application (the system setting and a choice in the account settings) gets its own specification.
-- **#532.** It plans to write in `docs/brand/` that the default radius, type scale, shadows and spacing are kept on purpose. That plan predates the Plane direction of 2026-11-27. If the answers replace those defaults (questions 4, 7, 13), #532 drops that paragraph and keeps only its `SDLC.md` part.
+- **#532.** It plans to write in `docs/brand/` that the default radius, type scale, shadows and spacing are kept on purpose. That plan predates the Plane direction of 2026-11-27. The answers replace those defaults (questions 4, 7, 13), so #532 drops that paragraph and keeps only its `SDLC.md` part.
 
 Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. The values here are derived for Trybun; none is copied from Propel.
 
@@ -67,7 +67,7 @@ Twelve steps in OKLCH at Trybun's own hue 196, between Teal (191) and Deep Teal 
 | 11 | secondary text, icons, placeholder | `#566060` | `#AFB8B8` | `--muted-foreground` |
 | 12 | primary text | `#152120` | `#E8EEEE` | `--foreground` |
 
-The OKLCH values are L 0.993, 0.982, 0.960, 0.940, 0.920, 0.898, 0.866, 0.812, 0.595, 0.575, 0.480, 0.235 with C 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012, 0.012, 0.013, 0.016. Dark: L 0.170, 0.198, 0.236, 0.262, 0.288, 0.318, 0.362, 0.432, 0.600, 0.640, 0.775, 0.945 with C 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.010, 0.012, 0.012, 0.012, 0.010, 0.006. Steps without a token stay primitives for components that need them. In dark, every surface is one step lighter than the one below it, and hover and pressed are one and two steps above the control background, so no state shares the step of the surface it sits on.
+The OKLCH values are L 0.993, 0.982, 0.960, 0.940, 0.920, 0.898, 0.866, 0.812, 0.595, 0.575, 0.480, 0.235 with C 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012, 0.012, 0.013, 0.016. Dark: L 0.170, 0.198, 0.236, 0.262, 0.288, 0.318, 0.362, 0.432, 0.600, 0.640, 0.775, 0.945 with C 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.010, 0.012, 0.012, 0.012, 0.010, 0.006. Steps without a token stay primitives for components that need them. In dark, the sidebar, page and card rise one step each, and hover and pressed are steps 5 and 6, above every surface and control background, so no state shares the step of the surface it sits on. A popover opened from a card or a dialog has the same step 3; its border and shadow separate it.
 
 Contrast (WCAG 2):
 
@@ -207,11 +207,13 @@ Dark (the fill keeps today's dark value; its label is dark step 1):
 | danger | `#FF6467` (6.62) | `#412120` | `#FEB5B1` (8.51, 10.80) | `#894746` |
 | info | `#60A5FA` (7.52) | `#1A2C44` | `#A8CEFF` (8.70, 11.21) | `#395F8F` |
 
+The dark status borders are decorative too (2.09–2.23:1 on the page).
+
 The borders are decorative (1.6–1.9:1 in light): a status always has text or an icon (§13.4). How the nine internal and five public statuses map to these colours, and the shared badge, belong to the layout specification.
 
 ### Motion
 
-Today's values, from `packages/ui/src/components/*`: hover and popups 100 ms (7 uses), one 200, one 250 (toast), one 300, the drawer 450 ms (2), and three arbitrary cubic-béziers (`0.22,1,0.36,1` twice, `0.32,0.72,0,1`, `0.45,1.005,0,1.005`). They become tokens in Tailwind's namespaces (`--transition-duration-*`, `--ease-*`), named by role so that Tailwind's own `ease-out` and `ease-in` keep their meaning:
+Today's values, from `packages/ui/src/components/*`: hover and popups 100 ms (7 uses), one 200, one 250 (toast), one 300, the drawer 450 ms (2), the drawer's swipe `calc(var(--drawer-swipe-strength) * 400ms)` (2), and three arbitrary cubic-béziers: `0.22,1,0.36,1` (toast twice, drawer once), `0.32,0.72,0,1` (drawer), `0.45,1.005,0,1.005` (drawer content). They become tokens in Tailwind's namespaces (`--transition-duration-*`, `--ease-*`), named by what they are, so that Tailwind's own `ease-out` and `ease-in` keep their meaning:
 
 | Token | Value with today's timing (question 13 a) | Value unified (question 13 b) |
 |---|---|---|
@@ -220,7 +222,8 @@ Today's values, from `packages/ui/src/components/*`: hover and popups 100 ms (7 
 | `--transition-duration-toast` | 250 ms | 300 ms (as slow) |
 | `--transition-duration-slow` | 300 ms | 300 ms (dialogs, drawers, toasts) |
 | `--transition-duration-drawer` | 450 ms | – (300 ms) |
-| `--ease-enter`, `--ease-exit`, `--ease-drawer` | today's three curves, named | `cubic-bezier(0.2, 0, 0, 1)` in, `cubic-bezier(0.4, 0, 1, 1)` out |
+| `--transition-duration-swipe` | 400 ms (base of the drawer's swipe `calc`) | 300 ms |
+| `--ease-emphasized`, `--ease-sheet`, `--ease-spring` | today's three curves (`0.22,1,0.36,1`, `0.32,0.72,0,1`, `0.45,1.005,0,1.005`) | `--ease-enter` `cubic-bezier(0.2, 0, 0, 1)` and `--ease-exit` `cubic-bezier(0.4, 0, 1, 1)` |
 
 Option (b) changes popups from 100 to 200 ms, the drawer from 450 to 300 ms and the toast from 250 to 300 ms. Changed timing touches the animation flakiness of the story tests (#555). #530 can land before or after either option, and neither changes what reduced motion stops.
 
@@ -242,14 +245,14 @@ Option (b) changes popups from 100 to 200 ms, the drawer from 450 to 300 ms and 
 | [§2.9](../../docs/spec/02-agent-rules.md) | reading text at 16 px and at most 65 characters; the compact sizes as tokens |
 | [§13.4](../../docs/spec/13-non-functional.md) | every text role ≥ 4.5:1 and every identifying border ≥ 3:1 on every surface, checked by the story tests |
 | [§18.6](../../docs/spec/18-code-patterns.md) | compact sizes through the size tokens; text through `Heading` and `Text`; registry components keep their Tailwind sizes; role radii in the adapted components |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens and Rules | the neutral scale, surfaces, text styles, radii, shadows, sizes and durations replace "Tailwind defaults"; Ink leaves the UI table, and the rule that names Ink as a dark background of the mark names Deep Teal only |
+| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens and Rules | the neutral scale, surfaces, text styles, radii, shadows, sizes and durations replace "Tailwind defaults"; Ink leaves the UI table |
 | [`.ai/memory/shadcn.md`](../memory/shadcn.md) | "The theme keeps Tailwind's type scale" becomes the `type-*` mechanism of question 8 |
 
 New or changed glossary terms: none.
 
 ## Open questions
 
-Every question has an answer. Each question names the options and the recommendation, with its reason.
+Every question has an answer. Questions 1–14 name the options and the recommendation, with its reason; question 15 records the maintainer's own decision.
 
 1. **Neutral scale.**
    - **Options:**
@@ -350,7 +353,7 @@ Every question has an answer. Each question names the options and the recommenda
 - [ ] The story test `Foundations/Colour tokens` checks, in both themes:
   - every text role on every surface where it is used (≥ 4.5:1);
   - `--input` on every surface where it is used (≥ 3:1);
-  - every status text on its subtle fill, and White on every status fill (≥ 4.5:1);
+  - every status text on its subtle fill, and the status label on every status fill (White in light, step 1 in dark) (≥ 4.5:1);
   - the Teal pairs of the teal specification.
 - [ ] In Trybun's own code the lint rejects `/NN` colour mixes, `dark:` classes, and Tailwind size, radius, shadow and duration classes where a token exists.
 - [ ] Every heading and text element in `apps/web` and in Trybun's own components uses `Heading` or `Text`; the registry components keep their Tailwind sizes. #533 is closed by this work.
@@ -362,8 +365,6 @@ Every question has an answer. Each question names the options and the recommenda
 ## Changelog
 
 - 2026-11-28 – Created from the research note of #580, with recommendations for the maintainer's answers.
-- 2026-11-28 – The maintainer keeps the dark theme (question 15 answered (b), correcting an earlier oversight); dark values, contrasts, statuses and shadows added; #531 closed.
-- 2026-11-28 – Second review: the `cn` merge gap in question 8, today's motion timing as option (a) of question 13, the `--spacing-*` and `--transition-duration-*` namespaces, step 9 darkened to 3.17:1 on the pressed surface, #532 conditional, status names on `--destructive`.
 - 2026-11-28 – Revised after review:
   - the Ink inventory is complete;
   - the dark theme was removed (question 15), later reversed;
@@ -373,4 +374,7 @@ Every question has an answer. Each question names the options and the recommenda
   - the shared status badge moved to the layout specification;
   - #532 and #533 are related;
   - the arguments of questions 4 and 7 are corrected.
+- 2026-11-28 – Second review: the `cn` merge gap in question 8, today's motion timing as option (a) of question 13, the `--spacing-*` and `--transition-duration-*` namespaces, step 9 darkened to 3.17:1 on the pressed surface, #532 conditional, status names on `--destructive`.
+- 2026-11-28 – The maintainer keeps the dark theme (question 15 answered (b), correcting an earlier oversight); dark values, contrasts, statuses and shadows added; #531 closed.
 - 2026-11-28 – Questions 1–14 answered by the maintainer on the recommendations; approved.
+- 2026-11-28 – Third review: the status-label criterion per theme, the dark surface sentence, the easing names and the swipe duration, #532 stated as decided, question 15 described, dark status border contrasts.
