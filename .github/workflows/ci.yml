@@ -95,10 +95,15 @@ jobs:
       # the web application (playwright.config.ts).
       - run: pnpm build
       - run: pnpm e2e
+      # The CPU calibration of the Lighthouse test, in the job log (readable with `gh run view --log`)
+      # and the job summary, for every run: the Playwright upgrade pull request compares it with
+      # earlier runs (#508, #579).
+      - name: Print the Lighthouse calibration
+        if: ${{ !cancelled() && hashFiles('apps/web/test-results/lighthouse-calibration.md') != '' }}
+        run: tee -a "$GITHUB_STEP_SUMMARY" < apps/web/test-results/lighthouse-calibration.md
       # Only for a failed run, to diagnose it (traces of failed tests, Lighthouse reports). The
-      # CPU calibration of the Lighthouse test goes to the job summary of every run (#579), so a
-      # green run needs no report; reports of every run outgrew the 500 MB of Actions storage of
-      # the Free plan.
+      # step above prints the CPU calibration of every run (#579), so a green run needs no report;
+      # reports of every run outgrew the 500 MB of Actions storage of the Free plan.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ failure() }}
         with:
