@@ -51,9 +51,9 @@ jobs:
       # Unit and integration tests (Testcontainers on the runner's Docker) in one run; the
       # coverage thresholds are checked on the combined result.
       - run: pnpm test:coverage
-      # Evidence for diagnosing a failed run only: a green run shows its result in the log, and
-      # nothing reads the reports of green runs. Artifacts of every run outgrew the 500 MB of
-      # Actions storage of the Free plan (about 45 runs a day).
+      # Only for a failed run, to diagnose it: Vitest writes the report when a coverage threshold
+      # fails (not when a test fails), and the summary of the thresholds is in the log of every
+      # run. Reports of every run outgrew the 500 MB of Actions storage of the Free plan (#579).
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ failure() }}
         with:
@@ -95,9 +95,10 @@ jobs:
       # the web application (playwright.config.ts).
       - run: pnpm build
       - run: pnpm e2e
-      # Evidence for diagnosing a failed run only: a green run shows its result in the log, and
-      # nothing reads the reports of green runs. Artifacts of every run outgrew the 500 MB of
-      # Actions storage of the Free plan (about 45 runs a day).
+      # Only for a failed run, to diagnose it (traces of failed tests, Lighthouse reports). The
+      # CPU calibration of the Lighthouse test goes to the job summary of every run (#579), so a
+      # green run needs no report; reports of every run outgrew the 500 MB of Actions storage of
+      # the Free plan.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ failure() }}
         with:

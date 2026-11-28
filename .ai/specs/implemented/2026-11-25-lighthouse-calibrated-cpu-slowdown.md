@@ -109,7 +109,7 @@ New or changed glossary terms: none.
 ## Open questions
 
 1. Should a run whose own `environment.benchmarkIndex` differs from the calibration's unthrottled reading by more than 20 % fail the test? That is a sign the runner became busier between the calibration and the run. — **Answer (maintainer, 2026-11-25):** no; record it in the report only. The median over three runs already covers a single run on a busier machine. A gate would fail a test on runner noise rather than on the page. If a median ever breaks the stop rule because of it, the report shows the drift and the decision returns to the maintainer.
-2. Where to recheck the target when Playwright's Chromium is upgraded (the benchmark's definition can change with Chromium)? — **Answer (maintainer, 2026-11-25):** a memory entry in `.ai/memory/e2e.md`, and a comment at the target constant. On every Chromium upgrade, the Playwright upgrade PR compares the calibrated multipliers in its report with the previous ones.
+2. Where to recheck the target when Playwright's Chromium is upgraded (the benchmark's definition can change with Chromium)? — **Answer (maintainer, 2026-11-25):** a memory entry in `.ai/memory/e2e.md`, and a comment at the target constant. On every Chromium upgrade, the Playwright upgrade PR compares the calibrated multipliers in its report with the previous ones. *Changed 2026-11-28 (#579, maintainer):* the multipliers are compared in the job summary of "E2E and Lighthouse", where the test writes its calibration on every run; the report is uploaded only for a failed run.
 
 ## Acceptance criteria
 
@@ -131,3 +131,4 @@ New or changed glossary terms: none.
 - 2026-11-25 – Created. The maintainer chose calibration and the target 1000 on 2026-11-25, after the stop rule broke on PR #507.
 - 2026-11-25 – Approved: the maintainer accepted both proposed answers.
 - 2026-11-25 – Implemented (#508): `apps/web/e2e/cpu-calibration.ts` and `lighthouse.spec.ts`, §2.9 and `.ai/memory/e2e.md` updated; the CI measurements are listed in the implementation pull request.
+- 2026-11-28 – Open question 2 amended (#579, maintainer): the calibration of each key page goes to the job summary of every CI run, because the Playwright report is now uploaded only for a failed run (Actions storage of the Free plan).

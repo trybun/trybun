@@ -1,9 +1,9 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { appendFile, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { availableParallelism, loadavg, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type BrowserContextOptions, chromium, expect, test } from '@playwright/test';
 import lighthouse, { type Result } from 'lighthouse';
-import { calibrateCpuSlowdown } from './cpu-calibration.js';
+import { type CpuCalibration, calibrateCpuSlowdown } from './cpu-calibration.js';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 
 /**
@@ -47,6 +47,43 @@ function median(values: readonly number[]): number {
 }
 
 type StorageState = Exclude<BrowserContextOptions['storageState'], string | undefined>;
+
+/**
+ * Writes the calibration of a key page to the summary of the CI job. After an upgrade of
+ * Playwright's Chromium its pull request compares these multipliers with those of earlier runs
+ * (open question 2 of #508); the summary is kept with the logs of the run, so that comparison needs
+ * no report artifact of a green run, which CI uploads only for a failed one (#579).
+ */
+async function appendToJobSummary(
+  file: unknown,
+  page: string,
+  calibration: CpuCalibration,
+  runner: { loadAverage: number[]; parallelism: number },
+  runs: readonly Result[],
+): Promise<void> {
+  if (typeof file !== 'string' || file === '') return;
+  const chromiumVersion =
+    /Chrome\/([\d.]+)/.exec(runs[0]?.environment.hostUserAgent ?? '')?.[1] ?? '?';
+  const [low, high] = calibration.rateInterval;
+  const rows = [
+    ['Chromium', chromiumVersion],
+    ['CPU slowdown multiplier', calibration.cpuSlowdownMultiplier.toFixed(2)],
+    ['95 % interval of the rate', `${low.toFixed(2)}–${high.toFixed(2)}`],
+    ['Unthrottled benchmark index (median)', median(calibration.unthrottledReadings).toFixed(0)],
+    ['Throttled readings', String(calibration.steps.length)],
+    [
+      'Benchmark index of the runs',
+      runs.map((run) => run.environment.benchmarkIndex.toFixed(0)).join(', '),
+    ],
+    ['Load average (1, 5, 15 min)', runner.loadAverage.map((load) => load.toFixed(2)).join(', ')],
+    ['Parallelism', String(runner.parallelism)],
+  ];
+  const table = rows.map(([label, value]) => `| ${label ?? ''} | ${value ?? ''} |`).join('\n');
+  await appendFile(
+    file,
+    `### Lighthouse CPU calibration: ${page}\n\n| | |\n|---|---|\n${table}\n\n`,
+  );
+}
 
 for (const keyPage of KEY_PAGES) {
   test(`${keyPage.name} meets the mobile budget`, async ({ baseURL }, testInfo) => {
@@ -104,6 +141,14 @@ for (const keyPage of KEY_PAGES) {
         // Measured on the key page itself, not on a page it redirects to.
         expect(result.lhr.finalDisplayedUrl).toBe(`${baseURL ?? ''}${keyPage.path}`);
       }
+
+      await appendToJobSummary(
+        testInfo.config.metadata.jobSummaryFile,
+        keyPage.name,
+        calibration,
+        runner,
+        runs,
+      );
 
       const score = (category: string) =>
         median(runs.map(({ categories }) => categories[category]?.score ?? 0));

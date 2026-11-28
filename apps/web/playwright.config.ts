@@ -15,6 +15,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCi,
   reporter: isCi ? [['github'], ['html', { open: 'never' }]] : 'list',
+  // The summary file of the GitHub Actions job, where the Lighthouse test writes its CPU
+  // calibration (#579); empty outside GitHub Actions.
+  metadata: { jobSummaryFile: process.env.GITHUB_STEP_SUMMARY ?? '' },
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'retain-on-failure',
