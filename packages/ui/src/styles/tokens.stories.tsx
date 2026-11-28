@@ -46,6 +46,12 @@ const PAIRS: readonly Pair[] = [
     minimum: 4.5,
     use: 'Text of a selected row',
   },
+  {
+    foreground: '--muted-foreground',
+    background: '--selected',
+    minimum: 4.5,
+    use: 'Secondary text of a selected row',
+  },
   ...SURFACES.flatMap((surface) => [
     { foreground: '--foreground', background: surface, minimum: 4.5, use: `Text on ${surface}` },
     {
@@ -55,8 +61,23 @@ const PAIRS: readonly Pair[] = [
       use: `Secondary text on ${surface}`,
     },
     { foreground: '--input', background: surface, minimum: 3, use: `Field border on ${surface}` },
+    {
+      foreground: '--input-hover',
+      background: surface,
+      minimum: 3,
+      use: `Hovered field border on ${surface}`,
+    },
+    { foreground: '--link', background: surface, minimum: 4.5, use: `Link on ${surface}` },
+
     { foreground: '--ring', background: surface, minimum: 3, use: `Focus ring on ${surface}` },
   ]),
+  // Error messages sit on the page, cards and popovers, never on a hovered or pressed row.
+  ...(['--background', '--card', '--popover'] as const).map((surface) => ({
+    foreground: '--destructive',
+    background: surface,
+    minimum: 4.5,
+    use: `Error text on ${surface}`,
+  })),
   ...STATUSES.flatMap((status) => [
     {
       foreground: `${status}-foreground`,

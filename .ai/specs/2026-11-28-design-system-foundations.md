@@ -207,7 +207,7 @@ Dark (the fill keeps today's dark value; its label is dark step 1):
 | danger | `#FF6467` (6.62) | `#412120` | `#FEB5B1` (8.51, 10.80) | `#894746` |
 | info | `#60A5FA` (7.52) | `#1A2C44` | `#A8CEFF` (8.70, 11.21) | `#395F8F` |
 
-The dark status borders are decorative too (2.09–2.23:1 on the page).
+The dark status borders are decorative too (2.09–2.23:1 on their subtle fill, 2.65–2.92:1 on the page).
 
 The borders are decorative (1.6–1.9:1 in light): a status always has text or an icon (§13.4). How the nine internal and five public statuses map to these colours, and the shared badge, belong to the layout specification.
 
