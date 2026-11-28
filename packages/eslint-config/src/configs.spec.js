@@ -297,6 +297,22 @@ describe('lint rules', () => {
       'better-tailwindcss/no-restricted-classes',
     ],
     [
+      'the brand accent with the important suffix (text-brand-accent!)',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      "import { cn } from 'cn';\nexport const banner = cn('text-brand-accent!');\n",
+      'better-tailwindcss/no-restricted-classes',
+    ],
+    [
+      'the brand accent through its variable (text-(--color-brand-accent))',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      "import { cn } from 'cn';\nexport const banner = cn('text-(--color-brand-accent)');\n",
+      'better-tailwindcss/no-restricted-classes',
+    ],
+    [
       'the brand accent as a background (bg-brand-accent/50)',
       ui,
       'ui',
@@ -405,7 +421,7 @@ describe('lint rules', () => {
       ui,
       'ui',
       'src/components/banner.tsx',
-      "import { cn } from 'cn';\nexport const banner = cn('bg-primary fill-brand-accent stroke-brand-accent h-(--drawer-height) rounded-[inherit] [--bleed:3rem]');\n",
+      "import { cn } from 'cn';\nexport const banner = cn('bg-primary fill-brand-accent hover:stroke-brand-accent/50 h-(--drawer-height) rounded-[inherit] [--bleed:3rem]');\n",
     ],
     [
       'the default export of a story file',

@@ -2,7 +2,7 @@
 
 ## The mark
 
-The Trybun mark is a letter **T** whose stem splits like branches in git: the dark branch stands for the development team, the vermilion branch for the customers. Both meet in one stem – customer requests and developer work on one path.
+The Trybun mark is a letter **T** whose stem splits like branches in git: the Deep Teal branch stands for the development team, the Gold branch for the customers. Both meet in one stem – customer requests and developer work on one path.
 
 ## Files
 

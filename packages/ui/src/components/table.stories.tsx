@@ -144,6 +144,7 @@ export const WithSelection: Story = {
     await expect(getComputedStyle(row('Select TRY-2')!).backgroundColor).toBe(
       tokenColor('--selected'),
     );
+    await expect(canvas.getByRole('checkbox', { name: 'Select TRY-2' })).toBeChecked();
     const selectAll = canvas.getByRole('checkbox', { name: 'Select all tickets' });
     await expect(selectAll).toHaveAttribute('aria-checked', 'mixed');
 

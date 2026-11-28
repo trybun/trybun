@@ -40,7 +40,8 @@ export function TicketCardList({
             data-state={isSelected ? 'selected' : undefined}
             className={cn(
               'flex gap-1 rounded-lg border border-border bg-card p-2 text-card-foreground',
-              isSelected && 'bg-muted',
+              // The same selected background as a table row; the checkbox is the second cue.
+              isSelected && 'bg-selected',
             )}
           >
             <span className="flex size-11 shrink-0 items-center justify-center">
