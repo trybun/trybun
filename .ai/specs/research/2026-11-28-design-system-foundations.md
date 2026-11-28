@@ -75,7 +75,7 @@ Source: `@makeplane/propel@0.9.11` `variables.css` l. 260–283, 572–590; rule
 
 | Border / shadow | Plane value and use | Source |
 |---|---|---|
-| `border-xs` 0.5px | no Propel component uses it; the app still uses 0.5px hairlines (`border-[0.5px]`, `border-{t,b,l,r}-[0.5px]`, `divide-*-[0.5px]`, `outline-[0.5px]`, `border-xs`) in about 50 files: spreadsheet, calendar and Gantt grids, form footers, some menus and buttons, the Kanban card outline | Propel docs borders; `variables.css` l. 926–933; `grep` of `makeplane/plane` at `723bb178` (47 files in a sparse checkout of `apps/` and `packages/`, 54 in a full one) |
+| `border-xs` 0.5px | no Propel component uses it; the app still uses 0.5px hairlines (`border-[0.5px]`, `border-{t,b,l,r}-[0.5px]`, `divide-*-[0.5px]`, `outline-[0.5px]`, `border-xs`) in about 50 files: spreadsheet, calendar and Gantt grids, form footers, some menus and buttons, the Kanban card outline | Propel docs borders; `variables.css` l. 926–933; `grep` of `makeplane/plane` at `723bb178` (47–54 files depending on the search pattern, in a sparse checkout of `apps/` and `packages/`) |
 | `border-sm` = `border` 1px | "Every divider, container edge, and control outline in Propel" (Propel's components) | Propel docs borders |
 | `border-md` 1.5, `-lg` 2, `-xl` 2.5px | unused; 2px only for avatar rims | same |
 | Border roles | subtle n-400 (1.19:1 on white), subtle-1 n-500 (1.30), strong n-600 (1.44), strong-1 n-700 (1.60); high-contrast themes re-point them to text steps 1200/1100/1000/900 | `variables.css` l. 316–319, 625–628 (light, dark), 837–914 (high contrast) |
