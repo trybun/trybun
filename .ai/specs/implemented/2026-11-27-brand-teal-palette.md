@@ -6,7 +6,7 @@
 | Created | 2026-11-27 |
 | Plan task | – |
 | System specification sections | §13.4; [`docs/brand/README.md`](../../../docs/brand/README.md) (The mark, Colours, UI design tokens, Rules) |
-| Related issues / PRs | #573, #572 (research), [`2026-11-01-brand-interactive-colour.md`](2026-11-01-brand-interactive-colour.md) (superseded in part) |
+| Related issues / PRs | #573, #572 (research), #574 (this specification), #575 (tokens), #577 (mark), #578 (completion), [`2026-11-01-brand-interactive-colour.md`](2026-11-01-brand-interactive-colour.md) (superseded in part) |
 
 ## Context
 
@@ -129,7 +129,7 @@ The focus ring stays 2 px. A focused invalid field keeps its danger border. `--r
 
 All values are ΔE OK. Statuses always have an icon or text as well (§13.4).
 
-**The customer side in the UI** is shown by an icon and a label ("Customer · organization name"), never by Gold (WCAG 1.4.1, §13.4).
+**The customer side in the UI** is never shown by colour alone, and never by Gold (WCAG 1.4.1, §13.4).
 
 **E-mails** carry inline colours (`apps/server/src/platform/markdown/render-email-markdown.ts`): the link colour changes from `#2563eb` to Teal `#035F5C`.
 
@@ -187,7 +187,7 @@ Implementation must not start until every question has an answer.
 - [x] No text, button or status in the product code uses `--brand-accent` (lint or story test); the unit-test strings listed under non-goals are exempt.
 - [x] E-mail links use Teal, and the test of `render-email-markdown.ts` asserts it.
 - [x] §13.4 and [`.ai/memory/shadcn.md`](../../memory/shadcn.md) are updated. [`2026-11-01-brand-interactive-colour.md`](2026-11-01-brand-interactive-colour.md) has a changelog line pointing here.
-- [x] Works on phone, tablet and desktop (Rule 9). The light theme is checked in manual QA. The dark theme is checked in Storybook, because the web application has no dark theme (#531).
+- [ ] Works on phone, tablet and desktop (Rule 9). The light theme is checked in manual QA. The dark theme is checked in Storybook, because the web application has no dark theme (#531).
 - [x] User documentation and product tour updated where they show the colours or the logo (Rules 3, 4).
 
 ## Changelog
@@ -196,4 +196,5 @@ Implementation must not start until every question has an answer.
 - 2026-11-27 – Questions 5–8 answered by the maintainer: the names Teal, Deep Teal and Gold, selected states in Teal, a light Teal button with Ink text in the dark theme, the wordmark in Deep Teal. Second review: figures corrected, the dark `--info` row, the ring and link test, the favicon on dark tabs and the full list of deliberate leftovers. Third review: the neighbour table from the whole survey, the SVG favicon for dark tabs, a criterion for the selected row, CVD distances to two decimals.
 - 2026-11-27 – Approved by the maintainer (merged in #574).
 - 2026-11-28 – Step 2: the mark files and the icons of the web application regenerated in the new colours. The favicon check at 16 px found no need for a darker gold; the light outline for browsers without the dark switch was dropped, because Safari 26 ignores the rule in the SVG favicon and an outline would harm light tabs (maintainer).
-- 2026-11-28 – Step 3: e-mail links in Teal, §13.4 updated, light theme checked at phone, tablet and desktop widths (agent QA); implemented (tokens #575, mark #577, this pull request). Status `implemented`, moved to `implemented/`.
+- 2026-11-28 – Step 3: e-mail links in Teal, §13.4 updated, light theme checked by the agent at phone, tablet and desktop widths (the Rule 9 criterion waits for `qa-approved` of the maintainer); implemented (tokens #575, mark #577, #578). Status `implemented`, moved to `implemented/`.
+- 2026-11-28 – Review of #578: the customer side was described as an icon and a label with the organization name, which contradicts §5.4 (other organizations see only "Customer") and exists nowhere in the UI; now it is only never shown by colour alone and never by Gold, as the table of system specification changes says.

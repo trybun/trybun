@@ -95,7 +95,7 @@ The type scale, spacing, radii (derived from `--radius`), shadows and breakpoint
 - Minimum size: 16 px for the icon, 80 px width for the logo with wordmark.
 - Do not recolour the branches, rotate, stretch, outline or add effects to the mark.
 - Versions: on light backgrounds Deep Teal and Gold; on dark backgrounds (Ink, Deep Teal) White and Gold; one colour Deep Teal, or White on dark backgrounds.
-- Gold is never used for text, buttons or statuses; the customer side in the UI is shown by an icon and a label.
+- Gold is never used for text, buttons or statuses; the customer side in the UI is never shown by colour alone.
 - After a change of the mark, check the favicon at 16 px on a light and a dark browser tab.
 - On photos or busy backgrounds, use the one-colour version.
 
