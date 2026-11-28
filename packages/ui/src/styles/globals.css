@@ -15,8 +15,22 @@
   /* Brand colours (docs/brand/README.md); not utilities, only the source of the tokens below. */
   --deep-teal: #071f20;
   --gold: #dca81c;
-  /* The neutral of the UI until the design system specification (2026-11-27-brand-teal-palette). */
-  --ink: #141a2e;
+  /*
+   * Neutral scale (2026-11-28-design-system-foundations): OKLCH at hue 196, between Teal and Deep
+   * Teal, chroma 0.002-0.016; the 12 roles of Radix Colors as for the Teal scale below.
+   */
+  --neutral-1: #fbfdfd;
+  --neutral-2: #f7fafa;
+  --neutral-3: #eff3f3;
+  --neutral-4: #e7ecec;
+  --neutral-5: #e0e6e6;
+  --neutral-6: #d8dfdf;
+  --neutral-7: #cdd5d4;
+  --neutral-8: #bbc4c3;
+  --neutral-9: #778181;
+  --neutral-10: #717b7b;
+  --neutral-11: #566060;
+  --neutral-12: #152120;
   /*
    * Teal scale (OKLCH, hue about 190), roles of Radix Colors: 1-2 backgrounds, 3-5 component
    * backgrounds, 6-8 borders, 9 the solid fill, 10 hover, 11 text, 12 strong text.
@@ -36,45 +50,73 @@
   --brand-12: #022d2b;
 
   color-scheme: light;
+  /* Text in step 12: 16.53:1 on White, 15.75 on --sidebar, 13.86 on --accent. */
   --background: #ffffff;
-  --foreground: var(--ink);
+  --foreground: var(--neutral-12);
   --card: #ffffff;
-  --card-foreground: var(--ink);
+  --card-foreground: var(--neutral-12);
   --popover: #ffffff;
-  --popover-foreground: var(--ink);
+  --popover-foreground: var(--neutral-12);
+  /* One step away from the page; never brand-coloured. */
+  --sidebar: var(--neutral-2);
+  /* Kanban columns, table headers, code blocks. */
+  --sunken: var(--neutral-2);
   /* Teal: 7.51:1 with White; hover 9.31:1. */
   --primary: var(--brand-9);
   --primary-foreground: #ffffff;
   --primary-hover: var(--brand-10);
-  /* Ink 5 % on White. */
-  --secondary: #f3f4f5;
-  --secondary-foreground: var(--ink);
-  --muted: #f3f4f5;
-  /* Ink 70 % on White: 6.4:1 on --background, 5.8:1 on --muted. */
-  --muted-foreground: #5a5f6d;
-  --accent: #f3f4f5;
-  --accent-foreground: var(--ink);
-  /* Tailwind red-700, green-700, amber-700: 6.6, 5.0 and 5.1:1 with White; blue 5.2:1. */
+  --secondary: var(--neutral-3);
+  --secondary-foreground: var(--neutral-12);
+  --muted: var(--neutral-3);
+  /* Step 11: 6.49:1 on White, 5.80 on --muted, 5.44 on --accent, 5.14 on --accent-active. */
+  --muted-foreground: var(--neutral-11);
+  /* Hovered and pressed rows and menu items. */
+  --accent: var(--neutral-4);
+  --accent-foreground: var(--neutral-12);
+  --accent-active: var(--neutral-5);
+  /* Fills: Tailwind red-700, green-700, amber-700 with White 6.42, 4.95, 5.03:1; blue 5.17:1. */
   --destructive: #c10007;
   --destructive-foreground: #ffffff;
+  --destructive-subtle: #fef0ee;
+  /* 7.50:1 on its subtle fill. */
+  --destructive-text: #8c2d28;
+  --destructive-border: #f2a89e;
   --success: #008236;
   --success-foreground: #ffffff;
+  --success-subtle: #e6fae9;
+  /* 6.71:1 on its subtle fill. */
+  --success-text: #03642b;
+  --success-border: #94cf9f;
   --warning: #bb4d00;
   --warning-foreground: #ffffff;
+  --warning-subtle: #fef0e9;
+  /* 7.28:1 on its subtle fill. */
+  --warning-text: #833b01;
+  --warning-border: #eead89;
   /* Its own blue, ΔE OK 0.23 from Teal. */
   --info: #2563eb;
   --info-foreground: #ffffff;
+  --info-subtle: #eef4ff;
+  /* 7.20:1 on its subtle fill. */
+  --info-text: #284e99;
+  --info-border: #9ebef8;
   /* Links in running text: 7.51:1 on --background. */
   --link: var(--brand-11);
-  /* Ink 12 % on White: decorative lines. */
-  --border: #e3e4e6;
-  /* Ink 50 % on White: 3.3:1, the boundary of form fields (WCAG 1.4.11). */
-  --input: #8a8c96;
-  /* Teal, far from the danger red: 7.51:1 on --background, 6.82:1 on --muted. */
+  /* Decorative lines (1.35:1), never the only cue; step 8 on hover. */
+  --border: var(--neutral-6);
+  --border-hover: var(--neutral-8);
+  /* The boundary of form fields (WCAG 1.4.11): 4.01:1 on White, 3.17 on --accent-active. */
+  --input: var(--neutral-9);
+  --input-hover: var(--neutral-10);
+  /* Teal, far from the danger red: 7.51:1 on --background, 6.72:1 on --muted. */
   --ring: var(--brand-9);
   /* Selected rows and items; only 1.15:1 on --background, so a second cue (a check) is needed. */
   --selected: var(--brand-3);
-  --overlay: rgb(20 26 46 / 40%);
+  --overlay: rgb(21 33 32 / 40%);
+  /* Shadows only for what floats or moves, in the colour of step 12. */
+  --shadow-raised: 0 1px 2px rgb(21 33 32 / 0.08), 0 4px 12px -2px rgb(21 33 32 / 0.12);
+  --shadow-overlay: 0 1px 2px rgb(21 33 32 / 0.06), 0 8px 24px -4px rgb(21 33 32 / 0.14);
+  --shadow-modal: 0 2px 4px rgb(21 33 32 / 0.06), 0 16px 40px -8px rgb(21 33 32 / 0.2);
   /* Gold: a brand accent for the mark and illustrations only, never text, buttons or statuses. */
   --brand-accent: var(--gold);
   --radius: 0.625rem;
@@ -94,44 +136,79 @@
   --brand-10: #82cec8;
   --brand-11: #8cd4ce;
   --brand-12: #d4f3f0;
-  --background: var(--ink);
-  --foreground: #ffffff;
-  /* White 6 % on Ink. */
-  --card: #22283b;
-  --card-foreground: #ffffff;
-  --popover: #22283b;
-  --popover-foreground: #ffffff;
-  /* Light Teal with Ink text: 8.07:1; hover 9.54:1. */
+  --neutral-1: #0d1010;
+  --neutral-2: #131616;
+  --neutral-3: #1b1f1f;
+  --neutral-4: #212626;
+  --neutral-5: #262c2c;
+  --neutral-6: #2d3434;
+  --neutral-7: #383f3f;
+  --neutral-8: #495252;
+  --neutral-9: #788382;
+  --neutral-10: #848f8e;
+  --neutral-11: #afb8b8;
+  --neutral-12: #e8eeee;
+  /* Surfaces rise one step each; hover and pressed sit above every surface. */
+  --background: var(--neutral-2);
+  /* Step 12: 15.51:1 on --background, 10.83 on --accent-active. */
+  --foreground: var(--neutral-12);
+  --card: var(--neutral-3);
+  --card-foreground: var(--neutral-12);
+  --popover: var(--neutral-3);
+  --popover-foreground: var(--neutral-12);
+  --sidebar: var(--neutral-1);
+  --sunken: var(--neutral-1);
+  /* Light Teal with step 1 text: 8.93:1; hover 10.57:1. */
   --primary: var(--brand-9);
-  --primary-foreground: var(--ink);
+  --primary-foreground: var(--neutral-1);
   --primary-hover: var(--brand-10);
-  /* White 12 % on Ink. */
-  --secondary: #303547;
-  --secondary-foreground: #ffffff;
-  --muted: #303547;
-  /* White 65 % on Ink: 7.9:1 on --background, 5.5:1 on --muted. */
-  --muted-foreground: #adafb6;
-  --accent: #303547;
-  --accent-foreground: #ffffff;
-  /* Tailwind red-400, green-400, amber-400: 6.0, 9.7 and 10.0:1 with Ink; blue 6.8:1. */
+  --secondary: var(--neutral-4);
+  --secondary-foreground: var(--neutral-12);
+  --muted: var(--neutral-4);
+  /* Step 11: 8.99:1 on --background, 6.28 on --accent-active. */
+  --muted-foreground: var(--neutral-11);
+  --accent: var(--neutral-5);
+  --accent-foreground: var(--neutral-12);
+  --accent-active: var(--neutral-6);
+  /* Fills: Tailwind red-400, green-400, amber-400 with step 1 6.62, 10.74, 11.10:1; blue 7.52:1. */
   --destructive: #ff6467;
-  --destructive-foreground: var(--ink);
+  --destructive-foreground: var(--neutral-1);
+  --destructive-subtle: #412120;
+  /* 8.51:1 on its subtle fill. */
+  --destructive-text: #feb5b1;
+  --destructive-border: #894746;
   --success: #05df72;
-  --success-foreground: var(--ink);
+  --success-foreground: var(--neutral-1);
+  --success-subtle: #17321e;
+  /* 8.90:1 on its subtle fill. */
+  --success-text: #8fe1a1;
+  --success-border: #346c42;
   --warning: #ffb900;
-  --warning-foreground: var(--ink);
+  --warning-foreground: var(--neutral-1);
+  --warning-subtle: #3a270b;
+  /* 8.58:1 on its subtle fill. */
+  --warning-text: #f8bf6c;
+  --warning-border: #7b5518;
   --info: #60a5fa;
-  --info-foreground: var(--ink);
-  /* 10.21:1 on --background. */
+  --info-foreground: var(--neutral-1);
+  --info-subtle: #1a2c44;
+  /* 8.70:1 on its subtle fill. */
+  --info-text: #a8ceff;
+  --info-border: #395f8f;
+  /* 10.77:1 on --background. */
   --link: var(--brand-11);
-  /* White 15 % on Ink. */
-  --border: #373c4d;
-  /* White 40 % on Ink: 3.8:1 on --background, 3.2:1 on --popover. */
-  --input: #727682;
-  /* Teal: 8.07:1 on --background, 6.84:1 on --card, 5.69:1 on --muted. */
+  --border: var(--neutral-7);
+  --border-hover: var(--neutral-8);
+  /* 4.65:1 on --background, 3.25 on --accent-active. */
+  --input: var(--neutral-9);
+  --input-hover: var(--neutral-10);
+  /* Teal: 8.51:1 on --background, 5.94:1 on --accent-active. */
   --ring: var(--brand-9);
   --selected: var(--brand-3);
   --overlay: rgb(0 0 0 / 60%);
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --shadow-overlay: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -4px rgb(0 0 0 / 0.5);
+  --shadow-modal: 0 2px 4px rgb(0 0 0 / 0.3), 0 16px 40px -8px rgb(0 0 0 / 0.6);
 }
 
 @theme inline {
@@ -153,21 +230,44 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-active: var(--accent-active);
+  --color-sidebar: var(--sidebar);
+  --color-sunken: var(--sunken);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-text: var(--destructive-text);
+  --color-destructive-border: var(--destructive-border);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-text: var(--success-text);
+  --color-success-border: var(--success-border);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-text: var(--warning-text);
+  --color-warning-border: var(--warning-border);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-text: var(--info-text);
+  --color-info-border: var(--info-border);
   --color-link: var(--link);
   --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
   --color-input: var(--input);
+  --color-input-hover: var(--input-hover);
   --color-ring: var(--ring);
   --color-selected: var(--selected);
   --color-overlay: var(--overlay);
   --color-brand-accent: var(--brand-accent);
+
+  /* Tailwind's black shadows are replaced by the three of the theme. */
+  --shadow-*: initial;
+  --shadow-raised: var(--shadow-raised);
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-modal: var(--shadow-modal);
 
   /* Manrope comes from next/font in the web application and from Fontsource in Storybook. */
   --font-sans: var(--font-manrope, system-ui), system-ui, sans-serif;

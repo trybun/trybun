@@ -378,3 +378,4 @@ Every question has an answer. Questions 1–14 name the options and the recommen
 - 2026-11-28 – The maintainer keeps the dark theme (question 15 answered (b), correcting an earlier oversight); dark values, contrasts, statuses and shadows added; #531 closed.
 - 2026-11-28 – Questions 1–14 answered by the maintainer on the recommendations; approved.
 - 2026-11-28 – Third review: the status-label criterion per theme, the dark surface sentence, the easing names and the swipe duration, #532 stated as decided, question 15 described, dark status border contrasts.
+- 2026-11-28 – Implementation, step 1 of 7: neutral scale, surfaces, status quartets and shadows in `globals.css`, with the contrast story test in both themes.

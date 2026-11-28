@@ -316,7 +316,7 @@ export function MentionSuggestionList({
               initialFocus={false}
               finalFocus={false}
               onPointerDown={keepFocus}
-              className="max-h-(--available-height) w-72 max-w-(--available-width) overflow-y-auto overscroll-contain rounded-lg bg-popover p-1 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden"
+              className="max-h-(--available-height) w-72 max-w-(--available-width) overflow-y-auto overscroll-contain rounded-lg border border-border bg-popover p-1 text-sm text-popover-foreground shadow-overlay outline-hidden"
             >
               <div id={listId} role="listbox" aria-label={t('mentionList')}>
                 {people.map((person, index) => (
