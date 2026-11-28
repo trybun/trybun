@@ -5,39 +5,44 @@
 | Status | `draft` |
 | Created | 2026-11-28 |
 | Plan task | – |
-| System specification sections | §2.6, §2.9, §13.4; [`docs/brand/README.md`](../../docs/brand/README.md) (UI design tokens) |
-| Related issues / PRs | #581, #580 (research), [`2026-11-27-brand-teal-palette.md`](implemented/2026-11-27-brand-teal-palette.md) (its non-goal), #530, #531, #533 |
+| System specification sections | §2.6, §2.9, §13.4, §18.6; [`docs/brand/README.md`](../../docs/brand/README.md) (UI design tokens) |
+| Related issues / PRs | #581, #580 (research), [`2026-11-27-brand-teal-palette.md`](implemented/2026-11-27-brand-teal-palette.md) (its non-goal), #530, #531, #532, #533 |
 
 ## Context
 
 On 2026-11-27 the maintainer chose Plane as the direction of Trybun's UI: clear, intuitive and full of conventions users know from other tools. The teal palette ([`2026-11-27-brand-teal-palette.md`](implemented/2026-11-27-brand-teal-palette.md)) changed the brand and action colours. Its non-goals left "neutrals and surface layers, type, radii, density, motion and statuses" to this specification.
 
-The research note [`research/2026-11-28-design-system-foundations.md`](research/2026-11-28-design-system-foundations.md) compares Plane's code with ten other design systems and the accessibility evidence. It also takes stock of `@trybun/ui` at `da23a6bb`. What it found about Trybun today:
+The research note [`research/2026-11-28-design-system-foundations.md`](research/2026-11-28-design-system-foundations.md) compares Plane's code with ten other design systems and with the accessibility evidence, and takes stock of `@trybun/ui` at `da23a6bb`. What it found in Trybun today:
 
-- **No neutral scale.** Nine single values, each an sRGB mix of Ink `#141A2E` and White. Ink has chroma 0.040 at hue 270, 3–10 times the darkest neutrals of the other systems, and about 80° from Teal's hue 191.
-- **No surface layers.** In light, `--background`, `--card` and `--popover` are the same white, and `--secondary`, `--muted` and `--accent` the same grey. Header, side navigation and page sit on one background. There is no sidebar token.
-- **No named text styles.** The page heading is copied 23 times, and h3 has five styles (#533). Ticket identifiers use the system monospace stack. Numbers are not tabular.
-- **One radius for everything.** Controls and cards share 10 px, so there is no step between a container and the controls inside it.
-- **Tailwind defaults** for shadows (black), type scale, motion, and all spacing outside the tokens. There are 47 `/NN` opacity mixes and 22 `dark:` classes that the token tests do not see.
-- **Statuses look different in two places.** Team statuses are one grey badge; the portal's are coloured with icons.
+- **No neutral scale.** Nine single values, each an sRGB mix of Ink `#141A2E` and White. Ink has chroma 0.040 at hue 270. That is 3–10 times the darkest neutrals of the other systems, and about 80° from Teal's hue 191.
+- **No surface layers.** In light, `--background`, `--card` and `--popover` are the same white, and `--secondary`, `--muted` and `--accent` the same grey. Header, side navigation and page sit on one background, and there is no sidebar token.
+- **No named text styles.** The page heading is copied 23 times and h3 has five styles (#533). Ticket identifiers use the system monospace stack, whose wide letter spacing shows as "CP - 3" on phones (stage 1 screenshots of 2026-11-27, `phone-team-ticket-list`). Numbers are not tabular.
+- **One radius for everything.** Controls and cards share 10 px, so a container and the controls inside it look the same.
+- **Tailwind defaults** for shadows (black), the type scale, motion and spacing. There are 47 `/NN` opacity mixes and 22 `dark:` classes that the token tests do not see.
 
-Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. This specification therefore takes Plane's principles and derives its own values. It copies no Propel tokens or code.
+Two open decisions bear on this specification:
+
+- **#531.** The maintainer decided on 2026-11-26 to remove the dark theme, which the application never shows. It comes back if the product brief (#501) names users who need it. This specification therefore defines light values only (question 15).
+- **#532.** It plans to write in `docs/brand/` that the default radius, type scale, shadows and spacing are kept on purpose. That plan predates the Plane direction of 2026-11-27. This specification replaces those defaults, so #532 drops that paragraph and keeps only its `SDLC.md` part.
+
+Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. The values here are derived for Trybun; none is copied from Propel.
 
 ## Goals
 
-- **One neutral scale** with a role for every step, in light and dark. Every text role meets 4.5:1, and every identifying border meets 3:1, on every surface it is used on.
-- **Surface layers** that separate the sidebar, the page, raised items and overlays, as in Plane and Atlassian, in both themes.
-- **Named text styles** for every role, used through one component. Raw size classes are replaced.
-- **A radius, border, shadow, density and motion scale by role**, so that equal things look equal everywhere (Rule 2, Rule 6).
-- **Tokens only.** Every value lives in [`globals.css`](../../packages/ui/src/styles/globals.css), the lint and the story tests guard it, and dark mode works through tokens alone.
+- **One neutral scale** whose steps follow the 12-step roles of Radix. Every text role meets 4.5:1 and every identifying border 3:1 on every surface where it is used (WCAG 1.4.3, 1.4.11).
+- **Surface layers** that separate the side navigation, the page, raised items and overlays, as in Plane and Atlassian.
+- **Named text styles** for every role, used through `Heading` and `Text` components in Trybun's own code.
+- **Radius, border, shadow, size and motion tokens by role**, so that equal things look equal everywhere (Rule 2, Rule 6).
+- **Tokens only.** Every value lives in [`globals.css`](../../packages/ui/src/styles/globals.css), and the lint and the story tests guard it.
 
 ## Non-goals
 
-- **Layout and UX patterns:** app shell, view header, list, board, detail view, command palette and empty states. They get their own specification after this one, which also lists the shared components of section 11 of the research note.
+- **Layout and UX patterns:** app shell, view header, list, board, detail view, command palette, empty states, and the shared components of section 11 of the research note (including one status badge for the team and the portal). They get their own specification after this one.
+- **The dark theme.** Its removal is #531 (question 15).
+- **A user setting for density, and high-contrast themes.** Nothing needs them yet; they can come when a user group asks.
 - **Keycloak sign-in theming.** It needs its own research and specification.
 - **The brand colours and the mark** ([`2026-11-27-brand-teal-palette.md`](implemented/2026-11-27-brand-teal-palette.md)).
-- **A user setting for density or high-contrast themes.** Nothing needs them yet; they can come when a user group asks.
-- **The reduced-motion behaviour of #530.** This specification adds duration tokens only; #530 decides what stops moving.
+- **What stops moving under reduced motion.** That is #530. This specification only moves durations and easings into tokens.
 
 ## Proposed change
 
@@ -45,227 +50,288 @@ The values below are the recommendation. The open questions show the options, an
 
 ### Neutral scale
 
-Twelve steps in OKLCH at Trybun's own hue 196, between Teal (191) and Deep Teal (199), with very low chroma: 0.002 at step 1 rising to 0.016 at step 12. It sits in the same family as Radix sage (the gray Radix Themes pairs with teal) and Tailwind mist, but the values are Trybun's own. Hex values are rounded from OKLCH.
+Twelve steps in OKLCH at Trybun's own hue 196, between Teal (191) and Deep Teal (199), with chroma rising from 0.002 at step 1 to 0.016 at step 12. Tailwind's `mist` (hue 197–229) is the closest published grey; Radix pairs teal with `sage` (hue 165–175). The values are Trybun's own. Hex values are rounded from OKLCH.
 
-| Step | Role (Radix convention) | Light | Dark |
+| Step | Role (Radix convention) | Value | Semantic token |
 |---|---|---|---|
-| 1 | app background, subtle | `#FBFDFD` | `#0D1010` |
-| 2 | sidebar, sunken areas | `#F7FAFA` | `#131616` |
-| 3 | control background (muted) | `#EFF3F3` | `#1B1F1F` |
-| 4 | hover | `#E7ECEC` | `#212626` |
-| 5 | active, pressed | `#E0E6E6` | `#262C2C` |
-| 6 | decorative border, divider | `#D8DFDF` | `#2D3434` |
-| 7 | stronger decorative border | `#CDD5D4` | `#383F3F` |
-| 8 | border on hover | `#BBC4C3` | `#495252` |
-| 9 | identifying border (inputs, unchecked controls) | `#7D8787` | `#737D7D` |
-| 10 | hover of identifying border | `#717B7B` | `#7E8988` |
-| 11 | secondary text, icons, placeholder | `#566060` | `#AFB8B8` |
-| 12 | primary text | `#152120` | `#E8EEEE` |
+| 1 | app background, subtle | `#FBFDFD` | – (the page is White) |
+| 2 | subtle background | `#F7FAFA` | `--sidebar`, `--sunken` |
+| 3 | UI element background | `#EFF3F3` | `--muted`, `--secondary` |
+| 4 | hovered element | `#E7ECEC` | `--accent` |
+| 5 | active or selected element | `#E0E6E6` | `--accent-active` (new) |
+| 6 | subtle border | `#D8DFDF` | `--border` |
+| 7 | border of interactive elements | `#CDD5D4` | – |
+| 8 | stronger border, hovered border | `#BBC4C3` | `--border-hover` (new) |
+| 9 | identifying border | `#7D8787` | `--input` |
+| 10 | hovered identifying border | `#717B7B` | `--input-hover` (new) |
+| 11 | secondary text, icons, placeholder | `#566060` | `--muted-foreground` |
+| 12 | primary text | `#152120` | `--foreground` |
 
-Contrast, measured with the WCAG 2 formula:
+The OKLCH values are L 0.993, 0.982, 0.960, 0.940, 0.920, 0.898, 0.866, 0.812, 0.615, 0.575, 0.480, 0.235 with C 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012, 0.012, 0.013, 0.016. Steps 1 and 7 stay primitives for components that need them.
 
-| Pair | Light | Dark |
-|---|---|---|
-| Step 12 text on the page | 16.53 on white | 15.51 on step 2 |
-| Step 11 text on the page / sidebar / control / hover | 6.49 / 6.18 / 5.80 / 5.44 | 8.99 on step 2, 7.57 on step 4 |
-| Step 9 border on the page / control | 3.69 / 3.30 | 4.30 on step 2, 3.62 on step 4 |
-| Teal action colour on the page / sidebar / control | 7.51 / 7.16 / 6.72 | `#6EBFB9`: 8.51 on step 2, 7.17 on step 4 |
+Contrast (WCAG 2):
 
-**Ink leaves the UI.** It stays a brand value for the dark Teal button label (dark-theme `--primary-foreground`), unless question 4 decides otherwise. The text colour becomes step 12, a near-black on Teal's side of the hue circle. The research note records that Atlassian and Linear also removed a blue tint from their neutrals.
+| Pair | On White (page, card) | On step 2 (sidebar) | On step 3 (control) | On step 4 (hover) |
+|---|---|---|---|---|
+| Step 12 text | 16.53 | 15.75 | 14.79 | – |
+| Step 11 text | 6.49 | 6.18 | 5.80 | 5.44 |
+| Step 9 border | 3.69 | 3.52 | 3.30 | – |
+| Teal `#035F5C` (action, links) | 7.51 | 7.16 | 6.72 | – |
+
+**Ink leaves the UI tokens.** Text becomes step 12. The backdrop of dialogs, `--overlay`, becomes step 12 at 40 % instead of Ink at 40 %. With the dark theme removed (#531), Ink has no other UI use: its dark-theme uses (`--primary-foreground` and the four status foregrounds) go with the dark block. Ink stays in the brand README only as history of the earlier palette.
 
 ### Surfaces
 
-| Token | Light | Dark | Used by |
-|---|---|---|---|
-| `--background` | White | step 2 | the page |
-| `--sidebar` (new) | step 2 | step 1 | the side navigation; one step away from the page, never brand-coloured |
-| `--sunken` (new) | step 2 | step 1 | Kanban columns, table header, code blocks |
-| `--card` | White + `--border` | step 3 | cards, panels |
-| `--popover` | White + `--border` + overlay shadow | step 4 + `--border` | menus, popovers, dialogs |
-| `--muted`, `--secondary` | step 3 | step 3 | control backgrounds, neutral badges |
-| `--accent` (hover) | step 4 | step 4 | hovered rows and menu items |
-| `--border` | step 6 | step 6 | dividers, card and popover edges (decorative, not the only cue) |
-| `--input` | step 9 | step 9 | identifying borders of fields and unchecked controls (≥ 3:1, WCAG 1.4.11) |
-
-In dark mode, higher surfaces are lighter, as in Material, Atlassian and Carbon. No surface is pure black.
+| Token | Value | Used by |
+|---|---|---|
+| `--background` | White | the page |
+| `--sidebar` (new) | step 2 | the side navigation; one step away from the page, never brand-coloured |
+| `--sunken` (new) | step 2 | Kanban columns, table header, code blocks |
+| `--card` | White + `--border` | cards and panels |
+| `--popover` | White + `--border` + `--shadow-overlay` | menus, popovers, selects, dialogs |
+| `--muted`, `--secondary` | step 3 | control backgrounds, neutral badges |
+| `--accent` / `--accent-active` | step 4 / step 5 | hovered / pressed rows and menu items |
 
 ### Borders and shadows
 
-- **Borders are 1 px.** No 0.5 px hairlines (WCAG 1.4.11, anti-aliasing). An identifying border uses `--input`. A decorative border uses `--border` and is never the only cue.
-- **Shadows are only for things that float or move:** popovers, menus, dialogs, toasts and dragged Kanban cards. Cards on the page get a border, not a shadow (NN/g, Atlassian).
-- **Three shadow tokens** in place of Tailwind's black shadows: `--shadow-raised` (a dragged card), `--shadow-overlay` (menus, popovers) and `--shadow-modal` (dialogs). Each is two layers in the hue of step 12 at low alpha. In dark mode they are nearly invisible, and depth comes from the surface steps and the border.
+- **Borders are 1 px.** There are no 0.5 px hairlines; anti-aliasing makes them fainter than their colour (WCAG 1.4.11).
+- **Two kinds of border:**
+  - an identifying border (fields, unchecked controls) uses `--input` and meets 3:1;
+  - a decorative border (dividers, card and popover edges, badge edges) uses `--border` and is never the only cue (question 9).
+- **Shadows are only for things that float or move:** popovers, menus, dialogs, toasts and a dragged Kanban card. Cards on the page get a border, not a shadow (NN/g, Atlassian).
+- **Three shadow tokens** in the colour of step 12, in place of Tailwind's black shadows:
+
+| Token | Value |
+|---|---|
+| `--shadow-raised` | `0 1px 2px rgb(21 33 32 / 0.08), 0 4px 12px -2px rgb(21 33 32 / 0.12)` |
+| `--shadow-overlay` | `0 1px 2px rgb(21 33 32 / 0.06), 0 8px 24px -4px rgb(21 33 32 / 0.14)` |
+| `--shadow-modal` | `0 2px 4px rgb(21 33 32 / 0.06), 0 16px 40px -8px rgb(21 33 32 / 0.20)` |
 
 ### Typography
 
-- **Typeface:** Manrope stays for the UI (question 2). Ticket identifiers and project keys use the UI font with tabular figures. Monospace is kept for code only, which ends the spaced-out "CP - 3" of the system monospace on phones. Code uses a defined monospace stack.
+- **Typeface:** Manrope stays for the UI (question 2).
+  - Ticket identifiers and project keys use the UI font with tabular figures.
+  - Monospace is kept for code. It uses the stack `ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace`, as the e-mails do today.
 - **Sizes:**
-  - **14 px** for UI text in the team view;
-  - **16 px** for reading text: ticket descriptions, comments, help pages and the customer portal's content;
-  - **12 px** as the floor, for short metadata only;
-  - form fields keep 16 px on touch (§2.9).
-- **Named styles**, as utilities from `globals.css`, used through a `Text` and a `Heading` component in `@trybun/ui` (#533):
+  - 14 px for UI text in the team view;
+  - 16 px for reading text: ticket descriptions, comments, help pages and the content of the customer portal;
+  - 12 px as the floor, for short metadata only.
+- **Form fields stay outside the named styles.** They keep the rule of §2.9 and §18.6: 16 px on touch, 14 px when compact.
+- **Named styles**, as `type-*` utilities in `globals.css` (question 8 explains the prefix):
 
-| Style | Size / line height | Weight | Use |
+| Utility | Size / line height | Weight | Use |
 |---|---|---|---|
-| `title-page` | 24 / 32 | 700 | the page heading (h1) |
-| `title-section` | 18 / 28 | 600 | section headings (h2) |
-| `title-group` | 16 / 24 | 600 | sub-section and dialog titles (h3) |
-| `body-reading` | 16 / 24 | 400 | descriptions, comments, help, portal content |
-| `body` | 14 / 20 | 400 | UI text |
-| `body-strong` | 14 / 20 | 500 | labels, emphasised UI text |
-| `caption` | 12 / 16 | 500 | metadata, badges, table headers |
+| `type-title-page` | 24 / 32 | 700, letter spacing −0.01em | the page heading (h1) |
+| `type-title-section` | 18 / 28 | 600 | section headings (h2) |
+| `type-title-group` | 16 / 24 | 600 | sub-sections and dialog titles (h3) |
+| `type-body-reading` | 16 / 24 | 400 | descriptions, comments, help, portal content |
+| `type-body` | 14 / 20 | 400 | UI text |
+| `type-body-strong` | 14 / 20 | 500 | labels, emphasised UI text |
+| `type-caption` | 12 / 16 | 500 | metadata, table headers |
 
-- **Reading text** is capped at about 70 characters per line (`max-w-prose` or the 768 px width of §2.9), with a line height of 1.5 and no justified text.
-- **Letter spacing** stays at 0, except −0.01em on `title-page`.
-- **Weights:** the regular weight is 400, unless question 3 decides 450.
+- **`Heading` and `Text`** in `@trybun/ui` apply these utilities (`Heading` takes the level and the style separately).
+  - Every heading and text element in `apps/web` and in Trybun's own components uses them.
+  - The registry components of shadcn keep their Tailwind sizes; `text-sm` and `text-xs` already equal `type-body` and the size of `type-caption`.
+  - This takes over the scope of #533, whose heading styles become `type-title-*`. Unifying the five h3 styles changes some sizes, which #533 had left out.
+- **Reading text** is at most 65 characters wide (`max-w-prose`), with a line height of 1.5 and no justified text. The 768 px width of §2.9 stays for forms and the detail of a record.
+- **Weights:** regular 400 (question 3).
 
 ### Radii
 
-By role, as in Plane and Atlassian:
-
-| Token | Value | Used by |
+| Token (utility) | Value | Used by |
 |---|---|---|
-| `--radius-sm` | 4 px | checkboxes, tags, the inner items of menus |
-| `--radius-md` | 6 px | buttons, inputs, selects, side-navigation items |
-| `--radius-lg` | 8 px | cards, menus, popovers, tables, toasts, Kanban cards |
-| `--radius-xl` | 12 px | dialogs, drawers, Kanban columns |
-| `--radius-full` | 9999 px | avatars, status pills |
+| `--radius-inner` (`rounded-inner`) | 4 px | checkboxes, tags, items inside menus and selects |
+| `--radius-control` (`rounded-control`) | 6 px | buttons, inputs, selects, side-navigation items |
+| `--radius-container` (`rounded-container`) | 8 px | cards, menus, popovers, tables, toasts, Kanban cards |
+| `--radius-dialog` (`rounded-dialog`) | 12 px | dialogs, drawers, Kanban columns |
+| `rounded-full` | – | avatars, status pills |
 
-The rule is that a container is one step rounder than the controls inside it. A nested radius is the outer radius minus the padding, with a floor of 0.
+- **The rules:**
+  - a container is never less rounded than what it holds;
+  - an item that sits inside a container at a small padding takes the container's radius minus the padding (menu 8 − padding 4 = item 4).
+- **The `--radius` multiplier and the derived `--radius-sm` … `--radius-4xl` are removed.** The components that use them move to the role tokens: Toast to `rounded-container`, Badge to `rounded-full`.
 
 ### Density and sizing
 
-The binary model of §2.9 and §18.6 stays: 44 px on touch below `xl` or with a coarse pointer, and compact on `xl` with a fine pointer. The compact sizes get named tokens:
+The binary model of §2.9 and §18.6 stays: 44 px on touch below `xl` or with a coarse pointer, and compact on `xl` with a fine pointer. The compact sizes become tokens (question 10):
 
-| Element | Touch | Compact (`xl:pointer-fine:`) |
-|---|---|---|
-| Button, input, select | 44 | 32 (small 28) |
-| Menu and side-navigation item | 44 | 32 |
-| Table and list row | 44 | 40 |
-| Icon button | 44 | 32 |
+| Token | Touch | Compact | Today (compact) |
+|---|---|---|---|
+| `--size-control` (button, input, select, icon button) | 44 | 32 | 32 |
+| `--size-control-sm` | 44 | 28 | – |
+| `--size-menu-item` | 44 | 32 | 28 |
+| `--size-nav-item` (side navigation) | 44 | 32 | 36 |
+| `--size-row` (table and list row) | 44 | 40 | about 36 |
 
 - **Spacing** stays on Tailwind's 4 px grid.
-- **The side navigation** is 240 px wide expanded and 64 px collapsed, as today.
+- **The side navigation** stays 240 px wide expanded and 64 px collapsed.
 
 ### Icons
 
-Lucide stays. The default stroke of 2 on a 24 px grid draws about 1.33 px at 16 px, between Plane's 1.25 and Atlassian's 1.5. Sizes become tokens: 16 px inline and in controls, 20 px in navigation.
+- **Lucide stays, with its default stroke** (question 11). The stroke of 2 on a 24 px grid draws about 1.33 px at 16 px, between Plane's 1.25 and Atlassian's 1.5.
+- **Two size tokens:** `--size-icon` 16 px (inline and in controls) and `--size-icon-nav` 20 px (navigation).
 
 ### Brand colour use
 
-No change from the approved teal specification (question 6 of [`2026-11-27-brand-teal-palette.md`](implemented/2026-11-27-brand-teal-palette.md)):
+No change from what the teal specification approved:
 
-- **Teal** marks checked controls, the active tab underline, the focus ring, links and the selected table row, which also shows its checked checkbox.
-- **The current side-navigation item** stays neutral, as in Plane's code: `--accent` background, `body-strong` and step 12 text.
+- **Teal marks:** checked controls, the active tab underline, the combobox check, checked field labels and the selected table row, which also shows its checked checkbox (its question 6); and the focus ring and links (its question 4).
+- **The current side-navigation item stays neutral,** as in today's code and in Plane: the `--accent` background, `type-body-strong` and step 12 text.
 
 ### Status colours
 
-- **Every status colour gets four tokens:** fill, subtle fill, text and border (`--success`, `--success-subtle`, `--success-text`, `--success-border`, and the same for warning, danger and info). They replace the ad-hoc `/NN` mixes.
-- **Text** on its subtle fill reaches at least 4.5:1, and the border at least 3:1, in both themes.
-- **Team and portal share one look.** The team view's status badge gets the colour and icon of the portal's `PublicStatusBadge`, through one shared component, so a status looks the same everywhere (Rule 2).
+Each status gets four tokens: fill, subtle fill, text and border. They replace the ad-hoc `/NN` mixes. The fill keeps today's value.
+
+| Status | Fill (White text) | Subtle | Text | Border (decorative) |
+|---|---|---|---|---|
+| success | `#008236` (4.95) | `#E6FAE9` | `#03642B` (6.71 on subtle) | `#94CF9F` |
+| warning | `#BB4D00` (5.03) | `#FEF0E9` | `#833B01` (7.28) | `#EEAD89` |
+| danger | `#C10007` (6.42) | `#FEF0EE` | `#8C2D28` (7.50) | `#F2A89E` |
+| info | `#2563EB` (5.17) | `#EEF4FF` | `#284E99` (7.20) | `#9EBEF8` |
+
+The borders are decorative (1.6–1.9:1): a status always has text or an icon (§13.4). How the nine internal and five public statuses map to these colours, and the shared badge, belong to the layout specification.
 
 ### Motion
 
-- **Three duration tokens:** `--duration-fast` 100 ms (hover, toggles), `--duration-base` 200 ms (popovers, menus) and `--duration-slow` 300 ms (dialogs, drawers, toasts).
-- **Two easings:** `--ease-out` for entering and `--ease-in` for leaving.
-- **The arbitrary durations and cubic-béziers** of the drawer and toast are replaced.
-- **What stops under reduced motion** is decided by #530.
+| Token | Value | Used by |
+|---|---|---|
+| `--duration-fast` | 100 ms | hover, toggles |
+| `--duration-base` | 200 ms | popovers, menus, selects |
+| `--duration-slow` | 300 ms | dialogs, drawers, toasts |
+| `--ease-out` | `cubic-bezier(0.2, 0, 0, 1)` | entering |
+| `--ease-in` | `cubic-bezier(0.4, 0, 1, 1)` | leaving |
 
-### Token structure
+They replace the arbitrary durations and cubic-béziers of the drawer and the toast. #530 can land before or after this. Either way this specification only moves values into tokens and does not change what reduced motion stops.
 
-- **Primitives:** `--neutral-1` … `--neutral-12` and the existing `--brand-1` … `--brand-12`, in light and dark.
-- **Semantic roles:** the shadcn names, plus `--sidebar`, `--sunken`, the status quartets, shadows, radii, sizes, durations and text styles.
-- **No component tier.** shadcn and Atlassian have none either, and every additional tier must be maintained.
-- **CSS only, no DTCG JSON**, because no tool needs JSON yet.
-- **The lint gets new rules** that reject:
-  - raw Tailwind size, shadow and duration classes where a token exists;
+### Token structure and lint
+
+- **Primitives:** `--neutral-1` … `--neutral-12` and the existing `--brand-1` … `--brand-12`.
+- **Semantic roles:** the shadcn names plus the new ones above (`--sidebar`, `--sunken`, `--accent-active`, `--border-hover`, `--input-hover`, the status quartets, shadows, radii, sizes, durations and `type-*` styles).
+- **No component tier, and CSS only** (question 14).
+- **New lint rules** in `@trybun/eslint-config` reject, in Trybun's own code (`apps/web` and Trybun's own components):
+  - Tailwind size, radius, shadow and duration classes where a token exists;
   - `/NN` colour mixes;
-  - `dark:` classes outside the exceptions written in `.ai/memory/shadcn.md`.
+  - `dark:` classes. With the dark theme removed (#531) there are no exceptions.
 
 ## Changes to the system specification
 
 | Section | Change |
 |---|---|
-| [§2.6](../../docs/spec/02-agent-rules.md) | the token families above, the lint rules, and "dark mode through tokens" without `dark:` classes |
-| [§2.9](../../docs/spec/02-agent-rules.md) | reading text at 16 px and about 70 characters; the compact sizes as named tokens |
+| [§2.6](../../docs/spec/02-agent-rules.md) | the token families above and the lint rules |
+| [§2.9](../../docs/spec/02-agent-rules.md) | reading text at 16 px and at most 65 characters; the compact sizes as tokens |
 | [§13.4](../../docs/spec/13-non-functional.md) | every text role ≥ 4.5:1 and every identifying border ≥ 3:1 on every surface, checked by the story tests |
+| [§18.6](../../docs/spec/18-code-patterns.md) | compact sizes through the size tokens; text through `Heading` and `Text`; registry components keep their Tailwind sizes; role radii in the adapted components |
 | [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens | the neutral scale, surfaces, text styles, radii, shadows, sizes and durations replace "Tailwind defaults"; Ink leaves the UI table |
+| [`.ai/memory/shadcn.md`](../memory/shadcn.md) | "The theme keeps Tailwind's type scale" becomes the `type-*` mechanism of question 8 |
+
+New or changed glossary terms: none.
 
 ## Open questions
 
-Implementation must not start until every question has an answer. Each question names the options from the research note and the recommendation, with its reason.
+Implementation must not start until every question has an answer. Each question names the options and the recommendation, with its reason.
 
-1. **Neutral scale:**
-   - (a) tinted toward Teal's hue (above);
-   - (b) near-achromatic cool grey like Plane;
-   - (c) pure grey like Fluent, Carbon and Polaris;
-   - (d) keep Ink mixes.
-
-   **Recommendation: (a).** It continues the brand without a colour cast. Radix pairs teal with sage. Ink's blue hue is 80° away from Teal, and its chroma is 3–10 times that of other systems.
-2. **Typeface:**
-   - (a) keep Manrope: one family with the wordmark, no change to the font load of #509, a geometric character that is less common than Inter;
-   - (b) move to Inter, as in Plane: optical sizes, and alternates that tell I, l and 1 apart.
-
-   **Recommendation: (a)**, with identifiers in tabular figures. The x-heights are almost equal (0.540 and 0.546), so legibility at 14 px is the same. Inter's alternates matter mostly for identifiers, which tabular Manrope covers. The preview shows both.
-3. **Regular weight:** 400, or 450 as Plane uses for Inter ("reads slightly light at 400"). **Recommendation:** decide on the preview. Manrope's 400 is heavier than Inter's, so 400 is the expected answer.
-4. **Text colour and Ink:**
-   - (a) step 12 for text, and Ink stays only as the dark-theme button label;
-   - (b) step 12 everywhere, including that label (8.93:1 on the dark Teal fill).
-
-   **Recommendation: (b).** One neutral family. Ink then remains only in the brand files' history.
-5. **UI text size:**
-   - (a) 14 px, with 12 px for metadata;
-   - (b) 13 px for dense rows, as in Plane's code, Polaris desktop and macOS.
-
-   **Recommendation: (a).** 14 px is the base of Primer, Atlassian, Material, Fluent and Carbon. By the visual-angle calculation, 13 px sits below the critical print size on most desktop setups. No study shows that 13 px helps.
-6. **Surfaces:**
-   - (a) a white page with a step-2 sidebar and sunken areas, as above (Linear, shadcn, Atlassian);
-   - (b) Plane's grey canvas with white surfaces on it.
-
-   **Recommendation: (a).** It changes the page least, and keeps the white reading surface for descriptions and comments.
-7. **Selection:**
-   - (a) as approved in the teal specification: Teal for checked controls, the tab underline and the selected row, and the side navigation neutral;
-   - (b) neutral for tabs and rows too, as in Plane's code.
-
-   **Recommendation: (a).** It is the maintainer's answer of 2026-11-27, and it already works with a second cue on rows.
-8. **Radii:**
-   - (a) by role, 4 / 6 / 8 / 12;
-   - (b) keep 10 px for controls and containers (the shadcn default).
-
-   **Recommendation: (a).** Plane, Atlassian and Primer all put controls at 6 and containers at 8–12. It also removes one of the visible shadcn defaults that the stage 1 audit named.
-9. **Compact row height:** 40 px (above), 36 px (today's cell padding), or 44 px as in Plane's list. **Recommendation:** 40 px. It is the default row in Carbon, and it is closest to Plane while keeping more rows on screen than 44.
-10. **Dark theme:**
-    - (a) keep it as a first-class option that follows the system setting, and close #531;
-    - (b) remove it (#531).
-
-    **Recommendation: (a).** NN/g: light reads better for most people, and dark is expected as an option in developer tools. The dark values above are ready and tested by the story tests. Showing it in the app is a separate step; until then it stays in Storybook.
-11. **Status colours:**
-    - (a) the four tokens per status, with one badge for team and portal;
-    - (b) solid fills only, as today.
-
-    **Recommendation: (a).** One look for one status (Rule 2), and no `/NN` mixes.
-12. **Motion tokens:**
-    - (a) three durations and two easings;
-    - (b) none, as in Plane and #530's non-goal.
-
-    **Recommendation: (a).** Durations are repeated in many components today, and the drawer and toast use arbitrary values.
+1. **Neutral scale.**
+   - **Options:**
+     - (a) tinted toward Teal's hue (above);
+     - (b) near-achromatic cool grey, like Plane;
+     - (c) pure grey, like Fluent, Carbon and Polaris;
+     - (d) keep the Ink mixes.
+   - **Recommendation: (a).** It continues the brand without a colour cast. Ink's chroma is 3–10 times that of other systems, and its hue is 80° from Teal. Atlassian and Linear removed a blue tint from their neutrals.
+2. **Typeface.**
+   - **Options:**
+     - (a) keep Manrope: one family with the wordmark, no change to the font load measured by #509, a geometric character less common than Inter, no alternates for I, l and 1;
+     - (b) move to Inter, as in Plane: optical sizes and those alternates, but a second family next to the wordmark and a font change measured against #509.
+   - **Recommendation: (a)**, with identifiers in tabular figures. The x-heights are almost equal (0.540 and 0.546). The alternates matter mostly for identifiers, which tabular figures in context cover. The preview shows both; the answer records what the maintainer saw.
+3. **Regular weight.**
+   - **Options:** 400, or 450 as Plane uses for Inter, because Inter "reads slightly light at 400".
+   - **Recommendation: 400**, to confirm on the preview. Plane's reason concerns Inter; whether Manrope needs it is a visual judgement (own reasoning).
+4. **UI text size.**
+   - **Options:**
+     - (a) 14 px, with 12 px for metadata;
+     - (b) 13 px for dense rows, as in Plane's code, Polaris desktop and macOS.
+   - **Recommendation: (a).** 14 px is the base of Primer, Atlassian, Material, Fluent and Carbon's productive set, and no study shows 13 px helps. The visual-angle calculation of the research note does not separate them: on desktop both 13 and 14 px sit below the 12′ critical print size of Legge and Bigelow.
+5. **Surfaces.**
+   - **Options:**
+     - (a) a white page with a step-2 side navigation and sunken areas (Linear, shadcn, Atlassian);
+     - (b) Plane's grey canvas with white surfaces on it.
+   - **Recommendation: (a).** It changes the page least and keeps a white reading surface for descriptions and comments.
+6. **Selection.**
+   - **Options:**
+     - (a) as approved in the teal specification, with the side navigation neutral as today;
+     - (b) tabs and rows neutral too, as in Plane's code.
+   - **Recommendation: (a).** It is the maintainer's answer of 2026-11-27, and rows already have a second cue.
+7. **Radius values.**
+   - **Options:**
+     - (a) by role, 4 / 6 / 8 / 12;
+     - (b) keep 10 px for controls and containers (the shadcn default kept on purpose, as #532 planned).
+   - **Recommendation: (a).** Plane and Atlassian put controls at 6 and containers at 8–12; Primer's default is 6, with 12 for large containers. A container then reads as holding its controls.
+8. **How text styles and radii reach the components.**
+   - **Options:**
+     - (a) new role names: `type-*` utilities, which `cn` keeps because they do not start with `text-`, and `rounded-inner`/`-control`/`-container`/`-dialog`. Trybun's adapted components move to them, the registry components keep their classes, and `shadcn diff` grows by those class names, listed in `.ai/memory/shadcn.md`;
+     - (b) retune the values of Tailwind's existing names (`text-sm`, `rounded-lg` …), with no component edits but no role names, so the roles stay approximate;
+     - (c) custom `text-*` names with a `createCn` instance, which means changing the `cn` import in every registry component.
+   - **Recommendation: (a).** It gives role names that lint can enforce, without touching `cn` or the registry imports.
+9. **Border strength.**
+   - **Options:**
+     - (a) two kinds, an identifying border at ≥ 3:1 (`--input`) and a decorative border (`--border`, 1.35:1) that is never the only cue;
+     - (b) every border at ≥ 3:1, heavier but self-sufficient;
+     - (c) decorative borders everywhere, as in Plane (1.19–1.30:1), criticised in makeplane/plane#9095.
+   - **Recommendation: (a).** It is today's model, it meets WCAG 1.4.11, and it keeps cards and dividers calm. High-contrast themes stay out of scope.
+10. **Compact sizes.**
+    - **Options:** the anchor for controls at 32 px (above; today, Primer, Atlassian, shadcn) or 28 px (Plane); menu items 32 (from 28); side-navigation items 32 (from 36); rows 40 (from about 36), 36 or 44 (Plane).
+    - **Recommendation:** as in the table. 32 px matches most systems and today. Menu and navigation items at 32 match each other and Plane. Rows at 40 are Carbon's default and the closest to Plane that still keeps more rows on screen than 44.
+11. **Icon stroke.**
+    - **Options:**
+      - (a) Lucide's default (about 1.33 px at 16 px);
+      - (b) a set stroke of 1.5;
+      - (c) another icon set.
+    - **Recommendation: (a).** It sits between Plane and Atlassian and needs no override on every icon.
+12. **Status colours.**
+    - **Options:**
+      - (a) the four tokens per status above;
+      - (b) solid fills only, as today.
+    - **Recommendation: (a).** It removes the `/NN` mixes, and the subtle variants are what lists and notes need.
+13. **Motion tokens.**
+    - **Options:**
+      - (a) three durations and two easings;
+      - (b) none, durations written per component.
+    - **Recommendation: (a).** Durations are repeated in many components, and the drawer and toast use arbitrary values. #530 left tokens out of its own scope; it did not reject them.
+14. **Token tiers and format.**
+    - **Options:**
+      - (a) primitives and semantic roles in CSS, with no component tier and no DTCG JSON;
+      - (b) add a component tier (Primer, Material);
+      - (c) keep a DTCG JSON source and generate the CSS.
+    - **Recommendation: (a).** shadcn and Atlassian have no component tier, and no tool needs JSON yet.
+15. **Dark theme.**
+    - **Options:**
+      - (a) remove it, as decided on 2026-11-26 (#531);
+      - (b) keep it as an option that follows the system setting.
+    - **Answer:** (a), remove it (maintainer, 2026-11-28, confirming the decision of #531 after the Plane direction). This specification defines light values only.
 
 ## Acceptance criteria
 
-- [ ] `globals.css` defines the neutral scale, surfaces, status quartets, shadows, radii, sizes, durations and text styles of the answers, in both themes.
-- [ ] The story test `Foundations/Colour tokens` checks, in both themes:
-  - every text role on every surface it is used on (≥ 4.5:1);
-  - `--input` on every surface (≥ 3:1);
-  - every status text on its subtle fill;
+- [ ] `globals.css` defines the neutral scale, surfaces, status quartets, shadows, role radii, sizes, durations and `type-*` styles of the answers. The `--radius` multiplier and the Ink-based UI values are gone.
+- [ ] The story test `Foundations/Colour tokens` checks:
+  - every text role on every surface where it is used (≥ 4.5:1);
+  - `--input` on every surface where it is used (≥ 3:1);
+  - every status text on its subtle fill, and White on every status fill (≥ 4.5:1);
   - the Teal pairs of the teal specification.
-- [ ] No `/NN` colour mix, `dark:` class (outside the written exceptions), raw size, shadow or duration class where a token exists; the lint rejects them.
-- [ ] Every heading and text in `@trybun/ui` and `apps/web` uses `Heading` or `Text` (#533).
+- [ ] In Trybun's own code the lint rejects `/NN` colour mixes, `dark:` classes, and Tailwind size, radius, shadow and duration classes where a token exists.
+- [ ] Every heading and text element in `apps/web` and in Trybun's own components uses `Heading` or `Text`; the registry components keep their Tailwind sizes. #533 is closed by this work.
 - [ ] Ticket identifiers and project keys use the UI font with tabular figures.
-- [ ] The team status badge and the portal status badge are one component.
-- [ ] `docs/brand/README.md` lists the new tokens and no longer says that type, radii and shadows are Tailwind defaults.
-- [ ] Works on phone, tablet and desktop (Rule 9); light theme in manual QA, dark theme in Storybook (unless question 10 shows it in the app).
+- [ ] `docs/brand/README.md` lists the new tokens and no longer says that type, radii and shadows are Tailwind defaults; `.ai/memory/shadcn.md` describes the `type-*` and role-radius mechanism and the classes it adds to `shadcn diff`.
+- [ ] Works on phone, tablet and desktop (Rule 9), checked in manual QA.
 - [ ] User documentation and product tour updated where they show the changed screens (Rules 3, 4).
 
 ## Changelog
 
 - 2026-11-28 – Created from the research note of #580, with recommendations for the maintainer's answers.
+- 2026-11-28 – Revised after review:
+  - the Ink inventory is complete;
+  - the dark theme is removed (question 15, answered by the maintainer), so only light values remain;
+  - the borders, compact sizes, icons and token tiers became questions;
+  - the mechanism for text styles and radii against `cn` and `shadcn diff` is a question;
+  - status, shadow and easing values are added;
+  - the shared status badge moved to the layout specification;
+  - #532 and #533 are related;
+  - the arguments of questions 4 and 7 are corrected.
