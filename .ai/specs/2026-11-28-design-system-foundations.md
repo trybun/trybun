@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | `draft` |
+| Status | `approved` |
 | Created | 2026-11-28 |
 | Plan task | – |
 | System specification sections | §2.6, §2.9, §13.4, §18.6; [`docs/brand/README.md`](../../docs/brand/README.md) (UI design tokens) |
@@ -46,7 +46,7 @@ Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. 
 
 ## Proposed change
 
-The values below are the recommendation. The open questions show the options, and the maintainer's answers decide the final values.
+The values below follow the maintainer's answers to the open questions.
 
 ### Neutral scale
 
@@ -249,7 +249,7 @@ New or changed glossary terms: none.
 
 ## Open questions
 
-Implementation must not start until every question has an answer. Each question names the options and the recommendation, with its reason.
+Every question has an answer. Each question names the options and the recommendation, with its reason.
 
 1. **Neutral scale.**
    - **Options:**
@@ -258,72 +258,86 @@ Implementation must not start until every question has an answer. Each question 
      - (c) pure grey, like Fluent, Carbon and Polaris;
      - (d) keep the Ink mixes.
    - **Recommendation: (a).** It continues the brand without a colour cast. Ink's chroma is 3–10 times that of other systems, and its hue is 80° from Teal. Atlassian and Linear removed a blue tint from their neutrals.
+   - **Answer:** (a), the neutral scale tinted toward Teal's hue (maintainer, 2026-11-28, on the recommendation).
 2. **Typeface.**
    - **Options:**
      - (a) keep Manrope: one family with the wordmark, no change to the font load measured by #509, a geometric character less common than Inter, no alternates for I, l and 1;
      - (b) move to Inter, as in Plane: optical sizes and those alternates, but a second family next to the wordmark and a font change measured against #509.
    - **Recommendation: (a)**, with identifiers in tabular figures. The x-heights are almost equal (0.540 and 0.546). The alternates matter mostly for identifiers, which tabular figures in context cover. The preview shows both; the answer records what the maintainer saw.
+   - **Answer:** (a), Manrope, with identifiers in tabular figures (maintainer, 2026-11-28, on the recommendation).
 3. **Regular weight.**
    - **Options:** 400, or 450 as Plane uses for Inter, because Inter "reads slightly light at 400".
    - **Recommendation: 400**, to confirm on the preview. Plane's reason concerns Inter; whether Manrope needs it is a visual judgement (own reasoning).
+   - **Answer:** 400 (maintainer, 2026-11-28, on the recommendation).
 4. **UI text size.**
    - **Options:**
      - (a) 14 px, with 12 px for metadata;
      - (b) 13 px for dense rows, as in Plane's code, Polaris desktop and macOS.
    - **Recommendation: (a).** 14 px is the base of Primer, Atlassian, Material, Fluent and Carbon's productive set, and no study shows 13 px helps. The visual-angle calculation of the research note does not separate them: on desktop both 13 and 14 px sit below the 12′ critical print size of Legge and Bigelow.
+   - **Answer:** (a), 14 px with 12 px for metadata and 16 px for reading text (maintainer, 2026-11-28, on the recommendation).
 5. **Surfaces.**
    - **Options:**
      - (a) a white page with a step-2 side navigation and sunken areas (Linear, shadcn, Atlassian);
      - (b) Plane's grey canvas with white surfaces on it.
    - **Recommendation: (a).** It changes the page least and keeps a white reading surface for descriptions and comments.
+   - **Answer:** (a), a white page with a step-2 side navigation and sunken areas (maintainer, 2026-11-28, on the recommendation).
 6. **Selection.**
    - **Options:**
      - (a) as approved in the teal specification, with the side navigation neutral as today;
      - (b) tabs and rows neutral too, as in Plane's code.
    - **Recommendation: (a).** It is the maintainer's answer of 2026-11-27, and rows already have a second cue.
+   - **Answer:** (a), as approved in the teal specification, with the side navigation neutral (maintainer, 2026-11-28, on the recommendation).
 7. **Radius values.**
    - **Options:**
      - (a) by role, 4 / 6 / 8 / 12;
      - (b) keep 10 px for controls and containers (the shadcn default kept on purpose, as #532 planned).
    - **Recommendation: (a).** Plane and Atlassian put controls at 6 and containers at 8–12; Primer's default is 6, with 12 for large containers. A container then reads as holding its controls.
+   - **Answer:** (a), by role, 4 / 6 / 8 / 12 (maintainer, 2026-11-28, on the recommendation).
 8. **How text styles and radii reach the components.**
    - **Options:**
      - (a) new role names: `type-*` utilities and `rounded-inner`/`-control`/`-container`/`-dialog`, with a `cn` configured through `cn/config` that knows them as size and radius groups, used only by Trybun's own components. `cn` alone keeps unknown names but no longer merges them: `cn('rounded-control', 'rounded-none')` keeps both, so a caller's `className` would stop winning (§18.6). The registry components keep Tailwind's classes and the plain `cn`, so they need no edits; `shadcn diff` grows only where an adapted registry component moves to a role name, listed in `.ai/memory/shadcn.md`;
      - (b) retune the values of Tailwind's existing names (`text-sm`, `rounded-lg` …), with no component edits but no role names, so the roles stay approximate;
      - (c) custom `text-*` names with a `createCn` instance, which means changing the `cn` import in every registry component.
    - **Recommendation: (a).** It gives role names that lint can enforce, keeps merging correct in Trybun's components, and leaves the registry imports untouched.
+   - **Answer:** (a), role names with a `cn` configured through `cn/config` in Trybun's own components (maintainer, 2026-11-28, on the recommendation).
 9. **Border strength.**
    - **Options:**
      - (a) two kinds, an identifying border at ≥ 3:1 (`--input`) and a decorative border (`--border`, 1.35:1) that is never the only cue;
      - (b) every border at ≥ 3:1, heavier but self-sufficient;
      - (c) decorative borders everywhere, as in Plane (1.19–1.30:1), criticised in makeplane/plane#9095.
    - **Recommendation: (a).** It is today's model, it meets WCAG 1.4.11, and it keeps cards and dividers calm. High-contrast themes stay out of scope.
+   - **Answer:** (a), an identifying border at ≥ 3:1 and a decorative border that is never the only cue (maintainer, 2026-11-28, on the recommendation).
 10. **Compact sizes.**
     - **Options:** the anchor for controls at 32 px (above; today, Primer, Atlassian, shadcn) or 28 px (Plane); menu items 32 (from 28); side-navigation items 32 (from 36); rows 40 (from about 36), 36 or 44 (Plane).
     - **Recommendation:** as in the table. 32 px matches most systems and today. Menu and navigation items at 32 match each other and Plane. Rows at 40 are Carbon's default and the closest to Plane that still keeps more rows on screen than 44.
+    - **Answer:** as in the table: controls 32 (small 28), menu and side-navigation items 32, rows 40 (maintainer, 2026-11-28, on the recommendation).
 11. **Icon stroke.**
     - **Options:**
       - (a) Lucide's default (about 1.33 px at 16 px);
       - (b) a set stroke of 1.5;
       - (c) another icon set.
     - **Recommendation: (a).** It sits between Plane and Atlassian and needs no override on every icon.
+    - **Answer:** (a), Lucide's default stroke (maintainer, 2026-11-28, on the recommendation).
 12. **Status colours.**
     - **Options:**
       - (a) the four tokens per status above;
       - (b) solid fills only, as today.
     - **Recommendation: (a).** It removes the `/NN` mixes, and the subtle variants are what lists and notes need.
+    - **Answer:** (a), four tokens per status (maintainer, 2026-11-28, on the recommendation).
 13. **Motion tokens.**
     - **Options:**
       - (a) tokens with today's timing (the table above);
       - (b) tokens with unified timing: 100 / 200 / 300 ms and two curves;
       - (c) no tokens, durations written per component.
     - **Recommendation: (a).** It removes the arbitrary values without changing how anything moves, so the story tests keep their timing (#555). The drawer's 450 ms is above NN/g's 400 ms for large moves; changing it can follow as a measured change. #530 left tokens out of its own scope; it did not reject them.
+    - **Answer:** (a), tokens with today's timing (maintainer, 2026-11-28, on the recommendation).
 14. **Token tiers and format.**
     - **Options:**
       - (a) primitives and semantic roles in CSS, with no component tier and no DTCG JSON;
       - (b) add a component tier (Primer, Material);
       - (c) keep a DTCG JSON source and generate the CSS.
     - **Recommendation: (a).** shadcn and Atlassian have no component tier, and no tool needs JSON yet.
+    - **Answer:** (a), primitives and semantic roles in CSS, no component tier, no DTCG JSON (maintainer, 2026-11-28, on the recommendation).
 15. **Dark theme.**
     - **Options:**
       - (a) remove it, as decided on 2026-11-26 (#531);
@@ -359,3 +373,4 @@ Implementation must not start until every question has an answer. Each question 
   - the shared status badge moved to the layout specification;
   - #532 and #533 are related;
   - the arguments of questions 4 and 7 are corrected.
+- 2026-11-28 – Questions 1–14 answered by the maintainer on the recommendations; approved.
