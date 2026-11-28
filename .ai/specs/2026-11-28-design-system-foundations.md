@@ -16,14 +16,14 @@ The research note [`research/2026-11-28-design-system-foundations.md`](research/
 
 - **No neutral scale.** Nine single values, each an sRGB mix of Ink `#141A2E` and White. Ink has chroma 0.040 at hue 270. That is 3–10 times the darkest neutrals of the other systems, and about 80° from Teal's hue 191.
 - **No surface layers.** In light, `--background`, `--card` and `--popover` are the same white, and `--secondary`, `--muted` and `--accent` the same grey. Header, side navigation and page sit on one background, and there is no sidebar token.
-- **No named text styles.** The page heading is copied 23 times and h3 has five styles (#533). Ticket identifiers use the system monospace stack, whose wide letter spacing shows as "CP - 3" on phones (stage 1 screenshots of 2026-11-27, `phone-team-ticket-list`). Numbers are not tabular.
+- **No named text styles.** The page heading is copied 23 times and h3 has five styles (#533). Ticket identifiers use the system monospace stack, whose wide letter spacing showed as "CP - 3" on phones in the stage 1 screenshots of 2026-11-27 (not kept in the repository). Numbers are not tabular.
 - **One radius for everything.** Controls and cards share 10 px, so a container and the controls inside it look the same.
 - **Tailwind defaults** for shadows (black), the type scale, motion and spacing. There are 47 `/NN` opacity mixes and 22 `dark:` classes that the token tests do not see.
 
 Two open decisions bear on this specification:
 
 - **#531.** The maintainer decided on 2026-11-26 to remove the dark theme, which the application never shows. It comes back if the product brief (#501) names users who need it. This specification therefore defines light values only (question 15).
-- **#532.** It plans to write in `docs/brand/` that the default radius, type scale, shadows and spacing are kept on purpose. That plan predates the Plane direction of 2026-11-27. This specification replaces those defaults, so #532 drops that paragraph and keeps only its `SDLC.md` part.
+- **#532.** It plans to write in `docs/brand/` that the default radius, type scale, shadows and spacing are kept on purpose. That plan predates the Plane direction of 2026-11-27. If the answers replace those defaults (questions 4, 7, 13), #532 drops that paragraph and keeps only its `SDLC.md` part.
 
 Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. The values here are derived for Trybun; none is copied from Propel.
 
@@ -42,7 +42,7 @@ Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. 
 - **A user setting for density, and high-contrast themes.** Nothing needs them yet; they can come when a user group asks.
 - **Keycloak sign-in theming.** It needs its own research and specification.
 - **The brand colours and the mark** ([`2026-11-27-brand-teal-palette.md`](implemented/2026-11-27-brand-teal-palette.md)).
-- **What stops moving under reduced motion.** That is #530. This specification only moves durations and easings into tokens.
+- **What stops moving under reduced motion.** That is #530. This specification moves durations and easings into tokens; whether their values change is question 13.
 
 ## Proposed change
 
@@ -62,21 +62,21 @@ Twelve steps in OKLCH at Trybun's own hue 196, between Teal (191) and Deep Teal 
 | 6 | subtle border | `#D8DFDF` | `--border` |
 | 7 | border of interactive elements | `#CDD5D4` | – |
 | 8 | stronger border, hovered border | `#BBC4C3` | `--border-hover` (new) |
-| 9 | identifying border | `#7D8787` | `--input` |
+| 9 | identifying border | `#778181` | `--input` |
 | 10 | hovered identifying border | `#717B7B` | `--input-hover` (new) |
 | 11 | secondary text, icons, placeholder | `#566060` | `--muted-foreground` |
 | 12 | primary text | `#152120` | `--foreground` |
 
-The OKLCH values are L 0.993, 0.982, 0.960, 0.940, 0.920, 0.898, 0.866, 0.812, 0.615, 0.575, 0.480, 0.235 with C 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012, 0.012, 0.013, 0.016. Steps 1 and 7 stay primitives for components that need them.
+The OKLCH values are L 0.993, 0.982, 0.960, 0.940, 0.920, 0.898, 0.866, 0.812, 0.595, 0.575, 0.480, 0.235 with C 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012, 0.012, 0.013, 0.016. Steps 1 and 7 stay primitives for components that need them.
 
 Contrast (WCAG 2):
 
-| Pair | On White (page, card) | On step 2 (sidebar) | On step 3 (control) | On step 4 (hover) |
-|---|---|---|---|---|
-| Step 12 text | 16.53 | 15.75 | 14.79 | – |
-| Step 11 text | 6.49 | 6.18 | 5.80 | 5.44 |
-| Step 9 border | 3.69 | 3.52 | 3.30 | – |
-| Teal `#035F5C` (action, links) | 7.51 | 7.16 | 6.72 | – |
+| Pair | On White (page, card) | On step 2 (sidebar) | On step 3 (control) | On step 4 (hover) | On step 5 (pressed) |
+|---|---|---|---|---|---|
+| Step 12 text | 16.53 | 15.75 | 14.79 | 13.86 | – |
+| Step 11 text | 6.49 | 6.18 | 5.80 | 5.44 | 5.14 |
+| Step 9 border | 4.01 | 3.82 | 3.58 | 3.36 | 3.17 |
+| Teal `#035F5C` (action, links) | 7.51 | 7.16 | 6.72 | – | – |
 
 **Ink leaves the UI tokens.** Text becomes step 12. The backdrop of dialogs, `--overlay`, becomes step 12 at 40 % instead of Ink at 40 %. With the dark theme removed (#531), Ink has no other UI use: its dark-theme uses (`--primary-foreground` and the four status foregrounds) go with the dark block. Ink stays in the brand README only as history of the earlier palette.
 
@@ -153,15 +153,15 @@ Contrast (WCAG 2):
 
 ### Density and sizing
 
-The binary model of §2.9 and §18.6 stays: 44 px on touch below `xl` or with a coarse pointer, and compact on `xl` with a fine pointer. The compact sizes become tokens (question 10):
+The binary model of §2.9 and §18.6 stays: 44 px on touch below `xl` or with a coarse pointer, and compact on `xl` with a fine pointer. The compact sizes become tokens in Tailwind's `--spacing-*` namespace, so that `h-control`, `min-h-control` and `size-control` exist (question 10):
 
 | Token | Touch | Compact | Today (compact) |
 |---|---|---|---|
-| `--size-control` (button, input, select, icon button) | 44 | 32 | 32 |
-| `--size-control-sm` | 44 | 28 | – |
-| `--size-menu-item` | 44 | 32 | 28 |
-| `--size-nav-item` (side navigation) | 44 | 32 | 36 |
-| `--size-row` (table and list row) | 44 | 40 | about 36 |
+| `--spacing-control` (button, input, select, icon button) | 44 | 32 | 32 |
+| `--spacing-control-sm` | 44 | 28 | – |
+| `--spacing-menu-item` | 44 | 32 | 28 |
+| `--spacing-nav-item` (side navigation) | 44 | 32 | 36 |
+| `--spacing-row` (table and list row) | 44 | 40 | about 36 |
 
 - **Spacing** stays on Tailwind's 4 px grid.
 - **The side navigation** stays 240 px wide expanded and 64 px collapsed.
@@ -169,7 +169,7 @@ The binary model of §2.9 and §18.6 stays: 44 px on touch below `xl` or with a 
 ### Icons
 
 - **Lucide stays, with its default stroke** (question 11). The stroke of 2 on a 24 px grid draws about 1.33 px at 16 px, between Plane's 1.25 and Atlassian's 1.5.
-- **Two size tokens:** `--size-icon` 16 px (inline and in controls) and `--size-icon-nav` 20 px (navigation).
+- **Two size tokens** in the `--spacing-*` namespace: `--spacing-icon` 16 px (inline and in controls) and `--spacing-icon-nav` 20 px (navigation).
 
 ### Brand colour use
 
@@ -193,20 +193,23 @@ The borders are decorative (1.6–1.9:1): a status always has text or an icon (�
 
 ### Motion
 
-| Token | Value | Used by |
-|---|---|---|
-| `--duration-fast` | 100 ms | hover, toggles |
-| `--duration-base` | 200 ms | popovers, menus, selects |
-| `--duration-slow` | 300 ms | dialogs, drawers, toasts |
-| `--ease-out` | `cubic-bezier(0.2, 0, 0, 1)` | entering |
-| `--ease-in` | `cubic-bezier(0.4, 0, 1, 1)` | leaving |
+Today's values, from `packages/ui/src/components/*`: hover and popups 100 ms (7 uses), one 200, one 250 (toast), one 300, the drawer 450 ms (2), and three arbitrary cubic-béziers (`0.22,1,0.36,1` twice, `0.32,0.72,0,1`, `0.45,1.005,0,1.005`). They become tokens in Tailwind's namespaces (`--transition-duration-*`, `--ease-*`), named by role so that Tailwind's own `ease-out` and `ease-in` keep their meaning:
 
-They replace the arbitrary durations and cubic-béziers of the drawer and the toast. #530 can land before or after this. Either way this specification only moves values into tokens and does not change what reduced motion stops.
+| Token | Value with today's timing (question 13 a) | Value unified (question 13 b) |
+|---|---|---|
+| `--transition-duration-fast` | 100 ms (hover, toggles, popups) | 100 ms (hover, toggles) |
+| `--transition-duration-base` | 200 ms | 200 ms (popups, menus) |
+| `--transition-duration-toast` | 250 ms | 300 ms (as slow) |
+| `--transition-duration-slow` | 300 ms | 300 ms (dialogs, drawers, toasts) |
+| `--transition-duration-drawer` | 450 ms | – (300 ms) |
+| `--ease-enter`, `--ease-exit`, `--ease-drawer` | today's three curves, named | `cubic-bezier(0.2, 0, 0, 1)` in, `cubic-bezier(0.4, 0, 1, 1)` out |
+
+Option (b) changes popups from 100 to 200 ms, the drawer from 450 to 300 ms and the toast from 250 to 300 ms. Changed timing touches the animation flakiness of the story tests (#555). #530 can land before or after either option, and neither changes what reduced motion stops.
 
 ### Token structure and lint
 
 - **Primitives:** `--neutral-1` … `--neutral-12` and the existing `--brand-1` … `--brand-12`.
-- **Semantic roles:** the shadcn names plus the new ones above (`--sidebar`, `--sunken`, `--accent-active`, `--border-hover`, `--input-hover`, the status quartets, shadows, radii, sizes, durations and `type-*` styles).
+- **Semantic roles:** the shadcn names plus the new ones above (`--sidebar`, `--sunken`, `--accent-active`, `--border-hover`, `--input-hover`, the status quartets, shadows, radii, sizes, durations and `type-*` styles). The status quartets keep the existing names: `--destructive` with `--destructive-subtle`, `--destructive-text` and `--destructive-border`, and the same for success, warning and info; "danger" in the table means `--destructive`.
 - **No component tier, and CSS only** (question 14).
 - **New lint rules** in `@trybun/eslint-config` reject, in Trybun's own code (`apps/web` and Trybun's own components):
   - Tailwind size, radius, shadow and duration classes where a token exists;
@@ -221,7 +224,7 @@ They replace the arbitrary durations and cubic-béziers of the drawer and the to
 | [§2.9](../../docs/spec/02-agent-rules.md) | reading text at 16 px and at most 65 characters; the compact sizes as tokens |
 | [§13.4](../../docs/spec/13-non-functional.md) | every text role ≥ 4.5:1 and every identifying border ≥ 3:1 on every surface, checked by the story tests |
 | [§18.6](../../docs/spec/18-code-patterns.md) | compact sizes through the size tokens; text through `Heading` and `Text`; registry components keep their Tailwind sizes; role radii in the adapted components |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens | the neutral scale, surfaces, text styles, radii, shadows, sizes and durations replace "Tailwind defaults"; Ink leaves the UI table |
+| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens and Rules | the neutral scale, surfaces, text styles, radii, shadows, sizes and durations replace "Tailwind defaults"; Ink leaves the UI table, and the rule that names Ink as a dark background of the mark names Deep Teal only |
 | [`.ai/memory/shadcn.md`](../memory/shadcn.md) | "The theme keeps Tailwind's type scale" becomes the `type-*` mechanism of question 8 |
 
 New or changed glossary terms: none.
@@ -267,10 +270,10 @@ Implementation must not start until every question has an answer. Each question 
    - **Recommendation: (a).** Plane and Atlassian put controls at 6 and containers at 8–12; Primer's default is 6, with 12 for large containers. A container then reads as holding its controls.
 8. **How text styles and radii reach the components.**
    - **Options:**
-     - (a) new role names: `type-*` utilities, which `cn` keeps because they do not start with `text-`, and `rounded-inner`/`-control`/`-container`/`-dialog`. Trybun's adapted components move to them, the registry components keep their classes, and `shadcn diff` grows by those class names, listed in `.ai/memory/shadcn.md`;
+     - (a) new role names: `type-*` utilities and `rounded-inner`/`-control`/`-container`/`-dialog`, with a `cn` configured through `cn/config` that knows them as size and radius groups, used only by Trybun's own components. `cn` alone keeps unknown names but no longer merges them: `cn('rounded-control', 'rounded-none')` keeps both, so a caller's `className` would stop winning (§18.6). The registry components keep Tailwind's classes and the plain `cn`, so they need no edits; `shadcn diff` grows only where an adapted registry component moves to a role name, listed in `.ai/memory/shadcn.md`;
      - (b) retune the values of Tailwind's existing names (`text-sm`, `rounded-lg` …), with no component edits but no role names, so the roles stay approximate;
      - (c) custom `text-*` names with a `createCn` instance, which means changing the `cn` import in every registry component.
-   - **Recommendation: (a).** It gives role names that lint can enforce, without touching `cn` or the registry imports.
+   - **Recommendation: (a).** It gives role names that lint can enforce, keeps merging correct in Trybun's components, and leaves the registry imports untouched.
 9. **Border strength.**
    - **Options:**
      - (a) two kinds, an identifying border at ≥ 3:1 (`--input`) and a decorative border (`--border`, 1.35:1) that is never the only cue;
@@ -293,9 +296,10 @@ Implementation must not start until every question has an answer. Each question 
     - **Recommendation: (a).** It removes the `/NN` mixes, and the subtle variants are what lists and notes need.
 13. **Motion tokens.**
     - **Options:**
-      - (a) three durations and two easings;
-      - (b) none, durations written per component.
-    - **Recommendation: (a).** Durations are repeated in many components, and the drawer and toast use arbitrary values. #530 left tokens out of its own scope; it did not reject them.
+      - (a) tokens with today's timing (the table above);
+      - (b) tokens with unified timing: 100 / 200 / 300 ms and two curves;
+      - (c) no tokens, durations written per component.
+    - **Recommendation: (a).** It removes the arbitrary values without changing how anything moves, so the story tests keep their timing (#555). The drawer's 450 ms is above NN/g's 400 ms for large moves; changing it can follow as a measured change. #530 left tokens out of its own scope; it did not reject them.
 14. **Token tiers and format.**
     - **Options:**
       - (a) primitives and semantic roles in CSS, with no component tier and no DTCG JSON;
@@ -326,6 +330,7 @@ Implementation must not start until every question has an answer. Each question 
 ## Changelog
 
 - 2026-11-28 – Created from the research note of #580, with recommendations for the maintainer's answers.
+- 2026-11-28 – Second review: the `cn` merge gap in question 8, today's motion timing as option (a) of question 13, the `--spacing-*` and `--transition-duration-*` namespaces, step 9 darkened to 3.17:1 on the pressed surface, #532 conditional, status names on `--destructive`.
 - 2026-11-28 – Revised after review:
   - the Ink inventory is complete;
   - the dark theme is removed (question 15, answered by the maintainer), so only light values remain;
