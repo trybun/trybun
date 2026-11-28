@@ -289,6 +289,22 @@ describe('lint rules', () => {
       'better-tailwindcss/no-restricted-classes',
     ],
     [
+      'the brand accent as a text colour (text-brand-accent)',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      "import { cn } from 'cn';\nexport const banner = cn('hover:text-brand-accent');\n",
+      'better-tailwindcss/no-restricted-classes',
+    ],
+    [
+      'the brand accent as a background (bg-brand-accent/50)',
+      ui,
+      'ui',
+      'src/components/banner.tsx',
+      'export function Banner() {\n  return <div className="bg-brand-accent/50" />;\n}\n',
+      'better-tailwindcss/no-restricted-classes',
+    ],
+    [
       'a colour outside the theme (bg-red-500)',
       ui,
       'ui',
@@ -385,11 +401,11 @@ describe('lint rules', () => {
       'export function Primary() {\n  return <button type="button">Save</button>;\n}\n',
     ],
     [
-      'theme tokens, CSS variables and CSS-wide keywords in classes',
+      'theme tokens, the brand accent as fill and stroke, CSS variables and CSS-wide keywords in classes',
       ui,
       'ui',
       'src/components/banner.tsx',
-      "import { cn } from 'cn';\nexport const banner = cn('bg-primary text-brand-accent h-(--drawer-height) rounded-[inherit] [--bleed:3rem]');\n",
+      "import { cn } from 'cn';\nexport const banner = cn('bg-primary fill-brand-accent stroke-brand-accent h-(--drawer-height) rounded-[inherit] [--bleed:3rem]');\n",
     ],
     [
       'the default export of a story file',

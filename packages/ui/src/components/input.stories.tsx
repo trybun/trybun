@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import { expect } from 'storybook/test';
+import { tokenColor } from '../../.storybook/colours.js';
 import { viewport } from '../../.storybook/viewports.js';
 import { Input } from './input.js';
 
@@ -24,16 +25,6 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 type Args = ComponentProps<typeof Input>;
-
-// The computed `rgb()` value of a colour token, for comparing with computed styles.
-function tokenColor(token: string) {
-  const probe = document.createElement('span');
-  probe.style.color = `var(${token})`;
-  document.body.append(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
-}
 
 export const Default: Story = {
   play: async ({ canvas, userEvent }) => {
@@ -61,8 +52,8 @@ export const Invalid: Story = {
   ),
 };
 
-// A focused valid field never looks invalid: the ring is the interactive blue, neither a red close to
-// the danger colour nor the near-black Ink; the border plus a 1 px ring make the 2 px indicator (#177).
+// A focused valid field never looks invalid: the ring is the brand Teal, far from the danger red; the
+// border plus a 1 px ring make the 2 px indicator (#177, 2026-11-27-brand-teal-palette).
 // Without the colour transition, so the computed border is the final one.
 export const Focused: Story = {
   args: { className: 'transition-none' },
@@ -74,9 +65,10 @@ export const Focused: Story = {
     await expect(getComputedStyle(input).boxShadow).toContain(
       `${tokenColor('--ring')} 0px 0px 0px 1px`,
     );
-    await expect(tokenColor('--ring')).toBe(tokenColor('--link'));
+    // The ring is step 9 and links step 11 of the brand scale (equal in the light theme).
+    await expect(tokenColor('--ring')).toBe(tokenColor('--brand-9'));
+    await expect(tokenColor('--link')).toBe(tokenColor('--brand-11'));
     await expect(tokenColor('--ring')).not.toBe(tokenColor('--destructive'));
-    await expect(tokenColor('--ring')).not.toBe(tokenColor('--primary'));
   },
 };
 
