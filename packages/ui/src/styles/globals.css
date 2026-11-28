@@ -13,10 +13,27 @@
 
 :root {
   /* Brand colours (docs/brand/README.md); not utilities, only the source of the tokens below. */
+  --deep-teal: #071f20;
+  --gold: #dca81c;
+  /* The neutral of the UI until the design system specification (2026-11-27-brand-teal-palette). */
   --ink: #141a2e;
-  --vermilion: #e0482c;
-  /* Interactive states: focus, links, information (docs/brand/README.md). */
-  --blue: #2563eb;
+  /*
+   * Teal scale (OKLCH, hue about 190), roles of Radix Colors: 1-2 backgrounds, 3-5 component
+   * backgrounds, 6-8 borders, 9 the solid fill, 10 hover, 11 text, 12 strong text.
+   */
+  --brand-1: #f7fdfd;
+  --brand-2: #eff9f8;
+  --brand-3: #def4f2;
+  --brand-4: #d1edeb;
+  --brand-5: #c1e5e2;
+  --brand-6: #b0d9d6;
+  --brand-7: #98c9c5;
+  --brand-8: #74b2ad;
+  --brand-9: #035f5c;
+  --brand-10: #01504d;
+  /* Equal to step 9 on purpose: the fill already reaches 7.51:1 as text. */
+  --brand-11: #035f5c;
+  --brand-12: #022d2b;
 
   color-scheme: light;
   --background: #ffffff;
@@ -25,8 +42,10 @@
   --card-foreground: var(--ink);
   --popover: #ffffff;
   --popover-foreground: var(--ink);
-  --primary: var(--ink);
+  /* Teal: 7.51:1 with White; hover 9.31:1. */
+  --primary: var(--brand-9);
   --primary-foreground: #ffffff;
+  --primary-hover: var(--brand-10);
   /* Ink 5 % on White. */
   --secondary: #f3f4f5;
   --secondary-foreground: var(--ink);
@@ -35,30 +54,46 @@
   --muted-foreground: #5a5f6d;
   --accent: #f3f4f5;
   --accent-foreground: var(--ink);
-  /* Tailwind red-700, green-700, amber-700: 6.6, 5.0 and 5.1:1 with White; Blue 5.2:1. */
+  /* Tailwind red-700, green-700, amber-700: 6.6, 5.0 and 5.1:1 with White; blue 5.2:1. */
   --destructive: #c10007;
   --destructive-foreground: #ffffff;
   --success: #008236;
   --success-foreground: #ffffff;
   --warning: #bb4d00;
   --warning-foreground: #ffffff;
-  --info: var(--blue);
+  /* Its own blue, ΔE OK 0.23 from Teal. */
+  --info: #2563eb;
   --info-foreground: #ffffff;
-  /* Links in running text: 5.2:1 on --background. */
-  --link: var(--blue);
+  /* Links in running text: 7.51:1 on --background. */
+  --link: var(--brand-11);
   /* Ink 12 % on White: decorative lines. */
   --border: #e3e4e6;
   /* Ink 50 % on White: 3.3:1, the boundary of form fields (WCAG 1.4.11). */
   --input: #8a8c96;
-  /* Blue, apart from the danger red and the neutral Ink: 5.2:1 on --background. */
-  --ring: var(--blue);
+  /* Teal, far from the danger red: 7.51:1 on --background, 6.82:1 on --muted. */
+  --ring: var(--brand-9);
+  /* Selected rows and items; only 1.15:1 on --background, so a second cue (a check) is needed. */
+  --selected: var(--brand-3);
   --overlay: rgb(20 26 46 / 40%);
-  --brand-accent: var(--vermilion);
+  /* Gold: a brand accent for the mark and illustrations only, never text, buttons or statuses. */
+  --brand-accent: var(--gold);
   --radius: 0.625rem;
 }
 
 .dark {
   color-scheme: dark;
+  --brand-1: #091413;
+  --brand-2: #0d1b1a;
+  --brand-3: #0d2725;
+  --brand-4: #0c2f2d;
+  --brand-5: #103735;
+  --brand-6: #174340;
+  --brand-7: #1f5451;
+  --brand-8: #316f6b;
+  --brand-9: #6ebfb9;
+  --brand-10: #82cec8;
+  --brand-11: #8cd4ce;
+  --brand-12: #d4f3f0;
   --background: var(--ink);
   --foreground: #ffffff;
   /* White 6 % on Ink. */
@@ -66,8 +101,10 @@
   --card-foreground: #ffffff;
   --popover: #22283b;
   --popover-foreground: #ffffff;
-  --primary: #ffffff;
+  /* Light Teal with Ink text: 8.07:1; hover 9.54:1. */
+  --primary: var(--brand-9);
   --primary-foreground: var(--ink);
+  --primary-hover: var(--brand-10);
   /* White 12 % on Ink. */
   --secondary: #303547;
   --secondary-foreground: #ffffff;
@@ -76,7 +113,7 @@
   --muted-foreground: #adafb6;
   --accent: #303547;
   --accent-foreground: #ffffff;
-  /* Tailwind red-400, green-400, amber-400: 6.0, 9.7 and 10.0:1 with Ink; Blue 6.8:1. */
+  /* Tailwind red-400, green-400, amber-400: 6.0, 9.7 and 10.0:1 with Ink; blue 6.8:1. */
   --destructive: #ff6467;
   --destructive-foreground: var(--ink);
   --success: #05df72;
@@ -85,14 +122,15 @@
   --warning-foreground: var(--ink);
   --info: #60a5fa;
   --info-foreground: var(--ink);
-  /* 6.8:1 on --background, 5.8:1 on --card. */
-  --link: #60a5fa;
+  /* 10.21:1 on --background. */
+  --link: var(--brand-11);
   /* White 15 % on Ink. */
   --border: #373c4d;
   /* White 40 % on Ink: 3.8:1 on --background, 3.2:1 on --popover. */
   --input: #727682;
-  /* Blue: 6.8:1 on --background, 5.8:1 on --card. */
-  --ring: #60a5fa;
+  /* Teal: 8.07:1 on --background, 6.84:1 on --card, 5.69:1 on --muted. */
+  --ring: var(--brand-9);
+  --selected: var(--brand-3);
   --overlay: rgb(0 0 0 / 60%);
 }
 
@@ -108,6 +146,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -126,6 +165,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-selected: var(--selected);
   --color-overlay: var(--overlay);
   --color-brand-accent: var(--brand-accent);
 

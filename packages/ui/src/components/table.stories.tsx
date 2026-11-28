@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { expect, within } from 'storybook/test';
+import { tokenColor } from '../../.storybook/colours.js';
 import { viewport } from '../../.storybook/viewports.js';
 import { Checkbox } from './checkbox.js';
 import {
@@ -139,6 +140,11 @@ export const WithSelection: Story = {
     const row = (name: string) => canvas.getByRole('checkbox', { name }).closest('tr');
     await expect(row('Select TRY-2')).toHaveAttribute('data-state', 'selected');
     await expect(row('Select TRY-1')).not.toHaveAttribute('data-state');
+    // The selected background differs little from the page (1.15:1), so the checkbox is the cue.
+    await expect(getComputedStyle(row('Select TRY-2')!).backgroundColor).toBe(
+      tokenColor('--selected'),
+    );
+    await expect(canvas.getByRole('checkbox', { name: 'Select TRY-2' })).toBeChecked();
     const selectAll = canvas.getByRole('checkbox', { name: 'Select all tickets' });
     await expect(selectAll).toHaveAttribute('aria-checked', 'mixed');
 

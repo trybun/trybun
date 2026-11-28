@@ -65,6 +65,18 @@ export const LITERAL_COLOUR =
 const TOKENS_ONLY = 'Use a token of the theme instead of an arbitrary value (§2.6).';
 
 /**
+ * Any class that names the brand accent (Gold), except the fill or stroke of a shape: utilities,
+ * `!` before or after, any opacity, and variable references such as `text-(--color-brand-accent)`.
+ * Gold is close to the warning colour and has 2.17:1 on white, so it is never text, a button or a
+ * status (2026-11-27-brand-teal-palette).
+ */
+export const BRAND_ACCENT_OUTSIDE_SHAPES =
+  '^(?!(?:[^:]*:)*!?(?:fill|stroke)-brand-accent(?:/[^!]+)?!?$).*brand-accent';
+
+const BRAND_ACCENT_SHAPES_ONLY =
+  'The brand accent (Gold) is only for the fill or stroke of the mark and illustrations, never text, buttons or statuses.';
+
+/**
  * The correctness rules of eslint-plugin-better-tailwindcss and the ban on arbitrary values.
  * Class order is left to the Prettier plugin of Tailwind CSS.
  * @param {{ entryPoint: string }} options `entryPoint` is the CSS file with the theme
@@ -84,6 +96,7 @@ export function tailwind({ entryPoint }) {
             restrict: [
               { pattern: ARBITRARY_TOKEN_VALUE, message: TOKENS_ONLY },
               { pattern: LITERAL_COLOUR, message: TOKENS_ONLY },
+              { pattern: BRAND_ACCENT_OUTSIDE_SHAPES, message: BRAND_ACCENT_SHAPES_ONLY },
             ],
           },
         ],

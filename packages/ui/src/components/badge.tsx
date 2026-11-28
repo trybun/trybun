@@ -11,7 +11,7 @@ const badgeVariants = cva(
       variant: {
         // The ring has the colour of the fill; the offset keeps a gap between them.
         default:
-          'bg-primary text-primary-foreground focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background [a]:hover:bg-primary/80',
+          'bg-primary text-primary-foreground focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background [a]:hover:bg-primary-hover',
         secondary: 'bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80',
         destructive: 'bg-destructive text-destructive-foreground [a]:hover:bg-destructive/90',
         success: 'bg-success text-success-foreground [a]:hover:bg-success/90',

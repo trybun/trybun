@@ -88,3 +88,4 @@ Implementation (#182) must not start until every question has an answer.
 - 2026-11-01 – Created after the maintainer's manual QA of #182.
 - 2026-11-01 – Open questions answered by the maintainer: A – Blue, 2 px, blue links, `--info` reuses the blue, selections stay Ink. Implemented in #182.
 - 2026-11-01 – Approved by the maintainer (merged in #183) and implemented in #182: `--blue`, `--ring`, `--link` and `--info`, the 2 px focus indicator, blue links; `docs/brand/README.md` and §13.4 updated.
+- 2026-11-28 – Superseded in part by [`2026-11-27-brand-teal-palette.md`](../2026-11-27-brand-teal-palette.md): `--ring`, `--link` and selected states use the brand Teal, `--info` keeps the blue as its own colour and `--blue` is removed; the 2 px focus indicator stays.
