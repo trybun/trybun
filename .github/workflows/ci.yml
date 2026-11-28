@@ -97,7 +97,8 @@ jobs:
       - run: pnpm e2e
       # The CPU calibration of the Lighthouse test, in the job log (readable with `gh run view --log`)
       # and the job summary, for every run: the Playwright upgrade pull request compares it with
-      # earlier runs (#508, #579).
+      # earlier runs (#508, #579). The path is the default `outputDir` of Playwright, where the test
+      # writes the file (`testInfo.project.outputDir`): a changed `outputDir` must change it here.
       - name: Print the Lighthouse calibration
         if: ${{ !cancelled() && hashFiles('apps/web/test-results/lighthouse-calibration.md') != '' }}
         run: tee -a "$GITHUB_STEP_SUMMARY" < apps/web/test-results/lighthouse-calibration.md
