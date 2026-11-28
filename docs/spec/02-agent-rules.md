@@ -120,6 +120,7 @@ Per Rule 2:
 
 - The same elements (person picker, label picker, visibility switch, status badge, GFM editor) look and behave **identically across the system**. Users learn them once and recognize them everywhere (Nielsen's "consistency and standards").
 - An improvement made in a component (e.g. a new keyboard shortcut) immediately works everywhere the component is used.
+- **The second use makes a component.** The second time the same element is needed in another place – the same role and meaning for the user, such as a status badge, a page header, a list row or a load-more button, not class lists that happen to match – it becomes one shared component, or an existing one is extended; it is never copied. This deliberately differs from the common rule of three, because copies of UI drift from the first copy. Generic UI goes to `@trybun/ui`; domain UI goes to the components of the feature that owns the resource ([§18.5](18-code-patterns.md)) and is composed from `@trybun/ui`. Repetition inside one file (a loop) and files added by the shadcn CLI are exempt.
 
 ## 2.7 Rule 7 – Project memory lives in the repository
 
