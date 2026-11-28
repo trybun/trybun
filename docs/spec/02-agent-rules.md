@@ -96,6 +96,7 @@ Rule 6 is **subordinate to Rules 1 and 2**.
 Per Rule 1:
 
 - **Check what already exists first.** Before creating a component, the agent checks the project's component library. If a similar component exists, it extends it or composes from it instead of creating a copy.
+- **The second use makes a component.** The second time the same piece of UI (markup, a class list or a behaviour) is needed, it becomes one shared component, or an existing one is extended; it is never copied. Generic UI goes to `@trybun/ui`, domain UI to the feature's `components/`. Waiting for the second use keeps components to known use cases (YAGNI, below).
 - UI components form the **project component library** (a separate internal monorepo package `packages/ui`, named `@trybun/ui`), built on Base UI primitives (the default of shadcn/ui), not from scratch. **shadcn/ui** is the starting point ([§14.2](14-architecture.md)): if shadcn/ui offers a suitable component, it is added to `packages/ui` with the shadcn CLI and then adapted; a component is built from scratch only when shadcn/ui has nothing suitable.
 - A component copied from shadcn/ui becomes **project code** and is adapted before first use:
   - styling uses only the project's design tokens,
