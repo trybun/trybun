@@ -50,7 +50,7 @@ export function SideNavigation({
       aria-label={t('mainNavigation')}
       data-tour="app-shell-navigation"
       className={cn(
-        'hidden shrink-0 border-r border-border md:block',
+        'hidden shrink-0 border-r border-border bg-sidebar md:block',
         isTabletExpanded ? 'w-60' : 'w-16',
         isDesktopCollapsed ? 'xl:w-16' : 'xl:w-60',
       )}
@@ -82,8 +82,8 @@ export function SideNavigation({
                           href={href}
                           aria-current={isCurrentPage ? 'page' : undefined}
                           className={cn(
-                            'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-9',
-                            isCurrentPage && 'bg-muted text-foreground',
+                            'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none xl:pointer-fine:min-h-9',
+                            isCurrentPage && 'bg-accent text-foreground',
                           )}
                         />
                       }

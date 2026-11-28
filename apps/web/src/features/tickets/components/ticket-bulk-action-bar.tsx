@@ -117,7 +117,7 @@ export function TicketBulkActionBar({
     <div
       role="region"
       aria-label={t('list.selection.bar')}
-      className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-2 border-t border-border bg-background p-3 pb-safe-offset-17 shadow-lg md:static md:z-auto md:flex-row md:flex-wrap md:items-center md:rounded-lg md:border md:p-2 md:shadow-none"
+      className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-2 border-t border-border bg-background p-3 pb-safe-offset-17 shadow-overlay md:static md:z-auto md:flex-row md:flex-wrap md:items-center md:rounded-lg md:border md:p-2 md:shadow-none"
     >
       <p className="text-sm font-medium md:mr-2" aria-live="polite">
         {t('list.selection.selected', { count: selected.length })}

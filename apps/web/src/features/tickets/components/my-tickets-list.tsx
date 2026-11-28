@@ -134,7 +134,7 @@ function TicketGroup({
             <Link
               href={portalTicketHref(ticket.identifier)}
               className={cn(
-                'flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground hover:bg-muted focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
+                'flex min-h-11 items-center gap-3 rounded-lg border border-border bg-card p-3 text-card-foreground hover:bg-accent focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
                 isHighlighted && 'border-l-4 border-l-warning',
               )}
             >

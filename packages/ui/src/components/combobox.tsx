@@ -26,7 +26,7 @@ function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
     <div data-slot="combobox-input-group" className={cn('relative w-full', className)}>
       <ComboboxPrimitive.Input
         data-slot="combobox-input"
-        className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent py-1 pr-11 pl-3 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pr-8 xl:pointer-fine:pl-2.5 xl:pointer-fine:text-sm"
+        className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent py-1 pr-11 pl-3 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-input-hover focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pr-8 xl:pointer-fine:pl-2.5 xl:pointer-fine:text-sm"
         {...props}
       />
       <ComboboxPrimitive.Trigger
@@ -70,7 +70,7 @@ function ComboboxContent({
         <ComboboxPrimitive.Popup
           data-slot="combobox-content"
           className={cn(
-            'group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+            'group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) origin-(--transform-origin) overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-overlay duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
             className,
           )}
           {...props}
@@ -133,7 +133,7 @@ function ComboboxPopupInput({ className, ...props }: ComboboxPrimitive.Input.Pro
       <ComboboxPrimitive.Input
         data-slot="combobox-popup-input"
         className={cn(
-          'h-11 w-full min-w-0 rounded-md border border-input bg-transparent py-1 pr-3 pl-9 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pl-8 xl:pointer-fine:text-sm',
+          'h-11 w-full min-w-0 rounded-md border border-input bg-transparent py-1 pr-3 pl-9 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-input-hover focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pl-8 xl:pointer-fine:text-sm',
           className,
         )}
         {...props}

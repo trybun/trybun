@@ -53,7 +53,7 @@ export function PortalProjectList() {
           <li key={project.id}>
             <Link
               href={portalProjectHref(project.id)}
-              className="flex min-h-20 items-center gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground hover:bg-muted focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+              className="flex min-h-20 items-center gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground hover:bg-accent focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
             >
               <span className="min-w-0 flex-1 truncate text-lg font-medium">{project.name}</span>
               <ChevronRightIcon aria-hidden className="size-5 shrink-0 text-muted-foreground" />

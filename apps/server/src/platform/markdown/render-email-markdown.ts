@@ -10,9 +10,9 @@ import { unified } from 'unified';
 
 // E-mail clients ignore style sheets and CSS variables, so the elements carry inline styles with the
 // light-theme values of the design tokens (packages/ui/src/styles/globals.css).
-const MUTED = '#f3f4f5';
-const MUTED_FOREGROUND = '#5a5f6d';
-const BORDER = '#e3e4e6';
+const MUTED = '#eff3f3';
+const MUTED_FOREGROUND = '#566060';
+const BORDER = '#d8dfdf';
 const LINK = '#035f5c';
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
