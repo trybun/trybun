@@ -22,7 +22,7 @@ The research note [`research/2026-11-28-design-system-foundations.md`](research/
 
 Two open decisions bear on this specification:
 
-- **#531.** The maintainer decided on 2026-11-26 to remove the dark theme, which the application never shows. It comes back if the product brief (#501) names users who need it. This specification therefore defines light values only (question 15).
+- **#531.** The maintainer decided on 2026-11-26 to remove the dark theme, which the application never shows. On 2026-11-28 they reversed it: a dark theme is a convention of the category (Plane, Linear, GitHub, Jira offer one) and stays, as an option beside the default light theme (question 15). #531 is closed. This specification defines the dark values; showing the theme in the application (the system setting and a choice in the account settings) gets its own specification.
 - **#532.** It plans to write in `docs/brand/` that the default radius, type scale, shadows and spacing are kept on purpose. That plan predates the Plane direction of 2026-11-27. If the answers replace those defaults (questions 4, 7, 13), #532 drops that paragraph and keeps only its `SDLC.md` part.
 
 Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. The values here are derived for Trybun; none is copied from Propel.
@@ -38,7 +38,7 @@ Plane's design system (`@makeplane/propel`) is AGPL-3.0-only and Trybun is MIT. 
 ## Non-goals
 
 - **Layout and UX patterns:** app shell, view header, list, board, detail view, command palette, empty states, and the shared components of section 11 of the research note (including one status badge for the team and the portal). They get their own specification after this one.
-- **The dark theme.** Its removal is #531 (question 15).
+- **Showing the dark theme in the application:** following the system setting, a System / Light / Dark choice in the account settings, `theme-color` and the mark in the header. It gets its own specification after this one; until then the dark theme is visible in Storybook only.
 - **A user setting for density, and high-contrast themes.** Nothing needs them yet; they can come when a user group asks.
 - **Keycloak sign-in theming.** It needs its own research and specification.
 - **The brand colours and the mark** ([`2026-11-27-brand-teal-palette.md`](implemented/2026-11-27-brand-teal-palette.md)).
@@ -52,22 +52,22 @@ The values below are the recommendation. The open questions show the options, an
 
 Twelve steps in OKLCH at Trybun's own hue 196, between Teal (191) and Deep Teal (199), with chroma rising from 0.002 at step 1 to 0.016 at step 12. Tailwind's `mist` (hue 197–229) is the closest published grey; Radix pairs teal with `sage` (hue 165–175). The values are Trybun's own. Hex values are rounded from OKLCH.
 
-| Step | Role (Radix convention) | Value | Semantic token |
-|---|---|---|---|
-| 1 | app background, subtle | `#FBFDFD` | – (the page is White) |
-| 2 | subtle background | `#F7FAFA` | `--sidebar`, `--sunken` |
-| 3 | UI element background | `#EFF3F3` | `--muted`, `--secondary` |
-| 4 | hovered element | `#E7ECEC` | `--accent` |
-| 5 | active or selected element | `#E0E6E6` | `--accent-active` (new) |
-| 6 | subtle border | `#D8DFDF` | `--border` |
-| 7 | border of interactive elements | `#CDD5D4` | – |
-| 8 | stronger border, hovered border | `#BBC4C3` | `--border-hover` (new) |
-| 9 | identifying border | `#778181` | `--input` |
-| 10 | hovered identifying border | `#717B7B` | `--input-hover` (new) |
-| 11 | secondary text, icons, placeholder | `#566060` | `--muted-foreground` |
-| 12 | primary text | `#152120` | `--foreground` |
+| Step | Role (Radix convention) | Light | Dark | Semantic token (light / dark) |
+|---|---|---|---|---|
+| 1 | app background, subtle | `#FBFDFD` | `#0D1010` | – (the page is White) / `--sidebar`, `--sunken` |
+| 2 | subtle background | `#F7FAFA` | `#131616` | `--sidebar`, `--sunken` / `--background` |
+| 3 | UI element background | `#EFF3F3` | `#1B1F1F` | `--muted`, `--secondary` / `--card`, `--popover` |
+| 4 | hovered element | `#E7ECEC` | `#212626` | `--accent` / `--muted`, `--secondary` |
+| 5 | active or selected element | `#E0E6E6` | `#262C2C` | `--accent-active` (new) / `--accent` |
+| 6 | subtle border | `#D8DFDF` | `#2D3434` | `--border` / `--accent-active` |
+| 7 | border of interactive elements | `#CDD5D4` | `#383F3F` | – / `--border` |
+| 8 | stronger border, hovered border | `#BBC4C3` | `#495252` | `--border-hover` (new) |
+| 9 | identifying border | `#778181` | `#788382` | `--input` |
+| 10 | hovered identifying border | `#717B7B` | `#848F8E` | `--input-hover` (new) |
+| 11 | secondary text, icons, placeholder | `#566060` | `#AFB8B8` | `--muted-foreground` |
+| 12 | primary text | `#152120` | `#E8EEEE` | `--foreground` |
 
-The OKLCH values are L 0.993, 0.982, 0.960, 0.940, 0.920, 0.898, 0.866, 0.812, 0.595, 0.575, 0.480, 0.235 with C 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012, 0.012, 0.013, 0.016. Steps 1 and 7 stay primitives for components that need them.
+The OKLCH values are L 0.993, 0.982, 0.960, 0.940, 0.920, 0.898, 0.866, 0.812, 0.595, 0.575, 0.480, 0.235 with C 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.010, 0.012, 0.012, 0.013, 0.016. Dark: L 0.170, 0.198, 0.236, 0.262, 0.288, 0.318, 0.362, 0.432, 0.600, 0.640, 0.775, 0.945 with C 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.010, 0.012, 0.012, 0.012, 0.010, 0.006. Steps without a token stay primitives for components that need them. In dark, every surface is one step lighter than the one below it, and hover and pressed are one and two steps above the control background, so no state shares the step of the surface it sits on.
 
 Contrast (WCAG 2):
 
@@ -78,19 +78,28 @@ Contrast (WCAG 2):
 | Step 9 border | 4.01 | 3.82 | 3.58 | 3.36 | 3.17 |
 | Teal `#035F5C` (action, links) | 7.51 | 7.16 | 6.72 | – | – |
 
-**Ink leaves the UI tokens.** Text becomes step 12. The backdrop of dialogs, `--overlay`, becomes step 12 at 40 % instead of Ink at 40 %. With the dark theme removed (#531), Ink has no other UI use: its dark-theme uses (`--primary-foreground` and the four status foregrounds) go with the dark block. Ink stays in the brand README only as history of the earlier palette.
+Dark:
+
+| Pair | On step 1 (sidebar) | On step 2 (page) | On step 3 (card, popover) | On step 4 (control) | On step 5 (hover) | On step 6 (pressed) |
+|---|---|---|---|---|---|---|
+| Step 12 text | 16.29 | 15.51 | 14.18 | 13.06 | 12.10 | 10.83 |
+| Step 11 text | 9.44 | 8.99 | 8.22 | 7.57 | 7.01 | 6.28 |
+| Step 9 border | 4.89 | 4.65 | 4.25 | 3.92 | 3.63 | 3.25 |
+| Teal `#6EBFB9` (ring) / `#8CD4CE` (links) | 8.93 / 11.31 | 8.51 / 10.77 | 7.78 / 9.84 | 7.17 / 9.07 | 6.64 / 8.40 | 5.94 / 7.52 |
+
+**Ink leaves the UI tokens.** Text becomes step 12. The backdrop of dialogs, `--overlay`, becomes step 12 at 40 % in light instead of Ink at 40 %, and stays black at 60 % in dark. In dark, the label on the light Teal button (`--primary-foreground`) and on the four status fills becomes dark step 1 `#0D1010` instead of Ink: 8.93:1 on `#6EBFB9`, 10.57:1 on the hover `#82CEC8`. Ink stays in the brand README only as history of the earlier palette.
 
 ### Surfaces
 
-| Token | Value | Used by |
-|---|---|---|
-| `--background` | White | the page |
-| `--sidebar` (new) | step 2 | the side navigation; one step away from the page, never brand-coloured |
-| `--sunken` (new) | step 2 | Kanban columns, table header, code blocks |
-| `--card` | White + `--border` | cards and panels |
-| `--popover` | White + `--border` + `--shadow-overlay` | menus, popovers, selects, dialogs |
-| `--muted`, `--secondary` | step 3 | control backgrounds, neutral badges |
-| `--accent` / `--accent-active` | step 4 / step 5 | hovered / pressed rows and menu items |
+| Token | Light | Dark | Used by |
+|---|---|---|---|
+| `--background` | White | step 2 | the page |
+| `--sidebar` (new) | step 2 | step 1 | the side navigation; one step away from the page, never brand-coloured |
+| `--sunken` (new) | step 2 | step 1 | Kanban columns, table header, code blocks |
+| `--card` | White + `--border` | step 3 + `--border` | cards and panels |
+| `--popover` | White + `--border` + `--shadow-overlay` | step 3 + `--border` + `--shadow-overlay` | menus, popovers, selects, dialogs |
+| `--muted`, `--secondary` | step 3 | step 4 | control backgrounds, neutral badges |
+| `--accent` / `--accent-active` | step 4 / step 5 | step 5 / step 6 | hovered / pressed rows and menu items |
 
 ### Borders and shadows
 
@@ -99,13 +108,13 @@ Contrast (WCAG 2):
   - an identifying border (fields, unchecked controls) uses `--input` and meets 3:1;
   - a decorative border (dividers, card and popover edges, badge edges) uses `--border` and is never the only cue (question 9).
 - **Shadows are only for things that float or move:** popovers, menus, dialogs, toasts and a dragged Kanban card. Cards on the page get a border, not a shadow (NN/g, Atlassian).
-- **Three shadow tokens** in the colour of step 12, in place of Tailwind's black shadows:
+- **Three shadow tokens** in place of Tailwind's black shadows: in light in the colour of step 12; in dark black at higher alpha, where depth comes mostly from the surface steps and the border:
 
-| Token | Value |
-|---|---|
-| `--shadow-raised` | `0 1px 2px rgb(21 33 32 / 0.08), 0 4px 12px -2px rgb(21 33 32 / 0.12)` |
-| `--shadow-overlay` | `0 1px 2px rgb(21 33 32 / 0.06), 0 8px 24px -4px rgb(21 33 32 / 0.14)` |
-| `--shadow-modal` | `0 2px 4px rgb(21 33 32 / 0.06), 0 16px 40px -8px rgb(21 33 32 / 0.20)` |
+| Token | Light | Dark |
+|---|---|---|
+| `--shadow-raised` | `0 1px 2px rgb(21 33 32 / 0.08), 0 4px 12px -2px rgb(21 33 32 / 0.12)` | `0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -2px rgb(0 0 0 / 0.4)` |
+| `--shadow-overlay` | `0 1px 2px rgb(21 33 32 / 0.06), 0 8px 24px -4px rgb(21 33 32 / 0.14)` | `0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -4px rgb(0 0 0 / 0.5)` |
+| `--shadow-modal` | `0 2px 4px rgb(21 33 32 / 0.06), 0 16px 40px -8px rgb(21 33 32 / 0.20)` | `0 2px 4px rgb(0 0 0 / 0.3), 0 16px 40px -8px rgb(0 0 0 / 0.6)` |
 
 ### Typography
 
@@ -189,7 +198,16 @@ Each status gets four tokens: fill, subtle fill, text and border. They replace t
 | danger | `#C10007` (6.42) | `#FEF0EE` | `#8C2D28` (7.50) | `#F2A89E` |
 | info | `#2563EB` (5.17) | `#EEF4FF` | `#284E99` (7.20) | `#9EBEF8` |
 
-The borders are decorative (1.6–1.9:1): a status always has text or an icon (§13.4). How the nine internal and five public statuses map to these colours, and the shared badge, belong to the layout specification.
+Dark (the fill keeps today's dark value; its label is dark step 1):
+
+| Status | Fill (step 1 text) | Subtle | Text | Border (decorative) |
+|---|---|---|---|---|
+| success | `#05DF72` (10.74) | `#17321E` | `#8FE1A1` (8.90 on subtle, 11.66 on the page) | `#346C42` |
+| warning | `#FFB900` (11.10) | `#3A270B` | `#F8BF6C` (8.58, 10.97) | `#7B5518` |
+| danger | `#FF6467` (6.62) | `#412120` | `#FEB5B1` (8.51, 10.80) | `#894746` |
+| info | `#60A5FA` (7.52) | `#1A2C44` | `#A8CEFF` (8.70, 11.21) | `#395F8F` |
+
+The borders are decorative (1.6–1.9:1 in light): a status always has text or an icon (§13.4). How the nine internal and five public statuses map to these colours, and the shared badge, belong to the layout specification.
 
 ### Motion
 
@@ -214,7 +232,7 @@ Option (b) changes popups from 100 to 200 ms, the drawer from 450 to 300 ms and 
 - **New lint rules** in `@trybun/eslint-config` reject, in Trybun's own code (`apps/web` and Trybun's own components):
   - Tailwind size, radius, shadow and duration classes where a token exists;
   - `/NN` colour mixes;
-  - `dark:` classes. With the dark theme removed (#531) there are no exceptions.
+  - `dark:` classes, with no exceptions: dark mode works through the tokens alone (§2.6).
 
 ## Changes to the system specification
 
@@ -309,13 +327,13 @@ Implementation must not start until every question has an answer. Each question 
 15. **Dark theme.**
     - **Options:**
       - (a) remove it, as decided on 2026-11-26 (#531);
-      - (b) keep it as an option that follows the system setting.
-    - **Answer:** (a), remove it (maintainer, 2026-11-28, confirming the decision of #531 after the Plane direction). This specification defines light values only.
+      - (b) keep it as an option beside the default light theme.
+    - **Answer:** (b), keep it (maintainer, 2026-11-28: "a must-have of the industry today"). An earlier reply of the same day accepted (a) by oversight and was corrected. NN/g finds light text easier to read for most people, so light stays the default and dark is an option. #531 is closed; showing the theme in the application gets its own specification.
 
 ## Acceptance criteria
 
-- [ ] `globals.css` defines the neutral scale, surfaces, status quartets, shadows, role radii, sizes, durations and `type-*` styles of the answers. The `--radius` multiplier and the Ink-based UI values are gone.
-- [ ] The story test `Foundations/Colour tokens` checks:
+- [ ] `globals.css` defines the neutral scale, surfaces, status quartets, shadows, role radii, sizes, durations and `type-*` styles of the answers, in light and dark. The `--radius` multiplier and the Ink-based UI values are gone.
+- [ ] The story test `Foundations/Colour tokens` checks, in both themes:
   - every text role on every surface where it is used (≥ 4.5:1);
   - `--input` on every surface where it is used (≥ 3:1);
   - every status text on its subtle fill, and White on every status fill (≥ 4.5:1);
@@ -324,16 +342,17 @@ Implementation must not start until every question has an answer. Each question 
 - [ ] Every heading and text element in `apps/web` and in Trybun's own components uses `Heading` or `Text`; the registry components keep their Tailwind sizes. #533 is closed by this work.
 - [ ] Ticket identifiers and project keys use the UI font with tabular figures.
 - [ ] `docs/brand/README.md` lists the new tokens and no longer says that type, radii and shadows are Tailwind defaults; `.ai/memory/shadcn.md` describes the `type-*` and role-radius mechanism and the classes it adds to `shadcn diff`.
-- [ ] Works on phone, tablet and desktop (Rule 9), checked in manual QA.
+- [ ] Works on phone, tablet and desktop (Rule 9): light theme in manual QA, dark theme in Storybook until the application shows it.
 - [ ] User documentation and product tour updated where they show the changed screens (Rules 3, 4).
 
 ## Changelog
 
 - 2026-11-28 – Created from the research note of #580, with recommendations for the maintainer's answers.
+- 2026-11-28 – The maintainer keeps the dark theme (question 15 answered (b), correcting an earlier oversight); dark values, contrasts, statuses and shadows added; #531 closed.
 - 2026-11-28 – Second review: the `cn` merge gap in question 8, today's motion timing as option (a) of question 13, the `--spacing-*` and `--transition-duration-*` namespaces, step 9 darkened to 3.17:1 on the pressed surface, #532 conditional, status names on `--destructive`.
 - 2026-11-28 – Revised after review:
   - the Ink inventory is complete;
-  - the dark theme is removed (question 15, answered by the maintainer), so only light values remain;
+  - the dark theme was removed (question 15), later reversed;
   - the borders, compact sizes, icons and token tiers became questions;
   - the mechanism for text styles and radii against `cn` and `shadcn diff` is a question;
   - status, shadow and easing values are added;
