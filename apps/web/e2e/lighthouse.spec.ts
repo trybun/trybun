@@ -1,9 +1,9 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { appendFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import { availableParallelism, loadavg, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type BrowserContextOptions, chromium, expect, test } from '@playwright/test';
 import lighthouse, { type Result } from 'lighthouse';
-import { calibrateCpuSlowdown } from './cpu-calibration.js';
+import { type CpuCalibration, calibrateCpuSlowdown } from './cpu-calibration.js';
 import { TEAM_STORAGE_STATE } from './storage-state.js';
 
 /**
@@ -47,6 +47,50 @@ function median(values: readonly number[]): number {
 }
 
 type StorageState = Exclude<BrowserContextOptions['storageState'], string | undefined>;
+
+/**
+ * The file of the run's calibrations, in the output folder of Playwright, which every run empties.
+ * CI prints it to the job log and the job summary after the tests (#579): after an upgrade of
+ * Playwright's Chromium, its pull request compares the multipliers with those of earlier runs
+ * (open question 2 of #508). The job log can be read with `gh run view --log` and is not
+ * Actions storage, while the report is uploaded only for a failed run.
+ */
+const CALIBRATION_FILE = 'lighthouse-calibration.md';
+
+/** Appends the calibration of a key page and the medians of its runs to the calibration file. */
+async function appendCalibration(
+  folder: string,
+  page: string,
+  calibration: CpuCalibration,
+  runner: { loadAverage: number[]; parallelism: number },
+  runs: readonly Result[],
+  medians: { performance: number; lcpMs: number; tbtMs: number },
+): Promise<void> {
+  const chromiumVersion =
+    /Chrome\/([\d.]+)/.exec(runs[0]?.environment.hostUserAgent ?? '')?.[1] ?? '?';
+  const [low, high] = calibration.rateInterval;
+  const rows = [
+    ['Chromium', chromiumVersion],
+    ['CPU slowdown multiplier', calibration.cpuSlowdownMultiplier.toFixed(2)],
+    ['95 % interval of the rate', `${low.toFixed(2)}–${high.toFixed(2)}`],
+    ['Unthrottled benchmark index (median)', median(calibration.unthrottledReadings).toFixed(0)],
+    ['Throttled readings', String(calibration.steps.length)],
+    [
+      'Benchmark index of the runs',
+      runs.map((run) => run.environment.benchmarkIndex.toFixed(0)).join(', '),
+    ],
+    ['Load average (1, 5, 15 min)', runner.loadAverage.map((load) => load.toFixed(2)).join(', ')],
+    ['Parallelism', String(runner.parallelism)],
+    ['Performance (median)', medians.performance.toFixed(2)],
+    ['LCP, TBT (median, ms)', `${medians.lcpMs.toFixed(0)}, ${medians.tbtMs.toFixed(0)}`],
+  ];
+  const table = rows.map(([label, value]) => `| ${label ?? ''} | ${value ?? ''} |`).join('\n');
+  await mkdir(folder, { recursive: true });
+  await appendFile(
+    join(folder, CALIBRATION_FILE),
+    `### Lighthouse CPU calibration: ${page}\n\n| | |\n|---|---|\n${table}\n\n`,
+  );
+}
 
 for (const keyPage of KEY_PAGES) {
   test(`${keyPage.name} meets the mobile budget`, async ({ baseURL }, testInfo) => {
@@ -109,6 +153,11 @@ for (const keyPage of KEY_PAGES) {
         median(runs.map(({ categories }) => categories[category]?.score ?? 0));
       const metric = (audit: string) =>
         median(runs.map(({ audits }) => audits[audit]?.numericValue ?? Number.POSITIVE_INFINITY));
+      await appendCalibration(testInfo.project.outputDir, keyPage.name, calibration, runner, runs, {
+        performance: score('performance'),
+        lcpMs: metric('largest-contentful-paint'),
+        tbtMs: metric('total-blocking-time'),
+      });
       expect.soft(score('performance'), 'Performance').toBeGreaterThanOrEqual(BUDGET.performance);
       expect
         .soft(score('accessibility'), 'Accessibility')

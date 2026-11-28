@@ -5,7 +5,7 @@ import { pageFunctions } from 'lighthouse/core/lib/page-functions.js';
  * The benchmark index of the device the Lighthouse budget emulates: a mid-tier phone ("like a
  * Pixel 5"), the target of the CPU throttling calibration of Chrome DevTools (#508). The index is
  * Lighthouse's `computeBenchmarkIndex`, whose definition can change with Chromium: compare the
- * calibrated multipliers of the reports after every upgrade of Playwright's Chromium.
+ * calibrated multipliers printed in the CI job log (#579) after every upgrade of Playwright's Chromium.
  */
 export const TARGET_BENCHMARK_INDEX = 1_000;
 
