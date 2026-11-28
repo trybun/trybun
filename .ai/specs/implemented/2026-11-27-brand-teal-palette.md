@@ -2,31 +2,31 @@
 
 | | |
 |---|---|
-| Status | `approved` |
+| Status | `implemented` |
 | Created | 2026-11-27 |
 | Plan task | – |
-| System specification sections | §13.4; [`docs/brand/README.md`](../../docs/brand/README.md) (The mark, Colours, UI design tokens, Rules) |
-| Related issues / PRs | #573, #572 (research), [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md) (superseded in part) |
+| System specification sections | §13.4; [`docs/brand/README.md`](../../../docs/brand/README.md) (The mark, Colours, UI design tokens, Rules) |
+| Related issues / PRs | #573, #572 (research), #574 (this specification), #575 (tokens), #577 (mark), #578 (completion), [`2026-11-01-brand-interactive-colour.md`](2026-11-01-brand-interactive-colour.md) (superseded in part) |
 
 ## Context
 
 The maintainer wants Trybun to look modern and attractive, because buyers who compare two similar tools choose the one that looks better. On 2026-11-27 they chose the UI direction of Plane: clear, intuitive and full of conventions from other tools. They also rejected the current brand colours, because the black primary does not fit that direction.
 
-Today the brand has three colours ([`docs/brand/README.md`](../../docs/brand/README.md)):
+Today the brand has three colours ([`docs/brand/README.md`](../../../docs/brand/README.md)):
 
 | Colour | Use today | Problem |
 |---|---|---|
 | Ink `#141A2E` | `--primary`, so every primary button is near-black; the team branch and the wordmark | reads as black; the same as the default shadcn look, Polaris, GitLab since 2026 and Frappe Helpdesk, so it does not set Trybun apart |
 | Vermilion `#E0482C` | `--brand-accent`, the customer branch of the mark | 4.1° of hue from `--destructive` and only 4.09:1 with white text, so it cannot be an action colour; in the mark it is almost the red of GitLab (`#E24329`) and close to Zammad (`#E54011`) |
-| Blue `#2563EB` | focus ring, links and information ([2026-11-01](implemented/2026-11-01-brand-interactive-colour.md)) | added only because Ink reads as black and Vermilion as an error; blue is the most crowded hue in the category |
+| Blue `#2563EB` | focus ring, links and information ([2026-11-01](2026-11-01-brand-interactive-colour.md)) | added only because Ink reads as black and Vermilion as an error; blue is the most crowded hue in the category |
 
 Under deuteranopia, Vermilion beside green cannot be told apart (about 8 % of men of European descent).
 
 The research of 2026-11-27 is in three notes:
 
-- [`research/2026-11-27-category-colour-landscape.md`](research/2026-11-27-category-colour-landscape.md): 30 trackers and help desks;
-- [`research/2026-11-27-brand-colour-landscape-wide.md`](research/2026-11-27-brand-colour-landscape-wide.md): 156 more vendors;
-- [`research/2026-11-27-brand-colour-practice.md`](research/2026-11-27-brand-colour-practice.md): practice and accessibility.
+- [`research/2026-11-27-category-colour-landscape.md`](../research/2026-11-27-category-colour-landscape.md): 30 trackers and help desks;
+- [`research/2026-11-27-brand-colour-landscape-wide.md`](../research/2026-11-27-brand-colour-landscape-wide.md): 156 more vendors;
+- [`research/2026-11-27-brand-colour-practice.md`](../research/2026-11-27-brand-colour-practice.md): practice and accessibility.
 
 The main findings:
 
@@ -48,7 +48,7 @@ The maintainer chose the teal hue from four candidates on mock-ups. The wide sur
 - **The semantic colours.** Danger, success and warning stay as they are. `--info` keeps its own blue.
 - **The shape of the mark and the wordmark typeface** (Manrope ExtraBold).
 - **Deliberate uses of old colours**, which stay:
-  - the `bg-[#E0482C]` examples in [§2.6](../../docs/spec/02-agent-rules.md), in the lint tests and the test fixture `globals.css` of `@trybun/eslint-config` and in the comment of its `tailwind.js`, which show a forbidden arbitrary value;
+  - the `bg-[#E0482C]` examples in [§2.6](../../../docs/spec/02-agent-rules.md), in the lint tests and the test fixture `globals.css` of `@trybun/eslint-config` and in the comment of its `tailwind.js`, which show a forbidden arbitrary value;
   - the `text-brand-accent` strings in the unit tests of `@trybun/eslint-config` (`configs.spec.js`) and `@trybun/ui` (`utils.spec.ts`), which test class merging, not product use;
   - test data with fixed colours: the button in `apps/web/e2e/accessibility.spec.ts` and the sample image in `attachment-list.stories.tsx`;
   - the implemented specifications, research notes, run logs and mock-ups (for example `.ai/specs/assets/rate-limited-sign-out/`), which record history.
@@ -64,7 +64,7 @@ The maintainer chose the teal hue from four candidates on mock-ups. The wide sur
 | Gold | `#DCA81C` | L 0.76 C 0.15 H 85 | customer branch of the mark; brand accent only |
 | White | `#FFFFFF` | | backgrounds; the team branch and crossbar of the mark on dark backgrounds |
 
-Nearest colours among 324 product colours of the wide survey (ΔE OK; 0.02 is the just-noticeable difference of CSS Color 4; full table in section 3 of [`research/2026-11-27-brand-colour-landscape-wide.md`](research/2026-11-27-brand-colour-landscape-wide.md)):
+Nearest colours among 324 product colours of the wide survey (ΔE OK; 0.02 is the just-noticeable difference of CSS Color 4; full table in section 3 of [`research/2026-11-27-brand-colour-landscape-wide.md`](../research/2026-11-27-brand-colour-landscape-wide.md)):
 
 | Colour | Nearest overall | Nearest in the direct category (help desks, trackers) |
 |---|---|---|
@@ -84,7 +84,7 @@ Recognition comes from Teal and Gold; Deep Teal is a dark surface colour, close 
 
 Gold has 2.17:1 on white (2.06:1 under deuteranopia), and differs from a white team branch by 2.17:1. WCAG 1.4.11 does not apply to logos. The maintainer accepted these values after examples at 16, 24 and 56 px, under simulated deuteranopia and in greyscale. The research proposed at least 3:1 here, and this specification records the exception on purpose. The meaning "team – customers" is also carried by the shape: the left and right branches.
 
-Every file in [`docs/brand/`](../../docs/brand/README.md) is regenerated in the new colours with the same geometry:
+Every file in [`docs/brand/`](../../../docs/brand/README.md) is regenerated in the new colours with the same geometry:
 
 - the icons: primary, on dark, one-colour dark and one-colour white;
 - the logos with the wordmark, light and dark;
@@ -129,13 +129,13 @@ The focus ring stays 2 px. A focused invalid field keeps its danger border. `--r
 
 All values are ΔE OK. Statuses always have an icon or text as well (§13.4).
 
-**The customer side in the UI** is shown by an icon and a label ("Customer · organization name"), never by Gold (WCAG 1.4.1, §13.4).
+**The customer side in the UI** is never shown by colour alone, and never by Gold (WCAG 1.4.1, §13.4).
 
 **E-mails** carry inline colours (`apps/server/src/platform/markdown/render-email-markdown.ts`): the link colour changes from `#2563eb` to Teal `#035F5C`.
 
 ### Supersedes
 
-[`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md):
+[`2026-11-01-brand-interactive-colour.md`](2026-11-01-brand-interactive-colour.md):
 
 | Answer of 2026-11-01 | Now |
 |---|---|
@@ -150,13 +150,13 @@ That specification gets a changelog line pointing here.
 
 | Section | Change |
 |---|---|
-| [`docs/brand/README.md`](../../docs/brand/README.md) – The mark | branch colours: Deep Teal (team), Gold (customers); White and Gold on dark backgrounds |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – Colours | Teal, Deep Teal, Gold and White replace Ink, Vermilion and Blue as brand colours; Ink stays a UI neutral until the design system specification |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – UI design tokens | the rows above, the bullets on Teal, Gold and `--info`, the 12-step scale |
-| [`docs/brand/README.md`](../../docs/brand/README.md) – Rules | the versions of the mark; Gold never for text, buttons or statuses; the 16 px favicon check |
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – The mark | branch colours: Deep Teal (team), Gold (customers); White and Gold on dark backgrounds |
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – Colours | Teal, Deep Teal, Gold and White replace Ink, Vermilion and Blue as brand colours; Ink stays a UI neutral until the design system specification |
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – UI design tokens | the rows above, the bullets on Teal, Gold and `--info`, the 12-step scale |
+| [`docs/brand/README.md`](../../../docs/brand/README.md) – Rules | the versions of the mark; Gold never for text, buttons or statuses; the 16 px favicon check |
 | §13.4 | the focus indicator uses Teal (`--ring`), still 2 px; the customer side is never shown by colour alone |
 
-Agent memory: [`.ai/memory/shadcn.md`](../memory/shadcn.md) says the focus ring is Blue; it is updated with the implementation.
+Agent memory: [`.ai/memory/shadcn.md`](../../memory/shadcn.md) says the focus ring is Blue; it is updated with the implementation.
 
 New or changed glossary terms: none.
 
@@ -175,20 +175,20 @@ Implementation must not start until every question has an answer.
 
 ## Acceptance criteria
 
-- [ ] `docs/brand/README.md` lists Teal, Deep Teal, Gold and White with their uses, the versions of the mark and the rules above.
-- [ ] All brand files and the web application's icons (`icon.svg`, `favicon.ico`, `apple-icon.png`, `public/icons/`) use the new colours with unchanged geometry. The favicon is checked at 16 px on a light and a dark tab, including the dark-theme switch of the SVG favicon. The maintainer has been asked to upload the avatar and the social preview.
-- [ ] The tokens have the values above in both themes: `--brand-1` … `--brand-12`, `--primary`, `--primary-hover`, `--ring`, `--link`, `--selected` and `--brand-accent`. `--info` keeps its blue; `--blue` and `--vermilion` are gone.
-- [ ] Story tests check:
+- [x] `docs/brand/README.md` lists Teal, Deep Teal, Gold and White with their uses, the versions of the mark and the rules above.
+- [x] All brand files and the web application's icons (`icon.svg`, `favicon.ico`, `apple-icon.png`, `public/icons/`) use the new colours with unchanged geometry. The favicon is checked at 16 px on a light and a dark tab, including the dark-theme switch of the SVG favicon. The maintainer has been asked to upload the avatar and the social preview.
+- [x] The tokens have the values above in both themes: `--brand-1` … `--brand-12`, `--primary`, `--primary-hover`, `--ring`, `--link`, `--selected` and `--brand-accent`. `--info` keeps its blue; `--blue` and `--vermilion` are gone.
+- [x] Story tests check:
   - `--primary-foreground` on `--primary` ≥ 4.5:1 in both themes;
   - `--ring` ≥ 3:1 on `--background`, `--card`, `--popover` and `--muted` in both themes;
   - `--ring` is not `--destructive`; in `input.stories.tsx` the assertion `--ring` ≠ `--primary` is removed, because both are Teal now, and `--ring` = `--link` becomes "both from the brand scale": they are equal in the light theme, while in the dark theme `--ring` is step 9 and `--link` step 11;
   - a focused invalid field keeps its danger border (`Input/FocusedInvalid`).
-- [ ] A selected table row (`table.tsx`) shows a second indicator besides `--selected`, because the selected background differs from `--background` by only 1.15:1 (light) and 1.10:1 (dark). The indicator is chosen in the implementation (a check, a bar or bold text) and checked by a story test in both themes.
-- [ ] No text, button or status in the product code uses `--brand-accent` (lint or story test); the unit-test strings listed under non-goals are exempt.
-- [ ] E-mail links use Teal, and the test of `render-email-markdown.ts` asserts it.
-- [ ] §13.4 and [`.ai/memory/shadcn.md`](../memory/shadcn.md) are updated. [`2026-11-01-brand-interactive-colour.md`](implemented/2026-11-01-brand-interactive-colour.md) has a changelog line pointing here.
-- [ ] Works on phone, tablet and desktop (Rule 9). The light theme is checked in manual QA. The dark theme is checked in Storybook, because the web application has no dark theme (#531).
-- [ ] User documentation and product tour updated where they show the colours or the logo (Rules 3, 4).
+- [x] A selected table row (`table.tsx`) shows a second indicator besides `--selected`, because the selected background differs from `--background` by only 1.15:1 (light) and 1.10:1 (dark). The indicator is chosen in the implementation (a check, a bar or bold text) and checked by a story test in both themes.
+- [x] No text, button or status in the product code uses `--brand-accent` (lint or story test); the unit-test strings listed under non-goals are exempt.
+- [x] E-mail links use Teal, and the test of `render-email-markdown.ts` asserts it.
+- [x] §13.4 and [`.ai/memory/shadcn.md`](../../memory/shadcn.md) are updated. [`2026-11-01-brand-interactive-colour.md`](2026-11-01-brand-interactive-colour.md) has a changelog line pointing here.
+- [x] Works on phone, tablet and desktop (Rule 9). The light theme is checked in manual QA. The dark theme is checked in Storybook, because the web application has no dark theme (#531).
+- [x] User documentation and product tour updated where they show the colours or the logo (Rules 3, 4).
 
 ## Changelog
 
@@ -196,3 +196,5 @@ Implementation must not start until every question has an answer.
 - 2026-11-27 – Questions 5–8 answered by the maintainer: the names Teal, Deep Teal and Gold, selected states in Teal, a light Teal button with Ink text in the dark theme, the wordmark in Deep Teal. Second review: figures corrected, the dark `--info` row, the ring and link test, the favicon on dark tabs and the full list of deliberate leftovers. Third review: the neighbour table from the whole survey, the SVG favicon for dark tabs, a criterion for the selected row, CVD distances to two decimals.
 - 2026-11-27 – Approved by the maintainer (merged in #574).
 - 2026-11-28 – Step 2: the mark files and the icons of the web application regenerated in the new colours. The favicon check at 16 px found no need for a darker gold; the light outline for browsers without the dark switch was dropped, because Safari 26 ignores the rule in the SVG favicon and an outline would harm light tabs (maintainer).
+- 2026-11-28 – Step 3: e-mail links in Teal, §13.4 updated, light theme checked by the agent at phone, tablet and desktop widths (screenshots approved by the maintainer as QA of #578); implemented (tokens #575, mark #577, #578). Status `implemented`, moved to `implemented/`.
+- 2026-11-28 – Review of #578: the customer side was described as an icon and a label with the organization name, which contradicts §5.4 (other organizations see only "Customer") and exists nowhere in the UI; now it is only never shown by colour alone and never by Gold, as the table of system specification changes says.

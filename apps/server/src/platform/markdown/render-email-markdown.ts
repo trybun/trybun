@@ -13,7 +13,7 @@ import { unified } from 'unified';
 const MUTED = '#f3f4f5';
 const MUTED_FOREGROUND = '#5a5f6d';
 const BORDER = '#e3e4e6';
-const LINK = '#2563eb';
+const LINK = '#035f5c';
 const MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
 const ELEMENT_STYLES: Readonly<Record<string, string>> = {
