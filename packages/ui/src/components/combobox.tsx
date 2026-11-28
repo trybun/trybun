@@ -26,7 +26,7 @@ function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
     <div data-slot="combobox-input-group" className={cn('relative w-full', className)}>
       <ComboboxPrimitive.Input
         data-slot="combobox-input"
-        className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent py-1 pr-11 pl-3 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-input-hover focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-input aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pr-8 xl:pointer-fine:pl-2.5 xl:pointer-fine:text-sm"
+        className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent py-1 pr-11 pl-3 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-input-hover focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pr-8 xl:pointer-fine:pl-2.5 xl:pointer-fine:text-sm"
         {...props}
       />
       <ComboboxPrimitive.Trigger
@@ -133,7 +133,7 @@ function ComboboxPopupInput({ className, ...props }: ComboboxPrimitive.Input.Pro
       <ComboboxPrimitive.Input
         data-slot="combobox-popup-input"
         className={cn(
-          'h-11 w-full min-w-0 rounded-md border border-input bg-transparent py-1 pr-3 pl-9 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-input-hover focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-input dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pl-8 xl:pointer-fine:text-sm',
+          'h-11 w-full min-w-0 rounded-md border border-input bg-transparent py-1 pr-3 pl-9 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-input-hover focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 xl:pointer-fine:h-8 xl:pointer-fine:pl-8 xl:pointer-fine:text-sm',
           className,
         )}
         {...props}

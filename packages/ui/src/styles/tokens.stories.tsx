@@ -68,7 +68,6 @@ const PAIRS: readonly Pair[] = [
       use: `Hovered field border on ${surface}`,
     },
     { foreground: '--link', background: surface, minimum: 4.5, use: `Link on ${surface}` },
-
     { foreground: '--ring', background: surface, minimum: 3, use: `Focus ring on ${surface}` },
   ]),
   // Error messages sit on the page, cards and popovers, never on a hovered or pressed row.
